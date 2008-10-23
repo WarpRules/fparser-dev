@@ -1,9 +1,9 @@
-//==============================
-// Function parser v2.8 by Warp
-//==============================
+//===============================
+// Function parser v2.81 by Warp
+//===============================
 
-#include "fparser.hh"
 #include "fpconfig.hh"
+#include "fparser.hh"
 #include "fptypes.hh"
 using namespace FUNCTIONPARSERTYPES;
 
@@ -13,6 +13,12 @@ using namespace FUNCTIONPARSERTYPES;
 #include <cmath>
 
 using namespace std;
+
+#ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
+#ifndef FP_USE_THREAD_SAFE_EVAL
+#define FP_USE_THREAD_SAFE_EVAL
+#endif
+#endif
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795
@@ -62,7 +68,7 @@ namespace
 //---------------------------------------------------------------------------
 // Copy-on-write method
 //---------------------------------------------------------------------------
-void FunctionParser::copyOnWrite()
+void FunctionParser::CopyOnWrite()
 {
     if(data->referenceCounter > 1)
     {
@@ -120,6 +126,10 @@ FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
     return *this;
 }
 
+void FunctionParser::ForceDeepCopy()
+{
+    CopyOnWrite();
+}
 
 FunctionParser::Data::Data():
     useDegreeConversion(false),
@@ -138,7 +148,7 @@ FunctionParser::Data::~Data()
 // Makes a deep-copy of Data:
 FunctionParser::Data::Data(const Data& cpy):
     varAmount(cpy.varAmount), useDegreeConversion(cpy.useDegreeConversion),
-    Variables(cpy.Variables), Constants(cpy.Constants),
+    Variables(cpy.Variables), Constants(cpy.Constants), Units(cpy.Units),
     FuncPtrNames(cpy.FuncPtrNames), FuncPtrs(cpy.FuncPtrs),
     FuncParserNames(cpy.FuncParserNames), FuncParsers(cpy.FuncParsers),
     ByteCode(0), ByteCodeSize(cpy.ByteCodeSize),
@@ -182,74 +192,102 @@ namespace
     };
 
 
-    // Parse variables
-    bool ParseVars(const string& Vars, map<string, unsigned>& dest)
+    enum VarNameType
+    { NOT_VALID_NAME, VALID_NEW_NAME, RESERVED_FUNCTION,
+      USER_DEF_CONST, USER_DEF_UNIT,
+      USER_DEF_FUNC_PTR, USER_DEF_FUNC_PARSER
+    };
+}
+
+
+// Parse variables
+bool FunctionParser::ParseVars(const string& Vars, map<string, unsigned>& dest)
+{
+    unsigned varNumber = VarBegin;
+    unsigned ind1 = 0, ind2;
+
+    while(ind1 < Vars.size())
     {
-        unsigned varNumber = VarBegin;
-        unsigned ind1 = 0, ind2;
+        if(!isalpha(Vars[ind1]) && Vars[ind1]!='_') return false;
+        for(ind2=ind1+1; ind2<Vars.size() && Vars[ind2]!=','; ++ind2)
+            if(!isalnum(Vars[ind2]) && Vars[ind2]!='_') return false;
+        const string varName = Vars.substr(ind1, ind2-ind1);
+        if(VarNameType(varName) != VALID_NEW_NAME) return false;
 
-        while(ind1 < Vars.size())
-        {
-            if(!isalpha(Vars[ind1]) && Vars[ind1]!='_') return false;
-            for(ind2=ind1+1; ind2<Vars.size() && Vars[ind2]!=','; ++ind2)
-                if(!isalnum(Vars[ind2]) && Vars[ind2]!='_') return false;
-            const string varName = Vars.substr(ind1, ind2-ind1);
+        if(dest.insert(make_pair(varName, varNumber++)).second == false)
+            return false;
 
-            if(dest.insert(make_pair(varName, varNumber++)).second == false)
+        ind1 = ind2+1;
+    }
+    return true;
+}
+
+namespace
+{
+    bool varNameHasOnlyValidChars(const std::string& name)
+    {
+        if(name.empty() || (!isalpha(name[0]) && name[0] != '_'))
+            return false;
+        for(unsigned i=0; i<name.size(); ++i)
+            if(!isalnum(name[i]) && name[i] != '_')
                 return false;
-
-            ind1 = ind2+1;
-        }
         return true;
     }
 }
 
-bool FunctionParser::isValidName(const std::string& name) const
+int FunctionParser::VarNameType(const std::string& name) const
 {
-    if(name.empty() || (!isalpha(name[0]) && name[0] != '_')) return false;
-    for(unsigned i=0; i<name.size(); ++i)
-        if(!isalnum(name[i]) && name[i] != '_') return false;
+    if(!varNameHasOnlyValidChars(name)) return NOT_VALID_NAME;
 
-    if(FindFunction(name.c_str())) return false;
+    const char* n = name.c_str();
+    if(FindFunction(n)) return RESERVED_FUNCTION;
+    if(FindConstant(n, data->Constants) != data->Constants.end())
+        return USER_DEF_CONST;
 
-    return true;
+    // Units are independent from the rest and thus the following check
+    // is actually not needed:
+    //if(FindConstant(n, data->Units) != data->Units.end())
+    //    return USER_DEF_UNIT;
+
+    if(FindVariable(n, data->FuncParserNames) != data->FuncParserNames.end())
+        return USER_DEF_FUNC_PARSER;
+    if(FindVariable(n, data->FuncPtrNames) != data->FuncPtrNames.end())
+        return USER_DEF_FUNC_PTR;
+
+    return VALID_NEW_NAME;
 }
 
 
 // Constants:
 bool FunctionParser::AddConstant(const string& name, double value)
 {
-    if(isValidName(name))
+    int nameType = VarNameType(name);
+    if(nameType == VALID_NEW_NAME || nameType == USER_DEF_CONST)
     {
-        const char* n = name.c_str();
-        if(FindVariable(n, data->FuncParserNames) !=
-           data->FuncParserNames.end() ||
-           FindVariable(n, data->FuncPtrNames) !=
-           data->FuncPtrNames.end())
-            return false;
-
-        copyOnWrite();
-
+        CopyOnWrite();
         data->Constants[name] = value;
         return true;
     }
     return false;
 }
 
+// Units:
+bool FunctionParser::AddUnit(const std::string& name, double value)
+{
+    if(!varNameHasOnlyValidChars(name)) return false;
+    CopyOnWrite();
+    data->Units[name] = value;
+    return true;
+}
+
 // Function pointers
 bool FunctionParser::AddFunction(const std::string& name,
                                  FunctionPtr func, unsigned paramsAmount)
 {
-    if(isValidName(name))
+    int nameType = VarNameType(name);
+    if(nameType == VALID_NEW_NAME)
     {
-        const char* n = name.c_str();
-        if(FindVariable(n, data->FuncParserNames) !=
-           data->FuncParserNames.end() ||
-           FindConstant(n) != data->Constants.end())
-            return false;
-
-        copyOnWrite();
-
+        CopyOnWrite();
         data->FuncPtrNames[name] = data->FuncPtrs.size();
         data->FuncPtrs.push_back(Data::FuncPtrData(func, paramsAmount));
         return true;
@@ -257,27 +295,23 @@ bool FunctionParser::AddFunction(const std::string& name,
     return false;
 }
 
-bool FunctionParser::checkRecursiveLinking(const FunctionParser* fp) const
+bool FunctionParser::CheckRecursiveLinking(const FunctionParser* fp) const
 {
     if(fp == this) return true;
     for(unsigned i=0; i<fp->data->FuncParsers.size(); ++i)
-        if(checkRecursiveLinking(fp->data->FuncParsers[i])) return true;
+        if(CheckRecursiveLinking(fp->data->FuncParsers[i])) return true;
     return false;
 }
 
 bool FunctionParser::AddFunction(const std::string& name,
                                  FunctionParser& parser)
 {
-    if(isValidName(name))
+    int nameType = VarNameType(name);
+    if(nameType == VALID_NEW_NAME)
     {
-        const char* n = name.c_str();
-        if(FindVariable(n, data->FuncPtrNames) != data->FuncPtrNames.end() ||
-           FindConstant(n) != data->Constants.end())
-            return false;
+        if(CheckRecursiveLinking(&parser)) return false;
 
-        if(checkRecursiveLinking(&parser)) return false;
-
-        copyOnWrite();
+        CopyOnWrite();
 
         data->FuncParserNames[name] = data->FuncParsers.size();
         data->FuncParsers.push_back(&parser);
@@ -294,7 +328,7 @@ int FunctionParser::Parse(const std::string& Function,
                           const std::string& Vars,
                           bool useDegrees)
 {
-    copyOnWrite();
+    CopyOnWrite();
 
     data->Variables.clear();
 
@@ -310,10 +344,11 @@ int FunctionParser::Parse(const std::string& Function,
     parseErrorType = FP_NO_ERROR;
 
     int Result = CheckSyntax(Func);
-    if(Result>=0) return Result;
+    if(Result >= 0) return Result;
 
     data->useDegreeConversion = useDegrees;
-    if(!Compile(Func)) return Function.size();
+    Result = Compile(Func);
+    if(Result >= 0) return Result;
 
     data->Variables.clear();
 
@@ -372,19 +407,36 @@ FunctionParser::FindVariable(const char* F, const Data::VarMap_t& vars) const
 }
 
 inline FunctionParser::Data::ConstMap_t::const_iterator
-FunctionParser::FindConstant(const char* F) const
+FunctionParser::FindConstant(const char* F,
+                             const Data::ConstMap_t& consts) const
 {
-    if(data->Constants.size())
+    if(consts.size())
     {
         unsigned ind = 0;
         while(isalnum(F[ind]) || F[ind] == '_') ++ind;
         if(ind)
         {
             string name(F, ind);
-            return data->Constants.find(name);
+            return consts.find(name);
         }
     }
-    return data->Constants.end();
+    return consts.end();
+}
+
+int FunctionParser::CheckForUnit(const char* Function, int Ind) const
+{
+    int c = Function[Ind];
+    if(isalpha(c) || c == '_')
+    {
+        Data::ConstMap_t::const_iterator uIter =
+            FindConstant(&Function[Ind], data->Units);
+        if(uIter != data->Units.end())
+        {
+            Ind += uIter->first.size();
+            sws(Function, Ind);
+        }
+    }
+    return Ind;
 }
 
 //---------------------------------------------------------------------------
@@ -490,7 +542,7 @@ int FunctionParser::CheckSyntax(const char* Function)
             {
                 // Check for constant
                 Data::ConstMap_t::const_iterator cIter =
-                    FindConstant(&Function[Ind]);
+                    FindConstant(&Function[Ind], Constants);
                 if(cIter != Constants.end())
                     Ind += cIter->first.size();
                 else
@@ -499,6 +551,10 @@ int FunctionParser::CheckSyntax(const char* Function)
             sws(Function, Ind);
             c = Function[Ind];
         }
+
+        // Check for unit
+        Ind = CheckForUnit(Function, Ind);
+        c = Function[Ind];
 
         // Check for closing parenthesis
         while(c==')')
@@ -511,10 +567,14 @@ int FunctionParser::CheckSyntax(const char* Function)
             c=Function[Ind];
         }
 
-// If we get here, we have a legal operand and now a legal operator or
+    CheckOperator:
+// If we get here, we have a legal operand and now a legal unit, operator or
 // end of string must follow
 
-    CheckOperator:
+        // Check for unit
+        Ind = CheckForUnit(Function, Ind);
+        c = Function[Ind];
+
         // Check for EOS
         if(c==0) break; // The only way to end the checking loop without error
 
@@ -544,7 +604,7 @@ int FunctionParser::CheckSyntax(const char* Function)
 
 // Compile function string to bytecode
 // -----------------------------------
-bool FunctionParser::Compile(const char* Function)
+int FunctionParser::Compile(const char* Function)
 {
     if(data->ByteCode) { delete[] data->ByteCode; data->ByteCode=0; }
     if(data->Immed) { delete[] data->Immed; data->Immed=0; }
@@ -558,8 +618,8 @@ bool FunctionParser::Compile(const char* Function)
 
     data->StackSize = StackPtr = 0;
 
-    CompileExpression(Function, 0);
-    if(parseErrorType != FP_NO_ERROR) return false;
+    int ind = CompileExpression(Function, 0);
+    if(parseErrorType != FP_NO_ERROR) return ind;
 
     data->ByteCodeSize = byteCode.size();
     data->ImmedSize = immed.size();
@@ -576,10 +636,12 @@ bool FunctionParser::Compile(const char* Function)
         memcpy(data->Immed, &immed[0],
                sizeof(double)*data->ImmedSize);
     }
+#ifndef FP_USE_THREAD_SAFE_EVAL
     if(data->StackSize)
         data->Stack = new double[data->StackSize];
+#endif
 
-    return true;
+    return -1;
 }
 
 
@@ -751,7 +813,8 @@ int FunctionParser::CompileElement(const char* F, int ind)
             return ind + vIter->first.size();
         }
 
-        Data::ConstMap_t::const_iterator cIter = FindConstant(F+ind);
+        Data::ConstMap_t::const_iterator cIter =
+            FindConstant(F+ind, data->Constants);
         if(cIter != data->Constants.end()) // is constant
         {
             AddImmediate(cIter->second);
@@ -799,15 +862,38 @@ int FunctionParser::CompileElement(const char* F, int ind)
     return ind;
 }
 
+// Compiles a unit factor possibly appearing after an element
+int FunctionParser::CompilePossibleUnit(const char* F, int ind)
+{
+    if(isalpha(F[ind]) || F[ind] == '_')
+    {
+        // If the syntax checker is bug-free, this should always work:
+        Data::ConstMap_t::const_iterator uIter =
+            FindConstant(F+ind, data->Units);
+
+        AddImmediate(uIter->second);
+        AddCompiledByte(cImmed);
+        incStackPtr();
+        AddCompiledByte(cMul);
+        --StackPtr;
+        ind += uIter->first.size();
+        sws(F, ind);
+    }
+    return ind;
+}
+
 // Compiles '^'
 int FunctionParser::CompilePow(const char* F, int ind)
 {
     int ind2 = CompileElement(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
+    ind2 = CompilePossibleUnit(F, ind2);
 
     while(F[ind2] == '^')
     {
         ind2 = CompileUnaryMinus(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         AddCompiledByte(cPow);
         --StackPtr;
@@ -825,6 +911,7 @@ int FunctionParser::CompileUnaryMinus(const char* F, int ind)
         int ind2 = ind+1;
         sws(F, ind2);
         ind2 = CompilePow(F, ind2);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
 
         // if we are negating a constant, negate the constant itself:
@@ -842,6 +929,7 @@ int FunctionParser::CompileUnaryMinus(const char* F, int ind)
     }
 
     int ind2 = CompilePow(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
     return ind2;
 }
@@ -850,12 +938,14 @@ int FunctionParser::CompileUnaryMinus(const char* F, int ind)
 int FunctionParser::CompileMult(const char* F, int ind)
 {
     int ind2 = CompileUnaryMinus(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '*' || op == '/' || op == '%')
     {
         ind2 = CompileUnaryMinus(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         switch(op)
         {
@@ -873,12 +963,14 @@ int FunctionParser::CompileMult(const char* F, int ind)
 int FunctionParser::CompileAddition(const char* F, int ind)
 {
     int ind2 = CompileMult(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '+' || op == '-')
     {
         ind2 = CompileMult(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         AddCompiledByte(op=='+' ? cAdd : cSub);
         --StackPtr;
@@ -891,6 +983,7 @@ int FunctionParser::CompileAddition(const char* F, int ind)
 int FunctionParser::CompileComparison(const char* F, int ind)
 {
     int ind2 = CompileAddition(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
     char op;
 
@@ -898,6 +991,7 @@ int FunctionParser::CompileComparison(const char* F, int ind)
     {
         int opSize = (F[ind2+1] == '=' ? 2 : 1);
         ind2 = CompileAddition(F, ind2+opSize);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         switch(op)
         {
@@ -920,11 +1014,13 @@ int FunctionParser::CompileComparison(const char* F, int ind)
 int FunctionParser::CompileAnd(const char* F, int ind)
 {
     int ind2 = CompileComparison(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
 
     while(F[ind2] == '&')
     {
         ind2 = CompileComparison(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         AddCompiledByte(cAnd);
         --StackPtr;
@@ -937,11 +1033,13 @@ int FunctionParser::CompileAnd(const char* F, int ind)
 int FunctionParser::CompileOr(const char* F, int ind)
 {
     int ind2 = CompileAnd(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
 
     while(F[ind2] == '|')
     {
         ind2 = CompileAnd(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
         AddCompiledByte(cOr);
         --StackPtr;
@@ -954,6 +1052,7 @@ int FunctionParser::CompileOr(const char* F, int ind)
 int FunctionParser::CompileExpression(const char* F, int ind, bool stopAtComma)
 {
     int ind2 = CompileOr(F, ind);
+    if(parseErrorType != FP_NO_ERROR) return ind2;
     sws(F, ind2);
 
     if(stopAtComma) return ind2;
@@ -961,6 +1060,7 @@ int FunctionParser::CompileExpression(const char* F, int ind, bool stopAtComma)
     while(F[ind2] == ',')
     {
         ind2 = CompileOr(F, ind2+1);
+        if(parseErrorType != FP_NO_ERROR) return ind2;
         sws(F, ind2);
     }
 
@@ -1011,10 +1111,19 @@ double FunctionParser::Eval(const double* Vars)
 {
     const unsigned* const ByteCode = data->ByteCode;
     const double* const Immed = data->Immed;
-    double* const Stack = data->Stack;
     const unsigned ByteCodeSize = data->ByteCodeSize;
     unsigned IP, DP=0;
     int SP=-1;
+
+#ifdef FP_USE_THREAD_SAFE_EVAL
+#ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
+    double* const Stack = (double*)alloca(data->StackSize*sizeof(double));
+#else
+    std::vector<double> Stack(data->StackSize);
+#endif
+#else
+    double* const Stack = data->Stack;
+#endif
 
     for(IP=0; IP<ByteCodeSize; ++IP)
     {
@@ -1068,12 +1177,16 @@ double FunctionParser::Eval(const double* Vars)
                   }
                   else
                   {
+#ifndef FP_USE_THREAD_SAFE_EVAL
                       data->Stack = new double[data->StackSize];
+#endif
                       ++evalRecursionLevel;
                       retVal = Eval(&Stack[SP-data->varAmount+1]);
                       --evalRecursionLevel;
+#ifndef FP_USE_THREAD_SAFE_EVAL
                       delete[] data->Stack;
                       data->Stack = Stack;
+#endif
                   }
                   SP -= data->varAmount-1;
                   Stack[SP] = retVal;
@@ -1228,11 +1341,12 @@ double FunctionParser::Eval(const double* Vars)
 
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#include <iomanip>
 namespace
 {
     inline void printHex(std::ostream& dest, unsigned n)
     {
-        dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
+        dest.width(8); dest.fill('0'); std::hex(dest); //uppercase(dest);
         dest << n;
     }
 }

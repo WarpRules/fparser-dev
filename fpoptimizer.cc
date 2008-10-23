@@ -1,6 +1,6 @@
-//===========================================
-// Function parser v2.8 optimizer by Bisqwit
-//===========================================
+//============================================
+// Function parser v2.81 optimizer by Bisqwit
+//============================================
 
 /*
  NOTE!
@@ -40,6 +40,13 @@ using namespace std;
 #define CONSTANT_L10EI CONSTANT_L10            // 1/log10(e)
 #define CONSTANT_DR    (180.0 / M_PI)          // 180/pi
 #define CONSTANT_RD    (M_PI / 180.0)          // pi/180
+
+// Debugging in optimizer? Not recommended for production use.
+//#define TREE_DEBUG
+#ifdef TREE_DEBUG
+// Debug verbosely?
+#include <ostream>
+#endif
 
 namespace {
 inline double Min(double d1, double d2)
@@ -108,6 +115,12 @@ bool IsInverse(const SubTree &p1, const SubTree &p2);
 
 typedef list<SubTree> paramlist;
 
+#ifdef TREE_DEBUG
+struct CodeTreeData;
+std::ostream& operator << (std::ostream& str, const CodeTreeData& tree);
+std::ostream& operator << (std::ostream& str, const CodeTree& tree);
+#endif
+
 struct CodeTreeData
 {
     paramlist args;
@@ -124,20 +137,15 @@ public:
 
     void SetOp(unsigned newop)     { op=newop; }
     void SetFuncNo(unsigned newno) { funcno=newno; }
-    unsigned GetFuncNo() const { return funcno; }
+
+    inline unsigned GetOp() const { return op; }
+    inline double GetImmed() const { return value; }
+    inline unsigned GetVar() const { return var; }
+    inline unsigned GetFuncNo() const { return funcno; }
 
     bool IsFunc() const  { return op == cFCall || op == cPCall; }
     bool IsImmed() const { return op == cImmed; }
     bool IsVar() const   { return op == cVar; }
-    inline unsigned GetOp() const { return op; }
-    inline double GetImmed() const
-    {
-        return value;
-    }
-    inline unsigned GetVar() const
-    {
-        return var;
-    }
 
     void AddParam(const SubTree &p)
     {
@@ -1151,11 +1159,19 @@ public:
             }
             else if(cl.value == CONSTANT_DR)
             {
+                KillConst(cl);
                 OptimizeRedundant();
+#ifdef TREE_DEBUG
+    cout << "PRE_REP         :" << (*this) << endl;
+#endif
                 ReplaceWith(cDeg, *this);
+#ifdef TREE_DEBUG
+    cout << "POST_REP        :" << (*this) << endl;
+#endif
             }
             else if(cl.value == CONSTANT_RD)
             {
+                KillConst(cl);
                 OptimizeRedundant();
                 ReplaceWith(cRad, *this);
             }
@@ -1165,6 +1181,95 @@ public:
         SortIfPossible();
     }
 };
+
+#ifdef TREE_DEBUG
+std::ostream& operator << (std::ostream& str, const CodeTree& tree)
+{
+    const CodeTreeData& data = *tree.data;
+    switch( (FUNCTIONPARSERTYPES::OPCODE) data.GetOp())
+    {
+        case cImmed: str << data.GetImmed(); return str;
+        case cVar:   str << "Var" << data.GetVar(); return str;
+        case cFCall: str << "FCall(Func" << data.GetFuncNo() << ")"; break;
+        case cPCall: str << "PCall(Func" << data.GetFuncNo() << ")"; break;
+        
+        case cAbs: str << "cAbs"; break;
+        case cAcos: str << "cAcos"; break;
+#ifndef NO_ASINH
+        case cAcosh: str << "cAcosh"; break;
+#endif
+        case cAsin: str << "cAsin"; break;
+#ifndef NO_ASINH
+        case cAsinh: str << "cAsinh"; break;
+#endif
+        case cAtan: str << "cAtan"; break;
+        case cAtan2: str << "cAtan2"; break;
+#ifndef NO_ASINH
+        case cAtanh: str << "cAtanh"; break;
+#endif
+        case cCeil: str << "cCeil"; break;
+        case cCos: str << "cCos"; break;
+        case cCosh: str << "cCosh"; break;
+        case cCot: str << "cCot"; break;
+        case cCsc: str << "cCsc"; break;
+#ifndef DISABLE_EVAL
+        case cEval: str << "cEval"; break;
+#endif
+        case cExp: str << "cExp"; break;
+        case cFloor: str << "cFloor"; break;
+        case cIf: str << "cIf"; break;
+        case cInt: str << "cInt"; break;
+        case cLog: str << "cLog"; break;
+        case cLog10: str << "cLog10"; break;
+        case cMax: str << "cMax"; break;
+        case cMin: str << "cMin"; break;
+        case cSec: str << "cSec"; break;
+        case cSin: str << "cSin"; break;
+        case cSinh: str << "cSinh"; break;
+        case cSqrt: str << "cSqrt"; break;
+        case cTan: str << "cTan"; break;
+        case cTanh: str << "cTanh"; break;
+
+        // These do not need any ordering:
+        case cJump: str << "cJump"; break;
+        case cNeg: str << "cNeg"; break;
+        case cAdd: str << "cAdd"; break;
+        case cSub: str << "cSub"; break;
+        case cMul: str << "cMul"; break;
+        case cDiv: str << "cDiv"; break;
+        case cMod: str << "cMod"; break;
+        case cPow: str << "cPow"; break;
+        case cEqual: str << "cEqual"; break;
+        case cNEqual: str << "cNEqual"; break;
+        case cLess: str << "cLess"; break;
+        case cLessOrEq: str << "cLessOrEq"; break;
+        case cGreater: str << "cGreater"; break;
+        case cGreaterOrEq: str << "cGreaterOrEq"; break;
+        case cNot: str << "cNot"; break;
+        case cAnd: str << "cAnd"; break;
+        case cOr: str << "cOr"; break;
+        case cDeg: str << "cDeg"; break;
+        case cRad: str << "cRad"; break;
+        case cDup: str << "cDup"; break;
+        case cInv: str << "cInv"; break;
+        case VarBegin: str << "VarBegin"; break;
+    }
+    str << '(';
+    
+    bool first = true;
+    for(paramlist::const_iterator
+        i = data.args.begin(); i != data.args.end(); ++i)
+    {
+        if(first) first=false; else str << ", ";
+        const SubTree& sub = *i;
+        if(sub.getsign()) str << '!';
+        str << *sub;
+    }
+    str << ')';
+    
+    return str;
+}
+#endif
 
 void CodeTreeDataPtr::Shock()
 {
@@ -1589,7 +1694,7 @@ void FunctionParser::MakeTree(void *r) const
     } while(0)
 
     #define EAT(n, opcode) do { \
-        unsigned newstacktop = stacktop-n; \
+        unsigned newstacktop = stacktop-(n); \
         if((n) == 0) GROW(1); \
         stack[stacktop].SetOp((opcode)); \
         for(unsigned a=0, b=(n); a<b; ++a) \
@@ -1798,16 +1903,27 @@ void FunctionParser::MakeTree(void *r) const
 
 void FunctionParser::Optimize()
 {
-    copyOnWrite();
+    CopyOnWrite();
 
     CodeTree tree;
     MakeTree(&tree);
 
+#ifdef TREE_DEBUG
+    cout << "BEFORE OPT      :" << tree << endl;
+#endif
     // Do all sorts of optimizations
     tree.Optimize();
+
+#ifdef TREE_DEBUG
+    cout << "BEFORE FINAL    :" << tree << endl;
+#endif
+
     // Last changes before assembly
     tree.FinalOptimize();
 
+#ifdef TREE_DEBUG
+    cout << "AFTER           :" << tree << endl;
+#endif
     // Now rebuild from the tree.
 
     vector<unsigned> byteCode;

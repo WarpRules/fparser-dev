@@ -21,6 +21,8 @@ int main()
     double minx, maxx, step;
     FunctionParser fparser;
 
+    fparser.AddConstant("pi", 3.1415926535897932);
+
     while(true)
     {
         std::cout << "f(x) = ";
@@ -28,8 +30,8 @@ int main()
         int res = fparser.Parse(function, "x");
         if(res < 0) break;
 
-        for(int i = 0; i < res+7; ++i) std::cout << " ";
-        std::cout << "^\n" << fparser.ErrorMsg() << "\n\n";
+        std::cout << std::string(res+7, ' ') << "^\n"
+                  << fparser.ErrorMsg() << "\n\n";
     }
 
     std::cout << "min x: ";
