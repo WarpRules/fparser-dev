@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function parser v2.3 by Warp                                            *|
+|* Function parser v2.4 by Warp                                            *|
 |* ----------------------------                                            *|
 |* Parses and evaluates the given function with the given variable values. *|
 |*                                                                         *|
@@ -21,6 +21,7 @@ public:
     double Eval(const double* Vars);
     inline int EvalError(void) const { return EvalErrorType; }
 
+    void Optimize();
 
 
     FunctionParser();
@@ -41,7 +42,6 @@ private:
 
     struct CompiledCode
     {   CompiledCode();
-        CompiledCode(const CompiledCode&);
         ~CompiledCode();
 
         unsigned* ByteCode;
@@ -50,7 +50,6 @@ private:
         unsigned ImmedSize;
         double* Stack;
         unsigned StackSize, StackPtr;
-        bool thisIsACopy;
     } Comp;
 
     // Temp vectors for bytecode:
@@ -72,6 +71,9 @@ private:
     int CompileAnd(const char*, int);
     int CompileOr(const char*, int);
     int CompileExpression(const char*, int, bool=false);
+
+
+    void MakeTree(struct CodeTree *result) const;
 
     FunctionParser(const FunctionParser&);
 };

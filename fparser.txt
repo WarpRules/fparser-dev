@@ -1,46 +1,24 @@
-  Function parser for C++  v2.3 by Warp.
+  Function parser for C++  v2.4 by Warp.
   ======================================
+
+  Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
+
 
 | Changes in this document compared to the previous version are marked with '|'
 | characters at the left column.
 
 
-  Usage license:
-  -------------
-
-  1. This library is free for non-commercial usage. You can do whatever you
-     like with it as long as you don't claim you made it yourself.
-
-  2. It is possible to use this library in a commercial program, but in this
-     case you MUST contact me first (warp@iki.fi) and ask express permission
-     for this. I want to know what type of program it is going to be, its
-     price and so on.
-       If you are making a free program or a shareware program with just a
-     nominal price (5 US dollars or less), you don't have to ask for
-     permission.
-       In any case, I DON'T WANT MONEY for the usage of this library. It is
-     free, period.
-
-  3. You can make any modifications you want to it so that it conforms your
-     needs. If you make modifications to it, you have, of course, credits for
-     the modified parts.
-
-  4. If you use this library in your own program, you don't have to provide
-     the source code if you don't want to (ie. the source code of your program
-     or this library).
-       If you DO include the source code for this library, this text file
-     must be included in its original intact form.
-
-  5. If you distribute a program which uses this library, and specially if you
-     provide the source code, proper credits MUST be included. Trying to
-     obfuscate the fact that this library is not made by you or that it is
-     free is expressly prohibited. When crediting the usage of this library,
-     it's enough to include my nickname and email address, that is:
-     "Warp (warp@iki.fi)". Also a URL to the library download page would be
-     nice, although not required. The official URL is:
-       http://iki.fi/warp/FunctionParser/
+| The usage license of this library is located at the end of this text file.
 
 
+
+| What's new in v2.4:
+| ------------------
+| - A new Optimize() method which tries to simplify the bytecode so that
+|   it will be evaluated faster. Please note that this is still experimental.
+| - New functions added: atan2() and log10().
+| - Two new more detailed syntax error messages (previously simply
+|   "Syntax error").
 
 | What's new in v2.3:
 | ------------------
@@ -75,7 +53,7 @@ arithmetic).
 libraries which evaluate functions by just interpreting the raw function
 string).
 
-  The library is made in ANSI C++ and requires a standard-conforming C++
+  The library is made in ISO C++ and requires a standard-conforming C++
 compiler.
 
 
@@ -125,6 +103,43 @@ const char* ErrorMsg(void) const;
     Returns a pointer to an error message string corresponding to the error
     caused by Parse() (you can use this to print the proper error message to
     the user). If no such error has occurred, returns 0.
+
+
+void Optimize();
+
+|   This method can be called after calling the Parse() method. It will try
+|   to simplify the internal bytecode so that it will evaluate faster (it
+|   tries to reduce the amount of opcodes in the bytecode).
+|     For example, the bytecode for the function "5+x*y-25*4/8" will be
+|   reduced to a bytecode equivalent to the function "x*y-7.5" (the original
+|   11 opcodes will be reduced to 5). Besides calculating constant expressions
+|   (like in the example), it also performs other types of simplifications
+|   with variable and function expressions.
+
+|     This method is quite slow and the decision of whether to use it or
+|   not should depend on the type of application. If a function is parsed
+|   once and evaluated millions of times, then calling Optimize() may speed-up
+|   noticeably. However, if there are tons of functions to parse and each one
+|   is evaluated once or just a few times, then calling Optimize() will only
+|   slow down the program.
+|     Also, if the original function is expected to be optimal, then calling
+|   Optimize() would be useless.
+
+|     Note: Currently this method does not make any checks (like Eval() does)
+|   and thus things like "1/0" will cause undefined behaviour. (On the other
+|   hand, if such expression is given to the parser, Eval() will always give
+|   an error code, no matter what the parameters.) If caching this type of
+|   errors is important, a work-around is to call Eval() once before calling
+|   Optimize() and checking EvalError().
+
+|     If the destination application is not going to use this method,
+|   the compiler constant SUPPORT_OPTIMIZER can be undefined at the beginning
+|   of fparser.cc to make the library smaller (Optimize() can still be called,
+|   but it will not do anything).
+
+|   (If you are interested in seeing how this method optimizes the opcode,
+|   you can call the PrintByteCode() method before and after the call to
+|   Optimize() to see the difference.)
 
 
 double Eval(const double* Vars);
@@ -208,47 +223,51 @@ or functions using the following operators in this order of precedence:
 
   The class supports these functions:
 
-  abs(A)   : Absolute value of A. If A is negative, returns -A otherwise
-             returns A.
-  acos(A)  : Arc-cosine of A. Returns the angle, measured in radians,
-             whose cosine is A.
-  acosh(A) : Same as acos() but for hyperbolic cosine.
-  asin(A)  : Arc-sine of A. Returns the angle, measured in radians, whose
-             sine is A.
-  asinh(A) : Same as asin() but for hyperbolic sine.
-  atan(A)  : Arc-tangent of (A). Returns the angle, measured in radians,
-             whose tangent is (A).
-  atanh(A) : Same as atan() but for hyperbolic tangent.
-  ceil(A)  : Ceiling of A. Returns the smallest integer greater than A.
-             Rounds up to the next higher integer.
-  cos(A)   : Cosine of A. Returns the cosine of the angle A, where A is
-             measured in radians.
-  cosh(A)  : Same as cos() but for hyperbolic cosine.
-  eval(...): This a recursive call to the function to be evaluated. The
-             number of parameters must be the same as the number of parameters
-             taken by the function. Usually called inside if() to avoid
-             infinite recursion.
-  exp(A)   : Exponential of A. Returns the value of e raised to the power
-             A where e is the base of the natural logarithm, i.e. the
-             non-repeating value approximately equal to 2.71828182846.
-  floor(A) : Floor of A. Returns the largest integer less than A. Rounds
-             down to the next lower integer.
-  if(A,B,C): If int(A) differs from 0, the return value of this function is B,
-             else C. Only the parameter which needs to be evaluated is
-             evaluated, the other parameter is skipped; this makes it safe to
-             use eval() in them.
-  int(A)   : Rounds A to the closest integer. 0.5 is rounded to 1.
-  log(A)   : Natural logarithm of A. Returns the natural logarithm base e
-             of the value A.
-  max(A,B) : If A>B, the result is A, else B.
-  min(A,B) : If A<B, the result is A, else B.
-  sin(A)   : Sine of A. Returns the sine of the angle A, where A is
-             measured in radians.
-  sinh(A)  : Same as sin() but for hyperbolic sine.
-  sqrt(A)  : Square root of A. Returns the value whose square is A.
-  tan(A)   : Tangent of A. Returns the tangent of the angle A, where A
-             is measured in radians.
-  tanh(A)  : Same as tan() but for hyperbolic tangent.
+  abs(A)    : Absolute value of A. If A is negative, returns -A otherwise
+              returns A.
+  acos(A)   : Arc-cosine of A. Returns the angle, measured in radians,
+              whose cosine is A.
+  acosh(A)  : Same as acos() but for hyperbolic cosine.
+  asin(A)   : Arc-sine of A. Returns the angle, measured in radians, whose
+              sine is A.
+  asinh(A)  : Same as asin() but for hyperbolic sine.
+  atan(A)   : Arc-tangent of (A). Returns the angle, measured in radians,
+              whose tangent is (A).
+| atan2(A,B): Arc-tangent of A/B. The two main differences to atan() is
+|             that it will return the right angle depending on the signs of
+|             A and B (atan() can only return values betwen -pi/2 and pi/2),
+|             and that the return value of pi/2 and -pi/2 are possible.
+  atanh(A)  : Same as atan() but for hyperbolic tangent.
+  ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
+              Rounds up to the next higher integer.
+  cos(A)    : Cosine of A. Returns the cosine of the angle A, where A is
+              measured in radians.
+  cosh(A)   : Same as cos() but for hyperbolic cosine.
+  eval(...) : This a recursive call to the function to be evaluated. The
+              number of parameters must be the same as the number of parameters
+              taken by the function. Usually called inside if() to avoid
+              infinite recursion.
+  exp(A)    : Exponential of A. Returns the value of e raised to the power
+              A where e is the base of the natural logarithm, i.e. the
+              non-repeating value approximately equal to 2.71828182846.
+  floor(A)  : Floor of A. Returns the largest integer less than A. Rounds
+              down to the next lower integer.
+  if(A,B,C) : If int(A) differs from 0, the return value of this function is B,
+              else C. Only the parameter which needs to be evaluated is
+              evaluated, the other parameter is skipped; this makes it safe to
+              use eval() in them.
+  int(A)    : Rounds A to the closest integer. 0.5 is rounded to 1.
+  log(A)    : Natural (base e) logarithm of A.
+| log10(A)  : Base 10 logarithm of A.
+  max(A,B)  : If A>B, the result is A, else B.
+  min(A,B)  : If A<B, the result is A, else B.
+  sin(A)    : Sine of A. Returns the sine of the angle A, where A is
+              measured in radians.
+  sinh(A)   : Same as sin() but for hyperbolic sine.
+  sqrt(A)   : Square root of A. Returns the value whose square is A.
+  tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
+              is measured in radians.
+  tanh(A)   : Same as tan() but for hyperbolic tangent.
 
 
   Examples of function string understood by the class:
@@ -354,3 +373,56 @@ it byte by byte, from the beginning to the end. You never have to go back,
 make loops or anything.
 
   This is what makes byte-coded stack arithmetic so fast.
+
+
+=============================================================================
+
+  Usage license:
+  -------------
+
+Copyright © 2003 Juha Nieminen, Joel Yliluoma
+
+  1. This library is free for non-commercial usage. You can do whatever you
+     like with it as long as you don't claim you made it yourself.
+
+  2. It is possible to use this library in a commercial program, but in this
+     case you MUST contact me first (warp@iki.fi) and ask express permission
+     for this. I want to know what type of program it is going to be, its
+     price and so on.
+       If you are making a free program or a shareware program with just a
+     nominal price (5 US dollars or less), you don't have to ask for
+     permission.
+       In any case, I DON'T WANT MONEY for the usage of this library. It is
+     free, period.
+
+  3. You can make any modifications you want to it so that it conforms your
+     needs. If you make modifications to it, you have, of course, credits for
+     the modified parts.
+
+  4. If you use this library in your own program, you don't have to provide
+     the source code if you don't want to (ie. the source code of your program
+     or this library).
+       If you DO include the source code for this library, this text file
+     must be included in its original intact form.
+
+  5. If you distribute a program which uses this library, and specially if you
+     provide the source code, proper credits MUST be included. Trying to
+     obfuscate the fact that this library is not made by you or that it is
+     free is expressly prohibited. When crediting the usage of this library,
+     it's enough to include my name and email address, that is:
+     "Juha Nieminen (warp@iki.fi)". Also a URL to the library download page
+     would be nice, although not required. The official URL is:
+       http://iki.fi/warp/FunctionParser/
+
+  6. And the necessary "lawyer stuff":
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     The software is provided "as is", without warranty of any kind,
+     express or implied, including but not limited to the warranties of
+     merchantability, fitness for a particular purpose and noninfringement.
+     In no event shall the authors or copyright holders be liable for any
+     claim, damages or other liability, whether in an action of contract,
+     tort or otherwise, arising from, out of or in connection with the
+     software or the use or other dealings in the software.
