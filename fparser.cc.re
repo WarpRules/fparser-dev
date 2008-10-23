@@ -396,6 +396,7 @@ int FunctionParser::Parse(const std::string& Function,
 {
     CopyOnWrite();
 
+    data->isOptimized = false;
     data->Variables.clear();
 
     if(!ParseVars(Vars, data->Variables))
