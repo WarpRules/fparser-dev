@@ -1,0 +1,284 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
+  <title>Function Parser library for C++</title>
+</head>
+
+<body>
+<h1>Version history</h1>
+
+<p>What's new in v2.84
+<ul>
+ <li>Changed all precompiler constant names to have the <code>FP_</code> prefix, to make
+    them more consistent and lessen the danger of name collisions. (This
+    breaks backwards compatibility.) Also added support for all the compiling
+    options to be configurable without having to modify the fpconfig.hh file.
+    Consult the documentation about conditional compiling below.
+ <li>Made <code>FP_DISABLE_EVAL</code> to be defined by default (previously it was undefined
+    by default). The "<code>eval()</code>" function is way too dangerous and rarely useful,
+    so it's better for it to be disabled by default.
+ <li>If another function parser was given to a parser with <code>AddFunction()</code>, and
+    during evaluation that other parser produced an eval error, the calling
+    parser would ignore it. Now the calling parser will return the same eval
+    error (and 0 as the return value of the function).
+ <li>Fixed a bug in the optimizer which caused things like
+    <code>"max(0, min(-2,0))"</code>
+    to be wrongly optimized (the return value was wrong).
+</ul>
+
+<p>What's new in v2.83
+<ul>
+ <li>Fixed bug in the optimizer which caused functions like
+     <code>"x-y*1"</code> to crash.
+</ul>
+
+<p>What's new in v2.82
+<ul>
+ <li>Fixed bug in the optimizer which caused a crash with some functions.
+</ul>
+
+<p>What's new in v2.81
+<ul>
+ <li>Added support for units (see help on the <code>AddUnit()</code> method).
+ <li>Added support for optionally making the <code>Eval()</code> function
+     thread-safe with a precompiler constant.
+ <li>Fixed optimizer bug that caused things like "<code>acos(0)</code>" to
+     misbehave.
+</ul>
+
+<p>What's new in v2.8
+<ul>
+ <li>Put the compile-time options to a separate file <code>fpconfig.hh</code>.
+ <li>Added comparison operators "<code>!=</code>", "<code>&lt;=</code>" and
+     "<code>&gt;=</code>".
+ <li>Added an epsilon value to the comparison operators (its value can be
+     changed in <code>fpconfig.hh</code> or it can be completely disabled
+     there).
+ <li>Added unary not operator "<code>!</code>".
+ <li>Now user-defined functions can take 0 parameters.
+ <li>Added a maximum recursion level to the "<code>eval()</code>" function
+    (definable in <code>fpconfig.hh</code>). Now "<code>eval()</code>"
+    should never cause an infinite recursion.
+    (Note however, that it may still be relevant to disable it completely
+    because it is possible to write functions which take enormous amounts
+    of time to evaluate even when the maximum recursion level is not reached.)
+ <li>Separated the optimizer code to its own file (makes developement easier).
+</ul>
+
+
+<p>What's new in v2.71
+<ul>
+ <li>Fixed a couple of syntax errors which slipped through in the v2.7
+    distribution version:
+    <ul>
+     <li>non-standard semicolons at the end of namespace blocks
+     <li>a compilation error which happens if SUPPORT_OPTIMIZER is disabled
+    </ul>
+ <li>Included a simple example program.
+</ul>
+
+<p>What's new in v2.7
+<ul>
+ <li>Changed precedence rules for unary minus and the power operator (<code>^</code>) to
+    make it closer in functionality to the power "operator" in mathematics
+    (ie. superscript):
+    <ul>
+     <li> Consecutive power operators at the same precedence level are
+      evaluated from right to left. That is, for example <code>"2^3^4"</code> is
+      now evaluated as if it had been written as <code>"2^(3^4)"</code> (and not
+      as <code>"(2^3)^4"</code> like in previous versions).
+     <li> The unary minus in the base of the power has now a lower precedence
+      than the power operator. That is, <code>"-2^3"</code> will be evaluated as if
+      written as <code>"-(2^3)"</code>, ie. the result is <code>"-8"</code> (and not <code>"8"</code> like in
+      previous versions). The unary minus in the exponent is still
+      evaluated first because of the right-left precedence change above
+      (that is, <code>"-2^-3"</code> is evaluated as <code>"-(2^(-3))"</code>).
+    </ul>
+ <li> Fixed a bug in the copy-on-write engine.
+</ul>
+
+
+<p>What's new in v2.63
+<ul>
+ <li>Some tiny fixes to make the library more compatible with BCB4.
+</ul>
+
+<p>What's new in v2.62
+<ul>
+ <li>Only an addition to the usage license. (Please read it.)
+</ul>
+
+
+<p>What's new in v2.61
+<ul>
+ <li>Tiny bug fix: Tabs and carriage returns now allowed in the function
+     string.
+</ul>
+
+<p>What's new in v2.6
+<ul>
+ <li>Added a new method: <code>GetParseErrorType()</code>. This method can be used to
+    get the type of parsing error (which can be used eg. for customized
+    error messages in another language).
+ <li>Added working copy constructor and assignment operator (using the
+    copy-on-write technique for efficiency). See the "Usage" section for
+    details.
+ <li>Fixed a problem with the comma operator (<code>,</code>): Comma is not allowed
+    anymore anywhere else than separating function parameters. In other
+    words, comma is not an operator anymore (just a parameter separator).
+</ul>
+
+<p>What's new in v2.51:
+<ul>
+ <li>Tiny fixes to make it work with gcc 2.x (which is still sadly common).
+</ul>
+
+<p>What's new in v2.5:
+<ul>
+ <li>A new <code>AddConstant()</code> method for adding constants to the parser.
+ <li>Two <code>AddFunction()</code> methods for adding user-defined functions to the parser.
+ <li>The library can now handle trigonometrical angles either in radians
+    (default) or degrees with an optional parameter of <code>Parse()</code>.
+ <li>New functions added: <code>cot()</code>, <code>csc()</code> and <code>sec()</code>.
+ <li>Enhancements and bug fixes to the <code>Optimize()</code> method (please consider
+    it still as experimental).
+</ul>
+
+<p>What's new in v2.4:
+<ul>
+ <li>A new <code>Optimize()</code> method which tries to simplify the bytecode so that
+     it will be evaluated faster. Please note that this is still experimental.
+ <li>New functions added: <code>atan2()</code> and <code>log10()</code>.
+ <li>Two new more detailed syntax error messages (previously simply
+     "Syntax error").
+</ul>
+
+
+<p>What's new in v2.3:
+<ul>
+ <li>Variable names can now have digits and underscores (but they can't begin
+     with a digit).
+ <li>Parsing speed optimizations. The <code>Parse()</code> method can be even 40% faster
+     than in the previous version.
+     (Please be aware that the new parser has not been thoroughly tested;
+      bugs are possible.)
+ <li>A new "semi-undocumented" debugging function for printing the bytecode
+     of the current function (in an asm-like syntax). Mostly useless from
+     the user's point of view.
+</ul>
+
+<p>What's new in v2.22:
+<ul>
+ <li>Fixed a tiny bug which made the class to misbehave when an error
+     occurred during parsing.
+</ul>
+
+<p>What's new in v2.21:
+<ul>
+ <li>A tiny fix to make the library work with Borland C++ Builder 4.
+</ul>
+
+<p>What's new in v2.2:
+<ul>
+ <li>Support for long variable names (NOTE: Unfortunately this breaks backwards
+     compatibility.)
+ <li>New functions: <code>min()</code>, <code>max()</code>, <code>if()</code>, <code>eval()</code>.
+ <li>Support for recursive calls (with <code>if()</code> and <code>eval()</code>).
+ <li>New operators (mainly for use with if(), but can be used anywhere):
+     '<code>=</code>', '<code>&lt;</code>', '<code>&gt;</code>', '<code>&amp;</code>' and '<code>|</code>'.
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v2.1:
+<ul>
+ <li>Parsing speed optimization.
+
+  <p>I implemented the parser from the scratch using a known parsing algorithm
+  from classical compiler techniques, thus replacing my old ad&nbsp;hoc parser.
+  <p>The parser should be much faster now, specially with long functions with
+  lots of parentheses (specially when the expressions inside parentheses are
+  very long).
+  <p>I made a test with the function
+  "<code>((2*(5+x*(cos(y-x)/3+2)/4)+1)/4+x)-1</code>" in
+  a Sun Ultra 5 computer. The version 2.0 of the library parses it in
+  approximately 0.21 ms, while the new version 2.1 parses it in 0.115 ms.
+  (I performed the test by parsing the function 100000 times and then dividing
+  the total time by that.)
+  <p>Needs lots of testing to make sure that it works!
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v2.0:
+<ul>
+ <li> Slight changes in the interface.<br>
+    I'm sorry for the lost backwards compatibility, but the v1.x way of taking
+    the parameters was just awful - I made it better this time.<br>
+    These changes are:
+    <ul>
+     <li><code>Parse()</code> takes the function as a
+         <code>const std::string&amp;</code> (this is fully backwards
+	 compatible).
+     <li><code>Parse()</code> takes the variables as a
+         <code>const std::string&amp;</code> (eg. <code>"xy"</code>). The
+         old way of taking variable number of parameters was just a too awful
+         hack.
+     <li>The <code>Eval()</code> function taking a variable number of
+      parameters has been
+      removed. Although it was a bit easier to use, it was a hack and led to
+      inefficient code (internally the parameters were put inside a dynamically
+      allocated array anyways, and that's not the most efficient way of doing
+      it; it's much more efficient that the user uses a statically allocated
+      local array).
+    </ul>
+    These changes are not radical, so don't get too alarmed. I'm sure that
+    changing old code to this new interface is trivial.
+ <li>Added the modulo operator (<code>%</code>) and a new function
+     <code>int()</code>.
+ <li>I hope that now, at last, all the problems with parsing functions with
+    similar beginnings (eg. <code>acos()</code> vs. <code>acosh()</code>) are
+    gone. Needs more testing, though...
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v1.3:<br>
+(Thanks to Roland Schmehl for these bug reports).
+<ul>
+ <li>The library parsed wrongly sinh, cosh and tanh (confused them with sin,
+    cos and tan and then reported a syntax error for the 'h').
+ <li>The library parsed an expression like "-cos(x)+cos(y)" like if it
+    was "-(cos(x)+cos(y))" instead of "(-cos(x))+cos(y)" as it should. Fixed.
+ <li>The library didn't parse correctly numbers in the form "1e-2". Fixed.
+ <li>Added some explanations at the end of the fparser.txt file.
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v1.21:
+<ul>
+ <li>Fixed several memory leaks (thanks to Stephen Agate for the bug report).
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v1.2:
+<ul>
+ <li>If you define the identifier NO_ASINH (see the beginning of fparser.cc),
+    then support for the functions asinh, acosh and atanh will be removed
+    (they are not part of the ANSI C standard and thus not supported by most
+    compilers).
+ <li>A tiny bug fixed.
+</ul>
+
+<hr width="50%">
+
+<p>What's new in v1.1:
+<ul>
+ <li>Fixed bug that made a negated function (eg. "-sin(x)") crash.
+</ul>
+
+</body></html>

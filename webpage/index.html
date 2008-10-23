@@ -1,0 +1,351 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
+  <title>Function Parser library for C++</title>
+</head>
+
+<body>
+<h1>Function parser for C++ v2.84 by Warp</h1>
+
+<h2>- Download</h2>
+
+<p>Download <a href="fparser284.zip">fparser284.zip</a> v2.84
+(released 02 Oct 2008)
+
+<p>(Older versions:
+<a href="fparser283.zip">v2.83</a>,
+<a href="fparser282.zip">v2.82</a>,
+<a href="fparser281.zip">v2.81</a>,
+<a href="fparser28.zip">v2.8</a>,
+<a href="fparser271.zip">v2.71</a>,
+<a href="fparser27.zip">v2.7</a>,
+<a href="fparser263.zip">v2.63</a>,
+<a href="fparser251.zip">v2.51</a>,
+<a href="fparser24.zip">v2.4</a>,
+<a href="fparser23.zip">v2.3</a>,
+<a href="fparser222.zip">v2.22</a>)
+
+<hr width="50%">
+
+<h2>- Speed tests</h2>
+
+<a href="speedtests.html">Some speed tests.</a>
+
+<h2>- Some software which uses this library</h2>
+
+<p><a href="../FuncViewer/">Function Viewer</a>: A small program I made to
+demonstrate the function parser.
+
+<ul>
+ <li><a href="http://www.ribbonsoft.com/qcad.html">QCad</a>: A GPL CAD software
+     for various platforms.
+ <li><a href="http://fung-calc.sourceforge.net/">Fung-Calc</a>: A GPL graphing
+     calculator for both 2D and 3D graphs.
+ <li><a href="http://www.scribus.net/">Scribus - Open Source Desktop Publishing</a>
+</ul>
+
+<hr width="50%">
+
+<h2>- What's new?</h2>
+
+<p>What's new in v2.84
+<ul>
+ <li>Changed all precompiler constant names to have the <code>FP_</code> prefix, to make
+    them more consistent and lessen the danger of name collisions. (This
+    breaks backwards compatibility.) Also added support for all the compiling
+    options to be configurable without having to modify the fpconfig.hh file.
+    Consult the documentation about conditional compiling below.
+ <li>Made <code>FP_DISABLE_EVAL</code> to be defined by default (previously it was undefined
+    by default). The "<code>eval()</code>" function is way too dangerous and rarely useful,
+    so it's better for it to be disabled by default.
+ <li>If another function parser was given to a parser with <code>AddFunction()</code>, and
+    during evaluation that other parser produced an eval error, the calling
+    parser would ignore it. Now the calling parser will return the same eval
+    error (and 0 as the return value of the function).
+ <li>Fixed a bug in the optimizer which caused things like
+    <code>"max(0, min(-2,0))"</code>
+    to be wrongly optimized (the return value was wrong).
+</ul>
+
+<p>You can also view the <a href="history.html">full version history</a>.
+
+<hr>
+
+<h2>- Long-term plans</h2>
+
+<p>(Or plans which I would like to implement some day, but may perhaps never
+be done.)
+
+<ul>
+ <li>Rewrite the optimizer.
+ <li>In fact, rewrite the whole thing. The current parser is horrible and rigid
+     and hard to maintain (I noticed this when I estimated how hard would it
+     be to add support for UTF8-encoded input). The parser really needs a
+     true abstract tokenizer.
+ <li>Add JIT-compilation support for several platforms (Windows, PC-Linux,
+     Sparc-Solaris).
+ <li>Change to a different, less troublesome usage license.
+</ul>
+
+<hr>
+
+<h2>- What is this library?</h2>
+
+<p>This is a part of the <code>fparser.txt</code> file
+included in the zip file (the file itself contains more info than this;
+you can read the entire file <a href="fparser.txt">here</a>).
+
+<p>(You can also look at the simple <a href="example.cc">example program</a>
+which comes with the library.)
+
+<pre>
+  - Preface
+    -------
+
+  Often people need to ask some mathematical expression from the user and
+then evaluate values for that expression. The simplest example is a program
+which draws the graphic of a user-defined function on screen.
+
+  This library adds C-style function string parsing to the program. This
+means that you can evaluate the string "sqrt(1-x^2+y^2)" with given values
+of 'x' and 'y'.
+
+  The library is intended to be very fast. It byte-compiles the function
+string at parse time and interpretes this byte-code at evaluation time.
+The evaluation is straightforward and no recursions are done (uses stack
+arithmetic).
+  Empirical tests show that it indeed is very fast (specially compared to
+libraries which evaluate functions by just interpreting the raw function
+string).
+
+  The library is made in ISO C++ and requires a standard-conforming C++
+compiler.
+
+
+  - The function string
+    -------------------
+
+  The function string understood by the class is very similar to the C-syntax.
+  Arithmetic float expressions can be created from float literals, variables
+or functions using the following operators in this order of precedence:
+
+   ()             expressions in parentheses first
+   A unit         a unit multiplier (if one has been added)
+   A^B            exponentiation (A raised to the power B)
+   -A             unary minus
+   !A             unary logical not (result is 1 if int(A) is 0, else 0)
+   A*B  A/B  A%B  multiplication, division and modulo
+   A+B  A-B       addition and subtraction
+   A=B  A!=B  A&lt;B  A&lt;=B  A&gt;B  A&gt;=B
+                  comparison between A and B (result is either 0 or 1)
+   A&amp;B            result is 1 if int(A) and int(B) differ from 0, else 0.
+   A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
+
+    Since the unary minus has higher precedence than any other operator, for
+  example the following expression is valid: x*-y
+
+    The comparison operators use an epsilon value, so expressions which may
+  differ in very least-significant digits should work correctly. For example,
+  "0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1+0.1 = 1" should always return 1, and
+  the same comparison done with "&gt;" or "&lt;" should always return 0.
+  (The epsilon value can be configured in the fpconfig.hh file.)
+  Without epsilon this comparison probably returns the wrong value.
+
+  The class supports these functions:
+
+  abs(A)    : Absolute value of A. If A is negative, returns -A otherwise
+              returns A.
+  acos(A)   : Arc-cosine of A. Returns the angle, measured in radians,
+              whose cosine is A.
+  acosh(A)  : Same as acos() but for hyperbolic cosine.
+  asin(A)   : Arc-sine of A. Returns the angle, measured in radians, whose
+              sine is A.
+  asinh(A)  : Same as asin() but for hyperbolic sine.
+  atan(A)   : Arc-tangent of (A). Returns the angle, measured in radians,
+              whose tangent is (A).
+  atan2(A,B): Arc-tangent of A/B. The two main differences to atan() is
+              that it will return the right angle depending on the signs of
+              A and B (atan() can only return values betwen -pi/2 and pi/2),
+              and that the return value of pi/2 and -pi/2 are possible.
+  atanh(A)  : Same as atan() but for hyperbolic tangent.
+  ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
+              Rounds up to the next higher integer.
+  cos(A)    : Cosine of A. Returns the cosine of the angle A, where A is
+              measured in radians.
+  cosh(A)   : Same as cos() but for hyperbolic cosine.
+  cot(A)    : Cotangent of A (equivalent to 1/tan(A)).
+  csc(A)    : Cosecant of A (equivalent to 1/sin(A)).
+  eval(...) : This a recursive call to the function to be evaluated. The
+              number of parameters must be the same as the number of parameters
+              taken by the function. Usually called inside if() to avoid
+              infinite recursion.
+  exp(A)    : Exponential of A. Returns the value of e raised to the power
+              A where e is the base of the natural logarithm, i.e. the
+              non-repeating value approximately equal to 2.71828182846.
+  floor(A)  : Floor of A. Returns the largest integer less than A. Rounds
+              down to the next lower integer.
+  if(A,B,C) : If int(A) differs from 0, the return value of this function is B,
+              else C. Only the parameter which needs to be evaluated is
+              evaluated, the other parameter is skipped; this makes it safe to
+              use eval() in them.
+  int(A)    : Rounds A to the closest integer. 0.5 is rounded to 1.
+  log(A)    : Natural (base e) logarithm of A.
+  log10(A)  : Base 10 logarithm of A.
+  max(A,B)  : If A&gt;B, the result is A, else B.
+  min(A,B)  : If A&lt;B, the result is A, else B.
+  sec(A)    : Secant of A (equivalent to 1/cos(A)).
+  sin(A)    : Sine of A. Returns the sine of the angle A, where A is
+              measured in radians.
+  sinh(A)   : Same as sin() but for hyperbolic sine.
+  sqrt(A)   : Square root of A. Returns the value whose square is A.
+  tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
+              is measured in radians.
+  tanh(A)   : Same as tan() but for hyperbolic tangent.
+
+
+  Examples of function string understood by the class:
+
+  "1+2"
+  "x-1"
+  "-sin(sqrt(x^2+y^2))"
+  "sqrt(XCoord*XCoord + YCoord*YCoord)"
+
+  An example of a recursive function is the factorial function:
+
+  "if(n&gt;1, n*eval(n-1), 1)"
+
+  Note that a recursive call has some overhead, which makes it a bit slower
+  than any other operation. It may be a good idea to avoid recursive functions
+  in very time-critical applications. Recursion also takes some memory, so
+  extremely deep recursions should be avoided (eg. millions of nested recursive
+  calls).
+
+  Also note that even though the maximum recursion level of eval() is
+  limited, it is possible to write functions which never reach that level
+  but still take enormous amounts of time to evaluate.
+  This can sometimes be undesirable because it is prone to exploitation,
+  but you can disable the eval() function completely in the fpconfig.hh file.
+
+  - Contacting the author
+    --------------------
+
+  Any comments, bug reports, etc. should be sent to warp@iki.fi
+
+
+=============================================================================
+
+  Usage license:
+  -------------
+
+Copyright © 2003 Juha Nieminen, Joel Yliluoma
+
+  This library is distributed under two distinct usage licenses depending
+on the software ("Software" below) which uses the Function Parser library
+("Library" below).
+  The reason for having two distinct usage licenses is to make the library
+compatible with the GPL license while still being usable in other non-GPL
+(even commercial) software.
+
+A) If the Software using the Library is distributed under the GPL license,
+   then the Library can be used under the GPL license as well.
+
+   The Library will be under the GPL license only when used with the
+   Software. If the Library is separated from the Software and used in
+   another different software under a different license, then the Library
+   will have the B) license below.
+
+   Exception to the above: If the Library is modified for the GPL Software,
+   then the Library cannot be used with the B) license without the express
+   permission of the author of the modifications. A modified library will
+   be under the GPL license by default. That is, only the original,
+   unmodified version of the Library can be taken to another software
+   with the B) license below.
+
+   The author of the Software should provide an URL to the original
+   version of the Library if the one used in the Software has been
+   modified. (http://iki.fi/warp/FunctionParser/)
+
+   This text file must be distributed in its original intact form along
+   with the sources of the Library. (Documentation about possible
+   modifications to the library should be put in a different text file.)
+
+B) If the Software using the Library is not distributed under the GPL
+   license but under any other license, then the following usage license
+   applies to the Library:
+
+  1. This library is free for non-commercial usage. You can do whatever you
+     like with it as long as you don't claim you made it yourself.
+
+  2. It is possible to use this library in a commercial program, but in this
+     case you MUST contact me first (warp@iki.fi) and ask express permission
+     for this. (Read explanation at the end of the file.)
+       If you are making a free program or a shareware program with just a
+     nominal price (5 US dollars or less), you don't have to ask for
+     permission.
+       In any case, I DON'T WANT MONEY for the usage of this library. It is
+     free, period.
+
+  3. You can make any modifications you want to it so that it conforms your
+     needs. If you make modifications to it, you have, of course, credits for
+     the modified parts.
+
+  4. If you use this library in your own program, you don't have to provide
+     the source code if you don't want to (ie. the source code of your program
+     or this library).
+       If you DO include the source code for this library, this text file
+     must be included in its original intact form.
+
+  5. If you distribute a program which uses this library, and specially if you
+     provide the source code, proper credits MUST be included. Trying to
+     obfuscate the fact that this library is not made by you or that it is
+     free is expressly prohibited. When crediting the usage of this library,
+     it's enough to include my name and email address, that is:
+     "Juha Nieminen (warp@iki.fi)". Also a URL to the library download page
+     would be nice, although not required. The official URL is:
+       http://iki.fi/warp/FunctionParser/
+
+  6. And the necessary "lawyer stuff":
+
+     The above copyright notice and this permission notice shall be
+     included in all copies or substantial portions of the Software.
+
+     The software is provided "as is", without warranty of any kind,
+     express or implied, including but not limited to the warranties of
+     merchantability, fitness for a particular purpose and noninfringement.
+     In no event shall the authors or copyright holders be liable for any
+     claim, damages or other liability, whether in an action of contract,
+     tort or otherwise, arising from, out of or in connection with the
+     software or the use or other dealings in the software.
+
+
+---  Explanation of the section 2 of the B) license above:
+
+  The section 2 tries to define "fair use" of the library in commercial
+programs.
+  "Fair use" of the library means that the program is not heavily dependent
+on the library, but the library only provides a minor secondary feature
+to the program.
+  "Heavily dependent" means that the program depends so much on the library
+that without it the functionality of the program would be seriously
+degraded or the program would even become completely non-functional.
+
+  In other words: If the program does not depend heavily on the library,
+that is, the library only provides a minor secondary feature which could
+be removed without the program being degraded in any considerable way,
+then it's OK to use the library in the commercial program.
+  If, however, the program depends so heavily on the library that
+removing it would make the program non-functional or degrade its
+functionality considerably, then it's NOT OK to use the library.
+
+  The ideology behind this is that it's not fair to use a free library
+as a base for a commercial program, but it's fair if the library is
+just a minor, unimportant extra.
+
+  If you are going to ask me for permission to use the library in a
+commercial program, please describe the feature which the library will
+be providing and how important it is to the program.
+</pre>
+
+</body></html>
