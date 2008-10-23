@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function parser v2.82 by Warp                                           *|
+|* Function parser v2.83 by Warp                                           *|
 |* -----------------------------                                           *|
 |* Parses and evaluates the given function with the given variable values. *|
 |* See fparser.txt for details.                                            *|
@@ -82,7 +82,7 @@ private:
         unsigned referenceCounter;
 
         int varAmount;
-        bool useDegreeConversion;
+        bool useDegreeConversion, isOptimized;
 
         typedef std::map<std::string, unsigned> VarMap_t;
         VarMap_t Variables;

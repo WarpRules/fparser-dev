@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.82 by Warp
+// Function parser v2.83 by Warp
 //===============================
 
 #include "fpconfig.hh"
@@ -133,6 +133,7 @@ void FunctionParser::ForceDeepCopy()
 
 FunctionParser::Data::Data():
     useDegreeConversion(false),
+    isOptimized(false),
     ByteCode(0), ByteCodeSize(0),
     Immed(0), ImmedSize(0),
     Stack(0), StackSize(0)
@@ -609,6 +610,7 @@ int FunctionParser::Compile(const char* Function)
     if(data->ByteCode) { delete[] data->ByteCode; data->ByteCode=0; }
     if(data->Immed) { delete[] data->Immed; data->Immed=0; }
     if(data->Stack) { delete[] data->Stack; data->Stack=0; }
+    data->isOptimized = false;
 
     vector<unsigned> byteCode; byteCode.reserve(1024);
     tempByteCode = &byteCode;

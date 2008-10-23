@@ -311,10 +311,22 @@ private:
         for(list<pit>::const_iterator i=cl.cp.begin(); i!=cl.cp.end(); ++i)
             Erase(*i);
     }
-    void FinishConst(const ConstList &cl)
+    void FinishConst(const ConstList &cl, bool has_voidvalue)
     {
-        if(cl.value != cl.voidvalue && cl.size() > 1) AddParam(cl.value);
-        if(cl.value == cl.voidvalue || cl.size() > 1) KillConst(cl);
+        if(has_voidvalue)
+        {
+            if(cl.value != cl.voidvalue)
+            {
+                if(cl.size() == 1) return; // nothing to do
+                AddParam(cl.value); // add the resulting constant
+            }
+        }
+        else
+        {
+            if(cl.size() <= 0) return; // nothing to do
+            AddParam(cl.value); // add the resulting constant
+        }
+        KillConst(cl); // remove all listed constants
     }
 
 public:
@@ -397,7 +409,7 @@ private:
             pit a, b;
             for(a=GetBegin(); a!=GetEnd(); ++a)
             {
-                for(b=GetBegin(); ++b != GetEnd(); )
+                for(b=a; ++b != GetEnd(); )
                 {
                     const SubTree &p1 = *a;
                     const SubTree &p2 = *b;
@@ -447,26 +459,36 @@ private:
         {
             // Eschew double negations
 
-            // If any of the elements is cMul
+            // If any of the elements is !cAdd of cMul
             // and has a numeric constant, negate
             // the constant and negate sign.
-
+            
             for(pit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 SubTree &pa = *a;
                 if(pa.getsign()
                 && pa->GetOp() == cMul)
                 {
-                    CodeTree &p = *pa;
-                    for(pit b=p.GetBegin();
-                            b!=p.GetEnd(); ++b)
+                    // Before doing the check, ensure that
+                    // we are not changing a x*1 into x*-1.
+                    pa->OptimizeConstantMath1();
+                    
+                    // OptimizeConstantMath1() may have changed
+                    // the type of the expression (but not its sign),
+                    // so verify that we're still talking about a cMul group.
+                    if(pa->GetOp() == cMul)
                     {
-                        SubTree &pb = *b;
-                        if(pb->IsImmed())
+                        CodeTree &p = *pa;
+                        for(pit b=p.GetBegin();
+                                b!=p.GetEnd(); ++b)
                         {
-                            pb.Negate();
-                            pa.Negate();
-                            break;
+                            SubTree &pb = *b;
+                            if(pb->IsImmed())
+                            {
+                                pb.Negate();
+                                pa.Negate();
+                                break;
+                            }
                         }
                     }
                 }
@@ -475,7 +497,7 @@ private:
 
         if(GetOp() == cMul)
         {
-            // If any of the elements is cPow
+            // If any of the elements is !cMul of cPow
             // and has a numeric exponent, negate
             // the exponent and negate sign.
 
@@ -510,12 +532,15 @@ private:
         // First, do this:
         OptimizeAddMulFlat();
 
+#ifdef TREE_DEBUG
+        cout << "BEFORE MATH1    :" << *this << endl;
+#endif
         switch(GetOp())
         {
             case cAdd:
             {
                 ConstList cl = BuildConstList();
-                FinishConst(cl);
+                FinishConst(cl, true);
                 break;
             }
             case cMul:
@@ -523,10 +548,18 @@ private:
                 ConstList cl = BuildConstList();
 
                 if(cl.value == 0.0) ReplaceWithConst(0.0);
-                else FinishConst(cl);
+                else FinishConst(cl, true);
 
                 break;
             }
+            case cMin:
+            case cMax:
+            {
+                ConstList cl = BuildConstList();
+                FinishConst(cl, false); // No "default" value
+                break;
+            }
+            
             #define ConstantUnaryFun(token, fun) \
                 case token: { const SubTree &p0 = getp0(); \
                     if(p0->IsImmed()) ReplaceWithConst(fun(p0->GetImmed())); \
@@ -555,8 +588,6 @@ private:
             ConstantUnaryFun(cTan,   tan);
             ConstantUnaryFun(cTanh,  tanh);
             ConstantBinaryFun(cAtan2, atan2);
-            ConstantBinaryFun(cMax,   Max);
-            ConstantBinaryFun(cMin,   Min);
             ConstantBinaryFun(cMod,   fmod); // not a func, but belongs here too
             ConstantBinaryFun(cPow,   pow);
 
@@ -581,8 +612,15 @@ private:
                  */
                  break;
         }
+#ifdef TREE_DEBUG
+        cout << "AFTER MATH1 A   :" << *this << endl;
+#endif
 
         OptimizeConflict();
+
+#ifdef TREE_DEBUG
+        cout << "AFTER MATH1 B   :" << *this << endl;
+#endif
     }
 
     void OptimizeAddMulFlat()
@@ -592,8 +630,13 @@ private:
         //       x + (y+z) = x+y+z
         //       x * (y/z) = x*y/z
         //       x / (y/z) = x/y*z
+        //       min(x, min(y,z)) = min(x,y,z)
+        //       max(x, max(y,z)) = max(x,y,z)
 
-        if(GetOp() == cAdd || GetOp() == cMul)
+        if(GetOp() == cAdd
+        || GetOp() == cMul
+        || GetOp() == cMin
+        || GetOp() == cMax)
         {
             // If children are same type as parent add them here
             for(pit b, a=GetBegin(); a!=GetEnd(); a=b)
@@ -637,14 +680,35 @@ private:
         //   x+x+x+x -> x*4
         //   x*x     -> x^2
         //   x/z/z   ->
-        //
+        //   
+        //   min(x,x,y) -> min(x,y)
+        //   max(x,x,y) -> max(x,y)
+        //   max(x,x)   -> max(x)
 
         // Remove conflicts first, so we don't have to worry about signs.
         OptimizeConflict();
 
         bool didchanges = false;
-        if(GetOp() == cAdd || GetOp() == cMul)
+        bool FactorIsImportant = true;
+        unsigned ReplacementOpcode = GetOp();
+        
+        switch(GetOp())
         {
+        case cAdd:
+            FactorIsImportant = true;
+            ReplacementOpcode = cMul;
+            goto Redo;
+        case cMul:
+            FactorIsImportant = true;
+            ReplacementOpcode = cPow;
+            goto Redo;
+        case cMin:
+            FactorIsImportant = false;
+            goto Redo;
+        case cMax:
+            FactorIsImportant = false;
+            goto Redo;
+        default: break;
         Redo:
             for(pit a=GetBegin(); a!=GetEnd(); ++a)
             {
@@ -672,22 +736,34 @@ private:
                         arvo.Negate();
                         factor = -factor;
                     }
+                    
+                    if(FactorIsImportant)
+                    {
+                        CodeTree tmp;
+                        tmp.SetOp(ReplacementOpcode);
+                        tmp.AddParam(arvo);
+                        tmp.AddParam(factor);
 
-                    CodeTree tmp(GetOp()==cAdd ? cMul : cPow,
-                                 arvo,
-                                 factor);
-
-                    list<pit>::const_iterator j;
-                    for(j=poslist.begin(); j!=poslist.end(); ++j)
-                        Erase(*j);
-                    poslist.clear();
-
-                    *a = tmp;
+                        list<pit>::const_iterator j;
+                        for(j=poslist.begin(); j!=poslist.end(); ++j)
+                            Erase(*j);
+                        poslist.clear();
+                        *a = tmp;
+                    }
+                    else
+                    {
+                        list<pit>::const_iterator j;
+                        bool first=true;
+                        for(j=poslist.begin(); j!=poslist.end(); ++j, first=false)
+                            if(!first)
+                                Erase(*j);
+                    }
                     didchanges = true;
                     goto Redo;
                 }
             }
         }
+        
         if(didchanges)
         {
             // As a result, there might be need for this:
@@ -757,7 +833,8 @@ private:
 
                 p->OptimizeAddMulFlat();
                 p->OptimizeExponents();
-                CHECKCONSTNEG(p, p->GetOp());
+                
+                p.CheckConstInv();
 
                 list<SubTree> adds;
 
@@ -837,7 +914,7 @@ private:
             else if(p1->GetOp() == cMul)
             {
                 //bool didsomething = true;
-
+                
                 pit poslogpos; bool foundposlog = false;
                 pit neglogpos; bool foundneglog = false;
 
@@ -879,7 +956,7 @@ private:
                 }
 
                 // Put back the constant
-                FinishConst(cl);
+                FinishConst(cl, true);
 
                 if(p0->IsImmed()
                 && p0->GetImmed() == CONSTANT_E
@@ -1142,6 +1219,8 @@ public:
         // Separate "if", because op may have just changed
         if(GetOp() == cMul)
         {
+            /* NOTE: Not gcov'd yet */
+            
             CodeTree *found_log = 0;
 
             ConstList cl = BuildConstList();
@@ -1177,7 +1256,7 @@ public:
                 OptimizeRedundant();
                 ReplaceWith(cRad, *this);
             }
-            else FinishConst(cl);
+            else FinishConst(cl, true);
         }
 
         SortIfPossible();
@@ -1291,6 +1370,8 @@ CodeTree::ConstList CodeTree::BuildConstList()
     result.value     =
     result.voidvalue = GetOp()==cMul ? 1.0 : 0.0;
 
+    bool first = true;
+    
     list<pit> &cp = result.cp;
     for(pit b, a=GetBegin(); a!=GetEnd(); a=b)
     {
@@ -1304,17 +1385,30 @@ CodeTree::ConstList CodeTree::BuildConstList()
             Erase(a);
             continue;
         }
-        if(GetOp() == cMul)
-            result.value *= thisvalue;
-        else
-            result.value += thisvalue;
+        switch(GetOp())
+        {
+            case cMul:
+                result.value *= thisvalue;
+                break;
+            case cAdd:
+                result.value += thisvalue;
+                break;
+            case cMin:
+                if(first || thisvalue < result.value) result.value = thisvalue;
+                break;
+            case cMax:
+                if(first || thisvalue > result.value) result.value = thisvalue;
+                break;
+            default: break; /* Unreached */
+        }
         cp.push_back(a);
+        first = false;
     }
     if(GetOp() == cMul)
     {
         /*
-          Jos joku niistä arvoista on -1 eikä se ole ainoa arvo,
-          niin joku muu niistä arvoista negatoidaan.
+          If one of the values is -1 and it's not the only value,
+          then some other value will be negated.
         */
         for(bool done=false; cp.size() > 1 && !done; )
         {
@@ -1372,6 +1466,8 @@ void CodeTree::Assemble
     {
         case cAdd:
         case cMul:
+        case cMin:
+        case cMax:
         {
             unsigned opcount = 0;
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
@@ -1418,15 +1514,14 @@ void CodeTree::Assemble
                 if(opcount == 2)
                 {
                     unsigned tmpop = GetOp();
-                    if(pnega) // negate
+                    if(pnega) // negation in non-first operand
                     {
                         tmpop = (tmpop == cMul) ? cDiv : cSub;
                     }
-                    
                     SimuPop(1);
                     AddCmd(tmpop);
                 }
-                else if(pnega)
+                else if(pnega) // negation in the first operand
                 {
                     if(GetOp() == cMul) AddCmd(cInv);
                     else AddCmd(cNeg);
@@ -1929,6 +2024,7 @@ void FunctionParser::MakeTree(void *r) const
 
 void FunctionParser::Optimize()
 {
+    if(data->isOptimized) return;
     CopyOnWrite();
 
     CodeTree tree;
@@ -1990,6 +2086,8 @@ void FunctionParser::Optimize()
         for(unsigned a=0; a<immed.size(); ++a)
             data->Immed[a] = immed[a];
     }
+
+    data->isOptimized = true;
 }
 
 
