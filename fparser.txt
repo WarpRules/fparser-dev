@@ -1,41 +1,52 @@
-  Function parser for C++  v2.4 by Warp.
+  Function parser for C++  v2.51 by Warp.
   ======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
 
 
-| Changes in this document compared to the previous version are marked with '|'
-| characters at the left column.
-
-
-| The usage license of this library is located at the end of this text file.
+  The usage license of this library is located at the end of this text file.
 
 
 
-| What's new in v2.4:
-| ------------------
-| - A new Optimize() method which tries to simplify the bytecode so that
-|   it will be evaluated faster. Please note that this is still experimental.
-| - New functions added: atan2() and log10().
-| - Two new more detailed syntax error messages (previously simply
-|   "Syntax error").
+  What's new in v2.51
+  -------------------
+  - Tiny fixes to make it work with gcc 2.x (which is still sadly common).
 
-| What's new in v2.3:
-| ------------------
-| - Variable names can now have digits and underscores (but they can't begin
-|   with a digit).
-| - Parsing speed optimizations. The Parse() method can be even 40% faster
-|   than in the previous version.
-|   (Please be aware that the new parser has not been thoroughly tested;
-|    bugs are possible.)
-| - A new "semi-undocumented" debugging function for printing the bytecode
-|   of the current function (in an asm-like syntax). Mostly useless from
-|   the user's point of view.
+  What's new in v2.5
+  ------------------
+  - A new AddConstant() method for adding constants to the parser.
+  - Two AddFunction() methods for adding user-defined functions to the parser.
+  - The library can now handle trigonometrical angles either in radians
+    (default) or degrees with an optional parameter of Parse().
+  - New functions added: cot(), csc() and sec().
+  - Enhancements and bug fixes to the Optimize() method (please consider
+    it still as experimental).
+
+  What's new in v2.4:
+  ------------------
+  - A new Optimize() method which tries to simplify the bytecode so that
+    it will be evaluated faster. Please note that this is still experimental.
+  - New functions added: atan2() and log10().
+  - Two new more detailed syntax error messages (previously simply
+    "Syntax error").
+
+  What's new in v2.3:
+  ------------------
+  - Variable names can now have digits and underscores (but they can't begin
+    with a digit).
+  - Parsing speed optimizations. The Parse() method can be even 40% faster
+    than in the previous version.
+    (Please be aware that the new parser has not been thoroughly tested;
+     bugs are possible.)
+  - A new "semi-undocumented" debugging function for printing the bytecode
+    of the current function (in an asm-like syntax). Mostly useless from
+    the user's point of view.
 
 
 
+=============================================================================
   - Preface
-    -------
+=============================================================================
 
   Often people need to ask some mathematical expression from the user and
 then evaluate values for that expression. The simplest example is a program
@@ -57,37 +68,102 @@ string).
 compiler.
 
 
+=============================================================================
   - Usage
-    -----
+=============================================================================
 
   To use the FunctionParser class, you have to include "fparser.hh". When
 compiling, you have to compile fparser.cc and link it to the main program.
 You can also make a library from the fparser.cc (see the help on your
 compiler to see how this is done).
 
-  The FunctionParser class has the following methods:
+
+  * Short descriptions of FunctionParser methods:
+    --------------------------------------------
+
+int Parse(const std::string& Function, const std::string& Vars,
+          bool useDegrees = false);
+
+    Parses the given function and compiles it to internal format.
+    Return value is -1 if successful, else the index value to the location
+    of the error.
 
 
-int Parse(const std::string& Function, const std::string& Vars);
+const char* ErrorMsg(void) const;
 
-      Parses the given function (and converts it to internal format).
+    Returns an error message corresponding to the error in Parse(), or 0 if
+    no such error occurred.
+
+
+double Eval(const double* Vars);
+
+    Evaluates the function given to Parse().
+
+
+int EvalError(void) const;
+
+    Returns 0 if no error happened in the previous call to Eval(), else an
+    error code >1.
+
+
+void Optimize();
+
+    Tries to optimize the bytecode for faster evaluation.
+
+
+bool AddConstant(const std::string& name, double value);
+
+    Add a constant to the parser. Returns false if the name of the constant
+    is invalid, else true.
+
+
+bool AddFunction(const std::string& name,
+                 double (*functionPtr)(const double*),
+                 unsigned paramsAmount);
+
+    Add a user-defined function to the parser (as a function pointer).
+    Returns false if the name of the function is invalid, else true.
+
+
+bool AddFunction(const std::string& name, FunctionParser&);
+
+    Add a user-defined function to the parser (as a FunctionParser instance).
+    Returns false if the name of the function is invalid, else true.
+
+
+
+  * Long descriptions of FunctionParser methods:
+    -------------------------------------------
+
+---------------------------------------------------------------------------
+int Parse(const std::string& Function, const std::string& Vars,
+          bool useDegrees = false);
+---------------------------------------------------------------------------
+
+      Parses the given function (and compiles it to internal format).
     Destroys previous function. Following calls to Eval() will evaluate
     the given function.
       The strings given as parameters are not needed anymore after parsing.
 
     Parameters:
-      Function: String containing the function to parse.
-      Vars    : String containing the variable names, separated by commas.
-|               Eg. "x,y", "VarX,VarY,VarZ,n" or "x1,x2,x3,x4,__VAR__".
+      Function  : String containing the function to parse.
+      Vars      : String containing the variable names, separated by commas.
+                  Eg. "x,y", "VarX,VarY,VarZ,n" or "x1,x2,x3,x4,__VAR__".
+      useDegrees: (Optional.) Whether to use degrees or radians in
+                  trigonometric functions. (Default: radians)
 
     Variables can have any size and they are case sensitive (ie. "var",
-|   "VAR" and "Var" are *different* variable names). Letters, digits and
-|   underscores can be used in variable names, but the name of a variable
-|   can't begin with a digit. Each variable name can appear only once in
-|   the string. Function names are not legal variable names.
+    "VAR" and "Var" are *different* variable names). Letters, digits and
+    underscores can be used in variable names, but the name of a variable
+    can't begin with a digit. Each variable name can appear only once in
+    the string. Function names are not legal variable names.
 
     Using longer variable names causes no overhead whatsoever to the Eval()
     method, so it's completely safe to use variable names of any size.
+
+    The third, optional parameter specifies whether angles should be
+    interpreted as radians or degrees in trigonometrical functions.
+    If not specified, the default value is radians.
 
     Return values:
     -On success the function returns -1.
@@ -98,59 +174,23 @@ int Parse(const std::string& Function, const std::string& Vars);
     Example: parser.Parse("3*x+y", "x,y");
 
 
+---------------------------------------------------------------------------
 const char* ErrorMsg(void) const;
+---------------------------------------------------------------------------
 
     Returns a pointer to an error message string corresponding to the error
     caused by Parse() (you can use this to print the proper error message to
     the user). If no such error has occurred, returns 0.
 
 
-void Optimize();
-
-|   This method can be called after calling the Parse() method. It will try
-|   to simplify the internal bytecode so that it will evaluate faster (it
-|   tries to reduce the amount of opcodes in the bytecode).
-|     For example, the bytecode for the function "5+x*y-25*4/8" will be
-|   reduced to a bytecode equivalent to the function "x*y-7.5" (the original
-|   11 opcodes will be reduced to 5). Besides calculating constant expressions
-|   (like in the example), it also performs other types of simplifications
-|   with variable and function expressions.
-
-|     This method is quite slow and the decision of whether to use it or
-|   not should depend on the type of application. If a function is parsed
-|   once and evaluated millions of times, then calling Optimize() may speed-up
-|   noticeably. However, if there are tons of functions to parse and each one
-|   is evaluated once or just a few times, then calling Optimize() will only
-|   slow down the program.
-|     Also, if the original function is expected to be optimal, then calling
-|   Optimize() would be useless.
-
-|     Note: Currently this method does not make any checks (like Eval() does)
-|   and thus things like "1/0" will cause undefined behaviour. (On the other
-|   hand, if such expression is given to the parser, Eval() will always give
-|   an error code, no matter what the parameters.) If caching this type of
-|   errors is important, a work-around is to call Eval() once before calling
-|   Optimize() and checking EvalError().
-
-|     If the destination application is not going to use this method,
-|   the compiler constant SUPPORT_OPTIMIZER can be undefined at the beginning
-|   of fparser.cc to make the library smaller (Optimize() can still be called,
-|   but it will not do anything).
-
-|   (If you are interested in seeing how this method optimizes the opcode,
-|   you can call the PrintByteCode() method before and after the call to
-|   Optimize() to see the difference.)
-
-
+---------------------------------------------------------------------------
 double Eval(const double* Vars);
+---------------------------------------------------------------------------
 
-    Evaluates the function given to Parse() with the values given to Eval().
-    Each value in the array given to Eval() corresponds to the variables given
-    to Parse(). There must be as many values as given to Parse().
-
-    Parameters:
-
-    Array of doubles, one for each variable given to the Parse() function.
+    Evaluates the function given to Parse().
+    The array given as parameter must contain the same amount of values as
+    the amount of variables given to Parse(). Each value corresponds to each
+    variable, in the same order.
 
     Return values:
     -On success returns the evaluated value of the function given to
@@ -164,7 +204,9 @@ double Eval(const double* Vars);
       double result = parser.Eval(Vars);
 
 
+---------------------------------------------------------------------------
 int EvalError(void) const;
+---------------------------------------------------------------------------
 
     Used to test if the call to Eval() succeeded.
 
@@ -176,6 +218,163 @@ int EvalError(void) const;
         3: log error (logarithm of a negative value)
         4: trigonometric error (asin or acos of illegal value)
 
+
+---------------------------------------------------------------------------
+void Optimize();
+---------------------------------------------------------------------------
+
+    This method can be called after calling the Parse() method. It will try
+    to simplify the internal bytecode so that it will evaluate faster (it
+    tries to reduce the amount of opcodes in the bytecode).
+
+      For example, the bytecode for the function "5+x*y-25*4/8" will be
+    reduced to a bytecode equivalent to the function "x*y-7.5" (the original
+    11 opcodes will be reduced to 5). Besides calculating constant expressions
+    (like in the example), it also performs other types of simplifications
+    with variable and function expressions.
+
+      This method is quite slow and the decision of whether to use it or
+    not should depend on the type of application. If a function is parsed
+    once and evaluated millions of times, then calling Optimize() may speed-up
+    noticeably. However, if there are tons of functions to parse and each one
+    is evaluated once or just a few times, then calling Optimize() will only
+    slow down the program.
+      Also, if the original function is expected to be optimal, then calling
+    Optimize() would be useless.
+
+      Note: Currently this method does not make any checks (like Eval() does)
+    and thus things like "1/0" will cause undefined behaviour. (On the other
+    hand, if such expression is given to the parser, Eval() will always give
+    an error code, no matter what the parameters.) If caching this type of
+    errors is important, a work-around is to call Eval() once before calling
+    Optimize() and checking EvalError().
+
+      If the destination application is not going to use this method,
+    the compiler constant SUPPORT_OPTIMIZER can be undefined at the beginning
+    of fparser.cc to make the library smaller (Optimize() can still be called,
+    but it will not do anything).
+
+    (If you are interested in seeing how this method optimizes the opcode,
+    you can call the PrintByteCode() method before and after the call to
+    Optimize() to see the difference.)
+
+
+---------------------------------------------------------------------------
+bool AddConstant(const std::string& name, double value);
+---------------------------------------------------------------------------
+
+    This method can be used to add constants to the parser. Syntactically
+    constants are identical to variables (ie. they follow the same naming
+    rules and they can be used in the function string in the same way as
+    variables), but internally constants are directly replaced with their
+    value at parse time.
+
+      Constants used by a function must be added before calling Parse()
+    for that function. Constants are preserved between Parse() calls in
+    the current FunctionParser instance, so they don't need to be added
+    but once. (If you use the same constant in several instances of
+    FunctionParser, you will need to add it to all the instances separately.)
+
+      Constants can be added at any time and the value of old constants can
+    be changed, but new additions and changes will only have effect the next
+    time Parse() is called. (That is, changing the value of a constant
+    after calling Parse() and before calling Eval() will have no effect.)
+
+      The return value will be false if the 'name' of the constant was
+    illegal, else true. If the name was illegal, the method does nothing.
+
+    Example: parser.AddConstant("pi", 3.14159265);
+
+    Now for example parser.Parse("x*pi", "x"); will be identical to the
+    call parser.Parse("x*3.14159265", "x");
+
+
+---------------------------------------------------------------------------
+bool AddFunction(const std::string& name,
+                 double (*functionPtr)(const double*),
+                 unsigned paramsAmount);
+---------------------------------------------------------------------------
+
+    This method can be used to add new functions to the parser. For example,
+    if you would like to add a function "sqr(A)" which squares the value
+    of A, you can do it with this method (so that you don't need to touch
+    the source code of the parser).
+
+      The method takes three parameters:
+
+    - The name of the function. The name follows the same naming conventions
+      as variable names.
+
+    - A C++ function, which will be called when evaluating the function
+      string (if the user-given function is called there). The C++ function
+      must have the form:
+          double functionName(const double* params);
+
+    - The number of parameters the function takes. NOTE: Currently this
+      value must be at least 1; the parser does not support functions which
+      take no parameters (this problem may be fixed in the future).
+
+    The return value will be false if the given name was invalid (either it
+    did not follow the variable naming conventions, or the name was already
+    reserved), else true. If the return value is false, nothing is added.
+
+    Example:
+    Suppose we have a C++ function like this:
+
+    double Square(const double* p)
+    {
+        return p[0]*p[0];
+    }
+
+    Now we can add this function to the parser like this:
+
+    parser.AddFunction("sqr", Square, 1);
+
+    parser.Parse("2*sqr(x)", "x");
+
+
+    IMPORTANT NOTE: If you use the Optimize() method, it will assume that
+    the user-given function has no side-effects, that is, it always
+    returns the same value for the same parameters. The optimizer will
+    optimize the function call away in some cases, making this assumption.
+
+
+---------------------------------------------------------------------------
+bool AddFunction(const std::string& name, FunctionParser&);
+---------------------------------------------------------------------------
+
+    This method is almost identical to the previous AddFunction(), but
+    instead of taking a C++ function, it takes another FunctionParser
+    instance.
+
+    There are some important restrictions on making a FunctionParser instance
+    call another:
+
+    - The FunctionParser instance given as parameter must be initialized
+      with a Parse() call before giving it as parameter. That is, if you
+      want to use the parser A in the parser B, you must call A.Parse()
+      before you can call B.AddFunction("name", A).
+
+    - The amount of parameters in the FunctionParser instance given as
+      parameter must not change after it has been given to the AddFunction()
+      of another instance. Changing the number of parameters will result in
+      malfunction.
+
+    - AddFunction() will fail (ie. return false) if a recursive loop is
+      formed. The method specifically checks that no such loop is built.
+
+    - As with the other AddFunction(), the number of parameters taken by
+      the user-defined function must be at least 1 (this may be fixed in
+      the future).
+
+    Example:
+
+    FunctionParser f1, f2;
+    f1.Parse("x*x", "x");
+    f2.AddFunction("sqr", f1);
+
+
+---------------------------------------------------------------------------
 
   Example program:
 
@@ -200,8 +399,9 @@ int main()
 
 
 
+=============================================================================
   - The function string
-    -------------------
+=============================================================================
 
   The function string understood by the class is very similar to the C-syntax.
   Arithmetic float expressions can be created from float literals, variables
@@ -233,16 +433,18 @@ or functions using the following operators in this order of precedence:
   asinh(A)  : Same as asin() but for hyperbolic sine.
   atan(A)   : Arc-tangent of (A). Returns the angle, measured in radians,
               whose tangent is (A).
-| atan2(A,B): Arc-tangent of A/B. The two main differences to atan() is
-|             that it will return the right angle depending on the signs of
-|             A and B (atan() can only return values betwen -pi/2 and pi/2),
-|             and that the return value of pi/2 and -pi/2 are possible.
+  atan2(A,B): Arc-tangent of A/B. The two main differences to atan() is
+              that it will return the right angle depending on the signs of
+              A and B (atan() can only return values betwen -pi/2 and pi/2),
+              and that the return value of pi/2 and -pi/2 are possible.
   atanh(A)  : Same as atan() but for hyperbolic tangent.
   ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
               Rounds up to the next higher integer.
   cos(A)    : Cosine of A. Returns the cosine of the angle A, where A is
               measured in radians.
   cosh(A)   : Same as cos() but for hyperbolic cosine.
+  cot(A)    : Cotangent of A (equivalent to 1/tan(A)).
+  csc(A)    : Cosecant of A (equivalent to 1/sin(A)).
   eval(...) : This a recursive call to the function to be evaluated. The
               number of parameters must be the same as the number of parameters
               taken by the function. Usually called inside if() to avoid
@@ -258,9 +460,10 @@ or functions using the following operators in this order of precedence:
               use eval() in them.
   int(A)    : Rounds A to the closest integer. 0.5 is rounded to 1.
   log(A)    : Natural (base e) logarithm of A.
-| log10(A)  : Base 10 logarithm of A.
+  log10(A)  : Base 10 logarithm of A.
   max(A,B)  : If A>B, the result is A, else B.
   min(A,B)  : If A<B, the result is A, else B.
+  sec(A)    : Secant of A (equivalent to 1/cos(A)).
   sin(A)    : Sine of A. Returns the sine of the angle A, where A is
               measured in radians.
   sinh(A)   : Same as sin() but for hyperbolic sine.
@@ -290,20 +493,22 @@ or functions using the following operators in this order of precedence:
   Also note that the if() function is the only place where making a recursive
   call is safe. In any other place it will cause an infinite recursion (which
   will make the program eventually run out of memory). If this is something
-| which should be avoided, it may be a good idea to disable the eval()
-| function completely.
-| The eval() function can be disabled with the DISABLE_EVAL precompiler
-| constant (see the beginning of fparser.cc).
+  which should be avoided, it may be a good idea to disable the eval()
+  function completely.
+  The eval() function can be disabled with the DISABLE_EVAL precompiler
+  constant (see the beginning of fparser.cc).
 
 
+=============================================================================
   - Contacting the author
-    --------------------
+=============================================================================
 
   Any comments, bug reports, etc. should be sent to warp@iki.fi
 
 
+=============================================================================
   - The algorithm used in the library
-    ---------------------------------
+=============================================================================
 
   The whole idea behind the algorithm is to convert the regular infix
 format (the regular syntax for mathematical operations in most languages,
@@ -375,10 +580,10 @@ make loops or anything.
   This is what makes byte-coded stack arithmetic so fast.
 
 
-=============================================================================
 
+=============================================================================
   Usage license:
-  -------------
+=============================================================================
 
 Copyright © 2003 Juha Nieminen, Joel Yliluoma
 

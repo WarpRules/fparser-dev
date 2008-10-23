@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.4 by Warp
+// Function parser v2.51 by Warp
 //===============================
 
 // Comment out the following line if your compiler supports the (non-standard)
@@ -34,6 +34,10 @@
 
 using namespace std;
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832795
+#endif
+
 namespace
 {
 // The functions must be in alphabetical order:
@@ -52,21 +56,24 @@ namespace
 #ifndef NO_ASINH
         cAtanh,
 #endif
-        cCeil, cCos, cCosh,
+        cCeil, cCos, cCosh, cCot, cCsc,
 #ifndef DISABLE_EVAL
         cEval,
 #endif
         cExp, cFloor, cIf, cInt, cLog, cLog10, cMax, cMin,
-        cSin, cSinh, cSqrt, cTan, cTanh,
+        cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
 // These do not need any ordering:
         cImmed, cJump,
         cNeg, cAdd, cSub, cMul, cDiv, cMod, cPow,
         cEqual, cLess, cGreater, cAnd, cOr,
 
+        cDeg, cRad,
+
+        cFCall, cPCall,
+
 #ifdef SUPPORT_OPTIMIZER
-        cNop, cVar,
-        cDup, cInv,
+        cVar, cDup, cInv,
 #endif
 
         VarBegin
@@ -115,6 +122,8 @@ namespace
         { "ceil", 4, cCeil, 1 },
         { "cos", 3, cCos, 1 },
         { "cosh", 4, cCosh, 1 },
+        { "cot", 3, cCot, 1 },
+        { "csc", 3, cCsc, 1 },
 #ifndef DISABLE_EVAL
         { "eval", 4, cEval, 0 },
 #endif
@@ -126,6 +135,7 @@ namespace
         { "log10", 5, cLog10, 1 },
         { "max", 3, cMax, 2 },
         { "min", 3, cMin, 2 },
+        { "sec", 3, cSec, 1 },
         { "sin", 3, cSin, 1 },
         { "sinh", 4, cSinh, 1 },
         { "sqrt", 4, cSqrt, 1 },
@@ -228,10 +238,90 @@ namespace
     }
 };
 
+bool FunctionParser::isValidName(const std::string& name)
+{
+    if(name.empty() || (!isalpha(name[0]) && name[0] != '_')) return false;
+    for(unsigned i=0; i<name.size(); ++i)
+        if(!isalnum(name[i]) && name[i] != '_') return false;
+
+    if(FindFunction(name.c_str())) return false;
+
+    return true;
+}
+
+
+// Constants:
+bool FunctionParser::AddConstant(const string& name, double value)
+{
+    if(isValidName(name))
+    {
+        const char* n = name.c_str();
+        if(FindVariable(n, FuncParserNames) != FuncParserNames.end() ||
+           FindVariable(n, FuncPtrNames) != FuncPtrNames.end())
+            return false;
+
+        Constants[name] = value;
+        return true;
+    }
+    return false;
+}
+
+// Function pointers
+bool FunctionParser::AddFunction(const std::string& name,
+                                 FunctionPtr func, unsigned paramsAmount)
+{
+    if(paramsAmount == 0) return false; // Currently must be at least one
+
+    if(isValidName(name))
+    {
+        const char* n = name.c_str();
+        if(FindVariable(n, FuncParserNames) != FuncParserNames.end() ||
+           FindConstant(n) != Constants.end())
+            return false;
+
+        FuncPtrNames[name] = FuncPtrs.size();
+        FuncPtrs.push_back(FuncPtrData(func, paramsAmount));
+        return true;
+    }
+    return false;
+}
+
+bool FunctionParser::checkRecursiveLinking(const FunctionParser* fp)
+{
+    if(fp == this) return true;
+    for(unsigned i=0; i<fp->FuncParsers.size(); ++i)
+        if(checkRecursiveLinking(fp->FuncParsers[i])) return true;
+    return false;
+}
+
+bool FunctionParser::AddFunction(const std::string& name,
+                                 FunctionParser& parser)
+{
+    if(parser.varAmount == 0) return false; // Currently must be at least one
+
+    if(isValidName(name))
+    {
+        const char* n = name.c_str();
+        if(FindVariable(n, FuncPtrNames) != FuncPtrNames.end() ||
+           FindConstant(n) != Constants.end())
+            return false;
+
+        if(checkRecursiveLinking(&parser)) return false;
+
+        FuncParserNames[name] = FuncParsers.size();
+        FuncParsers.push_back(&parser);
+        return true;
+    }
+    return false;
+}
+
+
+
 // Main parsing function
 // ---------------------
 int FunctionParser::Parse(const std::string& Function,
-                          const std::string& Vars)
+                          const std::string& Vars,
+                          bool useDegrees)
 {
     Variables.clear();
 
@@ -249,6 +339,7 @@ int FunctionParser::Parse(const std::string& Function,
     int Result = CheckSyntax(Func);
     if(Result>=0) return Result;
 
+    useDegreeConversion = useDegrees;
     if(!Compile(Func)) return Function.size();
 
     Variables.clear();
@@ -275,16 +366,35 @@ namespace
 // Returns an iterator to the variable with the same name as 'F', or to
 // Variables.end() if no such variable exists:
 inline FunctionParser::VarMap_t::const_iterator
-FunctionParser::FindVariable(const char* F)
+FunctionParser::FindVariable(const char* F, const VarMap_t& vars)
 {
-    unsigned ind = 0;
-    while(isalnum(F[ind]) || F[ind] == '_') ++ind;
-    if(ind)
+    if(vars.size())
     {
-        string name(F, ind);
-        return Variables.find(name);
+        unsigned ind = 0;
+        while(isalnum(F[ind]) || F[ind] == '_') ++ind;
+        if(ind)
+        {
+            string name(F, ind);
+            return vars.find(name);
+        }
     }
-    return Variables.end();
+    return vars.end();
+}
+
+inline FunctionParser::ConstMap_t::const_iterator
+FunctionParser::FindConstant(const char* F)
+{
+    if(Constants.size())
+    {
+        unsigned ind = 0;
+        while(isalnum(F[ind]) || F[ind] == '_') ++ind;
+        if(ind)
+        {
+            string name(F, ind);
+            return Constants.find(name);
+        }
+    }
+    return Constants.end();
 }
 
 //---------------------------------------------------------------------------
@@ -307,10 +417,37 @@ int FunctionParser::CheckSyntax(const char* Function)
         if(c==0) { ParseErrorType=9; return Ind; }
 
         // Check for math function
+        bool foundFunc = false;
         const FuncDefinition* fptr = FindFunction(&Function[Ind]);
         if(fptr)
         {
             Ind += fptr->nameLength;
+            foundFunc = true;
+        }
+        else
+        {
+            // Check for user-defined function
+            VarMap_t::const_iterator fIter =
+                FindVariable(&Function[Ind], FuncPtrNames);
+            if(fIter != FuncPtrNames.end())
+            {
+                Ind += fIter->first.size();
+                foundFunc = true;
+            }
+            else
+            {
+                VarMap_t::const_iterator pIter =
+                    FindVariable(&Function[Ind], FuncParserNames);
+                if(pIter != FuncParserNames.end())
+                {
+                    Ind += pIter->first.size();
+                    foundFunc = true;
+                }
+            }
+        }
+
+        if(foundFunc)
+        {
             sws(Function, Ind);
             c = Function[Ind];
             if(c!='(') { ParseErrorType=10; return Ind; }
@@ -335,9 +472,20 @@ int FunctionParser::CheckSyntax(const char* Function)
         }
         else
         { // Check for variable
-            VarMap_t::const_iterator vIter = FindVariable(&Function[Ind]);
-            if(vIter == Variables.end()) { ParseErrorType=0; return Ind; }
-            Ind += vIter->first.size();
+            VarMap_t::const_iterator vIter =
+                FindVariable(&Function[Ind], Variables);
+            if(vIter != Variables.end())
+                Ind += vIter->first.size();
+            else
+            {
+                // Check for constant
+                ConstMap_t::const_iterator cIter =
+                    FindConstant(&Function[Ind]);
+                if(cIter != Constants.end())
+                    Ind += cIter->first.size();
+                else
+                { ParseErrorType=0; return Ind; }
+            }
             sws(Function, Ind);
             c = Function[Ind];
         }
@@ -423,6 +571,41 @@ inline void FunctionParser::AddImmediate(double i)
     tempImmed->push_back(i);
 }
 
+inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
+{
+    if(useDegreeConversion)
+        switch(opcode)
+        {
+          case cCos:
+          case cCosh:
+          case cCot:
+          case cCsc:
+          case cSec:
+          case cSin:
+          case cSinh:
+          case cTan:
+          case cTanh:
+              AddCompiledByte(cRad);
+        }
+
+    AddCompiledByte(opcode);
+
+    if(useDegreeConversion)
+        switch(opcode)
+        {
+          case cAcos:
+#ifndef NO_ASINH
+          case cAcosh:
+          case cAsinh:
+          case cAtanh:
+#endif
+          case cAsin:
+          case cAtan:
+          case cAtan2:
+              AddCompiledByte(cDeg);
+        }
+}
+
 // Compile if()
 int FunctionParser::CompileIf(const char* F, int ind)
 {
@@ -460,6 +643,20 @@ int FunctionParser::CompileIf(const char* F, int ind)
     return ind2+1;
 }
 
+int FunctionParser::CompileFunctionParams(const char* F, int ind,
+                                          unsigned requiredParams)
+{
+    unsigned curStackPtr = Comp.StackPtr;
+    int ind2 = CompileExpression(F, ind);
+
+    if(Comp.StackPtr != curStackPtr+requiredParams)
+    { ParseErrorType=8; return ind; }
+
+    Comp.StackPtr -= requiredParams - 1;
+    sws(F, ind2);
+    return ind2+1; // F[ind2] is ')'
+}
+
 // Compiles element
 int FunctionParser::CompileElement(const char* F, int ind)
 {
@@ -494,7 +691,7 @@ int FunctionParser::CompileElement(const char* F, int ind)
         return ind+(endPtr-startPtr);
     }
 
-    if(isalpha(c) || c == '_') // Function or variable
+    if(isalpha(c) || c == '_') // Function, variable or constant
     {
         const FuncDefinition* func = FindFunction(F+ind);
         if(func) // is function
@@ -506,9 +703,6 @@ int FunctionParser::CompileElement(const char* F, int ind)
                 return CompileIf(F, ind2+1);
             }
 
-            unsigned curStackPtr = Comp.StackPtr;
-            ind2 = CompileExpression(F, ind2+1);
-
 #ifndef DISABLE_EVAL
             unsigned requiredParams =
                 strcmp(func->name, "eval") == 0 ?
@@ -516,21 +710,57 @@ int FunctionParser::CompileElement(const char* F, int ind)
 #else
             unsigned requiredParams = func->params;
 #endif
-            if(Comp.StackPtr != curStackPtr+requiredParams)
-            { ParseErrorType=8; return ind; }
-
-            AddCompiledByte(func->opcode);
-            Comp.StackPtr -= func->params - 1;
-            sws(F, ind2);
-            return ind2+1; // F[ind2] is ')'
+            ind2 = CompileFunctionParams(F, ind2+1, requiredParams);
+            AddFunctionOpcode(func->opcode);
+            return ind2; // F[ind2-1] is ')'
         }
 
-        VarMap_t::const_iterator vIter = FindVariable(F+ind);
+        VarMap_t::const_iterator vIter = FindVariable(F+ind, Variables);
         if(vIter != Variables.end()) // is variable
         {
             AddCompiledByte(vIter->second);
             ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
             return ind + vIter->first.size();
+        }
+
+        ConstMap_t::const_iterator cIter = FindConstant(F+ind);
+        if(cIter != Constants.end()) // is constant
+        {
+            AddImmediate(cIter->second);
+            AddCompiledByte(cImmed);
+            ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
+            return ind + cIter->first.size();
+        }
+
+        VarMap_t::const_iterator fIter = FindVariable(F+ind, FuncPtrNames);
+        if(fIter != FuncPtrNames.end()) // is user-defined function pointer
+        {
+            unsigned index = fIter->second;
+
+            int ind2 = ind + fIter->first.length();
+            sws(F, ind2); // F[ind2] is '('
+
+            ind2 = CompileFunctionParams(F, ind2+1, FuncPtrs[index].params);
+
+            AddCompiledByte(cFCall);
+            AddCompiledByte(index);
+            return ind2;
+        }
+
+        VarMap_t::const_iterator pIter = FindVariable(F+ind, FuncParserNames);
+        if(pIter != FuncParserNames.end()) // is user-defined function parser
+        {
+            unsigned index = pIter->second;
+
+            int ind2 = ind + pIter->first.length();
+            sws(F, ind2); // F[ind2] is '('
+
+            ind2 = CompileFunctionParams(F, ind2+1,
+                                         FuncParsers[index]->varAmount);
+
+            AddCompiledByte(cPCall);
+            AddCompiledByte(index);
+            return ind2;
         }
     }
 
@@ -698,6 +928,16 @@ namespace
     {
         return d1>d2 ? d1 : d2;
     }
+
+
+    inline double DegreesToRadians(double degrees)
+    {
+        return degrees*(M_PI/180.0);
+    }
+    inline double RadiansToDegrees(double radians)
+    {
+        return radians*(180.0/M_PI);
+    }
 }
 
 double FunctionParser::Eval(const double* Vars)
@@ -732,6 +972,20 @@ double FunctionParser::Eval(const double* Vars)
           case  cCeil: Comp.Stack[SP]=ceil(Comp.Stack[SP]); break;
           case   cCos: Comp.Stack[SP]=cos(Comp.Stack[SP]); break;
           case  cCosh: Comp.Stack[SP]=cosh(Comp.Stack[SP]); break;
+
+          case   cCot:
+              {
+                  double t = tan(Comp.Stack[SP]);
+                  if(t == 0) { EvalErrorType=1; return 0; }
+                  Comp.Stack[SP] = 1/t; break;
+              }
+          case   cCsc:
+              {
+                  double s = sin(Comp.Stack[SP]);
+                  if(s == 0) { EvalErrorType=1; return 0; }
+                  Comp.Stack[SP] = 1/s; break;
+              }
+
 
 #ifndef DISABLE_EVAL
           case  cEval:
@@ -771,12 +1025,18 @@ double FunctionParser::Eval(const double* Vars)
                        SP--; break;
           case   cMin: Comp.Stack[SP-1]=Min(Comp.Stack[SP-1],Comp.Stack[SP]);
                        SP--; break;
+          case   cSec:
+              {
+                  double c = cos(Comp.Stack[SP]);
+                  if(c == 0) { EvalErrorType=1; return 0; }
+                  Comp.Stack[SP] = 1/c; break;
+              }
           case   cSin: Comp.Stack[SP]=sin(Comp.Stack[SP]); break;
           case  cSinh: Comp.Stack[SP]=sinh(Comp.Stack[SP]); break;
           case  cSqrt: if(Comp.Stack[SP]<0) { EvalErrorType=2; return 0; }
                        Comp.Stack[SP]=sqrt(Comp.Stack[SP]); break;
-          case  cTanh: Comp.Stack[SP]=tanh(Comp.Stack[SP]); break;
           case   cTan: Comp.Stack[SP]=tan(Comp.Stack[SP]); break;
+          case  cTanh: Comp.Stack[SP]=tanh(Comp.Stack[SP]); break;
 
 
 // Misc:
@@ -813,9 +1073,36 @@ double FunctionParser::Eval(const double* Vars)
                             doubleToInt(Comp.Stack[SP]));
                        SP--; break;
 
+// Degrees-radians conversion:
+          case   cDeg: Comp.Stack[SP]=RadiansToDegrees(Comp.Stack[SP]); break;
+          case   cRad: Comp.Stack[SP]=DegreesToRadians(Comp.Stack[SP]); break;
+
+// User-defined function calls:
+          case cFCall:
+              {
+                  unsigned index = Comp.ByteCode[++IP];
+                  unsigned params = FuncPtrs[index].params;
+                  double retVal =
+                      FuncPtrs[index].ptr(&Comp.Stack[SP-params+1]);
+                  SP -= params-1;
+                  Comp.Stack[SP] = retVal;
+                  break;
+              }
+
+          case cPCall:
+              {
+                  unsigned index = Comp.ByteCode[++IP];
+                  unsigned params = FuncParsers[index]->varAmount;
+                  double retVal =
+                      FuncParsers[index]->Eval(&Comp.Stack[SP-params+1]);
+                  SP -= params-1;
+                  Comp.Stack[SP] = retVal;
+                  break;
+              }
+
+
 #ifdef SUPPORT_OPTIMIZER
-          case   cVar:
-          case   cNop: break; // Paranoia. These should never exist
+          case   cVar: break; // Paranoia. These should never exist
           case   cDup: Comp.Stack[SP+1]=Comp.Stack[SP]; ++SP; break;
           case   cInv:
               if(Comp.Stack[SP]==0.0) { EvalErrorType=1; return 0; }
@@ -838,66 +1125,88 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 {
     for(unsigned IP=0, DP=0; IP<Comp.ByteCodeSize; IP++)
     {
-        dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
+        dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
         dest << IP << ": ";
 
         unsigned opcode = Comp.ByteCode[IP];
 
-        if(opcode == cIf)
+        switch(opcode)
         {
-            dest << "jz\t";
-            dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
-            dest << Comp.ByteCode[IP+1]+1 << endl;
-            IP += 2;
-        }
-        else if(opcode == cJump)
-        {
-            dest << "jump\t";
-            dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
-            dest << Comp.ByteCode[IP+1]+1 << endl;
-            IP += 2;
-        }
-        else if(opcode == cImmed)
-        {
-            dest.precision(10);
-            dest << "push\t" << Comp.Immed[DP++] << endl;
-        }
-        else if(opcode < VarBegin)
-        {
-            string n;
-            switch(opcode)
-            {
-              case cNeg: n = "neg"; break;
-              case cAdd: n = "add"; break;
-              case cSub: n = "sub"; break;
-              case cMul: n = "mul"; break;
-              case cDiv: n = "div"; break;
-              case cMod: n = "mod"; break;
-              case cPow: n = "pow"; break;
-              case cEqual: n = "eq"; break;
-              case cLess: n = "lt"; break;
-              case cGreater: n = "gt"; break;
-              case cAnd: n = "and"; break;
-              case cOr: n = "or"; break;
+          case cIf:
+              dest << "jz\t";
+              dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
+              dest << Comp.ByteCode[IP+1]+1 << endl;
+              IP += 2;
+              break;
+
+          case cJump:
+              dest << "jump\t";
+              dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
+              dest << Comp.ByteCode[IP+1]+1 << endl;
+              IP += 2;
+              break;
+          case cImmed:
+              dest.precision(10);
+              dest << "push\t" << Comp.Immed[DP++] << endl;
+              break;
+
+          case cFCall:
+              {
+                  unsigned index = Comp.ByteCode[++IP];
+                  VarMap_t::const_iterator iter = FuncPtrNames.begin();
+                  while(iter->second != index) ++iter;
+                  dest << "call\t" << iter->first << endl;
+                  break;
+              }
+
+          case cPCall:
+              {
+                  unsigned index = Comp.ByteCode[++IP];
+                  VarMap_t::const_iterator iter = FuncParserNames.begin();
+                  while(iter->second != index) ++iter;
+                  dest << "call\t" << iter->first << endl;
+                  break;
+              }
+
+          default:
+              if(opcode < VarBegin)
+              {
+                  string n;
+                  switch(opcode)
+                  {
+                    case cNeg: n = "neg"; break;
+                    case cAdd: n = "add"; break;
+                    case cSub: n = "sub"; break;
+                    case cMul: n = "mul"; break;
+                    case cDiv: n = "div"; break;
+                    case cMod: n = "mod"; break;
+                    case cPow: n = "pow"; break;
+                    case cEqual: n = "eq"; break;
+                    case cLess: n = "lt"; break;
+                    case cGreater: n = "gt"; break;
+                    case cAnd: n = "and"; break;
+                    case cOr: n = "or"; break;
+                    case cDeg: n = "deg"; break;
+                    case cRad: n = "rad"; break;
 
 #ifndef DISABLE_EVAL
-              case cEval: n = "call\t0"; break;
+                    case cEval: n = "call\t0"; break;
 #endif
 
 #ifdef SUPPORT_OPTIMIZER
-              case cNop: n = "ret"; break;
-              case cVar: n = "(var)"; break;
-              case cDup: n = "dup"; break;
-              case cInv: n = "inv"; break;
+                    case cVar: n = "(var)"; break;
+                    case cDup: n = "dup"; break;
+                    case cInv: n = "inv"; break;
 #endif
 
-              default: n = Functions[opcode-cAbs].name;
-            }
-            dest << n << endl;
-        }
-        else
-        {
-            dest << "push\tVar" << opcode-VarBegin << endl;
+                    default: n = Functions[opcode-cAbs].name;
+                  }
+                  dest << n << endl;
+              }
+              else
+              {
+                  dest << "push\tVar" << opcode-VarBegin << endl;
+              }
         }
     }
 }
@@ -909,25 +1218,54 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 //========================================================================
 #ifdef SUPPORT_OPTIMIZER
 
-#include <set>
-#include <deque>
+#include <list>
 #include <utility>
+
+#define CONSTANT_E     2.71828182845904509080  // exp(1)
+#define CONSTANT_PI    M_PI                    // atan2(0,-1)
+#define CONSTANT_L10   2.30258509299404590109  // log(10)
+#define CONSTANT_L10I  0.43429448190325176116  // 1/log(10)
+#define CONSTANT_L10E  CONSTANT_L10I           // log10(e)
+#define CONSTANT_L10EI CONSTANT_L10            // 1/log10(e)
+#define CONSTANT_DR    (180.0 / M_PI)          // 180/pi
+#define CONSTANT_RD    (M_PI / 180.0)          // pi/180
+
+class compres
+{
+    // states: 0=false, 1=true, 2=unknown
+public:
+    compres(bool b) : state(b) {}
+    compres(char v) : state(v) {}
+    // is it?
+    operator bool() const { return state != 0; }
+    // is it not?
+    bool operator! () const { return state != 1; }
+    bool operator==(bool b) const { return state != !b; }
+    bool operator!=(bool b) const { return state != b; }
+private:
+    char state;
+};
+
+namespace {
+const compres maybe = (char)2;
+}
 
 class SubTree
 {
     struct CodeTree *tree;
     bool sign;  // Only possible when parent is cAdd or cMul
 
-    void flipsign() { sign = !sign; }
+    inline void flipsign() { sign = !sign; }
 public:
     SubTree();
+    SubTree(double value);
     SubTree(const SubTree &b);
     SubTree(const struct CodeTree &b);
-    SubTree(double imm);
 
     ~SubTree();
-
     const SubTree &operator= (const SubTree &b);
+    const SubTree &operator= (const CodeTree &b);
+
     bool getsign() const { return sign; }
 
     const struct CodeTree* operator-> () const { return tree; }
@@ -939,75 +1277,306 @@ public:
     bool operator== (const SubTree& b) const;
     void Negate(); // Note: Parent must be cAdd
     void Invert(); // Note: Parent must be cMul
+
+    void CheckConstNeg();
+    void CheckConstInv();
 };
 
-namespace
-{
-    bool IsNegate(const SubTree &p1, const SubTree &p2);
-    bool IsInverse(const SubTree &p1, const SubTree &p2);
+namespace {
+bool IsNegate(const SubTree &p1, const SubTree &p2);
+bool IsInverse(const SubTree &p1, const SubTree &p2);
 }
 
+typedef list<SubTree> paramlist;
+
+struct CodeTreeData
+{
+    paramlist args;
+
+private:
+    unsigned op;       // Operation
+    double value;      // In case of cImmed
+    unsigned var;      // In case of cVar
+    unsigned funcno;   // In case of cFCall, cPCall
+
+public:
+    CodeTreeData() : op(cAdd) {}
+    ~CodeTreeData() {}
+
+    void SetOp(unsigned newop)     { op=newop; }
+    void SetFuncNo(unsigned newno) { funcno=newno; }
+    unsigned GetFuncNo() const { return funcno; }
+
+    bool IsFunc() const  { return op == cFCall || op == cPCall; }
+    bool IsImmed() const { return op == cImmed; }
+    bool IsVar() const   { return op == cVar; }
+    inline unsigned GetOp() const { return op; }
+    inline double GetImmed() const
+    {
+        return value;
+    }
+    inline unsigned GetVar() const
+    {
+        return var;
+    }
+
+    void AddParam(const SubTree &p)
+    {
+        args.push_back(p);
+    }
+    void SetVar(unsigned v)
+    {
+        args.clear();
+        op  = cVar;
+        var = v;
+    }
+    void SetImmed(double v)
+    {
+        args.clear();
+        op       = cImmed;
+        value    = orig = v;
+        inverted = negated = false;
+    }
+    void NegateImmed()
+    {
+        negated = !negated;
+        UpdateValue();
+    }
+    void InvertImmed()
+    {
+        inverted = !inverted;
+        UpdateValue();
+    }
+
+    bool IsOriginal() const { return !(IsInverted() || IsNegated()); }
+    bool IsInverted() const { return inverted; }
+    bool IsNegated() const { return negated; }
+    bool IsInvertedOriginal() const { return IsInverted() && !IsNegated(); }
+    bool IsNegatedOriginal() const { return !IsInverted() && IsNegated(); }
+
+private:
+    void UpdateValue()
+    {
+        value = orig;
+        if(IsInverted()) { value = 1.0 / value;
+                           // FIXME: potential divide by zero.
+                         }
+        if(IsNegated()) value = -value;
+    }
+
+    double orig;
+    bool inverted;
+    bool negated;
+protected:
+    // Ensure we don't accidentally copy this
+    void operator=(const CodeTreeData &b);
+};
+
+class CodeTreeDataPtr
+{
+    typedef pair<CodeTreeData, unsigned> p_t;
+    typedef p_t* pp;
+    mutable pp p;
+
+    void Alloc()   const { ++p->second; }
+    void Dealloc() const { if(!--p->second) delete p; p = 0; }
+
+    void PrepareForWrite()
+    {
+        // We're ready if we're the only owner.
+        if(p->second == 1) return;
+
+        // Then make a clone.
+        p_t *newtree = new p_t(p->first, 1);
+        // Forget the old
+        Dealloc();
+        // Keep the new
+        p = newtree;
+    }
+
+public:
+    CodeTreeDataPtr() : p(new p_t) { p->second = 1; }
+    CodeTreeDataPtr(const CodeTreeDataPtr &b): p(b.p) { Alloc(); }
+    ~CodeTreeDataPtr() { Dealloc(); }
+    const CodeTreeDataPtr &operator= (const CodeTreeDataPtr &b)
+    {
+        b.Alloc();
+        Dealloc();
+        p = b.p;
+        return *this;
+    }
+    const CodeTreeData *operator-> () const { return &p->first; }
+    const CodeTreeData &operator*  () const { return p->first; }
+    CodeTreeData *operator-> () { PrepareForWrite(); return &p->first; }
+    CodeTreeData &operator*  () { PrepareForWrite(); return p->first; }
+
+    void Shock();
+};
+
+#define CHECKCONSTNEG(item, op) \
+    ((op)==cMul) \
+       ? (item).CheckConstInv() \
+       : (item).CheckConstNeg()
 
 struct CodeTree
 {
-    // Vector doesn't work here.
-    std::deque<SubTree> params;
+    CodeTreeDataPtr data;
 
-    unsigned op;  // Operation
-    double immed; // In case of cImmed
-    unsigned var; // In case of cVar
+private:
+    typedef paramlist::iterator pit;
+    typedef paramlist::const_iterator pcit;
 
-    CodeTree(): op(cNop), immed(0), var(0) {}
-    CodeTree(double imm): op(cImmed), immed(imm), var(0) {}
+    template<unsigned v> inline void chk() const
+    {
+    }
+
+public:
+    const pcit GetBegin() const { return data->args.begin(); }
+    const pcit GetEnd()   const { return data->args.end(); }
+    const pit GetBegin() { return data->args.begin(); }
+    const pit GetEnd()   { return data->args.end(); }
+    const SubTree& getp0() const { chk<1>();pcit tmp=GetBegin();               return *tmp; }
+    const SubTree& getp1() const { chk<2>();pcit tmp=GetBegin(); ++tmp;        return *tmp; }
+    const SubTree& getp2() const { chk<3>();pcit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
+    unsigned GetArgCount() const { return data->args.size(); }
+    void Erase(const pit p)      { data->args.erase(p); }
+
+    SubTree& getp0() { chk<1>();pit tmp=GetBegin();               return *tmp; }
+    SubTree& getp1() { chk<2>();pit tmp=GetBegin(); ++tmp;        return *tmp; }
+    SubTree& getp2() { chk<3>();pit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
+
+    // set
+    void SetImmed(double v) { data->SetImmed(v); }
+    void SetOp(unsigned op) { data->SetOp(op); }
+    void SetVar(unsigned v) { data->SetVar(v); }
+    // get
+    double GetImmed() const { return data->GetImmed(); }
+    unsigned GetVar() const { return data->GetVar(); }
+    unsigned GetOp() const  { return data->GetOp(); }
+    // test
+    bool IsImmed() const { return data->IsImmed(); }
+    bool IsVar()   const { return data->IsVar(); }
+    // act
+    void AddParam(const SubTree &p) { data->AddParam(p); }
+    void NegateImmed() { data->NegateImmed(); } // don't use when op!=cImmed
+    void InvertImmed() { data->InvertImmed(); } // don't use when op!=cImmed
+
+    compres NonZero() const { if(!IsImmed()) return maybe;
+                              return GetImmed() != 0.0; }
+    compres IsPositive() const { if(!IsImmed()) return maybe;
+                                 return GetImmed() > 0.0; }
+
+private:
+    struct ConstList
+    {
+        double voidvalue;
+        list<pit> cp;
+        double value;
+        unsigned size() const { return cp.size(); }
+    };
+    struct ConstList BuildConstList();
+    void KillConst(const ConstList &cl)
+    {
+        for(list<pit>::const_iterator i=cl.cp.begin(); i!=cl.cp.end(); ++i)
+            Erase(*i);
+    }
+    void FinishConst(const ConstList &cl)
+    {
+        if(cl.value != cl.voidvalue && cl.size() > 1) AddParam(cl.value);
+        if(cl.value == cl.voidvalue || cl.size() > 1) KillConst(cl);
+    }
+
+public:
+    CodeTree() {}
+    CodeTree(double v) { SetImmed(v); }
+
+    CodeTree(unsigned op, const SubTree &p)
+    {
+        SetOp(op);
+        AddParam(p);
+    }
+    CodeTree(unsigned op, const SubTree &p1, const SubTree &p2)
+    {
+        SetOp(op);
+        AddParam(p1);
+        AddParam(p2);
+    }
 
     bool operator== (const CodeTree& b) const;
     bool operator< (const CodeTree& b) const;
 
-
 private:
     bool IsSortable() const
     {
-        return
-          (op == cAdd || op == cMul
-        || op == cEqual
-        || op == cAnd || op == cOr
-        || op == cMax || op == cMin);
+        switch(GetOp())
+        {
+            case cAdd:  case cMul:
+            case cEqual:
+            case cAnd: case cOr:
+            case cMax: case cMin:
+                return true;
+            default:
+                return false;
+        }
     }
     void SortIfPossible()
     {
         if(IsSortable())
         {
-            sort(params.begin(), params.end());
+            data->args.sort();
         }
     }
 
-    void ReplaceWithConstant(double value)
+    void ReplaceWithConst(double value)
     {
-        params.clear();
-        op    = cImmed;
-        immed = value;
+        SetImmed(value);
+
+        /* REMEMBER TO CALL CheckConstInv / CheckConstNeg
+         * FOR PARENT SubTree, OR MAYHEM HAPPENS
+         */
+    }
+
+    void ReplaceWith(const CodeTree &b)
+    {
+        // If b is child of *this, mayhem
+        // happens. So we first make a clone
+        // and then proceed with copy.
+        CodeTreeDataPtr tmp = b.data;
+        tmp.Shock();
+        data = tmp;
+    }
+
+    void ReplaceWith(unsigned op, const SubTree &p)
+    {
+        ReplaceWith(CodeTree(op, p));
+    }
+
+    void ReplaceWith(unsigned op, const SubTree &p1, const SubTree &p2)
+    {
+        ReplaceWith(CodeTree(op, p1, p2));
     }
 
     void OptimizeConflict()
     {
         // This optimization does this: x-x = 0, x/x = 1, a+b-a = b.
 
-        if(op == cAdd || op == cMul)
+        if(GetOp() == cAdd || GetOp() == cMul)
         {
         Redo:
-            for(unsigned a=0; a<params.size(); ++a)
+            pit a, b;
+            for(a=GetBegin(); a!=GetEnd(); ++a)
             {
-                for(unsigned b=a+1; b<params.size(); ++b)
+                for(b=GetBegin(); ++b != GetEnd(); )
                 {
-                    const SubTree &p1 = params[a];
-                    const SubTree &p2 = params[b];
+                    const SubTree &p1 = *a;
+                    const SubTree &p2 = *b;
 
-                    if(op==cMul ? IsInverse(p1,p2)
-                                : IsNegate(p1,p2))
+                    if(GetOp() == cMul ? IsInverse(p1,p2)
+                                       : IsNegate(p1,p2))
                     {
                         // These parameters complement each others out
-                        params.erase(params.begin()+b);
-                        params.erase(params.begin()+a);
+                        Erase(b);
+                        Erase(a);
                         goto Redo;
                     }
                 }
@@ -1020,25 +1589,22 @@ private:
     {
         // This optimization does this: min()=0, max()=0, add()=0, mul()=1
 
-        if(!params.size())
+        if(!GetArgCount())
         {
-            if(op == cAdd || op == cMin || op == cMax)
-                ReplaceWithConstant(0);
-            else if(op == cMul)
-                ReplaceWithConstant(1);
+            if(GetOp() == cAdd || GetOp() == cMin || GetOp() == cMax)
+                ReplaceWithConst(0);
+            else if(GetOp() == cMul)
+                ReplaceWithConst(1);
             return;
         }
 
         // And this: mul(x) = x, min(x) = x, max(x) = x, add(x) = x
 
-        if(params.size() == 1)
+        if(GetArgCount() == 1)
         {
-            if(op == cMul || op == cAdd || op == cMin || op == cMax)
-                if(!params[0].getsign())
-                {
-                    CodeTree tmp = *params[0];
-                    *this = tmp;
-                }
+            if(GetOp() == cMul || GetOp() == cAdd || GetOp() == cMin || GetOp() == cMax)
+                if(!getp0().getsign())
+                    ReplaceWith(*getp0());
         }
 
         OptimizeDoubleNegations();
@@ -1046,44 +1612,56 @@ private:
 
     void OptimizeDoubleNegations()
     {
-        if(op == cAdd)
+        if(GetOp() == cAdd)
         {
-        	// Eschew double negations
+            // Eschew double negations
 
-        	// If any of the elements is cMul
-        	// and has a numeric constant, negate
-        	// the constant and negate sign.
-        	for(unsigned a=0; a<params.size(); ++a)
-        		if(params[a].getsign()
-        		&& params[a]->op == cMul)
-        		{
-        			CodeTree &p = *params[a];
-        			for(unsigned b=0; b<p.params.size(); ++b)
-        				if(p.params[b]->op == cImmed)
-        				{
-        					p.params[b].Negate();
-        					params[a].Negate();
-        					break;
-        				}
-        		}
+            // If any of the elements is cMul
+            // and has a numeric constant, negate
+            // the constant and negate sign.
+
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                SubTree &pa = *a;
+                if(pa.getsign()
+                && pa->GetOp() == cMul)
+                {
+                    CodeTree &p = *pa;
+                    for(pit b=p.GetBegin();
+                            b!=p.GetEnd(); ++b)
+                    {
+                        SubTree &pb = *b;
+                        if(pb->IsImmed())
+                        {
+                            pb.Negate();
+                            pa.Negate();
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
-        if(op == cMul)
+        if(GetOp() == cMul)
         {
-        	// If any of the elements is cPow
-        	// and has a numeric exponent, negate
-        	// the exponent and negate sign.
-        	for(unsigned a=0; a<params.size(); ++a)
-        		if(params[a].getsign()
-        		&& params[a]->op == cPow)
-        		{
-        			CodeTree &p = *params[a];
-        			if(p.params[1]->op == cImmed)
-        			{
-        				p.params[1].Negate();
-       					params[a].Negate();
-       				}
-        		}
+            // If any of the elements is cPow
+            // and has a numeric exponent, negate
+            // the exponent and negate sign.
+
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                SubTree &pa = *a;
+                if(pa.getsign() && pa->GetOp() == cPow)
+                {
+                    CodeTree &p = *pa;
+                    if(p.getp1()->IsImmed())
+                    {
+                        // negate ok for pow when op=cImmed
+                        p.getp1().Negate();
+                        pa.Negate();
+                    }
+                }
+            }
         }
     }
 
@@ -1101,51 +1679,33 @@ private:
         // First, do this:
         OptimizeAddMulFlat();
 
-        switch(op)
+        switch(GetOp())
         {
             case cAdd:
             {
-                double constant = 0.0;
-                for(unsigned a=0; a<params.size(); )
-                {
-                    if(params[a]->op != cImmed) { ++a; continue; }
-                       if(params[a].getsign())
-                           constant -= params[a]->immed;
-                       else
-                           constant += params[a]->immed;
-                    params.erase(params.begin()+a);
-                }
-                if(constant != 0.0) params.push_back(constant);
-                //if(!params.size()) ReplaceWithConstant(constant); -- done later
+                ConstList cl = BuildConstList();
+                FinishConst(cl);
                 break;
             }
             case cMul:
             {
-                double constant = 1.0;
-                for(unsigned a=0; a<params.size(); )
-                {
-                    if(params[a]->op != cImmed) { ++a; continue; }
-                       if(params[a].getsign())
-                           constant /= params[a]->immed; //FIXME: Chance for divide by zero
-                       else
-                           constant *= params[a]->immed;
-                    params.erase(params.begin()+a);
-                }
-                if(constant != 1.0) params.push_back(constant);
-                //if(!params.size()) ReplaceWithConstant(constant); -- done later
+                ConstList cl = BuildConstList();
+
+                if(cl.value == 0.0) ReplaceWithConst(0.0);
+                else FinishConst(cl);
+
                 break;
             }
-            #define p0 params[0]
-            #define p1 params[1]
             #define ConstantUnaryFun(token, fun) \
-                case token: \
-                    if(p0->op == cImmed) ReplaceWithConstant(fun(p0->immed)); \
-                    break;
+                case token: { const SubTree &p0 = getp0(); \
+                    if(p0->IsImmed()) ReplaceWithConst(fun(p0->GetImmed())); \
+                    break; }
             #define ConstantBinaryFun(token, fun) \
-                case token: \
-                    if(p0->op == cImmed && \
-                       p1->op == cImmed) ReplaceWithConstant(fun(p0->immed, p1->immed)); \
-                    break;
+                case token: { const SubTree &p0 = getp0(); \
+                              const SubTree &p1 = getp1(); \
+                    if(p0->IsImmed() && \
+                       p1->IsImmed()) ReplaceWithConst(fun(p0->GetImmed(), p1->GetImmed())); \
+                    break; }
 
             // FIXME: potential invalid parameters for functions
             //        can cause exceptions here
@@ -1157,23 +1717,41 @@ private:
             ConstantUnaryFun(cCeil,  ceil);
             ConstantUnaryFun(cCos,   cos);
             ConstantUnaryFun(cCosh,  cosh);
-            ConstantUnaryFun(cExp,   exp);
             ConstantUnaryFun(cFloor, floor);
             ConstantUnaryFun(cLog,   log);
-            ConstantUnaryFun(cLog10, log10);
             ConstantUnaryFun(cSin,   sin);
             ConstantUnaryFun(cSinh,  sinh);
-            ConstantUnaryFun(cSqrt,  sqrt);
             ConstantUnaryFun(cTan,   tan);
             ConstantUnaryFun(cTanh,  tanh);
             ConstantBinaryFun(cAtan2, atan2);
             ConstantBinaryFun(cMax,   Max);
             ConstantBinaryFun(cMin,   Min);
+            ConstantBinaryFun(cMod,   fmod); // not a func, but belongs here too
             ConstantBinaryFun(cPow,   pow);
 
-            #undef p0
-            #undef p1
+            case cNeg:
+            case cSub:
+            case cDiv:
+                /* Unreached (nonexistent operator)
+                 * TODO: internal error here?
+                 */
+                break;
+
+            case cCot:
+            case cCsc:
+            case cSec:
+            case cDeg:
+            case cRad:
+            case cLog10:
+            case cSqrt:
+            case cExp:
+                /* Unreached (nonexistent function)
+                 * TODO: internal error here?
+                 */
+                 break;
         }
+
+        OptimizeConflict();
     }
 
     void OptimizeAddMulFlat()
@@ -1184,34 +1762,36 @@ private:
         //       x * (y/z) = x*y/z
         //       x / (y/z) = x/y*z
 
-        if(op == cAdd || op == cMul)
+        if(GetOp() == cAdd || GetOp() == cMul)
         {
             // If children are same type as parent add them here
-            for(unsigned a=0; a<params.size(); )
+            for(pit b, a=GetBegin(); a!=GetEnd(); a=b)
             {
-                const SubTree &pa = params[a];
-                if(pa->op != op) { ++a; continue; }
+                const SubTree &pa = *a;  b=a; ++b;
+                if(pa->GetOp() != GetOp()) continue;
 
                 // Child is same type
-                for(unsigned b=0; b<pa->params.size(); ++b)
+                for(pcit c=pa->GetBegin();
+                         c!=pa->GetEnd();
+                         ++c)
                 {
-                    const SubTree &pb = pa->params[b];
+                    const SubTree &pb = *c;
                     if(pa.getsign())
                     {
                         // +a -(+b +c)
                         // means b and c will be negated
 
                         SubTree tmp = pb;
-                        if(op == cMul)
+                        if(GetOp() == cMul)
                             tmp.Invert();
                         else
                             tmp.Negate();
-                           params.push_back(tmp);
+                        AddParam(tmp);
                     }
                     else
-                        params.push_back(pb);
+                        AddParam(pb);
                 }
-                params.erase(params.begin() + a);
+                Erase(a);
 
                 // Note: OptimizeConstantMath1() would be a good thing to call next.
             }
@@ -1232,49 +1812,46 @@ private:
         OptimizeConflict();
 
         bool didchanges = false;
-        if(op == cAdd || op == cMul)
+        if(GetOp() == cAdd || GetOp() == cMul)
         {
         Redo:
-            for(unsigned a=0; a<params.size(); ++a)
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
             {
-                const SubTree &pa = params[a];
+                const SubTree &pa = *a;
 
-                std::set<unsigned> poslist;
-                for(unsigned b=a+1; b<params.size(); ++b)
+                list<pit> poslist;
+
+                for(pit b=a; ++b!=GetEnd(); )
                 {
-                    const SubTree &pb = params[b];
-
+                    const SubTree &pb = *b;
                     if(*pa == *pb)
-                        poslist.insert(b);
+                        poslist.push_back(b);
                 }
 
-                unsigned min = 2;//op==cAdd ? 2 : 1;
+                unsigned min = 2;
                 if(poslist.size() >= min)
                 {
-                    bool negate = pa.getsign();
+                    SubTree arvo = pa;
+                    bool negate = arvo.getsign();
 
-                    int factor = poslist.size() + 1;
+                    double factor = poslist.size() + 1;
 
-                    if(negate) factor = -factor;
-
-                    SubTree tmp;
-                    tmp->op = op==cAdd ? cMul : cPow;
-                    tmp->params.push_back(*pa);
-                    tmp->params.push_back(CodeTree(factor));
-
-                    std::set<unsigned>::reverse_iterator i;
-                    for(i=poslist.rbegin(); i!=poslist.rend(); ++i)
-                        params.erase(params.begin() + *i);
-
-                    /*
                     if(negate)
                     {
-                        // negative
-                        tmp.Negate();
+                        arvo.Negate();
+                        factor = -factor;
                     }
-                    */
 
-                    params[a] = tmp;
+                    CodeTree tmp(GetOp()==cAdd ? cMul : cPow,
+                                 arvo,
+                                 factor);
+
+                    list<pit>::const_iterator j;
+                    for(j=poslist.begin(); j!=poslist.end(); ++j)
+                        Erase(*j);
+                    poslist.clear();
+
+                    *a = tmp;
                     didchanges = true;
                     goto Redo;
                 }
@@ -1291,156 +1868,344 @@ private:
 
     void OptimizeLogarithm()
     {
-        // This optimization should do the following:
-        //
-        //   log(x^z)        -> z * log(x)
-        //
-        // Also it should do this:
-        //
-        //   log(x) + log(y) -> log(x * y)
+        /*
+            This is basic logarithm math:
+              pow(X,Y)/log(Y) = X
+              log(X)/log(Y) = logY(X)
+              log(X^Y)      = log(X)*Y
+              log(X*Y)      = log(X)+log(Y)
+              exp(log(X)*Y) = X^Y
 
-        // First move to exponential form.
-        OptimizeLinearCombine();
+            This function does these optimizations:
+               pow(const_E, log(x))   = x
+               pow(const_E, log(x)*y) = x^y
+               pow(10,      log(x)*const_L10I*y) = x^y
+               pow(z,       log(x)/log(z)*y)     = x^y
 
-        if(op == cLog || op == cLog10)
+            And this:
+               log(x^z)             = z * log(x)
+            Which automatically causes these too:
+               log(pow(const_E, x))         = x
+               log(pow(y,       x))         = x * log(y)
+               log(pow(pow(const_E, y), x)) = x*y
+
+            And it does this too:
+               log(x) + log(y) + log(z) = log(x * y * z)
+               log(x * exp(y)) = log(x) + y
+
+        */
+
+        // Must be already in exponential form.
+
+        // Optimize exponents before doing something.
+        OptimizeExponents();
+
+        if(GetOp() == cLog)
         {
             // We should have one parameter for log() function.
             // If we don't, we're screwed.
 
-            const SubTree &p =* params[0];
+            const SubTree &p = getp0();
 
-            if(p->op == cPow)
+            if(p->GetOp() == cPow)
             {
                 // Found log(x^y)
-                const SubTree &p0 = *p->params[0];
-                const SubTree &p1 = *p->params[1];
-                // We will become a multiplication.
-                // Add the exponent to the list now.
-                params.push_back(p1);
-                // Build the new logarithm.
-                SubTree tmp;
-                tmp->op = op;
-                tmp->params.push_back(p0);
-                params.push_back(tmp);
+                SubTree p0 = p->getp0(); // x
+                SubTree p1 = p->getp1(); // y
 
-                params.erase(params.begin(), params.end()-2);
-                op = cMul;
-                // Finished.
+                // Build the new logarithm.
+                CodeTree tmp(GetOp(), p0);  // log(x)
+
+                // Become log(x) * y
+                ReplaceWith(cMul, tmp, p1);
+            }
+            else if(p->GetOp() == cMul)
+            {
+                // Redefine &p nonconst
+                SubTree &p = getp0();
+
+                p->OptimizeAddMulFlat();
+                p->OptimizeExponents();
+                CHECKCONSTNEG(p, p->GetOp());
+
+                list<SubTree> adds;
+
+                for(pit b, a = p->GetBegin();
+                           a != p->GetEnd(); a=b)
+                {
+                    SubTree &pa = *a;  b=a; ++b;
+                    if(pa->GetOp() == cPow
+                    && pa->getp0()->IsImmed()
+                    && pa->getp0()->GetImmed() == CONSTANT_E)
+                    {
+                        adds.push_back(pa->getp1());
+                        p->Erase(a);
+                        continue;
+                    }
+                }
+                if(adds.size())
+                {
+                    CodeTree tmp(cAdd, *this);
+
+                    list<SubTree>::const_iterator i;
+                    for(i=adds.begin(); i!=adds.end(); ++i)
+                        tmp.AddParam(*i);
+
+                    ReplaceWith(tmp);
+                }
             }
         }
-        if(op == cAdd)
+        if(GetOp() == cAdd)
         {
             // Check which ones are logs.
+            list<pit> poslist;
 
-            std::set<unsigned>::reverse_iterator i;
-
-            for(unsigned phase=1; phase<=2; ++phase)
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
             {
-                unsigned op_to_find = phase==1 ? cLog : cLog10;
+                const SubTree &pa = *a;
+                if(pa->GetOp() == cLog)
+                    poslist.push_back(a);
+            }
 
-                std::set<unsigned> poslist;
-                for(unsigned a=0; a<params.size(); ++a)
-                {
-                    const SubTree &pa = params[a];
+            if(poslist.size() >= 2)
+            {
+                CodeTree tmp(cMul, 1.0); // eek
 
-                    if(pa->op == op_to_find)
-                        poslist.insert(a);
-                }
-                if(poslist.size() >= 2)
+                list<pit>::const_iterator j;
+                for(j=poslist.begin(); j!=poslist.end(); ++j)
                 {
-                    SubTree tmp;
-                    tmp->op = cMul;
-                    for(i=poslist.rbegin(); i!=poslist.rend(); ++i)
+                    const SubTree &pb = **j;
+                    // Take all of its children
+                    for(pcit b=pb->GetBegin();
+                             b!=pb->GetEnd();
+                             ++b)
                     {
-                        const SubTree &pb = params[*i];
-                        // Take all of its children
-                        for(unsigned b=0; b<pb->params.size(); ++b)
-                        {
-                            SubTree tmp2 = pb->params[b];
-                            if(pb.getsign()) tmp2.Negate();
-                            tmp->params.push_back(tmp2);
-                        }
-                        params.erase(params.begin() + *i);
+                        SubTree tmp2 = *b;
+                        if(pb.getsign()) tmp2.Negate();
+                        tmp.AddParam(tmp2);
                     }
-                    SubTree tmp2;
-                    tmp2->op = op_to_find;
-                    tmp2->params.push_back(tmp);
-                    params.push_back(tmp2);
+                    Erase(*j);
                 }
+                poslist.clear();
+
+                AddParam(CodeTree(cLog, tmp));
             }
             // Done, hopefully
         }
+        if(GetOp() == cPow)
+        {
+            const SubTree &p0 = getp0();
+            SubTree &p1 = getp1();
+
+            if(p0->IsImmed() && p0->GetImmed() == CONSTANT_E
+            && p1->GetOp() == cLog)
+            {
+                // pow(const_E, log(x)) = x
+                ReplaceWith(*(p1->getp0()));
+            }
+            else if(p1->GetOp() == cMul)
+            {
+                //bool didsomething = true;
+
+                pit poslogpos; bool foundposlog = false;
+                pit neglogpos; bool foundneglog = false;
+
+                ConstList cl = p1->BuildConstList();
+
+                for(pit a=p1->GetBegin(); a!=p1->GetEnd(); ++a)
+                {
+                    const SubTree &pa = *a;
+                    if(pa->GetOp() == cLog)
+                    {
+                        if(!pa.getsign())
+                        {
+                            foundposlog = true;
+                            poslogpos   = a;
+                        }
+                        else if(*p0 == *(pa->getp0()))
+                        {
+                            foundneglog = true;
+                            neglogpos   = a;
+                        }
+                    }
+                }
+
+                if(p0->IsImmed()
+                && p0->GetImmed() == 10.0
+                && cl.value == CONSTANT_L10I
+                && foundposlog)
+                {
+                    SubTree base = (*poslogpos)->getp0();
+                    p1->KillConst(cl);
+                    p1->Erase(poslogpos);
+                    p1->OptimizeRedundant();
+                    SubTree mul = p1;
+
+                    ReplaceWith(cPow, base, mul);
+
+                    // FIXME: what optimizations should be done now?
+                    return;
+                }
+
+                // Put back the constant
+                FinishConst(cl);
+
+                if(p0->IsImmed()
+                && p0->GetImmed() == CONSTANT_E
+                && foundposlog)
+                {
+                    SubTree base = (*poslogpos)->getp0();
+                    p1->Erase(poslogpos);
+
+                    p1->OptimizeRedundant();
+                    SubTree mul = p1;
+
+                    ReplaceWith(cPow, base, mul);
+
+                    // FIXME: what optimizations should be done now?
+                    return;
+                }
+
+                if(foundposlog
+                && foundneglog
+                && *((*neglogpos)->getp0()) == *p0)
+                {
+                    SubTree base = (*poslogpos)->getp0();
+                    p1->Erase(poslogpos);
+                    p1->Erase(neglogpos);
+
+                    p1->OptimizeRedundant();
+                    SubTree mul = p1;
+
+                    ReplaceWith(cPow, base, mul);
+
+                    // FIXME: what optimizations should be done now?
+                    return;
+                }
+            }
+        }
+    }
+
+    void OptimizeFunctionCalls()
+    {
+        /* Goals: sin(asin(x)) = x
+         *        cos(acos(x)) = x
+         *        tan(atan(x)) = x
+         * NOTE:
+         *   Do NOT do these:
+         *     asin(sin(x))
+         *     acos(cos(x))
+         *     atan(tan(x))
+         *   Because someone might want to wrap the angle.
+         */
+        // FIXME: TODO
     }
 
     void OptimizePowMulAdd()
     {
-    	// BROKEN, DON'T USE (x / (y*z) -> x*y*z)
+        // x^3 * x -> x^4
+        // x*3 + x -> x*4
+        // FIXME: Do those
+
+        // x^1 -> x
+        if(GetOp() == cPow)
+        {
+            const SubTree &base     = getp0();
+            const SubTree &exponent = getp1();
+
+            if(exponent->IsImmed())
+            {
+                if(exponent->GetImmed() == 1.0)
+                    ReplaceWith(*base);
+                else if(exponent->GetImmed() == 0.0
+                     && base->NonZero())
+                    ReplaceWithConst(1.0);
+            }
+        }
     }
 
     void OptimizeExponents()
     {
-        // x^3 * x^2 -> x^6
-
+        /* Goals:
+         *     (x^y)^z   -> x^(y*z)
+         *     x^y * x^z -> x^(y+z)
+         */
         // First move to exponential form.
         OptimizeLinearCombine();
 
         bool didchanges = false;
 
-        if(op == cMul)
+    Redo:
+        if(GetOp() == cPow)
         {
-        Redo:
-            for(unsigned a=0; a<params.size(); ++a)
+            // (x^y)^z   -> x^(y*z)
+
+            const SubTree &p0 = getp0();
+            const SubTree &p1 = getp1();
+            if(p0->GetOp() == cPow)
             {
-                const SubTree &pa = params[a];
+                CodeTree tmp(cMul, p0->getp1(), p1);
+                tmp.Optimize();
 
-                if(pa->op != cPow) continue;
+                ReplaceWith(cPow, p0->getp0(), tmp);
 
-                std::set<unsigned>::reverse_iterator i;
-                std::set<unsigned> poslist;
+                didchanges = true;
+                goto Redo;
+            }
+        }
+        if(GetOp() == cMul)
+        {
+            // x^y * x^z -> x^(y+z)
 
-                for(unsigned b=a+1; b<params.size(); ++b)
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                const SubTree &pa = *a;
+
+                if(pa->GetOp() != cPow) continue;
+
+                list<pit> poslist;
+
+                for(pit b=a; ++b != GetEnd(); )
                 {
-                    const SubTree &pb = params[b];
-                    if(pb->op == cPow
-                    && *pa->params[0] == *pb->params[0])
+                    const SubTree &pb = *b;
+                    if(pb->GetOp() == cPow
+                    && *(pa->getp0())
+                    == *(pb->getp0()))
                     {
-                        poslist.insert(b);
+                        poslist.push_back(b);
                     }
                 }
 
                 if(poslist.size() >= 1)
                 {
-                    poslist.insert(a);
+                    poslist.push_back(a);
 
-                    CodeTree base = *pa->params[0];
+                    CodeTree base = *(pa->getp0());
 
-                    SubTree exponent;
-                    exponent->op = cMul;
+                    CodeTree exponent(cAdd, 0.0); //eek
 
-                    // Collect all exponents to cMul
-                    for(i=poslist.rbegin(); i!=poslist.rend(); ++i)
+                    // Collect all exponents to cAdd
+                    list<pit>::const_iterator i;
+                    for(i=poslist.begin(); i!=poslist.end(); ++i)
                     {
-                        const SubTree &pb = params[*i];
+                        const SubTree &pb = **i;
 
-                        SubTree tmp2 = pb->params[1];
+                        SubTree tmp2 = pb->getp1();
                         if(pb.getsign()) tmp2.Invert();
-                        exponent->params.push_back(tmp2);
+
+                        exponent.AddParam(tmp2);
                     }
 
-                    exponent->Optimize();
+                    exponent.Optimize();
 
-                    SubTree result = base;
+                    CodeTree result(cPow, base, exponent);
 
-                    result->op = cPow;
-                    result->params.push_back(base);
-                    result->params.push_back(exponent);
+                    for(i=poslist.begin(); i!=poslist.end(); ++i)
+                        Erase(*i);
+                    poslist.clear();
 
-                    for(i=poslist.rbegin(); i!=poslist.rend(); ++i)
-                    {
-                        params.erase(params.begin() + *i);
-                    }
+                    AddParam(result); // We're cMul, remember
 
-                    params.push_back(result);
                     didchanges = true;
                     goto Redo;
                 }
@@ -1462,157 +2227,283 @@ private:
         // But only if x is just a simple thing
 
         // Won't work on anything else.
-        if(op != cPow) return;
+        if(GetOp() != cPow) return;
 
         // TODO TODO TODO
     }
 
     void OptimizePascal()
     {
+#if 0    // Too big, too specific, etc
+
+        // Won't work on anything else.
+        if(GetOp() != cAdd) return;
+
+        // Must be done after OptimizeLinearCombine();
+
+        // Don't need pascal triangle
+        // Coefficient for x^a * y^b * z^c = 3! / (a! * b! * c!)
+
+        // We are greedy and want other than just binomials
+        // FIXME
+
+        // note: partial ones are also nice
+        //     x*x + x*y + y*y
+        //   = (x+y)^2 - x*y
+        //
+        //     x x * x y * + y y * +
+        // ->  x y + dup * x y * -
+#endif
     }
 
 public:
+
     void Optimize();
 
-    void Compile(vector<unsigned> &byteCode,
-                 vector<double>   &immed,
-                 CodeTree &stacktop) const;
+    void Assemble(vector<unsigned> &byteCode,
+                  vector<double>   &immed) const;
+
+    void FinalOptimize()
+    {
+        // First optimize each parameter.
+        for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            (*a)->FinalOptimize();
+
+        /* These things are to be done:
+         *
+         * x * CONSTANT_DR        -> cDeg(x)
+         * x * CONSTANT_RD        -> cRad(x)
+         * pow(x, 0.5)            -> sqrt(x)
+         * log(x) * CONSTANT_L10I -> log10(x)
+         * pow(CONSTANT_E, x)     -> exp(x)
+         * inv(sin(x))            -> csc(x)
+         * inv(cos(x))            -> sec(x)
+         * inv(tan(x))            -> cot(x)
+         */
+
+
+        if(GetOp() == cPow)
+        {
+            const SubTree &p0 = getp0();
+            const SubTree &p1 = getp1();
+            if(p0->GetOp()    == cImmed
+            && p0->GetImmed() == CONSTANT_E)
+            {
+                ReplaceWith(cExp, p1);
+            }
+            else if(p1->GetOp()    == cImmed
+                 && p1->GetImmed() == 0.5)
+            {
+                ReplaceWith(cSqrt, p0);
+            }
+        }
+        if(GetOp() == cMul)
+        {
+            if(GetArgCount() == 1 && getp0().getsign())
+            {
+                /***/if(getp0()->GetOp() == cSin)ReplaceWith(cCsc, getp0()->getp0());
+                else if(getp0()->GetOp() == cCos)ReplaceWith(cSec, getp0()->getp0());
+                else if(getp0()->GetOp() == cTan)ReplaceWith(cCot, getp0()->getp0());
+            }
+        }
+        // Separate "if", because op may have just changed
+        if(GetOp() == cMul)
+        {
+            CodeTree *found_log = 0;
+
+            ConstList cl = BuildConstList();
+
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                SubTree &pa = *a;
+                if(pa->GetOp() == cLog && !pa.getsign())
+                    found_log = &*pa;
+            }
+            if(cl.value == CONSTANT_L10I && found_log)
+            {
+                // Change the log() to log10()
+                found_log->SetOp(cLog10);
+                // And forget the constant
+                KillConst(cl);
+            }
+            else if(cl.value == CONSTANT_DR)
+            {
+                OptimizeRedundant();
+                ReplaceWith(cDeg, *this);
+            }
+            else if(cl.value == CONSTANT_RD)
+            {
+                OptimizeRedundant();
+                ReplaceWith(cRad, *this);
+            }
+            else FinishConst(cl);
+        }
+
+        SortIfPossible();
+    }
 };
 
-void CodeTree::Optimize()
+void CodeTreeDataPtr::Shock()
 {
-    // Phase:
-    //   Phase 0: Do local optimizations.
-    //   Phase 1: Optimize each.
-    //   Phase 2: Do local optimizations again.
-    //   Phase 3: Sort the parameters.
-
-    for(unsigned phase=0; phase<=3; ++phase)
+ /*
+    PrepareForWrite();
+    paramlist &p2 = (*this)->args;
+    for(paramlist::iterator i=p2.begin(); i!=p2.end(); ++i)
     {
-        if(phase == 3)
-        {
-            /* If the parameter order may be changed,
-             * sort them.
-             * NOTE: Remove cAnd and cOr here if fast boolean is in use
-             */
-
-            SortIfPossible();
-        }
-        if(phase == 1)
-        {
-            // Optimize each parameter.
-            for(unsigned a=0; a<params.size(); ++a)
-            {
-                params[a]->Optimize();
-            }
-            continue;
-        }
-        if(phase == 0 || phase == 2)
-        {
-            // Do local optimizations.
-
-            OptimizeAddMulFlat();
-            OptimizeConstantMath1();
-            OptimizeConflict();
-            OptimizeLogarithm();
-            OptimizeExponents();
-            OptimizeLinearExplode();
-        }
+        (*i)->data.Shock();
     }
+ */
 }
 
-void CodeTree::Compile
-   (vector<unsigned> &byteCode,
-    vector<double>   &immed,
-    CodeTree &stacktop) const
+CodeTree::ConstList CodeTree::BuildConstList()
 {
+    ConstList result;
+    result.value     =
+    result.voidvalue = GetOp()==cMul ? 1.0 : 0.0;
+
+    list<pit> &cp = result.cp;
+    for(pit b, a=GetBegin(); a!=GetEnd(); a=b)
+    {
+        SubTree &pa = *a;  b=a; ++b;
+        if(!pa->IsImmed()) continue;
+
+        double thisvalue = pa->GetImmed();
+        if(thisvalue == result.voidvalue)
+        {
+            // This value is no good, forget it
+            Erase(a);
+            continue;
+        }
+        if(GetOp() == cMul)
+            result.value *= thisvalue;
+        else
+            result.value += thisvalue;
+        cp.push_back(a);
+    }
+    if(GetOp() == cMul)
+    {
+        /*
+          Jos joku niistä arvoista on -1 eikä se ole ainoa arvo,
+          niin joku muu niistä arvoista negatoidaan.
+        */
+        for(bool done=false; cp.size() > 1 && !done; )
+        {
+            done = true;
+            for(list<pit>::iterator b,a=cp.begin(); a!=cp.end(); a=b)
+            {
+                b=a; ++b;
+                if((**a)->GetImmed() == -1.0)
+                {
+                    Erase(*a);
+                    cp.erase(a);
+
+                    // take randomly something
+                    (**cp.begin())->data->NegateImmed();
+                    if(cp.size() < 2)break;
+                    done = false;
+                }
+            }
+        }
+    }
+    return result;
+}
+
+void CodeTree::Assemble
+   (vector<unsigned> &byteCode,
+    vector<double>   &immed) const
+{
+    #define AddCmd(op) byteCode.push_back((op))
     #define AddConst(v) do { \
         byteCode.push_back(cImmed); \
         immed.push_back((v)); \
     } while(0)
-    #define AddCmd(op) byteCode.push_back((op))
 
-    switch(op)
+    if(IsVar())
+    {
+        AddCmd(GetVar());
+        return;
+    }
+    if(IsImmed())
+    {
+        AddConst(GetImmed());
+        return;
+    }
+
+    switch(GetOp())
     {
         case cAdd:
         case cMul:
         {
-            CodeTree left = stacktop;
-            unsigned stacksize = 0;
-            for(unsigned a=0; a<params.size(); ++a)
+            unsigned opcount = 0;
+            for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
-                const CodeTree &pa = *params[a];
+                const SubTree &pa = *a;
 
-                if(stacksize == 2)stacksize = 1; // We already cut it
+                if(opcount < 2) ++opcount;
 
-                ++stacksize;
+                bool pnega = pa.getsign();
 
-                bool pnega = false;
-
-                if(pa == stacktop)
-                    AddCmd(cDup);
-                else
+                bool done = false;
+                if(pa->IsImmed())
                 {
-                    if(params[a].getsign()) pnega = true;
-                    pa.Compile(byteCode, immed, stacktop);
+                    if(GetOp() == cMul
+                    && pa->data->IsInverted()
+                    && (pnega || opcount==2)
+                      )
+                    {
+                        CodeTree tmp = *pa;
+                        tmp.data->InvertImmed();
+                        tmp.Assemble(byteCode, immed);
+                        pnega = !pnega;
+                        done = true;
+                    }
+                    else if(GetOp() == cAdd
+                    && (pa->data->IsNegatedOriginal()
+                //     || pa->GetImmed() < 0
+                       )
+                    && (pnega || opcount==2)
+                           )
+                    {
+                        CodeTree tmp = *pa;
+                        tmp.data->NegateImmed();
+                        tmp.Assemble(byteCode, immed);
+                        pnega = !pnega;
+                        done = true;
+                    }
                 }
+                if(!done)
+                    pa->Assemble(byteCode, immed);
 
-                stacktop = pa;
-
-                if(stacksize == 2)
+                if(opcount == 2)
                 {
-                    stacktop = CodeTree(); //FIXME
-
-                    if(pnega)
+                    unsigned tmpop = GetOp();
+                    if(pnega) // negate
                     {
-                        if(op == cAdd)
-                        {
-                            AddCmd(cSub);
-                        }
-                        else
-                        {
-                            AddCmd(cDiv);
-                        }
+                        tmpop = (tmpop == cMul) ? cDiv : cSub;
                     }
-                    else
-                    {
-                        AddCmd(op);
-                    }
-                    // leave stacksize=2 so the next step won't choke
+                    AddCmd(tmpop);
                 }
                 else if(pnega)
                 {
-                    if(op == cMul) AddCmd(cInv);
+                    if(GetOp() == cMul) AddCmd(cInv);
                     else AddCmd(cNeg);
                 }
             }
             break;
         }
-        case cImmed:
-        {
-            AddConst(this->immed);
-            stacktop = *this;
-            break;
-        }
-        case cVar:
-        {
-            AddCmd(var);
-            stacktop = *this;
-            break;
-        }
         case cIf:
         {
             // If the parameter amount is != 3, we're screwed.
-            params[0]->Compile(byteCode, immed, stacktop);
+            getp0()->Assemble(byteCode, immed);
 
             unsigned ofs = byteCode.size();
             AddCmd(cIf);
             AddCmd(0); // code index
             AddCmd(0); // immed index
 
-            params[1]->Compile(byteCode, immed, stacktop);
+            getp1()->Assemble(byteCode, immed);
 
-            byteCode[ofs+1] = byteCode.size()-1;
+            byteCode[ofs+1] = byteCode.size()+2;
             byteCode[ofs+2] = immed.size();
 
             ofs = byteCode.size();
@@ -1620,74 +2511,171 @@ void CodeTree::Compile
             AddCmd(0); // code index
             AddCmd(0); // immed index
 
-            params[2]->Compile(byteCode, immed, stacktop);
+            getp2()->Assemble(byteCode, immed);
 
             byteCode[ofs+1] = byteCode.size()-1;
             byteCode[ofs+2] = immed.size();
 
-            stacktop = *this;
-
+            break;
+        }
+        case cFCall:
+        {
+            // If the parameter count is invalid, we're screwed.
+            for(pcit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                const SubTree &pa = *a;
+                pa->Assemble(byteCode, immed);
+            }
+            AddCmd(GetOp());
+            AddCmd(data->GetFuncNo());
+            break;
+        }
+        case cPCall:
+        {
+            // If the parameter count is invalid, we're screwed.
+            for(pcit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                const SubTree &pa = *a;
+                pa->Assemble(byteCode, immed);
+            }
+            AddCmd(GetOp());
+            AddCmd(data->GetFuncNo());
             break;
         }
         default:
         {
             // If the parameter count is invalid, we're screwed.
-            for(unsigned a=0; a<params.size(); ++a)
+            for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
-                const CodeTree &pa = *params[a];
-                pa.Compile(byteCode, immed, stacktop);
+                const SubTree &pa = *a;
+                pa->Assemble(byteCode, immed);
             }
-            AddCmd(op);
-
-            stacktop = *this;
+            AddCmd(GetOp());
+            break;
         }
     }
 }
 
+void CodeTree::Optimize()
+{
+    // Phase:
+    //   Phase 0: Do local optimizations.
+    //   Phase 1: Optimize each.
+    //   Phase 2: Do local optimizations again.
+
+    for(unsigned phase=0; phase<=2; ++phase)
+    {
+        if(phase == 1)
+        {
+            // Optimize each parameter.
+            for(pit a=GetBegin(); a!=GetEnd(); ++a)
+            {
+                (*a)->Optimize();
+                CHECKCONSTNEG(*a, GetOp());
+            }
+            continue;
+        }
+        if(phase == 0 || phase == 2)
+        {
+            // Do local optimizations.
+
+            OptimizeConstantMath1();
+            OptimizeLogarithm();
+            OptimizeFunctionCalls();
+            OptimizeExponents();
+            OptimizeLinearExplode();
+            OptimizePascal();
+
+            /* Optimization paths:
+
+               doublenegations=
+               redundant= * doublenegations
+               conflict= * redundant
+               addmulflat=
+               constantmath1= addmulflat * conflict
+               linearcombine= conflict * addmulflat¹ redundant¹
+               powmuladd=
+               exponents= linearcombine * powmuladd conflict¹
+               logarithm= exponents *
+               functioncalls= IDLE
+               linearexplode= IDLE
+               pascal= IDLE
+
+               * = actions here
+               ¹ = only if made changes
+            */
+        }
+    }
+}
+
+
 bool CodeTree::operator== (const CodeTree& b) const
 {
-    if(op != b.op) return false;
-    if(op == cImmed) if(immed != b.immed) return false;
-    if(op == cVar)   if(var != b.var)     return false;
-    return params == b.params;
+    if(GetOp() != b.GetOp()) return false;
+    if(IsImmed()) if(GetImmed()  != b.GetImmed())  return false;
+    if(IsVar())   if(GetVar()    != b.GetVar())    return false;
+    if(data->IsFunc())
+        if(data->GetFuncNo() != b.data->GetFuncNo()) return false;
+    return data->args == b.data->args;
 }
 
 bool CodeTree::operator< (const CodeTree& b) const
 {
-    if(params.size() != b.params.size())
-        return params.size() > b.params.size();
+    if(GetArgCount() != b.GetArgCount())
+        return GetArgCount() > b.GetArgCount();
 
-    if(op != b.op) return op < b.op;
+    if(GetOp() != b.GetOp())
+    {
+        // sort immeds last
+        if(IsImmed() != b.IsImmed()) return IsImmed() < b.IsImmed();
 
-    if(op == cImmed && immed != b.immed) return immed < b.immed;
-    if(op == cVar   && var   != b.var)   return var < b.var;
-    for(unsigned a=0; a<params.size(); ++a)
-        if(!(params[a] == b.params[a]))
-            return params[a] < b.params[a];
+        return GetOp() < b.GetOp();
+    }
+
+    if(IsImmed())
+    {
+        if(GetImmed() != b.GetImmed()) return GetImmed() < b.GetImmed();
+    }
+    if(IsVar() && GetVar() != b.GetVar())
+    {
+        return GetVar() < b.GetVar();
+    }
+    if(data->IsFunc() && data->GetFuncNo() != b.data->GetFuncNo())
+    {
+        return data->GetFuncNo() < b.data->GetFuncNo();
+    }
+
+    pcit i = GetBegin(), j = b.GetBegin();
+    for(; i != GetEnd(); ++i, ++j)
+    {
+        const SubTree &pa = *i, &pb = *j;
+
+        if(!(pa == pb))
+            return pa < pb;
+    }
     return false;
 }
 
-namespace
+namespace {
+bool IsNegate(const SubTree &p1, const SubTree &p2) /*const */
 {
-    bool IsNegate(const SubTree &p1, const SubTree &p2)
+    if(p1->IsImmed() && p2->IsImmed())
     {
-        if(p1->op == cImmed && p2->op == cImmed)
-        {
-            return p1->immed == -p2->immed;
-        }
-        if(p1.getsign() == p2.getsign()) return false;
-        return *p1 == *p2;
+        return p1->GetImmed() == -p2->GetImmed();
     }
-    bool IsInverse(const SubTree &p1, const SubTree &p2)
+    if(p1.getsign() == p2.getsign()) return false;
+    return *p1 == *p2;
+}
+bool IsInverse(const SubTree &p1, const SubTree &p2) /*const*/
+{
+    if(p1->IsImmed() && p2->IsImmed())
     {
-        if(p1->op == cImmed && p2->op == cImmed)
-        {
-            // FIXME: potential divide by zero.
-            return p1->immed == 1.0 / p2->immed;
-        }
-        if(p1.getsign() == p2.getsign()) return false;
-        return *p1 == *p2;
+        // FIXME: potential divide by zero.
+        return p1->GetImmed() == 1.0 / p2->GetImmed();
     }
+    if(p1.getsign() == p2.getsign()) return false;
+    return *p1 == *p2;
+}
 }
 
 SubTree::SubTree() : tree(new CodeTree), sign(false)
@@ -1698,20 +2686,17 @@ SubTree::SubTree(const SubTree &b) : tree(new CodeTree(*b.tree)), sign(b.sign)
 {
 }
 
-SubTree::SubTree(const CodeTree &b) : tree(new CodeTree(b)), sign(false)
-{
-}
+#define SubTreeDecl(p1, p2) \
+    SubTree::SubTree p1 : tree(new CodeTree p2), sign(false) { }
 
-SubTree::SubTree(double imm) : tree(new CodeTree), sign(false)
-{
-    tree->op    = cImmed;
-    tree->immed = imm;
-    tree->var   = 0;
-}
+SubTreeDecl( (const struct CodeTree &b), (b) )
+SubTreeDecl( (double value),             (value) )
+
+#undef SubTreeDecl
 
 SubTree::~SubTree()
 {
-    delete tree;
+    delete tree; tree=0;
 }
 
 const SubTree &SubTree::operator= (const SubTree &b)
@@ -1719,6 +2704,14 @@ const SubTree &SubTree::operator= (const SubTree &b)
     sign = b.sign;
     CodeTree *oldtree = tree;
     tree = new CodeTree(*b.tree);
+    delete oldtree;
+    return *this;
+}
+const SubTree &SubTree::operator= (const CodeTree &b)
+{
+    sign = false;
+    CodeTree *oldtree = tree;
+    tree = new CodeTree(b);
     delete oldtree;
     return *this;
 }
@@ -1734,14 +2727,29 @@ bool SubTree::operator== (const SubTree& b) const
 }
 void SubTree::Negate() // Note: Parent must be cAdd
 {
-    if(tree->op != cImmed) { flipsign(); return; }
-    tree->immed = -tree->immed;
+    flipsign();
+    CheckConstNeg();
+}
+void SubTree::CheckConstNeg()
+{
+    if(tree->IsImmed() && getsign())
+    {
+        tree->NegateImmed();
+        sign = false;
+    }
 }
 void SubTree::Invert() // Note: Parent must be cMul
 {
-    if(tree->op != cImmed) { flipsign(); return; }
-    tree->immed = 1.0 / tree->immed;
-    // FIXME: potential divide by zero.
+    flipsign();
+    CheckConstInv();
+}
+void SubTree::CheckConstInv()
+{
+    if(tree->IsImmed() && getsign())
+    {
+        tree->InvertImmed();
+        sign = false;
+    }
 }
 
 void FunctionParser::MakeTree(struct CodeTree *result) const
@@ -1755,24 +2763,31 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
     #define EAT(n, opcode) do { \
         unsigned newstacktop = stacktop-n; \
-        stack[stacktop].op = (opcode); \
+        stack[stacktop].SetOp((opcode)); \
         for(unsigned a=0, b=(n); a<b; ++a) \
-            stack[stacktop].params.push_back(stack[newstacktop+a]); \
+            stack[stacktop].AddParam(stack[newstacktop+a]); \
         stack.erase(stack.begin() + newstacktop, \
                     stack.begin() + stacktop); \
         stacktop = newstacktop; GROW(1); \
     } while(0)
 
+    #define ADDCONST(n) do { \
+        stack[stacktop].SetImmed((n)); \
+        GROW(1); \
+    } while(0)
+
     unsigned stacktop=0;
 
-    std::set<unsigned> labels;
+    list<unsigned> labels;
 
     for(unsigned IP=0, DP=0; ; ++IP)
     {
-        if(labels.find(IP) != labels.end())
+        while(labels.size() > 0
+        && *labels.begin() == IP)
         {
             // The "else" of an "if" ends here
             EAT(3, cIf);
+            labels.erase(labels.begin());
         }
 
         if(IP >= Comp.ByteCodeSize)
@@ -1788,14 +2803,12 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
         }
         else if(opcode == cJump)
         {
-            labels.insert(Comp.ByteCode[IP+1]+1);
+            labels.push_front(Comp.ByteCode[IP+1]+1);
             IP += 2;
         }
         else if(opcode == cImmed)
         {
-            stack[stacktop].op     = cImmed;
-            stack[stacktop].immed  = Comp.Immed[DP++];
-            GROW(1);
+            ADDCONST(Comp.Immed[DP++]);
         }
         else if(opcode < VarBegin)
         {
@@ -1805,27 +2818,58 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
                 case cNeg:
                 {
                     EAT(1, cAdd); // Unary minus is negative adding.
-                    stack[stacktop-1].params[0].Negate();
+                    stack[stacktop-1].getp0().Negate();
                     break;
                 }
                 // Binary operators
                 case cSub:
                 {
                     EAT(2, cAdd); // Minus is negative adding
-                    stack[stacktop-1].params[1].Negate();
+                    stack[stacktop-1].getp1().Negate();
                     break;
                 }
                 case cDiv:
                 {
                     EAT(2, cMul); // Divide is inverse multiply
-                    stack[stacktop-1].params[1].Invert();
+                    stack[stacktop-1].getp1().Invert();
                     break;
                 }
+
+                // ADD ALL TWO PARAMETER NON-FUNCTIONS HERE
                 case cAdd: case cMul:
                 case cMod: case cPow:
                 case cEqual: case cLess: case cGreater:
                 case cAnd: case cOr:
                     EAT(2, opcode);
+                    break;
+
+                case cFCall:
+                {
+                    unsigned index = Comp.ByteCode[++IP];
+                    unsigned params = FuncPtrs[index].params;
+                    EAT(params, opcode);
+                    stack[stacktop-1].data->SetFuncNo(index);
+                    break;
+                }
+                case cPCall:
+                {
+                    unsigned index = Comp.ByteCode[++IP];
+                    unsigned params = FuncParsers[index]->varAmount;
+                    EAT(params, opcode);
+                    stack[stacktop-1].data->SetFuncNo(index);
+                    break;
+                }
+
+                // Converted to cMul on fly
+                case cDeg:
+                    ADDCONST(CONSTANT_DR);
+                    EAT(2, cMul);
+                    break;
+
+                // Converted to cMul on fly
+                case cRad:
+                    ADDCONST(CONSTANT_RD);
+                    EAT(2, cMul);
                     break;
 
                 // Functions
@@ -1837,14 +2881,55 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 #ifndef DISABLE_EVAL
                     if(opcode == cEval) paramcount = varAmount;
 #endif
+                    if(opcode == cSqrt)
+                    {
+                        // Converted on fly: sqrt(x) = x^0.5
+                        opcode = cPow;
+                        paramcount = 2;
+                        ADDCONST(0.5);
+                    }
+                    if(opcode == cExp)
+                    {
+                        // Converted on fly: exp(x) = CONSTANT_E^x
+
+                        opcode = cPow;
+                        paramcount = 2;
+                        // reverse the parameters... kludgey
+                        stack[stacktop] = stack[stacktop-1];
+                        stack[stacktop-1].SetImmed(CONSTANT_E);
+                        GROW(1);
+                    }
+                    bool do_inv = false;
+                    if(opcode == cCot) { do_inv = true; opcode = cTan; }
+                    if(opcode == cCsc) { do_inv = true; opcode = cSin; }
+                    if(opcode == cSec) { do_inv = true; opcode = cCos; }
+
+                    bool do_log10 = false;
+                    if(opcode == cLog10)
+                    {
+                        // Converted on fly: log10(x) = log(x) * CONSTANT_L10I
+                        opcode = cLog;
+                        do_log10 = true;
+                    }
                     EAT(paramcount, opcode);
+                    if(do_log10)
+                    {
+                        ADDCONST(CONSTANT_L10I);
+                        EAT(2, cMul);
+                    }
+                    if(do_inv)
+                    {
+                        // Unary cMul, inverted. No need for "1.0"
+                        EAT(1, cMul);
+                        stack[stacktop-1].getp0().Invert();
+                    }
+                    break;
                 }
             }
         }
         else
         {
-            stack[stacktop].op     = cVar;
-            stack[stacktop].var    = opcode;
+            stack[stacktop].SetVar(opcode);
             GROW(1);
         }
     }
@@ -1855,7 +2940,7 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
         return;
     }
 
-    --stacktop; // Ignore the last element, it is always cNop.
+    --stacktop; // Ignore the last element, it is always nop (cAdd).
 
     if(stacktop > 0)
     {
@@ -1869,42 +2954,46 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
 void FunctionParser::Optimize()
 {
+
     CodeTree tree;
     MakeTree(&tree);
 
+    // Do all sorts of optimizations
     tree.Optimize();
+    // Last changes before assembly
+    tree.FinalOptimize();
 
     // Now rebuild from the tree.
-
-    delete[] Comp.ByteCode;
-    delete[] Comp.Immed;
 
     vector<unsigned> byteCode;
     vector<double> immed;
 
-    CodeTree tmpstack;
-    tree.Compile(byteCode, immed, tmpstack);
+#if 0
+    byteCode.resize(Comp.ByteCodeSize);
+    for(unsigned a=0; a<Comp.ByteCodeSize; ++a)byteCode[a] = Comp.ByteCode[a];
 
-    Comp.ByteCodeSize = byteCode.size();
-    Comp.ImmedSize = immed.size();
+    immed.resize(Comp.ImmedSize);
+    for(unsigned a=0; a<Comp.ImmedSize; ++a)immed[a] = Comp.Immed[a];
+#else
+    byteCode.clear(); immed.clear();
+    tree.Assemble(byteCode, immed);
+#endif
 
-    if(Comp.ByteCodeSize)
+    delete[] Comp.ByteCode; Comp.ByteCode = 0;
+    if((Comp.ByteCodeSize = byteCode.size()) > 0)
     {
         Comp.ByteCode = new unsigned[Comp.ByteCodeSize];
-        memcpy(Comp.ByteCode, &byteCode[0],
-               sizeof(unsigned)*Comp.ByteCodeSize);
+        for(unsigned a=0; a<byteCode.size(); ++a)
+            Comp.ByteCode[a] = byteCode[a];
     }
-    if(Comp.ImmedSize)
+
+    delete[] Comp.Immed; Comp.Immed = 0;
+    if((Comp.ImmedSize = immed.size()) > 0)
     {
         Comp.Immed = new double[Comp.ImmedSize];
-        memcpy(Comp.Immed, &immed[0],
-               sizeof(double)*Comp.ImmedSize);
+        for(unsigned a=0; a<immed.size(); ++a)
+            Comp.Immed[a] = immed[a];
     }
-#if 0
-    // FIXME: Stack is overwritten here with something evil
-    if(Comp.StackSize)
-        Comp.Stack = new double[Comp.StackSize];
-#endif
 }
 
 
