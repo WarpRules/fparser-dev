@@ -1,6 +1,6 @@
-//==============================
-// Function parser v2.7 by Warp
-//==============================
+//===============================
+// Function parser v2.71 by Warp
+//===============================
 
 // Comment out the following line if your compiler supports the (non-standard)
 // asinh, acosh and atanh functions and you want them to be supported. If
@@ -18,7 +18,9 @@
 // but it will not do anything.
 // If you are unsure, just leave it. It won't slow down the other parts of
 // the library.
+#ifndef NO_SUPPORT_OPTIMIZER
 #define SUPPORT_OPTIMIZER
+#endif
 
 
 //============================================================================
@@ -177,7 +179,7 @@ namespace
         }
         return 0;
     }
-};
+}
 
 
 //---------------------------------------------------------------------------
@@ -320,7 +322,7 @@ namespace
         }
         return true;
     }
-};
+}
 
 bool FunctionParser::isValidName(const std::string& name) const
 {
@@ -457,7 +459,7 @@ namespace
     {
         while(F[Ind] && isspace(F[Ind])) ++Ind;
     }
-};
+}
 
 // Returns an iterator to the variable with the same name as 'F', or to
 // Variables.end() if no such variable exists:
@@ -3171,7 +3173,7 @@ void FunctionParser::Optimize()
 #else /* !SUPPORT_OPTIMIZER */
 
 /* keep the linker happy */
-void FunctionParser::MakeTree(CodeTree *) const {}
+void FunctionParser::MakeTree(void *) const {}
 void FunctionParser::Optimize()
 {
     // Do nothing if no optimizations are supported.
