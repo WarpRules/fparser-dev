@@ -1,5 +1,5 @@
-  Function parser for C++  v2.22 by Warp.
-  =======================================
+  Function parser for C++  v2.3 by Warp.
+  ======================================
 
 | Changes in this document compared to the previous version are marked with '|'
 | characters at the left column.
@@ -42,88 +42,17 @@
 
 
 
-| What's new in v2.22:
-| -------------------
-| - Fixed a tiny bug which made the class to misbehave when an error occurred
-|   during parsing.
-
-| What's new in v2.21:
-| -------------------
-| - A tiny fix to make the library work with Borland C++ Builder 4.
-
-| What's new in v2.2:
+| What's new in v2.3:
 | ------------------
-| - Support for long variable names (NOTE: Unfortunately this breaks backwards
-|   compatibility.)
-| - New functions: min(), max(), if(), eval().
-| - Support for recursive calls (with if() and eval()).
-| - New operators (mainly for use with if(), but can be used anywhere):
-|   '=', '<', '>', '&' and '|'.
-
-  What's new in v2.1:
-  ------------------
-  - Parsing speed optimization.
-
-    I implemented the parser from the scratch using a known parsing algorithm
-  from classical compiler techniques, thus replacing my old ad hoc parser.
-    The parser should be much faster now, specially with long functions with
-  lots of parentheses (specially when the expressions inside parentheses are
-  very long).
-    I made a test with the function "((2*(5+x*(cos(y-x)/3+2)/4)+1)/4+x)-1" in
-  a Sun Ultra 5 computer. The version 2.0 of the library parses it in
-  approximately 0.21 ms, while the new version 2.1 parses it in 0.115 ms.
-  (I performed the test by parsing the function 100000 times and then dividing
-  the total time by that.)
-    Needs lots of testing to make sure that it works!
-
-  What's new in v2.0:
-  ------------------
-  - Slight changes in the interface.
-    I'm sorry for the lost backwards compatibility, but the v1.x way of taking
-    the parameters was just awful - I made it better this time.
-    These changes are:
-    * Parse() takes the function as a const std::string& (this is fully
-      backwards compatible).
-    * Parse() takes the variables as a const std::string& (eg. "xy"). The old
-      way of taking variable number of parameters was just a too awful hack.
-    * The Eval() function taking a variable number of parameters has been
-      removed. Although it was a bit easier to use, it was a hack and led to
-      inefficient code (internally the parameters were put inside a dynamically
-      allocated array anyways, and that's not the most efficient way of doing
-      it; it's much more efficient that the user uses a statically allocated
-      local array).
-    These changes are not radical, so don't get too alarmed. I'm sure that
-    changing old code to this new interface is trivial.
-  - Added the modulo operator (%) and a new function int().
-  - I hope that now, at last, all the problems with parsing functions with
-    similar beginnings (eg. acos() vs. acosh()) are gone. Needs more testing,
-    though...
-
-  What's new in v1.3:
-  -------------------
-  (Thanks to Roland Schmehl for these bug reports).
-  - The library parsed wrongly sinh, cosh and tanh (confused them with sin,
-    cos and tan and than reported a syntax error for the 'h').
-  - The library parsed an expression like "-cos(x)+cos(y)" like if it
-    was "-(cos(x)+cos(y))" instead of "(-cos(x))+cos(y)" as it should. Fixed.
-  - The library didn't parse correctly numbers in the form "1e-2". Fixed.
-  - Added some explanations at the end of the file.
-
-  What's new in v1.21:
-  -------------------
-  - Fixed several memory leaks (thanks to Stephen Agate for the bug report).
-
-  What's new in v1.2:
-  ------------------
-  - If you define the identifier NO_ASINH (see the beginning of fparser.cc),
-    then support for the functions asinh, acosh and atanh will be removed
-    (they are not part of the ANSI C standard and thus not supported by most
-    compilers).
-  - A tiny bug fixed.
-
-  What's new in v1.1:
-  ------------------
-  - Fixed bug that made a negated function (eg. "-sin(x)") crash.
+| - Variable names can now have digits and underscores (but they can't begin
+|   with a digit).
+| - Parsing speed optimizations. The Parse() method can be even 40% faster
+|   than in the previous version.
+|   (Please be aware that the new parser has not been thoroughly tested;
+|    bugs are possible.)
+| - A new "semi-undocumented" debugging function for printing the bytecode
+|   of the current function (in an asm-like syntax). Mostly useless from
+|   the user's point of view.
 
 
 
@@ -170,17 +99,17 @@ int Parse(const std::string& Function, const std::string& Vars);
 
     Parameters:
       Function: String containing the function to parse.
-|     Vars    : String containing the variable names, separated by commas.
-|               Eg. "x,y" or "VarX,VarY,VarZ,n".
+      Vars    : String containing the variable names, separated by commas.
+|               Eg. "x,y", "VarX,VarY,VarZ,n" or "x1,x2,x3,x4,__VAR__".
 
-|   Variables can have any size and they are case sensitive (ie. "var",
-|   "VAR" and "Var" are *different* variable names). Only lowercase and
-|   uppercase letters can be used as variable names. Each variable name
-|   can appear only once in the string. Function names are not legal variable
-|   names.
+    Variables can have any size and they are case sensitive (ie. "var",
+|   "VAR" and "Var" are *different* variable names). Letters, digits and
+|   underscores can be used in variable names, but the name of a variable
+|   can't begin with a digit. Each variable name can appear only once in
+|   the string. Function names are not legal variable names.
 
-|   Using longer variable names causes no overhead whatsoever to the Eval()
-|   method, so it's completely safe to use variable names of any size.
+    Using longer variable names causes no overhead whatsoever to the Eval()
+    method, so it's completely safe to use variable names of any size.
 
     Return values:
     -On success the function returns -1.
@@ -188,7 +117,7 @@ int Parse(const std::string& Function, const std::string& Vars);
      (0 is the first character, 1 the second, etc). If the error was not
      a parsing error returns an index to the end of the string + 1.
 
-|   Example: Parse("3*x+y", "x,y");
+    Example: parser.Parse("3*x+y", "x,y");
 
 
 const char* ErrorMsg(void) const;
@@ -217,7 +146,7 @@ double Eval(const double* Vars);
     Example:
 
       double Vars[] = {1, -2.5};
-      double result = Eval(Vars);
+      double result = parser.Eval(Vars);
 
 
 int EvalError(void) const;
@@ -268,14 +197,14 @@ or functions using the following operators in this order of precedence:
    A^B            exponentiation (A raised to the power B)
    A*B  A/B  A%B  multiplication, division and modulo
    A+B  A-B       addition and subtraction
-|  A=B  A<B  A>B  comparison between A and B (result is either 0 or 1)
-|  A&B            result is 1 if int(A) and int(B) differ from 0, else 0.
-|  A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
+   A=B  A<B  A>B  comparison between A and B (result is either 0 or 1)
+   A&B            result is 1 if int(A) and int(B) differ from 0, else 0.
+   A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
 
     Since the unary minus has higher precedence than any other operator, for
   example the following expression is valid: x*-y
-|   Note that the '=' comparison can be inaccurate due to floating point
-| precision problems (eg. "sqrt(100)=10" probably returns 0, not 1).
+    Note that the '=' comparison can be inaccurate due to floating point
+  precision problems (eg. "sqrt(100)=10" probably returns 0, not 1).
 
   The class supports these functions:
 
@@ -295,24 +224,24 @@ or functions using the following operators in this order of precedence:
   cos(A)   : Cosine of A. Returns the cosine of the angle A, where A is
              measured in radians.
   cosh(A)  : Same as cos() but for hyperbolic cosine.
-| eval(...): This a recursive call to the function to be evaluated. The
-|            number of parameters must be the same as the number of parameters
-|            taken by the function. Usually called inside if() to avoid
-|            infinite recursion.
+  eval(...): This a recursive call to the function to be evaluated. The
+             number of parameters must be the same as the number of parameters
+             taken by the function. Usually called inside if() to avoid
+             infinite recursion.
   exp(A)   : Exponential of A. Returns the value of e raised to the power
              A where e is the base of the natural logarithm, i.e. the
              non-repeating value approximately equal to 2.71828182846.
   floor(A) : Floor of A. Returns the largest integer less than A. Rounds
              down to the next lower integer.
-| if(A,B,C): If int(A) differs from 0, the return value of this function is B,
-|            else C. Only the parameter which needs to be evaluated is
-|            evaluated, the other parameter is skipped; this makes it safe to
-|            use eval() in them.
+  if(A,B,C): If int(A) differs from 0, the return value of this function is B,
+             else C. Only the parameter which needs to be evaluated is
+             evaluated, the other parameter is skipped; this makes it safe to
+             use eval() in them.
   int(A)   : Rounds A to the closest integer. 0.5 is rounded to 1.
   log(A)   : Natural logarithm of A. Returns the natural logarithm base e
              of the value A.
-| max(A,B) : If A>B, the result is A, else B.
-| min(A,B) : If A<B, the result is A, else B.
+  max(A,B) : If A>B, the result is A, else B.
+  min(A,B) : If A<B, the result is A, else B.
   sin(A)   : Sine of A. Returns the sine of the angle A, where A is
              measured in radians.
   sinh(A)  : Same as sin() but for hyperbolic sine.
@@ -327,25 +256,24 @@ or functions using the following operators in this order of precedence:
   "1+2"
   "x-1"
   "-sin(sqrt(x^2+y^2))"
-| "sqrt(XCoord*XCoord + YCoord*YCoord)"
+  "sqrt(XCoord*XCoord + YCoord*YCoord)"
 
-| An example of a recursive function is the factorial function:
+  An example of a recursive function is the factorial function:
 
-| "if(n>1, n*eval(n-1), 1)"
+  "if(n>1, n*eval(n-1), 1)"
 
-| Note that a recursive call has some overhead, which makes it a bit slower
-| than any other operation. It may be a good idea to avoid recursive functions
-| in very time-critical applications. Recursion also takes some memory, so
-| extremely deep recursions should be avoided (eg. millions of nested recursive
-| calls).
+  Note that a recursive call has some overhead, which makes it a bit slower
+  than any other operation. It may be a good idea to avoid recursive functions
+  in very time-critical applications. Recursion also takes some memory, so
+  extremely deep recursions should be avoided (eg. millions of nested recursive
+  calls).
 
-| Also note that the if() function is the only place where making a recursive
-| call is safe. In any other place it will cause an infinite recursion (which
-| will make the program eventually run out of memory). If this is something
-| which should be avoided, it may be a good idea to search the function
-| string for 'eval *\(' before giving it to the parser and discard that
-| function.
-| You can also disable eval() completely with the DISABLE_EVAL precompiler
+  Also note that the if() function is the only place where making a recursive
+  call is safe. In any other place it will cause an infinite recursion (which
+  will make the program eventually run out of memory). If this is something
+| which should be avoided, it may be a good idea to disable the eval()
+| function completely.
+| The eval() function can be disabled with the DISABLE_EVAL precompiler
 | constant (see the beginning of fparser.cc).
 
 

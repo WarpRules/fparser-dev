@@ -1,6 +1,6 @@
 /***************************************************************************\
-|* Function parser v2.22 by Warp                                           *|
-|* -----------------------------                                           *|
+|* Function parser v2.3 by Warp                                            *|
+|* ----------------------------                                            *|
 |* Parses and evaluates the given function with the given variable values. *|
 |*                                                                         *|
 \***************************************************************************/
@@ -10,6 +10,8 @@
 
 #include <string>
 #include <map>
+#include <vector>
+#include <iostream>
 
 class FunctionParser
 {
@@ -25,6 +27,9 @@ public:
     ~FunctionParser();
 
 
+
+    // For debugging purposes only:
+    void PrintByteCode(std::ostream& dest) const;
 
 //========================================================================
 private:
@@ -48,11 +53,16 @@ private:
         bool thisIsACopy;
     } Comp;
 
+    // Temp vectors for bytecode:
+    std::vector<unsigned>* tempByteCode;
+    std::vector<double>* tempImmed;
+
     VarMap_t::const_iterator FindVariable(const char*);
     int CheckSyntax(const char*);
     bool Compile(const char*);
     bool IsVariable(int);
     void AddCompiledByte(unsigned);
+    void AddImmediate(double);
     int CompileIf(const char*, int);
     int CompileElement(const char*, int);
     int CompilePow(const char*, int);

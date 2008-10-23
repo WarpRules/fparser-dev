@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.22 by Warp
+// Function parser v2.3 by Warp
 //===============================
 
 // Comment out the following line if your compiler supports the (non-standard)
@@ -19,86 +19,114 @@
 #include <cctype>
 #include <cmath>
 #include <new>
+#include <algorithm>
 
 using namespace std;
 
 namespace
 {
-    const char* const FuncNames[]=
-    {
-        "abs","exp","ceil","floor","log","sqrt","int",
-        "sinh","cosh","tanh","sin","cos","tan",
-#ifndef NO_ASINH
-        "asinh","acosh","atanh",
-#endif
-        "asin","acos","atan",
-        "min", "max", "if",
-#ifndef DISABLE_EVAL
-        "eval",
-#endif
-        0
-    };
-    const unsigned FuncParams[]=
-    {
-        1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1,
-#ifndef NO_ASINH
-        1, 1, 1,
-#endif
-        1, 1, 1,
-        2, 2, 0,
-#ifndef DISABLE_EVAL
-        0
-#endif
-    };
-
+// The functions must be in alphabetical order:
     enum OPCODE
     {
-        cImmed, cJump,
-        cNeg, cAdd, cSub, cMul, cDiv, cMod, cPow,
-        cEqual, cLess, cGreater, cAnd, cOr,
-        cAbs, cExp, cCeil, cFloor, cLog, cSqrt, cInt,
-        cSinh, cCosh, cTanh, cSin, cCos, cTan,
+        cAbs, cAcos,
 #ifndef NO_ASINH
-        cAsinh, cAcosh, cAtanh,
+        cAcosh,
 #endif
-        cAsin, cAcos, cAtan,
-        cMin, cMax, cIf,
+        cAsin,
+#ifndef NO_ASINH
+        cAsinh,
+#endif
+        cAtan,
+#ifndef NO_ASINH
+        cAtanh,
+#endif
+        cCeil, cCos, cCosh,
 #ifndef DISABLE_EVAL
         cEval,
 #endif
+        cExp, cFloor, cIf, cInt, cLog, cMax, cMin,
+        cSin, cSinh, cSqrt, cTan, cTanh,
+
+        cImmed, cJump,
+        cNeg, cAdd, cSub, cMul, cDiv, cMod, cPow,
+        cEqual, cLess, cGreater, cAnd, cOr,
+
         VarBegin
     };
 
     struct FuncDefinition
     {
+        const char* name;
+        unsigned nameLength;
         unsigned opcode;
         unsigned params;
 
-        inline FuncDefinition(unsigned o, unsigned p): opcode(o), params(p) {}
-        inline FuncDefinition(): opcode(0), params(1) {}
+        bool operator<(const FuncDefinition& rhs) const
+        {
+            for(unsigned i = 0; i < nameLength; ++i)
+            {
+                if(i == rhs.nameLength) return false;
+                const char c1 = name[i], c2 = rhs.name[i];
+                if(c1 < c2) return true;
+                if(c2 < c1) return false;
+            }
+            return nameLength < rhs.nameLength;
+        }
     };
 
-    typedef map<string, FuncDefinition> FuncMap_t;
-    FuncMap_t Functions;
 
-    template<typename MapType>
-    inline typename MapType::const_iterator
-    FindInMap(const MapType& Map, const char* F)
+// This list must be in alphabetical order:
+    const FuncDefinition Functions[]=
     {
-        unsigned ind = 0;
-        while(isalpha(F[ind])) ++ind;
-        if(ind)
+        { "abs", 3, cAbs, 1 },
+        { "acos", 4, cAcos, 1 },
+#ifndef NO_ASINH
+        { "acosh", 5, cAcosh, 1 },
+#endif
+        { "asin", 4, cAsin, 1 },
+#ifndef NO_ASINH
+        { "asinh", 5, cAsinh, 1 },
+#endif
+        { "atan", 4, cAtan, 1 },
+#ifndef NO_ASINH
+        { "atanh", 5, cAtanh, 1 },
+#endif
+        { "ceil", 4, cCeil, 1 },
+        { "cos", 3, cCos, 1 },
+        { "cosh", 4, cCosh, 1 },
+#ifndef DISABLE_EVAL
+        { "eval", 4, cEval, 0 },
+#endif
+        { "exp", 3, cExp, 1 },
+        { "floor", 5, cFloor, 1 },
+        { "if", 2, cIf, 0 },
+        { "int", 3, cInt, 1 },
+        { "log", 3, cLog, 1 },
+        { "max", 3, cMax, 2 },
+        { "min", 3, cMin, 2 },
+        { "sin", 3, cSin, 1 },
+        { "sinh", 4, cSinh, 1 },
+        { "sqrt", 4, cSqrt, 1 },
+        { "tan", 3, cTan, 1 },
+        { "tanh", 4, cTanh, 1 }
+    };
+
+    const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
+
+
+    inline const FuncDefinition* FindFunction(const char* F)
+    {
+        FuncDefinition func = { F, 0, 0, 0 };
+        while(isalpha(F[func.nameLength])) ++func.nameLength;
+        if(func.nameLength)
         {
-            string name(F, ind);
-            return Map.find(name);
+            const FuncDefinition* found =
+                lower_bound(Functions, Functions+FUNC_AMOUNT, func);
+            if(found == Functions+FUNC_AMOUNT || func < *found)
+                return 0;
+            return found;
         }
-        return Map.end();
-    }
-
-    inline FuncMap_t::const_iterator FindFunction(const char* F)
-    {
-        return FindInMap(Functions, F);
+        return 0;
     }
 };
 
@@ -108,27 +136,17 @@ namespace
 //===========================================================================
 FunctionParser::FunctionParser():
     ParseErrorType(-1), EvalErrorType(0)
-{
-    // Initialize function name map
-    if(Functions.size() == 0)
-    {
-        for(unsigned fInd = 0; FuncNames[fInd]; ++fInd)
-        {
-            Functions[FuncNames[fInd]] =
-                FuncDefinition(cAbs+fInd, FuncParams[fInd]);
-        }
-    }
-}
+{}
 
 // Copy constructor (only for private use)
 FunctionParser::FunctionParser(const FunctionParser& cpy):
     varAmount(cpy.varAmount),
     EvalErrorType(cpy.EvalErrorType),
     Comp(cpy.Comp)
-{
-}
+{}
 
-FunctionParser::~FunctionParser() {}
+FunctionParser::~FunctionParser()
+{}
 
 FunctionParser::CompiledCode::CompiledCode():
     ByteCode(0), ByteCodeSize(0),
@@ -142,8 +160,7 @@ FunctionParser::CompiledCode::CompiledCode(const CompiledCode& cpy):
     Immed(cpy.Immed), ImmedSize(cpy.ImmedSize),
     Stack(new double[cpy.StackSize]), StackSize(cpy.StackSize),
     thisIsACopy(true)
-{
-}
+{}
 
 FunctionParser::CompiledCode::~CompiledCode()
 {
@@ -174,35 +191,22 @@ namespace
         "Illegal number of parameters to function"  // 8
     };
 
-    // Return index to original string when the index is to the function
-    // with no whitespaces
-    inline int RealIndexPos(const string& s,int Pos)
-    {
-        int i, Ind=0;
-        for(i=0; i<Pos; i++,Ind++)
-            while(s[Ind]==' ') Ind++;
-        while(s[Ind]==' ') Ind++;
-        return Ind;
-    }
-
-    typedef map<string, unsigned> NameMap_t;
 
     // Parse variables
-    bool ParseVars(const string& Vars, NameMap_t& dest)
+    bool ParseVars(const string& Vars, map<string, unsigned>& dest)
     {
         unsigned varNumber = VarBegin;
         unsigned ind1 = 0, ind2;
 
         while(ind1 < Vars.size())
         {
-            for(ind2=ind1; ind2<Vars.size() && Vars[ind2]!=','; ++ind2)
-                if(!isalpha(Vars[ind2])) return false;
-            if(ind2 == ind1) return false;
+            if(!isalpha(Vars[ind1]) && Vars[ind1]!='_') return false;
+            for(ind2=ind1+1; ind2<Vars.size() && Vars[ind2]!=','; ++ind2)
+                if(!isalnum(Vars[ind2]) && Vars[ind2]!='_') return false;
             const string varName = Vars.substr(ind1, ind2-ind1);
 
-            NameMap_t::const_iterator iter = dest.find(varName);
-            if(iter != dest.end()) return false;
-            dest[varName] = varNumber++;
+            if(dest.insert(make_pair(varName, varNumber++)).second == false)
+                return false;
 
             ind1 = ind2+1;
         }
@@ -223,19 +227,12 @@ int FunctionParser::Parse(const std::string& Function,
     }
     varAmount = Variables.size(); // this is for Eval()
 
-    string tmp;
-    tmp.reserve(Function.size());
-    for(unsigned i=0; i<Function.size(); ++i)
-        if(!isspace(Function[i])) tmp += Function[i];
-    const char* Func = tmp.c_str();
+    const char* Func = Function.c_str();
 
     ParseErrorType = -1;
 
     int Result = CheckSyntax(Func);
-    if(Result>=0)
-    {
-        return RealIndexPos(Function, Result);
-    }
+    if(Result>=0) return Result;
 
     if(!Compile(Func)) return Function.size();
 
@@ -252,12 +249,25 @@ namespace
     {
         return strchr("+-*/%^=<>&|,",c)!=NULL;
     }
+
+    // skip whitespace
+    inline void sws(const char* F, int& Ind)
+    {
+        while(F[Ind] && F[Ind] == ' ') ++Ind;
+    }
 };
 
 inline FunctionParser::VarMap_t::const_iterator
 FunctionParser::FindVariable(const char* F)
 {
-    return FindInMap(Variables, F);
+    unsigned ind = 0;
+    while(isalnum(F[ind]) || F[ind] == '_') ++ind;
+    if(ind)
+    {   
+        string name(F, ind);
+        return Variables.find(name);
+    }
+    return Variables.end();
 }
 
 //---------------------------------------------------------------------------
@@ -265,36 +275,45 @@ FunctionParser::FindVariable(const char* F)
 // ----------------------------
 int FunctionParser::CheckSyntax(const char* Function)
 {
-    int Ind=0,ParenthCnt=0,c;
+    int Ind=0, ParenthCnt=0, c;
     char* Ptr;
 
     while(true)
     {
+        sws(Function, Ind);
         c=Function[Ind];
 
 // Check for valid operand (must appear)
 
         // Check for leading -
-        if(c=='-') c=Function[++Ind];
+        if(c=='-') { sws(Function, ++Ind); c=Function[Ind]; }
         if(c==0) { ParseErrorType=0; return Ind; }
 
         // Check for math function
-        FuncMap_t::const_iterator fIter = FindFunction(&Function[Ind]);
-        if(fIter != Functions.end())
+        const FuncDefinition* fptr = FindFunction(&Function[Ind]);
+        if(fptr)
         {
-            Ind += fIter->first.size();
+            Ind += fptr->nameLength;
+            sws(Function, Ind);
             c = Function[Ind];
             if(c!='(') { ParseErrorType=0; return Ind; }
         }
 
         // Check for opening parenthesis
-        if(c=='(') { ParenthCnt++; Ind++; continue; }
+        if(c=='(')
+        {
+            ++ParenthCnt;
+            sws(Function, ++Ind);
+            if(Function[Ind]==')') { ParseErrorType=3; return Ind; }
+            continue;
+        }
 
         // Check for number
         if(isdigit(c) || (c=='.' && isdigit(Function[Ind+1])))
         {
             strtod(&Function[Ind], &Ptr);
             Ind += int(Ptr-&Function[Ind]);
+            sws(Function, Ind);
             c = Function[Ind];
         }
         else
@@ -302,16 +321,16 @@ int FunctionParser::CheckSyntax(const char* Function)
             VarMap_t::const_iterator vIter = FindVariable(&Function[Ind]);
             if(vIter == Variables.end()) { ParseErrorType=0; return Ind; }
             Ind += vIter->first.size();
+            sws(Function, Ind);
             c = Function[Ind];
         }
 
         // Check for closing parenthesis
         while(c==')')
         {
-            ParenthCnt--;
-            if(ParenthCnt<0) { ParseErrorType=1; return Ind; }
-            if(Function[Ind-1]=='(') { ParseErrorType=3; return Ind; }
-            c=Function[++Ind];
+            if((--ParenthCnt)<0) { ParseErrorType=1; return Ind; }
+            sws(Function, ++Ind);
+            c=Function[Ind];
         }
 
 // If we get here, we have a legal operand and now a legal operator or
@@ -335,6 +354,7 @@ int FunctionParser::CheckSyntax(const char* Function)
     return -1;
 }
 
+
 // Compile function string to bytecode
 // -----------------------------------
 bool FunctionParser::Compile(const char* Function)
@@ -343,73 +363,82 @@ bool FunctionParser::Compile(const char* Function)
     if(Comp.Immed) { delete[] Comp.Immed; Comp.Immed=0; }
     if(Comp.Stack) { delete[] Comp.Stack; Comp.Stack=0; }
 
-// Compile to nowhere to get the size of the bytecode
-    Comp.ByteCodeSize=Comp.ImmedSize=Comp.StackSize=Comp.StackPtr=0;
+    vector<unsigned> byteCode; byteCode.reserve(1024);
+    tempByteCode = &byteCode;
+
+    vector<double> immed; immed.reserve(1024);
+    tempImmed = &immed;
+
+    Comp.StackSize = Comp.StackPtr = 0;
+
     CompileExpression(Function, 0);
     if(ParseErrorType >= 0) return false;
 
-    try
-    {
-        if(Comp.ByteCodeSize)
-            Comp.ByteCode = new unsigned[Comp.ByteCodeSize];
-        if(Comp.ImmedSize)
-            Comp.Immed = new double[Comp.ImmedSize];
-        if(Comp.StackSize)
-            Comp.Stack = new double[Comp.StackSize];
-    }
-    catch(std::bad_alloc)
-    {
-        ParseErrorType=5; return false;
-        // Already allocated memory blocks are freed in the destructor or when
-        // Parse() is called again, so no need to free them here
-    }
+    Comp.ByteCodeSize = byteCode.size();
+    Comp.ImmedSize = immed.size();
 
-// Compile
-    Comp.ByteCodeSize=Comp.ImmedSize=Comp.StackSize=Comp.StackPtr=0;
-    CompileExpression(Function, 0);
+    if(Comp.ByteCodeSize)
+    {
+        Comp.ByteCode = new unsigned[Comp.ByteCodeSize];
+        memcpy(Comp.ByteCode, &byteCode[0],
+               sizeof(unsigned)*Comp.ByteCodeSize);
+    }
+    if(Comp.ImmedSize)
+    {
+        Comp.Immed = new double[Comp.ImmedSize];
+        memcpy(Comp.Immed, &immed[0],
+               sizeof(double)*Comp.ImmedSize);
+    }
+    if(Comp.StackSize)
+        Comp.Stack = new double[Comp.StackSize];
 
-    return ParseErrorType < 0;
+    return true;
 }
+
 
 inline void FunctionParser::AddCompiledByte(unsigned c)
 {
-    if(Comp.ByteCode)
-        Comp.ByteCode[Comp.ByteCodeSize] = c;
-    ++Comp.ByteCodeSize;
+    tempByteCode->push_back(c);
+}
+
+inline void FunctionParser::AddImmediate(double i)
+{
+    tempImmed->push_back(i);
 }
 
 // Compile if()
 int FunctionParser::CompileIf(const char* F, int ind)
 {
     int ind2 = CompileExpression(F, ind, true); // condition
+    sws(F, ind2);
     if(F[ind2] != ',') { ParseErrorType=8; return ind2; }
     AddCompiledByte(cIf);
-    unsigned curByteCodeSize = Comp.ByteCodeSize;
+    unsigned curByteCodeSize = tempByteCode->size();
     AddCompiledByte(0); // Jump index; to be set later
     AddCompiledByte(0); // Immed jump index; to be set later
 
     --Comp.StackPtr;
 
     ind2 = CompileExpression(F, ind2+1, true); // then
+    sws(F, ind2);
     if(F[ind2] != ',') { ParseErrorType=8; return ind2; }
     AddCompiledByte(cJump);
-    unsigned curByteCodeSize2 = Comp.ByteCodeSize;
-    unsigned curImmedSize2 = Comp.ImmedSize;
+    unsigned curByteCodeSize2 = tempByteCode->size();
+    unsigned curImmedSize2 = tempImmed->size();
     AddCompiledByte(0); // Jump index; to be set later
     AddCompiledByte(0); // Immed jump index; to be set later
 
     --Comp.StackPtr;
 
     ind2 = CompileExpression(F, ind2+1, true); // else
+    sws(F, ind2);
     if(F[ind2] != ')') { ParseErrorType=8; return ind2; }
 
-    if(Comp.ByteCode) // Set jump indices
-    {
-        Comp.ByteCode[curByteCodeSize] = curByteCodeSize2+1;
-        Comp.ByteCode[curByteCodeSize+1] = curImmedSize2;
-        Comp.ByteCode[curByteCodeSize2] = Comp.ByteCodeSize-1;
-        Comp.ByteCode[curByteCodeSize2+1] = Comp.ImmedSize;
-    }
+    // Set jump indices
+    (*tempByteCode)[curByteCodeSize] = curByteCodeSize2+1;
+    (*tempByteCode)[curByteCodeSize+1] = curImmedSize2;
+    (*tempByteCode)[curByteCodeSize2] = tempByteCode->size()-1;
+    (*tempByteCode)[curByteCodeSize2+1] = tempImmed->size();
 
     return ind2+1;
 }
@@ -417,11 +446,14 @@ int FunctionParser::CompileIf(const char* F, int ind)
 // Compiles element
 int FunctionParser::CompileElement(const char* F, int ind)
 {
+    sws(F, ind);
     char c = F[ind];
 
     if(c == '(')
     {
-        return CompileExpression(F, ind+1) + 1;
+        ind = CompileExpression(F, ind+1);
+        sws(F, ind);
+        return ind+1; // F[ind] is ')'
     }
     else if(c == '-')
     {
@@ -435,24 +467,20 @@ int FunctionParser::CompileElement(const char* F, int ind)
         const char* startPtr = &F[ind];
         char* endPtr;
         double val = strtod(startPtr, &endPtr);
-        if(Comp.Immed)
-            Comp.Immed[Comp.ImmedSize] = val;
-        ++Comp.ImmedSize;
+        AddImmediate(val);
         AddCompiledByte(cImmed);
         ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
         return ind+(endPtr-startPtr);
     }
 
-    if(isalpha(c)) // Function or variable
+    if(isalpha(c) || c == '_') // Function or variable
     {
-        int ind2 = ind+1;
-        while(isalpha(F[ind2])) ++ind2;
-        string name(F+ind, ind2-ind);
-
-        FuncMap_t::const_iterator fIter = Functions.find(name);
-        if(fIter != Functions.end()) // is function
+        const FuncDefinition* func = FindFunction(F+ind);
+        if(func) // is function
         {
-            if(fIter->first == "if") // "if" is a special case
+            int ind2 = ind + func->nameLength;
+            sws(F, ind2); // F[ind2] is '('
+            if(strcmp(func->name, "if") == 0) // "if" is a special case
             {
                 return CompileIf(F, ind2+1);
             }
@@ -462,19 +490,21 @@ int FunctionParser::CompileElement(const char* F, int ind)
 
 #ifndef DISABLE_EVAL
             unsigned requiredParams =
-                fIter->first=="eval" ? Variables.size() : fIter->second.params;
+                strcmp(func->name, "eval") == 0 ?
+                Variables.size() : func->params;
 #else
-            unsigned requiredParams = fIter->second.params;
+            unsigned requiredParams = func->params;
 #endif
             if(Comp.StackPtr != curStackPtr+requiredParams)
             { ParseErrorType=8; return ind; }
 
-            AddCompiledByte(fIter->second.opcode);
-            Comp.StackPtr -= fIter->second.params - 1;
-            return ind2+1;
+            AddCompiledByte(func->opcode);
+            Comp.StackPtr -= func->params - 1;
+            sws(F, ind2);
+            return ind2+1; // F[ind2] is ')'
         }
 
-        VarMap_t::const_iterator vIter = Variables.find(name);
+        VarMap_t::const_iterator vIter = FindVariable(F+ind);
         if(vIter != Variables.end()) // is variable
         {
             AddCompiledByte(vIter->second);
@@ -491,10 +521,12 @@ int FunctionParser::CompileElement(const char* F, int ind)
 int FunctionParser::CompilePow(const char* F, int ind)
 {
     int ind2 = CompileElement(F, ind);
+    sws(F, ind2);
 
     while(F[ind2] == '^')
     {
         ind2 = CompileElement(F, ind2+1);
+        sws(F, ind2);
         AddCompiledByte(cPow);
         --Comp.StackPtr;
     }
@@ -506,11 +538,13 @@ int FunctionParser::CompilePow(const char* F, int ind)
 int FunctionParser::CompileMult(const char* F, int ind)
 {
     int ind2 = CompilePow(F, ind);
+    sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '*' || op == '/' || op == '%')
     {
         ind2 = CompilePow(F, ind2+1);
+        sws(F, ind2);
         switch(op)
         {
           case '*': AddCompiledByte(cMul); break;
@@ -527,11 +561,13 @@ int FunctionParser::CompileMult(const char* F, int ind)
 int FunctionParser::CompileAddition(const char* F, int ind)
 {
     int ind2 = CompileMult(F, ind);
+    sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '+' || op == '-')
     {
         ind2 = CompileMult(F, ind2+1);
+        sws(F, ind2);
         AddCompiledByte(op=='+' ? cAdd : cSub);
         --Comp.StackPtr;
     }
@@ -543,11 +579,13 @@ int FunctionParser::CompileAddition(const char* F, int ind)
 int FunctionParser::CompileComparison(const char* F, int ind)
 {
     int ind2 = CompileAddition(F, ind);
+    sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '=' || op == '<' || op == '>')
     {
         ind2 = CompileAddition(F, ind2+1);
+        sws(F, ind2);
         switch(op)
         {
           case '=': AddCompiledByte(cEqual); break;
@@ -564,10 +602,12 @@ int FunctionParser::CompileComparison(const char* F, int ind)
 int FunctionParser::CompileAnd(const char* F, int ind)
 {
     int ind2 = CompileComparison(F, ind);
+    sws(F, ind2);
 
     while(F[ind2] == '&')
     {
         ind2 = CompileComparison(F, ind2+1);
+        sws(F, ind2);
         AddCompiledByte(cAnd);
         --Comp.StackPtr;
     }
@@ -579,10 +619,12 @@ int FunctionParser::CompileAnd(const char* F, int ind)
 int FunctionParser::CompileOr(const char* F, int ind)
 {
     int ind2 = CompileAnd(F, ind);
+    sws(F, ind2);
 
     while(F[ind2] == '|')
     {
         ind2 = CompileAnd(F, ind2+1);
+        sws(F, ind2);
         AddCompiledByte(cOr);
         --Comp.StackPtr;
     }
@@ -594,12 +636,14 @@ int FunctionParser::CompileOr(const char* F, int ind)
 int FunctionParser::CompileExpression(const char* F, int ind, bool stopAtComma)
 {
     int ind2 = CompileOr(F, ind);
+    sws(F, ind2);
 
     if(stopAtComma) return ind2;
 
     while(F[ind2] == ',')
     {
         ind2 = CompileOr(F, ind2+1);
+        sws(F, ind2);
     }
 
     return ind2;
@@ -644,12 +688,76 @@ double FunctionParser::Eval(const double* Vars)
     {
         switch(Comp.ByteCode[IP])
         {
-          case cImmed: Comp.Stack[++SP]=Comp.Immed[DP++]; break;
+// Functions:
+          case   cAbs: Comp.Stack[SP]=fabs(Comp.Stack[SP]); break;
+          case  cAcos: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
+                       { EvalErrorType=4; return 0; }
+                       Comp.Stack[SP]=acos(Comp.Stack[SP]); break;
+#ifndef NO_ASINH
+          case cAcosh: Comp.Stack[SP]=acosh(Comp.Stack[SP]); break;
+#endif
+          case  cAsin: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
+                       { EvalErrorType=4; return 0; }
+                       Comp.Stack[SP]=asin(Comp.Stack[SP]); break;
+#ifndef NO_ASINH
+          case cAsinh: Comp.Stack[SP]=asinh(Comp.Stack[SP]); break;
+#endif
+          case  cAtan: Comp.Stack[SP]=atan(Comp.Stack[SP]); break;
+#ifndef NO_ASINH
+          case cAtanh: Comp.Stack[SP]=atanh(Comp.Stack[SP]); break;
+#endif
+          case  cCeil: Comp.Stack[SP]=ceil(Comp.Stack[SP]); break;
+          case   cCos: Comp.Stack[SP]=cos(Comp.Stack[SP]); break;
+          case  cCosh: Comp.Stack[SP]=cosh(Comp.Stack[SP]); break;
 
+#ifndef DISABLE_EVAL
+          case  cEval:
+              {
+                  FunctionParser fpcopy(*this);
+                  double retVal = fpcopy.Eval(&Comp.Stack[SP-varAmount+1]);
+                  SP -= varAmount-1;
+                  Comp.Stack[SP] = retVal;
+                  break;
+              }
+#endif
+
+          case   cExp: Comp.Stack[SP]=exp(Comp.Stack[SP]); break;
+          case cFloor: Comp.Stack[SP]=floor(Comp.Stack[SP]); break;
+
+          case    cIf:
+              {
+                  unsigned jumpAddr = Comp.ByteCode[++IP];
+                  unsigned immedAddr = Comp.ByteCode[++IP];
+                  if(doubleToInt(Comp.Stack[SP]) == 0)
+                  {
+                      IP = jumpAddr;
+                      DP = immedAddr;
+                  }
+                  SP--; break;
+              }
+
+          case   cInt: Comp.Stack[SP]=floor(Comp.Stack[SP]+.5); break;
+          case   cLog: if(Comp.Stack[SP]<=0) { EvalErrorType=3; return 0; }
+                       Comp.Stack[SP]=log(Comp.Stack[SP]); break;
+          case   cMax: Comp.Stack[SP-1]=Max(Comp.Stack[SP-1],Comp.Stack[SP]);
+                       SP--; break;
+          case   cMin: Comp.Stack[SP-1]=Min(Comp.Stack[SP-1],Comp.Stack[SP]);
+                       SP--; break;
+          case   cSin: Comp.Stack[SP]=sin(Comp.Stack[SP]); break;
+          case  cSinh: Comp.Stack[SP]=sinh(Comp.Stack[SP]); break;
+          case  cSqrt: if(Comp.Stack[SP]<0) { EvalErrorType=2; return 0; }
+                       Comp.Stack[SP]=sqrt(Comp.Stack[SP]); break;
+          case  cTanh: Comp.Stack[SP]=tanh(Comp.Stack[SP]); break;
+          case   cTan: Comp.Stack[SP]=tan(Comp.Stack[SP]); break;
+
+
+// Misc:
+          case cImmed: Comp.Stack[++SP]=Comp.Immed[DP++]; break;
           case  cJump: DP = Comp.ByteCode[IP+2];
                        IP = Comp.ByteCode[IP+1];
                        break;
 
+// Operators:
           case   cNeg: Comp.Stack[SP]=-Comp.Stack[SP]; break;
           case   cAdd: Comp.Stack[SP-1]+=Comp.Stack[SP]; SP--; break;
           case   cSub: Comp.Stack[SP-1]-=Comp.Stack[SP]; SP--; break;
@@ -677,61 +785,8 @@ double FunctionParser::Eval(const double* Vars)
                             doubleToInt(Comp.Stack[SP]));
                        SP--; break;
 
-          case   cAbs: Comp.Stack[SP]=fabs(Comp.Stack[SP]); break;
-          case   cExp: Comp.Stack[SP]=exp(Comp.Stack[SP]); break;
-          case  cCeil: Comp.Stack[SP]=ceil(Comp.Stack[SP]); break;
-          case cFloor: Comp.Stack[SP]=floor(Comp.Stack[SP]); break;
-          case   cLog: if(Comp.Stack[SP]<=0) { EvalErrorType=3; return 0; }
-                       Comp.Stack[SP]=log(Comp.Stack[SP]); break;
-          case  cSqrt: if(Comp.Stack[SP]<0) { EvalErrorType=2; return 0; }
-                       Comp.Stack[SP]=sqrt(Comp.Stack[SP]); break;
-          case   cInt: Comp.Stack[SP]=doubleToInt(Comp.Stack[SP]); break;
-          case  cSinh: Comp.Stack[SP]=sinh(Comp.Stack[SP]); break;
-          case  cCosh: Comp.Stack[SP]=cosh(Comp.Stack[SP]); break;
-          case  cTanh: Comp.Stack[SP]=tanh(Comp.Stack[SP]); break;
-          case   cSin: Comp.Stack[SP]=sin(Comp.Stack[SP]); break;
-          case   cCos: Comp.Stack[SP]=cos(Comp.Stack[SP]); break;
-          case   cTan: Comp.Stack[SP]=tan(Comp.Stack[SP]); break;
-#ifndef NO_ASINH
-          case cAsinh: Comp.Stack[SP]=asinh(Comp.Stack[SP]); break;
-          case cAcosh: Comp.Stack[SP]=acosh(Comp.Stack[SP]); break;
-          case cAtanh: Comp.Stack[SP]=atanh(Comp.Stack[SP]); break;
-#endif
-          case  cAsin: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
-                       { EvalErrorType=4; return 0; }
-                       Comp.Stack[SP]=asin(Comp.Stack[SP]); break;
-          case  cAcos: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
-                       { EvalErrorType=4; return 0; }
-                       Comp.Stack[SP]=acos(Comp.Stack[SP]); break;
-          case  cAtan: Comp.Stack[SP]=atan(Comp.Stack[SP]); break;
 
-          case   cMin: Comp.Stack[SP-1]=Min(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
-          case   cMax: Comp.Stack[SP-1]=Max(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
-          case    cIf:
-              {
-                  unsigned jumpAddr = Comp.ByteCode[++IP];
-                  unsigned immedAddr = Comp.ByteCode[++IP];
-                  if(doubleToInt(Comp.Stack[SP]) == 0)
-                  {
-                      IP = jumpAddr;
-                      DP = immedAddr;
-                  }
-                  SP--; break;
-              }
-
-#ifndef DISABLE_EVAL
-          case  cEval:
-              {
-                  FunctionParser fpcopy(*this);
-                  double retVal = fpcopy.Eval(&Comp.Stack[SP-varAmount+1]);
-                  SP -= varAmount-1;
-                  Comp.Stack[SP] = retVal;
-                  break;
-              }
-#endif
-
+// Variables:
           default:
               Comp.Stack[++SP]=Vars[Comp.ByteCode[IP]-VarBegin];
         }
@@ -739,4 +794,68 @@ double FunctionParser::Eval(const double* Vars)
 
     EvalErrorType=0;
     return Comp.Stack[SP];
+}
+
+
+void FunctionParser::PrintByteCode(std::ostream& dest) const
+{
+    for(unsigned IP=0, DP=0; IP<Comp.ByteCodeSize; IP++)
+    {
+        dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
+        dest << IP << ": ";
+
+        unsigned opcode = Comp.ByteCode[IP];
+
+        if(opcode == cIf)
+        {
+            dest << "jz\t";
+            dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
+            dest << Comp.ByteCode[IP+1]+1 << endl;
+            IP += 2;
+        }
+        else if(opcode == cEval)
+        {
+            dest << "call\t0" << endl;
+        }
+        else if(/*opcode >= cAbs &&*/ opcode <= cTanh)
+        {
+            dest << Functions[opcode-cAbs].name << endl;
+        }
+        else if(opcode == cImmed)
+        {
+            dest.precision(10);
+            dest << "push\t" << Comp.Immed[DP++] << endl;
+        }
+        else if(opcode == cJump)
+        {
+            dest << "jump\t";
+            dest.width(8); dest.fill('0'); hex(dest); uppercase(dest);
+            dest << Comp.ByteCode[IP+1]+1 << endl;
+            IP += 2;
+        }
+        else if(opcode < VarBegin)
+        {
+            string n;
+            switch(opcode)
+            {
+              case cNeg: n = "neg"; break;
+              case cAdd: n = "add"; break;
+              case cSub: n = "sub"; break;
+              case cMul: n = "mul"; break;
+              case cDiv: n = "div"; break;
+              case cMod: n = "mod"; break;
+              case cPow: n = "pow"; break;
+              case cEqual: n = "eq"; break;
+              case cLess: n = "lt"; break;
+              case cGreater: n = "gt"; break;
+              case cAnd: n = "and"; break;
+              case cOr: n = "or"; break;
+            }
+            dest << n << endl;
+        }
+        else
+        {
+            dest << "push\tVar" << opcode-VarBegin << endl;
+        }
+    }    
 }
