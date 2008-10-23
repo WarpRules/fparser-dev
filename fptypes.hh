@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.83 by Warp
+// Function parser v2.84 by Warp
 //===============================
 
 // NOTE:
@@ -15,20 +15,20 @@ namespace FUNCTIONPARSERTYPES
     enum OPCODE
     {
         cAbs, cAcos,
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         cAcosh,
 #endif
         cAsin,
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         cAsinh,
 #endif
         cAtan,
         cAtan2,
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         cAtanh,
 #endif
         cCeil, cCos, cCosh, cCot, cCsc,
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
         cEval,
 #endif
         cExp, cFloor, cIf, cInt, cLog, cLog10, cMax, cMin,
@@ -44,7 +44,7 @@ namespace FUNCTIONPARSERTYPES
 
         cFCall, cPCall,
 
-#ifdef SUPPORT_OPTIMIZER
+#ifdef FP_SUPPORT_OPTIMIZER
         cVar, cDup, cInv,
 #endif
 
@@ -79,16 +79,16 @@ namespace FUNCTIONPARSERTYPES
     {
         { "abs", 3, cAbs, 1 },
         { "acos", 4, cAcos, 1 },
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         { "acosh", 5, cAcosh, 1 },
 #endif
         { "asin", 4, cAsin, 1 },
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         { "asinh", 5, cAsinh, 1 },
 #endif
         { "atan", 4, cAtan, 1 },
         { "atan2", 5, cAtan2, 2 },
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         { "atanh", 5, cAtanh, 1 },
 #endif
         { "ceil", 4, cCeil, 1 },
@@ -96,7 +96,7 @@ namespace FUNCTIONPARSERTYPES
         { "cosh", 4, cCosh, 1 },
         { "cot", 3, cCot, 1 },
         { "csc", 3, cCsc, 1 },
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
         { "eval", 4, cEval, 0 },
 #endif
         { "exp", 3, cExp, 1 },

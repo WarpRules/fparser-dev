@@ -1,4 +1,4 @@
-  Function parser for C++  v2.83 by Warp.
+  Function parser for C++  v2.84 by Warp.
   ======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
@@ -6,6 +6,23 @@
 
   The usage license of this library is located at the end of this text file.
 
+
+  What's new in v2.84
+  -------------------
+  - Changed all precompiler constant names to have the FP_ prefix, to make
+    them more consistent and lessen the danger of name collisions. (This
+    breaks backwards compatibility.) Also added support for all the compiling
+    options to be configurable without having to modify the fpconfig.hh file.
+    Consult the documentation about conditional compiling below.
+  - Made FP_DISABLE_EVAL to be defined by default (previously it was undefined
+    by default). The "eval()" function is way too dangerous and rarely useful,
+    so it's better for it to be disabled by default.
+  - If another function parser was given to a parser with AddFunction(), and
+    during evaluation that other parser produced an eval error, the calling
+    parser would ignore it. Now the calling parser will return the same eval
+    error (and 0 as the return value of the function).
+  - Fixed a bug in the optimizer which caused things like "max(0, min(-2,0))"
+    to be wrongly optimized (the return value was wrong).
 
   What's new in v2.83
   -------------------
@@ -83,37 +100,36 @@ SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
     There is a set of precompiler options in the fpconfig.hh file
   which can be used for setting certain features on or off:
 
-  NO_ASINH : (Default on)
+  FP_NO_ASINH : (Default on)
        By default the library does not support the asinh(), acosh()
        and atanh() functions because they are not part of the ISO C++
        standard. If your compiler supports them and you want the
        parser to support them as well, comment out this line.
+       Alternatively you can define the FP_SUPPORT_ASINH precompiler
+       constant in your compiler settings to turn on the support
+       (eg. with -DFP_SUPPORT_ASINH in gcc).
 
-  DISABLE_EVAL : (Default off)
+  FP_DISABLE_EVAL : (Default on)
        Even though the maximum recursion level of the eval() function
        is limited, it is still possible to write functions which never
        reach this maximum recursion level but take enormous amounts of
        time to evaluate (this can be undesirable eg. in web server-side
-       applications).
-       Uncommenting this line will disable the eval() function completely,
-       thus removing the danger of exploitation.
+       applications). For this reason this function is disabled by default.
+       You can add support for the eval() function by uncommenting this
+       line or, alternatively, you can define the FP_ENABLE_EVAL precompiler
+       constant in your compiler settings.
 
-       Note that you can also disable eval() by specifying the
-       DISABLE_EVAL precompiler constant in your compiler (eg.
-       with -DDISABLE_EVAL in gcc).
-
-  EVAL_MAX_REC_LEVEL : (Default 1000)
+  FP_EVAL_MAX_REC_LEVEL : (Default 1000)
        Sets the maximum recursion level allowed for eval().
 
-  SUPPORT_OPTIMIZER : (Default on)
+  FP_SUPPORT_OPTIMIZER : (Default on)
        If you are not going to use the Optimize() method, you can comment
        this line out to speed-up the compilation of fparser.cc a bit, as
        well as making the binary a bit smaller. (Optimize() can still be
        called, but it will not do anything.)
 
        You can also disable the optimizer by specifying the
-       NO_SUPPORT_OPTIMIZER precompiler constant in your compiler
-       (eg. with -DNO_SUPPORT_OPTIMIZER in gcc).
+       FP_NO_SUPPORT_OPTIMIZER precompiler constant in your compiler.
 
   FP_EPSILON : (Default 1e-14)
        Epsilon value used in comparison operators.

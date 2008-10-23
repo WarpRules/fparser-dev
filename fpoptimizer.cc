@@ -1,22 +1,22 @@
 //============================================
-// Function parser v2.82 optimizer by Bisqwit
+// Function parser v2.84 optimizer by Bisqwit
 //============================================
 
 /*
  NOTE!
  ----
- Everything that goes into the #ifndef SUPPORT_OPTIMIZER part
- (ie. when SUPPORT_OPTIMIZER is not defined) should be put in
+ Everything that goes into the #ifndef FP_SUPPORT_OPTIMIZER part
+ (ie. when FP_SUPPORT_OPTIMIZER is not defined) should be put in
  the end of fparser.cc file, not in this file.
 
- Everything in this file should be inside the #ifdef SUPPORT_OPTIMIZER
+ Everything in this file should be inside the #ifdef FP_SUPPORT_OPTIMIZER
  block (except the #include "fpconfig.hh" line).
 */
 
 
 #include "fpconfig.hh"
 
-#ifdef SUPPORT_OPTIMIZER
+#ifdef FP_SUPPORT_OPTIMIZER
 
 #include "fparser.hh"
 #include "fptypes.hh"
@@ -305,7 +305,7 @@ private:
         double value;
         unsigned size() const { return cp.size(); }
     };
-    struct ConstList BuildConstList();
+    struct ConstList BuildConstList(bool has_voidvalue = true);
     void KillConst(const ConstList &cl)
     {
         for(list<pit>::const_iterator i=cl.cp.begin(); i!=cl.cp.end(); ++i)
@@ -555,7 +555,7 @@ private:
             case cMin:
             case cMax:
             {
-                ConstList cl = BuildConstList();
+                ConstList cl = BuildConstList(false);
                 FinishConst(cl, false); // No "default" value
                 break;
             }
@@ -1276,16 +1276,16 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         
         case cAbs: str << "cAbs"; break;
         case cAcos: str << "cAcos"; break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         case cAcosh: str << "cAcosh"; break;
 #endif
         case cAsin: str << "cAsin"; break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         case cAsinh: str << "cAsinh"; break;
 #endif
         case cAtan: str << "cAtan"; break;
         case cAtan2: str << "cAtan2"; break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
         case cAtanh: str << "cAtanh"; break;
 #endif
         case cCeil: str << "cCeil"; break;
@@ -1293,7 +1293,7 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         case cCosh: str << "cCosh"; break;
         case cCot: str << "cCot"; break;
         case cCsc: str << "cCsc"; break;
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
         case cEval: str << "cEval"; break;
 #endif
         case cExp: str << "cExp"; break;
@@ -1364,7 +1364,7 @@ void CodeTreeDataPtr::Shock()
  */
 }
 
-CodeTree::ConstList CodeTree::BuildConstList()
+CodeTree::ConstList CodeTree::BuildConstList(bool has_voidvalue)
 {
     ConstList result;
     result.value     =
@@ -1379,7 +1379,7 @@ CodeTree::ConstList CodeTree::BuildConstList()
         if(!pa->IsImmed()) continue;
 
         double thisvalue = pa->GetImmed();
-        if(thisvalue == result.voidvalue)
+        if(has_voidvalue && thisvalue == result.voidvalue)
         {
             // This value is no good, forget it
             Erase(a);
@@ -1948,7 +1948,7 @@ void FunctionParser::MakeTree(void *r) const
                     //const FuncDefinition& func = Functions[opcode-cAbs];
 
                     unsigned paramcount = func.params;
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
                     if(opcode == cEval) paramcount = data->varAmount;
 #endif
                     if(opcode == cSqrt)
@@ -2091,4 +2091,4 @@ void FunctionParser::Optimize()
 }
 
 
-#endif // #ifdef SUPPORT_OPTIMIZER
+#endif // #ifdef FP_SUPPORT_OPTIMIZER

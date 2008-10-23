@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.83 by Warp
+// Function parser v2.84 by Warp
 //===============================
 
 #include "fpconfig.hh"
@@ -680,7 +680,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         switch(opcode)
         {
           case cAcos:
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
           case cAcosh:
           case cAsinh:
           case cAtanh:
@@ -794,7 +794,7 @@ int FunctionParser::CompileElement(const char* F, int ind)
                 return CompileIf(F, ind2+1);
             }
 
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
             unsigned requiredParams =
                 strcmp(func->name, "eval") == 0 ?
                 data->Variables.size() : func->params;
@@ -1136,19 +1136,19 @@ double FunctionParser::Eval(const double* Vars)
           case  cAcos: if(Stack[SP] < -1 || Stack[SP] > 1)
                        { evalErrorType=4; return 0; }
                        Stack[SP] = acos(Stack[SP]); break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
           case cAcosh: Stack[SP] = acosh(Stack[SP]); break;
 #endif
           case  cAsin: if(Stack[SP] < -1 || Stack[SP] > 1)
                        { evalErrorType=4; return 0; }
                        Stack[SP] = asin(Stack[SP]); break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
           case cAsinh: Stack[SP] = asinh(Stack[SP]); break;
 #endif
           case  cAtan: Stack[SP] = atan(Stack[SP]); break;
           case cAtan2: Stack[SP-1] = atan2(Stack[SP-1], Stack[SP]);
                        --SP; break;
-#ifndef NO_ASINH
+#ifndef FP_NO_ASINH
           case cAtanh: Stack[SP] = atanh(Stack[SP]); break;
 #endif
           case  cCeil: Stack[SP] = ceil(Stack[SP]); break;
@@ -1169,11 +1169,11 @@ double FunctionParser::Eval(const double* Vars)
               }
 
 
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
           case  cEval:
               {
                   double retVal = 0;
-                  if(evalRecursionLevel == EVAL_MAX_REC_LEVEL)
+                  if(evalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
                   {
                       evalErrorType = 5;
                   }
@@ -1318,11 +1318,17 @@ double FunctionParser::Eval(const double* Vars)
                       data->FuncParsers[index]->Eval(&Stack[SP-params+1]);
                   SP -= int(params)-1;
                   Stack[SP] = retVal;
+                  const int error = data->FuncParsers[index]->EvalError();
+                  if(error)
+                  {
+                      evalErrorType = error;
+                      return 0;
+                  }
                   break;
               }
 
 
-#ifdef SUPPORT_OPTIMIZER
+#ifdef FP_SUPPORT_OPTIMIZER
           case   cVar: break; // Paranoia. These should never exist
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
           case   cInv:
@@ -1436,11 +1442,11 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cDeg: n = "deg"; break;
                     case cRad: n = "rad"; break;
 
-#ifndef DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
                     case cEval: n = "call\t0"; break;
 #endif
 
-#ifdef SUPPORT_OPTIMIZER
+#ifdef FP_SUPPORT_OPTIMIZER
                     case cVar: n = "(var)"; break;
                     case cDup: n = "dup"; break;
                     case cInv: n = "inv"; break;
@@ -1466,7 +1472,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 
 
 
-#ifndef SUPPORT_OPTIMIZER
+#ifndef FP_SUPPORT_OPTIMIZER
 void FunctionParser::MakeTree(void *) const {}
 void FunctionParser::Optimize()
 {
