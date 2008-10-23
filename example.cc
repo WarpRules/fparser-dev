@@ -1,7 +1,7 @@
 // Simple example file for the function parser
 // ===========================================
 
-/* Try for example with these values:
+/* When running the program, try for example with these values:
 
 f(x) = x^2
 min x: -5
