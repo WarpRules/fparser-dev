@@ -1,5 +1,5 @@
-  Function parser for C++  v2.63 by Warp.
-  ======================================
+  Function parser for C++  v2.7 by Warp.
+  =====================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
 
@@ -8,30 +8,22 @@
 
 
 
-  What's new in v2.63
-  -------------------
-  - Some tiny fixes to make the library more compatible with BCB4.
-
-  What's new in v2.62
-  -------------------
-  - Only an addition to the usage license. (Please read it.)
-
-  What's new in v2.61
-  -------------------
-  - Tiny bug fix: Tabs and carriage returns now allowed in the function
-    string.
-
-  What's new in v2.6
-  -------------------
-  - Added a new method: GetParseErrorType(). This method can be used to
-    get the type of parsing error (which can be used eg. for customized
-    error messages in another language).
-  - Added working copy constructor and assignment operator (using the
-    copy-on-write technique for efficiency). See the "Usage" section for
-    details.
-  - Fixed a problem with the comma operator (,): Comma is not allowed
-    anymore anywhere else than separating function parameters. In other
-    words, comma is not an operator anymore (just a parameter separator).
+  What's new in v2.7
+  ------------------
+  - Changed precedence rules for unary minus and the power operator (^) to
+    make it closer in functionality to the power "operator" in mathematics
+    (ie. superscript):
+    * Consecutive power operators at the same precedence level are
+      evaluated from right to left. That is, for example "2^3^4" is
+      now evaluated as if it had been written as "2^(3^4)" (and not
+      as "(2^3)^4" like in previous versions).
+    * The unary minus in the base of the power has now a lower precedence
+      than the power operator. That is, "-2^3" will be evaluated as if
+      written as "-(2^3)", ie. the result is "-8" (and not "8" like in
+      previous versions). The unary minus in the exponent is still
+      evaluated first because of the right-left precedence change above
+      (that is, "-2^-3" is evaluated as "-(2^(-3))").
+  - Fixed a bug in the copy-on-write engine.
 
 
 

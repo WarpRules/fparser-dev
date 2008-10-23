@@ -1,6 +1,6 @@
-//===============================
-// Function parser v2.63 by Warp
-//===============================
+//==============================
+// Function parser v2.7 by Warp
+//==============================
 
 // Comment out the following line if your compiler supports the (non-standard)
 // asinh, acosh and atanh functions and you want them to be supported. If
@@ -226,7 +226,7 @@ FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
 {
     if(data != cpy.data)
     {
-        delete data;
+        if(--(data->referenceCounter) == 0) delete data;
 
         parseErrorType = cpy.parseErrorType;
         evalErrorType = cpy.evalErrorType;
@@ -785,18 +785,8 @@ int FunctionParser::CompileElement(const char* F, int ind)
         sws(F, ind);
         return ind+1; // F[ind] is ')'
     }
-    else if(c == '-')
-    {
-        char c2 = F[ind+1];
-        if(!isdigit(c2) && c2!='.')
-        {
-            int ind2 = CompileElement(F, ind+1);
-            AddCompiledByte(cNeg);
-            return ind2;
-        }
-    }
 
-    if(isdigit(c) || c=='.' || c=='-') // Number
+    if(isdigit(c) || c=='.' /*|| c=='-'*/) // Number
     {
         const char* startPtr = &F[ind];
         char* endPtr;
@@ -896,7 +886,7 @@ int FunctionParser::CompilePow(const char* F, int ind)
 
     while(F[ind2] == '^')
     {
-        ind2 = CompileElement(F, ind2+1);
+        ind2 = CompileUnaryMinus(F, ind2+1);
         sws(F, ind2);
         AddCompiledByte(cPow);
         --StackPtr;
@@ -905,16 +895,46 @@ int FunctionParser::CompilePow(const char* F, int ind)
     return ind2;
 }
 
+// Compiles unary '-'
+int FunctionParser::CompileUnaryMinus(const char* F, int ind)
+{
+    sws(F, ind);
+    if(F[ind] == '-')
+    {
+        int ind2 = ind+1;
+        sws(F, ind2);
+        ind2 = CompilePow(F, ind2);
+        sws(F, ind2);
+
+        // if we are negating a constant, negate the constant itself:
+        if(tempByteCode->back() == cImmed)
+            tempImmed->back() = -tempImmed->back();
+
+        // if we are negating a negation, we can remove both:
+        else if(tempByteCode->back() == cNeg)
+            tempByteCode->pop_back();
+
+        else
+            AddCompiledByte(cNeg);
+
+        return ind2;
+    }
+
+    int ind2 = CompilePow(F, ind);
+    sws(F, ind2);
+    return ind2;
+}
+
 // Compiles '*', '/' and '%'
 int FunctionParser::CompileMult(const char* F, int ind)
 {
-    int ind2 = CompilePow(F, ind);
+    int ind2 = CompileUnaryMinus(F, ind);
     sws(F, ind2);
     char op;
 
     while((op = F[ind2]) == '*' || op == '/' || op == '%')
     {
-        ind2 = CompilePow(F, ind2+1);
+        ind2 = CompileUnaryMinus(F, ind2+1);
         sws(F, ind2);
         switch(op)
         {
@@ -1244,6 +1264,7 @@ double FunctionParser::Eval(const double* Vars)
 }
 
 
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 namespace
 {
     inline void printHex(std::ostream& dest, unsigned n)
@@ -1252,7 +1273,6 @@ namespace
         dest << n;
     }
 }
-
 
 void FunctionParser::PrintByteCode(std::ostream& dest) const
 {
@@ -1348,7 +1368,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
         }
     }
 }
-
+#endif
 
 
 //========================================================================
