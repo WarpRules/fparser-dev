@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.51 by Warp
+// Function parser v2.63 by Warp
 //===============================
 
 // Comment out the following line if your compiler supports the (non-standard)
@@ -29,8 +29,6 @@
 #include <cstring>
 #include <cctype>
 #include <cmath>
-#include <new>
-#include <algorithm>
 
 using namespace std;
 
@@ -146,6 +144,22 @@ namespace
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
 
 
+    // BCB4 does not implement the standard lower_bound function.
+    // This is used instead:
+    const FuncDefinition* fp_lower_bound(const FuncDefinition* first,
+                                         const FuncDefinition* last,
+                                         const FuncDefinition& value)
+    {
+        while(first < last)
+        {
+            const FuncDefinition* middle = first+(last-first)/2;
+            if(*middle < value) first = middle+1;
+            else last = middle;
+        }
+        return last;
+    }
+
+
     // Returns a pointer to the FuncDefinition instance which 'name' is
     // the same as the one given by 'F'. If no such function name exists,
     // returns 0.
@@ -156,7 +170,7 @@ namespace
         if(func.nameLength)
         {
             const FuncDefinition* found =
-                lower_bound(Functions, Functions+FUNC_AMOUNT, func);
+                fp_lower_bound(Functions, Functions+FUNC_AMOUNT, func);
             if(found == Functions+FUNC_AMOUNT || func < *found)
                 return 0;
             return found;
@@ -165,28 +179,98 @@ namespace
     }
 };
 
+
+//---------------------------------------------------------------------------
+// Copy-on-write method
+//---------------------------------------------------------------------------
+inline void FunctionParser::copyOnWrite()
+{
+    if(data->referenceCounter > 1)
+    {
+        Data* oldData = data;
+        data = new Data(*oldData);
+        --(oldData->referenceCounter);
+        data->referenceCounter = 1;
+    }
+}
+
+
 //---------------------------------------------------------------------------
 // Constructors and destructors
 //---------------------------------------------------------------------------
 //===========================================================================
 FunctionParser::FunctionParser():
-    ParseErrorType(-1), EvalErrorType(0)
-{}
+    parseErrorType(FP_NO_ERROR), evalErrorType(0),
+    data(new Data)
+{
+    data->referenceCounter = 1;
+}
 
 FunctionParser::~FunctionParser()
-{}
+{
+    if(--(data->referenceCounter) == 0)
+    {
+        delete data;
+    }
+}
 
-FunctionParser::CompiledCode::CompiledCode():
+FunctionParser::FunctionParser(const FunctionParser& cpy):
+    parseErrorType(cpy.parseErrorType),
+    evalErrorType(cpy.evalErrorType),
+    data(cpy.data)
+{
+    ++(data->referenceCounter);
+}
+
+FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
+{
+    if(data != cpy.data)
+    {
+        delete data;
+
+        parseErrorType = cpy.parseErrorType;
+        evalErrorType = cpy.evalErrorType;
+        data = cpy.data;
+
+        ++(data->referenceCounter);
+    }
+
+    return *this;
+}
+
+
+FunctionParser::Data::Data():
+    useDegreeConversion(false),
     ByteCode(0), ByteCodeSize(0),
     Immed(0), ImmedSize(0),
     Stack(0), StackSize(0)
 {}
 
-FunctionParser::CompiledCode::~CompiledCode()
+FunctionParser::Data::~Data()
 {
     if(ByteCode) { delete[] ByteCode; ByteCode=0; }
     if(Immed) { delete[] Immed; Immed=0; }
     if(Stack) { delete[] Stack; Stack=0; }
+}
+
+// Makes a deep-copy of Data:
+FunctionParser::Data::Data(const Data& cpy):
+    varAmount(cpy.varAmount), useDegreeConversion(cpy.useDegreeConversion),
+    Variables(cpy.Variables), Constants(cpy.Constants),
+    FuncPtrNames(cpy.FuncPtrNames), FuncPtrs(cpy.FuncPtrs),
+    FuncParserNames(cpy.FuncParserNames), FuncParsers(cpy.FuncParsers),
+    ByteCode(0), ByteCodeSize(cpy.ByteCodeSize),
+    Immed(0), ImmedSize(cpy.ImmedSize),
+    Stack(0), StackSize(cpy.StackSize)
+{
+    if(ByteCodeSize) ByteCode = new unsigned[ByteCodeSize];
+    if(ImmedSize) Immed = new double[ImmedSize];
+    if(StackSize) Stack = new double[StackSize];
+
+    for(unsigned i=0; i<ByteCodeSize; ++i) ByteCode[i] = cpy.ByteCode[i];
+    for(unsigned i=0; i<ImmedSize; ++i) Immed[i] = cpy.Immed[i];
+
+    // No need to copy the stack contents because it's obsolete outside Eval()
 }
 
 
@@ -238,7 +322,7 @@ namespace
     }
 };
 
-bool FunctionParser::isValidName(const std::string& name)
+bool FunctionParser::isValidName(const std::string& name) const
 {
     if(name.empty() || (!isalpha(name[0]) && name[0] != '_')) return false;
     for(unsigned i=0; i<name.size(); ++i)
@@ -256,11 +340,15 @@ bool FunctionParser::AddConstant(const string& name, double value)
     if(isValidName(name))
     {
         const char* n = name.c_str();
-        if(FindVariable(n, FuncParserNames) != FuncParserNames.end() ||
-           FindVariable(n, FuncPtrNames) != FuncPtrNames.end())
+        if(FindVariable(n, data->FuncParserNames) !=
+           data->FuncParserNames.end() ||
+           FindVariable(n, data->FuncPtrNames) !=
+           data->FuncPtrNames.end())
             return false;
 
-        Constants[name] = value;
+        copyOnWrite();
+
+        data->Constants[name] = value;
         return true;
     }
     return false;
@@ -275,41 +363,47 @@ bool FunctionParser::AddFunction(const std::string& name,
     if(isValidName(name))
     {
         const char* n = name.c_str();
-        if(FindVariable(n, FuncParserNames) != FuncParserNames.end() ||
-           FindConstant(n) != Constants.end())
+        if(FindVariable(n, data->FuncParserNames) !=
+           data->FuncParserNames.end() ||
+           FindConstant(n) != data->Constants.end())
             return false;
 
-        FuncPtrNames[name] = FuncPtrs.size();
-        FuncPtrs.push_back(FuncPtrData(func, paramsAmount));
+        copyOnWrite();
+
+        data->FuncPtrNames[name] = data->FuncPtrs.size();
+        data->FuncPtrs.push_back(Data::FuncPtrData(func, paramsAmount));
         return true;
     }
     return false;
 }
 
-bool FunctionParser::checkRecursiveLinking(const FunctionParser* fp)
+bool FunctionParser::checkRecursiveLinking(const FunctionParser* fp) const
 {
     if(fp == this) return true;
-    for(unsigned i=0; i<fp->FuncParsers.size(); ++i)
-        if(checkRecursiveLinking(fp->FuncParsers[i])) return true;
+    for(unsigned i=0; i<fp->data->FuncParsers.size(); ++i)
+        if(checkRecursiveLinking(fp->data->FuncParsers[i])) return true;
     return false;
 }
 
 bool FunctionParser::AddFunction(const std::string& name,
                                  FunctionParser& parser)
 {
-    if(parser.varAmount == 0) return false; // Currently must be at least one
+    if(parser.data->varAmount == 0) // Currently must be at least one
+        return false;
 
     if(isValidName(name))
     {
         const char* n = name.c_str();
-        if(FindVariable(n, FuncPtrNames) != FuncPtrNames.end() ||
-           FindConstant(n) != Constants.end())
+        if(FindVariable(n, data->FuncPtrNames) != data->FuncPtrNames.end() ||
+           FindConstant(n) != data->Constants.end())
             return false;
 
         if(checkRecursiveLinking(&parser)) return false;
 
-        FuncParserNames[name] = FuncParsers.size();
-        FuncParsers.push_back(&parser);
+        copyOnWrite();
+
+        data->FuncParserNames[name] = data->FuncParsers.size();
+        data->FuncParsers.push_back(&parser);
         return true;
     }
     return false;
@@ -323,28 +417,30 @@ int FunctionParser::Parse(const std::string& Function,
                           const std::string& Vars,
                           bool useDegrees)
 {
-    Variables.clear();
+    copyOnWrite();
 
-    if(!ParseVars(Vars, Variables))
+    data->Variables.clear();
+
+    if(!ParseVars(Vars, data->Variables))
     {
-        ParseErrorType = 7;
+        parseErrorType = INVALID_VARS;
         return Function.size();
     }
-    varAmount = Variables.size(); // this is for Eval()
+    data->varAmount = data->Variables.size(); // this is for Eval()
 
     const char* Func = Function.c_str();
 
-    ParseErrorType = -1;
+    parseErrorType = FP_NO_ERROR;
 
     int Result = CheckSyntax(Func);
     if(Result>=0) return Result;
 
-    useDegreeConversion = useDegrees;
+    data->useDegreeConversion = useDegrees;
     if(!Compile(Func)) return Function.size();
 
-    Variables.clear();
+    data->Variables.clear();
 
-    ParseErrorType = -1;
+    parseErrorType = FP_NO_ERROR;
     return -1;
 }
 
@@ -353,20 +449,20 @@ namespace
     // Is given char an operator?
     inline bool IsOperator(int c)
     {
-        return strchr("+-*/%^=<>&|,",c)!=NULL;
+        return strchr("+-*/%^=<>&|",c)!=NULL;
     }
 
     // skip whitespace
     inline void sws(const char* F, int& Ind)
     {
-        while(F[Ind] && F[Ind] == ' ') ++Ind;
+        while(F[Ind] && isspace(F[Ind])) ++Ind;
     }
 };
 
 // Returns an iterator to the variable with the same name as 'F', or to
 // Variables.end() if no such variable exists:
-inline FunctionParser::VarMap_t::const_iterator
-FunctionParser::FindVariable(const char* F, const VarMap_t& vars)
+inline FunctionParser::Data::VarMap_t::const_iterator
+FunctionParser::FindVariable(const char* F, const Data::VarMap_t& vars) const
 {
     if(vars.size())
     {
@@ -381,20 +477,20 @@ FunctionParser::FindVariable(const char* F, const VarMap_t& vars)
     return vars.end();
 }
 
-inline FunctionParser::ConstMap_t::const_iterator
-FunctionParser::FindConstant(const char* F)
+inline FunctionParser::Data::ConstMap_t::const_iterator
+FunctionParser::FindConstant(const char* F) const
 {
-    if(Constants.size())
+    if(data->Constants.size())
     {
         unsigned ind = 0;
         while(isalnum(F[ind]) || F[ind] == '_') ++ind;
         if(ind)
         {
             string name(F, ind);
-            return Constants.find(name);
+            return data->Constants.find(name);
         }
     }
-    return Constants.end();
+    return data->Constants.end();
 }
 
 //---------------------------------------------------------------------------
@@ -402,6 +498,13 @@ FunctionParser::FindConstant(const char* F)
 // ----------------------------
 int FunctionParser::CheckSyntax(const char* Function)
 {
+    const Data::VarMap_t& Variables = data->Variables;
+    const Data::ConstMap_t& Constants = data->Constants;
+    const Data::VarMap_t& FuncPtrNames = data->FuncPtrNames;
+    const Data::VarMap_t& FuncParserNames = data->FuncParserNames;
+
+    vector<int> functionParenthDepth;
+
     int Ind=0, ParenthCnt=0, c;
     char* Ptr;
 
@@ -414,7 +517,7 @@ int FunctionParser::CheckSyntax(const char* Function)
 
         // Check for leading -
         if(c=='-') { sws(Function, ++Ind); c=Function[Ind]; }
-        if(c==0) { ParseErrorType=9; return Ind; }
+        if(c==0) { parseErrorType=PREMATURE_EOS; return Ind; }
 
         // Check for math function
         bool foundFunc = false;
@@ -427,7 +530,7 @@ int FunctionParser::CheckSyntax(const char* Function)
         else
         {
             // Check for user-defined function
-            VarMap_t::const_iterator fIter =
+            Data::VarMap_t::const_iterator fIter =
                 FindVariable(&Function[Ind], FuncPtrNames);
             if(fIter != FuncPtrNames.end())
             {
@@ -436,7 +539,7 @@ int FunctionParser::CheckSyntax(const char* Function)
             }
             else
             {
-                VarMap_t::const_iterator pIter =
+                Data::VarMap_t::const_iterator pIter =
                     FindVariable(&Function[Ind], FuncParserNames);
                 if(pIter != FuncParserNames.end())
                 {
@@ -450,7 +553,8 @@ int FunctionParser::CheckSyntax(const char* Function)
         {
             sws(Function, Ind);
             c = Function[Ind];
-            if(c!='(') { ParseErrorType=10; return Ind; }
+            if(c!='(') { parseErrorType=EXPECT_PARENTH_FUNC; return Ind; }
+            functionParenthDepth.push_back(ParenthCnt+1);
         }
 
         // Check for opening parenthesis
@@ -458,7 +562,7 @@ int FunctionParser::CheckSyntax(const char* Function)
         {
             ++ParenthCnt;
             sws(Function, ++Ind);
-            if(Function[Ind]==')') { ParseErrorType=3; return Ind; }
+            if(Function[Ind]==')') { parseErrorType=EMPTY_PARENTH; return Ind;}
             continue;
         }
 
@@ -472,19 +576,19 @@ int FunctionParser::CheckSyntax(const char* Function)
         }
         else
         { // Check for variable
-            VarMap_t::const_iterator vIter =
+            Data::VarMap_t::const_iterator vIter =
                 FindVariable(&Function[Ind], Variables);
             if(vIter != Variables.end())
                 Ind += vIter->first.size();
             else
             {
                 // Check for constant
-                ConstMap_t::const_iterator cIter =
+                Data::ConstMap_t::const_iterator cIter =
                     FindConstant(&Function[Ind]);
                 if(cIter != Constants.end())
                     Ind += cIter->first.size();
                 else
-                { ParseErrorType=0; return Ind; }
+                { parseErrorType=SYNTAX_ERROR; return Ind; }
             }
             sws(Function, Ind);
             c = Function[Ind];
@@ -493,7 +597,10 @@ int FunctionParser::CheckSyntax(const char* Function)
         // Check for closing parenthesis
         while(c==')')
         {
-            if((--ParenthCnt)<0) { ParseErrorType=1; return Ind; }
+            if(functionParenthDepth.size() &&
+               functionParenthDepth.back() == ParenthCnt)
+                functionParenthDepth.pop_back();
+            if((--ParenthCnt)<0) { parseErrorType=MISM_PARENTH; return Ind; }
             sws(Function, ++Ind);
             c=Function[Ind];
         }
@@ -504,7 +611,10 @@ int FunctionParser::CheckSyntax(const char* Function)
         // Check for EOS
         if(c==0) break; // The only way to end the checking loop without error
         // Check for operator
-        if(!IsOperator(c)) { ParseErrorType=4; return Ind; }
+        if(!IsOperator(c) &&
+           (c != ',' || functionParenthDepth.empty() ||
+            functionParenthDepth.back() != ParenthCnt))
+        { parseErrorType=EXPECT_OPERATOR; return Ind; }
 
 // If we get here, we have an operand and an operator; the next loop will
 // check for another operand (must appear)
@@ -512,10 +622,10 @@ int FunctionParser::CheckSyntax(const char* Function)
     } // while
 
     // Check that all opened parentheses are also closed
-    if(ParenthCnt>0) { ParseErrorType=2; return Ind; }
+    if(ParenthCnt>0) { parseErrorType=MISSING_PARENTH; return Ind; }
 
 // The string is ok
-    ParseErrorType=-1;
+    parseErrorType=FP_NO_ERROR;
     return -1;
 }
 
@@ -524,9 +634,9 @@ int FunctionParser::CheckSyntax(const char* Function)
 // -----------------------------------
 bool FunctionParser::Compile(const char* Function)
 {
-    if(Comp.ByteCode) { delete[] Comp.ByteCode; Comp.ByteCode=0; }
-    if(Comp.Immed) { delete[] Comp.Immed; Comp.Immed=0; }
-    if(Comp.Stack) { delete[] Comp.Stack; Comp.Stack=0; }
+    if(data->ByteCode) { delete[] data->ByteCode; data->ByteCode=0; }
+    if(data->Immed) { delete[] data->Immed; data->Immed=0; }
+    if(data->Stack) { delete[] data->Stack; data->Stack=0; }
 
     vector<unsigned> byteCode; byteCode.reserve(1024);
     tempByteCode = &byteCode;
@@ -534,28 +644,28 @@ bool FunctionParser::Compile(const char* Function)
     vector<double> immed; immed.reserve(1024);
     tempImmed = &immed;
 
-    Comp.StackSize = Comp.StackPtr = 0;
+    data->StackSize = StackPtr = 0;
 
     CompileExpression(Function, 0);
-    if(ParseErrorType >= 0) return false;
+    if(parseErrorType != FP_NO_ERROR) return false;
 
-    Comp.ByteCodeSize = byteCode.size();
-    Comp.ImmedSize = immed.size();
+    data->ByteCodeSize = byteCode.size();
+    data->ImmedSize = immed.size();
 
-    if(Comp.ByteCodeSize)
+    if(data->ByteCodeSize)
     {
-        Comp.ByteCode = new unsigned[Comp.ByteCodeSize];
-        memcpy(Comp.ByteCode, &byteCode[0],
-               sizeof(unsigned)*Comp.ByteCodeSize);
+        data->ByteCode = new unsigned[data->ByteCodeSize];
+        memcpy(data->ByteCode, &byteCode[0],
+               sizeof(unsigned)*data->ByteCodeSize);
     }
-    if(Comp.ImmedSize)
+    if(data->ImmedSize)
     {
-        Comp.Immed = new double[Comp.ImmedSize];
-        memcpy(Comp.Immed, &immed[0],
-               sizeof(double)*Comp.ImmedSize);
+        data->Immed = new double[data->ImmedSize];
+        memcpy(data->Immed, &immed[0],
+               sizeof(double)*data->ImmedSize);
     }
-    if(Comp.StackSize)
-        Comp.Stack = new double[Comp.StackSize];
+    if(data->StackSize)
+        data->Stack = new double[data->StackSize];
 
     return true;
 }
@@ -573,7 +683,7 @@ inline void FunctionParser::AddImmediate(double i)
 
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 {
-    if(useDegreeConversion)
+    if(data->useDegreeConversion)
         switch(opcode)
         {
           case cCos:
@@ -590,7 +700,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 
     AddCompiledByte(opcode);
 
-    if(useDegreeConversion)
+    if(data->useDegreeConversion)
         switch(opcode)
         {
           case cAcos:
@@ -606,33 +716,39 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         }
 }
 
+inline void FunctionParser::incStackPtr()
+{
+    if(++StackPtr > data->StackSize) ++(data->StackSize);
+}
+
+
 // Compile if()
 int FunctionParser::CompileIf(const char* F, int ind)
 {
     int ind2 = CompileExpression(F, ind, true); // condition
     sws(F, ind2);
-    if(F[ind2] != ',') { ParseErrorType=8; return ind2; }
+    if(F[ind2] != ',') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
     AddCompiledByte(cIf);
     unsigned curByteCodeSize = tempByteCode->size();
     AddCompiledByte(0); // Jump index; to be set later
     AddCompiledByte(0); // Immed jump index; to be set later
 
-    --Comp.StackPtr;
+    --StackPtr;
 
     ind2 = CompileExpression(F, ind2+1, true); // then
     sws(F, ind2);
-    if(F[ind2] != ',') { ParseErrorType=8; return ind2; }
+    if(F[ind2] != ',') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
     AddCompiledByte(cJump);
     unsigned curByteCodeSize2 = tempByteCode->size();
     unsigned curImmedSize2 = tempImmed->size();
     AddCompiledByte(0); // Jump index; to be set later
     AddCompiledByte(0); // Immed jump index; to be set later
 
-    --Comp.StackPtr;
+    --StackPtr;
 
     ind2 = CompileExpression(F, ind2+1, true); // else
     sws(F, ind2);
-    if(F[ind2] != ')') { ParseErrorType=8; return ind2; }
+    if(F[ind2] != ')') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
 
     // Set jump indices
     (*tempByteCode)[curByteCodeSize] = curByteCodeSize2+1;
@@ -646,13 +762,13 @@ int FunctionParser::CompileIf(const char* F, int ind)
 int FunctionParser::CompileFunctionParams(const char* F, int ind,
                                           unsigned requiredParams)
 {
-    unsigned curStackPtr = Comp.StackPtr;
+    unsigned curStackPtr = StackPtr;
     int ind2 = CompileExpression(F, ind);
 
-    if(Comp.StackPtr != curStackPtr+requiredParams)
-    { ParseErrorType=8; return ind; }
+    if(StackPtr != curStackPtr+requiredParams)
+    { parseErrorType=ILL_PARAMS_AMOUNT; return ind; }
 
-    Comp.StackPtr -= requiredParams - 1;
+    StackPtr -= requiredParams - 1;
     sws(F, ind2);
     return ind2+1; // F[ind2] is ')'
 }
@@ -687,7 +803,7 @@ int FunctionParser::CompileElement(const char* F, int ind)
         double val = strtod(startPtr, &endPtr);
         AddImmediate(val);
         AddCompiledByte(cImmed);
-        ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
+        incStackPtr();
         return ind+(endPtr-startPtr);
     }
 
@@ -706,7 +822,7 @@ int FunctionParser::CompileElement(const char* F, int ind)
 #ifndef DISABLE_EVAL
             unsigned requiredParams =
                 strcmp(func->name, "eval") == 0 ?
-                Variables.size() : func->params;
+                data->Variables.size() : func->params;
 #else
             unsigned requiredParams = func->params;
 #endif
@@ -715,48 +831,52 @@ int FunctionParser::CompileElement(const char* F, int ind)
             return ind2; // F[ind2-1] is ')'
         }
 
-        VarMap_t::const_iterator vIter = FindVariable(F+ind, Variables);
-        if(vIter != Variables.end()) // is variable
+        Data::VarMap_t::const_iterator vIter =
+            FindVariable(F+ind, data->Variables);
+        if(vIter != data->Variables.end()) // is variable
         {
             AddCompiledByte(vIter->second);
-            ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
+            incStackPtr();
             return ind + vIter->first.size();
         }
 
-        ConstMap_t::const_iterator cIter = FindConstant(F+ind);
-        if(cIter != Constants.end()) // is constant
+        Data::ConstMap_t::const_iterator cIter = FindConstant(F+ind);
+        if(cIter != data->Constants.end()) // is constant
         {
             AddImmediate(cIter->second);
             AddCompiledByte(cImmed);
-            ++Comp.StackPtr; if(Comp.StackPtr>Comp.StackSize) Comp.StackSize++;
+            incStackPtr();
             return ind + cIter->first.size();
         }
 
-        VarMap_t::const_iterator fIter = FindVariable(F+ind, FuncPtrNames);
-        if(fIter != FuncPtrNames.end()) // is user-defined function pointer
+        Data::VarMap_t::const_iterator fIter =
+            FindVariable(F+ind, data->FuncPtrNames);
+        if(fIter != data->FuncPtrNames.end()) // is user-defined func pointer
         {
             unsigned index = fIter->second;
 
             int ind2 = ind + fIter->first.length();
             sws(F, ind2); // F[ind2] is '('
 
-            ind2 = CompileFunctionParams(F, ind2+1, FuncPtrs[index].params);
+            ind2 = CompileFunctionParams(F, ind2+1,
+                                         data->FuncPtrs[index].params);
 
             AddCompiledByte(cFCall);
             AddCompiledByte(index);
             return ind2;
         }
 
-        VarMap_t::const_iterator pIter = FindVariable(F+ind, FuncParserNames);
-        if(pIter != FuncParserNames.end()) // is user-defined function parser
+        Data::VarMap_t::const_iterator pIter =
+            FindVariable(F+ind, data->FuncParserNames);
+        if(pIter != data->FuncParserNames.end()) // is user-defined func parser
         {
             unsigned index = pIter->second;
 
             int ind2 = ind + pIter->first.length();
             sws(F, ind2); // F[ind2] is '('
 
-            ind2 = CompileFunctionParams(F, ind2+1,
-                                         FuncParsers[index]->varAmount);
+            ind2 = CompileFunctionParams
+                (F, ind2+1, data->FuncParsers[index]->data->varAmount);
 
             AddCompiledByte(cPCall);
             AddCompiledByte(index);
@@ -764,7 +884,7 @@ int FunctionParser::CompileElement(const char* F, int ind)
         }
     }
 
-    ParseErrorType = 6;
+    parseErrorType = UNEXPECTED_ERROR;
     return ind;
 }
 
@@ -779,7 +899,7 @@ int FunctionParser::CompilePow(const char* F, int ind)
         ind2 = CompileElement(F, ind2+1);
         sws(F, ind2);
         AddCompiledByte(cPow);
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -802,7 +922,7 @@ int FunctionParser::CompileMult(const char* F, int ind)
           case '/': AddCompiledByte(cDiv); break;
           case '%': AddCompiledByte(cMod); break;
         }
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -820,7 +940,7 @@ int FunctionParser::CompileAddition(const char* F, int ind)
         ind2 = CompileMult(F, ind2+1);
         sws(F, ind2);
         AddCompiledByte(op=='+' ? cAdd : cSub);
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -843,7 +963,7 @@ int FunctionParser::CompileComparison(const char* F, int ind)
           case '<': AddCompiledByte(cLess); break;
           case '>': AddCompiledByte(cGreater); break;
         }
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -860,7 +980,7 @@ int FunctionParser::CompileAnd(const char* F, int ind)
         ind2 = CompileComparison(F, ind2+1);
         sws(F, ind2);
         AddCompiledByte(cAnd);
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -877,7 +997,7 @@ int FunctionParser::CompileOr(const char* F, int ind)
         ind2 = CompileAnd(F, ind2+1);
         sws(F, ind2);
         AddCompiledByte(cOr);
-        --Comp.StackPtr;
+        --StackPtr;
     }
 
     return ind2;
@@ -903,9 +1023,9 @@ int FunctionParser::CompileExpression(const char* F, int ind, bool stopAtComma)
 
 // Return parse error message
 // --------------------------
-const char* FunctionParser::ErrorMsg(void) const
+const char* FunctionParser::ErrorMsg() const
 {
-    if(ParseErrorType>=0) return ParseErrorMessage[ParseErrorType];
+    if(parseErrorType != FP_NO_ERROR) return ParseErrorMessage[parseErrorType];
     return 0;
 }
 
@@ -942,218 +1062,235 @@ namespace
 
 double FunctionParser::Eval(const double* Vars)
 {
+    const unsigned* const ByteCode = data->ByteCode;
+    const double* const Immed = data->Immed;
+    double* const Stack = data->Stack;
+    const unsigned ByteCodeSize = data->ByteCodeSize;
     unsigned IP, DP=0;
     int SP=-1;
 
-    for(IP=0; IP<Comp.ByteCodeSize; IP++)
+    for(IP=0; IP<ByteCodeSize; ++IP)
     {
-        switch(Comp.ByteCode[IP])
+        switch(ByteCode[IP])
         {
 // Functions:
-          case   cAbs: Comp.Stack[SP]=fabs(Comp.Stack[SP]); break;
-          case  cAcos: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
-                       { EvalErrorType=4; return 0; }
-                       Comp.Stack[SP]=acos(Comp.Stack[SP]); break;
+          case   cAbs: Stack[SP] = fabs(Stack[SP]); break;
+          case  cAcos: if(Stack[SP] < -1 || Stack[SP] > 1)
+                       { evalErrorType=4; return 0; }
+                       Stack[SP] = acos(Stack[SP]); break;
 #ifndef NO_ASINH
-          case cAcosh: Comp.Stack[SP]=acosh(Comp.Stack[SP]); break;
+          case cAcosh: Stack[SP] = acosh(Stack[SP]); break;
 #endif
-          case  cAsin: if(Comp.Stack[SP]<-1 || Comp.Stack[SP]>1)
-                       { EvalErrorType=4; return 0; }
-                       Comp.Stack[SP]=asin(Comp.Stack[SP]); break;
+          case  cAsin: if(Stack[SP] < -1 || Stack[SP] > 1)
+                       { evalErrorType=4; return 0; }
+                       Stack[SP] = asin(Stack[SP]); break;
 #ifndef NO_ASINH
-          case cAsinh: Comp.Stack[SP]=asinh(Comp.Stack[SP]); break;
+          case cAsinh: Stack[SP] = asinh(Stack[SP]); break;
 #endif
-          case  cAtan: Comp.Stack[SP]=atan(Comp.Stack[SP]); break;
-          case cAtan2: Comp.Stack[SP-1]=atan2(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
+          case  cAtan: Stack[SP] = atan(Stack[SP]); break;
+          case cAtan2: Stack[SP-1] = atan2(Stack[SP-1], Stack[SP]);
+                       --SP; break;
 #ifndef NO_ASINH
-          case cAtanh: Comp.Stack[SP]=atanh(Comp.Stack[SP]); break;
+          case cAtanh: Stack[SP] = atanh(Stack[SP]); break;
 #endif
-          case  cCeil: Comp.Stack[SP]=ceil(Comp.Stack[SP]); break;
-          case   cCos: Comp.Stack[SP]=cos(Comp.Stack[SP]); break;
-          case  cCosh: Comp.Stack[SP]=cosh(Comp.Stack[SP]); break;
+          case  cCeil: Stack[SP] = ceil(Stack[SP]); break;
+          case   cCos: Stack[SP] = cos(Stack[SP]); break;
+          case  cCosh: Stack[SP] = cosh(Stack[SP]); break;
 
           case   cCot:
               {
-                  double t = tan(Comp.Stack[SP]);
-                  if(t == 0) { EvalErrorType=1; return 0; }
-                  Comp.Stack[SP] = 1/t; break;
+                  double t = tan(Stack[SP]);
+                  if(t == 0) { evalErrorType=1; return 0; }
+                  Stack[SP] = 1/t; break;
               }
           case   cCsc:
               {
-                  double s = sin(Comp.Stack[SP]);
-                  if(s == 0) { EvalErrorType=1; return 0; }
-                  Comp.Stack[SP] = 1/s; break;
+                  double s = sin(Stack[SP]);
+                  if(s == 0) { evalErrorType=1; return 0; }
+                  Stack[SP] = 1/s; break;
               }
 
 
 #ifndef DISABLE_EVAL
           case  cEval:
               {
-                  double* tmpStack = Comp.Stack;
-                  Comp.Stack = new double[Comp.StackSize];
-                  double retVal = Eval(&tmpStack[SP-varAmount+1]);
-                  delete[] Comp.Stack;
-                  Comp.Stack = tmpStack;
-                  SP -= varAmount-1;
-                  Comp.Stack[SP] = retVal;
+                  data->Stack = new double[data->StackSize];
+                  double retVal = Eval(&Stack[SP-data->varAmount+1]);
+                  delete[] data->Stack;
+                  data->Stack = Stack;
+                  SP -= data->varAmount-1;
+                  Stack[SP] = retVal;
                   break;
               }
 #endif
 
-          case   cExp: Comp.Stack[SP]=exp(Comp.Stack[SP]); break;
-          case cFloor: Comp.Stack[SP]=floor(Comp.Stack[SP]); break;
+          case   cExp: Stack[SP] = exp(Stack[SP]); break;
+          case cFloor: Stack[SP] = floor(Stack[SP]); break;
 
           case    cIf:
               {
-                  unsigned jumpAddr = Comp.ByteCode[++IP];
-                  unsigned immedAddr = Comp.ByteCode[++IP];
-                  if(doubleToInt(Comp.Stack[SP]) == 0)
+                  unsigned jumpAddr = ByteCode[++IP];
+                  unsigned immedAddr = ByteCode[++IP];
+                  if(doubleToInt(Stack[SP]) == 0)
                   {
                       IP = jumpAddr;
                       DP = immedAddr;
                   }
-                  SP--; break;
+                  --SP; break;
               }
 
-          case   cInt: Comp.Stack[SP]=floor(Comp.Stack[SP]+.5); break;
-          case   cLog: if(Comp.Stack[SP]<=0) { EvalErrorType=3; return 0; }
-                       Comp.Stack[SP]=log(Comp.Stack[SP]); break;
-          case cLog10: if(Comp.Stack[SP]<=0) { EvalErrorType=3; return 0; }
-                       Comp.Stack[SP]=log10(Comp.Stack[SP]); break;
-          case   cMax: Comp.Stack[SP-1]=Max(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
-          case   cMin: Comp.Stack[SP-1]=Min(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
+          case   cInt: Stack[SP] = floor(Stack[SP]+.5); break;
+          case   cLog: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       Stack[SP] = log(Stack[SP]); break;
+          case cLog10: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       Stack[SP] = log10(Stack[SP]); break;
+          case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);
+                       --SP; break;
+          case   cMin: Stack[SP-1] = Min(Stack[SP-1], Stack[SP]);
+                       --SP; break;
           case   cSec:
               {
-                  double c = cos(Comp.Stack[SP]);
-                  if(c == 0) { EvalErrorType=1; return 0; }
-                  Comp.Stack[SP] = 1/c; break;
+                  double c = cos(Stack[SP]);
+                  if(c == 0) { evalErrorType=1; return 0; }
+                  Stack[SP] = 1/c; break;
               }
-          case   cSin: Comp.Stack[SP]=sin(Comp.Stack[SP]); break;
-          case  cSinh: Comp.Stack[SP]=sinh(Comp.Stack[SP]); break;
-          case  cSqrt: if(Comp.Stack[SP]<0) { EvalErrorType=2; return 0; }
-                       Comp.Stack[SP]=sqrt(Comp.Stack[SP]); break;
-          case   cTan: Comp.Stack[SP]=tan(Comp.Stack[SP]); break;
-          case  cTanh: Comp.Stack[SP]=tanh(Comp.Stack[SP]); break;
+          case   cSin: Stack[SP] = sin(Stack[SP]); break;
+          case  cSinh: Stack[SP] = sinh(Stack[SP]); break;
+          case  cSqrt: if(Stack[SP] < 0) { evalErrorType=2; return 0; }
+                       Stack[SP] = sqrt(Stack[SP]); break;
+          case   cTan: Stack[SP] = tan(Stack[SP]); break;
+          case  cTanh: Stack[SP] = tanh(Stack[SP]); break;
 
 
 // Misc:
-          case cImmed: Comp.Stack[++SP]=Comp.Immed[DP++]; break;
-          case  cJump: DP = Comp.ByteCode[IP+2];
-                       IP = Comp.ByteCode[IP+1];
+          case cImmed: Stack[++SP] = Immed[DP++]; break;
+          case  cJump: DP = ByteCode[IP+2];
+                       IP = ByteCode[IP+1];
                        break;
 
 // Operators:
-          case   cNeg: Comp.Stack[SP]=-Comp.Stack[SP]; break;
-          case   cAdd: Comp.Stack[SP-1]+=Comp.Stack[SP]; SP--; break;
-          case   cSub: Comp.Stack[SP-1]-=Comp.Stack[SP]; SP--; break;
-          case   cMul: Comp.Stack[SP-1]*=Comp.Stack[SP]; SP--; break;
-          case   cDiv: if(Comp.Stack[SP]==0) { EvalErrorType=1; return 0; }
-                       Comp.Stack[SP-1]/=Comp.Stack[SP]; SP--; break;
-          case   cMod: if(Comp.Stack[SP]==0) { EvalErrorType=1; return 0; }
-                       Comp.Stack[SP-1]=fmod(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
-          case   cPow: Comp.Stack[SP-1]=pow(Comp.Stack[SP-1],Comp.Stack[SP]);
-                       SP--; break;
+          case   cNeg: Stack[SP] = -Stack[SP]; break;
+          case   cAdd: Stack[SP-1] += Stack[SP]; --SP; break;
+          case   cSub: Stack[SP-1] -= Stack[SP]; --SP; break;
+          case   cMul: Stack[SP-1] *= Stack[SP]; --SP; break;
+          case   cDiv: if(Stack[SP] == 0) { evalErrorType=1; return 0; }
+                       Stack[SP-1] /= Stack[SP]; --SP; break;
+          case   cMod: if(Stack[SP] == 0) { evalErrorType=1; return 0; }
+                       Stack[SP-1] = fmod(Stack[SP-1], Stack[SP]);
+                       --SP; break;
+          case   cPow: Stack[SP-1] = pow(Stack[SP-1], Stack[SP]);
+                       --SP; break;
 
-          case cEqual: Comp.Stack[SP-1] = (Comp.Stack[SP-1]==Comp.Stack[SP]);
-                       SP--; break;
-          case  cLess: Comp.Stack[SP-1] = (Comp.Stack[SP-1]<Comp.Stack[SP]);
-                       SP--; break;
-          case cGreater: Comp.Stack[SP-1] = (Comp.Stack[SP-1]>Comp.Stack[SP]);
-                         SP--; break;
-          case   cAnd: Comp.Stack[SP-1] =
-                           (doubleToInt(Comp.Stack[SP-1]) &&
-                            doubleToInt(Comp.Stack[SP]));
-                       SP--; break;
-          case    cOr: Comp.Stack[SP-1] =
-                           (doubleToInt(Comp.Stack[SP-1]) ||
-                            doubleToInt(Comp.Stack[SP]));
-                       SP--; break;
+          case cEqual: Stack[SP-1] = (Stack[SP-1] == Stack[SP]);
+                       --SP; break;
+          case  cLess: Stack[SP-1] = (Stack[SP-1] < Stack[SP]);
+                       --SP; break;
+          case cGreater: Stack[SP-1] = (Stack[SP-1] > Stack[SP]);
+                         --SP; break;
+          case   cAnd: Stack[SP-1] =
+                           (doubleToInt(Stack[SP-1]) &&
+                            doubleToInt(Stack[SP]));
+                       --SP; break;
+          case    cOr: Stack[SP-1] =
+                           (doubleToInt(Stack[SP-1]) ||
+                            doubleToInt(Stack[SP]));
+                       --SP; break;
 
 // Degrees-radians conversion:
-          case   cDeg: Comp.Stack[SP]=RadiansToDegrees(Comp.Stack[SP]); break;
-          case   cRad: Comp.Stack[SP]=DegreesToRadians(Comp.Stack[SP]); break;
+          case   cDeg: Stack[SP] = RadiansToDegrees(Stack[SP]); break;
+          case   cRad: Stack[SP] = DegreesToRadians(Stack[SP]); break;
 
 // User-defined function calls:
           case cFCall:
               {
-                  unsigned index = Comp.ByteCode[++IP];
-                  unsigned params = FuncPtrs[index].params;
+                  unsigned index = ByteCode[++IP];
+                  unsigned params = data->FuncPtrs[index].params;
                   double retVal =
-                      FuncPtrs[index].ptr(&Comp.Stack[SP-params+1]);
+                      data->FuncPtrs[index].ptr(&Stack[SP-params+1]);
                   SP -= params-1;
-                  Comp.Stack[SP] = retVal;
+                  Stack[SP] = retVal;
                   break;
               }
 
           case cPCall:
               {
-                  unsigned index = Comp.ByteCode[++IP];
-                  unsigned params = FuncParsers[index]->varAmount;
+                  unsigned index = ByteCode[++IP];
+                  unsigned params = data->FuncParsers[index]->data->varAmount;
                   double retVal =
-                      FuncParsers[index]->Eval(&Comp.Stack[SP-params+1]);
+                      data->FuncParsers[index]->Eval(&Stack[SP-params+1]);
                   SP -= params-1;
-                  Comp.Stack[SP] = retVal;
+                  Stack[SP] = retVal;
                   break;
               }
 
 
 #ifdef SUPPORT_OPTIMIZER
           case   cVar: break; // Paranoia. These should never exist
-          case   cDup: Comp.Stack[SP+1]=Comp.Stack[SP]; ++SP; break;
+          case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
           case   cInv:
-              if(Comp.Stack[SP]==0.0) { EvalErrorType=1; return 0; }
-              Comp.Stack[SP]=1.0/Comp.Stack[SP];
+              if(Stack[SP] == 0.0) { evalErrorType=1; return 0; }
+              Stack[SP] = 1.0/Stack[SP];
               break;
 #endif
 
 // Variables:
           default:
-              Comp.Stack[++SP]=Vars[Comp.ByteCode[IP]-VarBegin];
+              Stack[++SP] = Vars[ByteCode[IP]-VarBegin];
         }
     }
 
-    EvalErrorType=0;
-    return Comp.Stack[SP];
+    evalErrorType=0;
+    return Stack[SP];
+}
+
+
+namespace
+{
+    inline void printHex(std::ostream& dest, unsigned n)
+    {
+        dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
+        dest << n;
+    }
 }
 
 
 void FunctionParser::PrintByteCode(std::ostream& dest) const
 {
-    for(unsigned IP=0, DP=0; IP<Comp.ByteCodeSize; IP++)
-    {
-        dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
-        dest << IP << ": ";
+    const unsigned* const ByteCode = data->ByteCode;
+    const double* const Immed = data->Immed;
 
-        unsigned opcode = Comp.ByteCode[IP];
+    for(unsigned IP=0, DP=0; IP<data->ByteCodeSize; ++IP)
+    {
+        printHex(dest, IP);
+        dest << ": ";
+
+        unsigned opcode = ByteCode[IP];
 
         switch(opcode)
         {
           case cIf:
               dest << "jz\t";
-              dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
-              dest << Comp.ByteCode[IP+1]+1 << endl;
+              printHex(dest, ByteCode[IP+1]+1);
+              dest << endl;
               IP += 2;
               break;
 
           case cJump:
               dest << "jump\t";
-              dest.width(8); dest.fill('0'); hex(dest); //uppercase(dest);
-              dest << Comp.ByteCode[IP+1]+1 << endl;
+              printHex(dest, ByteCode[IP+1]+1);
+              dest << endl;
               IP += 2;
               break;
           case cImmed:
               dest.precision(10);
-              dest << "push\t" << Comp.Immed[DP++] << endl;
+              dest << "push\t" << Immed[DP++] << endl;
               break;
 
           case cFCall:
               {
-                  unsigned index = Comp.ByteCode[++IP];
-                  VarMap_t::const_iterator iter = FuncPtrNames.begin();
+                  unsigned index = ByteCode[++IP];
+                  Data::VarMap_t::const_iterator iter =
+                      data->FuncPtrNames.begin();
                   while(iter->second != index) ++iter;
                   dest << "call\t" << iter->first << endl;
                   break;
@@ -1161,8 +1298,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 
           case cPCall:
               {
-                  unsigned index = Comp.ByteCode[++IP];
-                  VarMap_t::const_iterator iter = FuncParserNames.begin();
+                  unsigned index = ByteCode[++IP];
+                  Data::VarMap_t::const_iterator iter =
+                      data->FuncParserNames.begin();
                   while(iter->second != index) ++iter;
                   dest << "call\t" << iter->first << endl;
                   break;
@@ -1230,6 +1368,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 #define CONSTANT_DR    (180.0 / M_PI)          // 180/pi
 #define CONSTANT_RD    (M_PI / 180.0)          // pi/180
 
+namespace {
 class compres
 {
     // states: 0=false, 1=true, 2=unknown
@@ -1246,13 +1385,13 @@ private:
     char state;
 };
 
-namespace {
 const compres maybe = (char)2;
-}
+
+struct CodeTree;
 
 class SubTree
 {
-    struct CodeTree *tree;
+    CodeTree *tree;
     bool sign;  // Only possible when parent is cAdd or cMul
 
     inline void flipsign() { sign = !sign; }
@@ -1260,7 +1399,7 @@ public:
     SubTree();
     SubTree(double value);
     SubTree(const SubTree &b);
-    SubTree(const struct CodeTree &b);
+    SubTree(const CodeTree &b);
 
     ~SubTree();
     const SubTree &operator= (const SubTree &b);
@@ -1268,8 +1407,8 @@ public:
 
     bool getsign() const { return sign; }
 
-    const struct CodeTree* operator-> () const { return tree; }
-    const struct CodeTree& operator* () const { return *tree; }
+    const CodeTree* operator-> () const { return tree; }
+    const CodeTree& operator* () const { return *tree; }
     struct CodeTree* operator-> () { return tree; }
     struct CodeTree& operator* () { return *tree; }
 
@@ -1282,10 +1421,8 @@ public:
     void CheckConstInv();
 };
 
-namespace {
 bool IsNegate(const SubTree &p1, const SubTree &p2);
 bool IsInverse(const SubTree &p1, const SubTree &p2);
-}
 
 typedef list<SubTree> paramlist;
 
@@ -1372,6 +1509,7 @@ protected:
     void operator=(const CodeTreeData &b);
 };
 
+
 class CodeTreeDataPtr
 {
     typedef pair<CodeTreeData, unsigned> p_t;
@@ -1413,6 +1551,7 @@ public:
     void Shock();
 };
 
+
 #define CHECKCONSTNEG(item, op) \
     ((op)==cMul) \
        ? (item).CheckConstInv() \
@@ -1426,24 +1565,26 @@ private:
     typedef paramlist::iterator pit;
     typedef paramlist::const_iterator pcit;
 
+    /*
     template<unsigned v> inline void chk() const
     {
     }
+    */
 
 public:
     const pcit GetBegin() const { return data->args.begin(); }
     const pcit GetEnd()   const { return data->args.end(); }
     const pit GetBegin() { return data->args.begin(); }
     const pit GetEnd()   { return data->args.end(); }
-    const SubTree& getp0() const { chk<1>();pcit tmp=GetBegin();               return *tmp; }
-    const SubTree& getp1() const { chk<2>();pcit tmp=GetBegin(); ++tmp;        return *tmp; }
-    const SubTree& getp2() const { chk<3>();pcit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
+    const SubTree& getp0() const { /*chk<1>();*/pcit tmp=GetBegin();               return *tmp; }
+    const SubTree& getp1() const { /*chk<2>();*/pcit tmp=GetBegin(); ++tmp;        return *tmp; }
+    const SubTree& getp2() const { /*chk<3>();*/pcit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
     unsigned GetArgCount() const { return data->args.size(); }
     void Erase(const pit p)      { data->args.erase(p); }
 
-    SubTree& getp0() { chk<1>();pit tmp=GetBegin();               return *tmp; }
-    SubTree& getp1() { chk<2>();pit tmp=GetBegin(); ++tmp;        return *tmp; }
-    SubTree& getp2() { chk<3>();pit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
+    SubTree& getp0() { /*chk<1>();*/pit tmp=GetBegin();               return *tmp; }
+    SubTree& getp1() { /*chk<2>();*/pit tmp=GetBegin(); ++tmp;        return *tmp; }
+    SubTree& getp2() { /*chk<3>();*/pit tmp=GetBegin(); ++tmp; ++tmp; return *tmp; }
 
     // set
     void SetImmed(double v) { data->SetImmed(v); }
@@ -2656,7 +2797,7 @@ bool CodeTree::operator< (const CodeTree& b) const
     return false;
 }
 
-namespace {
+
 bool IsNegate(const SubTree &p1, const SubTree &p2) /*const */
 {
     if(p1->IsImmed() && p2->IsImmed())
@@ -2676,7 +2817,6 @@ bool IsInverse(const SubTree &p1, const SubTree &p2) /*const*/
     if(p1.getsign() == p2.getsign()) return false;
     return *p1 == *p2;
 }
-}
 
 SubTree::SubTree() : tree(new CodeTree), sign(false)
 {
@@ -2689,7 +2829,7 @@ SubTree::SubTree(const SubTree &b) : tree(new CodeTree(*b.tree)), sign(b.sign)
 #define SubTreeDecl(p1, p2) \
     SubTree::SubTree p1 : tree(new CodeTree p2), sign(false) { }
 
-SubTreeDecl( (const struct CodeTree &b), (b) )
+SubTreeDecl( (const CodeTree &b), (b) )
 SubTreeDecl( (double value),             (value) )
 
 #undef SubTreeDecl
@@ -2752,8 +2892,13 @@ void SubTree::CheckConstInv()
     }
 }
 
-void FunctionParser::MakeTree(struct CodeTree *result) const
+}//namespace
+
+void FunctionParser::MakeTree(void *r) const
 {
+    // Dirty hack. Should be fixed.
+    CodeTree* result = static_cast<CodeTree*>(r);
+
     vector<CodeTree> stack(1);
 
     #define GROW(n) do { \
@@ -2780,6 +2925,10 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
     list<unsigned> labels;
 
+    const unsigned* const ByteCode = data->ByteCode;
+    const unsigned ByteCodeSize = data->ByteCodeSize;
+    const double* const Immed = data->Immed;
+
     for(unsigned IP=0, DP=0; ; ++IP)
     {
         while(labels.size() > 0
@@ -2790,12 +2939,12 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
             labels.erase(labels.begin());
         }
 
-        if(IP >= Comp.ByteCodeSize)
+        if(IP >= ByteCodeSize)
         {
             break;
         }
 
-        unsigned opcode = Comp.ByteCode[IP];
+        unsigned opcode = ByteCode[IP];
 
         if(opcode == cIf)
         {
@@ -2803,12 +2952,12 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
         }
         else if(opcode == cJump)
         {
-            labels.push_front(Comp.ByteCode[IP+1]+1);
+            labels.push_front(ByteCode[IP+1]+1);
             IP += 2;
         }
         else if(opcode == cImmed)
         {
-            ADDCONST(Comp.Immed[DP++]);
+            ADDCONST(Immed[DP++]);
         }
         else if(opcode < VarBegin)
         {
@@ -2845,16 +2994,17 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
                 case cFCall:
                 {
-                    unsigned index = Comp.ByteCode[++IP];
-                    unsigned params = FuncPtrs[index].params;
+                    unsigned index = ByteCode[++IP];
+                    unsigned params = data->FuncPtrs[index].params;
                     EAT(params, opcode);
                     stack[stacktop-1].data->SetFuncNo(index);
                     break;
                 }
                 case cPCall:
                 {
-                    unsigned index = Comp.ByteCode[++IP];
-                    unsigned params = FuncParsers[index]->varAmount;
+                    unsigned index = ByteCode[++IP];
+                    unsigned params =
+                        data->FuncParsers[index]->data->varAmount;
                     EAT(params, opcode);
                     stack[stacktop-1].data->SetFuncNo(index);
                     break;
@@ -2879,7 +3029,7 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
                     unsigned paramcount = func.params;
 #ifndef DISABLE_EVAL
-                    if(opcode == cEval) paramcount = varAmount;
+                    if(opcode == cEval) paramcount = data->varAmount;
 #endif
                     if(opcode == cSqrt)
                     {
@@ -2954,6 +3104,7 @@ void FunctionParser::MakeTree(struct CodeTree *result) const
 
 void FunctionParser::Optimize()
 {
+    copyOnWrite();
 
     CodeTree tree;
     MakeTree(&tree);
@@ -2979,20 +3130,20 @@ void FunctionParser::Optimize()
     tree.Assemble(byteCode, immed);
 #endif
 
-    delete[] Comp.ByteCode; Comp.ByteCode = 0;
-    if((Comp.ByteCodeSize = byteCode.size()) > 0)
+    delete[] data->ByteCode; data->ByteCode = 0;
+    if((data->ByteCodeSize = byteCode.size()) > 0)
     {
-        Comp.ByteCode = new unsigned[Comp.ByteCodeSize];
+        data->ByteCode = new unsigned[data->ByteCodeSize];
         for(unsigned a=0; a<byteCode.size(); ++a)
-            Comp.ByteCode[a] = byteCode[a];
+            data->ByteCode[a] = byteCode[a];
     }
 
-    delete[] Comp.Immed; Comp.Immed = 0;
-    if((Comp.ImmedSize = immed.size()) > 0)
+    delete[] data->Immed; data->Immed = 0;
+    if((data->ImmedSize = immed.size()) > 0)
     {
-        Comp.Immed = new double[Comp.ImmedSize];
+        data->Immed = new double[data->ImmedSize];
         for(unsigned a=0; a<immed.size(); ++a)
-            Comp.Immed[a] = immed[a];
+            data->Immed[a] = immed[a];
     }
 }
 
@@ -3000,7 +3151,7 @@ void FunctionParser::Optimize()
 #else /* !SUPPORT_OPTIMIZER */
 
 /* keep the linker happy */
-void FunctionParser::MakeTree(struct CodeTree *) const {}
+void FunctionParser::MakeTree(CodeTree *) const {}
 void FunctionParser::Optimize()
 {
     // Do nothing if no optimizations are supported.
