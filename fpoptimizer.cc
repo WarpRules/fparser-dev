@@ -1,5 +1,5 @@
 //============================================
-// Function parser v2.81 optimizer by Bisqwit
+// Function parser v2.82 optimizer by Bisqwit
 //============================================
 
 /*
@@ -1092,7 +1092,9 @@ public:
     void Optimize();
 
     void Assemble(vector<unsigned> &byteCode,
-                  vector<double>   &immed) const;
+                  vector<double>   &immed,
+                  size_t& stacktop_cur,
+                  size_t& stacktop_max) const;
 
     void FinalOptimize()
     {
@@ -1338,21 +1340,30 @@ CodeTree::ConstList CodeTree::BuildConstList()
 
 void CodeTree::Assemble
    (vector<unsigned> &byteCode,
-    vector<double>   &immed) const
+    vector<double>   &immed,
+    size_t& stacktop_cur,
+    size_t& stacktop_max) const
 {
     #define AddCmd(op) byteCode.push_back((op))
     #define AddConst(v) do { \
         byteCode.push_back(cImmed); \
         immed.push_back((v)); \
     } while(0)
+    #define SimuPush(n) stacktop_cur += (n)
+    #define SimuPop(n) do { \
+        if(stacktop_cur > stacktop_max) stacktop_max = stacktop_cur; \
+        stacktop_cur -= (n); \
+    } while(0)
 
     if(IsVar())
     {
+        SimuPush(1);
         AddCmd(GetVar());
         return;
     }
     if(IsImmed())
     {
+        SimuPush(1);
         AddConst(GetImmed());
         return;
     }
@@ -1381,7 +1392,8 @@ void CodeTree::Assemble
                     {
                         CodeTree tmp = *pa;
                         tmp.data->InvertImmed();
-                        tmp.Assemble(byteCode, immed);
+                        tmp.Assemble(byteCode, immed,
+                                     stacktop_cur, stacktop_max);
                         pnega = !pnega;
                         done = true;
                     }
@@ -1394,13 +1406,14 @@ void CodeTree::Assemble
                     {
                         CodeTree tmp = *pa;
                         tmp.data->NegateImmed();
-                        tmp.Assemble(byteCode, immed);
+                        tmp.Assemble(byteCode, immed,
+                                     stacktop_cur, stacktop_max);
                         pnega = !pnega;
                         done = true;
                     }
                 }
                 if(!done)
-                    pa->Assemble(byteCode, immed);
+                    pa->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
 
                 if(opcount == 2)
                 {
@@ -1409,6 +1422,8 @@ void CodeTree::Assemble
                     {
                         tmpop = (tmpop == cMul) ? cDiv : cSub;
                     }
+                    
+                    SimuPop(1);
                     AddCmd(tmpop);
                 }
                 else if(pnega)
@@ -1422,14 +1437,16 @@ void CodeTree::Assemble
         case cIf:
         {
             // If the parameter amount is != 3, we're screwed.
-            getp0()->Assemble(byteCode, immed);
+            getp0()->Assemble(byteCode, immed, stacktop_cur, stacktop_max); // expression
+            SimuPop(1);
 
             unsigned ofs = byteCode.size();
             AddCmd(cIf);
             AddCmd(0); // code index
             AddCmd(0); // immed index
 
-            getp1()->Assemble(byteCode, immed);
+            getp1()->Assemble(byteCode, immed, stacktop_cur, stacktop_max); // true branch
+            SimuPop(1);
 
             byteCode[ofs+1] = byteCode.size()+2;
             byteCode[ofs+2] = immed.size();
@@ -1439,46 +1456,55 @@ void CodeTree::Assemble
             AddCmd(0); // code index
             AddCmd(0); // immed index
 
-            getp2()->Assemble(byteCode, immed);
+            getp2()->Assemble(byteCode, immed, stacktop_cur, stacktop_max); // false branch
+            SimuPop(1);
 
             byteCode[ofs+1] = byteCode.size()-1;
             byteCode[ofs+2] = immed.size();
+            
+            SimuPush(1);
 
             break;
         }
         case cFCall:
         {
             // If the parameter count is invalid, we're screwed.
+            size_t was_stacktop = stacktop_cur;
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 const SubTree &pa = *a;
-                pa->Assemble(byteCode, immed);
+                pa->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
             }
             AddCmd(GetOp());
             AddCmd(data->GetFuncNo());
+            SimuPop(stacktop_cur - was_stacktop - 1);
             break;
         }
         case cPCall:
         {
             // If the parameter count is invalid, we're screwed.
+            size_t was_stacktop = stacktop_cur;
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 const SubTree &pa = *a;
-                pa->Assemble(byteCode, immed);
+                pa->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
             }
             AddCmd(GetOp());
             AddCmd(data->GetFuncNo());
+            SimuPop(stacktop_cur - was_stacktop - 1);
             break;
         }
         default:
         {
             // If the parameter count is invalid, we're screwed.
+            size_t was_stacktop = stacktop_cur;
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 const SubTree &pa = *a;
-                pa->Assemble(byteCode, immed);
+                pa->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
             }
             AddCmd(GetOp());
+            SimuPop(stacktop_cur - was_stacktop - 1);
             break;
         }
     }
@@ -1937,7 +1963,16 @@ void FunctionParser::Optimize()
     for(unsigned a=0; a<Comp.ImmedSize; ++a)immed[a] = Comp.Immed[a];
 #else
     byteCode.clear(); immed.clear();
-    tree.Assemble(byteCode, immed);
+    size_t stacktop_cur = 0;
+    size_t stacktop_max = 0;
+    tree.Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+    
+    if(data->StackSize < stacktop_max)
+    {
+        delete[] data->Stack;
+        data->Stack = new double[stacktop_max];
+        data->StackSize = stacktop_max;
+    }
 #endif
 
     delete[] data->ByteCode; data->ByteCode = 0;

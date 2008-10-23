@@ -1,5 +1,5 @@
 //===============================
-// Function parser v2.81 by Warp
+// Function parser v2.82 by Warp
 //===============================
 
 #include "fpconfig.hh"
@@ -1353,6 +1353,8 @@ namespace
 
 void FunctionParser::PrintByteCode(std::ostream& dest) const
 {
+    dest << "Size of stack: " << data->StackSize << "\n";
+
     const unsigned* const ByteCode = data->ByteCode;
     const double* const Immed = data->Immed;
 
