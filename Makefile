@@ -1,4 +1,5 @@
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -m32 -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 #CXX=g++ -Wall -W -pedantic -ansi -g -O0
 LD=g++ -s
 
@@ -13,6 +14,11 @@ example: example.o fparser.o fpoptimizer.o
 
 pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fptypes.hh
 	zip -9 fparser284.zip $^
+
+fparser.cc: fparser.cc.re Makefile
+	re2c -bs $< \
+	| sed 's/static unsigned char yybm/static const unsigned char yybm/' \
+	> $@
 
 #%.o: %.cc fparser.hh
 #	$(CXX) -c $<

@@ -132,34 +132,11 @@ private:
 
     bool CheckRecursiveLinking(const FunctionParser*) const;
 
-    bool ParseVars(const std::string& Vars,
-                   std::map<std::string, unsigned>& dest);
     int VarNameType(const std::string&) const;
-    Data::VarMap_t::const_iterator
-    FindVariable(const char*, const Data::VarMap_t&) const;
-    Data::ConstMap_t::const_iterator
-    FindConstant(const char*, const Data::ConstMap_t&) const;
-    int CheckForUnit(const char*, int) const;
-    int CheckSyntax(const char*);
-    int Compile(const char*);
-    bool IsVariable(int);
     void AddCompiledByte(unsigned);
     void AddImmediate(double);
     void AddFunctionOpcode(unsigned);
     inline void incStackPtr();
-    int CompileIf(const char*, int);
-    int CompileFunctionParams(const char*, int, unsigned);
-    int CompileElement(const char*, int);
-    int CompilePossibleUnit(const char*, int);
-    int CompilePow(const char*, int);
-    int CompileUnaryMinus(const char*, int);
-    int CompileMult(const char*, int);
-    int CompileAddition(const char*, int);
-    int CompileComparison(const char*, int);
-    int CompileAnd(const char*, int);
-    int CompileOr(const char*, int);
-    int CompileExpression(const char*, int, bool=false);
-
 
     void MakeTree(void*) const;
 };
