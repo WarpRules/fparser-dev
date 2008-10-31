@@ -24,6 +24,33 @@ using namespace std;
 #define M_PI 3.1415926535897932384626433832795
 #endif
 
+/* Require parentheses in function calls? (If not, "sin x" works.) */
+#define REQUIRE_FCALL_PARENS
+
+/*!re2c
+re2c:yyfill:enable = 0;
+digit = [0-9];
+digitseq = digit+;
+integer   = digitseq;
+pminteger = [-+]?digitseq;
+utf8four  = [\360-\367][\220-\277][\200-\277][\200-\277];
+utf8three = [\340-\357][\240-\277][\200-\277];
+utf8two   = [\302-\337][\200-\277];
+asciichar = [A-Za-z_];
+alpha = asciichar|utf8two|utf8three|utf8four;
+zzalpha = [a-zA-Z];
+space = [ \b\t\v\f\r\n];
+anychar = [\000-\377];
+exp = [eE]pminteger;
+decimpart = [.]digitseq;
+numconst = integer? decimpart exp?
+         | integer exp?;
+identifier = alpha(alpha|digit)*;
+sws = space+;
+andop = [&][&]?;
+orop = [|][|]?;
+*/
+
 namespace
 {
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
@@ -160,8 +187,8 @@ FunctionParser::Data::Data(const Data& cpy):
     if(ImmedSize) Immed = new double[ImmedSize];
     if(StackSize) Stack = new double[StackSize];
 
-    for(unsigned i=0; i<ByteCodeSize; ++i) ByteCode[i] = cpy.ByteCode[i];
-    for(unsigned i=0; i<ImmedSize; ++i) Immed[i] = cpy.Immed[i];
+    std::copy(cpy.ByteCode, cpy.ByteCode+ByteCodeSize, ByteCode);
+    std::copy(cpy.Immed, cpy.Immed+ImmedSize, Immed);
 
     // No need to copy the stack contents because it's obsolete outside Eval()
 }
@@ -198,41 +225,65 @@ namespace
       USER_DEF_CONST, USER_DEF_UNIT,
       USER_DEF_FUNC_PTR, USER_DEF_FUNC_PARSER
     };
-}
 
-
-// Parse variables
-bool FunctionParser::ParseVars(const string& Vars, map<string, unsigned>& dest)
-{
-    unsigned varNumber = VarBegin;
-    unsigned ind1 = 0, ind2;
-
-    while(ind1 < Vars.size())
+    // Parse variables
+    bool ParseVars(const string& Vars, map<string, unsigned>& dest)
     {
-        if(!isalpha(Vars[ind1]) && Vars[ind1]!='_') return false;
-        for(ind2=ind1+1; ind2<Vars.size() && Vars[ind2]!=','; ++ind2)
-            if(!isalnum(Vars[ind2]) && Vars[ind2]!='_') return false;
-        const string varName = Vars.substr(ind1, ind2-ind1);
-        if(VarNameType(varName) != VALID_NEW_NAME) return false;
+        #define YYFILL(n) { }
+        #define YYDEBUG(n,c) { printf("state %d, char '%c'\n", n,c); }
+        typedef unsigned char YYCTYPE;
+        const YYCTYPE* YYCURSOR = (const YYCTYPE*) Vars.c_str();
+        const YYCTYPE* YYLIMIT  = YYCURSOR + Vars.size();
+        const YYCTYPE* YYMARKER = 0;
 
-        if(dest.insert(make_pair(varName, varNumber++)).second == false)
-            return false;
+        size_t varNumber = VarBegin;
+        int CommaState = 0; // 0 = don't expect, 1 = expect, -1 = got
 
-        ind1 = ind2+1;
+ContParse:
+        const YYCTYPE* anchor = YYCURSOR;
+        if(anchor >= YYLIMIT) goto DoneParse;
+/*!re2c
+sws { goto ContParse; }
+identifier {
+    if(CommaState == 1) return false; CommaState = 1;
+    const std::string varName(anchor, YYCURSOR);
+    if(dest.insert(make_pair(varName, varNumber++)).second == false)
+        { return false; }
+    goto ContParse;
+}
+"," { if(CommaState != 1) return false; CommaState = -1; goto ContParse; }
+anychar { return false; }
+*/
+        #undef YYFILL
+        #undef YYDEBUG
+DoneParse:
+        if(CommaState == -1) return false; // spurious trailing comma
+	return true;
     }
-    return true;
 }
 
 namespace
 {
     bool varNameHasOnlyValidChars(const std::string& name)
     {
-        if(name.empty() || (!isalpha(name[0]) && name[0] != '_'))
-            return false;
-        for(unsigned i=0; i<name.size(); ++i)
-            if(!isalnum(name[i]) && name[i] != '_')
-                return false;
+        #define YYFILL(n) { }
+        #define YYDEBUG(n,c) { printf("state %d, char '%c'\n", n,c); }
+        typedef unsigned char YYCTYPE;
+        const YYCTYPE* YYCURSOR = (const YYCTYPE*) name.c_str();
+        //const YYCTYPE* YYLIMIT  = YYCURSOR + name.size();
+        const YYCTYPE* YYMARKER = 0;
+/*!re2c
+identifier {
+        if(*YYCURSOR) return false;
+        if(FindFunction(name.c_str())) return false;
         return true;
+}
+anychar { return false; }
+*/
+        return false;
+
+        #undef YYFILL
+        #undef YYDEBUG
     }
 }
 
@@ -240,19 +291,18 @@ int FunctionParser::VarNameType(const std::string& name) const
 {
     if(!varNameHasOnlyValidChars(name)) return NOT_VALID_NAME;
 
-    const char* n = name.c_str();
-    if(FindFunction(n)) return RESERVED_FUNCTION;
-    if(FindConstant(n, data->Constants) != data->Constants.end())
+    if(FindFunction(name.c_str())) return RESERVED_FUNCTION;
+    if(data->Constants.find(name) != data->Constants.end())
         return USER_DEF_CONST;
 
     // Units are independent from the rest and thus the following check
     // is actually not needed:
-    //if(FindConstant(n, data->Units) != data->Units.end())
+    //if(data->Units.find(name) != data->Units.end())
     //    return USER_DEF_UNIT;
 
-    if(FindVariable(n, data->FuncParserNames) != data->FuncParserNames.end())
+    if(data->FuncParserNames.find(name) != data->FuncParserNames.end())
         return USER_DEF_FUNC_PARSER;
-    if(FindVariable(n, data->FuncPtrNames) != data->FuncPtrNames.end())
+    if(data->FuncPtrNames.find(name) != data->FuncPtrNames.end())
         return USER_DEF_FUNC_PTR;
 
     return VALID_NEW_NAME;
@@ -307,9 +357,12 @@ bool FunctionParser::CheckRecursiveLinking(const FunctionParser* fp) const
 bool FunctionParser::AddFunction(const std::string& name,
                                  FunctionParser& parser)
 {
-    int nameType = VarNameType(name);
-    if(nameType == VALID_NEW_NAME)
+    if(varNameHasOnlyValidChars(name))
     {
+        if(data->FuncPtrNames.find(name) != data->FuncPtrNames.end()
+        || data->Constants.find(name) != data->Constants.end())
+            return false;
+
         if(CheckRecursiveLinking(&parser)) return false;
 
         CopyOnWrite();
@@ -321,6 +374,18 @@ bool FunctionParser::AddFunction(const std::string& name,
     return false;
 }
 
+struct PrioItem
+{
+    int prio;
+    int opcode;
+    int flags;
+    int nparams;
+
+    /* For cIf */
+    unsigned ByteCodeSize1, ByteCodeSize2, ImmedSize2;
+
+    PrioItem(int p,int o,int f,int n) : prio(p),opcode(o),flags(f),nparams(n) { }
+};
 
 
 // Main parsing function
@@ -331,6 +396,7 @@ int FunctionParser::Parse(const std::string& Function,
 {
     CopyOnWrite();
 
+    data->isOptimized = false;
     data->Variables.clear();
 
     if(!ParseVars(Vars, data->Variables))
@@ -340,288 +406,369 @@ int FunctionParser::Parse(const std::string& Function,
     }
     data->varAmount = data->Variables.size(); // this is for Eval()
 
-    const char* Func = Function.c_str();
-
     parseErrorType = FP_NO_ERROR;
-
-    int Result = CheckSyntax(Func);
-    if(Result >= 0) return Result;
 
     data->useDegreeConversion = useDegrees;
-    Result = Compile(Func);
-    if(Result >= 0) return Result;
 
-    data->Variables.clear();
-
-    parseErrorType = FP_NO_ERROR;
-    return -1;
-}
-
-namespace
-{
-    const char* const fpOperators[] =
-    {
-        "+", "-", "*", "/", "%", "^",
-        "=", "!=", "<=", "<", ">=", ">", "&", "|",
-        0
-    };
-
-    // Is given char an operator?
-    // (Returns 0 if not, else the size of the operator)
-    inline int IsOperator(const char* F)
-    {
-        for(unsigned opInd = 0; fpOperators[opInd]; ++opInd)
-        {
-            const char* op = fpOperators[opInd];
-            for(unsigned n = 0; F[n] == *op; ++n)
-            {
-                ++op;
-                if(*op == 0) return op-fpOperators[opInd];
-            }
-        }
-        return 0;
-    }
-
-    // skip whitespace
-    inline void sws(const char* F, int& Ind)
-    {
-        while(F[Ind] && isspace(F[Ind])) ++Ind;
-    }
-}
-
-// Returns an iterator to the variable with the same name as 'F', or to
-// Variables.end() if no such variable exists:
-inline FunctionParser::Data::VarMap_t::const_iterator
-FunctionParser::FindVariable(const char* F, const Data::VarMap_t& vars) const
-{
-    if(vars.size())
-    {
-        unsigned ind = 0;
-        while(isalnum(F[ind]) || F[ind] == '_') ++ind;
-        if(ind)
-        {
-            string name(F, ind);
-            return vars.find(name);
-        }
-    }
-    return vars.end();
-}
-
-inline FunctionParser::Data::ConstMap_t::const_iterator
-FunctionParser::FindConstant(const char* F,
-                             const Data::ConstMap_t& consts) const
-{
-    if(consts.size())
-    {
-        unsigned ind = 0;
-        while(isalnum(F[ind]) || F[ind] == '_') ++ind;
-        if(ind)
-        {
-            string name(F, ind);
-            return consts.find(name);
-        }
-    }
-    return consts.end();
-}
-
-int FunctionParser::CheckForUnit(const char* Function, int Ind) const
-{
-    int c = Function[Ind];
-    if(isalpha(c) || c == '_')
-    {
-        Data::ConstMap_t::const_iterator uIter =
-            FindConstant(&Function[Ind], data->Units);
-        if(uIter != data->Units.end())
-        {
-            Ind += uIter->first.size();
-            sws(Function, Ind);
-        }
-    }
-    return Ind;
-}
-
-//---------------------------------------------------------------------------
-// Check function string syntax
-// ----------------------------
-int FunctionParser::CheckSyntax(const char* Function)
-{
-    const Data::VarMap_t& Variables = data->Variables;
-    const Data::ConstMap_t& Constants = data->Constants;
-    const Data::VarMap_t& FuncPtrNames = data->FuncPtrNames;
-    const Data::VarMap_t& FuncParserNames = data->FuncParserNames;
-
-    vector<int> functionParenthDepth;
-
-    int Ind=0, ParenthCnt=0, c;
-    char* Ptr;
-
-    while(true)
-    {
-        sws(Function, Ind);
-        c=Function[Ind];
-
-// Check for valid operand (must appear)
-
-        // Check for leading - or !
-        if(c=='-' || c=='!') { sws(Function, ++Ind); c=Function[Ind]; }
-        if(c==0) { parseErrorType=PREMATURE_EOS; return Ind; }
-
-        // Check for math function
-        bool foundFunc = false;
-        const FuncDefinition* fptr = FindFunction(&Function[Ind]);
-        if(fptr)
-        {
-            Ind += fptr->nameLength;
-            foundFunc = true;
-        }
-        else
-        {
-            // Check for user-defined function
-            Data::VarMap_t::const_iterator fIter =
-                FindVariable(&Function[Ind], FuncPtrNames);
-            if(fIter != FuncPtrNames.end())
-            {
-                Ind += fIter->first.size();
-                foundFunc = true;
-            }
-            else
-            {
-                Data::VarMap_t::const_iterator pIter =
-                    FindVariable(&Function[Ind], FuncParserNames);
-                if(pIter != FuncParserNames.end())
-                {
-                    Ind += pIter->first.size();
-                    foundFunc = true;
-                }
-            }
-        }
-
-        if(foundFunc)
-        {
-            sws(Function, Ind);
-            c = Function[Ind];
-            if(c!='(') { parseErrorType=EXPECT_PARENTH_FUNC; return Ind; }
-
-            int Ind2 = Ind+1;
-            sws(Function, Ind2);
-            if(Function[Ind2] == ')')
-            {
-                Ind = Ind2+1;
-                sws(Function, Ind);
-                c = Function[Ind];
-                // Ugly, but other methods would just be uglier...
-                goto CheckOperator;
-            }
-
-            functionParenthDepth.push_back(ParenthCnt+1);
-        }
-
-        // Check for opening parenthesis
-        if(c=='(')
-        {
-            ++ParenthCnt;
-            sws(Function, ++Ind);
-            if(Function[Ind]==')') { parseErrorType=EMPTY_PARENTH; return Ind;}
-            continue;
-        }
-
-        // Check for number
-        if(isdigit(c) || (c=='.' && isdigit(Function[Ind+1])))
-        {
-            strtod(&Function[Ind], &Ptr);
-            Ind += int(Ptr-&Function[Ind]);
-            sws(Function, Ind);
-            c = Function[Ind];
-        }
-        else
-        { // Check for variable
-            Data::VarMap_t::const_iterator vIter =
-                FindVariable(&Function[Ind], Variables);
-            if(vIter != Variables.end())
-                Ind += vIter->first.size();
-            else
-            {
-                // Check for constant
-                Data::ConstMap_t::const_iterator cIter =
-                    FindConstant(&Function[Ind], Constants);
-                if(cIter != Constants.end())
-                    Ind += cIter->first.size();
-                else
-                { parseErrorType=SYNTAX_ERROR; return Ind; }
-            }
-            sws(Function, Ind);
-            c = Function[Ind];
-        }
-
-        // Check for unit
-        Ind = CheckForUnit(Function, Ind);
-        c = Function[Ind];
-
-        // Check for closing parenthesis
-        while(c==')')
-        {
-            if(functionParenthDepth.size() &&
-               functionParenthDepth.back() == ParenthCnt)
-                functionParenthDepth.pop_back();
-            if((--ParenthCnt)<0) { parseErrorType=MISM_PARENTH; return Ind; }
-            sws(Function, ++Ind);
-            c=Function[Ind];
-        }
-
-    CheckOperator:
-// If we get here, we have a legal operand and now a legal unit, operator or
-// end of string must follow
-
-        // Check for unit
-        Ind = CheckForUnit(Function, Ind);
-        c = Function[Ind];
-
-        // Check for EOS
-        if(c==0) break; // The only way to end the checking loop without error
-
-        // Check for operator
-        int opSize = 0;
-        if(c == ',' && !functionParenthDepth.empty() &&
-           functionParenthDepth.back() == ParenthCnt)
-            opSize = 1;
-        else
-            opSize = IsOperator(Function+Ind);
-        if(opSize == 0)
-        { parseErrorType=EXPECT_OPERATOR; return Ind; }
-
-// If we get here, we have an operand and an operator; the next loop will
-// check for another operand (must appear)
-        Ind += opSize;
-    } // while
-
-    // Check that all opened parentheses are also closed
-    if(ParenthCnt>0) { parseErrorType=MISSING_PARENTH; return Ind; }
-
-// The string is ok
-    parseErrorType=FP_NO_ERROR;
-    return -1;
-}
-
-
-// Compile function string to bytecode
-// -----------------------------------
-int FunctionParser::Compile(const char* Function)
-{
     if(data->ByteCode) { delete[] data->ByteCode; data->ByteCode=0; }
     if(data->Immed) { delete[] data->Immed; data->Immed=0; }
     if(data->Stack) { delete[] data->Stack; data->Stack=0; }
-    data->isOptimized = false;
 
-    vector<unsigned> byteCode; byteCode.reserve(1024);
+    std::vector<unsigned> byteCode; byteCode.reserve(1024);
     tempByteCode = &byteCode;
 
-    vector<double> immed; immed.reserve(1024);
+    std::vector<double> immed; immed.reserve(1024);
     tempImmed = &immed;
 
     data->StackSize = StackPtr = 0;
 
-    int ind = CompileExpression(Function, 0);
-    if(parseErrorType != FP_NO_ERROR) return ind;
+    #define YYFILL(n) { }
+    #define YYDEBUG(n,c) { printf("state %d, char '%c'\n", n,c); }
+    typedef unsigned char YYCTYPE;
+    const YYCTYPE* YYCURSOR = (const YYCTYPE*) Function.c_str();
+    const YYCTYPE* YYLIMIT  = YYCURSOR + Function.size();
+    const YYCTYPE* YYMARKER = 0;
+
+    std::vector<PrioItem> PrioStack;
+    PrioStack.reserve(Function.size()/3); /* heuristic guess */
+
+/*
+
+Priority levels:
+
+10 func
+9  units
+8  ^        (note: right-associative)
+7  ! -    (UNARY)
+6  * / %
+5  + -    (BINARY)
+4  = < > !=
+3  &
+2  |
+1  ,
+
+*/
+
+    int CurPrio = 0;
+    bool had_op = false;
+ContParse:
+    const YYCTYPE* anchor = YYCURSOR;
+    if(anchor >= YYLIMIT) goto DoneParse;
+ContParseWithSameAnchor:
+    /*printf("ContParse: anchor=%s\n", anchor);*/
+
+#define PRIO_ENTER_GEN(newprio, op, flags, nparams) \
+    do { \
+        /*printf("PrioEnter from %d to %d, op=%d(%s), flags=%u\n", \
+            CurPrio, newprio,op,#op,flags);*/ \
+        PrioStack.push_back(PrioItem(CurPrio,op,flags,nparams)); \
+        CurPrio=(newprio); \
+        had_op = false; \
+    } while(0)
+
+#define PRIO_ENTER_NOP(n,np)            PRIO_ENTER_GEN(n,-1,0,np)
+#define PRIO_ENTER_OP(n,op,np)          PRIO_ENTER_GEN(n,op,0,np)
+#define PRIO_ENTER_FLAGS(n,op,flags,np) PRIO_ENTER_GEN(n,op,flags,np)
+
+#define PRIO_RETURN() \
+    do { \
+        if(PrioStack.empty()) \
+        { \
+            parseErrorType = UNEXPECTED_ERROR; \
+            return (anchor - (const YYCTYPE*) Function.c_str()); \
+        } \
+        const PrioItem& item = PrioStack.back(); \
+        /*printf("PrioReturn from %d to %d, op=%d, flags=%u\n", \
+            CurPrio, item.prio,item.opcode,item.flags);*/ \
+        CurPrio = item.prio; \
+        switch(item.opcode) \
+        { \
+            case cIf: \
+                (*tempByteCode)[item.ByteCodeSize1]   = item.ByteCodeSize2+1; \
+                (*tempByteCode)[item.ByteCodeSize1+1] = item.ImmedSize2; \
+                (*tempByteCode)[item.ByteCodeSize2]   = tempByteCode->size()-1; \
+                (*tempByteCode)[item.ByteCodeSize2+1] = tempImmed->size(); \
+                break; \
+            case cFCall: case cPCall: \
+                AddCompiledByte(item.opcode); \
+                AddCompiledByte(item.flags); \
+                break; \
+            default: \
+                if(item.opcode >= 0) \
+                { \
+                    AddFunctionOpcode(item.opcode); \
+                } \
+        } \
+        if(item.opcode >= 0) \
+        { \
+            StackPtr -= item.nparams; \
+            incStackPtr(); \
+        } \
+        had_op = true; \
+        PrioStack.pop_back(); \
+    } while(0)
+
+/* left-associative x-nary op (nparams=x) */
+#define NARY_OP_LEFT(prio, op, fl, nparams) \
+    do { while(CurPrio >= prio) PRIO_RETURN(); \
+         PRIO_ENTER_FLAGS(prio, op, fl, nparams); } while(0)
+
+/* right-associative x-nary op (nparams=x) */
+#define NARY_OP_RIGHT(prio, op, fl, nparams) \
+    do { while(CurPrio > prio) PRIO_RETURN(); \
+         PRIO_ENTER_FLAGS(prio, op, fl, nparams); } while(0)
+
+#define BINARY_OP_LEFT(prio,op,fl) NARY_OP_LEFT(prio,op,fl,2)
+#define BINARY_OP_RIGHT(prio,op,fl) NARY_OP_RIGHT(prio,op,fl,2)
+#define UNARY_OP_LEFT(prio,op,fl) NARY_OP_LEFT(prio,op,fl,1)
+
+#ifdef FP_NO_ASINH
+ #define ASINH_ENABLE(x) goto GotIdentifier
+#else
+ #define ASINH_ENABLE(x) x
+#endif
+#ifdef FP_DISABLE_EVAL
+ #define EVAL_ENABLE(x) goto GotIdentifier
+#else
+ #define EVAL_ENABLE(x) x
+#endif
+
+
+/*!re2c
+sws      { goto ContParse; }
+"("      {   if(had_op)
+             {
+                  parseErrorType = SYNTAX_ERROR;
+                  //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+                  return (anchor - (const YYCTYPE*) Function.c_str());
+             }
+             PRIO_ENTER_NOP(0, 0);
+             goto ContParse;
+         }
+")"      {
+             while(CurPrio > 0) PRIO_RETURN();
+             PRIO_RETURN();
+             had_op = true;
+             goto ContParse;
+         }
+
+","      {
+             while(CurPrio >= 1) PRIO_RETURN();
+             if(PrioStack.size() >= 2)
+             {
+                 /* Get information about the caller */
+                 PrioItem& caller = PrioStack[PrioStack.size()-2];
+                 if(caller.opcode == cIf)
+                 {
+                     switch(caller.flags)
+                     {
+                         case 0: /* The first param of the "if", "condition" */
+                         {
+                             AddCompiledByte(cIf);
+                             caller.ByteCodeSize1 = tempByteCode->size();
+                             AddCompiledByte(0); // Jump index; to be set later
+                             AddCompiledByte(0); // Immed jump index; to be set later
+                             caller.flags = 1;
+                             break;
+                         }
+                         case 1: /* The second param of the "if", "positive branch" */
+                         {
+                             AddCompiledByte(cJump);
+                             caller.ByteCodeSize2 = tempByteCode->size();
+                             caller.ImmedSize2    = tempImmed->size();
+                             AddCompiledByte(0); // Jump index; to be set later
+                             AddCompiledByte(0); // Immed jump index; to be set later
+                             caller.flags = 2;
+                             break;
+                         }
+                     }
+                 }
+             }
+             NARY_OP_LEFT(1, -1, 0, 0); goto ContParse;
+         }
+
+orop     { BINARY_OP_LEFT(2, cOr, 0); goto ContParse; }
+
+andop    { BINARY_OP_LEFT(3, cAnd, 0); goto ContParse; }
+
+"+"      { if(had_op) /* binary? */
+             { BINARY_OP_LEFT(4, cAdd, 0); goto ContParse; }
+           else /* unary */
+             { goto ContParse; }
+         }
+"-"      { if(had_op) /* binary? */
+             { BINARY_OP_LEFT(4, cSub, 0); goto ContParse; }
+           else /* unary */
+             { /*while(*YYCURSOR == ' ' || *YYCURSOR == '\t'
+                  || *YYCURSOR == '\r' || *YYCURSOR == '\n') ++YYCURSOR;
+               */if(*YYCURSOR == '.' || (*YYCURSOR >= '0' && *YYCURSOR <= '9'))
+                  goto ContParseWithSameAnchor; // negative number
+               PRIO_ENTER_OP(7, cNeg, 1);  goto ContParse;
+             }
+         }
+"!"      { /* unary */
+           PRIO_ENTER_OP(7, cNot, 1); goto ContParse; }
+
+"="      { BINARY_OP_LEFT(5, cEqual, 0); goto ContParse; }
+"!="     { BINARY_OP_LEFT(5, cNEqual, 0); goto ContParse; }
+"<"      { BINARY_OP_LEFT(5, cLess, 0); goto ContParse; }
+">"      { BINARY_OP_LEFT(5, cGreater, 0); goto ContParse; }
+"<="     { BINARY_OP_LEFT(5, cLessOrEq, 0); goto ContParse; }
+">="     { BINARY_OP_LEFT(5, cGreaterOrEq, 0); goto ContParse; }
+
+"*"      { BINARY_OP_LEFT(6, cMul, 0); goto ContParse; }
+"/"      { BINARY_OP_LEFT(6, cDiv, 0); goto ContParse; }
+"%"      { BINARY_OP_LEFT(6, cMod, 0); goto ContParse; }
+
+"^"      { BINARY_OP_RIGHT(8, cPow, 0); goto ContParse; }
+
+"abs"     { UNARY_OP_LEFT(10, cAbs, 0); goto ExpectOpenParensParser; }
+"acos"    { UNARY_OP_LEFT(10, cAcos, 0); goto ExpectOpenParensParser; }
+"acosh"   { ASINH_ENABLE(
+            UNARY_OP_LEFT(10, cAcosh, 0); goto ExpectOpenParensParser); }
+"asin"    { UNARY_OP_LEFT(10, cAsin, 0); goto ExpectOpenParensParser; }
+"asinh"   { ASINH_ENABLE(
+            UNARY_OP_LEFT(10, cAsinh, 0); goto ExpectOpenParensParser); }
+"atan"    { UNARY_OP_LEFT(10, cAtan, 0); goto ExpectOpenParensParser; }
+"atan2"   { BINARY_OP_LEFT(10, cAtan2, 0); goto ExpectOpenParensParser; }
+"atanh"   { ASINH_ENABLE(
+            UNARY_OP_LEFT(10, cAtanh, 0); goto ExpectOpenParensParser); }
+"ceil"    { UNARY_OP_LEFT(10, cCeil, 0); goto ExpectOpenParensParser; }
+"cos"     { UNARY_OP_LEFT(10, cCos, 0); goto ExpectOpenParensParser; }
+"cosh"    { UNARY_OP_LEFT(10, cCosh, 0); goto ExpectOpenParensParser; }
+"cot"     { UNARY_OP_LEFT(10, cCot, 0); goto ExpectOpenParensParser; }
+"csc"     { UNARY_OP_LEFT(10, cCsc, 0); goto ExpectOpenParensParser; }
+"eval"    { EVAL_ENABLE(
+            NARY_OP_LEFT(10, cEval, 0, data->varAmount); goto ExpectOpenParensParser); }
+"exp"     { UNARY_OP_LEFT(10, cExp, 0); goto ExpectOpenParensParser; }
+"floor"   { UNARY_OP_LEFT(10, cFloor, 0); goto ExpectOpenParensParser; }
+"if"      { NARY_OP_LEFT(10, cIf, 0, 3); goto ExpectOpenParensParser; }
+"int"     { UNARY_OP_LEFT(10, cInt, 0); goto ExpectOpenParensParser; }
+"log"     { UNARY_OP_LEFT(10, cLog, 0); goto ExpectOpenParensParser; }
+"log10"   { UNARY_OP_LEFT(10, cLog10, 0); goto ExpectOpenParensParser; }
+"max"     { BINARY_OP_LEFT(10, cMax, 0); goto ExpectOpenParensParser; }
+"min"     { BINARY_OP_LEFT(10, cMin, 0); goto ExpectOpenParensParser; }
+"sec"     { UNARY_OP_LEFT(10, cSec, 0); goto ExpectOpenParensParser; }
+"sin"     { UNARY_OP_LEFT(10, cSin, 0); goto ExpectOpenParensParser; }
+"sinh"    { UNARY_OP_LEFT(10, cSinh, 0); goto ExpectOpenParensParser; }
+"sqrt"    { UNARY_OP_LEFT(10, cSqrt, 0); goto ExpectOpenParensParser; }
+"tan"     { UNARY_OP_LEFT(10, cTan, 0); goto ExpectOpenParensParser; }
+"tanh"    { UNARY_OP_LEFT(10, cTanh, 0); goto ExpectOpenParensParser; }
+
+numconst { char* endptr = (char*) YYCURSOR;
+           double val = strtod((const char*)anchor, &endptr);
+           YYCURSOR = (YYCTYPE*) endptr;
+           /*printf("Got imm %g\n", val);*/
+           AddImmediate(val);
+           AddCompiledByte(cImmed);
+           incStackPtr();
+           had_op = true;
+           goto ContParse; }
+
+identifier {
+GotIdentifier:
+    const std::string identifier(anchor, YYCURSOR);
+
+    if(had_op)
+    {
+        Data::ConstMap_t::const_iterator uIter = data->Units.find(identifier);
+        if(uIter != data->Units.end()) /* Is a unit */
+        {
+            BINARY_OP_LEFT(9, cMul, 0);
+            AddImmediate(uIter->second);
+            AddCompiledByte(cImmed);
+            incStackPtr();
+            had_op = true;
+            goto ContParse;
+        }
+        parseErrorType = EXPECT_OPERATOR;
+        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+        return (anchor - (const YYCTYPE*) Function.c_str());
+    }
+
+    Data::VarMap_t::const_iterator vIter = data->Variables.find(identifier);
+    if(vIter != data->Variables.end()) /* Is a variable */
+    {
+        AddCompiledByte(vIter->second);
+        had_op = true;
+        incStackPtr();
+        goto ContParse;
+    }
+    Data::ConstMap_t::const_iterator cIter = data->Constants.find(identifier);
+    if(cIter != data->Constants.end()) /* Is a constant */
+    {
+        AddImmediate(cIter->second);
+        AddCompiledByte(cImmed);
+        incStackPtr();
+        had_op = true;
+        goto ContParse;
+    }
+    Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(identifier);
+    if(fIter != data->FuncPtrNames.end()) /* Is a FCall pointer */
+    {
+        NARY_OP_LEFT(10, cFCall, fIter->second, data->FuncPtrs[fIter->second].params);
+        goto ExpectOpenParensParser;
+    }
+    Data::VarMap_t::const_iterator pIter = data->FuncParserNames.find(identifier);
+    if(pIter != data->FuncParserNames.end()) /* Is a PCall pointer */
+    {
+        NARY_OP_LEFT(10, cPCall, pIter->second, data->FuncParsers[pIter->second]->data->varAmount);
+        goto ExpectOpenParensParser;
+    }
+    //printf("ERROR: UNKNOWN IDENTIFIER: %s\n", identifier.c_str());
+    parseErrorType = INVALID_VARS;
+    return (anchor - (const YYCTYPE*) Function.c_str());
+}
+
+anychar {
+    parseErrorType = SYNTAX_ERROR;
+    return (anchor - (const YYCTYPE*) Function.c_str());
+}
+*/
+
+
+ExpectOpenParensParser:
+#ifndef REQUIRE_FCALL_PARENS
+    goto ContParse;
+#else
+/*!re2c
+sws { goto ExpectOpenParensParser; }
+"(" { PRIO_ENTER_NOP(0,0); goto ContParse; }
+anychar {
+    parseErrorType = MISSING_PARENTH;
+    return (YYCURSOR - (const YYCTYPE*) Function.c_str());
+}
+*/
+#endif
+
+    #undef YYFILL
+    #undef YYDEBUG
+
+DoneParse:
+    if(!had_op)
+    {
+        parseErrorType = PREMATURE_EOS;
+        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+        return (anchor - (const YYCTYPE*) Function.c_str());
+    }
+    while(!PrioStack.empty())
+    {
+    	if(CurPrio == 0)
+    	{
+    	    parseErrorType = MISSING_PARENTH;
+    	    return (anchor - (const YYCTYPE*) Function.c_str());
+    	}
+    	PRIO_RETURN();
+    }
+    //std::cout << "Stack ptr: " << StackPtr << std::endl;
+    if(StackPtr != 1)
+    {
+        parseErrorType = StackPtr > 1 ? PREMATURE_EOS : ILL_PARAMS_AMOUNT;
+        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+        return (anchor - (const YYCTYPE*) Function.c_str());
+    }
+
+    data->Variables.clear();
 
     data->ByteCodeSize = byteCode.size();
     data->ImmedSize = immed.size();
@@ -643,10 +790,13 @@ int FunctionParser::Compile(const char* Function)
         data->Stack = new double[data->StackSize];
 #endif
 
+    parseErrorType = FP_NO_ERROR;
+    /*PrintByteCode(std::cout);*/
     return -1;
 }
 
 
+//---------------------------------------------------------------------------
 inline void FunctionParser::AddCompiledByte(unsigned c)
 {
     tempByteCode->push_back(c);
@@ -659,414 +809,59 @@ inline void FunctionParser::AddImmediate(double i)
 
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 {
-    if(data->useDegreeConversion)
-        switch(opcode)
-        {
-          case cCos:
-          case cCosh:
-          case cCot:
-          case cCsc:
-          case cSec:
-          case cSin:
-          case cSinh:
-          case cTan:
-          case cTanh:
-              AddCompiledByte(cRad);
-        }
+    switch(opcode)
+    {
+        case cCos:
+        case cCosh:
+        case cCot:
+        case cCsc:
+        case cSec:
+        case cSin:
+        case cSinh:
+        case cTan:
+        case cTanh:
+            if(data->useDegreeConversion)
+                AddCompiledByte(cRad);
+            AddCompiledByte(opcode);
+            return;
 
-    AddCompiledByte(opcode);
-
-    if(data->useDegreeConversion)
-        switch(opcode)
-        {
-          case cAcos:
+        case cAcos:
 #ifndef FP_NO_ASINH
-          case cAcosh:
-          case cAsinh:
-          case cAtanh:
+        case cAcosh:
+        case cAsinh:
+        case cAtanh:
 #endif
-          case cAsin:
-          case cAtan:
-          case cAtan2:
-              AddCompiledByte(cDeg);
-        }
+        case cAsin:
+        case cAtan:
+        case cAtan2:
+            AddCompiledByte(opcode);
+            if(data->useDegreeConversion)
+                AddCompiledByte(cDeg);
+            return;
+
+        case cNeg:
+            /* Shouldn't these go to the optimizer? -Bisqwit */
+            if(tempByteCode->back() == cImmed)
+            {
+            	tempImmed->back() = -tempImmed->back();
+            	return;
+            }
+            if(tempByteCode->back() == cNeg)
+            {
+            	tempByteCode->pop_back();
+            	return;
+            }
+            AddCompiledByte(opcode);
+            return;
+
+        default:
+            AddCompiledByte(opcode);
+    }
 }
 
 inline void FunctionParser::incStackPtr()
 {
     if(++StackPtr > data->StackSize) ++(data->StackSize);
-}
-
-
-// Compile if()
-int FunctionParser::CompileIf(const char* F, int ind)
-{
-    int ind2 = CompileExpression(F, ind, true); // condition
-    sws(F, ind2);
-    if(F[ind2] != ',') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
-    AddCompiledByte(cIf);
-    unsigned curByteCodeSize = tempByteCode->size();
-    AddCompiledByte(0); // Jump index; to be set later
-    AddCompiledByte(0); // Immed jump index; to be set later
-
-    --StackPtr;
-
-    ind2 = CompileExpression(F, ind2+1, true); // then
-    sws(F, ind2);
-    if(F[ind2] != ',') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
-    AddCompiledByte(cJump);
-    unsigned curByteCodeSize2 = tempByteCode->size();
-    unsigned curImmedSize2 = tempImmed->size();
-    AddCompiledByte(0); // Jump index; to be set later
-    AddCompiledByte(0); // Immed jump index; to be set later
-
-    --StackPtr;
-
-    ind2 = CompileExpression(F, ind2+1, true); // else
-    sws(F, ind2);
-    if(F[ind2] != ')') { parseErrorType=ILL_PARAMS_AMOUNT; return ind2; }
-
-    // Set jump indices
-    (*tempByteCode)[curByteCodeSize] = curByteCodeSize2+1;
-    (*tempByteCode)[curByteCodeSize+1] = curImmedSize2;
-    (*tempByteCode)[curByteCodeSize2] = tempByteCode->size()-1;
-    (*tempByteCode)[curByteCodeSize2+1] = tempImmed->size();
-
-    return ind2+1;
-}
-
-int FunctionParser::CompileFunctionParams(const char* F, int ind,
-                                          unsigned requiredParams)
-{
-    int ind2 = ind;
-    if(requiredParams > 0)
-    {
-        unsigned curStackPtr = StackPtr;
-        ind2 = CompileExpression(F, ind);
-
-        if(StackPtr != curStackPtr+requiredParams)
-        { parseErrorType=ILL_PARAMS_AMOUNT; return ind; }
-
-        StackPtr -= requiredParams - 1;
-    }
-    else
-    {
-        incStackPtr();
-    }
-
-    sws(F, ind2);
-    return ind2+1; // F[ind2] is ')'
-}
-
-// Compiles element
-int FunctionParser::CompileElement(const char* F, int ind)
-{
-    sws(F, ind);
-    char c = F[ind];
-
-    if(c == '(')
-    {
-        ind = CompileExpression(F, ind+1);
-        sws(F, ind);
-        return ind+1; // F[ind] is ')'
-    }
-
-    if(isdigit(c) || c=='.' /*|| c=='-'*/) // Number
-    {
-        const char* startPtr = &F[ind];
-        char* endPtr;
-        double val = strtod(startPtr, &endPtr);
-        AddImmediate(val);
-        AddCompiledByte(cImmed);
-        incStackPtr();
-        return ind+(endPtr-startPtr);
-    }
-
-    if(isalpha(c) || c == '_') // Function, variable or constant
-    {
-        const FuncDefinition* func = FindFunction(F+ind);
-        if(func) // is function
-        {
-            int ind2 = ind + func->nameLength;
-            sws(F, ind2); // F[ind2] is '('
-            if(strcmp(func->name, "if") == 0) // "if" is a special case
-            {
-                return CompileIf(F, ind2+1);
-            }
-
-#ifndef FP_DISABLE_EVAL
-            unsigned requiredParams =
-                strcmp(func->name, "eval") == 0 ?
-                data->Variables.size() : func->params;
-#else
-            unsigned requiredParams = func->params;
-#endif
-            ind2 = CompileFunctionParams(F, ind2+1, requiredParams);
-            AddFunctionOpcode(func->opcode);
-            return ind2; // F[ind2-1] is ')'
-        }
-
-        Data::VarMap_t::const_iterator vIter =
-            FindVariable(F+ind, data->Variables);
-        if(vIter != data->Variables.end()) // is variable
-        {
-            AddCompiledByte(vIter->second);
-            incStackPtr();
-            return ind + vIter->first.size();
-        }
-
-        Data::ConstMap_t::const_iterator cIter =
-            FindConstant(F+ind, data->Constants);
-        if(cIter != data->Constants.end()) // is constant
-        {
-            AddImmediate(cIter->second);
-            AddCompiledByte(cImmed);
-            incStackPtr();
-            return ind + cIter->first.size();
-        }
-
-        Data::VarMap_t::const_iterator fIter =
-            FindVariable(F+ind, data->FuncPtrNames);
-        if(fIter != data->FuncPtrNames.end()) // is user-defined func pointer
-        {
-            unsigned index = fIter->second;
-
-            int ind2 = ind + fIter->first.length();
-            sws(F, ind2); // F[ind2] is '('
-
-            ind2 = CompileFunctionParams(F, ind2+1,
-                                         data->FuncPtrs[index].params);
-
-            AddCompiledByte(cFCall);
-            AddCompiledByte(index);
-            return ind2;
-        }
-
-        Data::VarMap_t::const_iterator pIter =
-            FindVariable(F+ind, data->FuncParserNames);
-        if(pIter != data->FuncParserNames.end()) // is user-defined func parser
-        {
-            unsigned index = pIter->second;
-
-            int ind2 = ind + pIter->first.length();
-            sws(F, ind2); // F[ind2] is '('
-
-            ind2 = CompileFunctionParams
-                (F, ind2+1, data->FuncParsers[index]->data->varAmount);
-
-            AddCompiledByte(cPCall);
-            AddCompiledByte(index);
-            return ind2;
-        }
-    }
-
-    parseErrorType = UNEXPECTED_ERROR;
-    return ind;
-}
-
-// Compiles a unit factor possibly appearing after an element
-int FunctionParser::CompilePossibleUnit(const char* F, int ind)
-{
-    if(isalpha(F[ind]) || F[ind] == '_')
-    {
-        // If the syntax checker is bug-free, this should always work:
-        Data::ConstMap_t::const_iterator uIter =
-            FindConstant(F+ind, data->Units);
-
-        AddImmediate(uIter->second);
-        AddCompiledByte(cImmed);
-        incStackPtr();
-        AddCompiledByte(cMul);
-        --StackPtr;
-        ind += uIter->first.size();
-        sws(F, ind);
-    }
-    return ind;
-}
-
-// Compiles '^'
-int FunctionParser::CompilePow(const char* F, int ind)
-{
-    int ind2 = CompileElement(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-    ind2 = CompilePossibleUnit(F, ind2);
-
-    while(F[ind2] == '^')
-    {
-        ind2 = CompileUnaryMinus(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        AddCompiledByte(cPow);
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles unary '-'
-int FunctionParser::CompileUnaryMinus(const char* F, int ind)
-{
-    sws(F, ind);
-    if(F[ind] == '-' || F[ind] == '!')
-    {
-        int ind2 = ind+1;
-        sws(F, ind2);
-        ind2 = CompilePow(F, ind2);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-
-        // if we are negating a constant, negate the constant itself:
-        if(F[ind] == '-' && tempByteCode->back() == cImmed)
-            tempImmed->back() = -tempImmed->back();
-
-        // if we are negating a negation, we can remove both:
-        else if((F[ind] == '-' && tempByteCode->back() == cNeg))
-            tempByteCode->pop_back();
-
-        else
-            AddCompiledByte(F[ind] == '-' ? cNeg : cNot);
-
-        return ind2;
-    }
-
-    int ind2 = CompilePow(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-    return ind2;
-}
-
-// Compiles '*', '/' and '%'
-int FunctionParser::CompileMult(const char* F, int ind)
-{
-    int ind2 = CompileUnaryMinus(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-    char op;
-
-    while((op = F[ind2]) == '*' || op == '/' || op == '%')
-    {
-        ind2 = CompileUnaryMinus(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        switch(op)
-        {
-          case '*': AddCompiledByte(cMul); break;
-          case '/': AddCompiledByte(cDiv); break;
-          case '%': AddCompiledByte(cMod); break;
-        }
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles '+' and '-'
-int FunctionParser::CompileAddition(const char* F, int ind)
-{
-    int ind2 = CompileMult(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-    char op;
-
-    while((op = F[ind2]) == '+' || op == '-')
-    {
-        ind2 = CompileMult(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        AddCompiledByte(op=='+' ? cAdd : cSub);
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles '=', '<' and '>'
-int FunctionParser::CompileComparison(const char* F, int ind)
-{
-    int ind2 = CompileAddition(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-    char op;
-
-    while((op = F[ind2]) == '=' || op == '<' || op == '>' || op == '!')
-    {
-        int opSize = (F[ind2+1] == '=' ? 2 : 1);
-        ind2 = CompileAddition(F, ind2+opSize);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        switch(op)
-        {
-          case '=':
-              AddCompiledByte(cEqual); break;
-          case '<':
-              AddCompiledByte(opSize == 1 ? cLess : cLessOrEq); break;
-          case '>':
-              AddCompiledByte(opSize == 1 ? cGreater : cGreaterOrEq); break;
-          case '!':
-              AddCompiledByte(cNEqual); break;
-        }
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles '&'
-int FunctionParser::CompileAnd(const char* F, int ind)
-{
-    int ind2 = CompileComparison(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-
-    while(F[ind2] == '&')
-    {
-        ind2 = CompileComparison(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        AddCompiledByte(cAnd);
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles '|'
-int FunctionParser::CompileOr(const char* F, int ind)
-{
-    int ind2 = CompileAnd(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-
-    while(F[ind2] == '|')
-    {
-        ind2 = CompileAnd(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-        AddCompiledByte(cOr);
-        --StackPtr;
-    }
-
-    return ind2;
-}
-
-// Compiles ','
-int FunctionParser::CompileExpression(const char* F, int ind, bool stopAtComma)
-{
-    int ind2 = CompileOr(F, ind);
-    if(parseErrorType != FP_NO_ERROR) return ind2;
-    sws(F, ind2);
-
-    if(stopAtComma) return ind2;
-
-    while(F[ind2] == ',')
-    {
-        ind2 = CompileOr(F, ind2+1);
-        if(parseErrorType != FP_NO_ERROR) return ind2;
-        sws(F, ind2);
-    }
-
-    return ind2;
 }
 
 
@@ -1329,7 +1124,7 @@ double FunctionParser::Eval(const double* Vars)
 
 
 #ifdef FP_SUPPORT_OPTIMIZER
-          case   cVar: break; // Paranoia. These should never exist
+          case   cVar: break; // Paranoia. This should never exist
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
           case   cInv:
               if(Stack[SP] == 0.0) { evalErrorType=1; return 0; }
@@ -1349,6 +1144,92 @@ double FunctionParser::Eval(const double* Vars)
 
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+
+#if 0
+#include <list>
+
+void FunctionParser::PrintByteCode(std::ostream& dest) const
+{
+    std::list<unsigned> labels;
+
+    for(unsigned IP=0, DP=0; ; ++IP)
+    {
+        dest << ' ';
+        //dest << "[IP=" << IP << "]";
+
+        while(labels.size() > 0
+        && *labels.begin() == IP)
+        {
+            // end branch started with {
+            dest << "} ";
+            labels.erase(labels.begin());
+        }
+
+        if(IP == data->ByteCodeSize) break;
+
+        unsigned opcode = data->ByteCode[IP];
+
+        if(opcode == cIf)
+        {
+            dest << '{'; // start branch, end with }
+            IP += 2;
+        }
+        else if(opcode == cImmed)
+        {
+            dest.precision(20);
+            dest << data->Immed[DP];
+            ++DP;
+        }
+        else if(opcode == cJump)
+        {
+            labels.push_front(data->ByteCode[IP+1]+1);
+            dest << "} {";
+            IP += 2;
+        }
+        else
+        {
+            /* Returns the textual description of the specified opcode.
+             * Note: opcode should never be cImmed, cJump or cVar.
+             */
+            if(opcode >= VarBegin)
+            {
+                unsigned ind = opcode;
+        #ifdef REMEMBER_VARNAMES
+                Data::VarMap_t::const_iterator i;
+                for(i=data->Variables.begin(); i!=data->Variables.end(); ++i)
+                    if(i->second == ind)
+                        return i->first;
+        #endif
+                dest << "Var" << (ind-VarBegin);
+            }
+            else
+            switch( (OPCODE) opcode)
+            {
+            #define c(o,v) case o: dest << v; break;
+            #define t(n)   c(n, #n); break;
+                t(cImmed) t(cJump) t(cNeg)
+                c(cAdd,"+") c(cSub,"-") c(cMul,"*") c(cDiv,"/")
+                c(cMod,"%") c(cPow,"^") c(cEqual,"=") c(cLess,"<")
+                c(cGreater,">") c(cNEqual,"!=") c(cLessOrEq,"<=")
+                c(cGreaterOrEq,">=")
+                t(cAnd) t(cOr) t(cDeg) t(cRad) t(cNot)
+              #ifdef FP_SUPPORT_OPTIMIZER
+                t(cVar) t(cDup) t(cInv)
+              #endif
+                t(cFCall) t(cPCall)
+
+            default:
+            	dest << Functions[opcode-cAbs].name << " ("
+            	     << Functions[opcode-cAbs].params << ")"; break;
+            }
+        }
+    }
+    dest << "  (length: " << data->ByteCodeSize << ")";
+    dest << "\n";
+}
+
+#else
+
 #include <iomanip>
 namespace
 {
@@ -1361,10 +1242,10 @@ namespace
 
 void FunctionParser::PrintByteCode(std::ostream& dest) const
 {
-    dest << "Size of stack: " << data->StackSize << "\n";
-
     const unsigned* const ByteCode = data->ByteCode;
     const double* const Immed = data->Immed;
+
+    dest << "(Stack size: " << data->StackSize << ")\n";
 
     for(unsigned IP=0, DP=0; IP<data->ByteCodeSize; ++IP)
     {
@@ -1392,7 +1273,6 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
               dest.precision(10);
               dest << "push\t" << Immed[DP++] << endl;
               break;
-
           case cFCall:
               {
                   unsigned index = ByteCode[++IP];
@@ -1468,8 +1348,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
     }
 }
 #endif
-
-
+#endif
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
