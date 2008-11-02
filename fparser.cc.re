@@ -374,22 +374,15 @@ bool FunctionParser::AddFunction(const std::string& name,
     return false;
 }
 
-struct PrioItem
-{
-    int prio;
-    int opcode;
-    int flags;
-    int nparams;
-
-    /* For cIf */
-    unsigned ByteCodeSize1, ByteCodeSize2, ImmedSize2;
-
-    PrioItem(int p,int o,int f,int n) : prio(p),opcode(o),flags(f),nparams(n) { }
-};
-
-
 // Main parsing function
 // ---------------------
+namespace {
+struct ShiftedTerminal
+{
+    std::string ident;
+    double num;
+    int opcode;
+}; }
 int FunctionParser::Parse(const std::string& Function,
                           const std::string& Vars,
                           bool useDegrees)
@@ -428,100 +421,31 @@ int FunctionParser::Parse(const std::string& Function,
     const YYCTYPE* YYCURSOR = (const YYCTYPE*) Function.c_str();
     const YYCTYPE* YYLIMIT  = YYCURSOR + Function.size();
     const YYCTYPE* YYMARKER = 0;
+    
+    /* Parser defs */
+    /* Note: The specific order of Terminals affects the numbering
+     * used in Actions[] in BisonState. So don't change too hastily.
+     */
+<<PARSING_DEFS_PLACEHOLDER>>
 
-    std::vector<PrioItem> PrioStack;
-    PrioStack.reserve(Function.size()/3); /* heuristic guess */
+    /* Parser state */
+    std::vector<int> StateList;
+    int CurrentState=0;
+    std::vector<ShiftedTerminal> ShiftedTerminals;
 
-/*
+    /* Lexer information */
+    double      LastNum=0;
+    std::string LastIdentifier;
+    int         LastOpcode=0;
+    Terminals   LastTerminal;
+    
+    fprintf(stderr, "Parsing %s\n", YYCURSOR);
 
-Priority levels:
-
-10 func
-9  units
-8  ^        (note: right-associative)
-7  ! -    (UNARY)
-6  * / %
-5  + -    (BINARY)
-4  = < > !=
-3  &
-2  |
-1  ,
-
-*/
-
-    int CurPrio = 0;
-    bool had_op = false;
+    /* Parser & lexer */
 ContParse:
     const YYCTYPE* anchor = YYCURSOR;
     if(anchor >= YYLIMIT) goto DoneParse;
 ContParseWithSameAnchor:
-    /*printf("ContParse: anchor=%s\n", anchor);*/
-
-#define PRIO_ENTER_GEN(newprio, op, flags, nparams) \
-    do { \
-        /*printf("PrioEnter from %d to %d, op=%d(%s), flags=%u\n", \
-            CurPrio, newprio,op,#op,flags);*/ \
-        PrioStack.push_back(PrioItem(CurPrio,op,flags,nparams)); \
-        CurPrio=(newprio); \
-        had_op = false; \
-    } while(0)
-
-#define PRIO_ENTER_NOP(n,np)            PRIO_ENTER_GEN(n,-1,0,np)
-#define PRIO_ENTER_OP(n,op,np)          PRIO_ENTER_GEN(n,op,0,np)
-#define PRIO_ENTER_FLAGS(n,op,flags,np) PRIO_ENTER_GEN(n,op,flags,np)
-
-#define PRIO_RETURN() \
-    do { \
-        if(PrioStack.empty()) \
-        { \
-            parseErrorType = UNEXPECTED_ERROR; \
-            return (anchor - (const YYCTYPE*) Function.c_str()); \
-        } \
-        const PrioItem& item = PrioStack.back(); \
-        /*printf("PrioReturn from %d to %d, op=%d, flags=%u\n", \
-            CurPrio, item.prio,item.opcode,item.flags);*/ \
-        CurPrio = item.prio; \
-        switch(item.opcode) \
-        { \
-            case cIf: \
-                (*tempByteCode)[item.ByteCodeSize1]   = item.ByteCodeSize2+1; \
-                (*tempByteCode)[item.ByteCodeSize1+1] = item.ImmedSize2; \
-                (*tempByteCode)[item.ByteCodeSize2]   = tempByteCode->size()-1; \
-                (*tempByteCode)[item.ByteCodeSize2+1] = tempImmed->size(); \
-                break; \
-            case cFCall: case cPCall: \
-                AddCompiledByte(item.opcode); \
-                AddCompiledByte(item.flags); \
-                break; \
-            default: \
-                if(item.opcode >= 0) \
-                { \
-                    AddFunctionOpcode(item.opcode); \
-                } \
-        } \
-        if(item.opcode >= 0) \
-        { \
-            StackPtr -= item.nparams; \
-            incStackPtr(); \
-        } \
-        had_op = true; \
-        PrioStack.pop_back(); \
-    } while(0)
-
-/* left-associative x-nary op (nparams=x) */
-#define NARY_OP_LEFT(prio, op, fl, nparams) \
-    do { while(CurPrio >= prio) PRIO_RETURN(); \
-         PRIO_ENTER_FLAGS(prio, op, fl, nparams); } while(0)
-
-/* right-associative x-nary op (nparams=x) */
-#define NARY_OP_RIGHT(prio, op, fl, nparams) \
-    do { while(CurPrio > prio) PRIO_RETURN(); \
-         PRIO_ENTER_FLAGS(prio, op, fl, nparams); } while(0)
-
-#define BINARY_OP_LEFT(prio,op,fl) NARY_OP_LEFT(prio,op,fl,2)
-#define BINARY_OP_RIGHT(prio,op,fl) NARY_OP_RIGHT(prio,op,fl,2)
-#define UNARY_OP_LEFT(prio,op,fl) NARY_OP_LEFT(prio,op,fl,1)
-
 #ifdef FP_NO_ASINH
  #define ASINH_ENABLE(x) goto GotIdentifier
 #else
@@ -533,191 +457,71 @@ ContParseWithSameAnchor:
  #define EVAL_ENABLE(x) x
 #endif
 
+#define DO_TERM(t) LastTerminal=t; goto GotTerminal
+#define DO_OP_TERM(o, t) LastOpcode=o; DO_TERM(t)
 
 /*!re2c
 sws      { goto ContParse; }
-"("      {   if(had_op)
-             {
-                  parseErrorType = SYNTAX_ERROR;
-                  //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
-                  return (anchor - (const YYCTYPE*) Function.c_str());
-             }
-             PRIO_ENTER_NOP(0, 0);
-             goto ContParse;
-         }
-")"      {
-             while(CurPrio > 0) PRIO_RETURN();
-             PRIO_RETURN();
-             had_op = true;
-             goto ContParse;
-         }
+"("      {  DO_TERM(T_LParens);  }
+")"      {  DO_TERM(T_RParens);  }
+","      {  DO_TERM(T_Comma);    }
+orop     {  DO_OP_TERM(cOr, T_OrOp);     }
+andop    {  DO_OP_TERM(cAnd, T_AndOp);    }
+"+"      {  DO_OP_TERM(cAdd, T_Plus);     }
+"-"      {  DO_OP_TERM(cSub, T_Minus);    }
+"!"      {  DO_OP_TERM(cNot, T_Bang);     }
+"="      {  DO_OP_TERM(cEqual, T_CompOp); }
+"!="     {  DO_OP_TERM(cNEqual, T_CompOp); }
+"<"      {  DO_OP_TERM(cLess, T_CompOp); }
+">"      {  DO_OP_TERM(cGreater, T_CompOp); }
+"<="     {  DO_OP_TERM(cLessOrEq, T_CompOp); }
+">="     {  DO_OP_TERM(cGreaterOrEq, T_CompOp); }
 
-","      {
-             while(CurPrio >= 1) PRIO_RETURN();
-             if(PrioStack.size() >= 2)
-             {
-                 /* Get information about the caller */
-                 PrioItem& caller = PrioStack[PrioStack.size()-2];
-                 if(caller.opcode == cIf)
-                 {
-                     switch(caller.flags)
-                     {
-                         case 0: /* The first param of the "if", "condition" */
-                         {
-                             AddCompiledByte(cIf);
-                             caller.ByteCodeSize1 = tempByteCode->size();
-                             AddCompiledByte(0); // Jump index; to be set later
-                             AddCompiledByte(0); // Immed jump index; to be set later
-                             caller.flags = 1;
-                             break;
-                         }
-                         case 1: /* The second param of the "if", "positive branch" */
-                         {
-                             AddCompiledByte(cJump);
-                             caller.ByteCodeSize2 = tempByteCode->size();
-                             caller.ImmedSize2    = tempImmed->size();
-                             AddCompiledByte(0); // Jump index; to be set later
-                             AddCompiledByte(0); // Immed jump index; to be set later
-                             caller.flags = 2;
-                             break;
-                         }
-                     }
-                 }
-             }
-             NARY_OP_LEFT(1, -1, 0, 0); goto ContParse;
-         }
+"*"      {  DO_OP_TERM(cMul, T_TimesMulModOp);  }
+"/"      {  DO_OP_TERM(cDiv, T_TimesMulModOp);  }
+"%"      {  DO_OP_TERM(cMod, T_TimesMulModOp);  }
 
-orop     { BINARY_OP_LEFT(2, cOr, 0); goto ContParse; }
+"^"      {  DO_OP_TERM(cPow, T_Pow);     }
 
-andop    { BINARY_OP_LEFT(3, cAnd, 0); goto ContParse; }
+"abs"     { DO_OP_TERM(cAbs, T_PreFunc1);  }
+"acos"    { DO_OP_TERM(cAcos, T_PreFunc1);  }
+"acosh"   { ASINH_ENABLE( DO_OP_TERM(cAcosh, T_PreFunc1) ); }
+"asin"    { DO_OP_TERM(cAsin, T_PreFunc1);  }
+"asinh"   { ASINH_ENABLE( DO_OP_TERM(cAsinh, T_PreFunc1) ); }
+"atan"    { DO_OP_TERM(cAtan, T_PreFunc1);  }
+"atan2"   { DO_OP_TERM(cAtan2, T_PreFunc2);  }
+"atanh"   { ASINH_ENABLE( DO_OP_TERM(cAtanh, T_PreFunc1) ); }
+"ceil"    { DO_OP_TERM(cCeil, T_PreFunc1); }
+"cos"     { DO_OP_TERM(cCos, T_PreFunc1); }
+"cosh"    { DO_OP_TERM(cCosh, T_PreFunc1); }
+"cot"     { DO_OP_TERM(cCot, T_PreFunc1); }
+"csc"     { DO_OP_TERM(cCsc, T_PreFunc1); }
+"eval"    { EVAL_ENABLE( DO_TERM(T_Eval) ); }
+"exp"     { DO_OP_TERM(cExp, T_PreFunc1); }
+"floor"   { DO_OP_TERM(cFloor, T_PreFunc1); }
+"if"      { DO_TERM(T_If); }
+"int"     { DO_OP_TERM(cInt, T_PreFunc1); }
+"log"     { DO_OP_TERM(cLog, T_PreFunc1); }
+"log10"   { DO_OP_TERM(cLog10, T_PreFunc1); }
+"max"     { DO_OP_TERM(cMax, T_PreFunc2); }
+"min"     { DO_OP_TERM(cMin, T_PreFunc2); }
+"sec"     { DO_OP_TERM(cSec, T_PreFunc1); }
+"sin"     { DO_OP_TERM(cSin, T_PreFunc1); }
+"sinh"    { DO_OP_TERM(cSinh, T_PreFunc1); }
+"sqrt"    { DO_OP_TERM(cSqrt, T_PreFunc1); }
+"tan"     { DO_OP_TERM(cTan, T_PreFunc1); }
+"tanh"    { DO_OP_TERM(cTanh, T_PreFunc1); }
 
-"+"      { if(had_op) /* binary? */
-             { BINARY_OP_LEFT(4, cAdd, 0); goto ContParse; }
-           else /* unary */
-             { goto ContParse; }
-         }
-"-"      { if(had_op) /* binary? */
-             { BINARY_OP_LEFT(4, cSub, 0); goto ContParse; }
-           else /* unary */
-             { /*while(*YYCURSOR == ' ' || *YYCURSOR == '\t'
-                  || *YYCURSOR == '\r' || *YYCURSOR == '\n') ++YYCURSOR;
-               */if(*YYCURSOR == '.' || (*YYCURSOR >= '0' && *YYCURSOR <= '9'))
-                  goto ContParseWithSameAnchor; // negative number
-               PRIO_ENTER_OP(7, cNeg, 1);  goto ContParse;
-             }
-         }
-"!"      { /* unary */
-           PRIO_ENTER_OP(7, cNot, 1); goto ContParse; }
-
-"="      { BINARY_OP_LEFT(5, cEqual, 0); goto ContParse; }
-"!="     { BINARY_OP_LEFT(5, cNEqual, 0); goto ContParse; }
-"<"      { BINARY_OP_LEFT(5, cLess, 0); goto ContParse; }
-">"      { BINARY_OP_LEFT(5, cGreater, 0); goto ContParse; }
-"<="     { BINARY_OP_LEFT(5, cLessOrEq, 0); goto ContParse; }
-">="     { BINARY_OP_LEFT(5, cGreaterOrEq, 0); goto ContParse; }
-
-"*"      { BINARY_OP_LEFT(6, cMul, 0); goto ContParse; }
-"/"      { BINARY_OP_LEFT(6, cDiv, 0); goto ContParse; }
-"%"      { BINARY_OP_LEFT(6, cMod, 0); goto ContParse; }
-
-"^"      { BINARY_OP_RIGHT(8, cPow, 0); goto ContParse; }
-
-"abs"     { UNARY_OP_LEFT(10, cAbs, 0); goto ExpectOpenParensParser; }
-"acos"    { UNARY_OP_LEFT(10, cAcos, 0); goto ExpectOpenParensParser; }
-"acosh"   { ASINH_ENABLE(
-            UNARY_OP_LEFT(10, cAcosh, 0); goto ExpectOpenParensParser); }
-"asin"    { UNARY_OP_LEFT(10, cAsin, 0); goto ExpectOpenParensParser; }
-"asinh"   { ASINH_ENABLE(
-            UNARY_OP_LEFT(10, cAsinh, 0); goto ExpectOpenParensParser); }
-"atan"    { UNARY_OP_LEFT(10, cAtan, 0); goto ExpectOpenParensParser; }
-"atan2"   { BINARY_OP_LEFT(10, cAtan2, 0); goto ExpectOpenParensParser; }
-"atanh"   { ASINH_ENABLE(
-            UNARY_OP_LEFT(10, cAtanh, 0); goto ExpectOpenParensParser); }
-"ceil"    { UNARY_OP_LEFT(10, cCeil, 0); goto ExpectOpenParensParser; }
-"cos"     { UNARY_OP_LEFT(10, cCos, 0); goto ExpectOpenParensParser; }
-"cosh"    { UNARY_OP_LEFT(10, cCosh, 0); goto ExpectOpenParensParser; }
-"cot"     { UNARY_OP_LEFT(10, cCot, 0); goto ExpectOpenParensParser; }
-"csc"     { UNARY_OP_LEFT(10, cCsc, 0); goto ExpectOpenParensParser; }
-"eval"    { EVAL_ENABLE(
-            NARY_OP_LEFT(10, cEval, 0, data->varAmount); goto ExpectOpenParensParser); }
-"exp"     { UNARY_OP_LEFT(10, cExp, 0); goto ExpectOpenParensParser; }
-"floor"   { UNARY_OP_LEFT(10, cFloor, 0); goto ExpectOpenParensParser; }
-"if"      { NARY_OP_LEFT(10, cIf, 0, 3); goto ExpectOpenParensParser; }
-"int"     { UNARY_OP_LEFT(10, cInt, 0); goto ExpectOpenParensParser; }
-"log"     { UNARY_OP_LEFT(10, cLog, 0); goto ExpectOpenParensParser; }
-"log10"   { UNARY_OP_LEFT(10, cLog10, 0); goto ExpectOpenParensParser; }
-"max"     { BINARY_OP_LEFT(10, cMax, 0); goto ExpectOpenParensParser; }
-"min"     { BINARY_OP_LEFT(10, cMin, 0); goto ExpectOpenParensParser; }
-"sec"     { UNARY_OP_LEFT(10, cSec, 0); goto ExpectOpenParensParser; }
-"sin"     { UNARY_OP_LEFT(10, cSin, 0); goto ExpectOpenParensParser; }
-"sinh"    { UNARY_OP_LEFT(10, cSinh, 0); goto ExpectOpenParensParser; }
-"sqrt"    { UNARY_OP_LEFT(10, cSqrt, 0); goto ExpectOpenParensParser; }
-"tan"     { UNARY_OP_LEFT(10, cTan, 0); goto ExpectOpenParensParser; }
-"tanh"    { UNARY_OP_LEFT(10, cTanh, 0); goto ExpectOpenParensParser; }
-
-numconst { char* endptr = (char*) YYCURSOR;
-           double val = strtod((const char*)anchor, &endptr);
-           YYCURSOR = (YYCTYPE*) endptr;
-           /*printf("Got imm %g\n", val);*/
-           AddImmediate(val);
-           AddCompiledByte(cImmed);
-           incStackPtr();
-           had_op = true;
-           goto ContParse; }
-
+numconst {
+    char* endptr = (char*) YYCURSOR;
+    LastNum = strtod((const char*)anchor, &endptr);
+    YYCURSOR = (YYCTYPE*) endptr;
+    //printf("Got imm %g\n", val);
+    DO_TERM(T_NumConst); }
 identifier {
 GotIdentifier:
-    const std::string identifier(anchor, YYCURSOR);
-
-    if(had_op)
-    {
-        Data::ConstMap_t::const_iterator uIter = data->Units.find(identifier);
-        if(uIter != data->Units.end()) /* Is a unit */
-        {
-            BINARY_OP_LEFT(9, cMul, 0);
-            AddImmediate(uIter->second);
-            AddCompiledByte(cImmed);
-            incStackPtr();
-            had_op = true;
-            goto ContParse;
-        }
-        parseErrorType = EXPECT_OPERATOR;
-        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
-        return (anchor - (const YYCTYPE*) Function.c_str());
-    }
-
-    Data::VarMap_t::const_iterator vIter = data->Variables.find(identifier);
-    if(vIter != data->Variables.end()) /* Is a variable */
-    {
-        AddCompiledByte(vIter->second);
-        had_op = true;
-        incStackPtr();
-        goto ContParse;
-    }
-    Data::ConstMap_t::const_iterator cIter = data->Constants.find(identifier);
-    if(cIter != data->Constants.end()) /* Is a constant */
-    {
-        AddImmediate(cIter->second);
-        AddCompiledByte(cImmed);
-        incStackPtr();
-        had_op = true;
-        goto ContParse;
-    }
-    Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(identifier);
-    if(fIter != data->FuncPtrNames.end()) /* Is a FCall pointer */
-    {
-        NARY_OP_LEFT(10, cFCall, fIter->second, data->FuncPtrs[fIter->second].params);
-        goto ExpectOpenParensParser;
-    }
-    Data::VarMap_t::const_iterator pIter = data->FuncParserNames.find(identifier);
-    if(pIter != data->FuncParserNames.end()) /* Is a PCall pointer */
-    {
-        NARY_OP_LEFT(10, cPCall, pIter->second, data->FuncParsers[pIter->second]->data->varAmount);
-        goto ExpectOpenParensParser;
-    }
-    //printf("ERROR: UNKNOWN IDENTIFIER: %s\n", identifier.c_str());
-    parseErrorType = INVALID_VARS;
-    return (anchor - (const YYCTYPE*) Function.c_str());
+    LastIdentifier.assign(anchor, YYCURSOR);
+    DO_TERM(T_Identifier);
 }
 
 anychar {
@@ -726,48 +530,333 @@ anychar {
 }
 */
 
-
-ExpectOpenParensParser:
-#ifndef REQUIRE_FCALL_PARENS
-    goto ContParse;
-#else
-/*!re2c
-sws { goto ExpectOpenParensParser; }
-"(" { PRIO_ENTER_NOP(0,0); goto ContParse; }
-anychar {
-    parseErrorType = MISSING_PARENTH;
-    return (YYCURSOR - (const YYCTYPE*) Function.c_str());
-}
-*/
-#endif
-
     #undef YYFILL
     #undef YYDEBUG
-
 DoneParse:
-    if(!had_op)
-    {
-        parseErrorType = PREMATURE_EOS;
-        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
-        return (anchor - (const YYCTYPE*) Function.c_str());
-    }
-    while(!PrioStack.empty())
-    {
-    	if(CurPrio == 0)
-    	{
-    	    parseErrorType = MISSING_PARENTH;
-    	    return (anchor - (const YYCTYPE*) Function.c_str());
-    	}
-    	PRIO_RETURN();
-    }
-    //std::cout << "Stack ptr: " << StackPtr << std::endl;
-    if(StackPtr != 1)
-    {
-        parseErrorType = StackPtr > 1 ? PREMATURE_EOS : ILL_PARAMS_AMOUNT;
-        //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
-        return (anchor - (const YYCTYPE*) Function.c_str());
-    }
+    DO_TERM(T_Zend);
+    /* FIXME: Prevent infinite loop here */
+    
+    static const bool DoDebug = false;
 
+GotTerminal:
+    #define CREATE_SHIFT(t) \
+        t.ident  = LastIdentifier; \
+        t.num    = LastNum; \
+        t.opcode = LastOpcode
+    
+    #define SHIFT(newstate) do { \
+        ShiftedTerminal t; \
+        CREATE_SHIFT(t); \
+        if(DoDebug)fprintf(stderr, "- Pushing opcode %d num %g id %s\n", \
+            t.opcode, t.num, t.ident.c_str()); \
+        ShiftedTerminals.push_back(t); \
+        StateList.push_back(CurrentState); \
+        CurrentState = newstate; \
+    } while(0)
+    
+    #define GET_PARAM(n_reduced, offs) \
+        const ShiftedTerminal& pair##offs = \
+            ShiftedTerminals[ShiftedTerminals.size() - n_reduced + offs]
+
+    /* Do the parsing decision */
+    const BisonState& State = States[CurrentState];
+    int Action = State.Actions[LastTerminal];
+    
+    if(DoDebug)fprintf(stderr, "State %d, LastTerminal=%s, Action=%d\n",
+        CurrentState, TerminalNames[LastTerminal], Action);
+    
+    if(Action == 127)
+    {
+        goto ReallyDoneParse; // Accept
+    }
+    else if(Action > 0)
+    {
+        /* Shift */
+        SHIFT(Action);
+        goto ContParse;
+    }
+    else if(Action < 0)
+    {
+        /* Reduce using rule (-Action) */
+        
+        ShiftedTerminal SaveTerminalBeforeReduce;
+        CREATE_SHIFT(SaveTerminalBeforeReduce);
+        
+        LastIdentifier.clear();
+        
+        int n_reduce = 0;
+        NonTerminals produced_nonterminal = NT_Zaccept;
+        
+        #define DONE_REDUCE(nr,nt) n_reduce=nr; produced_nonterminal=nt
+        
+        // Reduce using which rule?
+        // These rule numbers are directly derived from the
+        // fparser-parsingtree.output file, and must be changed
+        // any time you add/remove/reorder clauses in the fparser.y file.
+        switch(-Action)
+        {
+            case   1: //exp: NUMCONST
+            {
+                GET_PARAM(1,0);
+                AddImmediate(pair0.num);
+                AddCompiledByte(cImmed);
+                DONE_REDUCE(1, NT_exp);
+                incStackPtr();
+                break;
+            }
+            case   2: //   | PREDEFINED_FUNC1 '(' func_params_opt ')'
+            case   3: //   | PREDEFINED_FUNC2 '(' func_params_opt ')'
+            case   4: //   | PREDEFINED_FUNC3 '(' func_params_opt ')'
+            {
+                GET_PARAM(4,0); // ident
+                GET_PARAM(4,2); // func_params_opt
+                int n_params_expected = 0;
+                if(Action==-2) n_params_expected=1;
+                if(Action==-3) n_params_expected=2;
+                if(Action==-4) n_params_expected=3;
+                if(DoDebug)fprintf(stderr, "Expects %d params, gets %d\n",
+                    n_params_expected, pair2.opcode);
+                if(pair2.opcode != n_params_expected)
+                { 
+                    parseErrorType = ILL_PARAMS_AMOUNT;
+                    //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+                    return (anchor - (const YYCTYPE*) Function.c_str());
+                }
+                AddFunctionOpcode(pair0.opcode);
+                DONE_REDUCE(4, NT_exp);
+                StackPtr -= pair2.opcode; incStackPtr();
+                break;
+            }
+            case   5: //   | EVAL             '(' func_params_opt ')'
+            {
+                GET_PARAM(4,2); // func_params_opt
+                int n_params_expected = data->varAmount;
+                if(pair2.opcode != n_params_expected)
+                { 
+                    parseErrorType = ILL_PARAMS_AMOUNT;
+                    //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+                    return (anchor - (const YYCTYPE*) Function.c_str());
+                }
+                AddCompiledByte(cEval);
+                DONE_REDUCE(4, NT_exp);
+                StackPtr -= pair2.opcode; incStackPtr();
+                break;
+            }
+            case   6: // (after first exp in if)
+            {
+                AddCompiledByte(cIf);
+                size_t ByteCodeSize1 = tempByteCode->size();
+                AddCompiledByte(0); // Jump index; to be set later
+                AddCompiledByte(0); // Immed jump index; to be set later
+                LastOpcode = ByteCodeSize1;
+                DONE_REDUCE(0, NT_A1);
+                break;
+            }
+            case   7: // (after second exp in if)
+            {
+                AddCompiledByte(cJump);
+                size_t ByteCodeSize2 = tempByteCode->size();
+                size_t ImmedSize2    = tempImmed->size();
+                AddCompiledByte(0); // Jump index; to be set later
+                AddCompiledByte(0); // Immed jump index; to be set later
+                LastOpcode = ByteCodeSize2;
+                LastNum    = ImmedSize2; // FIXME: possibly loses precision
+                DONE_REDUCE(0, NT_A2);
+                break;
+            }
+            case   8: //exp: If LParens exp @1 Comma exp @2 Comma exp RParens
+            {
+                GET_PARAM(10,3); // NT_A1
+                GET_PARAM(10,6); // NT_A2
+                size_t ByteCodeSize1 = pair3.opcode;
+                size_t ByteCodeSize2 = pair6.opcode;
+                size_t ImmedSize2    = pair6.num;
+
+                (*tempByteCode)[ByteCodeSize1]   = ByteCodeSize2+1;
+                (*tempByteCode)[ByteCodeSize1+1] = ImmedSize2;
+                (*tempByteCode)[ByteCodeSize2]   = tempByteCode->size()-1;
+                (*tempByteCode)[ByteCodeSize2+1] = tempImmed->size();
+                DONE_REDUCE(10, NT_exp);
+                --StackPtr;
+                break;
+            }
+            case   9: //   | IDENTIFIER '(' func_params_opt ')' 
+            {
+                GET_PARAM(4,0); // ident
+                GET_PARAM(4,2); // func_params_opt
+                int n_params_expected = 0, opcode = 0, funcno = 0;
+
+                Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(pair0.ident);
+                if(fIter != data->FuncPtrNames.end()) /* Is a FCall pointer */
+                {
+                    n_params_expected = data->FuncPtrs[fIter->second].params;
+                    opcode            = cFCall;
+                    funcno            = fIter->second;
+                }
+                else
+                {
+                    Data::VarMap_t::const_iterator pIter = data->FuncParserNames.find(pair0.ident);
+                    if(pIter != data->FuncParserNames.end()) /* Is a PCall pointer */
+                    {
+                        opcode        = cPCall;
+                        funcno        = pIter->second;
+                        n_params_expected = data->FuncParsers[pIter->second]->data->varAmount;
+                    }
+                    else
+                    {
+                        parseErrorType = INVALID_VARS;
+                        return (anchor - (const YYCTYPE*) Function.c_str());
+                    }
+                }
+                
+                if(n_params_expected != pair2.opcode)
+                {
+                    parseErrorType = ILL_PARAMS_AMOUNT;
+                    //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+                    return (anchor - (const YYCTYPE*) Function.c_str());
+                }
+                
+                AddCompiledByte(opcode);
+                AddCompiledByte(funcno);
+                DONE_REDUCE(4, NT_exp);
+                StackPtr -= pair2.opcode; incStackPtr();
+                break;
+            }
+            case  10: //   | IDENTIFIER
+            {
+                GET_PARAM(1,0); //ident
+                Data::VarMap_t::const_iterator vIter = data->Variables.find(pair0.ident);
+                if(vIter != data->Variables.end()) /* Is a variable */
+                    AddCompiledByte(vIter->second);
+                else
+                {
+                    Data::ConstMap_t::const_iterator cIter = data->Constants.find(pair0.ident);
+                    if(cIter != data->Constants.end()) /* Is a constant */
+                    {
+                        AddImmediate(cIter->second);
+                        AddCompiledByte(cImmed);
+                    }
+                    else
+                    {
+                        parseErrorType = INVALID_VARS;
+                        return (anchor - (const YYCTYPE*) Function.c_str());
+                    }
+                }
+                DONE_REDUCE(1, NT_exp);
+                incStackPtr();
+                break;
+            }
+            case  11: //   | exp '+' exp
+            case  12: //   | exp '-' exp
+            case  13: //   | exp '&' exp
+            case  14: //   | exp '|' exp
+            case  15: //   | exp COMP_OP exp
+            case  16: //   | exp TIMES_MUL_MOD_OP exp
+            case  17: //   | exp '^' exp
+            {
+                GET_PARAM(3,1);
+                AddCompiledByte( pair1.opcode );
+                DONE_REDUCE(3, NT_exp);
+                StackPtr -= 2; incStackPtr();
+                break;
+            }
+            case  18: //   | '-' exp
+                AddCompiledByte(cNeg);
+                DONE_REDUCE(2, NT_exp);
+                break;
+            case  19: //   | '(' exp ')' 
+                DONE_REDUCE(3, NT_exp);
+                break;
+            case  20: //   | '!' exp
+                AddCompiledByte(cNot);
+                DONE_REDUCE(2, NT_exp);
+                break;
+
+            case  21: //exp: exp IDENTIFIER
+            {
+                GET_PARAM(2,1); // ident
+                
+                Data::ConstMap_t::const_iterator uIter = data->Units.find(pair1.ident);
+                if(uIter == data->Units.end()) // Is not a unit?
+                {
+                    parseErrorType = EXPECT_OPERATOR;
+                    //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
+                    return (anchor - (const YYCTYPE*) Function.c_str());
+                }
+                AddImmediate(uIter->second);
+                AddCompiledByte(cImmed);
+                incStackPtr();
+                AddCompiledByte(cMul);
+                --StackPtr;
+                DONE_REDUCE(2, NT_exp);
+                break;
+            }
+            
+            case 22: // func_params_opt: func_params
+            {
+                GET_PARAM(1, 0);// func_params
+                DONE_REDUCE(1, NT_func_params_opt);
+                LastOpcode = pair0.opcode; // denote the number of params
+                break;
+            }
+            
+            case 23: // func_params_opt: <empty>
+                DONE_REDUCE(0, NT_func_params_opt);
+                LastOpcode = 0; // denote 0 params
+                break;
+            
+            case 24: // func_params: func_params Comma exp
+            {
+                GET_PARAM(3, 0);// func_params
+                DONE_REDUCE(3, NT_func_params);
+                LastOpcode = pair0.opcode + 1; // denote 1 param more
+                break;
+            }
+            case 25: // func_params: exp
+                DONE_REDUCE(1, NT_func_params);
+                LastOpcode = 1; // denote 1 param
+                break;
+
+            default:
+                parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
+        }
+        
+        if(DoDebug)fprintf(stderr, "Reduced using rule %d, produced %s - eating %d\n",
+            -Action, NonTerminalNames[produced_nonterminal], n_reduce);
+        
+        if(n_reduce > 0)
+        {
+            CurrentState = StateList[StateList.size()-n_reduce];
+            ShiftedTerminals.resize(ShiftedTerminals.size()-n_reduce);
+            StateList.resize(StateList.size()-n_reduce);
+        }
+        
+        const BisonState& PoppedState = States[CurrentState];
+        int NewState = PoppedState.Goto[produced_nonterminal];
+        if(!NewState)
+        {
+            fprintf(stderr, "No CurrentState to go to in state %d?\n", NewState);
+            parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
+        }
+        SHIFT(NewState);
+        
+        /* Restore the terminal that was before reduce */
+        LastOpcode     = SaveTerminalBeforeReduce.opcode;
+        LastNum        = SaveTerminalBeforeReduce.num;
+        LastIdentifier = SaveTerminalBeforeReduce.ident;
+        
+        goto GotTerminal;
+    }
+    else
+    {
+        /* Parse error */
+        parseErrorType = SYNTAX_ERROR;
+        return (anchor - (const YYCTYPE*) Function.c_str());
+    }
+    goto ContParse;
+
+
+ReallyDoneParse:
     data->Variables.clear();
 
     data->ByteCodeSize = byteCode.size();
