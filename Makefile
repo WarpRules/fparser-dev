@@ -1,5 +1,5 @@
-#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -m32 -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -m32 -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 #CXX=g++ -Wall -W -pedantic -ansi -g -O0
 LD=g++ -s
 

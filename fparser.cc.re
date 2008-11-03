@@ -716,7 +716,7 @@ GotIdentifier:
         goto ExpectOpenParensParser;
     }
     //printf("ERROR: UNKNOWN IDENTIFIER: %s\n", identifier.c_str());
-    parseErrorType = INVALID_VARS;
+    parseErrorType = SYNTAX_ERROR;
     return (anchor - (const YYCTYPE*) Function.c_str());
 }
 
