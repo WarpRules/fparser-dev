@@ -441,7 +441,7 @@ int FunctionParser::Parse(const std::string& Function,
     int         LastOpcode=0;
     Terminals   LastTerminal;
 
-    fprintf(stderr, "Parsing %s\n", YYCURSOR);
+    //fprintf(stderr, "Parsing %s\n", YYCURSOR);
 
 #ifdef FP_NO_ASINH
  #define ASINH_ENABLE(x) goto GotIdentifier
