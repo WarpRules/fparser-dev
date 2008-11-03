@@ -153,23 +153,23 @@ foreach($nonterminals as $nt=>$dummy) $max_nt_len = max($max_nt_len, strlen($nt)
 ?>
 enum Terminals
 {
-    <?=wordwrap(join(', ', $terminals), 60, "\n    ")?>,
+    <?php echo wordwrap(join(', ', $terminals), 60, "\n    ");?>,
     NUM_TERMINALS
 };
 enum NonTerminals
 {
-    <?=wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    ")?>,
+    <?php echo wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    ");?>,
     NUM_NONTERMINALS
 };
 static const char TerminalNames[NUM_TERMINALS][1+<?=$max_t_len?>] =
 {
-    <?=preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
-         wordwrap(join(', ', $terminals), 60, "\n    "))?> 
+    <?php echo preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
+         wordwrap(join(', ', $terminals), 60, "\n    "));?> 
 };
 static const char NonTerminalNames[NUM_NONTERMINALS][1+<?=$max_nt_len?>] =
 {
-    <?=preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
-         wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    "))?> 
+    <?php echo preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
+         wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    "));?> 
 };
 static const struct BisonState
 {
