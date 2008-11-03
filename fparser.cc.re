@@ -554,9 +554,9 @@ GotTerminal:
         CurrentState = newstate; \
     } while(0)
     
-    #define GET_PARAM(n_reduced, offs) \
-        const ShiftedTerminal& pair##offs = \
-            ShiftedTerminals[ShiftedTerminals.size() - n_reduced + offs]
+    #define GET_PARAM(offs) \
+        const ShiftedTerminal& param##offs = \
+            ShiftedTerminals[ShiftedTerminals.size() - n_reduce + offs]
 
     /* Do the parsing decision */
     const BisonState& State = States[CurrentState];
@@ -584,23 +584,20 @@ GotTerminal:
         
         LastIdentifier.clear();
         
-        int n_reduce = 0;
-        NonTerminals produced_nonterminal = NT_Zaccept;
-        
-        #define DONE_REDUCE(nr,nt) n_reduce=nr; produced_nonterminal=nt
-        
         // Reduce using which rule?
         // These rule numbers are directly derived from the
         // fparser-parsingtree.output file, and must be changed
         // any time you add/remove/reorder clauses in the fparser.y file.
+        const int n_reduce                      = BisonGrammar[-Action].n_reduce;
+        const NonTerminals produced_nonterminal = BisonGrammar[-Action].produced_nonterminal;
+
         switch(-Action)
         {
             case   1: //exp: NUMCONST
             {
-                GET_PARAM(1,0);
-                AddImmediate(pair0.num);
+                GET_PARAM(0);
+                AddImmediate(param0.num);
                 AddCompiledByte(cImmed);
-                DONE_REDUCE(1, NT_exp);
                 incStackPtr();
                 break;
             }
@@ -608,38 +605,36 @@ GotTerminal:
             case   3: //   | PREDEFINED_FUNC2 '(' func_params_opt ')'
             case   4: //   | PREDEFINED_FUNC3 '(' func_params_opt ')'
             {
-                GET_PARAM(4,0); // ident
-                GET_PARAM(4,2); // func_params_opt
+                GET_PARAM(0); // ident
+                GET_PARAM(2); // func_params_opt
                 int n_params_expected = 0;
                 if(Action==-2) n_params_expected=1;
                 if(Action==-3) n_params_expected=2;
                 if(Action==-4) n_params_expected=3;
                 if(DoDebug)fprintf(stderr, "Expects %d params, gets %d\n",
-                    n_params_expected, pair2.opcode);
-                if(pair2.opcode != n_params_expected)
+                    n_params_expected, param2.opcode);
+                if(param2.opcode != n_params_expected)
                 { 
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
                 }
-                AddFunctionOpcode(pair0.opcode);
-                DONE_REDUCE(4, NT_exp);
-                StackPtr -= pair2.opcode; incStackPtr();
+                AddFunctionOpcode(param0.opcode);
+                StackPtr -= param2.opcode; incStackPtr();
                 break;
             }
             case   5: //   | EVAL             '(' func_params_opt ')'
             {
-                GET_PARAM(4,2); // func_params_opt
+                GET_PARAM(2); // func_params_opt
                 int n_params_expected = data->varAmount;
-                if(pair2.opcode != n_params_expected)
+                if(param2.opcode != n_params_expected)
                 { 
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
                 }
                 AddCompiledByte(cEval);
-                DONE_REDUCE(4, NT_exp);
-                StackPtr -= pair2.opcode; incStackPtr();
+                StackPtr -= param2.opcode; incStackPtr();
                 break;
             }
             case   6: // (after first exp in if)
@@ -649,7 +644,6 @@ GotTerminal:
                 AddCompiledByte(0); // Jump index; to be set later
                 AddCompiledByte(0); // Immed jump index; to be set later
                 LastOpcode = ByteCodeSize1;
-                DONE_REDUCE(0, NT_A1);
                 break;
             }
             case   7: // (after second exp in if)
@@ -661,32 +655,30 @@ GotTerminal:
                 AddCompiledByte(0); // Immed jump index; to be set later
                 LastOpcode = ByteCodeSize2;
                 LastNum    = ImmedSize2; // FIXME: possibly loses precision
-                DONE_REDUCE(0, NT_A2);
                 break;
             }
             case   8: //exp: If LParens exp @1 Comma exp @2 Comma exp RParens
             {
-                GET_PARAM(10,3); // NT_A1
-                GET_PARAM(10,6); // NT_A2
-                size_t ByteCodeSize1 = pair3.opcode;
-                size_t ByteCodeSize2 = pair6.opcode;
-                size_t ImmedSize2    = pair6.num;
+                GET_PARAM(3); // NT_A1
+                GET_PARAM(6); // NT_A2
+                size_t ByteCodeSize1 = param3.opcode;
+                size_t ByteCodeSize2 = param6.opcode;
+                size_t ImmedSize2    = param6.num;
 
                 (*tempByteCode)[ByteCodeSize1]   = ByteCodeSize2+1;
                 (*tempByteCode)[ByteCodeSize1+1] = ImmedSize2;
                 (*tempByteCode)[ByteCodeSize2]   = tempByteCode->size()-1;
                 (*tempByteCode)[ByteCodeSize2+1] = tempImmed->size();
-                DONE_REDUCE(10, NT_exp);
                 --StackPtr;
                 break;
             }
             case   9: //   | IDENTIFIER '(' func_params_opt ')' 
             {
-                GET_PARAM(4,0); // ident
-                GET_PARAM(4,2); // func_params_opt
+                GET_PARAM(0); // ident
+                GET_PARAM(2); // func_params_opt
                 int n_params_expected = 0, opcode = 0, funcno = 0;
 
-                Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(pair0.ident);
+                Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(param0.ident);
                 if(fIter != data->FuncPtrNames.end()) /* Is a FCall pointer */
                 {
                     n_params_expected = data->FuncPtrs[fIter->second].params;
@@ -695,7 +687,7 @@ GotTerminal:
                 }
                 else
                 {
-                    Data::VarMap_t::const_iterator pIter = data->FuncParserNames.find(pair0.ident);
+                    Data::VarMap_t::const_iterator pIter = data->FuncParserNames.find(param0.ident);
                     if(pIter != data->FuncParserNames.end()) /* Is a PCall pointer */
                     {
                         opcode        = cPCall;
@@ -709,7 +701,7 @@ GotTerminal:
                     }
                 }
                 
-                if(n_params_expected != pair2.opcode)
+                if(n_params_expected != param2.opcode)
                 {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
@@ -718,19 +710,18 @@ GotTerminal:
                 
                 AddCompiledByte(opcode);
                 AddCompiledByte(funcno);
-                DONE_REDUCE(4, NT_exp);
-                StackPtr -= pair2.opcode; incStackPtr();
+                StackPtr -= param2.opcode; incStackPtr();
                 break;
             }
             case  10: //   | IDENTIFIER
             {
-                GET_PARAM(1,0); //ident
-                Data::VarMap_t::const_iterator vIter = data->Variables.find(pair0.ident);
+                GET_PARAM(0); //ident
+                Data::VarMap_t::const_iterator vIter = data->Variables.find(param0.ident);
                 if(vIter != data->Variables.end()) /* Is a variable */
                     AddCompiledByte(vIter->second);
                 else
                 {
-                    Data::ConstMap_t::const_iterator cIter = data->Constants.find(pair0.ident);
+                    Data::ConstMap_t::const_iterator cIter = data->Constants.find(param0.ident);
                     if(cIter != data->Constants.end()) /* Is a constant */
                     {
                         AddImmediate(cIter->second);
@@ -742,7 +733,6 @@ GotTerminal:
                         return (anchor - (const YYCTYPE*) Function.c_str());
                     }
                 }
-                DONE_REDUCE(1, NT_exp);
                 incStackPtr();
                 break;
             }
@@ -754,29 +744,25 @@ GotTerminal:
             case  16: //   | exp TIMES_MUL_MOD_OP exp
             case  17: //   | exp '^' exp
             {
-                GET_PARAM(3,1);
-                AddCompiledByte( pair1.opcode );
-                DONE_REDUCE(3, NT_exp);
+                GET_PARAM(1);
+                AddCompiledByte( param1.opcode );
                 StackPtr -= 2; incStackPtr();
                 break;
             }
             case  18: //   | '-' exp
                 AddCompiledByte(cNeg);
-                DONE_REDUCE(2, NT_exp);
                 break;
             case  19: //   | '(' exp ')' 
-                DONE_REDUCE(3, NT_exp);
                 break;
             case  20: //   | '!' exp
                 AddCompiledByte(cNot);
-                DONE_REDUCE(2, NT_exp);
                 break;
 
             case  21: //exp: exp IDENTIFIER
             {
-                GET_PARAM(2,1); // ident
+                GET_PARAM(1); // ident
                 
-                Data::ConstMap_t::const_iterator uIter = data->Units.find(pair1.ident);
+                Data::ConstMap_t::const_iterator uIter = data->Units.find(param1.ident);
                 if(uIter == data->Units.end()) // Is not a unit?
                 {
                     parseErrorType = EXPECT_OPERATOR;
@@ -788,32 +774,27 @@ GotTerminal:
                 incStackPtr();
                 AddCompiledByte(cMul);
                 --StackPtr;
-                DONE_REDUCE(2, NT_exp);
                 break;
             }
             
             case 22: // func_params_opt: func_params
             {
-                GET_PARAM(1, 0);// func_params
-                DONE_REDUCE(1, NT_func_params_opt);
-                LastOpcode = pair0.opcode; // denote the number of params
+                GET_PARAM(0);// func_params
+                LastOpcode = param0.opcode; // denote the number of params
                 break;
             }
             
             case 23: // func_params_opt: <empty>
-                DONE_REDUCE(0, NT_func_params_opt);
                 LastOpcode = 0; // denote 0 params
                 break;
             
             case 24: // func_params: func_params Comma exp
             {
-                GET_PARAM(3, 0);// func_params
-                DONE_REDUCE(3, NT_func_params);
-                LastOpcode = pair0.opcode + 1; // denote 1 param more
+                GET_PARAM(0);// func_params
+                LastOpcode = param0.opcode + 1; // denote 1 param more
                 break;
             }
             case 25: // func_params: exp
-                DONE_REDUCE(1, NT_func_params);
                 LastOpcode = 1; // denote 1 param
                 break;
 

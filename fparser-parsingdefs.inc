@@ -24,11 +24,10 @@ static const char NonTerminalNames[NUM_NONTERMINALS][1+18] =
     "NT_Zaccept", "NT_exp", "NT_A1", "NT_A2", "NT_func_params_opt",
     "NT_func_params" 
 };
-struct BisonState
+static const struct BisonState
 {
     char Actions[NUM_TERMINALS], Goto[NUM_NONTERMINALS];
-};
-static const BisonState States[] =
+} States[] =
 {
   // state 0
   { {   0,  0,  0,  0,  1,  0,  0,  2,  0,  3,  4,  5,  6,  7,  8,  9, 10,  0,  0}, { 0,11,0,0,0,0} },
@@ -102,4 +101,37 @@ static const BisonState States[] =
   { {   0,  0,  0,  0,  1,  0,  0,  2,  0,  3,  4,  5,  6,  7,  8,  9, 10,  0,  0}, { 0,58,0,0,0,0} },
   { {   0, 22, 23, 24, 25, 26, 27,  0, 28,  0,  0,  0,  0,  0,  0, 29,  0, 59,  0}, { 0,0,0,0,0,0} },
   { {  -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8, -8}, { 0,0,0,0,0,0} },
+};
+static const struct BisonReduce
+{
+  int          n_reduce:8;
+  NonTerminals produced_nonterminal:8;
+} BisonGrammar[] =
+{
+  {  2, NT_Zaccept        }, /* Zaccept: exp Zend */
+  {  1, NT_exp            }, /* exp: NumConst */
+  {  4, NT_exp            }, /*    | PreFunc1 LParens func_params_opt RParens */
+  {  4, NT_exp            }, /*    | PreFunc2 LParens func_params_opt RParens */
+  {  4, NT_exp            }, /*    | PreFunc3 LParens func_params_opt RParens */
+  {  4, NT_exp            }, /*    | Eval LParens func_params_opt RParens */
+  {  0, NT_A1             }, /* A1: (* empty *) */
+  {  0, NT_A2             }, /* A2: (* empty *) */
+  { 10, NT_exp            }, /* exp: If LParens exp A1 Comma exp A2 Comma exp RParens */
+  {  4, NT_exp            }, /*    | Identifier LParens func_params_opt RParens */
+  {  1, NT_exp            }, /*    | Identifier */
+  {  3, NT_exp            }, /*    | exp Plus exp */
+  {  3, NT_exp            }, /*    | exp Minus exp */
+  {  3, NT_exp            }, /*    | exp AndOp exp */
+  {  3, NT_exp            }, /*    | exp OrOp exp */
+  {  3, NT_exp            }, /*    | exp CompOp exp */
+  {  3, NT_exp            }, /*    | exp TimesMulModOp exp */
+  {  3, NT_exp            }, /*    | exp Pow exp */
+  {  2, NT_exp            }, /*    | Minus exp */
+  {  3, NT_exp            }, /*    | LParens exp RParens */
+  {  2, NT_exp            }, /*    | Bang exp */
+  {  2, NT_exp            }, /*    | exp Identifier */
+  {  1, NT_func_params_opt}, /* func_params_opt: func_params */
+  {  0, NT_func_params_opt}, /*                | (* empty *) */
+  {  3, NT_func_params    }, /* func_params: func_params Comma exp */
+  {  1, NT_func_params    }, /*            | exp */
 };

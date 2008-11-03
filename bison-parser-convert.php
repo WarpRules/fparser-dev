@@ -76,7 +76,7 @@ foreach(explode("\n", file_get_contents($inputfile)) as $line)
       
       #print "Reduce<$rule_template_param >\n";
       
-      $rules[(int)$line] = Array($rule, $n_reduce, $rule_template_param);
+      $rules[(int)$line] = Array($rule, $n_reduce, $rule_template_param, "NT_$rule_result");
       break;
     case STATE_TERMINALS:
       if(ereg('^Nonterminals, ', $line)) { $mode = STATE_NONTERMINALS; break; }
@@ -138,7 +138,6 @@ foreach(explode("\n", file_get_contents($inputfile)) as $line)
 }
 unset($statedata);
 
-
 $c=0;
 foreach($terminals as $t) $$t = $c++;
 $c=0;
@@ -172,11 +171,10 @@ static const char NonTerminalNames[NUM_NONTERMINALS][1+<?=$max_nt_len?>] =
     <?=preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
          wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    "))?> 
 };
-struct BisonState
+static const struct BisonState
 {
     char Actions[NUM_TERMINALS], Goto[NUM_NONTERMINALS];
-};
-static const BisonState States[] =
+} States[] =
 {
 <?php
   $stateno = 0;
@@ -221,6 +219,20 @@ static const BisonState States[] =
     echo "  { { ", join(',', $actions), '}, { ', join(',', $goto), "} },\n";
     ++$stateno;
   }
+?>
+};
+static const struct BisonReduce
+{
+  int          n_reduce:8;
+  NonTerminals produced_nonterminal:8;
+} BisonGrammar[] =
+{
+<?php
+  foreach($rules as $ruleno => $ruledata)
+    printf("  {%3d, %s}, /* %s */\n",
+      $ruledata[1],
+      str_pad($ruledata[3], $max_nt_len),
+      $ruledata[0]);
 ?>
 };
 <?php
