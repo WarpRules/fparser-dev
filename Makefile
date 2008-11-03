@@ -1,5 +1,5 @@
-#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -m32 -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -m32 -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 #CXX=g++ -Wall -W -pedantic -ansi -g -O0 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 LD=g++ -s
 
@@ -18,7 +18,6 @@ pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fp
 fparser.cc: fparser.cc.re fparser-parsingdefs.inc Makefile
 	re2c -bs $< \
 	| sed 's/static unsigned char yybm/static const unsigned char yybm/' \
-	| sed "s@<<PARSING_DEFS_PLACEHOLDER>>@`tr '\012' '§' < fparser-parsingdefs.inc`@" \
 	| tr '§' '\012' \
 	> $@
 

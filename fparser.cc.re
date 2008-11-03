@@ -429,7 +429,7 @@ int FunctionParser::Parse(const std::string& Function,
     /* Note: The specific order of Terminals affects the numbering
      * used in Actions[] in BisonState. So don't change too hastily.
      */
-<<PARSING_DEFS_PLACEHOLDER>>
+#include "fparser-parsingdefs.inc"
 
     /* Parser state */
     int CurrentState=0;
