@@ -376,13 +376,16 @@ bool FunctionParser::AddFunction(const std::string& name,
 
 // Main parsing function
 // ---------------------
-namespace {
-struct ShiftedTerminal
+namespace
 {
-    std::string ident;
-    double num;
-    int opcode;
-}; }
+    struct ShiftedState
+    {
+        std::string ident;
+        double num;
+        int opcode;
+        int state;
+    };
+}
 int FunctionParser::Parse(const std::string& Function,
                           const std::string& Vars,
                           bool useDegrees)
@@ -429,9 +432,8 @@ int FunctionParser::Parse(const std::string& Function,
 <<PARSING_DEFS_PLACEHOLDER>>
 
     /* Parser state */
-    std::vector<int> StateList;
     int CurrentState=0;
-    std::vector<ShiftedTerminal> ShiftedTerminals;
+    std::vector<ShiftedState> ShiftedStates;
 
     /* Lexer information */
     double      LastNum=0;
@@ -542,21 +544,21 @@ GotTerminal:
     #define CREATE_SHIFT(t) \
         t.ident  = LastIdentifier; \
         t.num    = LastNum; \
-        t.opcode = LastOpcode
+        t.opcode = LastOpcode; \
+        t.state  = CurrentState
 
     #define SHIFT(newstate) do { \
-        ShiftedTerminal t; \
+        ShiftedState t; \
         CREATE_SHIFT(t); \
         if(DoDebug)fprintf(stderr, "- Pushing opcode %d num %g id %s\n", \
             t.opcode, t.num, t.ident.c_str()); \
-        ShiftedTerminals.push_back(t); \
-        StateList.push_back(CurrentState); \
+        ShiftedStates.push_back(t); \
         CurrentState = newstate; \
     } while(0)
 
     #define GET_PARAM(offs) \
-        const ShiftedTerminal& param##offs = \
-            ShiftedTerminals[ShiftedTerminals.size() - n_reduce + offs]
+        const ShiftedState& param##offs = \
+            ShiftedStates[ShiftedStates.size() - n_reduce + offs]
 
     /* Do the parsing decision */
     const BisonState& State = States[CurrentState];
@@ -579,7 +581,7 @@ GotTerminal:
     {
         /* Reduce using rule (-Action) */
 
-        ShiftedTerminal SaveTerminalBeforeReduce;
+        ShiftedState SaveTerminalBeforeReduce;
         CREATE_SHIFT(SaveTerminalBeforeReduce);
 
         LastIdentifier.clear();
@@ -810,9 +812,8 @@ GotTerminal:
 
         if(n_reduce > 0)
         {
-            CurrentState = StateList[StateList.size()-n_reduce];
-            ShiftedTerminals.resize(ShiftedTerminals.size()-n_reduce);
-            StateList.resize(StateList.size()-n_reduce);
+            CurrentState = ShiftedStates[ShiftedStates.size()-n_reduce].state;
+            ShiftedStates.resize(ShiftedStates.size()-n_reduce);
         }
 
         const BisonState& PoppedState = States[CurrentState];
