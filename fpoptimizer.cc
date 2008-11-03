@@ -7,7 +7,7 @@
  ----
  Everything that goes into the #ifndef FP_SUPPORT_OPTIMIZER part
  (ie. when FP_SUPPORT_OPTIMIZER is not defined) should be put in
- the end of fparser.cc file, not in this file.
+ the end of fparser.cc.re file, not in this file.
 
  Everything in this file should be inside the #ifdef FP_SUPPORT_OPTIMIZER
  block (except the #include "fpconfig.hh" line).
