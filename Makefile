@@ -23,7 +23,7 @@ fparser.cc: fparser.cc.re fparser-parsingdefs.inc Makefile
 	> $@
 
 fparser-parsingtree.output: fparser.y
-	bison $< -dv -o fparser-parsingtree.c
+	bison $< -ndv -o fparser-parsingtree.c
 	rm -f fparser-parsingtree.[ch]
 
 fparser-parsingdefs.inc: \
