@@ -136,6 +136,7 @@ private:
     void AddCompiledByte(unsigned);
     void AddImmediate(double);
     void AddFunctionOpcode(unsigned);
+    unsigned GetLastCompiledOpcode() const;
     inline void incStackPtr();
 
     void MakeTree(void*) const;

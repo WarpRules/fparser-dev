@@ -421,7 +421,7 @@ int FunctionParser::Parse(const std::string& Function,
     const YYCTYPE* YYCURSOR = (const YYCTYPE*) Function.c_str();
     const YYCTYPE* YYLIMIT  = YYCURSOR + Function.size();
     const YYCTYPE* YYMARKER = 0;
-    
+
     /* Parser defs */
     /* Note: The specific order of Terminals affects the numbering
      * used in Actions[] in BisonState. So don't change too hastily.
@@ -438,7 +438,7 @@ int FunctionParser::Parse(const std::string& Function,
     std::string LastIdentifier;
     int         LastOpcode=0;
     Terminals   LastTerminal;
-    
+
     fprintf(stderr, "Parsing %s\n", YYCURSOR);
 
     /* Parser & lexer */
@@ -535,7 +535,7 @@ anychar {
 DoneParse:
     DO_TERM(T_Zend);
     /* FIXME: Prevent infinite loop here */
-    
+
     static const bool DoDebug = false;
 
 GotTerminal:
@@ -543,7 +543,7 @@ GotTerminal:
         t.ident  = LastIdentifier; \
         t.num    = LastNum; \
         t.opcode = LastOpcode
-    
+
     #define SHIFT(newstate) do { \
         ShiftedTerminal t; \
         CREATE_SHIFT(t); \
@@ -553,7 +553,7 @@ GotTerminal:
         StateList.push_back(CurrentState); \
         CurrentState = newstate; \
     } while(0)
-    
+
     #define GET_PARAM(offs) \
         const ShiftedTerminal& param##offs = \
             ShiftedTerminals[ShiftedTerminals.size() - n_reduce + offs]
@@ -561,10 +561,10 @@ GotTerminal:
     /* Do the parsing decision */
     const BisonState& State = States[CurrentState];
     int Action = State.Actions[LastTerminal];
-    
+
     if(DoDebug)fprintf(stderr, "State %d, LastTerminal=%s, Action=%d\n",
         CurrentState, TerminalNames[LastTerminal], Action);
-    
+
     if(Action == 127)
     {
         goto ReallyDoneParse; // Accept
@@ -578,12 +578,12 @@ GotTerminal:
     else if(Action < 0)
     {
         /* Reduce using rule (-Action) */
-        
+
         ShiftedTerminal SaveTerminalBeforeReduce;
         CREATE_SHIFT(SaveTerminalBeforeReduce);
-        
+
         LastIdentifier.clear();
-        
+
         // Reduce using which rule?
         // These rule numbers are directly derived from the
         // fparser-parsingtree.output file, and must be changed
@@ -614,7 +614,7 @@ GotTerminal:
                 if(DoDebug)fprintf(stderr, "Expects %d params, gets %d\n",
                     n_params_expected, param2.opcode);
                 if(param2.opcode != n_params_expected)
-                { 
+                {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
@@ -628,7 +628,7 @@ GotTerminal:
                 GET_PARAM(2); // func_params_opt
                 int n_params_expected = data->varAmount;
                 if(param2.opcode != n_params_expected)
-                { 
+                {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
@@ -672,7 +672,7 @@ GotTerminal:
                 --StackPtr;
                 break;
             }
-            case   9: //   | IDENTIFIER '(' func_params_opt ')' 
+            case   9: //   | IDENTIFIER '(' func_params_opt ')'
             {
                 GET_PARAM(0); // ident
                 GET_PARAM(2); // func_params_opt
@@ -700,14 +700,14 @@ GotTerminal:
                         return (anchor - (const YYCTYPE*) Function.c_str());
                     }
                 }
-                
+
                 if(n_params_expected != param2.opcode)
                 {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
                 }
-                
+
                 AddCompiledByte(opcode);
                 AddCompiledByte(funcno);
                 StackPtr -= param2.opcode; incStackPtr();
@@ -751,8 +751,11 @@ GotTerminal:
             }
             case  18: //   | '-' exp
                 AddCompiledByte(cNeg);
+                /* Note: Double negation / negation of immeds
+                 * is dealt with in AddCompiledByte()
+                 */
                 break;
-            case  19: //   | '(' exp ')' 
+            case  19: //   | '(' exp ')'
                 break;
             case  20: //   | '!' exp
                 AddCompiledByte(cNot);
@@ -761,7 +764,7 @@ GotTerminal:
             case  21: //exp: exp IDENTIFIER
             {
                 GET_PARAM(1); // ident
-                
+
                 Data::ConstMap_t::const_iterator uIter = data->Units.find(param1.ident);
                 if(uIter == data->Units.end()) // Is not a unit?
                 {
@@ -776,18 +779,18 @@ GotTerminal:
                 --StackPtr;
                 break;
             }
-            
+
             case 22: // func_params_opt: func_params
             {
                 GET_PARAM(0);// func_params
                 LastOpcode = param0.opcode; // denote the number of params
                 break;
             }
-            
+
             case 23: // func_params_opt: <empty>
                 LastOpcode = 0; // denote 0 params
                 break;
-            
+
             case 24: // func_params: func_params Comma exp
             {
                 GET_PARAM(0);// func_params
@@ -801,17 +804,17 @@ GotTerminal:
             default:
                 parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
         }
-        
+
         if(DoDebug)fprintf(stderr, "Reduced using rule %d, produced %s - eating %d\n",
             -Action, NonTerminalNames[produced_nonterminal], n_reduce);
-        
+
         if(n_reduce > 0)
         {
             CurrentState = StateList[StateList.size()-n_reduce];
             ShiftedTerminals.resize(ShiftedTerminals.size()-n_reduce);
             StateList.resize(StateList.size()-n_reduce);
         }
-        
+
         const BisonState& PoppedState = States[CurrentState];
         int NewState = PoppedState.Goto[produced_nonterminal];
         if(!NewState)
@@ -820,12 +823,12 @@ GotTerminal:
             parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
         }
         SHIFT(NewState);
-        
+
         /* Restore the terminal that was before reduce */
         LastOpcode     = SaveTerminalBeforeReduce.opcode;
         LastNum        = SaveTerminalBeforeReduce.num;
         LastIdentifier = SaveTerminalBeforeReduce.ident;
-        
+
         goto GotTerminal;
     }
     else
@@ -910,24 +913,50 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             return;
 
         case cNeg:
+        {
             /* Shouldn't these go to the optimizer? -Bisqwit */
-            if(tempByteCode->back() == cImmed)
+            unsigned LastOpcode = GetLastCompiledOpcode();
+            if(LastOpcode == cImmed)
             {
+                // negate the last immed and return
             	tempImmed->back() = -tempImmed->back();
             	return;
             }
-            if(tempByteCode->back() == cNeg)
+            if(LastOpcode == cNeg)
             {
-            	tempByteCode->pop_back();
+            	tempByteCode->pop_back(); // remove duplicate cNeg
+            	// and don't add a new one
             	return;
             }
             AddCompiledByte(opcode);
             return;
-
+        }
         default:
             AddCompiledByte(opcode);
     }
 }
+unsigned FunctionParser::GetLastCompiledOpcode() const
+{
+    if(tempByteCode->size() <= 0)
+        return 0;
+    if(tempByteCode->size() <= 1)
+        return tempByteCode->back();
+
+    const unsigned& last1 = tempByteCode->back();
+    // Check the preceding opcode to avoid a false positive
+    // when a cFCall is followed by a procedure index that
+    // happens to be identical with the value of cImmed.
+    const unsigned& last2 = (*tempByteCode)[tempByteCode->size()-2];
+    if(last2 == cFCall || last2 == cPCall)
+    {
+        // FIXME: Still has a possibility for false positive,
+        // if last_3_ is a cFCall or cPCall...
+        return last2;
+    }
+    return last1;
+}
+
+
 
 inline void FunctionParser::incStackPtr()
 {
