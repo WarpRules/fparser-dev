@@ -161,12 +161,12 @@ enum NonTerminals
     <?php echo wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    ");?>,
     NUM_NONTERMINALS
 };
-static const char TerminalNames[NUM_TERMINALS][1+<?=$max_t_len?>] =
+static const char TerminalNames[NUM_TERMINALS][1+<?php echo $max_t_len; ?>] =
 {
     <?php echo preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
          wordwrap(join(', ', $terminals), 60, "\n    "));?> 
 };
-static const char NonTerminalNames[NUM_NONTERMINALS][1+<?=$max_nt_len?>] =
+static const char NonTerminalNames[NUM_NONTERMINALS][1+<?php echo $max_nt_len; ?>] =
 {
     <?php echo preg_replace('/([A-Z0-9_a-z$@]+)/', '"\1"',
          wordwrap(join(', ', array_keys($nonterminals)), 60, "\n    "));?> 
