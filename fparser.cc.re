@@ -447,7 +447,7 @@ int FunctionParser::Parse(const std::string& Function,
 ContParse:
     const YYCTYPE* anchor = YYCURSOR;
     if(anchor >= YYLIMIT) goto DoneParse;
-ContParseWithSameAnchor:
+//ContParseWithSameAnchor:
 #ifdef FP_NO_ASINH
  #define ASINH_ENABLE(x) goto GotIdentifier
 #else
@@ -527,8 +527,7 @@ GotIdentifier:
 }
 
 anychar {
-    parseErrorType = SYNTAX_ERROR;
-    return (anchor - (const YYCTYPE*) Function.c_str());
+    DO_TERM(T_Garbage);
 }
 */
 
@@ -536,8 +535,15 @@ anychar {
     #undef YYDEBUG
 DoneParse:
     DO_TERM(T_Zend);
-    /* FIXME: Prevent infinite loop here */
-
+    /* Note: There's theoretically a possibility for an
+     * infinite loop here:
+     *    ContParse->DoneParse->GotTerminal->ContParse
+     *
+     * However, now really. The only situation where
+     * GotTerminal may return to ContParse is if it
+     * does a SHIFT(), and there's no grammar rule
+     * that causes a SHIF to be done for T_Zend.
+     */
     static const bool DoDebug = false;
 
 GotTerminal:
@@ -569,7 +575,7 @@ GotTerminal:
 
     if(Action == 127)
     {
-        goto ReallyDoneParse; // Accept
+        goto ReallyDoneParse; // Accept the result
     }
     else if(Action > 0)
     {
@@ -603,40 +609,40 @@ GotTerminal:
                 incStackPtr();
                 break;
             }
-            case   2: //   | PREDEFINED_FUNC1 '(' func_params_opt ')'
-            case   3: //   | PREDEFINED_FUNC2 '(' func_params_opt ')'
-            case   4: //   | PREDEFINED_FUNC3 '(' func_params_opt ')'
+            case   2: //   | PreFunc1 func_params_list_opt
+            case   3: //   | PreFunc2 func_params_list_opt
+            case   4: //   | PreFunc3 func_params_list_opt
             {
                 GET_PARAM(0); // ident
-                GET_PARAM(2); // func_params_opt
+                GET_PARAM(1); // func_params_list_opt
                 int n_params_expected = 0;
                 if(Action==-2) n_params_expected=1;
                 if(Action==-3) n_params_expected=2;
                 if(Action==-4) n_params_expected=3;
                 if(DoDebug)fprintf(stderr, "Expects %d params, gets %d\n",
-                    n_params_expected, param2.opcode);
-                if(param2.opcode != n_params_expected)
+                    n_params_expected, param1.opcode);
+                if(param1.opcode != n_params_expected)
                 {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
                 }
                 AddFunctionOpcode(param0.opcode);
-                StackPtr -= param2.opcode; incStackPtr();
+                StackPtr -= param1.opcode; incStackPtr();
                 break;
             }
-            case   5: //   | EVAL             '(' func_params_opt ')'
+            case   5: //   | EVAL func_params_list_opt
             {
-                GET_PARAM(2); // func_params_opt
+                GET_PARAM(1); // func_params_list_opt
                 int n_params_expected = data->varAmount;
-                if(param2.opcode != n_params_expected)
+                if(param1.opcode != n_params_expected)
                 {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
                     return (anchor - (const YYCTYPE*) Function.c_str());
                 }
                 AddCompiledByte(cEval);
-                StackPtr -= param2.opcode; incStackPtr();
+                StackPtr -= param1.opcode; incStackPtr();
                 break;
             }
             case   6: // (after first exp in if)
@@ -674,10 +680,10 @@ GotTerminal:
                 --StackPtr;
                 break;
             }
-            case   9: //   | IDENTIFIER '(' func_params_opt ')'
+            case   9: //   | Identifier func_params_list_opt
             {
                 GET_PARAM(0); // ident
-                GET_PARAM(2); // func_params_opt
+                GET_PARAM(1); // func_params_list_opt
                 int n_params_expected = 0, opcode = 0, funcno = 0;
 
                 Data::VarMap_t::const_iterator fIter = data->FuncPtrNames.find(param0.ident);
@@ -703,7 +709,7 @@ GotTerminal:
                     }
                 }
 
-                if(n_params_expected != param2.opcode)
+                if(n_params_expected != param1.opcode)
                 {
                     parseErrorType = ILL_PARAMS_AMOUNT;
                     //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
@@ -712,7 +718,7 @@ GotTerminal:
 
                 AddCompiledByte(opcode);
                 AddCompiledByte(funcno);
-                StackPtr -= param2.opcode; incStackPtr();
+                StackPtr -= param1.opcode; incStackPtr();
                 break;
             }
             case  10: //   | IDENTIFIER
@@ -751,19 +757,20 @@ GotTerminal:
                 StackPtr -= 2; incStackPtr();
                 break;
             }
-            case  18: //   | '-' exp
+            case  18: //   | '!' exp
+                AddCompiledByte(cNot);
+                break;
+            case  19: //   | '-' exp
                 AddCompiledByte(cNeg);
                 /* Note: Double negation / negation of immeds
                  * is dealt with in AddCompiledByte()
                  */
                 break;
-            case  19: //   | '(' exp ')'
-                break;
-            case  20: //   | '!' exp
-                AddCompiledByte(cNot);
+            case  20: //   | '(' exp ')'
+                /* nothing to do */
                 break;
 
-            case  21: //exp: exp IDENTIFIER
+            case  21: //exp: exp unit_name
             {
                 GET_PARAM(1); // ident
 
@@ -782,29 +789,41 @@ GotTerminal:
                 break;
             }
 
-            case 22: // func_params_opt: func_params
+            case 22: // func_params_list_opt: LParens func_params_opt RParens
+            {
+                GET_PARAM(1);// func_params_opt
+                LastOpcode = param1.opcode; // denote the number of params
+                break;
+            }
+
+            case 23: // func_params_opt: func_params
             {
                 GET_PARAM(0);// func_params
                 LastOpcode = param0.opcode; // denote the number of params
                 break;
             }
-
-            case 23: // func_params_opt: <empty>
+            case 24: // func_params_opt: <empty>
                 LastOpcode = 0; // denote 0 params
                 break;
 
-            case 24: // func_params: func_params Comma exp
+            case 25: // func_params: func_params Comma exp
             {
                 GET_PARAM(0);// func_params
                 LastOpcode = param0.opcode + 1; // denote 1 param more
                 break;
             }
-            case 25: // func_params: exp
+            case 26: // func_params: exp
                 LastOpcode = 1; // denote 1 param
                 break;
+            case 27: // unit_name: Identifier
+            {
+                GET_PARAM(0);// Identifier
+                LastIdentifier = param0.ident;
+                break;
+            }
 
             default:
-                parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
+                parseErrorType = UNEXPECTED_ERROR; return 0; // shouldn't happen
         }
 
         if(DoDebug)fprintf(stderr, "Reduced using rule %d, produced %s - eating %d\n",
@@ -812,16 +831,21 @@ GotTerminal:
 
         if(n_reduce > 0)
         {
+            /* Load up the state where we reduced to */
             CurrentState = ShiftedStates[ShiftedStates.size()-n_reduce].state;
             ShiftedStates.resize(ShiftedStates.size()-n_reduce);
         }
 
+        /* Check out what is the new state to which
+         * we should go after performing the reduce
+         */
         const BisonState& PoppedState = States[CurrentState];
         int NewState = PoppedState.Goto[produced_nonterminal];
         if(!NewState)
         {
+            // No state? Shouldn't happen. This indicates broken bison data.
             fprintf(stderr, "No CurrentState to go to in state %d?\n", NewState);
-            parseErrorType = OUT_OF_MEMORY; return 0; // shouldn't happen
+            parseErrorType = UNEXPECTED_ERROR; return 0;
         }
         SHIFT(NewState);
 
@@ -830,14 +854,48 @@ GotTerminal:
         LastNum        = SaveTerminalBeforeReduce.num;
         LastIdentifier = SaveTerminalBeforeReduce.ident;
 
+        /* And go deal with it in the new state */
         goto GotTerminal;
     }
     else
     {
-        /* Parse error */
+        /* The parse tree indicates that the given token
+         * should not occur here. Generate a parse error.
+         */
+        /* Decide what kind of parse error to indicate.
+         */
         parseErrorType = SYNTAX_ERROR;
+
+        std::string errormessage = "Parse error - expected", delim = " ";
+        if(State.Actions[T_Zend] != 0)
+            { errormessage += delim + "EOS"; delim = " or "; }
+        if(State.Actions[T_OrOp] != 0)
+            { errormessage += delim + "operator"; delim = " or ";
+              if(LastTerminal == T_RParens
+              || LastTerminal == T_LParens) parseErrorType = MISM_PARENTH;
+            }
+        if(State.Actions[T_RParens] != 0)
+            { errormessage += delim + "')'"; delim = " or ";
+              parseErrorType = MISSING_PARENTH; }
+        if(State.Goto[NT_unit_name] != 0)
+            { errormessage += delim + "unit"; delim = " or "; }
+
+        if(State.Goto[NT_exp] != 0)
+            { errormessage += delim + "expression"; delim = " or "; }
+        else if(State.Actions[T_LParens] != 0)
+            { errormessage += delim + "'('"; delim = " or ";
+              parseErrorType = EXPECT_PARENTH_FUNC; }
+        else if(State.Actions[T_Comma] != 0)
+            { errormessage += delim + "','"; delim = " or "; }
+
+        fprintf(stderr, "%s\n> %s\n> %*s^\n",
+            errormessage.c_str(),
+            Function.c_str(),
+            int(anchor - (const YYCTYPE*) Function.c_str()), "");
+
         return (anchor - (const YYCTYPE*) Function.c_str());
     }
+    /* Not reached */
     goto ContParse;
 
 

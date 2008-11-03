@@ -2,16 +2,16 @@
 
 Priority levels:
 
-10 func
-9  units
-8  ^        (note: right-associative)
-7  ! -    (UNARY)
-6  * / %
-5  + -    (BINARY)
-4  = < > != <= >=
-3  &
-2  |
 1  ,
+2  |
+3  &
+4  = < > != <= >=
+5  + -    (BINARY)
+6  * / %
+7  ! -    (UNARY)
+8  ^        (note: right-associative)
+9  units
+10 func
 
 */
 %left OrOp
@@ -25,36 +25,49 @@ Priority levels:
 %token PreFunc1  PreFunc2  PreFunc3
 %left Identifier
 %token LParens RParens Comma
+%token Garbage /* This is for anychar{} in re2c syntax */
 
 %%
 
 exp:
 		NumConst
-	|	PreFunc1 LParens func_params_opt RParens
-	|	PreFunc2 LParens func_params_opt RParens
-	|	PreFunc3 LParens func_params_opt RParens
-	|	Eval     LParens func_params_opt RParens
+	|	PreFunc1 f_parms_list_0
+	|	PreFunc2 f_parms_list_0
+	|	PreFunc3 f_parms_list_0
+	|	Eval     f_parms_list_0
 	|	If       LParens exp { xx } Comma exp { yy } Comma exp RParens
-	|	Identifier LParens func_params_opt RParens   /* fcall/pcall */
-	|	Identifier /* var / const */
-	|	exp Plus exp
-	|	exp Minus exp
-	|	exp AndOp exp
-	|	exp OrOp exp
+	|	Identifier f_parms_list_0   /* fcall/pcall */
+	|	Identifier                  /* var / const */
+	|	exp Plus   exp
+	|	exp Minus  exp
+	|	exp AndOp  exp
+	|	exp OrOp   exp
 	|	exp CompOp exp
 	|	exp TimesMulModOp exp
-	|	exp Pow exp     /* cPow */
-	|	Minus exp  %prec Bang /* negation */
-	|	LParens exp RParens /* parenthesized exp */
-	|	Bang exp        /* cNot */
-	|	exp Identifier  /* exp followed by unit */
+	|	exp Pow exp            /* cPow */
+	|	Bang exp               /* cNot */
+	|	Minus exp  %prec Bang  /* cNeg */
+	|	LParens exp RParens    /* parenthesized exp */
+	|	exp unit_name          /* exp followed by unit */
 ;
 
-func_params_opt:
-		func_params
+/* A parenthesized optional parameter list */
+f_parms_list_0:
+		LParens f_parms_0 RParens
+;
+
+/* Zero or more parameters */
+f_parms_0:
+		f_parms
 	|	/* nothing */
 ;
-func_params:
-		func_params Comma exp
+
+/* One or more parameters */
+f_parms:
+		f_parms Comma exp
 	|	exp
+;
+
+unit_name:
+	Identifier
 ;

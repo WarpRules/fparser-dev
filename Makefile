@@ -26,7 +26,8 @@ fparser-parsingtree.output: fparser.y
 	bison $< -dv -o fparser-parsingtree.c
 	rm -f fparser-parsingtree.[ch]
 
-fparser-parsingdefs.inc: bison-parser-convert.php fparser-parsingtree.output 
+fparser-parsingdefs.inc: \
+		bison-parser-convert.php fparser-parsingtree.output  /usr/bin/php
 	php -q $< fparser-parsingtree.output > $@
 
 #%.o: %.cc fparser.hh
