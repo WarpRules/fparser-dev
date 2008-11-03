@@ -31,10 +31,10 @@ Priority levels:
 
 exp:
 		NumConst
-	|	PreFunc1 f_parms_list_0
-	|	PreFunc2 f_parms_list_0
-	|	PreFunc3 f_parms_list_0
-	|	Eval     f_parms_list_0
+	|	PreFunc1 LParens exp RParens
+	|	PreFunc2 LParens exp Comma exp RParens
+	|	PreFunc3 LParens exp Comma exp Comma exp RParens
+	|	Eval	 f_parms_list_0
 	|	If       LParens exp { xx } Comma exp { yy } Comma exp RParens
 	|	Identifier f_parms_list_0   /* fcall/pcall */
 	|	Identifier                  /* var / const */
@@ -68,6 +68,4 @@ f_parms:
 	|	exp
 ;
 
-unit_name:
-	Identifier
-;
+unit_name: Identifier ;

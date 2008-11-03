@@ -443,11 +443,6 @@ int FunctionParser::Parse(const std::string& Function,
 
     fprintf(stderr, "Parsing %s\n", YYCURSOR);
 
-    /* Parser & lexer */
-ContParse:
-    const YYCTYPE* anchor = YYCURSOR;
-    if(anchor >= YYLIMIT) goto DoneParse;
-//ContParseWithSameAnchor:
 #ifdef FP_NO_ASINH
  #define ASINH_ENABLE(x) goto GotIdentifier
 #else
@@ -462,8 +457,13 @@ ContParse:
 #define DO_TERM(t) LastTerminal=t; goto GotTerminal
 #define DO_OP_TERM(o, t) LastOpcode=o; DO_TERM(t)
 
+    /* Parser & lexer */
+ContParse:
+    const YYCTYPE* anchor = YYCURSOR;
+    if(anchor >= YYLIMIT) goto DoneParse;
 /*!re2c
-sws      { goto ContParse; }
+sws      { goto ContParse;  // always ignore whitespace
+           }
 "("      {  DO_TERM(T_LParens);  }
 ")"      {  DO_TERM(T_RParens);  }
 ","      {  DO_TERM(T_Comma);    }
@@ -478,13 +478,10 @@ andop    {  DO_OP_TERM(cAnd, T_AndOp);    }
 ">"      {  DO_OP_TERM(cGreater, T_CompOp); }
 "<="     {  DO_OP_TERM(cLessOrEq, T_CompOp); }
 ">="     {  DO_OP_TERM(cGreaterOrEq, T_CompOp); }
-
 "*"      {  DO_OP_TERM(cMul, T_TimesMulModOp);  }
 "/"      {  DO_OP_TERM(cDiv, T_TimesMulModOp);  }
 "%"      {  DO_OP_TERM(cMod, T_TimesMulModOp);  }
-
 "^"      {  DO_OP_TERM(cPow, T_Pow);     }
-
 "abs"     { DO_OP_TERM(cAbs, T_PreFunc1);  }
 "acos"    { DO_OP_TERM(cAcos, T_PreFunc1);  }
 "acosh"   { ASINH_ENABLE( DO_OP_TERM(cAcosh, T_PreFunc1) ); }
@@ -514,21 +511,13 @@ andop    {  DO_OP_TERM(cAnd, T_AndOp);    }
 "tan"     { DO_OP_TERM(cTan, T_PreFunc1); }
 "tanh"    { DO_OP_TERM(cTanh, T_PreFunc1); }
 
-numconst {
-    char* endptr = (char*) YYCURSOR;
+numconst { char* endptr = (char*) YYCURSOR;
     LastNum = strtod((const char*)anchor, &endptr);
     YYCURSOR = (YYCTYPE*) endptr;
-    //printf("Got imm %g\n", val);
     DO_TERM(T_NumConst); }
-identifier {
-GotIdentifier:
-    LastIdentifier.assign(anchor, YYCURSOR);
-    DO_TERM(T_Identifier);
-}
+identifier { GotIdentifier: LastIdentifier.assign(anchor, YYCURSOR); DO_TERM(T_Identifier); }
 
-anychar {
-    DO_TERM(T_Garbage);
-}
+anychar { DO_TERM(T_Garbage); }
 */
 
     #undef YYFILL
@@ -542,7 +531,7 @@ DoneParse:
      * However, now really. The only situation where
      * GotTerminal may return to ContParse is if it
      * does a SHIFT(), and there's no grammar rule
-     * that causes a SHIF to be done for T_Zend.
+     * that causes a SHIFT to be done for T_Zend.
      */
     static const bool DoDebug = false;
 
@@ -609,26 +598,14 @@ GotTerminal:
                 incStackPtr();
                 break;
             }
-            case   2: //   | PreFunc1 func_params_list_opt
-            case   3: //   | PreFunc2 func_params_list_opt
-            case   4: //   | PreFunc3 func_params_list_opt
+            case   2: //   | PreFunc1 1param
+            case   3: //   | PreFunc2 2params
+            case   4: //   | PreFunc3 3params
             {
                 GET_PARAM(0); // ident
-                GET_PARAM(1); // func_params_list_opt
-                int n_params_expected = 0;
-                if(Action==-2) n_params_expected=1;
-                if(Action==-3) n_params_expected=2;
-                if(Action==-4) n_params_expected=3;
-                if(DoDebug)fprintf(stderr, "Expects %d params, gets %d\n",
-                    n_params_expected, param1.opcode);
-                if(param1.opcode != n_params_expected)
-                {
-                    parseErrorType = ILL_PARAMS_AMOUNT;
-                    //printf("ERROR: SYNTAX ERROR: %s\n", anchor);
-                    return (anchor - (const YYCTYPE*) Function.c_str());
-                }
                 AddFunctionOpcode(param0.opcode);
-                StackPtr -= param1.opcode; incStackPtr();
+                int n_params = (-Action)-1;
+                StackPtr -= n_params; incStackPtr();
                 break;
             }
             case   5: //   | EVAL func_params_list_opt
@@ -682,7 +659,7 @@ GotTerminal:
             }
             case   9: //   | Identifier func_params_list_opt
             {
-                GET_PARAM(0); // ident
+                GET_PARAM(0); // func_name (ident)
                 GET_PARAM(1); // func_params_list_opt
                 int n_params_expected = 0, opcode = 0, funcno = 0;
 
@@ -704,7 +681,8 @@ GotTerminal:
                     }
                     else
                     {
-                        parseErrorType = INVALID_VARS;
+                        /* This is not a FCall or a PCall identifier... What is it then? */
+                        parseErrorType = ILL_PARAMS_AMOUNT;
                         return (anchor - (const YYCTYPE*) Function.c_str());
                     }
                 }
@@ -721,9 +699,10 @@ GotTerminal:
                 StackPtr -= param1.opcode; incStackPtr();
                 break;
             }
-            case  10: //   | IDENTIFIER
+            case  10: //   | Identifier
             {
-                GET_PARAM(0); //ident
+                GET_PARAM(0); //var_name (ident)
+
                 Data::VarMap_t::const_iterator vIter = data->Variables.find(param0.ident);
                 if(vIter != data->Variables.end()) /* Is a variable */
                     AddCompiledByte(vIter->second);
@@ -737,7 +716,8 @@ GotTerminal:
                     }
                     else
                     {
-                        parseErrorType = INVALID_VARS;
+                        /* This is not a variable or a constant... What is it then? */
+                        parseErrorType = ILL_PARAMS_AMOUNT;
                         return (anchor - (const YYCTYPE*) Function.c_str());
                     }
                 }
@@ -815,6 +795,7 @@ GotTerminal:
             case 26: // func_params: exp
                 LastOpcode = 1; // denote 1 param
                 break;
+
             case 27: // unit_name: Identifier
             {
                 GET_PARAM(0);// Identifier
@@ -869,24 +850,29 @@ GotTerminal:
         std::string errormessage = "Parse error - expected", delim = " ";
         if(State.Actions[T_Zend] != 0)
             { errormessage += delim + "EOS"; delim = " or "; }
-        if(State.Actions[T_OrOp] != 0)
+        if(State.Actions[T_OrOp] != 0) // an example of an operator, don't bother listing them all
             { errormessage += delim + "operator"; delim = " or ";
               if(LastTerminal == T_RParens
               || LastTerminal == T_LParens) parseErrorType = MISM_PARENTH;
             }
         if(State.Actions[T_RParens] != 0)
             { errormessage += delim + "')'"; delim = " or ";
-              parseErrorType = MISSING_PARENTH; }
-        if(State.Goto[NT_unit_name] != 0)
-            { errormessage += delim + "unit"; delim = " or "; }
+              parseErrorType =
+                  LastTerminal == T_Comma ? ILL_PARAMS_AMOUNT : MISSING_PARENTH; }
 
         if(State.Goto[NT_exp] != 0)
             { errormessage += delim + "expression"; delim = " or "; }
-        else if(State.Actions[T_LParens] != 0)
-            { errormessage += delim + "'('"; delim = " or ";
-              parseErrorType = EXPECT_PARENTH_FUNC; }
-        else if(State.Actions[T_Comma] != 0)
-            { errormessage += delim + "','"; delim = " or "; }
+        else
+        {
+            if(State.Actions[T_LParens] != 0)
+                { errormessage += delim + "'('"; delim = " or ";
+                  parseErrorType = EXPECT_PARENTH_FUNC; }
+            if(State.Actions[T_Comma] != 0)
+                { errormessage += delim + "','"; delim = " or ";
+                  parseErrorType = ILL_PARAMS_AMOUNT; }
+        }
+        if(State.Goto[NT_unit_name] != 0)
+            { errormessage += delim + "unit"; delim = " or "; }
 
         fprintf(stderr, "%s\n> %s\n> %*s^\n",
             errormessage.c_str(),
