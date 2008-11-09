@@ -1,6 +1,7 @@
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=pentium4 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
-#CXX=g++ -Wall -W -pedantic -ansi -g -O0
-LD=g++ -s
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=pentium4 -m32 -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#CXX=g++ -Wall -W -pedantic -ansi -g -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#LD=g++ -s
+LD=g++
 
 testbed: testbed.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
@@ -12,7 +13,7 @@ example: example.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fptypes.hh
-	zip -9 fparser284.zip $^
+	zip -9 fparser30.zip $^
 
 #%.o: %.cc fparser.hh
 #	$(CXX) -c $<

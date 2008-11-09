@@ -9,6 +9,19 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v3.0
+<ul>
+ <li>Rewrote the parser from scratch. It uses the same parsing technique as
+    the old parser (iow. it's a recursive descent parser), but because of
+    simplification, refactoring and optimizations the new <code>Parse()</code>
+    function is over 5 times faster than the old one for most inputs.
+ <li>Unit names are no longer in a distinct namespace from all the other
+    names. Thus now unit names must also be distinct from everything else.
+ <li>Added the <code>pow()</code> function (which takes two parameters) to the
+    function syntax. Its behavior is identical to that of the <code>^</code>
+    operator.
+</ul>
+
 <p>What's new in v2.84
 <ul>
  <li>Changed all precompiler constant names to have the <code>FP_</code> prefix, to make

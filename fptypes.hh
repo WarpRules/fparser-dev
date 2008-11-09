@@ -1,6 +1,6 @@
-//===============================
-// Function parser v2.84 by Warp
-//===============================
+//==============================
+// Function parser v3.0 by Warp
+//==============================
 
 // NOTE:
 // This file contains only internal types for the function parser library.
@@ -32,11 +32,11 @@ namespace FUNCTIONPARSERTYPES
         cEval,
 #endif
         cExp, cFloor, cIf, cInt, cLog, cLog10, cMax, cMin,
-        cSec, cSin, cSinh, cSqrt, cTan, cTanh,
+        cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
 // These do not need any ordering:
         cImmed, cJump,
-        cNeg, cAdd, cSub, cMul, cDiv, cMod, cPow,
+        cNeg, cAdd, cSub, cMul, cDiv, cMod,
         cEqual, cNEqual, cLess, cLessOrEq, cGreater, cGreaterOrEq,
         cNot, cAnd, cOr,
 
@@ -109,6 +109,7 @@ namespace FUNCTIONPARSERTYPES
         { "log10", 5, cLog10, 1 },
         { "max", 3, cMax, 2 },
         { "min", 3, cMin, 2 },
+        { "pow", 3, cPow, 2 },
         { "sec", 3, cSec, 1 },
         { "sin", 3, cSin, 1 },
         { "sinh", 4, cSinh, 1 },
@@ -116,4 +117,80 @@ namespace FUNCTIONPARSERTYPES
         { "tan", 3, cTan, 1 },
         { "tanh", 4, cTanh, 1 }
     };
+
+    struct NamePtr
+    {
+        const char* name;
+        unsigned nameLength;
+
+        NamePtr(const char* n, unsigned l): name(n), nameLength(l) {}
+    };
+
+    struct NameData
+    {
+        enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR };
+
+        DataType type;
+        std::string name;
+
+        union
+        {
+            unsigned index;
+            double value;
+        };
+
+        NameData(DataType t, const std::string& n): type(t), name(n) {}
+
+        inline bool operator<(const NameData& rhs) const
+        {
+            return name < rhs.name;
+        }
+    };
+
+    template<typename LHS_t, typename RHS_t>
+    inline bool operator<(const LHS_t& lhs, const RHS_t& rhs)
+    {
+        for(unsigned i = 0; i < lhs.nameLength; ++i)
+        {
+            if(i == rhs.nameLength) return false;
+            const char c1 = lhs.name[i], c2 = rhs.name[i];
+            if(c1 < c2) return true;
+            if(c2 < c1) return false;
+        }
+        return lhs.nameLength < rhs.nameLength;
+    }
 }
+
+#include <map>
+#include <set>
+#include <vector>
+
+struct FunctionParser::Data
+{
+    unsigned referenceCounter;
+
+    std::string variablesString;
+    std::map<FUNCTIONPARSERTYPES::NamePtr, unsigned> variableRefs;
+
+    std::set<FUNCTIONPARSERTYPES::NameData> nameData;
+    std::map<FUNCTIONPARSERTYPES::NamePtr,
+             const FUNCTIONPARSERTYPES::NameData*> namePtrs;
+
+    struct FuncPtrData
+    {
+        union { FunctionPtr funcPtr; FunctionParser* parserPtr; };
+        unsigned params;
+    };
+
+    std::vector<FuncPtrData> FuncPtrs;
+    std::vector<FuncPtrData> FuncParsers;
+
+    std::vector<unsigned> ByteCode;
+    std::vector<double> Immed;
+    std::vector<double> Stack;
+    unsigned StackSize;
+
+    Data(): referenceCounter(1) {}
+    Data(const Data&);
+    Data& operator=(const Data&); // not implemented on purpose
+};

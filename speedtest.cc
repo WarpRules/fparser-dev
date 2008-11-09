@@ -7,10 +7,10 @@
 #include <cmath>
 
 #define FUNC0 x*x+y*y
-#define FUNC1 ((3*x*x*x*x-7*x*x*x+2*x*x-4*x+10)-(4*y*y*y+2*y*y-10*y+2))*10
+#define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10)-(4*pow(y,3)+2*y*y-10*y+2))*10
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
 #define FUNC3 sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)
-#define FUNC4 exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2)+sin(x*x*x*x-4*x*x*x+3*x*x-2*x+2*5-3)-cos(-2*y*y*y*y+5*y*y*y-14*x*x+8*x-120/2+4)
+#define FUNC4 exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2)+sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3)-cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)
 
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
@@ -107,7 +107,6 @@ int main()
             fp.Eval(values);
 
         printInfo("Eval time", "evals", iclock, EvalLoops);
-
 
         // Measure evaluation speed, optimized
         // -----------------------------------

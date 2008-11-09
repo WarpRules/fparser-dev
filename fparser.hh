@@ -1,6 +1,6 @@
 /***************************************************************************\
-|* Function parser v2.84 by Warp                                           *|
-|* -----------------------------                                           *|
+|* Function parser v3.0 by Warp                                            *|
+|* ----------------------------                                            *|
 |* Parses and evaluates the given function with the given variable values. *|
 |* See fparser.txt for details.                                            *|
 |*                                                                         *|
@@ -10,7 +10,6 @@
 #define ONCE_FPARSER_H_
 
 #include <string>
-#include <map>
 #include <vector>
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
@@ -29,8 +28,11 @@ public:
     };
 
 
+    int Parse(const char* Function, const std::string& Vars,
+              bool useDegrees = false);
     int Parse(const std::string& Function, const std::string& Vars,
               bool useDegrees = false);
+
     const char* ErrorMsg() const;
     inline ParseErrorType GetParseErrorType() const { return parseErrorType; }
 
@@ -77,89 +79,38 @@ private:
     ParseErrorType parseErrorType;
     int evalErrorType;
 
-    struct Data
-    {
-        unsigned referenceCounter;
-
-        int varAmount;
-        bool useDegreeConversion, isOptimized;
-
-        typedef std::map<std::string, unsigned> VarMap_t;
-        VarMap_t Variables;
-
-        typedef std::map<std::string, double> ConstMap_t;
-        ConstMap_t Constants;
-        ConstMap_t Units;
-
-        VarMap_t FuncPtrNames;
-        struct FuncPtrData
-        {
-            FunctionPtr ptr; unsigned params;
-            FuncPtrData(FunctionPtr p, unsigned par): ptr(p), params(par) {}
-        };
-        std::vector<FuncPtrData> FuncPtrs;
-
-        VarMap_t FuncParserNames;
-        std::vector<FunctionParser*> FuncParsers;
-
-        unsigned* ByteCode;
-        unsigned ByteCodeSize;
-        double* Immed;
-        unsigned ImmedSize;
-        double* Stack;
-        unsigned StackSize;
-
-        Data();
-        ~Data();
-        Data(const Data&);
-
-        Data& operator=(const Data&); // not implemented on purpose
-    };
-
+    struct Data;
     Data* data;
-    unsigned evalRecursionLevel;
 
-    // Temp data needed in Compile():
+    bool useDegreeConversion, isOptimized;
+    unsigned evalRecursionLevel;
     unsigned StackPtr;
-    std::vector<unsigned>* tempByteCode;
-    std::vector<double>* tempImmed;
+    const char* errorLocation;
 
 
 // Private methods:
 // ---------------
     void CopyOnWrite();
-
-
     bool CheckRecursiveLinking(const FunctionParser*) const;
+    bool NameExists(const char*, unsigned);
+    bool ParseVariables(const std::string&);
+    int ParseFunction(const char*, bool);
+    const char* SetErrorType(ParseErrorType, const char*);
 
-    bool ParseVars(const std::string& Vars,
-                   std::map<std::string, unsigned>& dest);
-    int VarNameType(const std::string&) const;
-    Data::VarMap_t::const_iterator
-    FindVariable(const char*, const Data::VarMap_t&) const;
-    Data::ConstMap_t::const_iterator
-    FindConstant(const char*, const Data::ConstMap_t&) const;
-    int CheckForUnit(const char*, int) const;
-    int CheckSyntax(const char*);
-    int Compile(const char*);
-    bool IsVariable(int);
-    void AddCompiledByte(unsigned);
-    void AddImmediate(double);
     void AddFunctionOpcode(unsigned);
     inline void incStackPtr();
-    int CompileIf(const char*, int);
-    int CompileFunctionParams(const char*, int, unsigned);
-    int CompileElement(const char*, int);
-    int CompilePossibleUnit(const char*, int);
-    int CompilePow(const char*, int);
-    int CompileUnaryMinus(const char*, int);
-    int CompileMult(const char*, int);
-    int CompileAddition(const char*, int);
-    int CompileComparison(const char*, int);
-    int CompileAnd(const char*, int);
-    int CompileOr(const char*, int);
-    int CompileExpression(const char*, int, bool=false);
 
+    const char* CompileIf(const char*);
+    const char* CompileFunctionParams(const char*, unsigned);
+    const char* CompileElement(const char*);
+    const char* CompilePossibleUnit(const char*);
+    const char* CompilePow(const char*);
+    const char* CompileUnaryMinus(const char*);
+    const char* CompileMult(const char*);
+    const char* CompileAddition(const char*);
+    const char* CompileComparison(const char*);
+    const char* CompileAnd(const char*);
+    const char* CompileExpression(const char*);
 
     void MakeTree(void*) const;
 };

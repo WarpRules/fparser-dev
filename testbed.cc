@@ -53,9 +53,9 @@ struct Test
 
 double f1(double* p)
 {
-#define P1 "x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
+#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
     double x = p[0];
-    return x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
+    return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
 }
 double f2(double* p)
 {
@@ -173,7 +173,7 @@ double f20(double* p)
 {
 #define P20 "(!(x != y) & !x) + !(!y)", "x,y", f20, 2, -100, 100, 1, false
     const double x = p[0], y = p[1];
-    return (!(x != y) && !x) + !(!y);
+    return (!(x != y) && !x) + (!(!y));
 }
 
 double f21(double* p)
@@ -221,9 +221,9 @@ double f26(double* p)
 
 double f27(double* p)
 {
-#define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x)", "x,y", f27, 2, .1, .9, .025, false
+#define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", f27, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
-    return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+1.0/tan(x)+1.0/sin(x);
+    return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+1.0/tan(x)+1.0/sin(x) + pow(x,y);
 }
 
 double f28(double* p)
@@ -444,7 +444,7 @@ bool TestErrorSituations()
     fp.AddUnit("unit", 2);
     tmpfp.Parse("0", "x");
 
-    const char* invalidFuncs[] =
+    const char* const invalidFuncs[] =
     { "abc", "x+y", "123b", "++c", "c++", "c+", "-", "sin", "sin()",
       "sin(x", "sin x", "x+", "x x", "sin(y)", "sin(x, 1)", "x, x",
       "x^^2", "x**x", "x+*x", "unit", "unit x", "x*unit", "unit*unit",
@@ -467,48 +467,31 @@ bool TestErrorSituations()
         }
     }
 
-    if(fp.AddConstant("s2%", 1))
-    {
-        std::cout <<
-            "Adding an invalid name (\"s2%\") as constant didn't fail"
-                  << std::endl;
-        retval = false;
-    }
-    if(fp.AddFunction("sin", Sqr, 1))
-    {
-        std::cout <<
-            "Adding an invalid name (\"sin\") as funcptr didn't fail"
-                  << std::endl;
-        retval = false;
-    }
-    if(fp.AddFunction("sin", tmpfp))
-    {
-        std::cout <<
-            "Adding an invalid name (\"sin\") as funcparser didn't fail"
-                  << std::endl;
-        retval = false;
-    }
+    const char* const invalidNames[] =
+    { "s2%", "sin", "(x)", "5x", "2" };
+    const unsigned namesAmnt = sizeof(invalidNames)/sizeof(invalidNames[0]);
 
-    if(fp.AddConstant("sin", 1))
+    for(unsigned i = 0; i < namesAmnt; ++i)
     {
-        std::cout <<
-            "Adding a reserved function (\"sin\") as constant didn't fail"
-                  << std::endl;
-        retval = false;
-    }
-    if(fp.AddFunction("sin", Sqr, 1))
-    {
-        std::cout <<
-            "Adding a reserved function (\"sin\") as funcptr didn't fail"
-                  << std::endl;
-        retval = false;
-    }
-    if(fp.AddFunction("sin", tmpfp))
-    {
-        std::cout <<
-            "Adding a reserved function (\"sin\") as funcparser didn't fail"
-                  << std::endl;
-        retval = false;
+        const char* const n = invalidNames[i];
+        if(fp.AddConstant(n, 1))
+        {
+            std::cout << "Adding an invalid name (\"" << n
+                      << "\") as constant didn't fail" << std::endl;
+            retval = false;
+        }
+        if(fp.AddFunction(n, Sqr, 1))
+        {
+            std::cout << "Adding an invalid name (\"" << n
+                      << "\") as funcptr didn't fail" << std::endl;
+            retval = false;
+        }
+        if(fp.AddFunction(n, tmpfp))
+        {
+            std::cout << "Adding an invalid name (\"" << n
+                      << "\") as funcparser didn't fail" << std::endl;
+            retval = false;
+        }
     }
 
     fp.AddConstant("CONST", 1);

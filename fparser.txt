@@ -1,4 +1,4 @@
-  Function parser for C++  v2.84 by Warp.
+  Function parser for C++  v3.0 by Warp.
   ======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
@@ -7,36 +7,17 @@
   The usage license of this library is located at the end of this text file.
 
 
-  What's new in v2.84
-  -------------------
-  - Changed all precompiler constant names to have the FP_ prefix, to make
-    them more consistent and lessen the danger of name collisions. (This
-    breaks backwards compatibility.) Also added support for all the compiling
-    options to be configurable without having to modify the fpconfig.hh file.
-    Consult the documentation about conditional compiling below.
-  - Made FP_DISABLE_EVAL to be defined by default (previously it was undefined
-    by default). The "eval()" function is way too dangerous and rarely useful,
-    so it's better for it to be disabled by default.
-  - If another function parser was given to a parser with AddFunction(), and
-    during evaluation that other parser produced an eval error, the calling
-    parser would ignore it. Now the calling parser will return the same eval
-    error (and 0 as the return value of the function).
-  - Fixed a bug in the optimizer which caused things like "max(0, min(-2,0))"
-    to be wrongly optimized (the return value was wrong).
+  What's new in v3.0
+  ------------------
+  - Rewrote the parser from scratch. It uses the same parsing technique as
+    the old parser (iow. it's a recursive descent parser), but because of
+    simplification, refactoring and optimizations the new Parse() function
+    is over 5 times faster than the old one for most inputs.
+  - Unit names are no longer in a distinct namespace from all the other
+    names. Thus now unit names must also be distinct from everything else.
+  - Added the pow() function (which takes two parameters) to the function
+    syntax. Its behavior is identical to that of the ^ operator.
 
-  What's new in v2.83
-  -------------------
-  - Fixed bug in the optimizer which caused functions like "x-y*1" to crash.
-
-  What's new in v2.82
-  -------------------
-  - Fixed bug in the optimizer which caused a crash with some functions.
-
-  What's new in v2.81
-  -------------------
-  - Added support for units (see help on the AddUnit() method).
-  - Added support for optionally making the Eval() function thread-safe
-    with a precompiler constant.
 
 
   Table of contents:
@@ -469,11 +450,8 @@ bool AddUnit(const std::string& name, double value);
     To change the value of a unit, call AddUnit() again with the same unit
     name and the new value.
 
-      Note that units are independent from variables, constants and functions.
-    This means that a unit can have the same name as those (there isn't any
-    syntactical problem in that), thus for example "x x" is a valid function
-    if "x" is a variable or constant and "x" is a unit, although for the sake
-    of clarity that is usually not recommended.
+      Unit names share the same namespace as constants, functions and
+    variables, and thus should be distinct from those.
 
     Example: parser.AddUnit("in", 300);
 
@@ -684,6 +662,7 @@ or functions using the following operators in this order of precedence:
   log10(A)  : Base 10 logarithm of A.
   max(A,B)  : If A>B, the result is A, else B.
   min(A,B)  : If A<B, the result is A, else B.
+  pow(A,B)  : Exponentiation (A raised to the power B).
   sec(A)    : Secant of A (equivalent to 1/cos(A)).
   sin(A)    : Sine of A. Returns the sine of the angle A, where A is
               measured in radians.

@@ -17,7 +17,7 @@ number of loops. The same is done for evaluating speed (both with default
 and optimized bytecodes). The speed of the <code>Optimize()</code> function
 was also measured.
 
-<p>The test was run on a 3.4GHz Pentium4 using gcc 3.3.5 with the compiler
+<p>The test was run on a 3.4GHz Pentium4 using gcc 4.3.1 with the compiler
 options <code>-O3 -ffast-math -march=pentium4</code>
 
 <p>(Note that the actual speeds may vary more than the amount of used
@@ -28,40 +28,40 @@ most significant digit is nevertheless quite accurate.)
 <p>Function:
 <code>"((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10"</code>
 <ul>
- <li>Parse time: 17.7 microseconds (56&nbsp;338 parses/s)
- <li>Eval time: 0.74 microseconds (1&nbsp;355&nbsp;014 evals/s)
- <li>Optimized: 0.66 microseconds (1&nbsp;517&nbsp;451 evals/s)
- <li>Optimization time: 69.3 microseconds (14&nbsp;430 optimizes/s)
+ <li>Parse time: 4.9 microseconds (204&nbsp;082 parses/s)
+ <li>Eval time: 0.68 microseconds (1&nbsp;477&nbsp;105 evals/s)
+ <li>Optimized: 0.56 microseconds (1&nbsp;779&nbsp;359 evals/s)
+ <li>Optimization time: 77.8 microseconds (12&nbsp;853 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7 + (8*x+5*y+(7-x))*4)-10*3+4"</code>
 <ul>
- <li>Parse time: 20.1 microseconds (49&nbsp;628 parses/s)
- <li>Eval time: 0.43 microseconds (2&nbsp;314&nbsp;815 evals/s)
- <li>Optimized: 0.22 microseconds (4&nbsp;545&nbsp;455 evals/s)
- <li>Optimization time: 80.2 microseconds (12&nbsp;469 optimizes/s)
+ <li>Parse time: 5.1 microseconds (196&nbsp;078 parses/s)
+ <li>Eval time: 0.58 microseconds (1&nbsp;706&nbsp;485 evals/s)
+ <li>Optimized: 0.22 microseconds (4&nbsp;566&nbsp;210 evals/s)
+ <li>Optimization time: 72.3 microseconds (13&nbsp;831 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"sin(sqrt(10-x*x+y*y)) + cos(sqrt(5-x*x-y*y)) + sin(x*x+y*y)"</code>
 <ul>
- <li>Parse time: 18.3 microseconds (54&nbsp;496 parses/s)
- <li>Eval time: 0.39 microseconds (2&nbsp;577&nbsp;320 evals/s)
- <li>Optimized: 0.34 microseconds (2&nbsp;976&nbsp;190 evals/s)
- <li>Optimization time: 54.9 microseconds (18&nbsp;215 optimizes/s)
+ <li>Parse time: 3.3 microseconds (298&nbsp;507 parses/s)
+ <li>Eval time: 0.42 microseconds (2&nbsp;392&nbsp;344 evals/s)
+ <li>Optimized: 0.39 microseconds (2&nbsp;583&nbsp;979 evals/s)
+ <li>Optimization time: 59 microseconds (16&nbsp;949 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(x^4-4*x^3+3*x^2-2*x+2*5-3) - cos(-2*y^4+5*y^3-14*x^2+8*x-120/2+4)"</code>
 <ul>
- <li>Parse time: 33.6 microseconds (29&nbsp;718 parses/s)
- <li>Eval time: 1.60 microseconds (625&nbsp;782 evals/s)
- <li>Optimized: 1.26 microseconds (796&nbsp;178 evals/s)
- <li>Optimization time: 140.1 microseconds (7&nbsp;138 optimizes/s)
+ <li>Parse time: 9.1 microseconds (109&nbsp;290 parses/s)
+ <li>Eval time: 1.54 microseconds (651&nbsp;042 evals/s)
+ <li>Optimized: 1.3 microseconds (771&nbsp;010 evals/s)
+ <li>Optimization time: 141 microseconds (7&nbsp;092 optimizes/s)
 </ul>
 
 </body></html>

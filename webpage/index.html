@@ -7,14 +7,15 @@
 </head>
 
 <body>
-<h1>Function parser for C++ v2.84 by Warp</h1>
+<h1>Function parser for C++ v3.0 by Warp</h1>
 
 <h2>- Download</h2>
 
-<p>Download <a href="fparser284.zip">fparser284.zip</a> v2.84
-(released 02 Oct 2008)
+<p>Download <a href="fparser30.zip">fparser30.zip</a> v3.0
+(released 09 Nov 2008)
 
 <p>(Older versions:
+<a href="fparser284.zip">v2.84</a>,
 <a href="fparser283.zip">v2.83</a>,
 <a href="fparser282.zip">v2.82</a>,
 <a href="fparser281.zip">v2.81</a>,
@@ -50,23 +51,17 @@ demonstrate the function parser.
 
 <h2>- What's new?</h2>
 
-<p>What's new in v2.84
+<p>What's new in v3.0
 <ul>
- <li>Changed all precompiler constant names to have the <code>FP_</code> prefix, to make
-    them more consistent and lessen the danger of name collisions. (This
-    breaks backwards compatibility.) Also added support for all the compiling
-    options to be configurable without having to modify the fpconfig.hh file.
-    Consult the documentation about conditional compiling below.
- <li>Made <code>FP_DISABLE_EVAL</code> to be defined by default (previously it was undefined
-    by default). The "<code>eval()</code>" function is way too dangerous and rarely useful,
-    so it's better for it to be disabled by default.
- <li>If another function parser was given to a parser with <code>AddFunction()</code>, and
-    during evaluation that other parser produced an eval error, the calling
-    parser would ignore it. Now the calling parser will return the same eval
-    error (and 0 as the return value of the function).
- <li>Fixed a bug in the optimizer which caused things like
-    <code>"max(0, min(-2,0))"</code>
-    to be wrongly optimized (the return value was wrong).
+ <li>Rewrote the parser from scratch. It uses the same parsing technique as
+    the old parser (iow. it's a recursive descent parser), but because of
+    simplification, refactoring and optimizations the new <code>Parse()</code>
+    function is over 5 times faster than the old one for most inputs.
+ <li>Unit names are no longer in a distinct namespace from all the other
+    names. Thus now unit names must also be distinct from everything else.
+ <li>Added the <code>pow()</code> function (which takes two parameters) to the
+    function syntax. Its behavior is identical to that of the <code>^</code>
+    operator.
 </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.
@@ -195,6 +190,7 @@ or functions using the following operators in this order of precedence:
   log10(A)  : Base 10 logarithm of A.
   max(A,B)  : If A&gt;B, the result is A, else B.
   min(A,B)  : If A&lt;B, the result is A, else B.
+  pow(A,B)  : Exponentiation (A raised to the power B).
   sec(A)    : Secant of A (equivalent to 1/cos(A)).
   sin(A)    : Sine of A. Returns the sine of the angle A, where A is
               measured in radians.

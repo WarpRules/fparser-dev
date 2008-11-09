@@ -1,6 +1,6 @@
-//============================================
-// Function parser v2.84 optimizer by Bisqwit
-//============================================
+//===========================================
+// Function parser v3.0 optimizer by Bisqwit
+//===========================================
 
 /*
  NOTE!
@@ -1834,9 +1834,12 @@ void FunctionParser::MakeTree(void *r) const
 
     list<unsigned> labels;
 
-    const unsigned* const ByteCode = data->ByteCode;
-    const unsigned ByteCodeSize = data->ByteCodeSize;
-    const double* const Immed = data->Immed;
+    //const unsigned* const ByteCode = data->ByteCode;
+    const std::vector<unsigned>& ByteCode = data->ByteCode;
+    //const unsigned ByteCodeSize = data->ByteCodeSize;
+    const unsigned ByteCodeSize = ByteCode.size();
+    //const double* const Immed = data->Immed;
+    const std::vector<double>& Immed = data->Immed;
 
     for(unsigned IP=0, DP=0; ; ++IP)
     {
@@ -1868,7 +1871,7 @@ void FunctionParser::MakeTree(void *r) const
         {
             ADDCONST(Immed[DP++]);
         }
-        else if(opcode < VarBegin)
+        else if(OPCODE(opcode) < VarBegin)
         {
             switch(opcode)
             {
@@ -1919,7 +1922,8 @@ void FunctionParser::MakeTree(void *r) const
                 {
                     unsigned index = ByteCode[++IP];
                     unsigned params =
-                        data->FuncParsers[index]->data->varAmount;
+                        //data->FuncParsers[index]->data->varAmount;
+                        data->FuncParsers[index].params;
                     EAT(params, opcode);
                     stack[stacktop-1].data->SetFuncNo(index);
                     break;
@@ -1949,7 +1953,8 @@ void FunctionParser::MakeTree(void *r) const
 
                     unsigned paramcount = func.params;
 #ifndef FP_DISABLE_EVAL
-                    if(opcode == cEval) paramcount = data->varAmount;
+                    if(opcode == cEval)
+                        paramcount = unsigned(data->variableRefs.size());
 #endif
                     if(opcode == cSqrt)
                     {
@@ -2024,7 +2029,7 @@ void FunctionParser::MakeTree(void *r) const
 
 void FunctionParser::Optimize()
 {
-    if(data->isOptimized) return;
+    if(isOptimized) return;
     CopyOnWrite();
 
     CodeTree tree;
@@ -2062,15 +2067,17 @@ void FunctionParser::Optimize()
     size_t stacktop_cur = 0;
     size_t stacktop_max = 0;
     tree.Assemble(byteCode, immed, stacktop_cur, stacktop_max);
-    
+
     if(data->StackSize < stacktop_max)
     {
-        delete[] data->Stack;
-        data->Stack = new double[stacktop_max];
+        //delete[] data->Stack;
+        //data->Stack = new double[stacktop_max];
         data->StackSize = stacktop_max;
+        data->Stack.resize(stacktop_max);
     }
 #endif
 
+    /*
     delete[] data->ByteCode; data->ByteCode = 0;
     if((data->ByteCodeSize = byteCode.size()) > 0)
     {
@@ -2078,7 +2085,10 @@ void FunctionParser::Optimize()
         for(unsigned a=0; a<byteCode.size(); ++a)
             data->ByteCode[a] = byteCode[a];
     }
+    */
+    data->ByteCode.swap(byteCode);
 
+    /*
     delete[] data->Immed; data->Immed = 0;
     if((data->ImmedSize = immed.size()) > 0)
     {
@@ -2086,8 +2096,10 @@ void FunctionParser::Optimize()
         for(unsigned a=0; a<immed.size(); ++a)
             data->Immed[a] = immed[a];
     }
+    */
+    data->Immed.swap(immed);
 
-    data->isOptimized = true;
+    isOptimized = true;
 }
 
 
