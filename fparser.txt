@@ -13,6 +13,8 @@
     the old parser (iow. it's a recursive descent parser), but because of
     simplification, refactoring and optimizations the new Parse() function
     is over 5 times faster than the old one for most inputs.
+  - Support for UTF8-encoded unicode characters in user-defined variable,
+    constant, unit and function names.
   - Unit names are no longer in a distinct namespace from all the other
     names. Thus now unit names must also be distinct from everything else.
   - Added the pow() function (which takes two parameters) to the function
@@ -26,6 +28,7 @@
   - Usage
     * Configuring the compilation
     * Copying and assignment
+    * Identifier names
     * Short descriptions of FunctionParser methods
     * Long descriptions of FunctionParser methods
   - About thread safety
@@ -160,6 +163,21 @@ SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
      assigned to another, like "fp2 = fp1;".)
 
 
+  * Identifier names:
+    ----------------
+
+    An identifier is a function (internal or user-defined), variable,
+  constant or unit. New identifiers can be specified with the functions
+  described in the next subsections.
+
+    The name of an identifier can use any alphanumeric characters, the
+  underscore character and any UTF8-encoded unicode character. The first
+  character of the name cannot be a numeric digit, though.
+
+    All functions, variables, constants and units must use unique names.
+  It's not possible to add two different identifiers with the same name.
+
+
   * Short descriptions of FunctionParser methods:
     --------------------------------------------
 
@@ -247,10 +265,11 @@ int Parse(const std::string& Function, const std::string& Vars,
                   trigonometric functions. (Default: radians)
 
     Variables can have any size and they are case sensitive (ie. "var",
-    "VAR" and "Var" are *different* variable names). Letters, digits and
-    underscores can be used in variable names, but the name of a variable
-    can't begin with a digit. Each variable name can appear only once in
-    the 'Vars' string. Function names are not legal variable names.
+    "VAR" and "Var" are *different* variable names). Letters, digits,
+    underscores and UTF8-encoded characters can be used in variable names,
+    but the name of a variable can't begin with a digit. Each variable name
+    can appear only once in the 'Vars' string. Function names are not legal
+    variable names.
 
     Using longer variable names causes no overhead whatsoever to the Eval()
     method, so it's completely safe to use variable names of any size.

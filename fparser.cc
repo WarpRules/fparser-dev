@@ -70,69 +70,64 @@ namespace
         return true;
     }
 
-    const char* readIdentifier(const char* ptr)
-    {
-        const unsigned char* uptr = (const unsigned char*) ptr;
+    // UTF8-conscious name parsing:
+    // ---------------------------
+    typedef unsigned char UChar;
+
 /*
 utf8four  = [\360-\367][\220-\277][\200-\277][\200-\277];
 utf8three = [\340-\357][\240-\277][\200-\277];
 utf8two   = [\302-\337][\200-\277];
 asciichar = [A-Za-z_];
 */
+    inline int isUTF8Character(const UChar* uptr)
+    {
+        if(uptr[0] >= (UChar)'\360' && uptr[0] <= (UChar)'\367' &&
+           uptr[1] >= (UChar)'\220' && uptr[1] <= (UChar)'\277' &&
+           uptr[2] >= (UChar)'\200' && uptr[2] <= (UChar)'\277' &&
+           uptr[3] >= (UChar)'\200' && uptr[3] <= (UChar)'\277')
+            return 4;
+
+        if(uptr[0] >= (UChar)'\340' && uptr[0] <= (UChar)'\357' &&
+           uptr[1] >= (UChar)'\240' && uptr[1] <= (UChar)'\277' &&
+           uptr[2] >= (UChar)'\200' && uptr[2] <= (UChar)'\277')
+            return 3;
+
+        if(uptr[0] >= (UChar)'\302' && uptr[0] <= (UChar)'\337' &&
+           uptr[1] >= (UChar)'\200' && uptr[1] <= (UChar)'\277')
+            return 2;
+
+        return 0;
+    }
+
+    inline const char* readIdentifier(const char* ptr)
+    {
+        const UChar* uptr = (const UChar*) ptr;
         if(uptr[0] >= 0x80)
         {
-            if(uptr[0] >= (unsigned char)'\360' && uptr[0] <= (unsigned char)'\367'
-            && uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
-            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
-            && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            const int len = isUTF8Character(uptr);
+            if(len)
             {
-                uptr += 4;
-                goto loop;
-            }
-            if(uptr[0] >= (unsigned char)'\340' && uptr[0] <= (unsigned char)'\357'
-            && uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
-            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
-            {
-                uptr += 3;
-                goto loop;
-            }
-            if(uptr[0] >= (unsigned char)'\302' && uptr[0] <= (unsigned char)'\337'
-            && uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
-            {
-                uptr += 2;
+                uptr += len;
                 goto loop;
             }
         }
-        else if((uptr[0] >= 'A' && uptr[0] <= 'Z')
-             || (uptr[0] >= 'a' && uptr[0] <= 'z')
-             || (uptr[0] == '_'))
+        else if((uptr[0] >= 'A' && uptr[0] <= 'Z') ||
+                (uptr[0] >= 'a' && uptr[0] <= 'z') ||
+                (uptr[0] == '_'))
         {
             uptr += 1;
             goto loop;
         }
         return (const char*) uptr;
+
     loop:
         if(uptr[0] >= 0x80)
         {
-            if(uptr[0] >= (unsigned char)'\360' && uptr[0] <= (unsigned char)'\367'
-            && uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
-            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
-            && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            const int len = isUTF8Character(uptr);
+            if(len)
             {
-                uptr += 4;
-                goto loop;
-            }
-            if(uptr[0] >= (unsigned char)'\340' && uptr[0] <= (unsigned char)'\357'
-            && uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
-            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
-            {
-                uptr += 3;
-                goto loop;
-            }
-            if(uptr[0] >= (unsigned char)'\302' && uptr[0] <= (unsigned char)'\337'
-            && uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
-            {
-                uptr += 2;
+                uptr += len;
                 goto loop;
             }
         }
@@ -150,9 +145,7 @@ asciichar = [A-Za-z_];
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-
         const char* endPtr = readIdentifier(name.c_str());
-
         return *endPtr == '\0';
     }
 }

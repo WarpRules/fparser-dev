@@ -296,13 +296,20 @@ double f33(double* p)
     return sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y);
 }
 
+double f34(double* p)
+{
+#define P34 "\360\220\200\200+\340\240\200*\302\200", "\360\220\200\200,\340\240\200,\302\200", f34, 3, -10, 10, 1, false
+    double x = p[0], y = p[1], z = p[2];
+    return x+y*z;
+}
+
 Test tests[] =
 {
     { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
     { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 },
     { P17 }, { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 },
     { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 },
-    { P33 }
+    { P33 }, { P34 }
 };
 
 const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);

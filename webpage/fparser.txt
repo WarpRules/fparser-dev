@@ -13,6 +13,8 @@
     the old parser (iow. it's a recursive descent parser), but because of
     simplification, refactoring and optimizations the new Parse() function
     is over 5 times faster than the old one for most inputs.
+  - Support for UTF8-encoded unicode characters in user-defined variable,
+    constant, unit and function names.
   - Unit names are no longer in a distinct namespace from all the other
     names. Thus now unit names must also be distinct from everything else.
   - Added the pow() function (which takes two parameters) to the function
