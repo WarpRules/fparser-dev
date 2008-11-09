@@ -132,33 +132,10 @@ namespace
         const unsigned char* uptr = (const unsigned char*) ptr;
         switch(tab[uptr[0]])
         {
-            case 2: // A-Z_a-z
-                uptr += 1;
-                goto loop;
-            case 1: // F0-F7:
-                if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
-                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
-                {
-                    uptr += 4;
-                    goto loop;
-                }
-                break;
-            case 3: // E0-EF
-                if(tab[uptr[1]] == 7
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
-                {
-                    uptr += 3;
-                    goto loop;
-                }
-                break;
-            case 4: // C2-CF
-                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
-                {
-                    uptr += 2;
-                    goto loop;
-                }
-                break;
+            case 2: goto loop_2; // A-Z_a-z
+            case 1: goto loop_1; // F0-F7
+            case 3: goto loop_3; // E0-EF
+            case 4: goto loop_4; // C2-CF
         }
         return (const char*) uptr;
 
@@ -167,9 +144,11 @@ namespace
         {
             case 5: // 0-9
             case 2: // A-Z_a-z
+            loop_2:
                 uptr += 1;
                 goto loop;
             case 1: // F0-F7:
+            loop_1:
                 if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
                 && uptr[2] >= 0x80 && uptr[2] <= 0xBF
                 && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
@@ -179,6 +158,7 @@ namespace
                 }
                 break;
             case 3: // E0-EF
+            loop_3:
                 if(tab[uptr[1]] == 7
                 && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
                 {
@@ -187,6 +167,7 @@ namespace
                 }
                 break;
             case 4: // C2-CF
+            loop_4:
                 if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
                 {
                     uptr += 2;
