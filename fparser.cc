@@ -92,38 +92,41 @@ namespace
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //00-0F
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //10-1F
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //20-2F
-            1,1,1,1, 1,1,1,1, 1,1,0,0, 0,0,0,0, //30-3F
+            5,5,5,5, 5,5,5,5, 5,5,0,0, 0,0,0,0, //30-3F
             0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //40-4F
             2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,2, //50-5F
             0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //60-6F
             2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,0, //70-7F
-            3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3, //70-7F
-            4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //80-8F
-            5,5,5,5, 5,5,5,5, 5,5,5,5, 5,5,5,5, //A0-AF
-            5,5,5,5, 5,5,5,5, 5,5,5,5, 5,5,5,5, //B0-BF
-            0,0,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //C0-CF
-            6,6,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //D0-DF
-            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //E0-EF
-            8,8,8,8, 8,8,8,8, 0,0,0,0, 0,0,0,0  //F0-FF
+            8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8, //70-7F
+            6,6,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //80-8F
+            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //A0-AF
+            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //B0-BF
+            0,0,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //C0-CF
+            4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //D0-DF
+            3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3, //E0-EF
+            1,1,1,1, 1,1,1,1, 0,0,0,0, 0,0,0,0  //F0-FF
         };
         /* Classes:
-         *   1 = digits    (30-39)
+         *   5 = digits    (30-39)
          *   2 = A-Z_a-z   (41-5A, 5F, 61-7A)
-         *   3 = 80-8F
-         *   4 = 90-9F
-         *   5 = A0-BF
-         *   6 = C2-CF
-         *   7 = E0-EF
-         *   8 = F0-F7
+         *   8 = 80-8F
+         *   6 = 90-9F
+         *   7 = A0-BF
+         *   4 = C2-CF
+         *   3 = E0-EF
+         *   1 = F0-F7
          *
          * Allowed multibyte utf8 sequences consist of these class options:
-         *   [6] [345]
-         *   [7] [5] [345]
-         *   [8] [45] [345] [345]
+         *   [4] [867]
+         *   [3] [7] [867]
+         *   [1] [67] [867] [867]
          * In addition, the first characters may be
          *   [2]
          * And the following characters may be
-         *   [12]
+         *   [52]
+         *
+         * The numberings are such chosen to optimize the
+         * following switch-statements for code generation.
          */
     
         const unsigned char* uptr = (const unsigned char*) ptr;
@@ -132,25 +135,25 @@ namespace
             case 2: // A-Z_a-z
                 uptr += 1;
                 goto loop;
-            case 8: // F0-F7:
-                if(uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
-                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
-                && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            case 1: // F0-F7:
+                if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
+                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
                 {
                     uptr += 4;
                     goto loop;
                 }
                 break;
-            case 7: // E0-EF
-                if(uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
-                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+            case 3: // E0-EF
+                if(tab[uptr[1]] == 7
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
                 {
                     uptr += 3;
                     goto loop;
                 }
                 break;
-            case 6: // C2-CF
-                if(uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+            case 4: // C2-CF
+                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
                 {
                     uptr += 2;
                     goto loop;
@@ -162,29 +165,29 @@ namespace
     loop:
         switch(tab[uptr[0]])
         {
-            case 1: // 0-9
+            case 5: // 0-9
             case 2: // A-Z_a-z
                 uptr += 1;
                 goto loop;
-            case 8: // F0-F7:
-                if(uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
-                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
-                && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            case 1: // F0-F7:
+                if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
+                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
                 {
                     uptr += 4;
                     goto loop;
                 }
                 break;
-            case 7: // E0-EF
-                if(uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
-                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+            case 3: // E0-EF
+                if(tab[uptr[1]] == 7
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
                 {
                     uptr += 3;
                     goto loop;
                 }
                 break;
-            case 6: // C2-CF
-                if(uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+            case 4: // C2-CF
+                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
                 {
                     uptr += 2;
                     goto loop;
