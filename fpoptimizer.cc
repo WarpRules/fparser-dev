@@ -1834,11 +1834,8 @@ void FunctionParser::MakeTree(void *r) const
 
     list<unsigned> labels;
 
-    //const unsigned* const ByteCode = data->ByteCode;
     const std::vector<unsigned>& ByteCode = data->ByteCode;
-    //const unsigned ByteCodeSize = data->ByteCodeSize;
     const unsigned ByteCodeSize = ByteCode.size();
-    //const double* const Immed = data->Immed;
     const std::vector<double>& Immed = data->Immed;
 
     for(unsigned IP=0, DP=0; ; ++IP)
@@ -2070,33 +2067,12 @@ void FunctionParser::Optimize()
 
     if(data->StackSize < stacktop_max)
     {
-        //delete[] data->Stack;
-        //data->Stack = new double[stacktop_max];
         data->StackSize = stacktop_max;
         data->Stack.resize(stacktop_max);
     }
 #endif
 
-    /*
-    delete[] data->ByteCode; data->ByteCode = 0;
-    if((data->ByteCodeSize = byteCode.size()) > 0)
-    {
-        data->ByteCode = new unsigned[data->ByteCodeSize];
-        for(unsigned a=0; a<byteCode.size(); ++a)
-            data->ByteCode[a] = byteCode[a];
-    }
-    */
     data->ByteCode.swap(byteCode);
-
-    /*
-    delete[] data->Immed; data->Immed = 0;
-    if((data->ImmedSize = immed.size()) > 0)
-    {
-        data->Immed = new double[data->ImmedSize];
-        for(unsigned a=0; a<immed.size(); ++a)
-            data->Immed[a] = immed[a];
-    }
-    */
     data->Immed.swap(immed);
 
     isOptimized = true;
