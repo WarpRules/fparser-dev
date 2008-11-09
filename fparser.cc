@@ -70,13 +70,90 @@ namespace
         return true;
     }
 
+    const char* readIdentifier(const char* ptr)
+    {
+        const unsigned char* uptr = (const unsigned char*) ptr;
+/*
+utf8four  = [\360-\367][\220-\277][\200-\277][\200-\277];
+utf8three = [\340-\357][\240-\277][\200-\277];
+utf8two   = [\302-\337][\200-\277];
+asciichar = [A-Za-z_];
+*/
+        if(uptr[0] >= 0x80)
+        {
+            if(uptr[0] >= (unsigned char)'\360' && uptr[0] <= (unsigned char)'\367'
+            && uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
+            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
+            && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            {
+                uptr += 4;
+                goto loop;
+            }
+            if(uptr[0] >= (unsigned char)'\340' && uptr[0] <= (unsigned char)'\357'
+            && uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
+            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+            {
+                uptr += 3;
+                goto loop;
+            }
+            if(uptr[0] >= (unsigned char)'\302' && uptr[0] <= (unsigned char)'\337'
+            && uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+            {
+                uptr += 2;
+                goto loop;
+            }
+        }
+        else if((uptr[0] >= 'A' && uptr[0] <= 'Z')
+             || (uptr[0] >= 'a' && uptr[0] <= 'z')
+             || (uptr[0] == '_'))
+        {
+            uptr += 1;
+            goto loop;
+        }
+        return (const char*) uptr;
+    loop:
+        if(uptr[0] >= 0x80)
+        {
+            if(uptr[0] >= (unsigned char)'\360' && uptr[0] <= (unsigned char)'\367'
+            && uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
+            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
+            && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+            {
+                uptr += 4;
+                goto loop;
+            }
+            if(uptr[0] >= (unsigned char)'\340' && uptr[0] <= (unsigned char)'\357'
+            && uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
+            && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+            {
+                uptr += 3;
+                goto loop;
+            }
+            if(uptr[0] >= (unsigned char)'\302' && uptr[0] <= (unsigned char)'\337'
+            && uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+            {
+                uptr += 2;
+                goto loop;
+            }
+        }
+        else if((uptr[0] >= 'A' && uptr[0] <= 'Z')
+             || (uptr[0] >= 'a' && uptr[0] <= 'z')
+             || (uptr[0] >= '0' && uptr[0] <= '9')
+             || (uptr[0] == '_'))
+        {
+            uptr += 1;
+            goto loop;
+        }
+        return (const char*) uptr;
+    }
+
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        if(!isalpha(name[0]) && name[0] != '_') return false;
-        for(unsigned i = 1; i < name.size(); ++i)
-            if(!isalnum(name[i]) && name[i] != '_') return false;
-        return true;
+
+        const char* endPtr = readIdentifier(name.c_str());
+
+        return *endPtr == '\0';
     }
 }
 
@@ -285,20 +362,17 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
     const unsigned len = unsigned(vars.size());
 
     unsigned varNumber = VarBegin;
-    unsigned ind1 = 0, ind2;
 
-    while(ind1 < len)
+    const char* beginPtr = vars.c_str();
+    const char* finalPtr = beginPtr + len;
+
+    while(beginPtr < finalPtr)
     {
-        const char c1 = vars[ind1];
-        if(!isalpha(c1) && c1 != '_') return false;
+        const char* endPtr = readIdentifier(beginPtr);
+        if(endPtr == beginPtr) return false;
+        if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        for(ind2 = ind1+1; ind2 < len && vars[ind2] != ','; ++ind2)
-        {
-            const char c2 = vars[ind2];
-            if(!isalnum(c2) && c2 != '_') return false;
-        }
-
-        NamePtr namePtr(&(vars[ind1]), ind2-ind1);
+        NamePtr namePtr(beginPtr, endPtr - beginPtr);
 
         if(findFunction(namePtr)) return false;
 
@@ -309,7 +383,7 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
         if(!(data->variableRefs.insert(make_pair(namePtr, varNumber++)).second))
             return false;
 
-        ind1 = ind2+1;
+        beginPtr = endPtr + 1;
     }
     return true;
 }
@@ -546,13 +620,9 @@ const char* FunctionParser::CompileElement(const char* function)
         return endPtr;
     }
 
-    if(isalpha(c) || c == '_') // Function, variable or constant
+    const char* endPtr = readIdentifier(function);
+    if(endPtr != function) // Function, variable or constant
     {
-        const char* endPtr = function;
-        char c2;
-        do c2 = *(++endPtr);
-        while(isalnum(c2) || c2 == '_');
-
         NamePtr name(function, unsigned(endPtr - function));
         while(isspace(*endPtr)) ++endPtr;
 
@@ -623,13 +693,10 @@ const char* FunctionParser::CompileElement(const char* function)
 
 const char* FunctionParser::CompilePossibleUnit(const char* function)
 {
-    char c = *function;
-    if(isalpha(c) || c == '_')
-    {
-        const char* endPtr = function;
-        do c = *(++endPtr);
-        while(isalnum(c) || c == '_');
+    const char* endPtr = readIdentifier(function);
 
+    if(endPtr != function)
+    {
         NamePtr name(function, unsigned(endPtr - function));
         while(isspace(*endPtr)) ++endPtr;
 
