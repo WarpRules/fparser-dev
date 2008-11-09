@@ -85,74 +85,111 @@ namespace
         return true;
     }
 
-    // UTF8-conscious name parsing:
-    // ---------------------------
-    typedef unsigned char UChar;
-
-/*
-utf8four  = [\360-\367][\220-\277][\200-\277][\200-\277];
-utf8three = [\340-\357][\240-\277][\200-\277];
-utf8two   = [\302-\337][\200-\277];
-asciichar = [A-Za-z_];
-*/
-    inline int isUTF8Character(const UChar* uptr)
+    const char* readIdentifier(const char* ptr)
     {
-        if(uptr[0] >= (UChar)'\360' && uptr[0] <= (UChar)'\367' &&
-           uptr[1] >= (UChar)'\220' && uptr[1] <= (UChar)'\277' &&
-           uptr[2] >= (UChar)'\200' && uptr[2] <= (UChar)'\277' &&
-           uptr[3] >= (UChar)'\200' && uptr[3] <= (UChar)'\277')
-            return 4;
-
-        if(uptr[0] >= (UChar)'\340' && uptr[0] <= (UChar)'\357' &&
-           uptr[1] >= (UChar)'\240' && uptr[1] <= (UChar)'\277' &&
-           uptr[2] >= (UChar)'\200' && uptr[2] <= (UChar)'\277')
-            return 3;
-
-        if(uptr[0] >= (UChar)'\302' && uptr[0] <= (UChar)'\337' &&
-           uptr[1] >= (UChar)'\200' && uptr[1] <= (UChar)'\277')
-            return 2;
-
-        return 0;
-    }
-
-    inline const char* readIdentifier(const char* ptr)
-    {
-        const UChar* uptr = (const UChar*) ptr;
-        if(uptr[0] >= 0x80)
+        static const char tab[0x100] =
         {
-            const int len = isUTF8Character(uptr);
-            if(len)
-            {
-                uptr += len;
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //00-0F
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //10-1F
+            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //20-2F
+            1,1,1,1, 1,1,1,1, 1,1,0,0, 0,0,0,0, //30-3F
+            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //40-4F
+            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,2, //50-5F
+            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //60-6F
+            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,0, //70-7F
+            3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3, //70-7F
+            4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //80-8F
+            5,5,5,5, 5,5,5,5, 5,5,5,5, 5,5,5,5, //A0-AF
+            5,5,5,5, 5,5,5,5, 5,5,5,5, 5,5,5,5, //B0-BF
+            0,0,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //C0-CF
+            6,6,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //D0-DF
+            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //E0-EF
+            8,8,8,8, 8,8,8,8, 0,0,0,0, 0,0,0,0  //F0-FF
+        };
+        /* Classes:
+         *   1 = digits    (30-39)
+         *   2 = A-Z_a-z   (41-5A, 5F, 61-7A)
+         *   3 = 80-8F
+         *   4 = 90-9F
+         *   5 = A0-BF
+         *   6 = C2-CF
+         *   7 = E0-EF
+         *   8 = F0-F7
+         *
+         * Allowed multibyte utf8 sequences consist of these class options:
+         *   [6] [345]
+         *   [7] [5] [345]
+         *   [8] [45] [345] [345]
+         * In addition, the first characters may be
+         *   [2]
+         * And the following characters may be
+         *   [12]
+         */
+    
+        const unsigned char* uptr = (const unsigned char*) ptr;
+        switch(tab[uptr[0]])
+        {
+            case 2: // A-Z_a-z
+                uptr += 1;
                 goto loop;
-            }
-        }
-        else if((uptr[0] >= 'A' && uptr[0] <= 'Z') ||
-                (uptr[0] >= 'a' && uptr[0] <= 'z') ||
-                (uptr[0] == '_'))
-        {
-            uptr += 1;
-            goto loop;
+            case 8: // F0-F7:
+                if(uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
+                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
+                && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+                {
+                    uptr += 4;
+                    goto loop;
+                }
+                break;
+            case 7: // E0-EF
+                if(uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
+                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+                {
+                    uptr += 3;
+                    goto loop;
+                }
+                break;
+            case 6: // C2-CF
+                if(uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+                {
+                    uptr += 2;
+                    goto loop;
+                }
+                break;
         }
         return (const char*) uptr;
 
     loop:
-        if(uptr[0] >= 0x80)
+        switch(tab[uptr[0]])
         {
-            const int len = isUTF8Character(uptr);
-            if(len)
-            {
-                uptr += len;
+            case 1: // 0-9
+            case 2: // A-Z_a-z
+                uptr += 1;
                 goto loop;
-            }
-        }
-        else if((uptr[0] >= 'A' && uptr[0] <= 'Z')
-             || (uptr[0] >= 'a' && uptr[0] <= 'z')
-             || (uptr[0] >= '0' && uptr[0] <= '9')
-             || (uptr[0] == '_'))
-        {
-            uptr += 1;
-            goto loop;
+            case 8: // F0-F7:
+                if(uptr[1] >= (unsigned char)'\220' && uptr[1] <= (unsigned char)'\277'
+                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277'
+                && uptr[3] >= (unsigned char)'\200' && uptr[3] <= (unsigned char)'\277')
+                {
+                    uptr += 4;
+                    goto loop;
+                }
+                break;
+            case 7: // E0-EF
+                if(uptr[1] >= (unsigned char)'\240' && uptr[1] <= (unsigned char)'\277'
+                && uptr[2] >= (unsigned char)'\200' && uptr[2] <= (unsigned char)'\277')
+                {
+                    uptr += 3;
+                    goto loop;
+                }
+                break;
+            case 6: // C2-CF
+                if(uptr[1] >= (unsigned char)'\200' && uptr[1] <= (unsigned char)'\277')
+                {
+                    uptr += 2;
+                    goto loop;
+                }
+                break;
         }
         return (const char*) uptr;
     }
