@@ -593,6 +593,23 @@ int main()
         return 1;
     }
 
+    for(double value = 0; value < 20; value += 1)
+    {
+        if(!fp.AddConstant("TestConstant", value))
+        {
+            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
+            return 1;
+        }
+
+        fp.Parse("TestConstant", "");
+        if(fp.Eval(0) != value)
+        {
+            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
+            else std::cout << "Changing the value of 'TestConstant' failed\n";
+            return 1;
+        }
+    }
+
     ret = fp.AddUnit("doubled", 2);
     ret &= fp.AddUnit("tripled", 3);
     if(!ret)

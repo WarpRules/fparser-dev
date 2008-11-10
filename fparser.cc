@@ -71,14 +71,15 @@ namespace
 
         std::set<NameData>::iterator dataIter = nameData.find(newData);
 
-        if(dataIter == nameData.end())
-            dataIter = nameData.insert(newData).first;
-        else
+        if(dataIter != nameData.end())
         {
             if(dataIter->type != newData.type) return false;
-            dataIter = nameData.insert(dataIter, newData);
+            namePtrs.erase(NamePtr(&(dataIter->name[0]),
+                                   unsigned(dataIter->name.size())));
+            nameData.erase(dataIter);
         }
 
+        dataIter = nameData.insert(newData).first;
         namePtrs[NamePtr(&(dataIter->name[0]),
                          unsigned(dataIter->name.size()))] = &(*dataIter);
         return true;
