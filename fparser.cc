@@ -32,6 +32,19 @@ namespace
 {
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
 
+    // -1 = (lhs < rhs); 0 = (lhs == rhs); 1 = (lhs > rhs)
+    inline int compare(const FuncDefinition& lhs, const NamePtr& rhs)
+    {
+        for(unsigned i = 0; i < lhs.nameLength; ++i)
+        {
+            if(i == rhs.nameLength) return 1;
+            const char c1 = lhs.name[i], c2 = rhs.name[i];
+            if(c1 < c2) return -1;
+            if(c2 < c1) return 1;
+        }
+        return lhs.nameLength < rhs.nameLength ? -1 : 0;
+    }
+
     inline const FuncDefinition* findFunction(const NamePtr& functionName)
     {
         const FuncDefinition* first = Functions;
@@ -40,11 +53,12 @@ namespace
         while(first < last)
         {
             const FuncDefinition* middle = first+(last-first)/2;
-            if(*middle < functionName) first = middle+1;
+            const int comp = compare(*middle, functionName);
+            if(comp == 0) return middle;
+            if(comp < 0) first = middle+1;
             else last = middle;
         }
-        return (last == Functions + FUNC_AMOUNT || functionName < *last) ?
-            0 : last;
+        return 0;
     }
 
     bool addNewNameData(std::set<NameData>& nameData,

@@ -1,4 +1,5 @@
 //#define TEST_JIT
+#define MEASURE_PARSING_SPEED_ONLY
 
 #include "fparser.hh"
 #include <ctime>
@@ -26,7 +27,7 @@ namespace
 {
     struct FuncData
     {
-        const std::string funcStr;
+        const char* const funcStr;
         const std::string paramStr;
         double (*const function)(const double*);
     };
@@ -84,7 +85,7 @@ int main()
                   << std::endl;
         */
 
-        const unsigned ParseLoops = 200000;
+        const unsigned ParseLoops = 2000000;
         const unsigned EvalLoops = 10000000;
         const unsigned JitLoops = 50000000;
         const unsigned OptimizationLoops = 100000;
@@ -99,7 +100,7 @@ int main()
 
         printInfo("Parse time", "parses", iclock, ParseLoops);
 
-
+#ifndef MEASURE_PARSING_SPEED_ONLY
         // Measure evaluation speed
         // ------------------------
         iclock = std::clock();
@@ -152,6 +153,7 @@ int main()
             funcData[i].function(values);
 
         printInfo("C++ function time", "evals", iclock, FuncLoops);
+#endif
     }
 
     return 0;

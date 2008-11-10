@@ -124,6 +124,18 @@ namespace FUNCTIONPARSERTYPES
         unsigned nameLength;
 
         NamePtr(const char* n, unsigned l): name(n), nameLength(l) {}
+
+        inline bool operator<(const NamePtr& rhs) const
+        {
+            for(unsigned i = 0; i < nameLength; ++i)
+            {
+                if(i == rhs.nameLength) return false;
+                const char c1 = name[i], c2 = rhs.name[i];
+                if(c1 < c2) return true;
+                if(c2 < c1) return false;
+            }
+            return nameLength < rhs.nameLength;
+        }
     };
 
     struct NameData
@@ -146,19 +158,6 @@ namespace FUNCTIONPARSERTYPES
             return name < rhs.name;
         }
     };
-
-    template<typename LHS_t, typename RHS_t>
-    inline bool operator<(const LHS_t& lhs, const RHS_t& rhs)
-    {
-        for(unsigned i = 0; i < lhs.nameLength; ++i)
-        {
-            if(i == rhs.nameLength) return false;
-            const char c1 = lhs.name[i], c2 = rhs.name[i];
-            if(c1 < c2) return true;
-            if(c2 < c1) return false;
-        }
-        return lhs.nameLength < rhs.nameLength;
-    }
 }
 
 #include <map>
