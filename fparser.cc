@@ -1,6 +1,6 @@
-//==============================
-// Function parser v3.0 by Warp
-//==============================
+//===============================
+// Function parser v3.01 by Warp
+//===============================
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -140,7 +140,7 @@ namespace
          * The numberings are such chosen to optimize the
          * following switch-statements for code generation.
          */
-    
+
         const unsigned char* uptr = (const unsigned char*) ptr;
         switch(tab[uptr[0]])
         {

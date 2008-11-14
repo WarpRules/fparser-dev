@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iostream>
 #include <iomanip>
+#include <cstdio>
 
 #define Epsilon (1e-9)
 
@@ -619,6 +620,214 @@ bool WhiteSpaceTest()
 
 
 //=========================================================================
+// Test UTF-8 parsing
+//=========================================================================
+namespace
+{
+    typedef unsigned char UChar;
+    struct CharValueRange { const UChar first, last; };
+
+    const CharValueRange validValueRanges[][4] =
+    {
+        { { 0x30, 0x39 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x41, 0x5A }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x5F, 0x5F }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x61, 0x7A }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xC2, 0xDF }, { 0x80, 0xBF }, { 0, 0 }, { 0, 0 } },
+        { { 0xE0, 0xE0 }, { 0xA0, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        { { 0xE1, 0xEC }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        { { 0xEE, 0xEF }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        { { 0xF0, 0xF0 }, { 0x90, 0xBF }, { 0x80, 0xBF }, { 0x80, 0xBF } },
+        { { 0xF1, 0xF3 }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0x80, 0xBF } },
+        { { 0xF4, 0xF4 }, { 0x80, 0x8F }, { 0x80, 0xBF }, { 0x80, 0xBF } }
+    };
+    const unsigned validValueRangesAmount =
+        sizeof(validValueRanges)/sizeof(validValueRanges[0]);
+
+    const CharValueRange invalidValueRanges[][4] =
+    {
+        { { 0xC0, 0xC1 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xED, 0xED }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xF5, 0xFF }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x21, 0x2F }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x3A, 0x40 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x5B, 0x5E }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x60, 0x60 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x7B, 0x7F }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x80, 0xFF }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xE0, 0xEF }, { 0x80, 0xFF }, { 0, 0 }, { 0, 0 } },
+        { { 0xF0, 0xF4 }, { 0x80, 0xFF }, { 0x80, 0xFF }, { 0, 0 } },
+    };
+    const unsigned invalidValueRangesAmount =
+        sizeof(invalidValueRanges)/sizeof(invalidValueRanges[0]);
+
+
+    class CharIter
+    {
+        const CharValueRange (*valueRanges)[4];
+        const unsigned valueRangesAmount;
+        UChar charValues[4];
+        unsigned rangeIndex, firstRangeIndex, skipIndex;
+
+        void initCharValues()
+        {
+            for(unsigned i = 0; i < 4; ++i)
+                charValues[i] = valueRanges[rangeIndex][i].first;
+        }
+
+     public:
+        CharIter(bool skipDigits, bool skipLowerCaseAscii):
+            valueRanges(validValueRanges),
+            valueRangesAmount(validValueRangesAmount),
+            rangeIndex(skipDigits ? 1 : 0),
+            firstRangeIndex(skipDigits ? 1 : 0),
+            skipIndex(skipLowerCaseAscii ? 3 : ~0U)
+        {
+            initCharValues();
+        }
+
+        CharIter():
+            valueRanges(invalidValueRanges),
+            valueRangesAmount(invalidValueRangesAmount),
+            rangeIndex(0), firstRangeIndex(0), skipIndex(~0U)
+        {
+            initCharValues();
+        }
+
+        void appendChar(std::string& dest) const
+        {
+            for(unsigned i = 0; i < 4; ++i)
+            {
+                if(charValues[i] == 0) break;
+                dest += char(charValues[i]);
+            }
+        }
+
+        bool next()
+        {
+            for(unsigned i = 0; i < 4; ++i)
+            {
+                if(charValues[i] < valueRanges[rangeIndex][i].last)
+                {
+                    ++charValues[i];
+                    return true;
+                }
+            }
+            if(++rangeIndex == skipIndex) ++rangeIndex;
+            if(rangeIndex < valueRangesAmount)
+            {
+                initCharValues();
+                return true;
+            }
+            rangeIndex = firstRangeIndex;
+            initCharValues();
+            return false;
+        }
+
+        void print() const
+        {
+            std::printf("{");
+            for(unsigned i = 0; i < 4; ++i)
+            {
+                if(charValues[i] == 0) break;
+                if(i > 0) std::printf(",");
+                std::printf("%02x", unsigned(charValues[i]));
+            }
+            std::printf("}");
+        }
+    };
+
+    bool printUTF8TestError(const char* testType,
+                            const CharIter* iters, unsigned length,
+                            const std::string& identifier)
+    {
+        std::printf("\n%s failed with identifier ", testType);
+        for(unsigned i = 0; i < length; ++i)
+            iters[i].print();
+        std::printf(": \"%s\"\n", identifier.c_str());
+        return false;
+    }
+
+    bool printUTF8TestError2(const CharIter* iters, unsigned length)
+    {
+        std::printf("\nParsing didn't fail with invalid identifier ");
+        for(unsigned i = 0; i < length; ++i)
+            iters[(length-1)-i].print();
+        std::printf("\n");
+        return false;
+    }
+}
+
+bool UTF8Test()
+{
+    std::cout << "*** Testing UTF8..." << std::flush;
+
+    CharIter iters[4] =
+        { CharIter(true, false), CharIter(false, true), CharIter(false, false),
+          CharIter(false, false) };
+    std::string identifier;
+    FunctionParser fp;
+    const double value = 0.0;
+
+    for(unsigned length = 1; length <= 4; ++length)
+    {
+        std::cout << " " << length << std::flush;
+        bool cont = true;
+        while(cont)
+        {
+            identifier.clear();
+            for(unsigned i = 0; i < length; ++i)
+                iters[i].appendChar(identifier);
+
+            if(fp.Parse(identifier, identifier) >= 0)
+                return printUTF8TestError("Parsing", iters, length, identifier);
+
+            if(fp.Eval(&value) != 0.0)
+                return printUTF8TestError("Evaluation", iters, length,
+                                          identifier);
+
+            cont = false;
+            const unsigned step = (length == 1) ? 1 : length-1;
+            for(unsigned i = 0; i < length; i += step)
+                if(iters[i].next())
+                {
+                    cont = true;
+                    break;
+                }
+        }
+    }
+
+    CharIter invalidIters[2] = { CharIter(), CharIter(true, false) };
+
+    for(unsigned length = 1; length <= 2; ++length)
+    {
+        std::cout << " " << 4+length << std::flush;
+        bool cont = true;
+        while(cont)
+        {
+            identifier.clear();
+            for(unsigned i = 0; i < length; ++i)
+                invalidIters[(length-1)-i].appendChar(identifier);
+
+            if(fp.Parse(identifier, identifier) < 0)
+                return printUTF8TestError2(invalidIters, length);
+
+            cont = false;
+            for(unsigned i = 0; i < length; ++i)
+                if(invalidIters[i].next())
+                {
+                    cont = true;
+                    break;
+                }
+        }
+    }
+
+    std::cout << std::endl;
+    return true;
+}
+
+
+//=========================================================================
 // Main test function
 //=========================================================================
 bool runTest(unsigned testIndex, FunctionParser& fp)
@@ -784,7 +993,8 @@ int main()
 
     // Misc. tests
     // -----------
-    if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest())
+    if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
+       !UTF8Test())
         return 1;
 
     std::cout << "==================================================\n"
