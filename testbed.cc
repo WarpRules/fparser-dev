@@ -1,6 +1,7 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include <cmath>
+#include <iostream>
 #include <iomanip>
 
 #define Epsilon (1e-9)
@@ -16,6 +17,9 @@
 
 namespace
 {
+    // Auxiliary functions
+    // -------------------
+    inline double abs(double d) { return fabs(d); }
     inline double min(double x, double y) { return x<y ? x : y; }
     inline double max(double x, double y) { return x>y ? x : y; }
     inline double r2d(double x) { return x*180.0/M_PI; }
@@ -24,23 +28,27 @@ namespace
     inline double csc(double x) { return 1.0 / std::sin(x); }
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
+
+    double Sqr(const double* p)
+    {
+        return p[0]*p[0];
+    }
+
+    double Sub(const double* p)
+    {
+        return p[0]-p[1];
+    }
+
+    double Value(const double*)
+    {
+        return 10;
+    }
 }
 
-double Sqr(const double* p)
-{
-    return p[0]*p[0];
-}
 
-double Sub(const double* p)
-{
-    return p[0]-p[1];
-}
-
-double Value(const double*)
-{
-    return 10;
-}
-
+//============================================================================
+// Test function definitions
+//============================================================================
 struct Test
 {
     const char* funcString;
@@ -180,8 +188,6 @@ double f21(double* p)
 {
 #define P21 "sqr(x)+value()-pvalue ( ) ", "x", f21, 1, -10, 10, 1, false
     return Sqr(p)+Value(0)-5;
-//#define P21 "value()", "x", f21, 1, -10, 10, 1
-//    return Value(0);
 }
 
 double f22(double* p)
@@ -223,14 +229,16 @@ double f27(double* p)
 {
 #define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", f27, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
-    return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+1.0/tan(x)+1.0/sin(x) + pow(x,y);
+    return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+
+        1.0/tan(x)+1.0/sin(x) + pow(x,y);
 }
 
 double f28(double* p)
 {
 #define P28 "exp(x)+floor(x)+int(x)+log(x)+log10(x)+max(x,y)+min(x,y)+sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)", "x,y", f28, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
-    return exp(x)+floor(x)+floor(x+.5)+log(x)+log10(x)+std::max(x,y)+std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x);
+    return exp(x)+floor(x)+floor(x+.5)+log(x)+log10(x)+std::max(x,y)+
+        std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x);
 }
 
 double f29(double* p)
@@ -257,8 +265,6 @@ double f31(double* p)
         pow(exp(1), log(x+6)*y) - pow(5,log(x+7)/log(5)) +
         pow(x*z+17,3) * pow(x*z+17,2) / pow(x*z+17,4);
 }
-
-inline double abs(double d) { return fabs(d); }
 
 double f32(double* p)
 {
@@ -298,24 +304,36 @@ double f33(double* p)
 
 double f34(double* p)
 {
-#define P34 "\360\220\200\200+\340\240\200*\302\200", "\360\220\200\200,\340\240\200,\302\200", f34, 3, -10, 10, 1, false
-    double x = p[0], y = p[1], z = p[2];
-    return x+y*z;
+#define P34 "\360\220\200\200+\340\240\200*\302\200-t", "\360\220\200\200,\340\240\200,\302\200,t", f34, 4, -5, 5, 1, false
+    double x = p[0], y = p[1], z = p[2], t = p[3];
+    return x+y*z-t;
 }
 
-Test tests[] =
+double f35(double* p)
 {
-    { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
-    { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 },
-    { P17 }, { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 },
-    { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 },
-    { P33 }, { P34 }
-};
+#define P35 "a_very_long_variable_name_1-a_very_long_variable_name_2+Yet_a_third_very_long_variable_name*a_very_long_variable_name_1", "a_very_long_variable_name_1,a_very_long_variable_name_2,Yet_a_third_very_long_variable_name", f35, 3, -10, 10, 1, false
+    double x = p[0], y = p[1], z = p[2];
+    return x-y+z*x;
+}
 
-const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
+namespace
+{
+    Test tests[] =
+    {
+        { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
+        { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
+        { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
+        { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
+        { P34 }, { P35 }
+    };
 
-#include <iostream>
+    const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
+}
 
+
+//=========================================================================
+// Copying testing functions
+//=========================================================================
 bool TestCopyingNoDeepCopy(FunctionParser p)
 {
     double vars[2] = { 3, 5 };
@@ -442,6 +460,10 @@ bool TestCopying()
     return retval;
 }
 
+
+//=========================================================================
+// Test error situations
+//=========================================================================
 bool TestErrorSituations()
 {
     std::cout << "*** Testing error situations..." << std::endl;
@@ -458,7 +480,8 @@ bool TestErrorSituations()
       "unit unit", "x(unit)", "x+unit", "x*unit", "()", "", "x()", "x*()",
       "sin(unit)", "sin unit", "1..2", "(", ")", "(x", "x)", ")x(",
       "(((((((x))))))", "(((((((x))))))))", "2x", "(2)x", "(x)2", "2(x)",
-      "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)"
+      "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)", "if(x,2)",
+      "if(x, 2, 3, 4)"
     };
     const unsigned amnt = sizeof(invalidFuncs)/sizeof(invalidFuncs[0]);
     for(unsigned i = 0; i < amnt; ++i)
@@ -499,6 +522,12 @@ bool TestErrorSituations()
                       << "\") as funcparser didn't fail" << std::endl;
             retval = false;
         }
+        if(fp.Parse("0", n) < 0)
+        {
+            std::cout << "Using an invalid name (\"" << n
+                      << "\") as variable name didn't fail" << std::endl;
+            retval = false;
+        }
     }
 
     fp.AddConstant("CONST", 1);
@@ -530,6 +559,68 @@ bool TestErrorSituations()
     return retval;
 }
 
+
+//=========================================================================
+// Thoroughly test whitespaces
+//=========================================================================
+double wsFunc(double x)
+{
+    return x + sin((x*-1.5)-(.5*2.0)*(((-x)*1.5+(2-(x)*2.0)*2.0)+(3.0*2.0))+
+                   (1.5*2.0))+(cos(x)*2.0);
+}
+
+bool testWsFunc(FunctionParser& fp, const std::string& function)
+{
+    int res = fp.Parse(function, "x");
+    if(res > -1)
+    {
+        std::cout << "Parsing function:\n\"" << function
+                  << "\"\nfailed at char " << res
+                  << ": " << fp.ErrorMsg() << std::endl;
+        return false;
+    }
+
+    double vars[1];
+    for(vars[0] = -2.0; vars[0] <= 2.0; vars[0] += .1)
+        if(abs(fp.Eval(vars) - wsFunc(vars[0])) > Epsilon)
+        {
+            std::cout << "Failed.\n";
+            return false;
+        }
+    return true;
+}
+
+bool WhiteSpaceTest()
+{
+    std::cout << "*** Testing whitespaces..." << std::endl;
+
+    FunctionParser fp;
+    fp.AddConstant("const", 1.5);
+    fp.AddUnit("unit", 2.0);
+    std::string function(" x + sin ( ( x * - 1.5 ) - .5 unit * ( ( ( - x ) * "
+                         "const + ( 2 - ( x ) unit ) unit ) + 3 unit ) + "
+                         "( const ) unit ) + cos ( x ) unit ");
+
+    if(!testWsFunc(fp, function)) return false;
+
+    for(unsigned i = 0; i < function.size(); ++i)
+    {
+        if(function[i] == ' ')
+        {
+            function.erase(i, 1);
+            if(!testWsFunc(fp, function)) return false;
+            function.insert(i, "  ");
+            if(!testWsFunc(fp, function)) return false;
+            function.erase(i, 1);
+        }
+    }
+    return true;
+}
+
+
+//=========================================================================
+// Main test function
+//=========================================================================
 bool runTest(unsigned testIndex, FunctionParser& fp)
 {
     double vars[10];
@@ -579,10 +670,16 @@ bool runTest(unsigned testIndex, FunctionParser& fp)
     return true;
 }
 
+
+//=========================================================================
+// Main
+//=========================================================================
 int main()
 {
     std::cout << "Performing tests..." << std::endl;
 
+    // Setup the function parser for testing
+    // -------------------------------------
     FunctionParser fp;
 
     bool ret = fp.AddConstant("pi", M_PI);
@@ -591,23 +688,6 @@ int main()
     {
         std::cout << "Ooops! AddConstant() didn't work" << std::endl;
         return 1;
-    }
-
-    for(double value = 0; value < 20; value += 1)
-    {
-        if(!fp.AddConstant("TestConstant", value))
-        {
-            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
-            return 1;
-        }
-
-        fp.Parse("TestConstant", "");
-        if(fp.Eval(0) != value)
-        {
-            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
-            else std::cout << "Changing the value of 'TestConstant' failed\n";
-            return 1;
-        }
     }
 
     ret = fp.AddUnit("doubled", 2);
@@ -644,6 +724,28 @@ int main()
         return 1;
     }
 
+    // Test repeated constant addition
+    // -------------------------------
+    for(double value = 0; value < 20; value += 1)
+    {
+        if(!fp.AddConstant("TestConstant", value))
+        {
+            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
+            return 1;
+        }
+
+        fp.Parse("TestConstant", "");
+        if(fp.Eval(0) != value)
+        {
+            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
+            else std::cout << "Changing the value of 'TestConstant' failed\n";
+            return 1;
+        }
+    }
+
+
+    // Main testing loop
+    // -----------------
     for(unsigned i = 0; i < testsAmount; ++i)
     {
         int retval = fp.Parse(tests[i].funcString, tests[i].paramString,
@@ -679,10 +781,15 @@ int main()
         std::cout << "Ok." << std::endl;
     }
 
-    if(!TestCopying() || !TestErrorSituations())
+
+    // Misc. tests
+    // -----------
+    if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest())
         return 1;
 
-    std::cout << "********** All tests OK **********" << std::endl;
+    std::cout << "==================================================\n"
+              << "================== All tests OK ==================\n"
+              << "==================================================\n";
 
     return 0;
 }
