@@ -87,43 +87,53 @@ namespace
 
     const char* readIdentifier(const char* ptr)
     {
+        static const char A=10, B=11;
+        /*  ^ define numeric constants for two-digit numbers
+         *    so as not to disturb the layout of this neat table
+         */
         static const char tab[0x100] =
         {
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //00-0F
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //10-1F
             0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //20-2F
-            5,5,5,5, 5,5,5,5, 5,5,0,0, 0,0,0,0, //30-3F
+            9,9,9,9, 9,9,9,9, 9,9,0,0, 0,0,0,0, //30-3F
             0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //40-4F
             2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,2, //50-5F
             0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //60-6F
             2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,0, //70-7F
-            8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8, //70-7F
-            6,6,6,6, 6,6,6,6, 6,6,6,6, 6,6,6,6, //80-8F
-            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //A0-AF
-            7,7,7,7, 7,7,7,7, 7,7,7,7, 7,7,7,7, //B0-BF
+            8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8, //80-8F
+            A,A,A,A, A,A,A,A, A,A,A,A, A,A,A,A, //90-9F
+            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //A0-AF
+            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //B0-BF
             0,0,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //C0-CF
             4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //D0-DF
-            3,3,3,3, 3,3,3,3, 3,3,3,3, 3,3,3,3, //E0-EF
-            1,1,1,1, 1,1,1,1, 0,0,0,0, 0,0,0,0  //F0-FF
+            5,3,3,3, 3,3,3,3, 3,3,3,3, 3,0,3,3, //E0-EC, EE-EF
+            6,1,1,1, 7,0,0,0, 0,0,0,0, 0,0,0,0  //F0-FF
         };
         /* Classes:
-         *   5 = digits    (30-39)
+         *   9 = digits    (30-39)
          *   2 = A-Z_a-z   (41-5A, 5F, 61-7A)
          *   8 = 80-8F
-         *   6 = 90-9F
-         *   7 = A0-BF
-         *   4 = C2-CF
-         *   3 = E0-EF
-         *   1 = F0-F7
+         *   A = 90-9F
+         *   B = A0-BF
+         *   4 = C2-DF
+         *   5 = E0
+         *   3 = E1-EC, EE-EF
+         *   6 = F0
+         *   1 = F1-F3
+         *   7 = F4
          *
          * Allowed multibyte utf8 sequences consist of these class options:
-         *   [4] [867]
-         *   [3] [7] [867]
-         *   [1] [67] [867] [867]
+         *   [4]             [8AB]
+         *   [5]         [B] [8AB]
+         *   [3]       [8AB] [8AB]
+         *   [6] [AB]  [8AB] [8AB]
+         *   [1] [8AB] [8AB] [8AB]
+         *   [7] [8]   [8AB] [8AB]
          * In addition, the first characters may be
          *   [2]
          * And the following characters may be
-         *   [52]
+         *   [92]
          *
          * The numberings are such chosen to optimize the
          * following switch-statements for code generation.
@@ -133,22 +143,26 @@ namespace
         switch(tab[uptr[0]])
         {
             case 2: goto loop_2; // A-Z_a-z
-            case 1: goto loop_1; // F0-F7
-            case 3: goto loop_3; // E0-EF
-            case 4: goto loop_4; // C2-CF
+            case 5: goto loop_5; // E0
+            case 3: goto loop_3; // E1-EC, EE-EF
+            case 4: goto loop_4; // C2-DF
+
+            case 1: goto loop_1; // F0-F4 XXX F1-F3
+            case 6: goto loop_6; //       XXX F0
+            case 7: goto loop_7; //       XXX F4
         }
         return (const char*) uptr;
 
     loop:
         switch(tab[uptr[0]])
         {
-            case 5: // 0-9
+            case 9: // 0-9
             case 2: // A-Z_a-z
             loop_2:
                 uptr += 1;
                 goto loop;
-            case 1: // F0-F7:
-            loop_1:
+            case 6: // F0:
+            loop_6:
                 if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
                 && uptr[2] >= 0x80 && uptr[2] <= 0xBF
                 && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
@@ -157,16 +171,45 @@ namespace
                     goto loop;
                 }
                 break;
-            case 3: // E0-EF
-            loop_3:
-                if(tab[uptr[1]] == 7
+            case 1: // F1-F3:
+            loop_1:
+                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
+                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
+                {
+                    uptr += 4;
+                    goto loop;
+                }
+                break;
+            case 7: // F4:
+            loop_7:
+                if(uptr[1] >= 0x90 && uptr[1] <= 0x8F
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
+                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
+                {
+                    uptr += 4;
+                    goto loop;
+                }
+                break;
+            case 5: // E0
+            loop_5:
+                if(tab[uptr[1]] == B
                 && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
                 {
                     uptr += 3;
                     goto loop;
                 }
                 break;
-            case 4: // C2-CF
+            case 3: // E1-EC, EE-EF
+            loop_3:
+                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF
+                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
+                {
+                    uptr += 3;
+                    goto loop;
+                }
+                break;
+            case 4: // C2-DF
             loop_4:
                 if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
                 {
