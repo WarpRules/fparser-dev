@@ -134,6 +134,8 @@ namespace
          *   [2]
          * And the following characters may be
          *   [92]
+         * These may never begin the character:
+         *   [08AB]
          *
          * The numberings are such chosen to optimize the
          * following switch-statements for code generation.
@@ -163,60 +165,36 @@ namespace
                 goto loop;
             case 6: // F0:
             loop_6:
-                if(uptr[1] >= 0x90 && uptr[1] <= 0xBF
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
-                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
-                {
-                    uptr += 4;
-                    goto loop;
-                }
-                break;
+                if(uptr[1] < 0x90 || uptr[1] > 0xBF) break;
+                goto len4pos2;
             case 1: // F1-F3:
             loop_1:
-                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
-                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
-                {
-                    uptr += 4;
-                    goto loop;
-                }
-                break;
+                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
+            len4pos2:
+                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
+                if(uptr[3] < 0x80 || uptr[3] > 0xBF) break;
+                uptr += 4;
+                goto loop;
             case 7: // F4:
             loop_7:
-                if(uptr[1] >= 0x90 && uptr[1] <= 0x8F
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF
-                && uptr[3] >= 0x80 && uptr[3] <= 0xBF)
-                {
-                    uptr += 4;
-                    goto loop;
-                }
-                break;
+                if(tab[uptr[1]] != 8) break;
+                goto len4pos2;
             case 5: // E0
             loop_5:
-                if(tab[uptr[1]] == B
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
-                {
-                    uptr += 3;
-                    goto loop;
-                }
-                break;
+                if(tab[uptr[1]] != B) break;
+                goto len3pos2;
             case 3: // E1-EC, EE-EF
             loop_3:
-                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF
-                && uptr[2] >= 0x80 && uptr[2] <= 0xBF)
-                {
-                    uptr += 3;
-                    goto loop;
-                }
-                break;
+                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
+            len3pos2:
+                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
+                uptr += 3;
+                goto loop;
             case 4: // C2-DF
             loop_4:
-                if(uptr[1] >= 0x80 && uptr[1] <= 0xBF)
-                {
-                    uptr += 2;
-                    goto loop;
-                }
-                break;
+                if(uptr[1] < 0x80 && uptr[1] > 0xBF) break;
+                uptr += 2;
+                goto loop;
         }
         return (const char*) uptr;
     }
