@@ -192,7 +192,7 @@ namespace
                 goto loop;
             case 4: // C2-DF
             loop_4:
-                if(uptr[1] < 0x80 && uptr[1] > 0xBF) break;
+                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
                 uptr += 2;
                 goto loop;
         }
