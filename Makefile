@@ -13,7 +13,7 @@ example: example.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fptypes.hh
-	zip -9 fparser301.zip $^
+	zip -9 fparser302.zip $^
 
 #%.o: %.cc fparser.hh
 #	$(CXX) -c $<

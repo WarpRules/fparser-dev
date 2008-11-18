@@ -1,5 +1,5 @@
 //============================================
-// Function parser v3.01 optimizer by Bisqwit
+// Function parser v3.02 optimizer by Bisqwit
 //============================================
 
 /*

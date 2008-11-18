@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function parser v3.01 by Warp                                           *|
+|* Function parser v3.02 by Warp                                           *|
 |* -----------------------------                                           *|
 |* Parses and evaluates the given function with the given variable values. *|
 |* See fparser.txt for details.                                            *|
@@ -32,6 +32,8 @@ public:
               bool useDegrees = false);
     int Parse(const std::string& Function, const std::string& Vars,
               bool useDegrees = false);
+
+    void setDelimiterChar(char);
 
     const char* ErrorMsg() const;
     inline ParseErrorType GetParseErrorType() const { return parseErrorType; }
@@ -76,6 +78,7 @@ private:
 
 // Private data:
 // ------------
+    char delimiterChar;
     ParseErrorType parseErrorType;
     int evalErrorType;
 

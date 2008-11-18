@@ -1,4 +1,4 @@
-  Function parser for C++  v3.01 by Warp.
+  Function parser for C++  v3.02 by Warp.
   =======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
@@ -6,6 +6,10 @@
 
   The usage license of this library is located at the end of this text file.
 
+
+  What's new in v3.02
+  -------------------
+  - Added support for specifying a delimiter character.
 
   What's new in v3.01
   -------------------
@@ -188,9 +192,18 @@ SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
 int Parse(const std::string& Function, const std::string& Vars,
           bool useDegrees = false);
 
+int Parse(const char* Function, const std::string& Vars,
+          bool useDegrees = false);
+
     Parses the given function and compiles it to internal format.
     Return value is -1 if successful, else the index value to the location
     of the error.
+
+
+void setDelimiterChar(char);
+
+    Sets an ending delimiter character for the function string. (See the
+    long description for more details.)
 
 
 const char* ErrorMsg(void) const;
@@ -254,6 +267,9 @@ bool AddFunction(const std::string& name, FunctionParser&);
 ---------------------------------------------------------------------------
 int Parse(const std::string& Function, const std::string& Vars,
           bool useDegrees = false);
+
+int Parse(const char* Function, const std::string& Vars,
+          bool useDegrees = false);
 ---------------------------------------------------------------------------
 
       Parses the given function (and compiles it to internal format).
@@ -267,6 +283,9 @@ int Parse(const std::string& Function, const std::string& Vars,
                   Eg. "x,y", "VarX,VarY,VarZ,n" or "x1,x2,x3,x4,__VAR__".
       useDegrees: (Optional.) Whether to use degrees or radians in
                   trigonometric functions. (Default: radians)
+
+    If a char* is given as the Function parameter, it must be a null-terminated
+    string.
 
     Variables can have any size and they are case sensitive (ie. "var",
     "VAR" and "Var" are *different* variable names). Letters, digits,
@@ -289,6 +308,50 @@ int Parse(const std::string& Function, const std::string& Vars,
      a parsing error returns an index to the end of the string + 1.
 
     Example: parser.Parse("3*x+y", "x,y");
+
+
+---------------------------------------------------------------------------
+void setDelimiterChar(char);
+---------------------------------------------------------------------------
+
+    By default the parser expects the entire function string to be valid
+    (ie. the entire contents of the given std::string, or a C string ending
+    in the null character '\0').
+
+    If a delimiter character is specified with this function, then if it's
+    encountered at the outermost parsing level by the Parse() function, and
+    the input function has been valid so far, Parse() will return an index
+    to this character inside the input string, but rather than set an error
+    code, FP_NO_ERROR will be set.
+
+    The idea is that this can be used to more easily parse functions which
+    are embedded inside larger strings, containing surrounding data, without
+    having to explicitly extract the function to a separate string.
+
+    For example, suppose you are writing an interpreter for a scripting
+    language, which can have commands like this:
+
+let MyFunction(x,y) = { sin(x*x+y*y) } // A 2-dimensional function
+
+    Normally when parsing such a line you would have to extract the part
+    inside the curly brackets into a separate string and parse it that way.
+    With this feature what you can do instead is to set '}' as the delimiter
+    character and then simply give a pointer to the character which comes
+    after the '{'. If all goes well, the Parse() function will return an
+    index to the '}' character (from the given starting point) and
+    GetParseErrorType() will return FP_NO_ERROR. You can use the return
+    value (if it's not -1) to jump forward in the string to the delimiter
+    character.
+
+    Note that a null character ('\0') or the end of the std::string (if
+    one was given) will still be a valid end of the function string even
+    if a delimiter character was specified. (In this case Parse() will
+    return -1 if there was no error, as usual.)
+
+    Also note that the delimiter character cannot be any valid operator
+    or alphanumeric (including the underscore) character, nor the other
+    characters defined in the function syntax. It must be a character not
+    supported by the function parser (such as '}', '"', ']', etc).
 
 
 ---------------------------------------------------------------------------

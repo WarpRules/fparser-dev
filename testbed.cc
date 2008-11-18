@@ -925,6 +925,22 @@ int main()
 {
     std::cout << "Performing tests..." << std::endl;
 
+    FunctionParser fp0;
+    fp0.setDelimiterChar('}');
+    int res = fp0.Parse("x+y } ", "x,y");
+    if(fp0.GetParseErrorType() != fp0.FP_NO_ERROR || res != 4)
+    {
+        std::cout << "Delimiter test failed" << std::endl;
+        return 1;
+    }
+    fp0.Parse("x+}y", "x,y");
+    if(fp0.GetParseErrorType() == fp0.FP_NO_ERROR)
+    {
+        std::cout << "Erroneous function with delimiter didn't fail"
+                  << std::endl;
+        return 1;
+    }
+
     // Setup the function parser for testing
     // -------------------------------------
     FunctionParser fp;

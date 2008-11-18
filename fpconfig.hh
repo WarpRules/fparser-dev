@@ -1,5 +1,5 @@
 //===============================
-// Function parser v3.01 by Warp
+// Function parser v3.02 by Warp
 //===============================
 
 // Configuration file

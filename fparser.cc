@@ -1,5 +1,5 @@
 //===============================
-// Function parser v3.01 by Warp
+// Function parser v3.02 by Warp
 //===============================
 
 #include "fpconfig.hh"
@@ -232,6 +232,7 @@ FunctionParser::Data::Data(const Data& rhs):
 // FunctionParser constructors, destructor and assignment
 //=========================================================================
 FunctionParser::FunctionParser():
+    delimiterChar(0),
     parseErrorType(FP_NO_ERROR), evalErrorType(0),
     data(new Data),
     useDegreeConversion(false), isOptimized(false),
@@ -246,6 +247,7 @@ FunctionParser::~FunctionParser()
 }
 
 FunctionParser::FunctionParser(const FunctionParser& cpy):
+    delimiterChar(cpy.delimiterChar),
     parseErrorType(cpy.parseErrorType),
     evalErrorType(cpy.evalErrorType),
     data(cpy.data),
@@ -262,6 +264,7 @@ FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
     {
         if(--(data->referenceCounter) == 0) delete data;
 
+        delimiterChar = cpy.delimiterChar;
         parseErrorType = cpy.parseErrorType;
         evalErrorType = cpy.evalErrorType;
         data = cpy.data;
@@ -273,6 +276,11 @@ FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
     }
 
     return *this;
+}
+
+void FunctionParser::setDelimiterChar(char c)
+{
+    delimiterChar = c;
 }
 
 
@@ -485,7 +493,12 @@ int FunctionParser::ParseFunction(const char* function, bool useDegrees)
     if(parseErrorType != FP_NO_ERROR) return errorLocation - function;
 
     assert(ptr); // Should never be null at this point. It's a bug otherwise.
-    if(*ptr) { parseErrorType = EXPECT_OPERATOR; return ptr - function; }
+    if(*ptr)
+    {
+        if(delimiterChar == 0 || *ptr != delimiterChar)
+            parseErrorType = EXPECT_OPERATOR;
+        return ptr - function;
+    }
 
 #ifndef FP_USE_THREAD_SAFE_EVAL
     data->Stack.resize(data->StackSize);
