@@ -146,6 +146,14 @@ public:
     bool IsFunc() const  { return op == cFCall || op == cPCall; }
     bool IsImmed() const { return op == cImmed; }
     bool IsVar() const   { return op == cVar; }
+    
+    bool IsLongIntegerImmed() const
+    {
+        // Returns true if the immed can be converted losslessly into (long).
+        if(!IsImmed()) return false;
+        return GetImmed() == (double)GetLongIntegerImmed();
+    }
+    inline long GetLongIntegerImmed() const { return (long)GetImmed(); }
 
     void AddParam(const SubTree &p)
     {
@@ -1172,6 +1180,23 @@ public:
                   vector<double>   &immed,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
+    void AssembleSequence(
+                  const SubTree& tree, long count,
+                  double if_zero_constant,
+                  unsigned if_negative_opcode,
+                  unsigned cumulation_opcode,
+                  vector<unsigned> &byteCode,
+                  vector<double>   &immed,
+                  size_t& stacktop_cur,
+                  size_t& stacktop_max) const;
+    void AssembleSequence_Subdivide(
+                  long count,
+                  int cache[256], int cache_needed[256], int& n_cached,
+                  unsigned cumulation_opcode,
+                  vector<unsigned> &byteCode,
+                  vector<double>   &immed,
+                  size_t& stacktop_cur,
+                  size_t& stacktop_max) const;
 
     void FinalOptimize()
     {
@@ -1471,6 +1496,14 @@ void CodeTree::Assemble
         case cMax:
         {
             unsigned opcount = 0;
+            
+            /* TODO: If the cMul contains an immed,
+                     refrain from processing the immed,
+                     and use AssembleSequence() to
+                     generate a sequence of cDup & cFetch & cAdd
+             */
+                     
+                     
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 const SubTree &pa = *a;
@@ -1527,6 +1560,31 @@ void CodeTree::Assemble
                     if(GetOp() == cMul) AddCmd(cInv);
                     else AddCmd(cNeg);
                 }
+            }
+            break;
+        }
+        case cPow:
+        {
+            const SubTree& p0 = getp0();
+            const SubTree& p1 = getp1();
+            
+            if(p1->IsLongIntegerImmed())
+            {
+                /* Optimize integer exponents */
+                AssembleSequence(
+                    p0, p1->GetLongIntegerImmed(),
+                    1.0,   /* in case the exponent is 0 */
+                    cInv,  /* in case the exponent is negative */
+                    cMul,  /* cumulation operand */
+                    byteCode,immed,stacktop_cur,stacktop_max
+                );
+            }
+            else
+            {
+                p0->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+                p1->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+                AddCmd(GetOp());
+                SimuPop(stacktop_cur - was_stacktop - 1);
             }
             break;
         }
@@ -1602,6 +1660,173 @@ void CodeTree::Assemble
             AddCmd(GetOp());
             SimuPop(stacktop_cur - was_stacktop - 1);
             break;
+        }
+    }
+}
+
+#define POWI_TABLE_SIZE 256
+#define POWI_WINDOW_SIZE 3 
+static const unsigned char powi_table[POWI_TABLE_SIZE] =
+{
+      0,   1,   1,   2,   2,   3,   3,   4,  /*   0 -   7 */
+      4,   6,   5,   6,   6,  10,   7,   9,  /*   8 -  15 */
+      8,  16,   9,  16,  10,  12,  11,  13,  /*  16 -  23 */ 
+     12,  17,  13,  18,  14,  24,  15,  26,  /*  24 -  31 */  
+     16,  17,  17,  19,  18,  33,  19,  26,  /*  32 -  39 */  
+     20,  25,  21,  40,  22,  27,  23,  44,  /*  40 -  47 */  
+     24,  32,  25,  34,  26,  29,  27,  44,  /*  48 -  55 */   
+     28,  31,  29,  34,  30,  60,  31,  36,  /*  56 -  63 */   
+     32,  64,  33,  34,  34,  46,  35,  37,  /*  64 -  71 */   
+     36,  65,  37,  50,  38,  48,  39,  69,  /*  72 -  79 */   
+     40,  49,  41,  43,  42,  51,  43,  58,  /*  80 -  87 */   
+     44,  64,  45,  47,  46,  59,  47,  76,  /*  88 -  95 */   
+     48,  65,  49,  66,  50,  67,  51,  66,  /*  96 - 103 */  
+     52,  70,  53,  74,  54, 104,  55,  74,  /* 104 - 111 */  
+     56,  64,  57,  69,  58,  78,  59,  68,  /* 112 - 119 */  
+     60,  61,  61,  80,  62,  75,  63,  68,  /* 120 - 127 */  
+     64,  65,  65, 128,  66, 129,  67,  90,  /* 128 - 135 */  
+     68,  73,  69, 131,  70,  94,  71,  88,  /* 136 - 143 */  
+     72, 128,  73,  98,  74, 132,  75, 121,  /* 144 - 151 */
+     76, 102,  77, 124,  78, 132,  79, 106,  /* 152 - 159 */
+     80,  97,  81, 160,  82,  99,  83, 134,  /* 160 - 167 */ 
+     84,  86,  85,  95,  86, 160,  87, 100,  /* 168 - 175 */ 
+     88, 113,  89,  98,  90, 107,  91, 122,  /* 176 - 183 */ 
+     92, 111,  93, 102,  94, 126,  95, 150,  /* 184 - 191 */ 
+     96, 128,  97, 130,  98, 133,  99, 195,  /* 192 - 199 */ 
+    100, 128, 101, 123, 102, 164, 103, 138,  /* 200 - 207 */ 
+    104, 145, 105, 146, 106, 109, 107, 149,  /* 208 - 215 */
+    108, 200, 109, 146, 110, 170, 111, 157,  /* 216 - 223 */
+    112, 128, 113, 130, 114, 182, 115, 132,  /* 224 - 231 */
+    116, 200, 117, 132, 118, 158, 119, 206,  /* 232 - 239 */ 
+    120, 240, 121, 162, 122, 147, 123, 152,  /* 240 - 247 */ 
+    124, 166, 125, 214, 126, 138, 127, 153  /* 248 - 255 */  
+}; /* copied from gcc */
+
+static void PlanNtimesCache(long count, int cache[256], int cache_needed[256])
+{
+    if(count <= 1) return;
+    if(count < 256)
+    {
+        ++cache_needed[count];
+        if(cache[count]) return;
+        
+        long half = powi_table[count];
+        PlanNtimesCache(half,       cache, cache_needed);
+        if(half*2 != count) PlanNtimesCache(count-half, cache, cache_needed);
+    }
+    else if(count & 1)
+    {
+        int digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
+        PlanNtimesCache(digit, cache, cache_needed);
+        if(digit*2 != count) PlanNtimesCache(count - digit, cache, cache_needed);
+    }
+    else
+        PlanNtimesCache(count / 2, cache, cache_needed);
+   
+    cache[count] = 1;
+}
+
+void CodeTree::AssembleSequence(
+    const SubTree& tree, long count,
+    double if_zero_constant,
+    unsigned if_negative_opcode,
+    unsigned cumulation_opcode,
+    vector<unsigned> &byteCode,
+    vector<double>   &immed,
+    size_t& stacktop_cur,
+    size_t& stacktop_max) const
+{
+    if(count == 0)
+    {
+        SimuPush(1);
+        AddConst(if_zero_constant);
+    }
+    else
+    {
+        p0->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+        if(count < 0)
+        {
+            AddCmd(if_neggative_opcode);
+            count = -count;
+        }
+        
+        int cache[256], cache_needed[256];
+        for(int n=0; n<256; ++n) { cache[n] = 0; cache_needed[n] = 0; }
+        PlanNtimesCache(count, cache, cache_needed);
+        for(int n=0; n<256; ++n) { cache_needed[n] = cache[n]; cache[n] = -1; }
+        
+        AssembleSequence_Subdivide(
+            count,
+            cache, cache_needed, n_cached,
+            cumulation_opcode,
+            byteCode,immed, stacktop_cur, stacktop_max);
+    }
+}
+
+void CodeTree::AssembleSequence_Subdivide(
+    long count,
+    int cache[256], int cache_needed[256], int& n_cached,
+    unsigned cumulation_opcode,
+    vector<unsigned> &byteCode,
+    vector<double>   &immed,
+    size_t& stacktop_cur,
+    size_t& stacktop_max) const
+{
+    void SynthNtimes(
+        long count,
+        int cache[256], int cache_needed[256], int& n_cached,
+        void (CodeSynth::*Combine)(bool,bool))
+    {
+        { std::stringstream tmp; tmp << "Synth " << count << ", ncached=" << n_cached;
+        CalcStack.Dump(tmp.str()); }
+        
+        /* FIXME: This seems to still be buggy */
+    
+        if(count < 256)
+        {
+            if(cache[count] >= 0)
+            {
+                bool dontmind = count > 1 && --cache_needed[count] <= 1;
+                GenDup(cache[count], dontmind ? 2 : 0);
+                //if(USE_SSE) RequireXMM_any(0, true); else RequireST_any(0, true);
+                
+                CalcStack.Dump("Found from cache");
+                return;
+            }
+            long half = powi_table[count];
+            
+            SynthNtimes(half,       cache,cache_needed,n_cached, Combine);
+            if(half*2 == count)
+                (this->*Combine)(true, true);
+            else {
+                SynthNtimes(count-half, cache,cache_needed,n_cached, Combine);
+                (this->*Combine)(false, true); }
+        }
+        else if(count & 1)
+        {
+            int digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
+            SynthNtimes(digit,         cache,cache_needed,n_cached, Combine);
+            if(digit*2 == count)
+                (this->*Combine)(true, true);
+            else {
+                SynthNtimes(count - digit, cache,cache_needed,n_cached, Combine);
+                (this->*Combine)(false, true); }
+        }
+        else
+        {
+            SynthNtimes(count/2,       cache,cache_needed,n_cached, Combine);
+            (this->*Combine)(true, true);
+        }
+        
+        { std::stringstream tmp; tmp << "Synth " << count << " done";
+        CalcStack.Dump(tmp.str()); }
+
+        if(cache_needed[count] > 0)
+        {
+            GenDup();
+            CalcStack.MoveInsertBottom(1, n_cached);
+            cache[count] = n_cached++;
+            CalcStack.Dump("->Cached");
         }
     }
 }
