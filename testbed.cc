@@ -62,9 +62,12 @@ struct Test
 
 double f1(double* p)
 {
-#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
-    double x = p[0];
-    return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
+//#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
+//    double x = p[0];
+//    return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
+    const double x = p[0], y = p[1], z = p[2];
+#define P1 "x - (y*(y*(y*-1))*1)", "x,y,z", f1, 3, .1, 4, .1, false
+    return x - (y*(y*(y*-1))*1);
 }
 double f2(double* p)
 {

@@ -52,7 +52,7 @@ using namespace std;
 #define POWI_WINDOW_SIZE 3
 static const unsigned char powi_table[POWI_TABLE_SIZE] =
 {
-      0,   1,   1,   2,   2,   3,   3,   4,  /*   0 -   7 */
+      0,   1,   1,   2,   2,   4,   3,   1,  /*   0 -   7 */
       4,   6,   5,   6,   6,  10,   7,   9,  /*   8 -  15 */
       8,  16,   9,  16,  10,  12,  11,  13,  /*  16 -  23 */
      12,  17,  13,  18,  14,  24,  15,  26,  /*  24 -  31 */  
@@ -84,7 +84,7 @@ static const unsigned char powi_table[POWI_TABLE_SIZE] =
     116, 200, 117, 132, 118, 158, 119, 206,  /* 232 - 239 */ 
     120, 240, 121, 162, 122, 147, 123, 152,  /* 240 - 247 */
     124, 166, 125, 214, 126, 138, 127, 153   /* 248 - 255 */
-}; /* copied from gcc */
+}; /* copied from gcc, with some custom changes for stack calculation */
 static const int powi_cache_size = 256;
 
 namespace {
@@ -1231,9 +1231,13 @@ public:
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
 
-    typedef std::pair<size_t, // Stack offset where it is found
-                      int     // How many times will it still be needed?
-                     > Subdivide_result;
+    struct Subdivide_result
+    {
+        size_t stackpos; // Stack offset where it is found
+        int cache_val;   // Which value from cache is it, -1 = none
+        
+        Subdivide_result(size_t s,int c=-1) : stackpos(s), cache_val(c) { }
+    };
 
     Subdivide_result AssembleSequence_Subdivide(
                   long count,
@@ -1247,6 +1251,7 @@ public:
     Subdivide_result Subdivide_MakeResult(
                   const Subdivide_result& a,
                   const Subdivide_result& b,
+                  int cache_needed[powi_cache_size],
 
                   unsigned cumulation_opcode,
                   vector<unsigned> &byteCode,
@@ -1725,6 +1730,9 @@ void CodeTree::Assemble
     }
 }
 
+#undef fprintf
+//static void fprintf(FILE*f, ...) {};
+
 static void PlanNtimesCache
     (long count,
      int cache[powi_cache_size],
@@ -1735,31 +1743,37 @@ static void PlanNtimesCache
 
     if(count < powi_cache_size)
     {
-        /*fprintf(stderr, "%ld will be needed %d times more\n", count, need_count);*/
+        fprintf(stderr, "%ld will be needed %d times more\n", count, need_count);
         cache_needed[count] += need_count;
         if(cache[count]) return;
     }
-
+    
+    long half = 1;
     if(count < POWI_TABLE_SIZE)
     {
-        long half = powi_table[count];
-        bool by_itself = half*2 == count;
-
-        PlanNtimesCache(half,       cache, cache_needed, by_itself ? 2 : 1);
-        if(!by_itself)
-            PlanNtimesCache(count-half, cache, cache_needed);
+        half = powi_table[count];
     }
     else if(count & 1)
     {
-        int digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
-        bool by_itself = digit*2 == count;
-
-        PlanNtimesCache(digit, cache, cache_needed, by_itself ? 2 : 1);
-
-        if(!by_itself) PlanNtimesCache(count - digit, cache, cache_needed);
+        half = count & ((1 << POWI_WINDOW_SIZE) - 1);
     }
     else
-        PlanNtimesCache(count / 2, cache, cache_needed, 2);
+    {
+        half = count / 2;
+    }
+    
+    long otherhalf = count-half;
+    if(half > otherhalf) std::swap(half, otherhalf);
+    
+    if(half == otherhalf)
+    {
+        PlanNtimesCache(half,      cache, cache_needed, 2);
+    }
+    else
+    {
+        PlanNtimesCache(half,      cache, cache_needed);
+        PlanNtimesCache(otherhalf, cache, cache_needed);
+    }
 
     if(count < powi_cache_size)
         cache[count] = 1; // This value has been generated
@@ -1811,31 +1825,31 @@ void CodeTree::AssembleSequence(
 
         size_t stacktop_desired = stacktop_cur;
 
-        // Cache all the required components
+        /*// Cache all the required components
         for(int n=2; n<powi_cache_size; ++n)
-            if(cache_needed[n] > 0)
+            if(cache_needed[n] > 1)
             {
-                /*fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]);*/
+                fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]);
                 Subdivide_result res = AssembleSequence_Subdivide(
                     n, cache, cache_needed, cumulation_opcode,
                     byteCode, immed, stacktop_cur, stacktop_max);
-                /*fprintf(stderr, "Cache[%d] = %u,%d\n",
-                    n, (unsigned)res.first, res.second);*/
-                cache[n] = res.first;
-            }
+                fprintf(stderr, "Cache[%d] = %u,%d\n",
+                    n, (unsigned)res.stackpos, res.cache_val);
+                cache[n] = res.stackpos;
+            }*/
 
-        /*fprintf(stderr, "Calculating result for %ld...\n", count);*/
+        fprintf(stderr, "Calculating result for %ld...\n", count);
         Subdivide_result res = AssembleSequence_Subdivide(
             count, cache, cache_needed, cumulation_opcode,
             byteCode,immed, stacktop_cur, stacktop_max);
 
         size_t n_excess = stacktop_cur - stacktop_desired;
-        if(n_excess > 0 || res.first != stacktop_desired-1)
+        if(n_excess > 0 || res.stackpos != stacktop_desired-1)
         {
             // Remove the cache values
             AddCmd(cPopNMov);
             AddCmd(stacktop_desired-1);
-            AddCmd(res.first);
+            AddCmd(res.stackpos);
             SimuPop(n_excess);
         }
     }
@@ -1855,121 +1869,97 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
         if(cache[count] >= 0)
         {
             // found from the cache
-            /*fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
-                count, (unsigned)cache[count], cache_needed[count]);*/
-            return Subdivide_result(cache[count], --cache_needed[count]);
+            fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
+                count, (unsigned)cache[count], cache_needed[count]);
+            return Subdivide_result(cache[count], count);
         }
     }
     
+    long half = 1;
+    
     if(count < POWI_TABLE_SIZE)
     {
-        long half = powi_table[count];
+        half = powi_table[count];
+    }
+    else if(count & 1)
+    {
+        half = count & ((1 << POWI_WINDOW_SIZE) - 1);
+    }
+    else
+    {
+        half = count / 2;
+    }
 
-        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half);*/
+    fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half);
 
+    if(half*2 == count)
+    {
         Subdivide_result half_res = AssembleSequence_Subdivide(
             half, cache, cache_needed, cumulation_opcode,
             byteCode,immed, stacktop_cur,stacktop_max);
 
-        if(half*2 == count)
-        {
-            // self-cumulate the subdivide result
-            return Subdivide_MakeResult(
-                half_res,
-                half_res,
-                cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-        }
-        else
-        {
-            Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
-                count-half, cache, cache_needed, cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-
-            return Subdivide_MakeResult(
-                half_res,
-                otherhalf_res,
-                cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-        }
-    }
-    else if(count & 1)
-    {
-        long digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
-
-        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, digit, count-digit);*/
-
-        Subdivide_result digit_res = AssembleSequence_Subdivide(
-            digit, cache, cache_needed, cumulation_opcode,
+        // self-cumulate the subdivide result
+        Subdivide_result res = Subdivide_MakeResult(half_res, half_res, cache_needed,
+            cumulation_opcode,
             byteCode,immed, stacktop_cur,stacktop_max);
-
-        if(digit*2 == count)
-        {
-            return Subdivide_MakeResult(
-                digit_res,
-                digit_res,
-                cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-        }
-        else
-        {
-            Subdivide_result other_res = AssembleSequence_Subdivide(
-                count-digit, cache, cache_needed, cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-
-            return Subdivide_MakeResult(
-                digit_res,
-                other_res,
-                cumulation_opcode,
-                byteCode,immed, stacktop_cur,stacktop_max);
-        }
+        if(res.cache_val < 0 && count < powi_cache_size)
+            { cache[count] = res.stackpos; res.cache_val = cache_needed[count]-1; }
+        return res;
     }
     else
     {
-        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, count/2, count/2);*/
-
+        long otherhalf = count-half;
+        if(half > otherhalf) std::swap(half,otherhalf);
+        
         Subdivide_result half_res = AssembleSequence_Subdivide(
-            count/2, cache, cache_needed, cumulation_opcode,
+            half, cache, cache_needed, cumulation_opcode,
             byteCode,immed, stacktop_cur,stacktop_max);
 
-        // self-cumulate the subdivide result
-        return Subdivide_MakeResult(
-            half_res,
-            half_res,
+        Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
+            otherhalf, cache, cache_needed, cumulation_opcode,
+            byteCode,immed, stacktop_cur,stacktop_max);
+
+        Subdivide_result res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
             cumulation_opcode,
             byteCode,immed, stacktop_cur,stacktop_max);
+
+        if(res.cache_val < 0 && count < powi_cache_size)
+            { cache[count] = res.stackpos; res.cache_val = cache_needed[count]-1; }
+        return res;
     }
 }
 
 CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     const Subdivide_result& a,
     const Subdivide_result& b,
+    int cache_needed[powi_cache_size],
     unsigned cumulation_opcode,
     vector<unsigned> &byteCode,
     vector<double>   &immed,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
 {
-    /*fprintf(stderr, "== making result for %u:%d and %u:%d, stacktop=%u\n",
-        (unsigned)a.first, a.second,
-        (unsigned)b.first, b.second,
-        (unsigned)stacktop_cur);*/
+    fprintf(stderr, "== making result for %u:%d and %u:%d, stacktop=%u\n",
+        (unsigned)a.stackpos, a.cache_val,
+        (unsigned)b.stackpos, b.cache_val,
+        (unsigned)stacktop_cur);
 
     // Figure out whether we can trample a and b
-    int a_needed = a.second;
-    int b_needed = b.second;
-    // If they're the same slot, tax them twice.
-    if(a.first == b.first) { a_needed -= 1; b_needed -= 1; }
+    int a_needed = 0;
+    int b_needed = 0;
+    
+    if(a.cache_val >= 0) a_needed = --cache_needed[a.cache_val];
+    if(b.cache_val >= 0) b_needed = --cache_needed[b.cache_val];
 
-    size_t apos = a.first, bpos = b.first;
+    size_t apos = a.stackpos, bpos = b.stackpos;
 
     #define DUP_BOTH() do { \
         if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; } \
-        /*fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos);*/ \
+        fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos); \
         SimuDupPushFrom(apos); \
         SimuDupPushFrom(apos==bpos ? stacktop_cur-1 : bpos); } while(0)
     #define DUP_ONE(p) do { \
-        /*fprintf(stderr, "-> dup(%u) op\n", (unsigned)p);*/ \
+        fprintf(stderr, "-> dup(%u) op\n", (unsigned)p); \
         SimuDupPushFrom(p); \
     } while(0)
 
@@ -1988,16 +1978,9 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         // Input:  x A B x x
         // Temp:   x A B x x B A
         // Output: x A B x x R
-
-        // Add them together.
-        AddCmd(cumulation_opcode);
-        SimuPop(1);
-        // The return value will not need to be preserved.
-        return Subdivide_result(stacktop_cur-1, 0);
     }
     // So, either one could be trampled over
-
-    if(a_needed > 0)
+    else if(a_needed > 0)
     {
         // A must be preserved, but B can be trampled over
 
@@ -2027,10 +2010,6 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
             DUP_BOTH();    // dup both
         else
             DUP_ONE(apos); // just dup A
-
-        AddCmd(cumulation_opcode);
-        SimuPop(1);
-        return Subdivide_result(stacktop_cur-1, 0);
     }
     else if(b_needed > 0)
     {
@@ -2040,10 +2019,6 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
             DUP_BOTH();
         else
             DUP_ONE(bpos);
-
-        AddCmd(cumulation_opcode);
-        SimuPop(1);
-        return Subdivide_result(stacktop_cur-1, 0);
     }
     else
     {
@@ -2074,20 +2049,22 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         if(apos == bpos && apos == stacktop_cur-1)
             DUP_ONE(apos); // scenario 6
         else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2)
-            /*fprintf(stderr, "-> op\n")*/; // scenario 3
+            fprintf(stderr, "-> op\n"); // scenario 3
         else if(apos == stacktop_cur-2 && bpos == stacktop_cur-1)
-            /*fprintf(stderr, "-> op\n")*/; // scenario 4
+            fprintf(stderr, "-> op\n"); // scenario 4
         else if(apos == stacktop_cur-1)
             DUP_ONE(bpos); // scenario 1
         else if(bpos == stacktop_cur-1)
             DUP_ONE(apos); // scenario 2
         else
             DUP_BOTH(); // scenario 5
-
-        AddCmd(cumulation_opcode);
-        SimuPop(1);
-        return Subdivide_result(stacktop_cur-1, 0);
     }
+    // Add them together.
+    AddCmd(cumulation_opcode);
+    SimuPop(1);
+    // The return value will not need to be preserved.
+    fprintf(stderr, "== producing %u:%d\n", (unsigned)(stacktop_cur-1), 0);
+    return Subdivide_result(stacktop_cur-1);
 }
 
 void CodeTree::Optimize()

@@ -8,7 +8,7 @@
 #include <cmath>
 
 //#define FUNC0 x*x+y*y
-#define FUNC0 pow(x,65535)
+#define FUNC0 pow(x,12)
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10)-(4*pow(y,3)+2*y*y-10*y+2))*10
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
 #define FUNC3 sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)
@@ -86,11 +86,11 @@ int main()
                   << std::endl;
         */
 
-        const unsigned ParseLoops = 2000000;
-        const unsigned EvalLoops = 10000000;
-        const unsigned JitLoops = 50000000;
-        const unsigned OptimizationLoops = 100000;
-        const unsigned FuncLoops = 100000000;
+        const unsigned ParseLoops = 1;//2000000;
+        const unsigned EvalLoops = 1;//10000000;
+        const unsigned JitLoops = 1;//50000000;
+        const unsigned OptimizationLoops = 1;//100000;
+        const unsigned FuncLoops = 1;//100000000;
 
 
         // Measure parsing speed
