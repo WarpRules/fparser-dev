@@ -1738,7 +1738,10 @@ static void PlanNtimesCache
         /*fprintf(stderr, "%ld will be needed %d times more\n", count, need_count);*/
         cache_needed[count] += need_count;
         if(cache[count]) return;
+    }
 
+    if(count < POWI_TABLE_SIZE)
+    {
         long half = powi_table[count];
         bool by_itself = half*2 == count;
 
@@ -1758,7 +1761,8 @@ static void PlanNtimesCache
     else
         PlanNtimesCache(count / 2, cache, cache_needed, 2);
 
-    cache[count] = 1; // This value has been generated
+    if(count < powi_cache_size)
+        cache[count] = 1; // This value has been generated
 }
 
 void CodeTree::AssembleSequence(
@@ -1855,7 +1859,10 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
                 count, (unsigned)cache[count], cache_needed[count]);*/
             return Subdivide_result(cache[count], --cache_needed[count]);
         }
-
+    }
+    
+    if(count < POWI_TABLE_SIZE)
+    {
         long half = powi_table[count];
 
         /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half);*/
