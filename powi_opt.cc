@@ -26,7 +26,7 @@ int main()
             
             ct.AssembleSequence(st,
                 exponent,
-                1,0,0,
+                1,cMul,cMul,
                 byteCode,immed,stacktop_cur,stacktop_max);
         
             double res = 0;
