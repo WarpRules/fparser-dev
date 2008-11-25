@@ -25,7 +25,9 @@ unsigned generateOpcodesForExp(unsigned n, bool print)
     return retval;
 }
 
-unsigned getParserOpcodesAmount(const std::string& func)
+struct Counts { unsigned opcodes, muls; };
+
+Counts getParserOpcodesAmount(const std::string& func)
 {
     FunctionParser fp;
     std::string line;
@@ -35,17 +37,23 @@ unsigned getParserOpcodesAmount(const std::string& func)
     std::ostringstream buf;
     fp.PrintByteCode(buf);
     std::istringstream lines(buf.str());
-    unsigned linesAmount = 0;
-    while(std::getline(lines, line).good()) ++linesAmount;
-    return linesAmount - 1;
+
+    Counts counts = { 0, 0 };
+    while(std::getline(lines, line).good())
+    {
+        ++counts.opcodes;
+        if(line.substr(line.size()-3) == "mul") ++counts.muls;
+    }
+    --counts.opcodes;
+    return counts;
 }
 
 int main()
 {
     std::printf
         ("Number of opcodes generated:\n"
-         "Func Naive Bisq    Func Naive Bisq    Func Naive Bisq    Func Naive Bisq\n"
-         "---- ----- ----    ---- ----- ----    ---- ----- ----    ---- ----- ----\n");
+         "Func      Naive    Bisq   Func       Naive    Bisq   Func       Naive    Bisq   Func       Naive    Bisq\n"
+         "----      -----    ----   ----       -----    ----   ----       -----    ----   ----       -----    ----\n");
 
     for(unsigned i = 0; i < 100; ++i)
     {
@@ -61,10 +69,11 @@ int main()
             const unsigned naiveOpcodes =
                 exponent < 2 ? 1 : generateOpcodesForExp(exponent, false)+1;
 
-            const unsigned bisqOpcodes = getParserOpcodesAmount(func);
+            const Counts bisqOpcodes = getParserOpcodesAmount(func);
 
-            std::printf("%s: %4u %4u   ", func.c_str(),
-                        naiveOpcodes, bisqOpcodes);
+            std::printf("%s: %4u (%2u) %2u (%2u)   ", func.c_str(),
+                        naiveOpcodes, naiveOpcodes/2,
+                        bisqOpcodes.opcodes, bisqOpcodes.muls);
         }
         std::printf("\n");
     }
@@ -77,6 +86,8 @@ int main()
         std::cout << ": " << amount << "\n";
     }
     return 0;
+
+
 
 
     std::string function;
