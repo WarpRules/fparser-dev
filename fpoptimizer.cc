@@ -1333,6 +1333,7 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         case cRad: str << "cRad"; break;
         case cDup: str << "cDup"; break;
         case cInv: str << "cInv"; break;
+        case cFetch: str << "cFetch"; break;
         case VarBegin: str << "VarBegin"; break;
     }
     str << '(';

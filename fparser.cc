@@ -1213,6 +1213,13 @@ double FunctionParser::Eval(const double* Vars)
               if(Stack[SP] == 0.0) { evalErrorType=1; return 0; }
               Stack[SP] = 1.0/Stack[SP];
               break;
+
+          case   cFetch:
+              {
+                  unsigned stackOffs = ByteCode[++IP];
+                  Stack[SP+1] = Stack[stackOffs]; ++SP;
+                  break;
+              }   
 #endif
 
           case cNop: break;
@@ -1334,6 +1341,11 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cVar: n = "(var)"; break;
                     case cDup: n = "dup"; break;
                     case cInv: n = "inv"; break;
+#endif
+#ifdef FP_SUPPORT_OPTIMIZER
+                    case cFetch:
+                        dest << "cFetch(" << data->ByteCode[++IP] << ")";
+                        break;
 #endif
 
                     case cNop: n = "nop"; break;
