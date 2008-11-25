@@ -48,6 +48,45 @@ using namespace std;
 #include <ostream>
 #endif
 
+#define POWI_TABLE_SIZE 256
+#define POWI_WINDOW_SIZE 3
+static const unsigned char powi_table[POWI_TABLE_SIZE] =
+{
+      0,   1,   1,   2,   2,   3,   3,   4,  /*   0 -   7 */
+      4,   6,   5,   6,   6,  10,   7,   9,  /*   8 -  15 */
+      8,  16,   9,  16,  10,  12,  11,  13,  /*  16 -  23 */
+     12,  17,  13,  18,  14,  24,  15,  26,  /*  24 -  31 */  
+     16,  17,  17,  19,  18,  33,  19,  26,  /*  32 -  39 */
+     20,  25,  21,  40,  22,  27,  23,  44,  /*  40 -  47 */  
+     24,  32,  25,  34,  26,  29,  27,  44,  /*  48 -  55 */
+     28,  31,  29,  34,  30,  60,  31,  36,  /*  56 -  63 */   
+     32,  64,  33,  34,  34,  46,  35,  37,  /*  64 -  71 */
+     36,  65,  37,  50,  38,  48,  39,  69,  /*  72 -  79 */   
+     40,  49,  41,  43,  42,  51,  43,  58,  /*  80 -  87 */
+     44,  64,  45,  47,  46,  59,  47,  76,  /*  88 -  95 */   
+     48,  65,  49,  66,  50,  67,  51,  66,  /*  96 - 103 */
+     52,  70,  53,  74,  54, 104,  55,  74,  /* 104 - 111 */  
+     56,  64,  57,  69,  58,  78,  59,  68,  /* 112 - 119 */
+     60,  61,  61,  80,  62,  75,  63,  68,  /* 120 - 127 */  
+     64,  65,  65, 128,  66, 129,  67,  90,  /* 128 - 135 */
+     68,  73,  69, 131,  70,  94,  71,  88,  /* 136 - 143 */  
+     72, 128,  73,  98,  74, 132,  75, 121,  /* 144 - 151 */
+     76, 102,  77, 124,  78, 132,  79, 106,  /* 152 - 159 */
+     80,  97,  81, 160,  82,  99,  83, 134,  /* 160 - 167 */ 
+     84,  86,  85,  95,  86, 160,  87, 100,  /* 168 - 175 */
+     88, 113,  89,  98,  90, 107,  91, 122,  /* 176 - 183 */ 
+     92, 111,  93, 102,  94, 126,  95, 150,  /* 184 - 191 */
+     96, 128,  97, 130,  98, 133,  99, 195,  /* 192 - 199 */ 
+    100, 128, 101, 123, 102, 164, 103, 138,  /* 200 - 207 */
+    104, 145, 105, 146, 106, 109, 107, 149,  /* 208 - 215 */
+    108, 200, 109, 146, 110, 170, 111, 157,  /* 216 - 223 */
+    112, 128, 113, 130, 114, 182, 115, 132,  /* 224 - 231 */
+    116, 200, 117, 132, 118, 158, 119, 206,  /* 232 - 239 */ 
+    120, 240, 121, 162, 122, 147, 123, 152,  /* 240 - 247 */
+    124, 166, 125, 214, 126, 138, 127, 153   /* 248 - 255 */
+}; /* copied from gcc */
+static const int powi_cache_size = 256;
+
 namespace {
 inline double Min(double d1, double d2)
 {
@@ -146,7 +185,7 @@ public:
     bool IsFunc() const  { return op == cFCall || op == cPCall; }
     bool IsImmed() const { return op == cImmed; }
     bool IsVar() const   { return op == cVar; }
-    
+
     bool IsLongIntegerImmed() const
     {
         // Returns true if the immed can be converted losslessly into (long).
@@ -290,10 +329,12 @@ public:
     void SetVar(unsigned v) { data->SetVar(v); }
     // get
     double GetImmed() const { return data->GetImmed(); }
+    long GetLongIntegerImmed() const { return data->GetLongIntegerImmed(); }
     unsigned GetVar() const { return data->GetVar(); }
     unsigned GetOp() const  { return data->GetOp(); }
     // test
     bool IsImmed() const { return data->IsImmed(); }
+    bool IsLongIntegerImmed() const { return data->IsLongIntegerImmed(); }
     bool IsVar()   const { return data->IsVar(); }
     // act
     void AddParam(const SubTree &p) { data->AddParam(p); }
@@ -470,7 +511,7 @@ private:
             // If any of the elements is !cAdd of cMul
             // and has a numeric constant, negate
             // the constant and negate sign.
-            
+
             for(pit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 SubTree &pa = *a;
@@ -480,7 +521,7 @@ private:
                     // Before doing the check, ensure that
                     // we are not changing a x*1 into x*-1.
                     pa->OptimizeConstantMath1();
-                    
+
                     // OptimizeConstantMath1() may have changed
                     // the type of the expression (but not its sign),
                     // so verify that we're still talking about a cMul group.
@@ -567,7 +608,7 @@ private:
                 FinishConst(cl, false); // No "default" value
                 break;
             }
-            
+
             #define ConstantUnaryFun(token, fun) \
                 case token: { const SubTree &p0 = getp0(); \
                     if(p0->IsImmed()) ReplaceWithConst(fun(p0->GetImmed())); \
@@ -688,7 +729,7 @@ private:
         //   x+x+x+x -> x*4
         //   x*x     -> x^2
         //   x/z/z   ->
-        //   
+        //
         //   min(x,x,y) -> min(x,y)
         //   max(x,x,y) -> max(x,y)
         //   max(x,x)   -> max(x)
@@ -699,7 +740,7 @@ private:
         bool didchanges = false;
         bool FactorIsImportant = true;
         unsigned ReplacementOpcode = GetOp();
-        
+
         switch(GetOp())
         {
         case cAdd:
@@ -744,7 +785,7 @@ private:
                         arvo.Negate();
                         factor = -factor;
                     }
-                    
+
                     if(FactorIsImportant)
                     {
                         CodeTree tmp;
@@ -771,7 +812,7 @@ private:
                 }
             }
         }
-        
+
         if(didchanges)
         {
             // As a result, there might be need for this:
@@ -841,7 +882,7 @@ private:
 
                 p->OptimizeAddMulFlat();
                 p->OptimizeExponents();
-                
+
                 p.CheckConstInv();
 
                 list<SubTree> adds;
@@ -922,7 +963,7 @@ private:
             else if(p1->GetOp() == cMul)
             {
                 //bool didsomething = true;
-                
+
                 pit poslogpos; bool foundposlog = false;
                 pit neglogpos; bool foundneglog = false;
 
@@ -1189,9 +1230,24 @@ public:
                   vector<double>   &immed,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
-    void AssembleSequence_Subdivide(
+
+    typedef std::pair<size_t, // Stack offset where it is found
+                      int     // How many times will it still be needed?
+                     > Subdivide_result;
+
+    Subdivide_result AssembleSequence_Subdivide(
                   long count,
-                  int cache[256], int cache_needed[256], int& n_cached,
+                  int cache[powi_cache_size], int cache_needed[powi_cache_size],
+                  unsigned cumulation_opcode,
+                  vector<unsigned> &byteCode,
+                  vector<double>   &immed,
+                  size_t& stacktop_cur,
+                  size_t& stacktop_max) const;
+
+    Subdivide_result Subdivide_MakeResult(
+                  const Subdivide_result& a,
+                  const Subdivide_result& b,
+
                   unsigned cumulation_opcode,
                   vector<unsigned> &byteCode,
                   vector<double>   &immed,
@@ -1245,7 +1301,7 @@ public:
         if(GetOp() == cMul)
         {
             /* NOTE: Not gcov'd yet */
-            
+
             CodeTree *found_log = 0;
 
             ConstList cl = BuildConstList();
@@ -1298,7 +1354,7 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         case cVar:   str << "Var" << data.GetVar(); return str;
         case cFCall: str << "FCall(Func" << data.GetFuncNo() << ")"; break;
         case cPCall: str << "PCall(Func" << data.GetFuncNo() << ")"; break;
-        
+
         case cAbs: str << "cAbs"; break;
         case cAcos: str << "cAcos"; break;
 #ifndef FP_NO_ASINH
@@ -1358,11 +1414,12 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         case cRad: str << "cRad"; break;
         case cDup: str << "cDup"; break;
         case cInv: str << "cInv"; break;
+        case cPop: str << "cPop"; break;
         case cFetch: str << "cFetch"; break;
         case VarBegin: str << "VarBegin"; break;
     }
     str << '(';
-    
+
     bool first = true;
     for(paramlist::const_iterator
         i = data.args.begin(); i != data.args.end(); ++i)
@@ -1373,7 +1430,7 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         str << *sub;
     }
     str << ')';
-    
+
     return str;
 }
 #endif
@@ -1397,7 +1454,7 @@ CodeTree::ConstList CodeTree::BuildConstList(bool has_voidvalue)
     result.voidvalue = GetOp()==cMul ? 1.0 : 0.0;
 
     bool first = true;
-    
+
     list<pit> &cp = result.cp;
     for(pit b, a=GetBegin(); a!=GetEnd(); a=b)
     {
@@ -1474,6 +1531,11 @@ void CodeTree::Assemble
         if(stacktop_cur > stacktop_max) stacktop_max = stacktop_cur; \
         stacktop_cur -= (n); \
     } while(0)
+    #define SimuDupPushFrom(n) do { \
+        if((n) == stacktop_cur-1) AddCmd(cDup); \
+        else { AddCmd(cFetch); AddCmd((n)); } \
+        SimuPush(1); \
+    } while(0)
 
     if(IsVar())
     {
@@ -1496,14 +1558,13 @@ void CodeTree::Assemble
         case cMax:
         {
             unsigned opcount = 0;
-            
+
             /* TODO: If the cMul contains an immed,
                      refrain from processing the immed,
                      and use AssembleSequence() to
                      generate a sequence of cDup & cFetch & cAdd
              */
-                     
-                     
+
             for(pcit a=GetBegin(); a!=GetEnd(); ++a)
             {
                 const SubTree &pa = *a;
@@ -1567,7 +1628,7 @@ void CodeTree::Assemble
         {
             const SubTree& p0 = getp0();
             const SubTree& p1 = getp1();
-            
+
             if(p1->IsLongIntegerImmed())
             {
                 /* Optimize integer exponents */
@@ -1584,7 +1645,7 @@ void CodeTree::Assemble
                 p0->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
                 p1->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
                 AddCmd(GetOp());
-                SimuPop(stacktop_cur - was_stacktop - 1);
+                SimuPop(1);
             }
             break;
         }
@@ -1615,7 +1676,7 @@ void CodeTree::Assemble
 
             byteCode[ofs+1] = byteCode.size()-1;
             byteCode[ofs+2] = immed.size();
-            
+
             SimuPush(1);
 
             break;
@@ -1664,66 +1725,40 @@ void CodeTree::Assemble
     }
 }
 
-#define POWI_TABLE_SIZE 256
-#define POWI_WINDOW_SIZE 3 
-static const unsigned char powi_table[POWI_TABLE_SIZE] =
+static void PlanNtimesCache
+    (long count,
+     int cache[powi_cache_size],
+     int cache_needed[powi_cache_size],
+     int need_count = 1)
 {
-      0,   1,   1,   2,   2,   3,   3,   4,  /*   0 -   7 */
-      4,   6,   5,   6,   6,  10,   7,   9,  /*   8 -  15 */
-      8,  16,   9,  16,  10,  12,  11,  13,  /*  16 -  23 */ 
-     12,  17,  13,  18,  14,  24,  15,  26,  /*  24 -  31 */  
-     16,  17,  17,  19,  18,  33,  19,  26,  /*  32 -  39 */  
-     20,  25,  21,  40,  22,  27,  23,  44,  /*  40 -  47 */  
-     24,  32,  25,  34,  26,  29,  27,  44,  /*  48 -  55 */   
-     28,  31,  29,  34,  30,  60,  31,  36,  /*  56 -  63 */   
-     32,  64,  33,  34,  34,  46,  35,  37,  /*  64 -  71 */   
-     36,  65,  37,  50,  38,  48,  39,  69,  /*  72 -  79 */   
-     40,  49,  41,  43,  42,  51,  43,  58,  /*  80 -  87 */   
-     44,  64,  45,  47,  46,  59,  47,  76,  /*  88 -  95 */   
-     48,  65,  49,  66,  50,  67,  51,  66,  /*  96 - 103 */  
-     52,  70,  53,  74,  54, 104,  55,  74,  /* 104 - 111 */  
-     56,  64,  57,  69,  58,  78,  59,  68,  /* 112 - 119 */  
-     60,  61,  61,  80,  62,  75,  63,  68,  /* 120 - 127 */  
-     64,  65,  65, 128,  66, 129,  67,  90,  /* 128 - 135 */  
-     68,  73,  69, 131,  70,  94,  71,  88,  /* 136 - 143 */  
-     72, 128,  73,  98,  74, 132,  75, 121,  /* 144 - 151 */
-     76, 102,  77, 124,  78, 132,  79, 106,  /* 152 - 159 */
-     80,  97,  81, 160,  82,  99,  83, 134,  /* 160 - 167 */ 
-     84,  86,  85,  95,  86, 160,  87, 100,  /* 168 - 175 */ 
-     88, 113,  89,  98,  90, 107,  91, 122,  /* 176 - 183 */ 
-     92, 111,  93, 102,  94, 126,  95, 150,  /* 184 - 191 */ 
-     96, 128,  97, 130,  98, 133,  99, 195,  /* 192 - 199 */ 
-    100, 128, 101, 123, 102, 164, 103, 138,  /* 200 - 207 */ 
-    104, 145, 105, 146, 106, 109, 107, 149,  /* 208 - 215 */
-    108, 200, 109, 146, 110, 170, 111, 157,  /* 216 - 223 */
-    112, 128, 113, 130, 114, 182, 115, 132,  /* 224 - 231 */
-    116, 200, 117, 132, 118, 158, 119, 206,  /* 232 - 239 */ 
-    120, 240, 121, 162, 122, 147, 123, 152,  /* 240 - 247 */ 
-    124, 166, 125, 214, 126, 138, 127, 153  /* 248 - 255 */  
-}; /* copied from gcc */
+    if(count < 1) return;
 
-static void PlanNtimesCache(long count, int cache[256], int cache_needed[256])
-{
-    if(count <= 1) return;
-    if(count < 256)
+    if(count < powi_cache_size)
     {
-        ++cache_needed[count];
+        /*fprintf(stderr, "%ld will be needed %d times more\n", count, need_count);*/
+        cache_needed[count] += need_count;
         if(cache[count]) return;
-        
+
         long half = powi_table[count];
-        PlanNtimesCache(half,       cache, cache_needed);
-        if(half*2 != count) PlanNtimesCache(count-half, cache, cache_needed);
+        bool by_itself = half*2 == count;
+
+        PlanNtimesCache(half,       cache, cache_needed, by_itself ? 2 : 1);
+        if(!by_itself)
+            PlanNtimesCache(count-half, cache, cache_needed);
     }
     else if(count & 1)
     {
         int digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
-        PlanNtimesCache(digit, cache, cache_needed);
-        if(digit*2 != count) PlanNtimesCache(count - digit, cache, cache_needed);
+        bool by_itself = digit*2 == count;
+
+        PlanNtimesCache(digit, cache, cache_needed, by_itself ? 2 : 1);
+
+        if(!by_itself) PlanNtimesCache(count - digit, cache, cache_needed);
     }
     else
-        PlanNtimesCache(count / 2, cache, cache_needed);
-   
-    cache[count] = 1;
+        PlanNtimesCache(count / 2, cache, cache_needed, 2);
+
+    cache[count] = 1; // This value has been generated
 }
 
 void CodeTree::AssembleSequence(
@@ -1743,91 +1778,308 @@ void CodeTree::AssembleSequence(
     }
     else
     {
-        p0->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+        tree->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
         if(count < 0)
         {
-            AddCmd(if_neggative_opcode);
+            AddCmd(if_negative_opcode);
             count = -count;
         }
-        
-        int cache[256], cache_needed[256];
-        for(int n=0; n<256; ++n) { cache[n] = 0; cache_needed[n] = 0; }
+
+        /* To prevent calculating the same factors over and over again,
+         * we use a cache. */
+        int cache[powi_cache_size], cache_needed[powi_cache_size];
+
+        /* Assume we have no factors in the cache */
+        for(int n=0; n<powi_cache_size; ++n) { cache[n] = 0; cache_needed[n] = 0; }
+
+
+        /* Decide which factors we would need multiple times.
+         * Output:
+         *   cache[]        = these factors were generated
+         *   cache_needed[] = number of times these factors were desired
+         */
+        cache[1] = 1; // We have this value already.
         PlanNtimesCache(count, cache, cache_needed);
-        for(int n=0; n<256; ++n) { cache_needed[n] = cache[n]; cache[n] = -1; }
-        
-        AssembleSequence_Subdivide(
-            count,
-            cache, cache_needed, n_cached,
-            cumulation_opcode,
+
+        cache[1] = stacktop_cur-1;
+        for(int n=2; n<powi_cache_size; ++n)
+            cache[n] = -1; /* Stack location for each component */
+
+        size_t stacktop_desired = stacktop_cur;
+
+        // Cache all the required components
+        for(int n=2; n<powi_cache_size; ++n)
+            if(cache_needed[n] > 0)
+            {
+                /*fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]);*/
+                Subdivide_result res = AssembleSequence_Subdivide(
+                    n, cache, cache_needed, cumulation_opcode,
+                    byteCode, immed, stacktop_cur, stacktop_max);
+                /*fprintf(stderr, "Cache[%d] = %u,%d\n",
+                    n, (unsigned)res.first, res.second);*/
+                cache[n] = res.first;
+            }
+
+        /*fprintf(stderr, "Calculating result for %ld...\n", count);*/
+        Subdivide_result res = AssembleSequence_Subdivide(
+            count, cache, cache_needed, cumulation_opcode,
             byteCode,immed, stacktop_cur, stacktop_max);
+
+        size_t n_excess = stacktop_cur - stacktop_desired;
+        if(n_excess > 0 || res.first != stacktop_desired-1)
+        {
+            // Remove the cache values
+            AddCmd(cPop);
+            AddCmd(stacktop_desired-1);
+            AddCmd(res.first);
+            SimuPop(n_excess);
+        }
     }
 }
 
-void CodeTree::AssembleSequence_Subdivide(
+CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     long count,
-    int cache[256], int cache_needed[256], int& n_cached,
+    int cache[powi_cache_size], int cache_needed[powi_cache_size],
     unsigned cumulation_opcode,
     vector<unsigned> &byteCode,
     vector<double>   &immed,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
 {
-    void SynthNtimes(
-        long count,
-        int cache[256], int cache_needed[256], int& n_cached,
-        void (CodeSynth::*Combine)(bool,bool))
+    if(count < powi_cache_size)
     {
-        { std::stringstream tmp; tmp << "Synth " << count << ", ncached=" << n_cached;
-        CalcStack.Dump(tmp.str()); }
-        
-        /* FIXME: This seems to still be buggy */
-    
-        if(count < 256)
+        if(cache[count] >= 0)
         {
-            if(cache[count] >= 0)
-            {
-                bool dontmind = count > 1 && --cache_needed[count] <= 1;
-                GenDup(cache[count], dontmind ? 2 : 0);
-                //if(USE_SSE) RequireXMM_any(0, true); else RequireST_any(0, true);
-                
-                CalcStack.Dump("Found from cache");
-                return;
-            }
-            long half = powi_table[count];
-            
-            SynthNtimes(half,       cache,cache_needed,n_cached, Combine);
-            if(half*2 == count)
-                (this->*Combine)(true, true);
-            else {
-                SynthNtimes(count-half, cache,cache_needed,n_cached, Combine);
-                (this->*Combine)(false, true); }
+            // found from the cache
+            /*fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
+                count, (unsigned)cache[count], cache_needed[count]);*/
+            return Subdivide_result(cache[count], --cache_needed[count]);
         }
-        else if(count & 1)
+
+        long half = powi_table[count];
+
+        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half);*/
+
+        Subdivide_result half_res = AssembleSequence_Subdivide(
+            half, cache, cache_needed, cumulation_opcode,
+            byteCode,immed, stacktop_cur,stacktop_max);
+
+        if(half*2 == count)
         {
-            int digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
-            SynthNtimes(digit,         cache,cache_needed,n_cached, Combine);
-            if(digit*2 == count)
-                (this->*Combine)(true, true);
-            else {
-                SynthNtimes(count - digit, cache,cache_needed,n_cached, Combine);
-                (this->*Combine)(false, true); }
+            // self-cumulate the subdivide result
+            return Subdivide_MakeResult(
+                half_res,
+                half_res,
+                cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
         }
         else
         {
-            SynthNtimes(count/2,       cache,cache_needed,n_cached, Combine);
-            (this->*Combine)(true, true);
-        }
-        
-        { std::stringstream tmp; tmp << "Synth " << count << " done";
-        CalcStack.Dump(tmp.str()); }
+            Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
+                count-half, cache, cache_needed, cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
 
-        if(cache_needed[count] > 0)
-        {
-            GenDup();
-            CalcStack.MoveInsertBottom(1, n_cached);
-            cache[count] = n_cached++;
-            CalcStack.Dump("->Cached");
+            return Subdivide_MakeResult(
+                half_res,
+                otherhalf_res,
+                cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
         }
+    }
+    else if(count & 1)
+    {
+        long digit = count & ((1 << POWI_WINDOW_SIZE) - 1);
+
+        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, digit, count-digit);*/
+
+        Subdivide_result digit_res = AssembleSequence_Subdivide(
+            digit, cache, cache_needed, cumulation_opcode,
+            byteCode,immed, stacktop_cur,stacktop_max);
+
+        if(digit*2 == count)
+        {
+            return Subdivide_MakeResult(
+                digit_res,
+                digit_res,
+                cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
+        }
+        else
+        {
+            Subdivide_result other_res = AssembleSequence_Subdivide(
+                count-digit, cache, cache_needed, cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
+
+            return Subdivide_MakeResult(
+                digit_res,
+                other_res,
+                cumulation_opcode,
+                byteCode,immed, stacktop_cur,stacktop_max);
+        }
+    }
+    else
+    {
+        /*fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, count/2, count/2);*/
+
+        Subdivide_result half_res = AssembleSequence_Subdivide(
+            count/2, cache, cache_needed, cumulation_opcode,
+            byteCode,immed, stacktop_cur,stacktop_max);
+
+        // self-cumulate the subdivide result
+        return Subdivide_MakeResult(
+            half_res,
+            half_res,
+            cumulation_opcode,
+            byteCode,immed, stacktop_cur,stacktop_max);
+    }
+}
+
+CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
+    const Subdivide_result& a,
+    const Subdivide_result& b,
+    unsigned cumulation_opcode,
+    vector<unsigned> &byteCode,
+    vector<double>   &immed,
+    size_t& stacktop_cur,
+    size_t& stacktop_max) const
+{
+    /*fprintf(stderr, "== making result for %u:%d and %u:%d, stacktop=%u\n",
+        (unsigned)a.first, a.second,
+        (unsigned)b.first, b.second,
+        (unsigned)stacktop_cur);*/
+
+    // Figure out whether we can trample a and b
+    int a_needed = a.second;
+    int b_needed = b.second;
+    // If they're the same slot, tax them twice.
+    if(a.first == b.first) { a_needed -= 1; b_needed -= 1; }
+
+    size_t apos = a.first, bpos = b.first;
+
+    #define DUP_BOTH() do { \
+        if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; } \
+        /*fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos);*/ \
+        SimuDupPushFrom(apos); \
+        SimuDupPushFrom(apos==bpos ? stacktop_cur-1 : bpos); } while(0)
+    #define DUP_ONE(p) do { \
+        /*fprintf(stderr, "-> dup(%u) op\n", (unsigned)p);*/ \
+        SimuDupPushFrom(p); \
+    } while(0)
+
+    if(a_needed > 0 && b_needed > 0)
+    {
+        // If they must both be preserved, make duplicates
+        // First push the one that is at the larger stack
+        // address. This increases the odds of possibly using cDup.
+        DUP_BOTH();
+
+        //SCENARIO 1:
+        // Input:  x B A x x
+        // Temp:   x B A x x A B
+        // Output: x B A x x R
+        //SCENARIO 2:
+        // Input:  x A B x x
+        // Temp:   x A B x x B A
+        // Output: x A B x x R
+
+        // Add them together.
+        AddCmd(cumulation_opcode);
+        SimuPop(1);
+        // The return value will not need to be preserved.
+        return Subdivide_result(stacktop_cur-1, 0);
+    }
+    // So, either one could be trampled over
+
+    if(a_needed > 0)
+    {
+        // A must be preserved, but B can be trampled over
+
+        // SCENARIO 1:
+        //  Input:  x B x x A
+        //   Temp:  x B x x A A B   (dup both, later first)
+        //  Output: x B x x A R
+        // SCENARIO 2:
+        //  Input:  x A x x B
+        //   Temp:  x A x x B A
+        //  Output: x A x x R
+        // SCENARIO 3:
+        //  Input:  x x x B A
+        //   Temp:  x x x B A A B   (dup both, later first)
+        //  Output: x x x B A R
+        // SCENARIO 4:
+        //  Input:  x x x A B
+        //   Temp:  x x x A B A
+        //  Output: x x x A R
+        // SCENARIO 5:
+        //  Input:  x A B x x
+        //   Temp:  x A B x x A B   (dup both, later first)
+        //  Output: x A B x x R
+
+        // if B is not at the top, dup both.
+        if(bpos != stacktop_cur-1)
+            DUP_BOTH();    // dup both
+        else
+            DUP_ONE(apos); // just dup A
+
+        AddCmd(cumulation_opcode);
+        SimuPop(1);
+        return Subdivide_result(stacktop_cur-1, 0);
+    }
+    else if(b_needed > 0)
+    {
+        // B must be preserved, but A can be trampled over
+        // This is a mirror image of the a_needed>0 case, so I'll cut the chase
+        if(apos != stacktop_cur-1)
+            DUP_BOTH();
+        else
+            DUP_ONE(bpos);
+
+        AddCmd(cumulation_opcode);
+        SimuPop(1);
+        return Subdivide_result(stacktop_cur-1, 0);
+    }
+    else
+    {
+        // Both can be trampled over.
+        // SCENARIO 1:
+        //  Input:  x B x x A
+        //   Temp:  x B x x A B
+        //  Output: x B x x R
+        // SCENARIO 2:
+        //  Input:  x A x x B
+        //   Temp:  x A x x B A
+        //  Output: x A x x R
+        // SCENARIO 3:
+        //  Input:  x x x B A
+        //  Output: x x x R
+        // SCENARIO 4:
+        //  Input:  x x x A B
+        //  Output: x x x R
+        // SCENARIO 5:
+        //  Input:  x A B x x
+        //   Temp:  x A B x x A B   (dup both, later first)
+        //  Output: x A B x x R
+        // SCENARIO 6:
+        //  Input:  x x x C
+        //   Temp:  x x x C C   (c is both A and B)
+        //  Output: x x x R
+
+        if(apos == bpos && apos == stacktop_cur-1)
+            DUP_ONE(apos); // scenario 6
+        else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2)
+            /*fprintf(stderr, "-> op\n")*/; // scenario 3
+        else if(apos == stacktop_cur-2 && bpos == stacktop_cur-1)
+            /*fprintf(stderr, "-> op\n")*/; // scenario 4
+        else if(apos == stacktop_cur-1)
+            DUP_ONE(bpos); // scenario 1
+        else if(bpos == stacktop_cur-1)
+            DUP_ONE(apos); // scenario 2
+        else
+            DUP_BOTH(); // scenario 5
+
+        AddCmd(cumulation_opcode);
+        SimuPop(1);
+        return Subdivide_result(stacktop_cur-1, 0);
     }
 }
 

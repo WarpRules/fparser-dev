@@ -49,6 +49,7 @@ namespace FUNCTIONPARSERTYPES
         cDup,   /* Duplicates the last value in the stack: Pop A, Push A, Push A */
         cInv,   /* Inverts the last value in the stack (x = 1/x) */
         cFetch, /* Same as Dup, except with absolute index (next value is index) */
+        cPop,   /* cPop(x,y) moves [y] to [x] and deletes anything above [x] */
 #endif
 
         cNop,
