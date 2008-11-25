@@ -12,6 +12,9 @@ speedtest: speedtest.o fparser.o fpoptimizer.o
 example: example.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
+ftest: ftest.o fparser.o fpoptimizer.o
+	$(LD) -o $@ $^
+
 pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fptypes.hh
 	zip -9 fparser3.0.3.zip $^
 
