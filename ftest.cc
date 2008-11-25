@@ -52,8 +52,8 @@ int main()
 {
     std::printf
         ("Number of opcodes generated:\n"
-         "Func      Naive    Bisq   Func       Naive    Bisq   Func       Naive    Bisq   Func       Naive    Bisq\n"
-         "----      -----    ----   ----       -----    ----   ----       -----    ----   ----       -----    ----\n");
+         "Func     Naive     Bisq   Func      Naive     Bisq   Func      Naive     Bisq   Func      Naive     Bisq\n"
+         "----     -----     ----   ----      -----     ----   ----      -----     ----   ----      -----     ----\n");
 
     for(unsigned i = 0; i < 100; ++i)
     {
@@ -71,7 +71,7 @@ int main()
 
             const Counts bisqOpcodes = getParserOpcodesAmount(func);
 
-            std::printf("%s: %4u (%2u) %2u (%2u)   ", func.c_str(),
+            std::printf("%s: %3u (%2u) %3u (%2u)   ", func.c_str(),
                         naiveOpcodes, naiveOpcodes/2,
                         bisqOpcodes.opcodes, bisqOpcodes.muls);
         }
