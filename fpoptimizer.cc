@@ -1414,7 +1414,7 @@ std::ostream& operator << (std::ostream& str, const CodeTree& tree)
         case cRad: str << "cRad"; break;
         case cDup: str << "cDup"; break;
         case cInv: str << "cInv"; break;
-        case cPop: str << "cPop"; break;
+        case cPopNMov: str << "cPopNMov"; break;
         case cFetch: str << "cFetch"; break;
         case VarBegin: str << "VarBegin"; break;
     }
@@ -1833,7 +1833,7 @@ void CodeTree::AssembleSequence(
         if(n_excess > 0 || res.first != stacktop_desired-1)
         {
             // Remove the cache values
-            AddCmd(cPop);
+            AddCmd(cPopNMov);
             AddCmd(stacktop_desired-1);
             AddCmd(res.first);
             SimuPop(n_excess);

@@ -1219,7 +1219,7 @@ double FunctionParser::Eval(const double* Vars)
                   Stack[SP+1] = Stack[stackOffs]; ++SP;
                   break;
               }
-          case   cPop:
+          case   cPopNMov:
               {
                   unsigned stackOffs_target = ByteCode[++IP];
                   unsigned stackOffs_source = ByteCode[++IP];
@@ -1351,11 +1351,11 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cFetch:
                         dest << "cFetch(" << data->ByteCode[++IP] << ")";
                         break;
-                    case cPop:
+                    case cPopNMov:
                     {
                         size_t a = data->ByteCode[++IP];
                         size_t b = data->ByteCode[++IP];
-                        dest << "cPop(" << a << ", " << b << ")";
+                        dest << "cPopNMov(" << a << ", " << b << ")";
                         break;
                     }
 #endif
