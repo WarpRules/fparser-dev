@@ -1210,7 +1210,8 @@ double FunctionParser::Eval(const double* Vars)
 
 
 #ifdef FP_SUPPORT_OPTIMIZER
-          case   cVar: break; // Paranoia. These should never exist
+          case   cVar: break;  // Paranoia. These should never exist
+          case cNotNot: break; // Paranoia. These should never exist
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
           case   cInv:
               if(Stack[SP] == 0.0) { evalErrorType=1; return 0; }
@@ -1356,7 +1357,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 #endif
 
 #ifdef FP_SUPPORT_OPTIMIZER
-                    case cVar: n = "(var)"; break;
+                    case cVar:    n = "(var)"; break;
+                    case cNotNot: n = "(notnot)"; break;
                     case cDup: n = "dup"; break;
                     case cInv: n = "inv"; break;
                     case cSqr: n = "sqr"; break;

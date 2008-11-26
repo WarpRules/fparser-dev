@@ -845,11 +845,11 @@ private:
     {
         /*
             This is basic logarithm math:
-              pow(X,Y)/log(Y) = X
-              log(X)/log(Y) = logY(X)
-              log(X^Y)      = log(X)*Y
-              log(X*Y)      = log(X)+log(Y)
-              exp(log(X)*Y) = X^Y
+              log(pow(X,Y))/log(X) = Y
+              log(X)/log(Y)        = logY(X)
+              log(X^Y)             = log(X)*Y
+              log(X*Y)             = log(X)+log(Y)
+              exp(log(X)*Y)        = X^Y
 
             This function does these optimizations:
                pow(const_E, log(x))   = x
