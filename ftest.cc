@@ -5,27 +5,31 @@
 #include <string>
 #include <sstream>
 
-unsigned generateOpcodesForExp(unsigned n, bool print)
+struct Counts { unsigned opcodes, muls; };
+
+Counts generateOpcodesForExp(unsigned n, bool print)
 {
-    unsigned retval = 0;
+    Counts retval = { 0, 0 };
     if(n > 1)
     {
         if(n % 2 == 1)
         {
             if(print) std::cout << "dup ";
-            retval = 2 + generateOpcodesForExp(n-1, print);
+            retval = generateOpcodesForExp(n-1, print);
+            retval.opcodes += 2;
+            ++retval.muls;
             if(print) std::cout << "mul ";
         }
         else
         {
-            retval = 2 + generateOpcodesForExp(n/2, print);
-            if(print) std::cout << "dup mul ";
+            retval = generateOpcodesForExp(n/2, print);
+            ++retval.opcodes;
+            ++retval.muls;
+            if(print) std::cout << "sqr ";
         }
     }
     return retval;
 }
-
-struct Counts { unsigned opcodes, muls; };
 
 Counts getParserOpcodesAmount(const std::string& func)
 {
@@ -55,6 +59,8 @@ int main()
          "Func     Naive     Bisq   Func      Naive     Bisq   Func      Naive     Bisq   Func      Naive     Bisq\n"
          "----     -----     ----   ----      -----     ----   ----      -----     ----   ----      -----     ----\n");
 
+    const Counts minimum = { 0, 0 };
+
     for(unsigned i = 0; i < 100; ++i)
     {
         for(unsigned col = 0; col < 4; ++col)
@@ -66,13 +72,14 @@ int main()
             funcStream << "x^" << exponent;
             const std::string func = funcStream.str();
 
-            const unsigned naiveOpcodes =
-                exponent < 2 ? 1 : generateOpcodesForExp(exponent, false)+1;
+            Counts naiveOpcodes = exponent < 2 ? minimum :
+                generateOpcodesForExp(exponent, false);
+            ++naiveOpcodes.opcodes;
 
             const Counts bisqOpcodes = getParserOpcodesAmount(func);
 
             std::printf("%s: %3u (%2u) %3u (%2u)   ", func.c_str(),
-                        naiveOpcodes, naiveOpcodes/2,
+                        naiveOpcodes.opcodes, naiveOpcodes.muls,
                         bisqOpcodes.opcodes, bisqOpcodes.muls);
         }
         std::printf("\n");
@@ -82,7 +89,7 @@ int main()
     for(unsigned i = 2; i < 20; ++i)
     {
         std::cout << "x^" << i << ": ";
-        unsigned amount = generateOpcodesForExp(i, true);
+        unsigned amount = generateOpcodesForExp(i, true).opcodes;
         std::cout << ": " << amount << "\n";
     }
     return 0;
