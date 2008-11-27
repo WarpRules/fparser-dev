@@ -1,13 +1,15 @@
 #include "fparser.hh"
 
 #include <iostream>
+#include <iomanip>
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include <cmath>
 
 struct Counts { unsigned opcodes, muls; };
 
-Counts generateOpcodesForExp(unsigned n, bool print)
+Counts generateOpcodesForExp(unsigned n, bool print, double& value)
 {
     Counts retval = { 0, 0 };
     if(n > 1)
@@ -15,23 +17,26 @@ Counts generateOpcodesForExp(unsigned n, bool print)
         if(n % 2 == 1)
         {
             if(print) std::cout << "dup ";
-            retval = generateOpcodesForExp(n-1, print);
+            const double valueCopy = value;
+            retval = generateOpcodesForExp(n-1, print, value);
             retval.opcodes += 2;
             ++retval.muls;
             if(print) std::cout << "mul ";
+            value *= valueCopy;
         }
         else
         {
-            retval = generateOpcodesForExp(n/2, print);
+            retval = generateOpcodesForExp(n/2, print, value);
             ++retval.opcodes;
             ++retval.muls;
             if(print) std::cout << "sqr ";
+            value *= value;
         }
     }
     return retval;
 }
 
-Counts getParserOpcodesAmount(const std::string& func)
+Counts getParserOpcodesAmount(const std::string& func, double& value)
 {
     FunctionParser fp;
     std::string line;
@@ -46,10 +51,24 @@ Counts getParserOpcodesAmount(const std::string& func)
     while(std::getline(lines, line).good())
     {
         ++counts.opcodes;
-        if(line.substr(line.size()-3) == "mul") ++counts.muls;
+        const std::string end = line.substr(line.size()-3);
+        if(end == "mul" || end == "sqr") ++counts.muls;
     }
     --counts.opcodes;
+
+    value = fp.Eval(&value);
+
     return counts;
+}
+
+bool compare(double v1, double v2)
+{
+    const double Epsilon = .000001;
+    const double scale = pow(10.0, floor(log10(fabs(v1))));
+    double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
+    double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+    double diff = sv2-sv1;
+    return std::fabs(diff) < Epsilon;
 }
 
 int main()
@@ -67,16 +86,39 @@ int main()
         {
             const unsigned exponent = i + 100*col;
 
+            const double value = 1.02;
+            double result = exponent == 0 ? 1 : value;
+            for(unsigned i = 2; i <= exponent; ++i)
+                result *= value;
+
             std::ostringstream funcStream;
             if(exponent < 10) funcStream << " ";
             funcStream << "x^" << exponent;
             const std::string func = funcStream.str();
 
+            double naiveValue = exponent == 0 ? 1 : value;
             Counts naiveOpcodes = exponent < 2 ? minimum :
-                generateOpcodesForExp(exponent, false);
+                generateOpcodesForExp(exponent, false, naiveValue);
             ++naiveOpcodes.opcodes;
 
-            const Counts bisqOpcodes = getParserOpcodesAmount(func);
+            double bisqValue = value;
+            const Counts bisqOpcodes = getParserOpcodesAmount(func, bisqValue);
+
+            if(!compare(naiveValue, result))
+            {
+                std::cerr << "\nFor exponent " << exponent
+                          << " naive algorithm returned \n"
+                          << std::setprecision(18)
+                          << naiveValue << " instead of " << result << "\n";
+                return 1;
+            }
+            if(!compare(bisqValue, result))
+            {
+                std::cerr << "\nFor exponent " << exponent
+                          << " Bisq algorithm returned \n"
+                          << bisqValue << " instead of " << result << "\n";
+                return 1;
+            }
 
             std::printf("%s: %3u (%2u) %3u (%2u)   ", func.c_str(),
                         naiveOpcodes.opcodes, naiveOpcodes.muls,
@@ -86,6 +128,7 @@ int main()
     }
     return 0;
 
+    /*
     for(unsigned i = 2; i < 20; ++i)
     {
         std::cout << "x^" << i << ": ";
@@ -118,4 +161,5 @@ int main()
             fparser.PrintByteCode(std::cout);
         }
     }
+    */
 }
