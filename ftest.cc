@@ -9,6 +9,23 @@
 
 struct Counts { unsigned opcodes, muls; };
 
+namespace
+{
+    static int Log2up(unsigned long value)
+    {
+        unsigned long res = 0;
+        while(value > (1LU << res)) ++res;
+        return res;
+    }
+    static int PopCount(unsigned long value) // population count
+    {
+        static const int counts[16] = { 0,1,1,2, 1,2,2,3, 1,2,2,3, 2,3,3,4 };
+        int result = 0;
+        while(value > 0) { result += counts[value & 15]; value >>= 4; }
+        return result;
+    }
+}
+
 Counts generateOpcodesForExp(unsigned n, bool print, double& value)
 {
     Counts retval = { 0, 0 };
@@ -16,6 +33,33 @@ Counts generateOpcodesForExp(unsigned n, bool print, double& value)
     {
         if(n % 2 == 1)
         {
+            if(true) // USE_DIVISIONS_AS_WELL
+            {
+                int next_power_of_2 = Log2up(n);
+                int popcount        = PopCount(n);
+                //fprintf(stderr, "Considering %u... %u/%u\n", n, popcount,next_power_of_2);
+                //fflush(stderr);
+                if(n != 3 && popcount >= next_power_of_2 )
+                {
+                    int morepower = 1 << next_power_of_2;
+                    int lesspower = -(n - morepower);
+                    const double valueCopy = value;
+                    if(print) std::cout << "dup ";
+                    retval = generateOpcodesForExp(morepower, print, value);
+                    if(print) std::cout << "fetch ";
+                    const double high = value;
+                    value = valueCopy;
+                    Counts r2 = generateOpcodesForExp(lesspower, print, value);
+                    if(print) std::cout << "div ";
+                    if(print) std::cout << "PopNMov ";
+                    retval.opcodes += r2.opcodes;
+                    retval.muls    += r2.muls;
+                    retval.muls += 1;
+                    retval.opcodes += 4;
+                    value = high / value;
+                    return retval;
+                }
+            }
             if(print) std::cout << "dup ";
             const double valueCopy = value;
             retval = generateOpcodesForExp(n-1, print, value);
@@ -122,9 +166,11 @@ int main()
                 return 1;
             }
 
+            //fflush(stderr);
             std::printf("%s: %3u (%2u) %3u (%2u)   ", func.c_str(),
                         naiveOpcodes.opcodes, naiveOpcodes.muls,
                         bisqOpcodes.opcodes, bisqOpcodes.muls);
+            //fflush(stdout);
         }
         std::printf("\n");
     }
