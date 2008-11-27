@@ -53,7 +53,7 @@ using namespace std;
 #ifndef FP_GENERATING_POWI_TABLE
 static const
 #endif
-unsigned char powi_table[POWI_TABLE_SIZE] =
+signed char powi_table[POWI_TABLE_SIZE] =
 {
       0,   1,   1,   1,   2,   1,   3,   1, /*   0 -   7 */
       4,   1,   5,   1,   6,   1,   7,   5, /*   8 -  15 */
@@ -62,31 +62,31 @@ unsigned char powi_table[POWI_TABLE_SIZE] =
      16,   1,  17,   1,  18,   1,  19,  13, /*  32 -  39 */
      20,   1,  21,   1,  22,   9,   1,   2, /*  40 -  47 */
      24,   1,  25,  17,  26,   1,  27,  11, /*  48 -  55 */
-     28,  19,  29,   8,  30,   1,  31,  21, /*  56 -  63 */
+     28,  19,  29,   8,  30,   1,  -2,  21, /*  56 -  63 */
      32,   1,  33,   1,  34,   1,  35,   1, /*  64 -  71 */
      36,   1,  37,  25,  38,   1,  39,   1, /*  72 -  79 */
      40,   9,  41,   1,  42,  17,   1,  29, /*  80 -  87 */
-     44,   1,  45,   1,  46,  31,  47,  19, /*  88 -  95 */
+     44,   1,  45,   1,  46,  -3,  32,  19, /*  88 -  95 */
      48,   1,  49,  33,  50,   1,  51,   1, /*  96 - 103 */
      52,  35,  53,   8,  54,   1,  55,  37, /* 104 - 111 */
      56,   1,  57,  16,  58,  13,  59,  17, /* 112 - 119 */
-     60,   1,  61,  41,  62,  25,  63,   1, /* 120 - 127 */
+     60,   1,  61,  41,  62,  25,  -2,   1, /* 120 - 127 */
      64,   1,  65,   1,  66,   1,  67,  45, /* 128 - 135 */
-     68,   1,  69,   1,  70,   1,  71,   8, /* 136 - 143 */
+     68,   1,  69,   1,  70,  48,  16,   8, /* 136 - 143 */
      72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */
-     76,  17,   1,  31,  78,   1,  79,  53, /* 152 - 159 */
+     76,  17,   1,  -5,  78,   1,  32,  53, /* 152 - 159 */
      80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */
      84,   1,  85,  19,  86,   8,  87,  35, /* 168 - 175 */
      88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */
-     92,  37,  93,  17,  94,  21,  95,   1, /* 184 - 191 */
+     92,  37,  93,  17,  94,  -3,  64,  64, /* 184 - 191 */
      96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */
     100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */
-    104,   1, 105,  16, 106,  71, 107,   1, /* 208 - 215 */
-    108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */
+    104,   1, 105,  16, 106,  24, 107,   1, /* 208 - 215 */
+    108,   1, 109,  73, 110,  17, 111, -33, /* 216 - 223 */
     112,  45, 113,  32, 114,   1, 115,  33, /* 224 - 231 */
-    116,   1, 117,   1, 118,   1, 119,   1, /* 232 - 239 */
-    120,   1, 121,  81, 122,  49, 123,  19, /* 240 - 247 */
-    124,   1, 125,   1, 126,   1, 127,  85  /* 248 - 255 */
+    116,   1, 117,  80, 118,  48, 119,   1, /* 232 - 239 */
+    120,   1, 121,  81, 122,  49, 123,  -9, /* 240 - 247 */
+    124,   1, 125,   1, 126,   1,  -2,  85  /* 248 - 255 */
 }; /* as in gcc, but custom-optimized for stack calculation */
 static const int POWI_CACHE_SIZE = 256;
 
@@ -1229,6 +1229,7 @@ public:
                   double if_zero_constant,
                   unsigned if_negative_opcode,
                   unsigned cumulation_opcode,
+                  unsigned cumulation_opcode_inverse,
                   vector<unsigned> &byteCode,
                   vector<double>   &immed,
                   size_t& stacktop_cur,
@@ -1240,12 +1241,14 @@ public:
         int cache_val;   // Which value from cache is it, -1 = none
         
         Subdivide_result(size_t s,int c=-1) : stackpos(s), cache_val(c) { }
+        Subdivide_result() : stackpos(),cache_val() { }
     };
 
     Subdivide_result AssembleSequence_Subdivide(
                   long count,
                   int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
                   unsigned cumulation_opcode,
+                  unsigned cumulation_opcode_inverse,
                   vector<unsigned> &byteCode,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
@@ -1256,6 +1259,8 @@ public:
                   int cache_needed[POWI_CACHE_SIZE],
 
                   unsigned cumulation_opcode,
+                  bool commutative,
+                  
                   vector<unsigned> &byteCode,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
@@ -1648,7 +1653,7 @@ void CodeTree::Assemble
                     p0, p1->GetLongIntegerImmed(),
                     1.0,   /* in case the exponent is 0 */
                     cInv,  /* in case the exponent is negative */
-                    cMul,  /* cumulation operand */
+                    cMul,cDiv,  /* cumulation operands */
                     byteCode,immed,stacktop_cur,stacktop_max
                 );
             }
@@ -1744,13 +1749,18 @@ static void PlanNtimesCache
     (long count,
      int cache[POWI_CACHE_SIZE],
      int cache_needed[POWI_CACHE_SIZE],
-     int need_count = 1)
+     int need_count,
+     int recursioncount=0)
 {
     if(count < 1) return;
 
+#ifdef FP_GENERATING_POWI_TABLE
+    if(recursioncount > 32) throw false;
+#endif
+
     if(count < POWI_CACHE_SIZE)
     {
-        FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
+        //FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
         cache_needed[count] += need_count;
         if(cache[count]) return;
     }
@@ -1762,7 +1772,7 @@ static void PlanNtimesCache
     }
     else if(count & 1)
     {
-        half = count & ((1 << POWI_WINDOW_SIZE) - 1);
+        half = count & ((1 << POWI_WINDOW_SIZE) - 1); // that is, count & 7
     }
     else
     {
@@ -1770,16 +1780,19 @@ static void PlanNtimesCache
     }
     
     long otherhalf = count-half;
-    if(half > otherhalf) std::swap(half, otherhalf);
+    if(half > otherhalf || half<0) std::swap(half,otherhalf);
+    
+    FPO(fprintf(stderr, "count=%ld, half=%ld, otherhalf=%ld\n", count,half,otherhalf));
     
     if(half == otherhalf)
     {
-        PlanNtimesCache(half,      cache, cache_needed, 2);
+        PlanNtimesCache(half,      cache, cache_needed, 2, recursioncount+1);
     }
     else
     {
-        PlanNtimesCache(half,      cache, cache_needed);
-        PlanNtimesCache(otherhalf, cache, cache_needed);
+        PlanNtimesCache(half,      cache, cache_needed, 1, recursioncount+1);
+        PlanNtimesCache(otherhalf>0?otherhalf:-otherhalf,
+                                   cache, cache_needed, 1, recursioncount+1);
     }
 
     if(count < POWI_CACHE_SIZE)
@@ -1791,6 +1804,7 @@ void CodeTree::AssembleSequence(
     double if_zero_constant,
     unsigned if_negative_opcode,
     unsigned cumulation_opcode,
+    unsigned cumulation_opcode_inverse,
     vector<unsigned> &byteCode,
     vector<double>   &immed,
     size_t& stacktop_cur,
@@ -1826,7 +1840,7 @@ void CodeTree::AssembleSequence(
              *   cache_needed[] = number of times these factors were desired
              */
             cache[1] = 1; // We have this value already.
-            PlanNtimesCache(count, cache, cache_needed);
+            PlanNtimesCache(count, cache, cache_needed, 1);
 
             cache[1] = stacktop_cur-1;
             for(int n=2; n<POWI_CACHE_SIZE; ++n)
@@ -1840,7 +1854,7 @@ void CodeTree::AssembleSequence(
                 {
                     FPO(fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]));
                     Subdivide_result res = AssembleSequence_Subdivide(
-                        n, cache, cache_needed, cumulation_opcode,
+                        n, cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
                         byteCode, immed, stacktop_cur, stacktop_max);
                     FPO(fprintf(stderr, "Cache[%d] = %u,%d\n",
                         n, (unsigned)res.stackpos, res.cache_val));
@@ -1856,7 +1870,7 @@ void CodeTree::AssembleSequence(
 
             FPO(fprintf(stderr, "Calculating result for %ld...\n", count));
             Subdivide_result res = AssembleSequence_Subdivide(
-                count, cache, cache_needed, cumulation_opcode,
+                count, cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
                 byteCode, stacktop_cur, stacktop_max);
 
             size_t n_excess = stacktop_cur - stacktop_desired;
@@ -1876,6 +1890,7 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     long count,
     int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
     unsigned cumulation_opcode,
+    unsigned cumulation_opcode_inverse,
     vector<unsigned> &byteCode,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
@@ -1899,71 +1914,64 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     }
     else if(count & 1)
     {
-        half = count & ((1 << POWI_WINDOW_SIZE) - 1);
+        half = count & ((1 << POWI_WINDOW_SIZE) - 1); // that is, count & 7
     }
     else
     {
         half = count / 2;
     }
+    long otherhalf = count-half;
+    if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
     FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half));
-
-    if(half*2 == count)
+   
+    Subdivide_result res;
+    if(half == otherhalf)
     {
         Subdivide_result half_res = AssembleSequence_Subdivide(
-            half, cache, cache_needed, cumulation_opcode,
+            half,
+            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
             byteCode, stacktop_cur,stacktop_max);
 
         // self-cumulate the subdivide result
-        Subdivide_result res = Subdivide_MakeResult(half_res, half_res, cache_needed,
-            cumulation_opcode,
+        res = Subdivide_MakeResult(half_res, half_res, cache_needed,
+            cumulation_opcode,true,
             byteCode, stacktop_cur,stacktop_max);
-        if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
-        {
-            FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
-                count, (unsigned)res.stackpos, cache_needed[count]));
-            cache[count] = res.stackpos;
-            res.cache_val = count;
-        }
-        for(int a=1; a<POWI_CACHE_SIZE; ++a)
-            if(cache[a] >= 0 || cache_needed[a] > 0)
-            {
-                FPO(fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
-                    cache[a], a, cache_needed[a]));
-            }
-        return res;
     }
     else
     {
-        long otherhalf = count-half;
-        if(half > otherhalf) std::swap(half,otherhalf);
-        
         Subdivide_result half_res = AssembleSequence_Subdivide(
-            half, cache, cache_needed, cumulation_opcode,
+            half,
+            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
             byteCode, stacktop_cur,stacktop_max);
 
         Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
-            otherhalf, cache, cache_needed, cumulation_opcode,
+            otherhalf>0?otherhalf:-otherhalf,
+            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
             byteCode, stacktop_cur,stacktop_max);
 
-        Subdivide_result res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
-            cumulation_opcode,
+        FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", count, half, otherhalf));
+
+        res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
+            otherhalf>0 ? cumulation_opcode : cumulation_opcode_inverse,
+            otherhalf>0,
             byteCode, stacktop_cur,stacktop_max);
-        if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
-        {
-            FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
-                count, (unsigned)res.stackpos, cache_needed[count]));
-            cache[count] = res.stackpos;
-            res.cache_val = count;
-        }
-        for(int a=1; a<POWI_CACHE_SIZE; ++a)
-            if(cache[a] >= 0 || cache_needed[a] > 0)
-            {
-                FPO(fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
-                    cache[a], a, cache_needed[a]));
-            }
-        return res;
     }
+    
+    if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
+    {
+        FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
+            count, (unsigned)res.stackpos, cache_needed[count]));
+        cache[count] = res.stackpos;
+        res.cache_val = count;
+    }
+    for(int a=1; a<POWI_CACHE_SIZE; ++a)
+        if(cache[a] >= 0 || cache_needed[a] > 0)
+        {
+            FPO(fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
+                cache[a], a, cache_needed[a]));
+        }
+    return res;
 }
 
 CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
@@ -1971,6 +1979,7 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     const Subdivide_result& b,
     int cache_needed[POWI_CACHE_SIZE],
     unsigned cumulation_opcode,
+    bool commutative,
     vector<unsigned> &byteCode,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
@@ -1990,7 +1999,7 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     size_t apos = a.stackpos, bpos = b.stackpos;
 
     #define DUP_BOTH() do { \
-        if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; } \
+        if(apos < bpos && commutative) { size_t tmp=apos; apos=bpos; bpos=tmp; } \
         FPO(fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos)); \
         SimuDupPushFrom(apos); \
         SimuDupPushFrom(apos==bpos ? stacktop_cur-1 : bpos); } while(0)
@@ -2027,14 +2036,14 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         // SCENARIO 2:
         //  Input:  x A x x B
         //   Temp:  x A x x B A
-        //  Output: x A x x R
+        //  Output: x A x x R       -- only commutative cases
         // SCENARIO 3:
         //  Input:  x x x B A
         //   Temp:  x x x B A A B   (dup both, later first)
         //  Output: x x x B A R
         // SCENARIO 4:
         //  Input:  x x x A B
-        //   Temp:  x x x A B A
+        //   Temp:  x x x A B A     -- only commutative cases
         //  Output: x x x A R
         // SCENARIO 5:
         //  Input:  x A B x x
@@ -2042,7 +2051,7 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         //  Output: x A B x x R
 
         // if B is not at the top, dup both.
-        if(bpos != stacktop_cur-1)
+        if(bpos != stacktop_cur-1 || !commutative)
             DUP_BOTH();    // dup both
         else
             DUP_ONE(apos); // just dup A
@@ -2066,10 +2075,10 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         // SCENARIO 2:
         //  Input:  x A x x B
         //   Temp:  x A x x B A
-        //  Output: x A x x R
+        //  Output: x A x x R       -- only commutative cases
         // SCENARIO 3:
         //  Input:  x x x B A
-        //  Output: x x x R
+        //  Output: x x x R         -- only commutative cases
         // SCENARIO 4:
         //  Input:  x x x A B
         //  Output: x x x R
@@ -2084,13 +2093,13 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
 
         if(apos == bpos && apos == stacktop_cur-1)
             DUP_ONE(apos); // scenario 6
-        else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2)
+        else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2 && commutative)
             FPO(fprintf(stderr, "-> op\n")); // scenario 3
         else if(apos == stacktop_cur-2 && bpos == stacktop_cur-1)
             FPO(fprintf(stderr, "-> op\n")); // scenario 4
         else if(apos == stacktop_cur-1)
             DUP_ONE(bpos); // scenario 1
-        else if(bpos == stacktop_cur-1)
+        else if(bpos == stacktop_cur-1 && commutative)
             DUP_ONE(apos); // scenario 2
         else
             DUP_BOTH(); // scenario 5

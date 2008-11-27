@@ -52,7 +52,9 @@ Counts getParserOpcodesAmount(const std::string& func, double& value)
     {
         ++counts.opcodes;
         const std::string end = line.substr(line.size()-3);
-        if(end == "mul" || end == "sqr") ++counts.muls;
+        if(end == "mul"
+        || end == "div"
+        || end == "sqr") ++counts.muls;
     }
     --counts.opcodes;
 

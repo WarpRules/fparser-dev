@@ -1353,12 +1353,12 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cInv: n = "inv"; break;
                     case cSqr: n = "sqr"; break;
                     case cFetch:
-                        dest << "cFetch(" << data->ByteCode[++IP] << ")";
+                        dest << "cFetch(" << ByteCode[++IP] << ")";
                         break;
                     case cPopNMov:
                     {
-                        size_t a = data->ByteCode[++IP];
-                        size_t b = data->ByteCode[++IP];
+                        size_t a = ByteCode[++IP];
+                        size_t b = ByteCode[++IP];
                         dest << "cPopNMov(" << a << ", " << b << ")";
                         break;
                     }
