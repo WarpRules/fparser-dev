@@ -12,23 +12,21 @@ int main()
 
         double bestres = 0;
         long bestp = 1;
-        
+
         for(long p=1; p<=exponent/2; ++p)
         {
             std::vector<unsigned> byteCode;
             std::vector<double>   immed;
             size_t stacktop_cur=1;
             size_t stacktop_max=1;
-            
+
             powi_table[exponent] = p;
-            
-            //fprintf(stderr, "For %ld, trying %ld\n", exponent, p);
-            
+
             ct.AssembleSequence(st,
                 exponent,
                 1,cMul,cMul,
                 byteCode,immed,stacktop_cur,stacktop_max);
-        
+
             double res = 0;
             for(size_t a=0; a<byteCode.size(); ++a)
             {
@@ -39,11 +37,13 @@ int main()
                 else if(byteCode[a] == cDup)
                     res += 1;
                 else if(byteCode[a] == cPopNMov)
-                    { res += 3.5; a += 2; } 
+                    { res += 3.5; a += 2; }
                 else if(byteCode[a] == cFetch)
                     { res += 2.5; a += 1; }
             }
-            
+
+//            fprintf(stderr, "For %ld, trying %ld... gets %g\n", exponent, p, res);
+
             if(res <= bestres || p == 1)
             {
                 bestp   = p;
