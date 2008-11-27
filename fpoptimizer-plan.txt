@@ -1,0 +1,121 @@
+FILES:
+  fpoptimizer.hh  - C++ structures
+  fpoptimizer.dat - Optimization operations
+
+PLAN:
+1.  Convert fpoptimizer.dat into code that initializes Grammar
+    - either automatically or manually
+    - avoid runtime parsing of .dat file
+    - prefer static const structs over constructor code
+
+2.  Augment the CodeTree mechanism the following ways:
+    - Add mechanism that generates a hash value for the contents
+      of the tree, for easy comparison of identical subtrees
+    - Any time a CodeTree changes in any way that may affect the
+      hash, update the hash value for this node and recursively
+      to all parents
+      (Note: Ensure that a CodeTree may only have one parent.)
+
+2.  Create code that matches a given CodeTree node to Grammar,
+    and finds the rules that match (only one should match at most,
+    but it can match a number of different ways, but that does not
+    matter; only utilize the first way)
+    - If a matching rule is found, replace either the matched params
+      or the entire node as instructed in the rule. Ensure that the
+      node gets its hash updated, along with its parents recursively.
+    - The matching can be optimized by grouping the rules by the Opcode
+    Note: The matching can get really complex and/or heavy in the
+    cases where the same operand (or worse, the same set of operands)
+    is expected to be found in two different subtrees. It may require
+    some O(n!) algorithms. However, those rules can be safely skipped
+    if the runtime sees that it would be too costly to check them.
+
+3. Algorithm for matching trees:
+     First,
+       match all nodes in the entire tree. (Do this only once.)
+     Any time a hash of a node is updated,
+       match that node.
+       (When the hashes are changed recursively for a node and all
+        its parents, match all those affected nodes after the hashes
+        have been regenerated.)
+     Repeat until no substitutions are done.
+
+     Overall, first apply this algorithm using the [ENTRY] rules only.
+     Then, apply the rules with [INTERMEDIATE] rules only.
+     Finally, apply the rules with [FINAL] rules only.
+
+3.5. Algorithm for matching nodes:
+       TODO
+
+4a. Algorithm for handling bytecode:
+     First, convert the bytecode into a CodeTree.
+     Then run the matching algorithm.
+     Last, convert the produced CodeTree back into bytecode.
+
+     When generating the bytecode, additional optimizations can be performed:
+     - Converting raise-to-integer-powers into sequences of cInv/cDup/cFetch/cMul
+       using the powi algorithm already existing in fpoptimizer.cc
+       (be wary of generating too long sequences, though)
+     - Converting multiply-by-integers into sequences of cNeg/cDup/cFetch/cAdd
+       using the powi algorithm already existing in fpoptimizer.cc
+       (be wary of generating too long sequences, though)
+     - Reordering cMul operands such that inverted operands
+       don't come first, to avoid creating cInv unless necessary.
+       When inverted operands come in non-head positions, use cDiv instead of cMul.
+     - Reordering cAdd operands such that negated operands
+       don't come first, to avoid creating cNeg unless necessary.
+       When negated operands come in non-head positions, use cSub instead of cAdd.
+     - When an identical subtree is synthesized into bytecode more than
+       once in a row, use cDup for the subsequential occurrences.
+       To that point, reorder any commutative operands so as to
+       increase the chances of cDup being utilized.
+
+4b. Optional algorithm if an SSA evaluator is supported
+   (possibly only if a JIT backend exists):
+     1. First, convert the bytecode into a CodeTree.
+     2. Then run the matching algorithm.
+     3. Then convert the produced CodeTree into SSA format.
+       SSA is a medium-level intermediate language (chapter 4.3 in [1], [2]),
+       in which each instruction takes one of the following forms:
+           target = command source1 source2 <...>
+             - commands such as add, mul, pow, cos, max, less
+           jump <label>
+           branch <label> if source == 0
+           target = phi source1 source2
+             - phi is used after two branches merge, to select
+               either result from the branches into one variable;
+               it is not a fparser function.
+       and in which every variable is written to only once,
+       i.e. "x = x+5" never occurs, but is instead written
+         as "x2 = x1+5"
+       <label> can be a pointer to another codeblock.
+     4. Then run generic optimizations on the SSA code, such
+       as common subexpression elimination (CSE, described
+       in chapter 13.1 in [1]).
+       Try also global value numbering (GVN, see [3]).
+       Note: After CSE, it's difficult to convert
+        the code back into bytecode.
+       Note: Due to the hashing, it is possible that some
+        of the CSE can be done automatically in the SSA
+        generation phase by peeling the CodeTree depth-first,
+        storing identical trees only once.
+     5a. (Apply this option if we do not have JIT.)
+        Eliminate the "single assignment" property of SSA
+        by mapping out the lifetimes of the variables and
+        reusing the same variables where possible. This
+        decreases the memory usage of the evaluator and
+        improves the cache efficiency.
+     5b. (Apply this option if we do have JIT.)
+        Perform register allocation for the SSA code,
+        as per chapter 16 in [1]. Doing this before
+        actual JIT will make the JIT more straightforward.
+        Doing code scheduling could be useful as well,
+        though it gets somewhat complex. (Chapter 17 in [1].)
+   If there's a library we can use from step 3 forward, it'd be great.
+   Note: There are many typical optimizations that we don't need to do.
+   For instance, we don't need to do "dead code elimination", because
+   dead code is never produced in the first place.
+
+[1] = Advanced Compiler Design & Implementation by Steven S. Muchnick, ISBN 1-55860-320-4
+[2] = http://en.wikipedia.org/wiki/Static_single_assignment_form
+[3] = http://en.wikipedia.org/wiki/Global_value_numbering

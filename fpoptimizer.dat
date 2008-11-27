@@ -6,79 +6,101 @@
 
 # Substitution rule syntax:
 #
-#    substitution:
-#      function '->' paramtoken
-#      /* Entire function is changed into the particular param */
+# %token NUMERIC_CONSTANT_VALUE  # literals such as 0, 1, 1.5
+# %token NUMERIC_CONSTANT_NAME   # constant names such as CONSTANT_DR, CONSTANT_L10I
+# %token PARAMETER_TOKEN         # placeholders such as x, y, a, b
+# %token PLACEHOLDER_TOKEN       # placeholders such as <1>, <2>, <7>
+# %token IMMED_TOKEN             # placeholders # and &
+# %token BUILTIN_FUNC_NAME       # such as COS, CEIL, POW
+# %token OPCODE_MAYBEINV         # opcodes cAnd, cOr, cAdd, cMul
+# %token OPCODE_NOTINV           # other opcodes
+# %token GROUP_CONSTANT_OPERATOR # +, *, MIN, MAX
+# %token UNARY_CONSTANT_OPERATOR # /, -, !  # inverts/negates/inverts the param
+# %token NEWLINE                 # newline
 #
-#    | function '->' function
-#      /* Entire function changes, the paramlist is rewritten */
-#      /* NOTE: "p x -> o y"  is an approximate shortcut for "p x <8> ~<9> : (o y)" -- except that p is replaced with o, instead of o becoming p's child */
+# %token SUBST_OP_COLON          # :
+# %token SUBST_OP_ARROW          # ->
 #
-#    | function ':'  paramlist
-#      /* The params provided are replaced with the new paramlist */
+# %%
+#     grammar:
+#       grammar substitution
+#     | grammar NEWLINE
+#     | /* empty */
+#     ;
 #
-#    ;
-# 
-#    function:
-#       opcode paramsmatchingspec
-#       /* Match a function with opcode=opcode and the given way of matching params */
-#    ;
+#     substitution:
+#       function SUBST_OP_ARROW paramtoken NEWLINE
+#       /* Entire function is changed into the particular param */
 #
-#    paramsmatchingspec:
-#       '[' paramlist ']'  /* match this exact paramlist */
-#     |  paramlist         /* find the specified params */
-#    ;
-#    
-#    paramlist: /* left-recursive list of 0-n params with no delimiter */
-#        paramlist param
-#      | /* empty */
-#    ;
+#     | function SUBST_OP_ARROW function NEWLINE
+#       /* Entire function changes, the paramlist is rewritten */
+#       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
 #
-#    param:
-#       '~' paramdef    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
-#       paramdef        /* non-negated/non-inverted param */
-#    ;
+#     | function_maybeinv SUBST_OP_COLON  param_maybeinv_list NEWLINE
+#       /* The params provided are replaced with the new param_maybeinv_list */
 #
-#    paramdef:
-#       paramtoken
-#    |  paramtoken '+'  /* In matching, matches TWO or more identical repetitions of paramtoken */
-#                       /* In substitution, yields an immed containing the number of repetitions */
-#    |  paramtoken '*'  /* In matching, matches ONE or more identical repetitions of paramtoken */
-#                       /* In substitution, yields an immed containing the number of repetitions */
-#    :
+#     | function_notinv   SUBST_OP_COLON  paramlist NEWLINE
+#       /* The params provided are replaced with the new param_maybeinv_list */
 #
-#    paramtoken:
-#       NUMERIC_CONSTANT_VALUE   /* particular immed */
-#    |  NUMERIC_CONSTANT_NAME    /* particular immed */
-#    |  numeric_constant_placeholder  /* some immed */
-#    |  '(' function ')'         /* a subtree */
-#    |  all_other_params_placeholder /* matches all other params */
-#    |  PARAM_NAME               /* any expression */
-#    |  '+(' paramlist ')'    /* the literal sum of the provided immed-type params */
-#    |  '*(' paramlist ')'    /* the literal product of the provided immed-type params */
-#    |  'MIN(' paramlist ')'    /* the literal minimum of the provided immed-type params */
-#    |  'MAX(' paramlist ')'    /* the literal maximum of the provided immed-type params */
-#    |  '-' paramtoken           /* the negated literal value of the paramtoken */
-#    |  '/' paramtoken           /* the inverted literal value of the paramtoken */
-#    |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
-#    ;
+#     ;
 #
-#   numeric_constant_placeholder:
-#       '#'                      /* a placeholder for some immed    */
-#    |  '&'                      /* a placeholder for another immed */
-#    ;
-#    
-#   all_other_params_placeholder:
-#       '<1>'                    /* a placeholder for all params */
-#    |  '<2>'                    /* a placeholder for all params */
-#    |  '<3>'                    /* a placeholder for all params */
-#    |  '<4>'                    /* a placeholder for all params */
-#    |  '<5>'                    /* a placeholder for all params */
-#    |  '<6>'                    /* a placeholder for all params */
-#    |  '<7>'                    /* a placeholder for all params */
-#    ;
-#    
-
+#     function:
+#        function_notinv
+#     |  function_maybeinv
+#     ;
+#
+#     function_notinv:
+#        OPCODE_NOTINV paramsmatchingspec
+#        /* Match a function with opcode=opcode and the given way of matching params */
+#     ;
+#
+#     function_maybeinv:
+#        OPCODE_MAYBEINV paramsmatchingspec
+#        /* Match a function with opcode=opcode and the given way of matching params */
+#     ;
+#
+#     paramsmatchingspec:
+#        '[' param_maybeinv_list ']'  /* match this exact paramlist */
+#      |  param_maybeinv_list         /* find the specified params */
+#     ;
+#
+#     param_maybeinv_list: /* left-recursive list of 0-n params with no delimiter */
+#         param_maybeinv_list maybeinv_param
+#       | /* empty */
+#     ;
+#     maybeinv_param:
+#        '~' param    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
+#        param        /* non-negated/non-inverted param */
+#     ;
+#
+#     paramlist: /* left-recursive list of 0-n params with no delimiter */
+#         paramlist param
+#       | /* empty */
+#     ;
+#
+#     param:
+#        paramtoken
+#     |  paramtoken '+'  /* In matching, matches TWO or more identical repetitions of paramtoken */
+#                        /* In substitution, yields an immed containing the number of repetitions */
+#     |  paramtoken '*'  /* In matching, matches ONE or more identical repetitions of paramtoken */
+#                        /* In substitution, yields an immed containing the number of repetitions */
+#     ;
+#
+#     paramtoken:
+#        NUMERIC_CONSTANT_VALUE   /* particular immed */
+#     |  NUMERIC_CONSTANT_NAME    /* particular immed */
+#     |  IMMED_TOKEN              /* a placeholder for some immed */
+#     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
+#     |  '(' function ')'         /* a subtree */
+#     |  PARAMETER_TOKEN          /* any expression */
+#     |  GROUP_CONSTANT_OPERATOR '(' paramlist ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
+#     |  UNARY_CONSTANT_OPERATOR paramtoken           /* the negated/inverted literal value of the paramtoken */
+#     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
+#     ;
+#
+#
+# %%
+#
 
 
 [ENTRY]
@@ -127,6 +149,10 @@ cLog10 [x]  -> cMul (cLog x) CONSTANT_L10I
 cLog2 [x]  -> cMul (cLog x) CONSTANT_L2I
 
 # not(not(x)) = notnot(x)
+# Do this so that !!x won't get inadvertedly optimized into x
+# However, optimizing !!!x into !x is allright, and we do quite
+# many things relating to cNot, so cNotNot helps protecting the
+# one special case without having to repeat protections everywhere.
 cNot[(cNot[x])] -> cNotNot x
 
 [INTERMEDIATE]
@@ -372,9 +398,9 @@ cAnd x ~x   -> 0
 cOr x ~x    -> 1
 
 # Eschew so many negations.
-#   !a & !b = !(a + b)
+#   !a & !b = !(a | b)
 cAnd ~a ~b ~<1> : ~(cOr a b <1>)
-#   !a + !b = !(a & b)
+#   !a | !b = !(a & b)
 cOr ~a ~b ~<1>  : ~(cAnd a b <1>)
 
 # From logic, follows that...
@@ -486,11 +512,28 @@ cMul ~(cCos[x])      : (cSec x)
 # In a mul-list, ~tan(x) = cot(x)
 cMul ~(cTan[x])      : (cCot x)
 
-# Reduce all mul-lists to two-operand topology
+# Reduce all add/mul/min/max/and/or lists to two-operand topology
+# Note: Don't do this if generating SSA format, because it hinders CSE
+# in e.g. (a+b+c+d)*(b+c+e) cases, as (((a+b)+c)+d)*((b+c)+e) has no
+# identical subtrees, even though (b+c) could be grouped.
+cAdd x y z     : x (cAdd y z)
+cAdd x y ~z    : x (cAdd y ~z)
+cAdd x ~y ~z   : x ~(cAdd y ~z)
+cAdd ~x ~y ~z  : ~x ~(cAdd y ~z)
 cMul x y z     : x (cMul y z)
 cMul x y ~z    : x (cMul y ~z)
 cMul x ~y ~z   : x ~(cMul y ~z)
 cMul ~x ~y ~z  : ~x ~(cMul y ~z)
+cAnd x y z     : x (cAnd y z)
+cAnd x y ~z    : x (cAnd y ~z)
+cAnd x ~y ~z   : x ~(cAnd y ~z)
+cAnd ~x ~y ~z  : ~x ~(cAnd y ~z)
+cMin x y z     : x (cMin y z)
+cMax x y z     : x (cMax y z)
+cOr x y z     : x (cOr y z)
+cOr x y ~z    : x (cOr y ~z)
+cOr x ~y ~z   : x ~(cOr y ~z)
+cOr ~x ~y ~z  : ~x ~(cOr y ~z)
 
 # Extract all negations from and-groups and or-groups
 cAnd ~x        : (cNot x)
