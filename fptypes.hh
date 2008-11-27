@@ -50,6 +50,7 @@ namespace FUNCTIONPARSERTYPES
         cInv,   /* Inverts the last value in the stack (x = 1/x) */
         cFetch, /* Same as Dup, except with absolute index (next value is index) */
         cPopNMov,   /* cPopNMov(x,y) moves [y] to [x] and deletes anything above [x] */
+        cSqr,   /* squares the last operand in the stack, no push/pop */
 #endif
 
         cNop,

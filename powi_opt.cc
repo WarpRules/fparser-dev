@@ -34,6 +34,8 @@ int main()
             {
                 if(byteCode[a] == cMul)
                     res += 5;
+                else if(byteCode[a] == cSqr)
+                    res += 5;
                 else if(byteCode[a] == cDup)
                     res += 1;
                 else if(byteCode[a] == cPopNMov)
