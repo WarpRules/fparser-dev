@@ -71,9 +71,9 @@ double f1(double* p)
 }
 double f2(double* p)
 {
-#define P2 " 2 * x + sin ( x ) / 5", "x", f2, 1, -1000, 1000, .1, false
+#define P2 " 2 * x^300 + sin ( x ) / 5", "x", f2, 1, -1000, 1000, .1, false
     double x = p[0];
-    return 2*x+sin(x)/5;
+    return 2*pow(x,300)+sin(x)/5;
 }
 double f3(double* p)
 {
