@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
+#include <sstream>
 
 #define Epsilon (1e-9)
 
@@ -62,18 +63,20 @@ struct Test
 
 double f1(double* p)
 {
-//#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
-//    double x = p[0];
-//    return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
+#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
+    double x = p[0];
+    return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
+/*
     const double x = p[0], y = p[1], z = p[2];
 #define P1 "x - (y*(y*(y*-1))*1)", "x,y,z", f1, 3, .1, 4, .1, false
     return x - (y*(y*(y*-1))*1);
+*/
 }
 double f2(double* p)
 {
-#define P2 " 2 * x^300 + sin ( x ) / 5", "x", f2, 1, -1000, 1000, .1, false
+#define P2 " 2 * x+ sin ( x ) / 5", "x", f2, 1, -1000, 1000, .1, false
     double x = p[0];
-    return 2*pow(x,300)+sin(x)/5;
+    return 2*x+sin(x)/5;
 }
 double f3(double* p)
 {
@@ -634,6 +637,69 @@ bool WhiteSpaceTest()
 
 
 //=========================================================================
+// Test integer powers
+//=========================================================================
+bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
+{
+    const int absExponent = exponent < 0 ? -exponent : exponent;
+
+    for(int valueOffset = 1; valueOffset <= 5; ++valueOffset)
+    {
+        const double value = 1.0 + valueOffset/100.0;
+        double v1 = exponent == 0 ? 1 : value;
+        for(int i = 2; i <= absExponent; ++i)
+            v1 *= value;
+        if(exponent < 0) v1 = 1.0/v1;
+
+        const double v2 = fp.Eval(&value);
+
+        const double scale = pow(10.0, floor(log10(fabs(v1))));
+        const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
+        const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+        const double diff = sv2-sv1;
+        if(std::fabs(diff) > Epsilon)
+        {
+            std::cout << "For x^" << exponent << " with x=" << value
+                      << " the library (";
+            if(!isOptimized) std::cout << "not ";
+            std::cout << std::setprecision(18);
+            std::cout << "optimized) returned\n" << v2 << " instead of "
+                      << v1 << std::endl;
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool TestIntPow()
+{
+    std::cout << "*** Testing integral powers..." << std::endl;
+
+    FunctionParser fp;
+
+    for(int exponent = -300; exponent <= 300; ++exponent)
+    {
+        std::ostringstream os;
+        os << "x^" << exponent;
+        const std::string func = os.str();
+        if(fp.Parse(func, "x") != -1)
+        {
+            std::cout << "Parsing \"" << func <<"\" failed: "
+                      << fp.ErrorMsg() << "\n";
+            return false;
+        }
+
+        if(!runIntPowTest(fp, exponent, false)) return false;
+        fp.Optimize();
+        if(!runIntPowTest(fp, exponent, true)) return false;
+    }
+
+    return true;
+}
+
+
+//=========================================================================
 // Test UTF-8 parsing
 //=========================================================================
 namespace
@@ -1062,7 +1128,7 @@ int main()
     // Misc. tests
     // -----------
     if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
-       !UTF8Test())
+       !TestIntPow() || !UTF8Test())
         return 1;
 
     std::cout << "==================================================\n"
