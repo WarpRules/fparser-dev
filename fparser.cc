@@ -1094,6 +1094,8 @@ double FunctionParser::Eval(const double* Vars)
                        --SP; break;
           case   cMin: Stack[SP-1] = Min(Stack[SP-1], Stack[SP]);
                        --SP; break;
+          case   cPow: Stack[SP-1] = pow(Stack[SP-1], Stack[SP]);
+                       --SP; break;
           case   cSec:
               {
                   double c = cos(Stack[SP]);
@@ -1123,8 +1125,6 @@ double FunctionParser::Eval(const double* Vars)
                        Stack[SP-1] /= Stack[SP]; --SP; break;
           case   cMod: if(Stack[SP] == 0) { evalErrorType=1; return 0; }
                        Stack[SP-1] = fmod(Stack[SP-1], Stack[SP]);
-                       --SP; break;
-          case   cPow: Stack[SP-1] = pow(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
 #ifdef FP_EPSILON

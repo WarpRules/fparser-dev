@@ -1,5 +1,5 @@
 //#define TEST_JIT
-#define MEASURE_PARSING_SPEED_ONLY
+//#define MEASURE_PARSING_SPEED_ONLY
 
 #include "fparser.hh"
 #include <ctime>
