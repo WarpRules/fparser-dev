@@ -87,11 +87,11 @@ int main()
                   << std::endl;
         */
 
-        const unsigned ParseLoops = 1;//2000000;
-        const unsigned EvalLoops = 1;//100000000;
-        const unsigned JitLoops = 1;//50000000;
-        const unsigned OptimizationLoops = 1;//100000;
-        const unsigned FuncLoops = 1;//100000000;
+        const unsigned ParseLoops = 2000000;
+        const unsigned EvalLoops = 10000000;
+        const unsigned JitLoops = 50000000;
+        const unsigned OptimizationLoops = 100000;
+        const unsigned FuncLoops = 100000000;
 
 
         // Measure parsing speed
@@ -105,7 +105,7 @@ int main()
 #ifndef MEASURE_PARSING_SPEED_ONLY
         // Measure evaluation speed
         // ------------------------
-        fp.PrintByteCode(std::cout);
+        //fp.PrintByteCode(std::cout);
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)
             fp.Eval(values);
@@ -116,8 +116,8 @@ int main()
         // -----------------------------------
         fp2 = fp;
         fp2.Optimize();
-        
-        fp2.PrintByteCode(std::cout);
+
+        //fp2.PrintByteCode(std::cout);
 
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)

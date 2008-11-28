@@ -3,6 +3,8 @@ CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_
 #LD=g++ -s
 LD=g++
 
+all: testbed speedtest example ftest powi_speedtest
+
 testbed: testbed.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
@@ -13,6 +15,9 @@ example: example.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 ftest: ftest.o fparser.o fpoptimizer.o
+	$(LD) -o $@ $^
+
+powi_speedtest: powi_speedtest.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 pack: example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh fpoptimizer.cc fptypes.hh
