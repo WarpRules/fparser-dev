@@ -33,9 +33,9 @@ int main()
     FunctionParser fp;
 
     std::printf
-        ("Evaluations per millisecond:\n"
-         "  Func  Normal   Optim    Func  Normal   Optim    Func  Normal   Optim    Func  Normal   Optim\n"
-         "  ----  ------   -----    ----  ------   -----    ----  ------   -----    ----  ------   -----\n");
+        ("Evaluations per microsecond:\n"
+         "  Func Normal  Optim    Func Normal  Optim    Func Normal  Optim    Func Normal  Optim\n"
+         "  ---- ------  -----    ---- ------  -----    ---- ------  -----    ---- ------  -----\n");
 
     for(int row = 0; row < 100; ++row)
     {
@@ -48,11 +48,12 @@ int main()
                     const std::string func = getFunction(exponent);
                     fp.Parse(func, "x");
 
-                    const unsigned epms1 = getEvalsPerMS(fp);
+                    const unsigned epms1 = (getEvalsPerMS(fp)+50)/100;
                     fp.Optimize();
-                    const unsigned epms2 = getEvalsPerMS(fp);
+                    const unsigned epms2 = (getEvalsPerMS(fp)+50)/100;
 
-                    std::printf("%s %7u %7u  ", func.c_str(), epms1, epms2);
+                    std::printf("%s %4u.%1u %4u.%1u  ", func.c_str(),
+                                epms1/10, epms1%10, epms2/10, epms2%10);
                 }
             }
             std::printf("\n");
