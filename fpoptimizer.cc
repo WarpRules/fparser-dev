@@ -48,6 +48,13 @@ using namespace std;
 #include <ostream>
 #endif
 
+#ifndef FP_GENERATING_POWI_TABLE
+static const unsigned MAX_POWI_BYTECODE_LENGTH = 15;
+#else
+static const unsigned MAX_POWI_BYTECODE_LENGTH = 999;
+#endif
+static const unsigned MAX_MULI_BYTECODE_LENGTH = 5;
+
 #define POWI_TABLE_SIZE 256
 #define POWI_WINDOW_SIZE 3
 #ifndef FP_GENERATING_POWI_TABLE
@@ -1233,13 +1240,14 @@ public:
                   vector<double>   &immed,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
-    void AssembleSequence(
+    bool AssembleSequence(
                   const SubTree& tree, long count,
                   const SequenceOpCode& sequencing,
                   vector<unsigned> &byteCode,
                   vector<double>   &immed,
                   size_t& stacktop_cur,
-                  size_t& stacktop_max) const;
+                  size_t& stacktop_max,
+                  size_t max_bytecode_grow_length) const;
 
     struct Subdivide_result
     {
@@ -1651,16 +1659,13 @@ void CodeTree::Assemble
             const SubTree& p0 = getp0();
             const SubTree& p1 = getp1();
 
-            if(p1->IsLongIntegerImmed())
-            {
-                /* Optimize integer exponents */
-                AssembleSequence(
+            if(!p1->IsLongIntegerImmed()
+            || !AssembleSequence( /* Optimize integer exponents */
                     p0, p1->GetLongIntegerImmed(),
                     MulSequence,
-                    byteCode,immed,stacktop_cur,stacktop_max
-                );
-            }
-            else
+                    byteCode,immed,stacktop_cur,stacktop_max,
+                    MAX_POWI_BYTECODE_LENGTH)
+              )
             {
                 p0->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
                 p1->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
@@ -1802,14 +1807,20 @@ static void PlanNtimesCache
         cache[count] = 1; // This value has been generated
 }
 
-void CodeTree::AssembleSequence(
+bool CodeTree::AssembleSequence(
     const SubTree& tree, long count,
     const SequenceOpCode& sequencing,
     vector<unsigned> &byteCode,
     vector<double>   &immed,
     size_t& stacktop_cur,
-    size_t& stacktop_max) const
+    size_t& stacktop_max,
+    size_t max_bytecode_grow_length) const
 {
+    const size_t bytecodesize_backup = byteCode.size();
+    const size_t immedsize_backup    = immed.size();
+    const size_t stacktopcur_backup  = stacktop_cur;
+    const size_t stacktopmax_backup  = stacktop_max;
+    
     if(count == 0)
     {
         SimuPush(1);
@@ -1818,6 +1829,7 @@ void CodeTree::AssembleSequence(
     else
     {
         tree->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
+        
         if(count < 0)
         {
             AddCmd(sequencing.op_flip);
@@ -1884,6 +1896,17 @@ void CodeTree::AssembleSequence(
             }
         }
     }
+
+    size_t bytecode_grow_amount = byteCode.size() - bytecodesize_backup;
+    if(bytecode_grow_amount > max_bytecode_grow_length)
+    {
+        byteCode.resize(bytecodesize_backup);
+        immed.resize(immedsize_backup);
+        stacktop_cur = stacktopcur_backup;
+        stacktop_max = stacktopmax_backup;
+        return false;
+    }
+    return true;
 }
 
 CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
