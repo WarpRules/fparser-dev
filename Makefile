@@ -1,7 +1,7 @@
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -g -Weffc++
 #CXX=g++ -Wall -W -pedantic -ansi -g -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 #LD=g++ -s
-LD=g++
+LD=g++ -g
 
 all: testbed speedtest example ftest powi_speedtest
 
@@ -34,7 +34,7 @@ powi_speedtest:\
 
 
 fpoptimizer_grammar_gen:\
-		fpoptimizer_grammar_gen.cc
+		fpoptimizer_grammar_gen.cc $(FP_MODULES)
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \

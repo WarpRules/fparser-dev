@@ -31,7 +31,7 @@ namespace FUNCTIONPARSERTYPES
 #ifndef FP_DISABLE_EVAL
         cEval,
 #endif
-        cExp, cFloor, cIf, cInt, cLog, cLog10, cMax, cMin,
+        cExp, cFloor, cIf, cInt, cLog, cLog2, cLog10, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
 // These do not need any ordering:
@@ -115,6 +115,7 @@ namespace FUNCTIONPARSERTYPES
         { "int", 3, cInt, 1 },
         { "log", 3, cLog, 1 },
         { "log10", 5, cLog10, 1 },
+        { "log2", 4, cLog2, 1 },
         { "max", 3, cMax, 2 },
         { "min", 3, cMin, 2 },
         { "pow", 3, cPow, 2 },
@@ -166,6 +167,37 @@ namespace FUNCTIONPARSERTYPES
             return name < rhs.name;
         }
     };
+
+    const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
+
+    // -1 = (lhs < rhs); 0 = (lhs == rhs); 1 = (lhs > rhs)
+    inline int compare(const FuncDefinition& lhs, const NamePtr& rhs)
+    {
+        for(unsigned i = 0; i < lhs.nameLength; ++i)
+        {
+            if(i == rhs.nameLength) return 1;
+            const char c1 = lhs.name[i], c2 = rhs.name[i];
+            if(c1 < c2) return -1;
+            if(c2 < c1) return 1;
+        }
+        return lhs.nameLength < rhs.nameLength ? -1 : 0;
+    }
+
+    inline const FuncDefinition* findFunction(const NamePtr& functionName)
+    {
+        const FuncDefinition* first = Functions;
+        const FuncDefinition* last = Functions + FUNC_AMOUNT;
+
+        while(first < last)
+        {
+            const FuncDefinition* middle = first+(last-first)/2;
+            const int comp = compare(*middle, functionName);
+            if(comp == 0) return middle;
+            if(comp < 0) first = middle+1;
+            else last = middle;
+        }
+        return 0;
+    }
 #endif
 }
 
@@ -199,7 +231,15 @@ struct FunctionParser::Data
     std::vector<double> Stack;
     unsigned StackSize;
 
-    Data(): referenceCounter(1) {}
+    Data(): referenceCounter(1),
+            variablesString(),
+            variableRefs(),
+            nameData(),
+            namePtrs(),
+            FuncPtrs(),
+            FuncParsers(),
+            ByteCode(),
+            Immed(), Stack(), StackSize(0) {}
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
 };

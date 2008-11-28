@@ -30,37 +30,6 @@ using namespace std;
 //=========================================================================
 namespace
 {
-    const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
-
-    // -1 = (lhs < rhs); 0 = (lhs == rhs); 1 = (lhs > rhs)
-    inline int compare(const FuncDefinition& lhs, const NamePtr& rhs)
-    {
-        for(unsigned i = 0; i < lhs.nameLength; ++i)
-        {
-            if(i == rhs.nameLength) return 1;
-            const char c1 = lhs.name[i], c2 = rhs.name[i];
-            if(c1 < c2) return -1;
-            if(c2 < c1) return 1;
-        }
-        return lhs.nameLength < rhs.nameLength ? -1 : 0;
-    }
-
-    inline const FuncDefinition* findFunction(const NamePtr& functionName)
-    {
-        const FuncDefinition* first = Functions;
-        const FuncDefinition* last = Functions + FUNC_AMOUNT;
-
-        while(first < last)
-        {
-            const FuncDefinition* middle = first+(last-first)/2;
-            const int comp = compare(*middle, functionName);
-            if(comp == 0) return middle;
-            if(comp < 0) first = middle+1;
-            else last = middle;
-        }
-        return 0;
-    }
-
     bool addNewNameData(std::set<NameData>& nameData,
                         std::map<NamePtr, const NameData*>& namePtrs,
                         const NameData& newData)
@@ -212,9 +181,16 @@ namespace
 // Data struct implementation
 //=========================================================================
 FunctionParser::Data::Data(const Data& rhs):
+    referenceCounter(0),
+    variablesString(),
+    variableRefs(),
     nameData(rhs.nameData),
+    namePtrs(),
+    FuncPtrs(),
+    FuncParsers(),
     ByteCode(rhs.ByteCode),
     Immed(rhs.Immed),
+    Stack(),
     StackSize(rhs.StackSize)
 {
     Stack.resize(rhs.Stack.size());
@@ -236,7 +212,8 @@ FunctionParser::FunctionParser():
     parseErrorType(FP_NO_ERROR), evalErrorType(0),
     data(new Data),
     useDegreeConversion(false), isOptimized(false),
-    evalRecursionLevel(0)
+    evalRecursionLevel(0),
+    StackPtr(0), errorLocation(0)
 {
 }
 
@@ -253,7 +230,8 @@ FunctionParser::FunctionParser(const FunctionParser& cpy):
     data(cpy.data),
     useDegreeConversion(cpy.useDegreeConversion),
     isOptimized(cpy.isOptimized),
-    evalRecursionLevel(0)
+    evalRecursionLevel(0),
+    StackPtr(0), errorLocation(0)
 {
     ++(data->referenceCounter);
 }
@@ -1093,6 +1071,10 @@ double FunctionParser::Eval(const double* Vars)
           case   cInt: Stack[SP] = floor(Stack[SP]+.5); break;
           case   cLog: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
                        Stack[SP] = log(Stack[SP]); break;
+          case  cLog2: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       Stack[SP] = log(Stack[SP]) / 0.6931471805599453094;
+                       //Stack[SP] = log2(Stack[SP]);
+                       break;
           case cLog10: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
                        Stack[SP] = log10(Stack[SP]); break;
           case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);
