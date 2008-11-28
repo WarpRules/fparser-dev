@@ -2422,7 +2422,7 @@ void FunctionParser::MakeTree(void *r) const
                 }
                 case cInv:
                 {
-                    EAT(1, cMul); // Unary division is inverse multiplying
+                    EAT(1, cMul); // Unary division is inverse multiplying.
                     stack[stacktop-1].getp0().Invert();
                     break;
                 }
@@ -2436,16 +2436,22 @@ void FunctionParser::MakeTree(void *r) const
                 // Binary operators
                 case cSub:
                 {
-                    EAT(2, cAdd); // Minus is negative adding
+                    EAT(2, cAdd); // Minus is negative adding.
                     stack[stacktop-1].getp1().Negate();
                     break;
                 }
                 case cDiv:
                 {
-                    EAT(2, cMul); // Divide is inverse multiply
+                    EAT(2, cMul); // Divide is inverse multiplying.
                     stack[stacktop-1].getp1().Invert();
                     break;
                 }
+                /*
+                case cDup:
+                {
+                    // Not implemented, troublesome
+                }
+                */
 
                 // ADD ALL TWO PARAMETER NON-FUNCTIONS HERE
                 case cAdd: case cMul:
@@ -2492,7 +2498,8 @@ void FunctionParser::MakeTree(void *r) const
                     EAT(2, cMul);
                     break;
 
-              case cNop: break;
+                case cNop:
+                    break;
 
                 // Functions
                 default:
