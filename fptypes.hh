@@ -1,6 +1,6 @@
-//===============================
-// Function parser v3.02 by Warp
-//===============================
+//================================
+// Function parser v3.0.3 by Warp
+//================================
 
 // NOTE:
 // This file contains only internal types for the function parser library.
@@ -50,6 +50,7 @@ namespace FUNCTIONPARSERTYPES
         cInv,   /* Inverts the last value in the stack (x = 1/x) */
 #endif
 
+        cNop,
         VarBegin
     };
 

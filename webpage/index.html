@@ -7,15 +7,16 @@
 </head>
 
 <body>
-<h1>Function parser for C++ v3.02 by Warp</h1>
+<h1>Function parser for C++ v3.0.3 by Warp</h1>
 
 <h2>- Download</h2>
 
-<p>Download <a href="fparser302.zip">fparser302.zip</a> v3.02
-(released 18 Nov 2008)
+<p>Download <a href="fparser3.0.3.zip">fparser3.0.3.zip</a> v3.0.3
+(released 28 Nov 2008)
 
 <p>(Older versions:
-<a href="fparser301.zip">v3.01</a>,
+<a href="fparser302.zip">v3.0.2</a>,
+<a href="fparser301.zip">v3.0.1</a>,
 <a href="fparser284.zip">v2.84</a>,
 <a href="fparser283.zip">v2.83</a>,
 <a href="fparser282.zip">v2.82</a>,
@@ -52,13 +53,21 @@ demonstrate the function parser.
 
 <h2>- What's new?</h2>
 
-<p>What's new in v3.02
+<p>What's new in v3.0.3
+<ul>
+ <li>Fixed bug that caused functions like "<code>-if(x, 1, 2)</code>" to be
+     parsed incorrectly. (This bug is a very old one, and caused by the change
+     related to the unary minus in the version 2.7 of the library.)
+ <li>Changed version numbering to a more logical format.
+</ul>
+
+<p>What's new in v3.0.2
 <ul>
  <li>Added support for specifying a delimiter character. (See fparser.txt
      for more details.)
 </ul>
 
-<p>What's new in v3.01
+<p>What's new in v3.0.1
 <ul>
  <li>Improved UTF8 support, and minor tweaking and fixes.
 </ul>

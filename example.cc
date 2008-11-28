@@ -43,8 +43,10 @@ int main()
 
     double vals[1];
     for(vals[0] = minx; vals[0] <= maxx; vals[0] += step)
+    {
         std::cout << "f(" << vals[0] << ") = " << fparser.Eval(vals)
                   << std::endl;
+    }
 
     return 0;
 }

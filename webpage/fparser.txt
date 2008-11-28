@@ -1,4 +1,4 @@
-  Function parser for C++  v3.02 by Warp.
+  Function parser for C++  v3.0.3 by Warp.
   =======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
@@ -7,12 +7,19 @@
   The usage license of this library is located at the end of this text file.
 
 
-  What's new in v3.02
-  -------------------
+  What's new in v3.0.3
+  --------------------
+  - Fixed bug that caused functions like "-if(x, 1, 2)" to be parsed
+    incorrectly. (This bug is a very old one, and caused by the change
+    related to the unary minus in the version 2.7 of the library.)
+  - Changed version numbering to a more logical format.
+
+  What's new in v3.0.2
+  --------------------
   - Added support for specifying a delimiter character.
 
-  What's new in v3.01
-  -------------------
+  What's new in v3.0.1
+  --------------------
   - Improved UTF8 support, and minor tweaking and fixes.
 
   What's new in v3.0

@@ -317,6 +317,17 @@ double f35(double* p)
     return x-y+z*x;
 }
 
+double f36(double* p)
+{
+#define P36 "-if(x<0, x, -x) + -if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
+//#define P36 "-if(x<0, x, -x)", "x", f36, 1, -10, 10, .1, false
+//#define P36 "-if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
+    double x = p[0];
+    return -(x<0 ? x : -x) + -(x<5 ? 2 : 3);
+    //return -(x<0 ? x : -x);
+    //return -(x<5 ? 2 : 3);
+}
+
 namespace
 {
     Test tests[] =
@@ -325,7 +336,7 @@ namespace
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
-        { P34 }, { P35 }
+        { P34 }, { P35 }, { P36 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);

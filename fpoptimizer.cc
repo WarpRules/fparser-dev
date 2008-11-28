@@ -1,6 +1,6 @@
-//============================================
-// Function parser v3.02 optimizer by Bisqwit
-//============================================
+//=============================================
+// Function parser v3.0.3 optimizer by Bisqwit
+//=============================================
 
 /*
  NOTE!
@@ -1937,6 +1937,8 @@ void FunctionParser::MakeTree(void *r) const
                     ADDCONST(CONSTANT_RD);
                     EAT(2, cMul);
                     break;
+
+              case cNop: break;
 
                 // Functions
                 default:

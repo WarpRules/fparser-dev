@@ -1,6 +1,6 @@
-//===============================
-// Function parser v3.02 by Warp
-//===============================
+//================================
+// Function parser v3.0.3 by Warp
+//================================
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -605,6 +605,8 @@ const char* FunctionParser::CompileIf(const char* function)
     if(!function) return 0;
     if(*function != ')')
         return SetErrorType(noParenthError(*function), function);
+
+    data->ByteCode.push_back(cNop);
 
     // Set jump indices
     data->ByteCode[curByteCodeSize] = curByteCodeSize2+1;
@@ -1213,6 +1215,8 @@ double FunctionParser::Eval(const double* Vars)
               break;
 #endif
 
+          case cNop: break;
+
 // Variables:
           default:
               Stack[++SP] = Vars[ByteCode[IP]-VarBegin];
@@ -1331,6 +1335,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cDup: n = "dup"; break;
                     case cInv: n = "inv"; break;
 #endif
+
+                    case cNop: n = "nop"; break;
 
                     default:
                         n = Functions[opcode-cAbs].name;
