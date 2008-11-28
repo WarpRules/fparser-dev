@@ -10,7 +10,7 @@
 # %token NUMERIC_CONSTANT_NAME   # constant names such as CONSTANT_DR, CONSTANT_L10I
 # %token PARAMETER_TOKEN         # placeholders such as x, y, a, b
 # %token PLACEHOLDER_TOKEN       # placeholders such as <1>, <2>, <7>
-# %token IMMED_TOKEN             # placeholders # and &
+# %token IMMED_TOKEN             # placeholders % and &
 # %token BUILTIN_FUNC_NAME       # such as COS, CEIL, POW
 # %token OPCODE_MAYBEINV         # opcodes cAnd, cOr, cAdd, cMul
 # %token OPCODE_NOTINV           # other opcodes
@@ -111,9 +111,11 @@
 
 # x / y = x * 1/y
 cDiv [x y] -> cMul x ~y
+cRDiv [y x] -> cMul x ~y
 
 # x - y = x + -y
 cSub [x y] -> cAdd x ~y
+cRSub [y x] -> cAdd x ~y
 
 # 1/x   = <implied> * ~x
 cInv [x]   -> cMul ~x
@@ -273,16 +275,16 @@ cOr [x]  -> cNotNot x
 cMul  x+                   : (cPow x  x+)
 cMul ~x+                   : (cPow x -x+)
 # x^3 * x = x^4
-cMul  x*       cPow[x #]   : (cPow x +(x* #))
-cMul  x*      ~cPow[x #]   : (cPow x +(x* -#))
-cMul ~x*       cPow[x #]   : (cPow x +(-x* #))
-cMul ~x*      ~cPow[x #]   : (cPow x +(-x* -#))
+cMul  x*       (cPow[x %]) : (cPow x +(x* %))
+cMul  x*      ~(cPow[x %]) : (cPow x +(x* -%))
+cMul ~x*       (cPow[x %]) : (cPow x +(-x* %))
+cMul ~x*      ~(cPow[x %]) : (cPow x +(-x* -%))
 # x^y * x^z = x^(y+z)
-cMul  cPow[x y]  cPow[x z] : (cPow x (cAdd y z))
+cMul  (cPow[x y])  (cPow[x z]) : (cPow x (cAdd y z))
 # x^y / x^z = x^(y-z)
-cMul  cPow[x y] ~cPow[x z] : (cPow x (cAdd y ~z))
+cMul  (cPow[x y]) ~(cPow[x z]) : (cPow x (cAdd y ~z))
 # 1 / x^y / x^z = x^(-y-z)
-cMul ~cPow[x y] ~cPow[x z] : (cPow x (cAdd ~y ~z))
+cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow x (cAdd ~y ~z))
 
 # If an add-list contains the same element four or more times,
 # replace the element with a mul with an integer factor
@@ -311,22 +313,22 @@ cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)         : (cMul x (cAdd  (cMul <1> ~<
 cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>)))
 cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>)))
 # The below is still simpler version...
-cAdd  (cMul  x #)  (cMul  x &)         : (cMul  x +(# &))
-cAdd  (cMul  x #) ~(cMul  x &)         : (cMul  x +(# -&))
-cAdd ~(cMul  x #) ~(cMul  x &)         : (cMul  x +(-# -&))
-cAdd  (cMul ~x #)  (cMul ~x &)         : (cMul ~x +(# &))
-cAdd  (cMul ~x #) ~(cMul ~x &)         : (cMul ~x +(# -&))
-cAdd ~(cMul ~x #) ~(cMul ~x &)         : (cMul ~x +(-# -&))
+cAdd  (cMul  x %)  (cMul  x &)         : (cMul  x +(% &))
+cAdd  (cMul  x %) ~(cMul  x &)         : (cMul  x +(% -&))
+cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul  x +(-% -&))
+cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul ~x +(% &))
+cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul ~x +(% -&))
+cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul ~x +(-% -&))
 
 #### Remote double negations/inversions
 
 # If an addlist contains a negated mul and that mul-list contains a factor,
 # un-negate the mul-list and negate the factor in the mul-list.
-cAdd ~(cMul # <1>)            : (cMul -# <1>)
+cAdd ~(cMul % <1>)            : (cMul -% <1>)
 
 # If a mul-list contains an inverted pow and the exponent is an immed,
 # un-negate the pow and negate the immed.
-cMul ~(cPow [x #])           : (cPow x -#)
+cMul ~(cPow [x %])           : (cPow x -%)
 
 # (x^y)^z        -> x^(y*z)
 cPow [ (cPow[x y]) z ]       : x (cMul y z)
@@ -338,50 +340,50 @@ cMul (cPow[x y]) (cPow[x z]) : (cPow x (cAdd y z))
 #### Constant folding:
 
 # Negate literal negated params...
-cAdd ~#      : -(#)
+cAdd ~%      : -%
 
 # If a add-list contains two or more immeds, replace those immeds
 # with a single non-negated immed that has the sum of those original
 # immeds.
-cAdd  #  &   : +(# &)
+cAdd  %  &   : +(% &)
 
 # Note: Don't invert literal inverted params liberally; doing so may lose precision.
 
 # If a mul-list contains two or more immeds, replace those immeds
 # with a single non-inverted immed that has the product of those original
 # immeds (paying attention to the polarity of those immeds)
-cMul  #  &   : *(# &)
-cMul  # ~&   : *(# /&)
+cMul  %  &   : *(% &)
+cMul  % ~&   : *(% /&)
 # Note: To preserve precision, this is not done as *(/# /&).
-cMul ~# ~&   : ~*(# &)
+cMul ~% ~&   : ~*(% &)
 
 # If a min-list contains two or more immeds, replace those immeds
 # with a single immed that is the minimum of the original immeds
-cMin # &     : MIN(# &)
+cMin % &     : MIN(% &)
 
 # If a max-list contains two or more immeds, replace those immeds
 # with a single immed that is the maximum of the original immeds
-cMax # &     : MAX(# &)
+cMax % &     : MAX(% &)
 
 # Function call optimization with constant params
 # such as sin(immed)->newimmed, log(immed)->newimmed etc.
-cSin[#]      -> SIN(#)
-cCos[#]      -> COS(#)
-cTan[#]      -> TAN(#)
-cAsin[#]     -> ASIN(#)
-cAcos[#]     -> ACOS(#)
-cAtan[#]     -> ATAN(#)
-cSinh[#]     -> SINH(#)
-cCosh[#]     -> COSH(#)
-cTanh[#]     -> TANH(#)
-cAsinh[#]    -> ASINH(#)
-cAcosh[#]    -> ACOSH(#)
-cAtanh[#]    -> ATANH(#)
-cPow[# &]    -> POW(# &)
-cCeil[#]     -> CEIL(#)
-cFloor[#]    -> FLOOR(#)
-cLog[#]      -> LOG(#)
-cMod[# &]    -> MOD(# &)
+cSin[%]      -> SIN(%)
+cCos[%]      -> COS(%)
+cTan[%]      -> TAN(%)
+cAsin[%]     -> ASIN(%)
+cAcos[%]     -> ACOS(%)
+cAtan[%]     -> ATAN(%)
+cSinh[%]     -> SINH(%)
+cCosh[%]     -> COSH(%)
+cTanh[%]     -> TANH(%)
+cAsinh[%]    -> ASINH(%)
+cAcosh[%]    -> ACOSH(%)
+cAtanh[%]    -> ATANH(%)
+cPow[% &]    -> POW(% &)
+cCeil[%]     -> CEIL(%)
+cFloor[%]    -> FLOOR(%)
+cLog[%]      -> LOG(%)
+cMod[% &]    -> MOD(% &)
 # TODO: equal,nequal,less,lessoreq,greater,greatoreq,not,and,or
 
 
@@ -430,17 +432,17 @@ cGreater[x x]                   -> 1
 cMul  (cLog[(cPow [x y])]) ~(cLog[x])  : y
 cMul ~(cLog[(cPow [x y])])  (cLog[x])  : ~y
 
-cMul  (cLog[(cPow [# y])]) ~LOG(#)  : y
-cMul ~(cLog[(cPow [# y])])  LOG(#)  : ~y
+cMul  (cLog[(cPow [% y])]) ~LOG(%)  : y
+cMul ~(cLog[(cPow [% y])])  LOG(%)  : ~y
 
 # CONSTANT_E^log(x) = x
 cPow [CONSTANT_E (cLog[x])]   -> x
 
 # CONSTANT_E^(log(x)*y) = x^y
-cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   -> x (cMul <1>)
+cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   : x (cMul <1>)
 
 # z^(log(x)/log(z)*y) = x^y
-cPow [z (cMul (~(cLog[z]) cLog[x]) <1>)] : x (cMul <1>)
+cPow [z (cMul ~(cLog[z]) (cLog[x]) <1>)] : x (cMul <1>)
 
 # log(x^z) = z * log(x)
 cLog [(cPow [x z])] -> cMul z (cLog x)
@@ -454,7 +456,7 @@ cLog [(cMul x (cPow [CONSTANT_E y]))] -> cAdd (cLog x) y
 # log(x * z^y) / log(z) = log(x) / log(z) + y
 # Note: z can also be an immed
 cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd (cMul (cLog x) ~(cLog z)) y
-cMul (cLog [(cMul x (cPow [# y]))]) ~LOG(#)     -> cAdd (cMul (cLog x) ~LOG(#)) y
+cMul (cLog [(cMul x (cPow [% y]))]) ~LOG(%)     -> cAdd (cMul (cLog x) ~LOG(%)) y
 
 
 #### Polynomic:
@@ -501,10 +503,10 @@ cPow [x 0.5]         -> cSqrt x
 cPow [CONSTANT_E x]  -> cExp x
 
 # log(x) * CONSTANT_L10I = log10(x)
-cMul(cLog[x] CONSTANT_L10I) -> cLog10 x
+cMul (cLog[x]) CONSTANT_L10I -> cLog10 x
 
 # log(x) * CONSTANT_L2I = log2(x)
-cMul(cLog[x] CONSTANT_L2I) -> cLog2 x
+cMul (cLog[x]) CONSTANT_L2I -> cLog2 x
 
 # In a mul-list, ~sin(x) = csc(x)
 cMul ~(cSin[x])      : (cCsc x)
