@@ -6,13 +6,14 @@ namespace FPoptimizer_Grammar
     typedef unsigned OpcodeType;
 
     class FunctionType;
+    struct GrammarPack;
 
     class ParamSpec
     {
     public:
         bool Negated;    // true means for: cAdd:-x; cMul:1/x; cAnd/cOr: !x; other: invalid
 
-        enum
+        enum TransformationType
         {
             None,    // default
             Negate,  // 0-x
@@ -21,65 +22,48 @@ namespace FPoptimizer_Grammar
 
         unsigned MinimumRepeat; // default 1
         bool AnyRepetition;     // false: max=minimum; true: max=infinite
-    private:
+        
+        OpcodeType Opcode;      // specifies the type of the function
+        // Special functions:
+        //    cImmed = NumConstant     , Holds a particular value (syntax-time constant)
+        //    cFetch = ImmedHolder          , Holds a particular immed
+        //      cVar = NamedHolder          , Holds a particular named param (of any kind)
+        //      cDup = RestHolder           , Holds anything else
+        //    cFCall = Function             , Holds an opcode and the params
+        //   <OTHER> = GroupFunction  , For parse-time functions:
+        
+        union
+        {
+            double ConstantValue;           // for NumConstant
+            unsigned Index;                 // for ImmedHolder, RestHolder
+            FunctionType* Func;             // for Function
+        };
+        std::vector<ParamSpec*> Params; // EvalValues thereof are used for calculation
+                                        // when GroupFunction is used
+        std::string Name;               // for NamedHolder
+    protected:
         // From parser, not from grammar:
         double EvalValue;// this is the value used for arithmetics
+    
+    public:
+        ParamSpec(FunctionType* f);      // Function
+        ParamSpec(double d);             // NumConstant
+        ParamSpec(const std::string& n); // NamedHolder
+        ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p); // GroupFunction
+        ParamSpec(unsigned i, double); // ImmedHolder
+        ParamSpec(unsigned i, void*);  // RestHolder
+        
+        ParamSpec* SetNegated()
+            { Negated=true; return this; }
+        ParamSpec* SetRepeat(unsigned min, bool any)
+            { MinimumRepeat=min; AnyRepetition=any; return this; }
 
-    public:
-        virtual ~ParamSpec() { }
-    };
-    // Holds a particular value (syntax-time constant):
-    class ParamSpec_NumConstant: public ParamSpec
-    {
+        ParamSpec(const GrammarPack& pack, size_t offs);
     private:
-        double ConstantValue;
-    public:
-        ParamSpec_NumConstant(double c) : ParamSpec(), ConstantValue(c) { }
+        ParamSpec(const ParamSpec&);
+        ParamSpec& operator= (const ParamSpec&);
     };
-    // Holds a particular immed:
-    class ParamSpec_ImmedHolder: public ParamSpec
-    {
-    private:
-        unsigned Index;
-    public:
-        ParamSpec_ImmedHolder(unsigned i) : ParamSpec(), Index(i) { }
-    };
-    // Holds a particular named param (of any kind):
-    class ParamSpec_NamedHolder: public ParamSpec
-    {
-    private:
-        std::string Name;
-    public:
-        ParamSpec_NamedHolder(const std::string& n) : ParamSpec(), Name(n) { }
-    };
-    // Holds anything else
-    class ParamSpec_RestHolder: public ParamSpec
-    {
-    private:
-        unsigned Index;
-    public:
-        ParamSpec_RestHolder(unsigned i) : ParamSpec(), Index(i) { }
-    };
-    // Holds an opcode and the params
-    class ParamSpec_Function: public ParamSpec
-    {
-    private:
-        FunctionType* func; // FIXME: has a pointer
-    public:
-        ParamSpec_Function(FunctionType* f): ParamSpec(), func(f) { }
-    };
-    // For parse-time functions:
-    class ParamSpec_GroupFunction: public ParamSpec
-    {
-    private:
-        OpcodeType Opcode;              // specifies the type of the function
-        std::vector<ParamSpec*> Params; // EvalValues thereof are used for calculation
-    public:
-        ParamSpec_GroupFunction(OpcodeType o,
-                                const std::vector<ParamSpec*>& p) 
-                               : ParamSpec(), Opcode(o), Params(p) { }
-    };
-
+    
     class MatchedParams
     {
     public:
@@ -88,27 +72,33 @@ namespace FPoptimizer_Grammar
             PositionalParams,
             AnyParams
         };
-    private:
+    public:
         TypeType Type;
 
         std::vector<ParamSpec*> Params;
     public:
         MatchedParams()             : Type(), Params() { }
+        MatchedParams(TypeType t)   : Type(t), Params() { }
         MatchedParams(ParamSpec* p) : Type(), Params() { Params.push_back(p); }
+        
         void SetType(TypeType t) { Type=t; }
         void AddParam(ParamSpec* p) { Params.push_back(p); }
         
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
+
+        MatchedParams(const GrammarPack& pack, size_t offs);
     };
 
     class FunctionType
     {
-    private:
+    public:
         OpcodeType    Opcode;
         MatchedParams Params;
     public:
         FunctionType(OpcodeType o, const MatchedParams& p)
             : Opcode(o), Params(p) { }
+
+        FunctionType(const GrammarPack& pack, size_t offs);
     };
 
     class Rule
@@ -119,7 +109,8 @@ namespace FPoptimizer_Grammar
             ProduceNewTree, // replace self with the first (and only) from replaced_param
             ReplaceParams   // replace indicate params with replaced_params
         };
-    private:
+    public:
+        friend class GrammarDumper;
         TypeType Type;
 
         FunctionType  Input;
@@ -127,13 +118,84 @@ namespace FPoptimizer_Grammar
     public:
         Rule(TypeType t, const FunctionType& f, const MatchedParams& r)
             : Type(t), Input(f), Replacement(r) { }
+        Rule(TypeType t, const FunctionType& f, ParamSpec* p)
+            : Type(t), Input(f), Replacement() { Replacement.AddParam(p); }
+
+        Rule(const GrammarPack& pack, size_t offs);
     };
 
     class Grammar
     {
-    private:
+    public:
         std::vector<Rule> rules;
     public:
+        Grammar(): rules() { }
+    
         void AddRule(const Rule& r) { rules.push_back(r); }
+        void Read(const GrammarPack& pack, size_t offs);
+    };
+
+    #ifdef __GNUC__
+    # define GRAMMAR_PACK_STRUCT __attribute__((packed))
+    #else
+    # define GRAMMAR_PACK_STRUCT
+    #endif
+    
+    /* These are the versions of those above classes, that can be
+     * statically initialized (used in fpoptimizer_grammar_init.cc,
+     * which is generated by fpoptimizer_grammar_gen,
+     * which is generated by bison++ from fpoptimizer_grammar_gen.y.
+     */
+    
+    struct ParamSpec_Const
+    {
+        bool     negated : 1;
+        ParamSpec::TransformationType
+           transformation : 3;
+        unsigned minrepeat : 3;
+        bool     anyrepeat : 1;
+        OpcodeType opcode : 8;
+        unsigned count : 8;
+        unsigned index : 16;
+    } GRAMMAR_PACK_STRUCT;
+    struct MatchedParams_Const
+    {
+        MatchedParams::TypeType type : 8;
+        unsigned count : 8;
+        unsigned index : 16;
+    } GRAMMAR_PACK_STRUCT;
+    struct FunctionType_Const
+    {
+        OpcodeType opcode : 16;
+        unsigned   index  : 16;
+    } GRAMMAR_PACK_STRUCT;
+    struct RuleType_Const
+    {
+        Rule::TypeType   type        : 4;
+        unsigned         input_index : 14;
+        unsigned         repl_index  : 14;
+    } GRAMMAR_PACK_STRUCT;
+    struct Grammar_Const
+    {
+        unsigned index : 8;
+        unsigned count : 8;
+    } GRAMMAR_PACK_STRUCT;
+    
+    #undef GRAMMAR_PACK_STRUCT
+    
+    struct GrammarPack
+    {
+        const char* const*          nlist;
+        const double*               clist;
+        const ParamSpec_Const*      plist;
+        const MatchedParams_Const*  mlist;
+        const FunctionType_Const*   flist;
+        const RuleType_Const*       rlist;
+        const Grammar_Const*        glist;
     };
 }
+
+extern FPoptimizer_Grammar::Grammar  Grammar_Entry;
+extern FPoptimizer_Grammar::Grammar  Grammar_Intermediate;
+extern FPoptimizer_Grammar::Grammar  Grammar_Final;
+extern void FPoptimizer_Grammar_Init();

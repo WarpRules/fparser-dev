@@ -10,7 +10,9 @@ FP_MODULES=\
 		fpoptimizer.o \
 		fpoptimizer_bytecode_to_codetree.o \
 		fpoptimizer_codetree_to_bytecode.o \
-		fpoptimizer_codetree.o
+		fpoptimizer_codetree.o \
+		fpoptimizer_grammar.o \
+		fpoptimizer_grammar_init.o
 
 testbed:\
 		testbed.o $(FP_MODULES)
@@ -33,21 +35,37 @@ powi_speedtest:\
 	$(LD) -o $@ $^
 
 
-fpoptimizer_grammar_gen:\
-		fpoptimizer_grammar_gen.cc $(FP_MODULES)
+fpoptimizer_grammar_gen: \
+		fpoptimizer_grammar_gen.o \
+		fpoptimizer_bytecode_to_codetree.o \
+		fpoptimizer_codetree_to_bytecode.o \
+		fpoptimizer_codetree.o \
+		fpoptimizer_grammar.o \
+		fpoptimizer.o \
+		fparser.o
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \
 		fpoptimizer_grammar_gen.y
 	bison++ --output=$@ $<
 
+fpoptimizer_grammar_init.cc: \
+		fpoptimizer_grammar_gen \
+		fpoptimizer.dat
+	./$<  < fpoptimizer.dat  > $@
+
 pack:\
 		example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
 		fptypes.hh \
+		fpoptimizer_grammar_gen.y \
+		fpoptimizer_grammar_gen.cc \
+		fpoptimizer_grammar_gen.h \
 		fpoptimizer.hh \
 		fpoptimizer_consts.hh \
 		fpoptimizer.cc \
 		fpoptimizer_codetree.cc \
+		fpoptimizer_grammar.cc \
+		fpoptimizer_grammar_init.cc \
 		fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer_bytecode_to_codetree.cc
 	zip -9 fparser3.0.3.zip $^
@@ -56,7 +74,15 @@ pack:\
 #	$(CXX) -c $<
 
 clean:
-	rm *.o
+	rm -f	testbed speedtest example ftest \
+		powi_speedtest fpoptimizer_grammar_gen \
+		*.o \
+		fpoptimizer_grammar_gen.cc \
+		fpoptimizer_grammar_gen.output \
+		fpoptimizer_grammar_gen.h \
+		fpoptimizer_grammar_init.cc
+distclean: clean
+	rm -f	*~
 
 .dep:
 	g++ -MM $(wildcard *.cc) > .dep

@@ -86,6 +86,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree* result = stack.back();
             stack.resize(stack.size()-1);
+            result->Rehash(false);
             return result;
         }
         
@@ -248,7 +249,7 @@ namespace FPoptimizer_CodeTree
 #endif
                     default:
                         unsigned funcno = opcode-cAbs;
-                        assert(funcno < sizeof(Functions)/sizeof(Functions[0]));
+                        assert(funcno < FUNC_AMOUNT);
                         const FuncDefinition& func = Functions[funcno];
                         data.Eat(func.params, OPCODE(opcode));
                         break;

@@ -7,6 +7,8 @@ PLAN:
     - either automatically or manually
     - avoid runtime parsing of .dat file
     - prefer static const structs over constructor code
+    DONE: See fpoptimizer_grammar_gen.y .
+          Produces fpoptimizer_grammar_init.cc .
 
 2.  Augment the CodeTree mechanism the following ways:
     - Add mechanism that generates a hash value for the contents
@@ -56,19 +58,24 @@ PLAN:
      - Converting raise-to-integer-powers into sequences of cInv/cDup/cFetch/cMul
        using the powi algorithm already existing in fpoptimizer.cc
        (be wary of generating too long sequences, though)
+       *DONE
      - Converting multiply-by-integers into sequences of cNeg/cDup/cFetch/cAdd
        using the powi algorithm already existing in fpoptimizer.cc
        (be wary of generating too long sequences, though)
+       *DONE
      - Reordering cMul operands such that inverted operands
        don't come first, to avoid creating cInv unless necessary.
        When inverted operands come in non-head positions, use cDiv instead of cMul.
+       *DONE
      - Reordering cAdd operands such that negated operands
        don't come first, to avoid creating cNeg unless necessary.
        When negated operands come in non-head positions, use cSub instead of cAdd.
+       *DONE
      - When an identical subtree is synthesized into bytecode more than
        once in a row, use cDup for the subsequential occurrences.
        To that point, reorder any commutative operands so as to
        increase the chances of cDup being utilized.
+       *TODO
 
 4b. Optional algorithm if an SSA evaluator is supported
    (possibly only if a JIT backend exists):

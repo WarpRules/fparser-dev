@@ -1,9 +1,9 @@
-#include "fpoptimizer_codetree.hh"
-#include "fpoptimizer_grammar.hh"
-
+#include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
 
+#include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_grammar.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
