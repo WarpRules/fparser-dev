@@ -137,7 +137,10 @@ cCsc [x]   -> cMul ~(cSin x)
 cSec [x]   -> cMul ~(cCos x)
 
 # sqrt(x) = x^0.5
-cSqrt [x]   -> cPow x 0.5
+cSqrt [x]  -> cPow x 0.5
+
+# sqr(x) = x*x
+cSqr [x]   -> cMul x x
 
 # exp(x) = CONSTANT_E^x
 cExp [x]    -> cPow CONSTANT_E x

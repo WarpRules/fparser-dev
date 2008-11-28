@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <string>
+#include <vector>
 
 /*
  First read: fpoptimizer-plan.txt
@@ -72,8 +74,8 @@ namespace FPoptimizer_Grammar
     private:
         enum
         {
-            PositionalParams
-            AnyParams,
+            PositionalParams,
+            AnyParams
         } Type;
 
         std::vector<ParamSpec> Params;
@@ -83,7 +85,7 @@ namespace FPoptimizer_Grammar
     {
     private:
         OpcodeType    Opcode;
-        MatchedParams MatchedParams;
+        MatchedParams Params;
     };
 
     class Rule
@@ -106,12 +108,16 @@ namespace FPoptimizer_Grammar
     };
 }
 
+
+
 namespace FPoptimizer_CodeTree
 {
     class CodeTree;
+    class CodeTreeParserData;
 
     class CodeTree
     {
+        friend class CodeTreeParserData;
     private:
         /* Describing the codetree node */
         unsigned Opcode;
@@ -131,7 +137,7 @@ namespace FPoptimizer_CodeTree
         //   For cAdd: operands to add together (0 to n)
         //             sign indicates that the value is negated before adding (0-x)
         //   For cMul: operands to multiply together (0 to n)
-        //             sign indicates that the value is inverted before adding (1/x)
+        //             sign indicates that the value is inverted before multiplying (1/x)
         //   For cAnd: operands to bitwise-and together (0 to n)
         //             sign indicates that the value is inverted before anding (!x)
         //   For cOr:  operands to bitwise-or together (0 to n)
@@ -148,5 +154,48 @@ namespace FPoptimizer_CodeTree
         /* Internal operation */
         uint_fast64_t Hash;
         CodeTree*     Parent;
+    public:
+        CodeTree();
+        ~CodeTree();
+        
+        /* Generates a CodeTree from the given bytecode */
+        static CodeTree* GenerateFrom(
+            const std::vector<unsigned>& byteCode,
+            const std::vector<double>& immed,
+            unsigned n_vars);
+
+        void SynthesizeByteCode(
+            std::vector<unsigned>& byteCode,
+            std::vector<double>&   immed,
+            size_t& stacktop_cur,
+            size_t& stacktop_max);
+        
+        /* Regenerates the hash.
+         * child_triggered=false: Recurse to children
+         * child_triggered=true:  Recurse to parents
+         */
+        void Rehash(bool child_triggered);
+        
+        /* Clones the tree. (For parameter duplication) */
+        CodeTree* Clone();
+        
+        bool    IsImmed() const;
+        double GetImmed() const { return Value; }
+        bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
+        double GetLongIntegerImmed() const { return (long)GetImmed(); }
+        bool      IsVar() const;
+        unsigned GetVar() const { return Var; }
+        
+        void NegateImmed() { if(IsImmed()) Value = -Value;       }
+        void InvertImmed() { if(IsImmed()) Value = 1.0 / Value;  }
+        void NotTheImmed() { if(IsImmed()) Value = Value == 0.0; }
+    
+    private:
+        void Recalculate_Hash_NoRecursion();
+        void ConstantFolding();
+    
+    private:
+        CodeTree(const CodeTree&);
+        CodeTree& operator=(const CodeTree&);
     };
 }
