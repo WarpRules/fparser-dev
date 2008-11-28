@@ -1,4 +1,6 @@
-#include "fpoptimizer.hh"
+#include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_grammar.hh"
+
 #include "fparser.hh"
 #include "fptypes.hh"
 
@@ -8,8 +10,8 @@ using namespace FUNCTIONPARSERTYPES;
 namespace FPoptimizer_CodeTree
 {
     bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
-    bool      CodeTree::IsVar() const { return Opcode == cVar; }
-    
+    bool    CodeTree::IsVar()   const { return Opcode == cVar; }
+
     void CodeTree::ConstantFolding()
     {
         // Insert here any hardcoded constant-folding optimizations

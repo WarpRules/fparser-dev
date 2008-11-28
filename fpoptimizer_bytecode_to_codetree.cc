@@ -2,7 +2,7 @@
 #include <list>
 #include <cassert>
 
-#include "fpoptimizer.hh"
+#include "fpoptimizer_codetree.hh"
 #include "fptypes.hh"
 
 #include "fpoptimizer_consts.hh"

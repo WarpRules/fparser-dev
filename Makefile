@@ -32,6 +32,15 @@ powi_speedtest:\
 		powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
+
+fpoptimizer_grammar_gen:\
+		fpoptimizer_grammar_gen.cc
+	$(LD) -o $@ $^
+
+fpoptimizer_grammar_gen.cc: \
+		fpoptimizer.y
+	bison++ -dv --output=$@ $<
+
 pack:\
 		example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
 		fptypes.hh \
