@@ -60,6 +60,7 @@ namespace FUNCTIONPARSERTYPES
         VarBegin
     };
 
+#ifdef ONCE_FPARSER_H_
     struct FuncDefinition
     {
         const char* name;
@@ -165,6 +166,7 @@ namespace FUNCTIONPARSERTYPES
             return name < rhs.name;
         }
     };
+#endif
 }
 
 #ifdef ONCE_FPARSER_H_

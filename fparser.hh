@@ -16,6 +16,8 @@
 #include <iostream>
 #endif
 
+namespace FPoptimizer_CodeTree { class CodeTree; }
+
 class FunctionParser
 {
 public:
@@ -82,6 +84,8 @@ private:
     ParseErrorType parseErrorType;
     int evalErrorType;
 
+    friend class FPoptimizer_CodeTree::CodeTree;
+    
     struct Data;
     Data* data;
 

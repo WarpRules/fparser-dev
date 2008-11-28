@@ -28,7 +28,8 @@ ftest:\
 		ftest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-powi_speedtest: powi_speedtest.o fparser.o fpoptimizer.o
+powi_speedtest:\
+		powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
 pack:\

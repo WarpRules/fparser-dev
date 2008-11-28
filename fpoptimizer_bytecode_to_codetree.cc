@@ -6,6 +6,7 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_consts.hh"
+#include "fparser.hh"
 
 
 using namespace FUNCTIONPARSERTYPES;
@@ -43,6 +44,12 @@ namespace FPoptimizer_CodeTree
             stack.push_back(newnode);
         }
         
+        void EatFunc(unsigned params, OPCODE opcode, unsigned funcno)
+        {
+            Eat(params, opcode);
+            stack.back()->Funcno = funcno;
+        }
+        
         void AddConst(double value)
         {
             CodeTree* newnode = new CodeTree;
@@ -59,20 +66,9 @@ namespace FPoptimizer_CodeTree
             stack.push_back(newnode);
         }
         
-        bool& GetLastOpParamSign(unsigned paramno)
+        void SetLastOpParamSign(unsigned paramno)
         {
-            return stack.back()->Params[paramno].sign;
-        }
-        
-        void CloneLastOpLastParam()
-        {
-            CodeTree& lastop = *stack.back();
-            const CodeTree::Param& refparam = lastop.Params.back();
-            
-            CodeTree::Param param;
-            param.param = refparam.param->Clone();
-            param.sign  = refparam.sign;
-            lastop.Params.push_back(param);
+            stack.back()->Params[paramno].sign = true;
         }
         
         void SwapLastTwoInStack()
@@ -107,12 +103,12 @@ namespace FPoptimizer_CodeTree
     CodeTree* CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
-        unsigned n_vars)
+        const FunctionParser::Data& fpdata)
     {
         CodeTreeParserData data;
         std::list<size_t> labels;
         
-        for(size_t IP=0, DP=0; ; )
+        for(size_t IP=0, DP=0; ; ++IP)
         {
             while(!labels.empty() && *labels.begin() == IP)
             {
@@ -145,18 +141,34 @@ namespace FPoptimizer_CodeTree
                     case cDup:
                         data.Dup();
                         break;
+                    case cNop:
+                        break;
+                    case cFCall:
+                    {
+                        unsigned funcno = ByteCode[++IP];
+                        unsigned params = fpdata.FuncPtrs[funcno].params;
+                        data.EatFunc(params, OPCODE(opcode), funcno);
+                        break;
+                    }
+                    case cPCall:
+                    {
+                        unsigned funcno = ByteCode[++IP];
+                        unsigned params = fpdata.FuncParsers[funcno].params;
+                        data.EatFunc(params, OPCODE(opcode), funcno);
+                        break;
+                    }
                     // Unary operators requiring special attention
                     case cInv:
                         data.Eat(1, cMul); // Unary division is inverse multiplying
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cNeg:
                         data.Eat(1, cAdd); // Unary minus is negative adding.
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cSqr:
-                        data.Eat(1, cMul);
-                        data.CloneLastOpLastParam();
+                        data.Dup();
+                        data.Eat(2, cMul);
                         break;
                     // Unary functions requiring special attention
                     case cDeg:
@@ -179,17 +191,17 @@ namespace FPoptimizer_CodeTree
                     case cCot:
                         data.Eat(1, cTan);
                         data.Eat(1, cMul);
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cCsc:
                         data.Eat(1, cSin);
                         data.Eat(1, cMul);
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cSec:
                         data.Eat(1, cCos);
                         data.Eat(1, cMul);
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cLog10:
                         data.Eat(1, cLog);
@@ -199,19 +211,19 @@ namespace FPoptimizer_CodeTree
                     // Binary operators requiring special attention
                     case cSub:
                         data.Eat(2, cAdd); // Minus is negative adding
-                        data.GetLastOpParamSign(1) = true;
+                        data.SetLastOpParamSign(1);
                         break;
                     case cRSub:
                         data.Eat(2, cAdd);
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     case cDiv:
                         data.Eat(2, cMul); // Divide is inverse multiply
-                        data.GetLastOpParamSign(1) = true;
+                        data.SetLastOpParamSign(1);
                         break;
                     case cRDiv:
                         data.Eat(2, cMul);
-                        data.GetLastOpParamSign(0) = true;
+                        data.SetLastOpParamSign(0);
                         break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:
@@ -226,14 +238,14 @@ namespace FPoptimizer_CodeTree
                         data.Eat(1, OPCODE(opcode));
                         break;
                     // Other functions
-    #ifndef FP_DISABLE_EVAL
+#ifndef FP_DISABLE_EVAL
                     case cEval:
                     {
-                        unsigned paramcount = unsigned(n_vars);
+                        unsigned paramcount = fpdata.variableRefs.size();
                         data.Eat(paramcount, OPCODE(opcode));
                         break;
                     }
-    #endif
+#endif
                     default:
                         unsigned funcno = opcode-cAbs;
                         assert(funcno < sizeof(Functions)/sizeof(Functions[0]));

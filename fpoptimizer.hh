@@ -2,6 +2,9 @@
 #include <string>
 #include <vector>
 
+#include "fpconfig.hh"
+#include "fparser.hh"
+
 /*
  First read: fpoptimizer-plan.txt
 */
@@ -162,7 +165,7 @@ namespace FPoptimizer_CodeTree
         static CodeTree* GenerateFrom(
             const std::vector<unsigned>& byteCode,
             const std::vector<double>& immed,
-            unsigned n_vars);
+            const FunctionParser::Data& data);
 
         void SynthesizeByteCode(
             std::vector<unsigned>& byteCode,
