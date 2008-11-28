@@ -136,7 +136,7 @@ int main()
             try {
                 ct.AssembleSequence(st,
                     exponent,
-                    1,cInv,cMul,cDiv,
+                    MulSequence,
                     byteCode,immed,stacktop_cur,stacktop_max);
             }
             catch(bool)
@@ -150,8 +150,8 @@ int main()
             {
                 if(byteCode[a] == cMul)
                     res += 5;
-                else if(byteCode[a] == cDiv)
-                    res += 6;
+                else if(byteCode[a] == cDiv || byteCode[a] == cRDiv)
+                    res += 5 * 1.25;
                 else if(byteCode[a] == cSqr)
                     res += 5;
                 else if(byteCode[a] == cDup)

@@ -50,12 +50,11 @@ Counts generateOpcodesForExp(unsigned n, bool print, double& value)
                     const double high = value;
                     value = valueCopy;
                     Counts r2 = generateOpcodesForExp(lesspower, print, value);
-                    if(print) std::cout << "div ";
-                    if(print) std::cout << "PopNMov ";
+                    if(print) std::cout << "rdiv ";
                     retval.opcodes += r2.opcodes;
                     retval.muls    += r2.muls;
                     retval.muls += 1;
-                    retval.opcodes += 4;
+                    retval.opcodes += 3;
                     value = high / value;
                     return retval;
                 }
@@ -98,6 +97,7 @@ Counts getParserOpcodesAmount(const std::string& func, double& value)
         const std::string end = line.substr(line.size()-3);
         if(end == "mul"
         || end == "div"
+        || end == "rdi"
         || end == "sqr") ++counts.muls;
     }
     --counts.opcodes;

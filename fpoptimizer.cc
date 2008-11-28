@@ -56,39 +56,48 @@ static const
 signed char powi_table[POWI_TABLE_SIZE] =
 {
       0,   1,   1,   1,   2,   1,   3,   1, /*   0 -   7 */
-      4,   1,   5,   1,   6,   1,   7,   5, /*   8 -  15 */
-      8,   1,   9,   1,  10,   1,  11,   1, /*  16 -  23 */
+      4,   1,   5,   1,   6,   1,  -2,   5, /*   8 -  15 */
+      8,   1,   9,   1,  10,  -3,  11,   1, /*  16 -  23 */
      12,   5,  13,   9,  14,   1,  15,   1, /*  24 -  31 */
-     16,   1,  17,   1,  18,   1,  19,  13, /*  32 -  39 */
-     20,   1,  21,   1,  22,   9,   1,   2, /*  40 -  47 */
+     16,   1,  17,  -5,  18,   1,  19,  13, /*  32 -  39 */
+     20,   1,  21,   1,  22,   9,  -2,   1, /*  40 -  47 */
      24,   1,  25,  17,  26,   1,  27,  11, /*  48 -  55 */
-     28,  19,  29,   8,  30,   1,  -2,  21, /*  56 -  63 */
+     28,   1,  29,   8,  30,   1,  -2,   1, /*  56 -  63 */
      32,   1,  33,   1,  34,   1,  35,   1, /*  64 -  71 */
-     36,   1,  37,  25,  38,   1,  39,   1, /*  72 -  79 */
+     36,   1,  37,  25,  38, -11,  39,   1, /*  72 -  79 */
      40,   9,  41,   1,  42,  17,   1,  29, /*  80 -  87 */
      44,   1,  45,   1,  46,  -3,  32,  19, /*  88 -  95 */
      48,   1,  49,  33,  50,   1,  51,   1, /*  96 - 103 */
      52,  35,  53,   8,  54,   1,  55,  37, /* 104 - 111 */
-     56,   1,  57,  16,  58,  13,  59,  17, /* 112 - 119 */
+     56,   1,  57,  -5,  58,  13,  59, -17, /* 112 - 119 */
      60,   1,  61,  41,  62,  25,  -2,   1, /* 120 - 127 */
      64,   1,  65,   1,  66,   1,  67,  45, /* 128 - 135 */
      68,   1,  69,   1,  70,  48,  16,   8, /* 136 - 143 */
      72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */
      76,  17,   1,  -5,  78,   1,  32,  53, /* 152 - 159 */
      80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */
-     84,   1,  85,  19,  86,   8,  87,  35, /* 168 - 175 */
+     84,   1,  85,  57,  86,   8,  87,  35, /* 168 - 175 */
      88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */
-     92,  37,  93,  17,  94,  -3,  64,  64, /* 184 - 191 */
+     92,  37,  93,  17,  94,  -3,  64,   2, /* 184 - 191 */
      96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */
     100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */
     104,   1, 105,  16, 106,  24, 107,   1, /* 208 - 215 */
-    108,   1, 109,  73, 110,  17, 111, -33, /* 216 - 223 */
-    112,  45, 113,  32, 114,   1, 115,  33, /* 224 - 231 */
-    116,   1, 117,  80, 118,  48, 119,   1, /* 232 - 239 */
-    120,   1, 121,  81, 122,  49, 123,  -9, /* 240 - 247 */
+    108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */
+    112,  45, 113,  32, 114,   1, 115, -33, /* 224 - 231 */
+    116,   1, 117,  -5, 118,  48, 119,   1, /* 232 - 239 */
+    120,   1, 121,  81, 122,  49, 123,  13, /* 240 - 247 */
     124,   1, 125,   1, 126,   1,  -2,  85  /* 248 - 255 */
 }; /* as in gcc, but custom-optimized for stack calculation */
 static const int POWI_CACHE_SIZE = 256;
+
+static const struct SequenceOpCode
+{
+    double basevalue;
+    unsigned op_flip;
+    unsigned op_normal, op_normal_flip;
+    unsigned op_inverse, op_inverse_flip;
+} AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub },
+  MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
 
 namespace {
 inline double Min(double d1, double d2)
@@ -1226,10 +1235,7 @@ public:
                   size_t& stacktop_max) const;
     void AssembleSequence(
                   const SubTree& tree, long count,
-                  double if_zero_constant,
-                  unsigned if_negative_opcode,
-                  unsigned cumulation_opcode,
-                  unsigned cumulation_opcode_inverse,
+                  const SequenceOpCode& sequencing,
                   vector<unsigned> &byteCode,
                   vector<double>   &immed,
                   size_t& stacktop_cur,
@@ -1247,8 +1253,7 @@ public:
     Subdivide_result AssembleSequence_Subdivide(
                   long count,
                   int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
-                  unsigned cumulation_opcode,
-                  unsigned cumulation_opcode_inverse,
+                  const SequenceOpCode& sequencing,
                   vector<unsigned> &byteCode,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
@@ -1259,7 +1264,7 @@ public:
                   int cache_needed[POWI_CACHE_SIZE],
 
                   unsigned cumulation_opcode,
-                  bool commutative,
+                  unsigned cimulation_opcode_flip,
                   
                   vector<unsigned> &byteCode,
                   size_t& stacktop_cur,
@@ -1651,9 +1656,7 @@ void CodeTree::Assemble
                 /* Optimize integer exponents */
                 AssembleSequence(
                     p0, p1->GetLongIntegerImmed(),
-                    1.0,   /* in case the exponent is 0 */
-                    cInv,  /* in case the exponent is negative */
-                    cMul,cDiv,  /* cumulation operands */
+                    MulSequence,
                     byteCode,immed,stacktop_cur,stacktop_max
                 );
             }
@@ -1801,10 +1804,7 @@ static void PlanNtimesCache
 
 void CodeTree::AssembleSequence(
     const SubTree& tree, long count,
-    double if_zero_constant,
-    unsigned if_negative_opcode,
-    unsigned cumulation_opcode,
-    unsigned cumulation_opcode_inverse,
+    const SequenceOpCode& sequencing,
     vector<unsigned> &byteCode,
     vector<double>   &immed,
     size_t& stacktop_cur,
@@ -1813,14 +1813,14 @@ void CodeTree::AssembleSequence(
     if(count == 0)
     {
         SimuPush(1);
-        AddConst(if_zero_constant);
+        AddConst(sequencing.basevalue);
     }
     else
     {
         tree->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
         if(count < 0)
         {
-            AddCmd(if_negative_opcode);
+            AddCmd(sequencing.op_flip);
             count = -count;
         }
 
@@ -1854,7 +1854,7 @@ void CodeTree::AssembleSequence(
                 {
                     FPO(fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]));
                     Subdivide_result res = AssembleSequence_Subdivide(
-                        n, cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
+                        n, cache, cache_needed, sequencing,
                         byteCode, immed, stacktop_cur, stacktop_max);
                     FPO(fprintf(stderr, "Cache[%d] = %u,%d\n",
                         n, (unsigned)res.stackpos, res.cache_val));
@@ -1870,7 +1870,7 @@ void CodeTree::AssembleSequence(
 
             FPO(fprintf(stderr, "Calculating result for %ld...\n", count));
             Subdivide_result res = AssembleSequence_Subdivide(
-                count, cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
+                count, cache, cache_needed, sequencing,
                 byteCode, stacktop_cur, stacktop_max);
 
             size_t n_excess = stacktop_cur - stacktop_desired;
@@ -1889,8 +1889,7 @@ void CodeTree::AssembleSequence(
 CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     long count,
     int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
-    unsigned cumulation_opcode,
-    unsigned cumulation_opcode_inverse,
+    const SequenceOpCode& sequencing,
     vector<unsigned> &byteCode,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
@@ -1930,31 +1929,31 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     {
         Subdivide_result half_res = AssembleSequence_Subdivide(
             half,
-            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
+            cache, cache_needed, sequencing,
             byteCode, stacktop_cur,stacktop_max);
 
         // self-cumulate the subdivide result
         res = Subdivide_MakeResult(half_res, half_res, cache_needed,
-            cumulation_opcode,true,
+            sequencing.op_normal, sequencing.op_normal_flip,
             byteCode, stacktop_cur,stacktop_max);
     }
     else
     {
         Subdivide_result half_res = AssembleSequence_Subdivide(
             half,
-            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
+            cache, cache_needed, sequencing,
             byteCode, stacktop_cur,stacktop_max);
 
         Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
             otherhalf>0?otherhalf:-otherhalf,
-            cache, cache_needed, cumulation_opcode,cumulation_opcode_inverse,
+            cache, cache_needed, sequencing,
             byteCode, stacktop_cur,stacktop_max);
 
         FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", count, half, otherhalf));
 
         res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
-            otherhalf>0 ? cumulation_opcode : cumulation_opcode_inverse,
-            otherhalf>0,
+            otherhalf>0 ? sequencing.op_normal      : sequencing.op_inverse,
+            otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
             byteCode, stacktop_cur,stacktop_max);
     }
     
@@ -1979,7 +1978,7 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     const Subdivide_result& b,
     int cache_needed[POWI_CACHE_SIZE],
     unsigned cumulation_opcode,
-    bool commutative,
+    unsigned cumulation_opcode_flip,
     vector<unsigned> &byteCode,
     size_t& stacktop_cur,
     size_t& stacktop_max) const
@@ -1997,9 +1996,11 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     if(b.cache_val >= 0) b_needed = --cache_needed[b.cache_val];
 
     size_t apos = a.stackpos, bpos = b.stackpos;
+    
+    bool flipped = false;
 
     #define DUP_BOTH() do { \
-        if(apos < bpos && commutative) { size_t tmp=apos; apos=bpos; bpos=tmp; } \
+        if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; flipped=!flipped; } \
         FPO(fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos)); \
         SimuDupPushFrom(apos); \
         SimuDupPushFrom(apos==bpos ? stacktop_cur-1 : bpos); } while(0)
@@ -2051,10 +2052,13 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
         //  Output: x A B x x R
 
         // if B is not at the top, dup both.
-        if(bpos != stacktop_cur-1 || !commutative)
+        if(bpos != stacktop_cur-1)
             DUP_BOTH();    // dup both
         else
+        {
             DUP_ONE(apos); // just dup A
+            flipped=!flipped;
+        }
     }
     else if(b_needed > 0)
     {
@@ -2093,19 +2097,25 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
 
         if(apos == bpos && apos == stacktop_cur-1)
             DUP_ONE(apos); // scenario 6
-        else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2 && commutative)
+        else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2)
+        {
             FPO(fprintf(stderr, "-> op\n")); // scenario 3
+            flipped=!flipped;
+        }
         else if(apos == stacktop_cur-2 && bpos == stacktop_cur-1)
             FPO(fprintf(stderr, "-> op\n")); // scenario 4
         else if(apos == stacktop_cur-1)
             DUP_ONE(bpos); // scenario 1
-        else if(bpos == stacktop_cur-1 && commutative)
+        else if(bpos == stacktop_cur-1)
+        {
             DUP_ONE(apos); // scenario 2
+            flipped=!flipped;
+        }
         else
             DUP_BOTH(); // scenario 5
     }
     // Add them together.
-    AddCmd(cumulation_opcode);
+    AddCmd(flipped ? cumulation_opcode_flip : cumulation_opcode);
     SimuPop(1);
     // The return value will not need to be preserved.
     int cache_val = -1;

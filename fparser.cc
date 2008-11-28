@@ -1230,6 +1230,9 @@ double FunctionParser::Eval(const double* Vars)
                   SP = stackOffs_target;
                   break;
               }
+          case   cRSub: Stack[SP-1] = Stack[SP] - Stack[SP-1]; --SP; break;
+          case   cRDiv: if(Stack[SP-1] == 0) { evalErrorType=1; return 0; }
+                        Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
 #endif
 
           case cNop: break;
@@ -1362,6 +1365,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                         dest << "cPopNMov(" << a << ", " << b << ")";
                         break;
                     }
+                    case cRDiv: n = "rdiv"; break;
+                    case cRSub: n = "rsub"; break;
 #endif
 
                     case cNop: n = "nop"; break;

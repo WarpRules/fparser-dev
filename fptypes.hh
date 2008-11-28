@@ -51,6 +51,8 @@ namespace FUNCTIONPARSERTYPES
         cFetch, /* Same as Dup, except with absolute index (next value is index) */
         cPopNMov,   /* cPopNMov(x,y) moves [y] to [x] and deletes anything above [x] */
         cSqr,   /* squares the last operand in the stack, no push/pop */
+        cRDiv,  /* reverse division (not x/y, but y/x) */
+        cRSub,  /* reverse subtraction (not x-y, but y-x) */
 #endif
 
         cNop,
