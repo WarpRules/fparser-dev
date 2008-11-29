@@ -37,12 +37,7 @@ powi_speedtest:\
 
 fpoptimizer_grammar_gen: \
 		fpoptimizer_grammar_gen.o \
-		fpoptimizer_bytecode_to_codetree.o \
-		fpoptimizer_codetree_to_bytecode.o \
-		fpoptimizer_codetree.o \
-		fpoptimizer_grammar.o \
-		fpoptimizer.o \
-		fparser.o
+		fpoptimizer_grammar.o
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \

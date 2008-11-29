@@ -14,6 +14,7 @@
 #include <sstream>
 #include <iostream>
 #include <map>
+#include <algorithm>
 
 /* crc32 */
 #include <stdint.h>
@@ -180,6 +181,15 @@ public:
             case cNop: return "cNop";
             case VarBegin: return "VarBegin";
         }
+        switch( ParamSpec::SpecialOpcode(o) )
+        {
+            case ParamSpec::NumConstant:   return "ParamSpec::NumConstant  ";
+            case ParamSpec::ImmedHolder:   return "ParamSpec::ImmedHolder  ";
+            case ParamSpec::NamedHolder:   return "ParamSpec::NamedHolder  ";
+            case ParamSpec::RestHolder:    return "ParamSpec::RestHolder   ";
+            case ParamSpec::Function:      return "ParamSpec::Function     ";
+          //case ParamSpec::GroupFunction: return "ParamSpec::GroupFunction";
+        }
         std::stringstream tmp;
         tmp << o;
         return tmp.str();
@@ -231,12 +241,12 @@ public:
         }
         size_t candidate_begin = 0;
         bool fail = false;
-        for(size_t a=0; a<crc32list.size(); ++a)
+        for(size_t a=0; a<count; ++a)
         {
             std::map<crc32_t, size_t>::const_iterator ppos = p_index.find(crc32list[a]);
             if(ppos == p_index.end())
             {
-                if(a > 0 && (candidate_begin + (a-1)) == index-a)
+                /*if(a > 0 && (candidate_begin + (a-1)) == index-a)
                 {
                     // REMOVED: This never seems to happen, so we can't
                     //          test it. Remove it rather than leave in
@@ -250,13 +260,13 @@ public:
                     fprintf(stderr, "len=%u, appending at %u\n", (unsigned)count, (unsigned)a);
                     plist.resize(index);
                     index = candidate_begin;
-                    for(; a < crc32list.size(); ++a)
+                    for(; a < count; ++a)
                     {
                         size_t pos = Dump(*params[a]);
                         p_index[crc32list[a]] = index + a;
                     }
                     return;
-                }
+                }*/
                 p_index[crc32list[a]] = index + a;
                 fail = true;
             }
@@ -283,31 +293,31 @@ public:
         pitem.opcode         = p.Opcode;
         switch(p.Opcode)
         {
-            case cImmed:
+            case ParamSpec::NumConstant:
             {
                 pitem.index = Dump(p.ConstantValue);
                 pitem.count = 0;
                 break;
             }
-            case cFetch:
+            case ParamSpec::ImmedHolder:
             {
                 pitem.index = p.Index;
                 pitem.count = 0;
                 break;
             }
-            case cVar:
+            case ParamSpec::NamedHolder:
             {
                 pitem.index = Dump(p.Name);
                 pitem.count = p.Name.size();
                 break;
             }
-            case cDup:
+            case ParamSpec::RestHolder:
             {
                 pitem.index = p.Index;
                 pitem.count = 0;
                 break;
             }
-            case cFCall:
+            case ParamSpec::Function:
             {
                 pitem.index = Dump(*p.Func);
                 pitem.count = 0;
@@ -955,6 +965,9 @@ int main()
     {
         FPoptimizerGrammarParser x;
         x.yyparse();
+        
+        std::sort(x.grammar.rules.begin(),
+                  x.grammar.rules.end());
         
         if(sectionname == "ENTRY")
             Grammar_Entry = x.grammar;

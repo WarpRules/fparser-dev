@@ -1,26 +1,20 @@
-#include "fpconfig.hh"
-#include "fparser.hh"
-#include "fptypes.hh"
-
 #include "fpoptimizer_grammar.hh"
-
-using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_Grammar
 {
     ParamSpec::ParamSpec(FunctionType* f)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-          Opcode(cFCall), Func(f), Params(), Name()
+          Opcode(Function), Func(f), Params(), Name()
           {
           }
     
     ParamSpec::ParamSpec(double d)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-          Opcode(cImmed), ConstantValue(d), Params(), Name() { }
+          Opcode(NumConstant), ConstantValue(d), Params(), Name() { }
     
     ParamSpec::ParamSpec(const std::string& n)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-          Opcode(cVar), Params(), Name(n) { }
+          Opcode(NamedHolder), Params(), Name(n) { }
     
     ParamSpec::ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
@@ -28,12 +22,88 @@ namespace FPoptimizer_Grammar
     
     ParamSpec::ParamSpec(unsigned i, double)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-          Opcode(cFetch), Index(i), Params(), Name() { }
+          Opcode(ImmedHolder), Index(i), Params(), Name() { }
     
     ParamSpec::ParamSpec(unsigned i, void*)
         : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-          Opcode(cDup), Index(i), Params(), Name() { }
+          Opcode(RestHolder), Index(i), Params(), Name() { }
 
+    bool ParamSpec::operator== (const ParamSpec& b) const
+    {
+        if(Negated != b.Negated) return false;
+        if(Transformation != b.Transformation) return false;
+        if(MinimumRepeat != b.MinimumRepeat) return false;
+        if(AnyRepetition != b.AnyRepetition) return false;
+        if(Opcode != b.Opcode) return false;
+        switch(Opcode)
+        {
+            case NumConstant:
+                return ConstantValue == b.ConstantValue;
+            case ImmedHolder:
+            case RestHolder:
+                return Index == b.Index;
+            case NamedHolder:
+                return Name == b.Name;
+            case Function:
+                return *Func == *b.Func;
+            default:
+                if(Params.size() != b.Params.size()) return false;
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(!(*Params[a] == *b.Params[a]))
+                        return false;
+                break;
+        }
+        return true;
+    }
+
+    bool ParamSpec::operator< (const ParamSpec& b) const
+    {
+        if(Negated != b.Negated) return Negated < b.Negated;
+        if(Transformation != b.Transformation) return Transformation < b.Transformation;
+        if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
+        if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
+        if(Opcode != b.Opcode) return Opcode < b.Opcode;
+        switch(Opcode)
+        {
+            case NumConstant:
+                return ConstantValue < b.ConstantValue;
+            case ImmedHolder:
+            case RestHolder:
+                return Index < b.Index;
+            case NamedHolder:
+                return Name < b.Name;
+            case Function:
+                return *Func < *b.Func;
+            default:
+                if(Params.size() != b.Params.size()) return Params.size() < b.Params.size();
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(!(*Params[a] == *b.Params[a]))
+                        return *Params[a] < *b.Params[a];
+                break;
+        }
+        return false;
+    }
+
+    bool MatchedParams::operator== (const MatchedParams& b) const
+    {
+        if(Type != b.Type) return false;
+        if(Params.size() != b.Params.size()) return false;
+        for(size_t a=0; a<Params.size(); ++a)
+            if(!(*Params[a] == *b.Params[a]))
+                return false;
+        return true;
+    }
+
+    bool MatchedParams::operator< (const MatchedParams& b) const
+    {
+        if(Type !=  b.Type) return Type;
+        if(Params.size() != b.Params.size()) return Params.size() < b.Params.size();
+        for(size_t a=0; a < Params.size(); ++a)
+            if(!(*Params[a] == *b.Params[a]))
+                return *Params[a] < *b.Params[a];
+        return false;
+    }
+    
 
     void Grammar::Read(const GrammarPack& pack, size_t offs)
     {
@@ -79,19 +149,19 @@ namespace FPoptimizer_Grammar
         const ParamSpec_Const& pitem = pack.plist[offs];
         switch(Opcode)
         {
-            case cImmed:
+            case NumConstant:
                 ConstantValue = pack.clist[pitem.index];
                 break;
-            case cFetch:
+            case ImmedHolder:
                 Index = pitem.index;
                 break;
-            case cVar:
+            case NamedHolder:
                 Name.assign(pack.nlist[pitem.index], pitem.count);
                 break;
-            case cDup:
+            case RestHolder:
                 Index = pitem.index;
                 break;
-            case cFCall:
+            case Function:
                 Func = new FunctionType(pack, pitem.index);
                 break;
             default:

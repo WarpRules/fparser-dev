@@ -23,15 +23,17 @@ namespace FPoptimizer_Grammar
         unsigned MinimumRepeat; // default 1
         bool AnyRepetition;     // false: max=minimum; true: max=infinite
         
-        OpcodeType Opcode;      // specifies the type of the function
-        // Special functions:
-        //    cImmed = NumConstant     , Holds a particular value (syntax-time constant)
-        //    cFetch = ImmedHolder          , Holds a particular immed
-        //      cVar = NamedHolder          , Holds a particular named param (of any kind)
-        //      cDup = RestHolder           , Holds anything else
-        //    cFCall = Function             , Holds an opcode and the params
-        //   <OTHER> = GroupFunction  , For parse-time functions:
+        enum SpecialOpcode
+        {
+            NumConstant = 0xFFFB, // Holds a particular value (syntax-time constant)
+            ImmedHolder,          // Holds a particular immed
+            NamedHolder,          // Holds a particular named param (of any kind)
+            RestHolder,           // Holds anything else
+            Function              // Holds an opcode and the params
+          //GroupFunction         // For parse-time functions
+        };
         
+        OpcodeType Opcode;      // specifies the type of the function
         union
         {
             double ConstantValue;           // for NumConstant
@@ -59,6 +61,10 @@ namespace FPoptimizer_Grammar
             { MinimumRepeat=min; AnyRepetition=any; return this; }
 
         ParamSpec(const GrammarPack& pack, size_t offs);
+        
+        bool operator== (const ParamSpec& b) const;
+        bool operator< (const ParamSpec& b) const;
+        
     private:
         ParamSpec(const ParamSpec&);
         ParamSpec& operator= (const ParamSpec&);
@@ -87,6 +93,10 @@ namespace FPoptimizer_Grammar
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
 
         MatchedParams(const GrammarPack& pack, size_t offs);
+        
+        bool operator== (const MatchedParams& b) const;
+        bool operator< (const MatchedParams& b) const;
+
     };
 
     class FunctionType
@@ -99,6 +109,16 @@ namespace FPoptimizer_Grammar
             : Opcode(o), Params(p) { }
 
         FunctionType(const GrammarPack& pack, size_t offs);
+        
+        bool operator== (const FunctionType& b) const
+        {
+            return Opcode == b.Opcode && Params == b.Params;
+        }
+        bool operator< (const FunctionType& b) const
+        {
+            if(Opcode != b.Opcode) return Opcode < b.Opcode;
+            return Params < b.Params;
+        }
     };
 
     class Rule
@@ -122,6 +142,11 @@ namespace FPoptimizer_Grammar
             : Type(t), Input(f), Replacement() { Replacement.AddParam(p); }
 
         Rule(const GrammarPack& pack, size_t offs);
+        
+        bool operator< (const Rule& b) const
+        {
+            return Input < b.Input;
+        }
     };
 
     class Grammar
@@ -154,7 +179,7 @@ namespace FPoptimizer_Grammar
            transformation : 3;
         unsigned minrepeat : 3;
         bool     anyrepeat : 1;
-        OpcodeType opcode : 8;
+        OpcodeType opcode : 16;
         unsigned count : 8;
         unsigned index : 16;
     } GRAMMAR_PACK_STRUCT;
