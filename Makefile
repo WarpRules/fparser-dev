@@ -38,8 +38,8 @@ fpoptimizer_grammar_gen:\
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \
-		fpoptimizer.y
-	bison++ -dv --output=$@ $<
+		fpoptimizer_grammar_gen.y
+	bison++ --output=$@ $<
 
 pack:\
 		example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
