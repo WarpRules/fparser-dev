@@ -16,52 +16,7 @@
 #include <map>
 #include <algorithm>
 
-/* crc32 */
-#include <stdint.h>
-typedef uint_least32_t crc32_t;
-namespace crc32 {
-    enum { startvalue = 0xFFFFFFFFUL };
-
-    /* This code constructs the CRC32 table at compile-time,
-     * avoiding the need for a huge explicitly written table of magical numbers. */
-    static const uint_least32_t poly = 0xEDB88320UL;
-    template<uint_fast32_t crc> // One byte of a CRC32 (eight bits):
-    struct b8
-    {
-        enum { b1 = (crc & 1) ? (poly ^ (crc >> 1)) : (crc >> 1),
-               b2 = (b1  & 1) ? (poly ^ (b1  >> 1)) : (b1  >> 1),
-               b3 = (b2  & 1) ? (poly ^ (b2  >> 1)) : (b2  >> 1),
-               b4 = (b3  & 1) ? (poly ^ (b3  >> 1)) : (b3  >> 1),
-               b5 = (b4  & 1) ? (poly ^ (b4  >> 1)) : (b4  >> 1),
-               b6 = (b5  & 1) ? (poly ^ (b5  >> 1)) : (b5  >> 1),
-               b7 = (b6  & 1) ? (poly ^ (b6  >> 1)) : (b6  >> 1),
-               res= (b7  & 1) ? (poly ^ (b7  >> 1)) : (b7  >> 1) };
-    };
-    // Four values of the table
-    #define B4(n) b8<n>::res,b8<n+1>::res,b8<n+2>::res,b8<n+3>::res
-    // Sixteen values of the table
-    #define R(n) B4(n),B4(n+4),B4(n+8),B4(n+12)
-    // The whole table, index by steps of 16
-    static const uint_least32_t table[256] =
-    { R(0x00),R(0x10),R(0x20),R(0x30), R(0x40),R(0x50),R(0x60),R(0x70),
-      R(0x80),R(0x90),R(0xA0),R(0xB0), R(0xC0),R(0xD0),R(0xE0),R(0xF0) };
-    #undef R
-    #undef B4
-    uint_fast32_t update(uint_fast32_t crc, unsigned/* char */b) // __attribute__((pure))
-    {
-        return ((crc >> 8) /* & 0x00FFFFFF*/) ^ table[/*(unsigned char)*/(crc^b)&0xFF];
-    }
-    crc32_t calc_upd(crc32_t c, const unsigned char* buf, size_t size)
-    {
-        uint_fast32_t value = c;
-        for(unsigned long p=0; p<size; ++p) value = update(value, buf[p]);
-        return value;
-    }
-    crc32_t calc(const unsigned char* buf, size_t size)
-    {
-        return calc_upd(startvalue, buf, size);
-    }
-}
+#include "crc32.hh"
 
 /*********/
 using namespace FPoptimizer_Grammar;
@@ -99,7 +54,7 @@ namespace GrammarData
 
         ParamSpec(FunctionType* f)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(SubFunction), Func(f), Params()
+              Opcode(SubFunction), Func(f),          Params()
               {
               }
 
@@ -109,25 +64,22 @@ namespace GrammarData
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(o), Params(p) { }
+              Opcode(o),                             Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NamedHolder), Index(i), Params() { }
+              Opcode(NamedHolder), Index(i),         Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(ImmedHolder), Index(i), Params() { }
+              Opcode(ImmedHolder), Index(i),         Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(RestHolder), Index(i), Params() { }
+              Opcode(RestHolder),  Index(i),         Params() { }
 
-
-        ParamSpec* SetNegated()
-            { Negated=true; return this; }
-        ParamSpec* SetRepeat(unsigned min, bool any)
-            { MinimumRepeat=min; AnyRepetition=any; return this; }
+        ParamSpec* SetNegated()                      { Negated=true; return this; }
+        ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
 
         bool operator== (const ParamSpec& b) const;
         bool operator< (const ParamSpec& b) const;
@@ -200,9 +152,8 @@ namespace GrammarData
     {
     public:
         std::vector<Rule> rules;
-        mutable std::set<uint_fast64_t> optimized_children;
     public:
-        Grammar(): rules(), optimized_children() { }
+        Grammar(): rules() { }
 
         void AddRule(const Rule& r) { rules.push_back(r); }
     };
@@ -406,10 +357,8 @@ public:
           //case GroupFunction: p = "GroupFunction"; break;
         }
         std::stringstream tmp;
-        if(p)
-            tmp << p;
-        else
-            tmp << o;
+        if(p) tmp << p;
+        else  tmp << o;
         while(tmp.str().size() < 11) tmp << ' ';
         return tmp.str();
     }
