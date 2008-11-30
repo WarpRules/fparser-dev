@@ -5,23 +5,22 @@
 
 namespace FPoptimizer_Grammar
 {
-    struct MatchedParams::CodeTreeMatch
-    {
-    };
-
     struct OpcodeRuleCompare
     {
-        bool operator() (unsigned opcode, const Rule& rule) const
+        bool operator() (unsigned opcode, const RuleType_Const& rule) const
         {
-            return opcode < rule.Input.Opcode;
+            return opcode < pack.flist[rule.input_index].opcode;
         }
-        bool operator() (const Rule& rule, unsigned opcode) const
+        bool operator() (const RuleType_Const& rule, unsigned opcode) const
         {
-            return rule.Input.Opcode < opcode;
+            return pack.flist[rule.input_index].opcode < opcode;
         }
     };
 
-    bool Grammar::ApplyTo(FPoptimizer_CodeTree::CodeTree& tree, bool child_triggered) const
+    bool Grammar_Const::ApplyTo(
+        std::set<uint_fast64_t>& optimized_children,
+        FPoptimizer_CodeTree::CodeTree& tree,
+        bool child_triggered) const
     {
         bool changed_once = false;
 
@@ -36,7 +35,7 @@ namespace FPoptimizer_Grammar
                     /* First optimize all children */
                     for(size_t a=0; a<tree.Params.size(); ++a)
                     {
-                        if( ApplyTo( *tree.Params[a].param ) )
+                        if( ApplyTo( optimized_children, *tree.Params[a].param ) )
                         {
                             changed = true;
                         }
@@ -44,11 +43,17 @@ namespace FPoptimizer_Grammar
                 }
 
                 /* Figure out which rules _may_ match this tree */
-                typedef std::vector<Rule>::const_iterator ruleit;
-                std::pair<ruleit, ruleit> range = std::equal_range(rules.begin(), rules.end(), tree.Opcode,
-                                                                   OpcodeRuleCompare());
+                typedef const RuleType_Const* ruleit;
+
+                std::pair<ruleit, ruleit> range
+                    = std::equal_range(pack.rlist + index,
+                                       pack.rlist + index + count,
+                                       tree.Opcode,
+                                       OpcodeRuleCompare());
+
                 while(range.first < range.second)
                 {
+                    /* Check if this rule matches */
                     if(range.first->ApplyTo(tree))
                     {
                         changed = true;
@@ -69,7 +74,7 @@ namespace FPoptimizer_Grammar
         /* If any changes whatsoever were done, recurse the optimization to parents */
         if((child_triggered || changed_once) && tree.Parent)
         {
-            ApplyTo(*tree.Parent, true);
+            ApplyTo( optimized_children, *tree.Parent, true );
             /* As this step may cause the tree we were passed to actually not exist,
              * don't touch the tree after this.
              *
@@ -80,39 +85,60 @@ namespace FPoptimizer_Grammar
         return changed_once;
     }
 
-    bool Rule::ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const
+    /* Store information about a potential match,
+     * in order to iterate through candidates
+     */
+    struct MatchedParams_Const::CodeTreeMatch
     {
+        //
+    };
+    
+    bool RuleType_Const::ApplyTo(
+        FPoptimizer_CodeTree::CodeTree& tree) const
+    {
+        const FunctionType_Const&  input  = pack.flist[input_index];
+        const MatchedParams_Const& params = pack.mlist[input.index];
+        const MatchedParams_Const& repl   = pack.mlist[repl_index];
+        
         // Simplest verifications first
-        if(Input.Opcode != tree.Opcode) return false;
+        if(input.opcode != tree.Opcode) return false;
 
-        MatchedParams::CodeTreeMatch matchrec;
-
-        if(Input.Params.Match(tree, matchrec))
+        MatchedParams_Const::CodeTreeMatch matchrec;
+        
+        if(params.Match(tree, matchrec))
         {
-            switch(Type)
+            switch(type)
             {
                 case ReplaceParams:
-                    Replacement.ReplaceParams(tree, Input.Params, matchrec);
+                    repl.ReplaceParams(tree, params, matchrec);
                     return true;
                 case ProduceNewTree:
-                    Replacement.ReplaceTree(tree,   Input.Params, matchrec);
+                    repl.ReplaceTree(tree,   params, matchrec);
                     return true;
             }
         }
         return false;
     }
 
-    bool MatchedParams::Match(FPoptimizer_CodeTree::CodeTree& tree, CodeTreeMatch& match) const
+    bool MatchedParams_Const::Match(
+        FPoptimizer_CodeTree::CodeTree& tree,
+        MatchedParams_Const::CodeTreeMatch& match) const
     {
         return false;
     }
 
-    void MatchedParams::ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree, const MatchedParams& matcher, CodeTreeMatch& match) const
+    void MatchedParams_Const::ReplaceParams(
+        FPoptimizer_CodeTree::CodeTree& tree,
+        const MatchedParams_Const& matcher,
+        MatchedParams_Const::CodeTreeMatch& match) const
     {
         // Replace the 0-level params indicated in "match" with the ones we have
     }
 
-    void MatchedParams::ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree, const MatchedParams& matcher, CodeTreeMatch& match) const
+    void MatchedParams_Const::ReplaceTree(
+        FPoptimizer_CodeTree::CodeTree& tree,
+        const MatchedParams_Const& matcher,
+        CodeTreeMatch& match) const
     {
         // Replace the entire tree with one indicated by our Params[0]
         // Note: The tree is still constructed using the holders indicated in "match".

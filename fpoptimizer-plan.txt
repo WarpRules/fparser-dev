@@ -8,7 +8,7 @@ PLAN:
     - avoid runtime parsing of .dat file
     - prefer static const structs over constructor code
     *DONE: See fpoptimizer_grammar_gen.y .
-           Produces fpoptimizer_grammar_init.cc .
+           Produces fpoptimizer_grammar.cc .
 
 2.  Augment the CodeTree mechanism the following ways:
     - Add mechanism that generates a hash value for the contents

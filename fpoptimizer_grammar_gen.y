@@ -63,10 +63,226 @@ namespace crc32 {
     }
 }
 
-
 /*********/
 using namespace FPoptimizer_Grammar;
 using namespace FUNCTIONPARSERTYPES;
+
+class GrammarDumper;
+
+namespace
+{
+    class FunctionType;
+    
+    class ParamSpec
+    {
+    public:
+        bool Negated;    // true means for: cAdd:-x; cMul:1/x; cAnd/cOr: !x; other: invalid
+
+        TransformationType Transformation;
+
+        unsigned MinimumRepeat; // default 1
+        bool AnyRepetition;     // false: max=minimum; true: max=infinite
+
+        OpcodeType Opcode;      // specifies the type of the function
+        union
+        {
+            double ConstantValue;           // for NumConstant
+            unsigned Index;                 // for ImmedHolder, RestHolder, NamedHolder
+            FunctionType* Func;             // for Function
+        };
+        std::vector<ParamSpec*> Params;
+
+    public:
+        struct NamedHolderTag{};
+        struct ImmedHolderTag{};
+        struct RestHolderTag{};
+
+        ParamSpec(FunctionType* f)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(Function), Func(f), Params()
+              {
+              }
+
+        ParamSpec(double d)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(NumConstant), ConstantValue(d), Params() { }
+
+        ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(o), Params(p) { }
+
+        ParamSpec(unsigned i, NamedHolderTag)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(NamedHolder), Index(i), Params() { }
+
+        ParamSpec(unsigned i, ImmedHolderTag)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(ImmedHolder), Index(i), Params() { }
+
+        ParamSpec(unsigned i, RestHolderTag)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(RestHolder), Index(i), Params() { }
+
+
+        ParamSpec* SetNegated()
+            { Negated=true; return this; }
+        ParamSpec* SetRepeat(unsigned min, bool any)
+            { MinimumRepeat=min; AnyRepetition=any; return this; }
+
+        bool operator== (const ParamSpec& b) const;
+        bool operator< (const ParamSpec& b) const;
+
+    private:
+        ParamSpec(const ParamSpec&);
+        ParamSpec& operator= (const ParamSpec&);
+    };
+
+    class MatchedParams
+    {
+    public:
+        ParamMatchingType Type;
+        std::vector<ParamSpec*> Params;
+
+    public:
+        MatchedParams()                    : Type(), Params() { }
+        MatchedParams(ParamMatchingType t) : Type(t), Params() { }
+        MatchedParams(ParamSpec* p)        : Type(), Params() { Params.push_back(p); }
+
+        void SetType(ParamMatchingType t) { Type=t; }
+        void AddParam(ParamSpec* p) { Params.push_back(p); }
+
+        const std::vector<ParamSpec*>& GetParams() const { return Params; }
+
+        bool operator== (const MatchedParams& b) const;
+        bool operator< (const MatchedParams& b) const;
+    };
+
+    class FunctionType
+    {
+    public:
+        OpcodeType    Opcode;
+        MatchedParams Params;
+    public:
+        FunctionType(OpcodeType o, const MatchedParams& p) : Opcode(o), Params(p) { }
+
+        bool operator== (const FunctionType& b) const
+        {
+            return Opcode == b.Opcode && Params == b.Params;
+        }
+        bool operator< (const FunctionType& b) const
+        {
+            if(Opcode != b.Opcode) return Opcode < b.Opcode;
+            return Params < b.Params;
+        }
+    };
+
+    class Rule
+    {
+    public:
+        friend class GrammarDumper;
+        RuleType Type;
+
+        FunctionType  Input;
+        MatchedParams Replacement; // length should be 1 if ProduceNewTree is used
+    public:
+        Rule(RuleType t, const FunctionType& f, const MatchedParams& r)
+            : Type(t), Input(f), Replacement(r) { }
+        Rule(RuleType t, const FunctionType& f, ParamSpec* p)
+            : Type(t), Input(f), Replacement() { Replacement.AddParam(p); }
+
+        bool operator< (const Rule& b) const
+        {
+            return Input < b.Input;
+        }
+    };
+
+    class Grammar
+    {
+    public:
+        std::vector<Rule> rules;
+        mutable std::set<uint_fast64_t> optimized_children;
+    public:
+        Grammar(): rules(), optimized_children() { }
+
+        void AddRule(const Rule& r) { rules.push_back(r); }
+    };
+    
+    ////////////////////
+
+    bool ParamSpec::operator== (const ParamSpec& b) const
+    {
+        if(Negated != b.Negated) return false;
+        if(Transformation != b.Transformation) return false;
+        if(MinimumRepeat != b.MinimumRepeat) return false;
+        if(AnyRepetition != b.AnyRepetition) return false;
+        if(Opcode != b.Opcode) return false;
+        switch(Opcode)
+        {
+            case NumConstant:
+                return ConstantValue == b.ConstantValue;
+            case ImmedHolder:
+            case RestHolder:
+            case NamedHolder:
+                return Index == b.Index;
+            case Function:
+                return *Func == *b.Func;
+            default:
+                if(Params.size() != b.Params.size()) return false;
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(!(*Params[a] == *b.Params[a]))
+                        return false;
+                break;
+        }
+        return true;
+    }
+
+    bool ParamSpec::operator< (const ParamSpec& b) const
+    {
+        if(Negated != b.Negated) return Negated < b.Negated;
+        if(Transformation != b.Transformation) return Transformation < b.Transformation;
+        if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
+        if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
+        if(Opcode != b.Opcode) return Opcode < b.Opcode;
+        switch(Opcode)
+        {
+            case NumConstant:
+                return ConstantValue < b.ConstantValue;
+            case ImmedHolder:
+            case RestHolder:
+            case NamedHolder:
+                return Index < b.Index;
+            case Function:
+                return *Func < *b.Func;
+            default:
+                if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(!(*Params[a] == *b.Params[a]))
+                        return *Params[a] < *b.Params[a];
+                break;
+        }
+        return false;
+    }
+
+    bool MatchedParams::operator== (const MatchedParams& b) const
+    {
+        if(Type != b.Type) return false;
+        if(Params.size() != b.Params.size()) return false;
+        for(size_t a=0; a<Params.size(); ++a)
+            if(!(*Params[a] == *b.Params[a]))
+                return false;
+        return true;
+    }
+
+    bool MatchedParams::operator< (const MatchedParams& b) const
+    {
+        if(Type !=  b.Type) return Type;
+        if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
+        for(size_t a=0; a < Params.size(); ++a)
+            if(!(*Params[a] == *b.Params[a]))
+                return *Params[a] < *b.Params[a];
+        return false;
+    }
+}
 
 #define YY_FPoptimizerGrammarParser_MEMBERS \
     Grammar grammar; \
@@ -105,92 +321,97 @@ public:
 
     std::string Dump(OpcodeType o)
     {
+        const char* p = 0;
         switch(OPCODE(o))
         {
-            case cAbs: return "cAbs";
-            case cAcos: return "cAcos";
+            case cAbs: p = "cAbs"; break;
+            case cAcos: p = "cAcos"; break;
 #ifndef FP_NO_ASINH
-            case cAcosh: return "cAcosh";
+            case cAcosh: p = "cAcosh"; break;
 #endif
-            case cAsin: return "cAsin";
+            case cAsin: p = "cAsin"; break;
 #ifndef FP_NO_ASINH
-            case cAsinh: return "cAsinh";
+            case cAsinh: p = "cAsinh"; break;
 #endif
-            case cAtan: return "cAtan";
-            case cAtan2: return "cAtan2";
+            case cAtan: p = "cAtan"; break;
+            case cAtan2: p = "cAtan2"; break;
 #ifndef FP_NO_ASINH
-            case cAtanh: return "cAtanh";
+            case cAtanh: p = "cAtanh"; break;
 #endif
-            case cCeil: return "cCeil";
-            case cCos: return "cCos";
-            case cCosh: return "cCosh";
-            case cCot: return "cCot";
-            case cCsc: return "cCsc";
+            case cCeil: p = "cCeil"; break;
+            case cCos: p = "cCos"; break;
+            case cCosh: p = "cCosh"; break;
+            case cCot: p = "cCot"; break;
+            case cCsc: p = "cCsc"; break;
 #ifndef FP_DISABLE_EVAL
-            case cEval: return "cEval";
+            case cEval: p = "cEval"; break;
 #endif
-            case cExp: return "cExp";
-            case cFloor: return "cFloor";
-            case cIf: return "cIf";
-            case cInt: return "cInt";
-            case cLog: return "cLog";
-            case cLog2: return "cLog2";
-            case cLog10: return "cLog10";
-            case cMax: return "cMax";
-            case cMin: return "cMin";
-            case cPow: return "cPow";
-            case cSec: return "cSec";
-            case cSin: return "cSin";
-            case cSinh: return "cSinh";
-            case cSqrt: return "cSqrt";
-            case cTan: return "cTan";
-            case cTanh: return "cTanh";
-            case cImmed: return "cImmed";
-            case cJump: return "cJump";
-            case cNeg: return "cNeg";
-            case cAdd: return "cAdd";
-            case cSub: return "cSub";
-            case cMul: return "cMul";
-            case cDiv: return "cDiv";
-            case cMod: return "cMod";
-            case cEqual: return "cEqual";
-            case cNEqual: return "cNEqual";
-            case cLess: return "cLess";
-            case cLessOrEq: return "cLessOrEq";
-            case cGreater: return "cGreater";
-            case cGreaterOrEq: return "cGreaterOrEq";
-            case cNot: return "cNot";
-            case cAnd: return "cAnd";
-            case cOr: return "cOr";
-            case cDeg: return "cDeg";
-            case cRad: return "cRad";
-            case cFCall: return "cFCall";
-            case cPCall: return "cPCall";
+            case cExp: p = "cExp"; break;
+            case cFloor: p = "cFloor"; break;
+            case cIf: p = "cIf"; break;
+            case cInt: p = "cInt"; break;
+            case cLog: p = "cLog"; break;
+            case cLog2: p = "cLog2"; break;
+            case cLog10: p = "cLog10"; break;
+            case cMax: p = "cMax"; break;
+            case cMin: p = "cMin"; break;
+            case cPow: p = "cPow"; break;
+            case cSec: p = "cSec"; break;
+            case cSin: p = "cSin"; break;
+            case cSinh: p = "cSinh"; break;
+            case cSqrt: p = "cSqrt"; break;
+            case cTan: p = "cTan"; break;
+            case cTanh: p = "cTanh"; break;
+            case cImmed: p = "cImmed"; break;
+            case cJump: p = "cJump"; break;
+            case cNeg: p = "cNeg"; break;
+            case cAdd: p = "cAdd"; break;
+            case cSub: p = "cSub"; break;
+            case cMul: p = "cMul"; break;
+            case cDiv: p = "cDiv"; break;
+            case cMod: p = "cMod"; break;
+            case cEqual: p = "cEqual"; break;
+            case cNEqual: p = "cNEqual"; break;
+            case cLess: p = "cLess"; break;
+            case cLessOrEq: p = "cLessOrEq"; break;
+            case cGreater: p = "cGreater"; break;
+            case cGreaterOrEq: p = "cGreaterOrEq"; break;
+            case cNot: p = "cNot"; break;
+            case cAnd: p = "cAnd"; break;
+            case cOr: p = "cOr"; break;
+            case cDeg: p = "cDeg"; break;
+            case cRad: p = "cRad"; break;
+            case cFCall: p = "cFCall"; break;
+            case cPCall: p = "cPCall"; break;
 #ifdef FP_SUPPORT_OPTIMIZER
-            case cVar: return "cVar";
-            case cDup: return "cDup";
-            case cInv: return "cInv";
-            case cFetch: return "cFetch";
-            case cPopNMov: return "cPopNMov";
-            case cSqr: return "cSqr";
-            case cRDiv: return "cRDiv";
-            case cRSub: return "cRSub";
-            case cNotNot: return "cNotNot";
+            case cVar: p = "cVar"; break;
+            case cDup: p = "cDup"; break;
+            case cInv: p = "cInv"; break;
+            case cFetch: p = "cFetch"; break;
+            case cPopNMov: p = "cPopNMov"; break;
+            case cSqr: p = "cSqr"; break;
+            case cRDiv: p = "cRDiv"; break;
+            case cRSub: p = "cRSub"; break;
+            case cNotNot: p = "cNotNot"; break;
 #endif
-            case cNop: return "cNop";
-            case VarBegin: return "VarBegin";
+            case cNop: p = "cNop"; break;
+            case VarBegin: p = "VarBegin"; break;
         }
-        switch( ParamSpec::SpecialOpcode(o) )
+        switch( SpecialOpcode(o) )
         {
-            case ParamSpec::NumConstant:   return "ParamSpec::NumConstant  ";
-            case ParamSpec::ImmedHolder:   return "ParamSpec::ImmedHolder  ";
-            case ParamSpec::NamedHolder:   return "ParamSpec::NamedHolder  ";
-            case ParamSpec::RestHolder:    return "ParamSpec::RestHolder   ";
-            case ParamSpec::Function:      return "ParamSpec::Function     ";
-          //case ParamSpec::GroupFunction: return "ParamSpec::GroupFunction";
+            case NumConstant:   p = "NumConstant"; break;
+            case ImmedHolder:   p = "ImmedHolder"; break;
+            case NamedHolder:   p = "NamedHolder"; break;
+            case RestHolder:    p = "RestHolder"; break;
+            case Function:      p = "Function"; break;
+          //case GroupFunction: p = "GroupFunction"; break;
         }
         std::stringstream tmp;
-        tmp << o;
+        if(p)
+            tmp << p;
+        else
+            tmp << o;
+        while(tmp.str().size() < 22) tmp << ' ';
         return tmp.str();
     }
     std::string PDumpFix(const ParamSpec& p, const std::string& s)
@@ -292,21 +513,21 @@ public:
         pitem.opcode         = p.Opcode;
         switch(p.Opcode)
         {
-            case ParamSpec::NumConstant:
+            case NumConstant:
             {
                 pitem.index = Dump(p.ConstantValue);
                 pitem.count = 0;
                 break;
             }
-            case ParamSpec::NamedHolder:
-            case ParamSpec::ImmedHolder:
-            case ParamSpec::RestHolder:
+            case NamedHolder:
+            case ImmedHolder:
+            case RestHolder:
             {
                 pitem.index = p.Index;
                 pitem.count = 0;
                 break;
             }
-            case ParamSpec::Function:
+            case Function:
             {
                 pitem.index = Dump(*p.Func);
                 pitem.count = 0;
@@ -403,24 +624,27 @@ public:
         for(size_t a=0; a<plist.size(); ++a)
         {
             std::cout <<
-            "        {" << (plist[a].negated ? "true " : "false")
+            "        {"
+                        << Dump(plist[a].opcode)
                         << ", "
-                        << (plist[a].transformation == ParamSpec::None    ? "ParamSpec::None  "
-                         :  plist[a].transformation == ParamSpec::Negate  ? "ParamSpec::Negate"
-                         :/*plist[a].transformation == ParamSpec::Invert?*/ "ParamSpec::Invert"
+                        << (plist[a].negated ? "true " : "false")
+                        << ", "
+                        << (plist[a].transformation == None    ? "None  "
+                         :  plist[a].transformation == Negate  ? "Negate"
+                         :/*plist[a].transformation == Invert?*/ "Invert"
                            )
                         << ", "
                         << plist[a].minrepeat
                         << ", "
                         << (plist[a].anyrepeat ? "true " : "false")
-                        << ", "
-                        << Dump(plist[a].opcode)
                         << ", " << plist[a].count
                         << ", " << plist[a].index
-                        << " }, /* " << a;
-            if(plist[a].opcode == ParamSpec::NamedHolder)
-                std::cout << ", \"" << nlist[plist[a].index] << "\"";
-            std::cout << " */\n";
+                        << "\t}, /* " << a;
+            if(plist[a].opcode == NamedHolder)
+                std::cout << " \"" << nlist[plist[a].index] << "\"";
+            else
+                std::cout << "    ";
+            std::cout << "\t*/\n";
         }
         std::cout <<
             "    };\n"
@@ -430,8 +654,8 @@ public:
         for(size_t a=0; a<mlist.size(); ++a)
         {
             std::cout <<
-            "        {" << (mlist[a].type == MatchedParams::PositionalParams ? "MatchedParams::PositionalParams"
-                         :/*mlist[a].type == MatchedParams::AnyParams      ?*/ "MatchedParams::AnyParams       "
+            "        {" << (mlist[a].type == PositionalParams ? "PositionalParams"
+                         :/*mlist[a].type == AnyParams      ?*/ "AnyParams       "
                            )
                         << ", " << mlist[a].count
                         << ", " << mlist[a].index
@@ -456,8 +680,8 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             std::cout <<
-            "        {" << (rlist[a].type == Rule::ProduceNewTree  ? "Rule::ProduceNewTree"
-                         :/*rlist[a].type == Rule::ReplaceParams ?*/ "Rule::ReplaceParams "
+            "        {" << (rlist[a].type == ProduceNewTree  ? "ProduceNewTree"
+                         :/*rlist[a].type == ReplaceParams ?*/ "ReplaceParams "
                            )
                         << ", " << rlist[a].input_index
                         << ", " << rlist[a].repl_index
@@ -466,20 +690,22 @@ public:
         std::cout <<
             "    };\n"
             "\n"
-            "    const Grammar_Const glist[] =\n"
-            "    {\n";
+            "}\n"
+            "\n"
+            "namespace FPoptimizer_Grammar\n"
+            "{\n"
+            "    const GrammarPack pack =\n"
+            "    {\n"
+            "        clist, plist, mlist, flist, rlist,\n"
+            "        {\n";
         for(size_t a=0; a<glist.size(); ++a)
         {
             std::cout <<
-            "        {" << glist[a].index << ", " << glist[a].count
+            "            {" << glist[a].index << ", " << glist[a].count
                         << " }, /* " << a << " */\n";
         }
         std::cout <<
-            "    };\n"
-            "\n"
-            "    const GrammarPack pack =\n"
-            "    {\n"
-            "        clist, plist, mlist, flist, rlist, glist\n"
+            "        }\n"
             "    };\n"
             "}\n";
     }
@@ -538,7 +764,7 @@ static GrammarDumper dumper;
       function SUBST_OP_ARROW paramtoken NEWLINE
       /* Entire function is changed into the particular param */
       {
-        $$ = new Rule(Rule::ProduceNewTree, *$1, $3);
+        $$ = new Rule(ProduceNewTree, *$1, $3);
         delete $1;
       }
 
@@ -546,7 +772,7 @@ static GrammarDumper dumper;
       /* Entire function changes, the paramlist is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
-        $$ = new Rule(Rule::ProduceNewTree, *$1, new ParamSpec($3));
+        $$ = new Rule(ProduceNewTree, *$1, new ParamSpec($3));
         //std::cout << GrammarDumper().Dump(*new ParamSpec($3)) << "\n";
         delete $1;
       }
@@ -554,7 +780,7 @@ static GrammarDumper dumper;
     | function_maybeinv SUBST_OP_COLON  param_maybeinv_list NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
-        $$ = new Rule(Rule::ReplaceParams, *$1, *$3);
+        $$ = new Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
@@ -562,7 +788,7 @@ static GrammarDumper dumper;
     | function_notinv   SUBST_OP_COLON  paramlist NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
-        $$ = new Rule(Rule::ReplaceParams, *$1, *$3);
+        $$ = new Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
@@ -596,12 +822,12 @@ static GrammarDumper dumper;
        '[' param_maybeinv_list ']'  /* match this exact paramlist */
         {
           $$ = $2;
-          $$->SetType(MatchedParams::PositionalParams);
+          $$->SetType(PositionalParams);
         }
      |  param_maybeinv_list         /* find the specified params */
         {
           $$ = $1;
-          $$->SetType(MatchedParams::AnyParams);
+          $$->SetType(AnyParams);
         }
     ;
 
@@ -685,8 +911,8 @@ static GrammarDumper dumper;
          $$ = $2;
          switch($1)
          {
-           case cNeg: $$->Transformation = ParamSpec::Negate; break;
-           case cInv: $$->Transformation = ParamSpec::Invert; break;
+           case cNeg: $$->Transformation = Negate; break;
+           case cInv: $$->Transformation = Invert; break;
          }
        }
     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
@@ -984,24 +1210,13 @@ int main()
         "\n"
         "using namespace FPoptimizer_Grammar;\n"
         "using namespace FUNCTIONPARSERTYPES;\n"
-        "\n"
-        "Grammar Grammar_Entry, Grammar_Intermediate, Grammar_Final;\n"
         "\n";
 
-    size_t e = dumper.Dump(Grammar_Entry);
-    size_t i = dumper.Dump(Grammar_Intermediate);
-    size_t f = dumper.Dump(Grammar_Final);
+    /*size_t e = */dumper.Dump(Grammar_Entry);
+    /*size_t i = */dumper.Dump(Grammar_Intermediate);
+    /*size_t f = */dumper.Dump(Grammar_Final);
 
     dumper.Flush();
-
-    std::cout <<
-        "\n"
-        "void FPoptimizer_Grammar_Init()\n"
-        "{\n"
-        "    Grammar_Entry.Read(pack,        " << e << ");\n"
-        "    Grammar_Intermediate.Read(pack, " << i << ");\n"
-        "    Grammar_Final.Read(pack,        " << f << ");\n"
-        "}\n";
 
     return 0;
 }

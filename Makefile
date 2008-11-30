@@ -12,7 +12,6 @@ FP_MODULES=\
 		fpoptimizer_codetree_to_bytecode.o \
 		fpoptimizer_codetree.o \
 		fpoptimizer_grammar.o \
-		fpoptimizer_grammar_init.o \
 		fpoptimizer_optimize.o
 
 testbed:\
@@ -37,15 +36,14 @@ powi_speedtest:\
 
 
 fpoptimizer_grammar_gen: \
-		fpoptimizer_grammar_gen.o \
-		fpoptimizer_grammar.o
+		fpoptimizer_grammar_gen.o
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \
 		fpoptimizer_grammar_gen.y
 	bison++ --output=$@ $<
 
-fpoptimizer_grammar_init.cc: \
+fpoptimizer_grammar.cc: \
 		fpoptimizer_grammar_gen \
 		fpoptimizer.dat
 	./$<  < fpoptimizer.dat  > $@
@@ -61,7 +59,6 @@ pack:\
 		fpoptimizer.cc \
 		fpoptimizer_codetree.cc \
 		fpoptimizer_grammar.cc \
-		fpoptimizer_grammar_init.cc \
 		fpoptimizer_optimize.cc \
 		fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer_bytecode_to_codetree.cc
@@ -77,7 +74,7 @@ clean:
 		fpoptimizer_grammar_gen.cc \
 		fpoptimizer_grammar_gen.output \
 		fpoptimizer_grammar_gen.h \
-		fpoptimizer_grammar_init.cc
+		fpoptimizer_grammar.cc
 distclean: clean
 	rm -f	*~
 
