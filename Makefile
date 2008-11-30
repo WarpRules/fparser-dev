@@ -1,4 +1,4 @@
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -g -Weffc++
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -g
 #CXX=g++ -Wall -W -pedantic -ansi -g -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
 #LD=g++ -s
 LD=g++ -g
@@ -44,9 +44,9 @@ fpoptimizer_grammar_gen.cc: \
 	bison++ --output=$@ $<
 
 fpoptimizer_grammar.cc: \
-		fpoptimizer_grammar_gen \
-		fpoptimizer.dat
-	./$<  < fpoptimizer.dat  > $@
+		fpoptimizer_grammar_gen.y fpoptimizer.dat
+	$(MAKE) fpoptimizer_grammar_gen
+	./fpoptimizer_grammar_gen < fpoptimizer.dat  > $@
 
 pack:\
 		example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
