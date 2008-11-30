@@ -54,6 +54,7 @@ int main()
 
                     std::printf("%s %4u.%1u %4u.%1u  ", func.c_str(),
                                 epms1/10, epms1%10, epms2/10, epms2%10);
+                    std::fflush(stdout);
                 }
             }
             std::printf("\n");
