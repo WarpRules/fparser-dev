@@ -69,7 +69,7 @@ using namespace FUNCTIONPARSERTYPES;
 
 class GrammarDumper;
 
-namespace
+namespace GrammarData
 {
     class FunctionType;
     
@@ -99,7 +99,7 @@ namespace
 
         ParamSpec(FunctionType* f)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(Function), Func(f), Params()
+              Opcode(SubFunction), Func(f), Params()
               {
               }
 
@@ -224,7 +224,7 @@ namespace
             case RestHolder:
             case NamedHolder:
                 return Index == b.Index;
-            case Function:
+            case SubFunction:
                 return *Func == *b.Func;
             default:
                 if(Params.size() != b.Params.size()) return false;
@@ -251,7 +251,7 @@ namespace
             case RestHolder:
             case NamedHolder:
                 return Index < b.Index;
-            case Function:
+            case SubFunction:
                 return *Func < *b.Func;
             default:
                 if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
@@ -285,8 +285,7 @@ namespace
 }
 
 #define YY_FPoptimizerGrammarParser_MEMBERS \
-    Grammar grammar; \
-    virtual ~YY_FPoptimizerGrammarParser_CLASS() { }
+    GrammarData::Grammar grammar;
 
 class GrammarDumper
 {
@@ -305,13 +304,13 @@ private:
     std::map<crc32_t,     size_t>    m_index;
     std::map<crc32_t,     size_t>    f_index;
 
-    std::vector<std::string>         nlist;
-    std::vector<double>              clist;
-    std::vector<ParamSpec_Const>     plist;
-    std::vector<MatchedParams_Const> mlist;
-    std::vector<FunctionType_Const>  flist;
-    std::vector<RuleType_Const>      rlist;
-    std::vector<Grammar_Const>       glist;
+    std::vector<std::string>   nlist;
+    std::vector<double>        clist;
+    std::vector<ParamSpec>     plist;
+    std::vector<MatchedParams> mlist;
+    std::vector<Function>      flist;
+    std::vector<Rule>          rlist;
+    std::vector<Grammar>       glist;
 public:
     GrammarDumper():
         n_index(), c_index(), p_index(), m_index(), f_index(),
@@ -403,7 +402,7 @@ public:
             case ImmedHolder:   p = "ImmedHolder"; break;
             case NamedHolder:   p = "NamedHolder"; break;
             case RestHolder:    p = "RestHolder"; break;
-            case Function:      p = "Function"; break;
+            case SubFunction:   p = "SubFunction"; break;
           //case GroupFunction: p = "GroupFunction"; break;
         }
         std::stringstream tmp;
@@ -411,10 +410,10 @@ public:
             tmp << p;
         else
             tmp << o;
-        while(tmp.str().size() < 22) tmp << ' ';
+        while(tmp.str().size() < 11) tmp << ' ';
         return tmp.str();
     }
-    std::string PDumpFix(const ParamSpec& p, const std::string& s)
+    std::string PDumpFix(const GrammarData::ParamSpec& p, const std::string& s)
     {
         std::string res = s;
         if(p.Negated)
@@ -445,7 +444,7 @@ public:
         return c_index[v] = clist.size()-1;
     }
 
-    void Dump(const std::vector<ParamSpec*>& params,
+    void Dump(const std::vector<GrammarData::ParamSpec*>& params,
               size_t& index,
               size_t& count)
     {
@@ -503,9 +502,9 @@ public:
         return;
     }
 
-    size_t Dump(const ParamSpec& p)
+    size_t Dump(const GrammarData::ParamSpec& p)
     {
-        ParamSpec_Const  pitem;
+        ParamSpec  pitem;
         pitem.negated        = p.Negated;
         pitem.transformation = p.Transformation;
         pitem.minrepeat      = p.MinimumRepeat;
@@ -527,7 +526,7 @@ public:
                 pitem.count = 0;
                 break;
             }
-            case Function:
+            case SubFunction:
             {
                 pitem.index = Dump(*p.Func);
                 pitem.count = 0;
@@ -545,9 +544,9 @@ public:
         plist.push_back(pitem);
         return plist.size()-1;
     }
-    size_t Dump(const MatchedParams& m)
+    size_t Dump(const GrammarData::MatchedParams& m)
     {
-        MatchedParams_Const mitem;
+        MatchedParams mitem;
         mitem.type  = m.Type;
         size_t i, c;
         Dump(m.Params, i, c);
@@ -563,9 +562,9 @@ public:
         mlist.push_back(mitem);
         return mlist.size()-1;
     }
-    size_t Dump(const FunctionType& f)
+    size_t Dump(const GrammarData::FunctionType& f)
     {
-        FunctionType_Const fitem;
+        Function fitem;
         fitem.opcode = f.Opcode;
         fitem.index  = Dump(f.Params);
 
@@ -578,18 +577,18 @@ public:
         flist.push_back(fitem);
         return flist.size()-1;
     }
-    size_t Dump(const Rule& r)
+    size_t Dump(const GrammarData::Rule& r)
     {
-        RuleType_Const ritem;
+        Rule ritem;
         ritem.type        = r.Type;
         ritem.input_index = Dump(r.Input);
         ritem.repl_index  = Dump(r.Replacement);
         rlist.push_back(ritem);
         return rlist.size()-1;
     }
-    size_t Dump(const Grammar& g)
+    size_t Dump(const GrammarData::Grammar& g)
     {
-        Grammar_Const gitem;
+        Grammar gitem;
         gitem.index = rlist.size();
         for(size_t a=0; a<g.rules.size(); ++a)
             Dump(g.rules[a]);
@@ -619,7 +618,7 @@ public:
         std::cout <<
             "    };\n"
             "\n"
-            "    const ParamSpec_Const plist[] =\n"
+            "    const ParamSpec plist[] =\n"
             "    {\n";
         for(size_t a=0; a<plist.size(); ++a)
         {
@@ -638,7 +637,7 @@ public:
                         << ", "
                         << (plist[a].anyrepeat ? "true " : "false")
                         << ", " << plist[a].count
-                        << ", " << plist[a].index
+                        << ",\t" << plist[a].index
                         << "\t}, /* " << a;
             if(plist[a].opcode == NamedHolder)
                 std::cout << " \"" << nlist[plist[a].index] << "\"";
@@ -649,7 +648,7 @@ public:
         std::cout <<
             "    };\n"
             "\n"
-            "    const MatchedParams_Const mlist[] =\n"
+            "    const MatchedParams mlist[] =\n"
             "    {\n";
         for(size_t a=0; a<mlist.size(); ++a)
         {
@@ -664,7 +663,7 @@ public:
         std::cout <<
             "    };\n"
             "\n"
-            "    const FunctionType_Const flist[] =\n"
+            "    const Function flist[] =\n"
             "    {\n";
         for(size_t a=0; a<flist.size(); ++a)
         {
@@ -675,7 +674,7 @@ public:
         std::cout <<
             "    };\n"
             "\n"
-            "    const RuleType_Const rlist[] =\n"
+            "    const Rule rlist[] =\n"
             "    {\n";
         for(size_t a=0; a<rlist.size(); ++a)
         {
@@ -689,7 +688,6 @@ public:
         }
         std::cout <<
             "    };\n"
-            "\n"
             "}\n"
             "\n"
             "namespace FPoptimizer_Grammar\n"
@@ -719,10 +717,10 @@ static GrammarDumper dumper;
 %pure_parser
 
 %union {
-    Rule*          r;
-    FunctionType*  f;
-    MatchedParams* p;
-    ParamSpec*     a;
+    GrammarData::Rule*          r;
+    GrammarData::FunctionType*  f;
+    GrammarData::MatchedParams* p;
+    GrammarData::ParamSpec*     a;
 
     double         num;
     std::string*   name;
@@ -764,7 +762,7 @@ static GrammarDumper dumper;
       function SUBST_OP_ARROW paramtoken NEWLINE
       /* Entire function is changed into the particular param */
       {
-        $$ = new Rule(ProduceNewTree, *$1, $3);
+        $$ = new GrammarData::Rule(ProduceNewTree, *$1, $3);
         delete $1;
       }
 
@@ -772,7 +770,7 @@ static GrammarDumper dumper;
       /* Entire function changes, the paramlist is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
-        $$ = new Rule(ProduceNewTree, *$1, new ParamSpec($3));
+        $$ = new GrammarData::Rule(ProduceNewTree, *$1, new GrammarData::ParamSpec($3));
         //std::cout << GrammarDumper().Dump(*new ParamSpec($3)) << "\n";
         delete $1;
       }
@@ -780,7 +778,7 @@ static GrammarDumper dumper;
     | function_maybeinv SUBST_OP_COLON  param_maybeinv_list NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
-        $$ = new Rule(ReplaceParams, *$1, *$3);
+        $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
@@ -788,7 +786,7 @@ static GrammarDumper dumper;
     | function_notinv   SUBST_OP_COLON  paramlist NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
-        $$ = new Rule(ReplaceParams, *$1, *$3);
+        $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
@@ -804,7 +802,7 @@ static GrammarDumper dumper;
        OPCODE_NOTINV paramsmatchingspec
        /* Match a function with opcode=opcode and the given way of matching params */
        {
-         $$ = new FunctionType($1, *$2);
+         $$ = new GrammarData::FunctionType($1, *$2);
          delete $2;
        }
     ;
@@ -813,7 +811,7 @@ static GrammarDumper dumper;
        OPCODE_MAYBEINV paramsmatchingspec
        /* Match a function with opcode=opcode and the given way of matching params */
        {
-         $$ = new FunctionType($1, *$2);
+         $$ = new GrammarData::FunctionType($1, *$2);
          delete $2;
        }
     ;
@@ -839,7 +837,7 @@ static GrammarDumper dumper;
         }
       | /* empty */
         {
-          $$ = new MatchedParams;
+          $$ = new GrammarData::MatchedParams;
         }
     ;
     maybeinv_param:
@@ -862,7 +860,7 @@ static GrammarDumper dumper;
         }
       | /* empty */
         {
-          $$ = new MatchedParams;
+          $$ = new GrammarData::MatchedParams;
         }
     ;
 
@@ -887,23 +885,29 @@ static GrammarDumper dumper;
     paramtoken:
        NUMERIC_CONSTANT         /* particular immed */
        {
-         $$ = new ParamSpec($1);
+         $$ = new GrammarData::ParamSpec($1);
        }
     |  IMMED_TOKEN              /* a placeholder for some immed */
        {
-         $$ = new ParamSpec($1, ParamSpec::ImmedHolderTag());
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
        }
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
-         $$ = new ParamSpec($1, ParamSpec::RestHolderTag());
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
+       }
+    |  PARAMETER_TOKEN          /* any expression */
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
+         delete $1;
        }
     |  '(' function ')'         /* a subtree */
        {
-         $$ = new ParamSpec($2);
+         $$ = new GrammarData::ParamSpec($2);
        }
     |  GROUP_CONSTANT_OPERATOR '(' paramlist ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
        {
-         $$ = new ParamSpec($1, $3->GetParams());
+         $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          delete $3;
        }
     |  UNARY_CONSTANT_OPERATOR paramtoken           /* the negated/inverted literal value of the paramtoken */
@@ -917,14 +921,8 @@ static GrammarDumper dumper;
        }
     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
        {
-         $$ = new ParamSpec($1, $3->GetParams());
+         $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          delete $3;
-       }
-    |  PARAMETER_TOKEN          /* any expression */
-       {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = new ParamSpec(nameindex, ParamSpec::NamedHolderTag());
-         delete $1;
        }
     ;
 
@@ -1164,9 +1162,9 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
 
 int main()
 {
-    Grammar Grammar_Entry;
-    Grammar Grammar_Intermediate;
-    Grammar Grammar_Final;
+    GrammarData::Grammar Grammar_Entry;
+    GrammarData::Grammar Grammar_Intermediate;
+    GrammarData::Grammar Grammar_Final;
 
     std::string sectionname;
 

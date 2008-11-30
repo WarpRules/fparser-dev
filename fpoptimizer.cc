@@ -3,7 +3,6 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_codetree.hh"
-#include "fpoptimizer_grammar.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 

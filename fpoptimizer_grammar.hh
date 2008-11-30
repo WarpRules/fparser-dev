@@ -23,7 +23,7 @@ namespace FPoptimizer_Grammar
         ImmedHolder,          // Holds a particular immed
         NamedHolder,          // Holds a particular named param (of any kind)
         RestHolder,           // Holds anything else
-        Function              // Holds an opcode and the params
+        SubFunction           // Holds an opcode and the params
       //GroupFunction         // For parse-time functions
     };
 
@@ -41,7 +41,7 @@ namespace FPoptimizer_Grammar
 
     /***/
 
-    struct ParamSpec_Const
+    struct ParamSpec
     {
         OpcodeType opcode : 16;
         bool     negated   : 1;
@@ -60,7 +60,7 @@ namespace FPoptimizer_Grammar
         unsigned count : 8;
         unsigned index : 16;
     };
-    struct MatchedParams_Const
+    struct MatchedParams
     {
         ParamMatchingType type : 8;
         // count,index to plist[]
@@ -73,18 +73,18 @@ namespace FPoptimizer_Grammar
                    CodeTreeMatch& match) const;
 
         void ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree,
-                           const MatchedParams_Const& matcher, CodeTreeMatch& match) const;
+                           const MatchedParams& matcher, CodeTreeMatch& match) const;
 
         void ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree,
-                         const MatchedParams_Const& matcher, CodeTreeMatch& match) const;
+                         const MatchedParams& matcher, CodeTreeMatch& match) const;
     };
-    struct FunctionType_Const
+    struct Function
     {
         OpcodeType opcode : 16;
         // index to mlist[]
         unsigned   index  : 16;
     };
-    struct RuleType_Const
+    struct Rule
     {
         RuleType  type        : 4;
         // index to flist[]
@@ -94,7 +94,7 @@ namespace FPoptimizer_Grammar
 
         bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const;
     };
-    struct Grammar_Const
+    struct Grammar
     {
         // count,index to rlist[]
         unsigned index : 16;
@@ -107,11 +107,11 @@ namespace FPoptimizer_Grammar
 
     extern const struct GrammarPack
     {
-        const double*               clist;
-        const ParamSpec_Const*      plist;
-        const MatchedParams_Const*  mlist;
-        const FunctionType_Const*   flist;
-        const RuleType_Const*       rlist;
-        Grammar_Const               glist[3];
+        const double*         clist;
+        const ParamSpec*      plist;
+        const MatchedParams*  mlist;
+        const Function*       flist;
+        const Rule*           rlist;
+        Grammar               glist[3];
     } pack;
 }

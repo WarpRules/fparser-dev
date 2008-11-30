@@ -6,8 +6,7 @@
 
 # Substitution rule syntax:
 #
-# %token NUMERIC_CONSTANT_VALUE  # literals such as 0, 1, 1.5
-# %token NUMERIC_CONSTANT_NAME   # constant names such as CONSTANT_DR, CONSTANT_L10I
+# %token NUMERIC_CONSTANT        # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
 # %token PARAMETER_TOKEN         # placeholders such as x, y, a, b
 # %token PLACEHOLDER_TOKEN       # placeholders such as <1>, <2>, <7>
 # %token IMMED_TOKEN             # placeholders % and &
@@ -70,7 +69,7 @@
 #     ;
 #     maybeinv_param:
 #        '~' param    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
-#        param        /* non-negated/non-inverted param */
+#      | param        /* non-negated/non-inverted param */
 #     ;
 #
 #     paramlist: /* left-recursive list of 0-n params with no delimiter */
@@ -80,27 +79,22 @@
 #
 #     param:
 #        paramtoken
-#     |  paramtoken '+'  /* In matching, matches TWO or more identical repetitions of paramtoken */
+#     |  paramtoken '+'  /* In matching, matches TWO or more identical repetitions of namedparam */
 #                        /* In substitution, yields an immed containing the number of repetitions */
-#     |  paramtoken '*'  /* In matching, matches ONE or more identical repetitions of paramtoken */
+#     |  paramtoken '*'  /* In matching, matches ONE or more identical repetitions of namedparam */
 #                        /* In substitution, yields an immed containing the number of repetitions */
 #     ;
 #
 #     paramtoken:
-#        NUMERIC_CONSTANT_VALUE   /* particular immed */
-#     |  NUMERIC_CONSTANT_NAME    /* particular immed */
+#        NUMERIC_CONSTANT         /* particular immed - may be specified by name or by value */
 #     |  IMMED_TOKEN              /* a placeholder for some immed */
 #     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-#     |  '(' function ')'         /* a subtree */
 #     |  PARAMETER_TOKEN          /* any expression */
+#     |  '(' function ')'         /* a subtree */
 #     |  GROUP_CONSTANT_OPERATOR '(' paramlist ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
 #     |  UNARY_CONSTANT_OPERATOR paramtoken           /* the negated/inverted literal value of the paramtoken */
 #     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
 #     ;
-#
-#
-# %%
-#
 
 
 [ENTRY]

@@ -53,7 +53,6 @@ pack:\
 		fptypes.hh \
 		fpoptimizer_grammar_gen.y \
 		fpoptimizer_grammar_gen.cc \
-		fpoptimizer_grammar_gen.h \
 		fpoptimizer.hh \
 		fpoptimizer_consts.hh \
 		fpoptimizer.cc \
