@@ -26,7 +26,7 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<stack.size(); ++a)
                 delete stack[a];
         }
-        
+
         void Eat(unsigned nparams, OPCODE opcode)
         {
             CodeTree* newnode = new CodeTree;
@@ -43,13 +43,13 @@ namespace FPoptimizer_CodeTree
             stack.resize(stackhead);
             stack.push_back(newnode);
         }
-        
+
         void EatFunc(unsigned params, OPCODE opcode, unsigned funcno)
         {
             Eat(params, opcode);
             stack.back()->Funcno = funcno;
         }
-        
+
         void AddConst(double value)
         {
             CodeTree* newnode = new CodeTree;
@@ -57,7 +57,7 @@ namespace FPoptimizer_CodeTree
             newnode->Value  = value;
             stack.push_back(newnode);
         }
-        
+
         void AddVar(unsigned varno)
         {
             CodeTree* newnode = new CodeTree;
@@ -65,23 +65,23 @@ namespace FPoptimizer_CodeTree
             newnode->Var    = varno;
             stack.push_back(newnode);
         }
-        
+
         void SetLastOpParamSign(unsigned paramno)
         {
             stack.back()->Params[paramno].sign = true;
         }
-        
+
         void SwapLastTwoInStack()
         {
             std::swap(stack[stack.size()-1],
                       stack[stack.size()-2]);
         }
-        
+
         void Dup()
         {
             stack.push_back(stack.back()->Clone());
         }
-        
+
         CodeTree* PullResult()
         {
             CodeTree* result = stack.back();
@@ -89,7 +89,7 @@ namespace FPoptimizer_CodeTree
             result->Rehash(false);
             return result;
         }
-        
+
         void CheckConst()
         {
             // Check if the last token on stack can be optimized with constant math
@@ -108,7 +108,7 @@ namespace FPoptimizer_CodeTree
     {
         CodeTreeParserData data;
         std::list<size_t> labels;
-        
+
         for(size_t IP=0, DP=0; ; ++IP)
         {
             while(!labels.empty() && *labels.begin() == IP)
@@ -118,7 +118,7 @@ namespace FPoptimizer_CodeTree
                 labels.erase(labels.begin());
             }
             if(IP >= ByteCode.size()) break;
-            
+
             unsigned opcode = ByteCode[IP];
             if(OPCODE(opcode) >= VarBegin)
             {

@@ -85,7 +85,7 @@ private:
     int evalErrorType;
 
     friend class FPoptimizer_CodeTree::CodeTree;
-    
+
     struct Data;
     Data* data;
 

@@ -26,17 +26,17 @@ Maintained by Magnus Ekdahl <magnus@debian.org>
 
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
    As a special exception, when this file is copied by Bison++ into a
    Bison++ output file, you may use that output file without restriction.
    This special exception was added by the Free Software Foundation
-   in version 1.24 of Bison, and has been in Bison++ since 1.21.9.  
+   in version 1.24 of Bison, and has been in Bison++ since 1.21.9.
 
 */
 
 /* HEADER SECTION */
-#if defined( _MSDOS ) || defined(MSDOS) || defined(__MSDOS__) 
+#if defined( _MSDOS ) || defined(MSDOS) || defined(__MSDOS__)
  #define __MSDOS_AND_ALIKE
 #endif
 
@@ -96,7 +96,7 @@ Maintained by Magnus Ekdahl <magnus@debian.org>
 #endif
 
 #include <stdio.h>
-#define YYBISON 1  
+#define YYBISON 1
 
  #line 88 "/usr/share/bison++/bison.cc"
 #line 1 "fpoptimizer_grammar_gen.y"
@@ -146,7 +146,7 @@ namespace crc32 {
     // The whole table, index by steps of 16
     static const uint_least32_t table[256] =
     { R(0x00),R(0x10),R(0x20),R(0x30), R(0x40),R(0x50),R(0x60),R(0x70),
-      R(0x80),R(0x90),R(0xA0),R(0xB0), R(0xC0),R(0xD0),R(0xE0),R(0xF0) }; 
+      R(0x80),R(0x90),R(0xA0),R(0xB0), R(0xC0),R(0xD0),R(0xE0),R(0xF0) };
     #undef R
     #undef B4
     uint_fast32_t update(uint_fast32_t crc, unsigned/* char */b) // __attribute__((pure))
@@ -164,7 +164,6 @@ namespace crc32 {
         return calc_upd(startvalue, buf, size);
     }
 }
-
 
 
 /*********/
@@ -191,21 +190,21 @@ private:
     std::map<crc32_t,     size_t>    p_index;
     std::map<crc32_t,     size_t>    m_index;
     std::map<crc32_t,     size_t>    f_index;
-    
+
     std::vector<std::string>         nlist;
     std::vector<double>              clist;
     std::vector<ParamSpec_Const>     plist;
     std::vector<MatchedParams_Const> mlist;
     std::vector<FunctionType_Const>  flist;
     std::vector<RuleType_Const>      rlist;
-    std::vector<Grammar_Const>       glist;    
+    std::vector<Grammar_Const>       glist;
 public:
     GrammarDumper():
         n_index(), c_index(), p_index(), m_index(), f_index(),
         nlist(),clist(),plist(),mlist(),flist(),rlist(),glist()
     {
     }
-    
+
     std::string Dump(OpcodeType o)
     {
         switch(OPCODE(o))
@@ -299,7 +298,7 @@ public:
     std::string PDumpFix(const ParamSpec& p, const std::string& s)
     {
         std::string res = s;
-        if(p.Negated)   
+        if(p.Negated)
             res = "(" + res + ")->SetNegated()";
         if(p.MinimumRepeat != 1 || p.AnyRepetition)
         {
@@ -311,7 +310,7 @@ public:
         }
         return res;
     }
-    
+
     size_t Dump(const std::string& n)
     {
         std::map<std::string, size_t>::const_iterator i = n_index.find(n);
@@ -326,7 +325,7 @@ public:
         clist.push_back(v);
         return c_index[v] = clist.size()-1;
     }
-    
+
     void Dump(const std::vector<ParamSpec*>& params,
               size_t& index,
               size_t& count)
@@ -384,7 +383,7 @@ public:
         }
         return;
     }
-    
+
     size_t Dump(const ParamSpec& p)
     {
         ParamSpec_Const  pitem;
@@ -401,18 +400,8 @@ public:
                 pitem.count = 0;
                 break;
             }
-            case ParamSpec::ImmedHolder:
-            {
-                pitem.index = p.Index;
-                pitem.count = 0;
-                break;
-            }
             case ParamSpec::NamedHolder:
-            {
-                pitem.index = Dump(p.Name);
-                pitem.count = p.Name.size();
-                break;
-            }
+            case ParamSpec::ImmedHolder:
             case ParamSpec::RestHolder:
             {
                 pitem.index = p.Index;
@@ -445,13 +434,13 @@ public:
         Dump(m.Params, i, c);
         mitem.index = i;
         mitem.count = c;
-        
+
         crc32_t crc = crc32::calc((const unsigned char*)&mitem, sizeof(mitem));
         std::map<crc32_t, size_t>::const_iterator mi = m_index.find(crc);
         if(mi != m_index.end())
             return mi->second;
         m_index[crc] = mlist.size();
-        
+
         mlist.push_back(mitem);
         return mlist.size()-1;
     }
@@ -473,7 +462,7 @@ public:
     size_t Dump(const Rule& r)
     {
         RuleType_Const ritem;
-        ritem.type        = r.Type; 
+        ritem.type        = r.Type;
         ritem.input_index = Dump(r.Input);
         ritem.repl_index  = Dump(r.Replacement);
         rlist.push_back(ritem);
@@ -489,22 +478,12 @@ public:
         glist.push_back(gitem);
         return glist.size()-1;
     }
-    
+
     void Flush()
     {
         std::cout <<
             "namespace\n"
             "{\n"
-            "    const char* const nlist[] =\n"
-            "    {\n";
-        for(size_t a=0; a<nlist.size(); ++a)
-        {
-            std::cout <<
-            "        \"" << nlist[a] << "\", /* " << a << " */\n";
-        }
-        std::cout <<
-            "    };\n"
-            "\n"
             "    const double clist[] =\n"
             "    {\n";
         for(size_t a=0; a<clist.size(); ++a)
@@ -540,9 +519,10 @@ public:
                         << Dump(plist[a].opcode)
                         << ", " << plist[a].count
                         << ", " << plist[a].index
-                        << " }, /* " << a
-                                     << " " << crc32::calc((const unsigned char*)&plist[a], sizeof(plist[a]))
-                                     << " */\n";
+                        << " }, /* " << a;
+            if(plist[a].opcode == ParamSpec::NamedHolder)
+                std::cout << ", \"" << nlist[plist[a].index] << "\"";
+            std::cout << " */\n";
         }
         std::cout <<
             "    };\n"
@@ -601,20 +581,22 @@ public:
             "\n"
             "    const GrammarPack pack =\n"
             "    {\n"
-            "        nlist, clist, plist, mlist, flist, rlist, glist\n"
+            "        clist, plist, mlist, flist, rlist, glist\n"
             "    };\n"
             "}\n";
     }
 };
 
+static GrammarDumper dumper;
 
-#line 513 "fpoptimizer_grammar_gen.y"
+
+#line 495 "fpoptimizer_grammar_gen.y"
 typedef union {
     Rule*          r;
     FunctionType*  f;
     MatchedParams* p;
     ParamSpec*     a;
-    
+
     double         num;
     std::string*   name;
     unsigned       index;
@@ -643,7 +625,7 @@ typedef union {
  #endif
 /* Testing alternative bison solution
    /#ifdef YYSTYPE*/
-#ifndef YY_FPoptimizerGrammarParser_STYPE 
+#ifndef YY_FPoptimizerGrammarParser_STYPE
    #define YY_FPoptimizerGrammarParser_STYPE YYSTYPE
 #endif
 /*#endif*/
@@ -652,7 +634,7 @@ typedef union {
    #define  YY_FPoptimizerGrammarParser_DEBUG YYDEBUG
   #endif
  #endif
- 
+
  /* use goto to be compatible */
  #ifndef YY_FPoptimizerGrammarParser_USE_GOTO
   #define YY_FPoptimizerGrammarParser_USE_GOTO 1
@@ -756,7 +738,7 @@ typedef
 #ifndef YY_FPoptimizerGrammarParser_PARSE_PARAM
  #ifndef YY_USE_CLASS
   #ifdef YYPARSE_PARAM
-   #define YY_FPoptimizerGrammarParser_PARSE_PARAM void* YYPARSE_PARAM 
+   #define YY_FPoptimizerGrammarParser_PARSE_PARAM void* YYPARSE_PARAM
   #else
    #ifndef __STDC__
     #ifndef __cplusplus
@@ -795,7 +777,7 @@ typedef
 
 #ifdef YY_FPoptimizerGrammarParser_DEBUG
 #  ifndef YYDEBUG
-#    define YYDEBUG YY_FPoptimizerGrammarParser_DEBUG 
+#    define YYDEBUG YY_FPoptimizerGrammarParser_DEBUG
 #  endif
 #endif
 
@@ -842,13 +824,13 @@ typedef
 #define YY_FPoptimizerGrammarParser_INHERIT
 #endif
 #ifndef YY_FPoptimizerGrammarParser_MEMBERS
-#define YY_FPoptimizerGrammarParser_MEMBERS 
+#define YY_FPoptimizerGrammarParser_MEMBERS
 #endif
 #ifndef YY_FPoptimizerGrammarParser_LEX_BODY
-#define YY_FPoptimizerGrammarParser_LEX_BODY  
+#define YY_FPoptimizerGrammarParser_LEX_BODY
 #endif
 #ifndef YY_FPoptimizerGrammarParser_ERROR_BODY
-#define YY_FPoptimizerGrammarParser_ERROR_BODY  
+#define YY_FPoptimizerGrammarParser_ERROR_BODY
 #endif
 #ifndef YY_FPoptimizerGrammarParser_CONSTRUCTOR_PARAM
 #define YY_FPoptimizerGrammarParser_CONSTRUCTOR_PARAM
@@ -863,7 +845,7 @@ typedef
 #ifndef YY_FPoptimizerGrammarParser_USE_CONST_TOKEN
 #define YY_FPoptimizerGrammarParser_USE_CONST_TOKEN 0
 /* yes enum is more compatible with flex,  */
-/* so by default we use it */ 
+/* so by default we use it */
 #endif
 #if YY_FPoptimizerGrammarParser_USE_CONST_TOKEN != 0
 #ifndef YY_FPoptimizerGrammarParser_ENUM_TOKEN
@@ -873,7 +855,7 @@ typedef
 
 class YY_FPoptimizerGrammarParser_CLASS YY_FPoptimizerGrammarParser_INHERIT
 {
-public: 
+public:
 #if YY_FPoptimizerGrammarParser_USE_CONST_TOKEN != 0
 /* static const int token ... */
 
@@ -940,7 +922,7 @@ public:
 public:
  YY_FPoptimizerGrammarParser_CLASS(YY_FPoptimizerGrammarParser_CONSTRUCTOR_PARAM);
 public:
- YY_FPoptimizerGrammarParser_MEMBERS 
+ YY_FPoptimizerGrammarParser_MEMBERS
 };
 /* other declare folow */
 #if YY_FPoptimizerGrammarParser_USE_CONST_TOKEN != 0
@@ -1033,11 +1015,11 @@ static const short yyrhs[] = {    22,
 
 #endif
 
-#if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
+#if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE)
 static const short yyrline[] = { 0,
-   545,   551,   552,   555,   563,   572,   580,   590,   592,   595,
-   604,   613,   619,   626,   632,   637,   643,   649,   655,   661,
-   663,   670,   679,   684,   688,   692,   696,   701,   710,   715
+   527,   533,   534,   537,   545,   554,   562,   572,   574,   577,
+   586,   595,   601,   608,   614,   619,   625,   631,   637,   643,
+   645,   652,   661,   666,   670,   674,   678,   683,   692,   697
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1138,10 +1120,10 @@ static const short yycheck[] = {    24,
 
 /* Note: dollar marks section change
    the next  is replaced by the list of actions, each action
-   as one case of the switch.  */ 
+   as one case of the switch.  */
 
 #if YY_FPoptimizerGrammarParser_USE_GOTO != 0
-/* 
+/*
  SUPRESSION OF GOTO : on some C++ compiler (sun c++)
   the goto is strictly forbidden if any constructor/destructor
   is used in the whole function (very stupid isn't it ?)
@@ -1152,19 +1134,19 @@ static const short yycheck[] = {    24,
 #define YYBEGINGOTO  enum yy_labels yy_gotostate=yygotostart; \
                      for(;;) switch(yy_gotostate) { case yygotostart: {
 #define YYLABEL(lb) } case lb: {
-#define YYENDGOTO } } 
+#define YYENDGOTO } }
 #define YYBEGINDECLARELABEL enum yy_labels {yygotostart
 #define YYDECLARELABEL(lb) ,lb
 #define YYENDDECLARELABEL  };
 #else
 /* macro to keep goto */
 #define YYGOTO(lb) goto lb
-#define YYBEGINGOTO 
+#define YYBEGINGOTO
 #define YYLABEL(lb) lb:
 #define YYENDGOTO
-#define YYBEGINDECLARELABEL 
+#define YYBEGINDECLARELABEL
 #define YYDECLARELABEL(lb)
-#define YYENDDECLARELABEL 
+#define YYENDDECLARELABEL
 #endif
 /* LABEL DECLARATION */
 YYBEGINDECLARELABEL
@@ -1177,7 +1159,7 @@ YYBEGINDECLARELABEL
   YYDECLARELABEL(yyerrlab1)   /* here on error raised explicitly by an action */
   YYDECLARELABEL(yyerrdefault)  /* current state does not do anything special for the error token. */
   YYDECLARELABEL(yyerrpop)   /* pop the current state because it cannot handle the error token */
-  YYDECLARELABEL(yyerrhandle)  
+  YYDECLARELABEL(yyerrhandle)
 YYENDDECLARELABEL
 /* ALLOCA SIMULATION */
 /* __HAVE_NO_ALLOCA */
@@ -1204,7 +1186,7 @@ int __alloca_free_ptr(char *ptr,char *ref)
 #else
 #define __ALLOCA_return(num) do { return(num); } while(0)
 #define __ALLOCA_alloca(size) alloca(size)
-#define __ALLOCA_free(ptr,ref) 
+#define __ALLOCA_free(ptr,ref)
 #endif
 
 /* ENDALLOCA SIMULATION */
@@ -1619,21 +1601,21 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 547 "fpoptimizer_grammar_gen.y"
+#line 529 "fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 558 "fpoptimizer_grammar_gen.y"
+#line 540 "fpoptimizer_grammar_gen.y"
 {
         yyval.r = new Rule(Rule::ProduceNewTree, *yyvsp[-3].f, yyvsp[-1].a);
         delete yyvsp[-3].f;
       ;
     break;}
 case 5:
-#line 566 "fpoptimizer_grammar_gen.y"
+#line 548 "fpoptimizer_grammar_gen.y"
 {
         yyval.r = new Rule(Rule::ProduceNewTree, *yyvsp[-3].f, new ParamSpec(yyvsp[-1].f));
         //std::cout << GrammarDumper().Dump(*new ParamSpec($3)) << "\n";
@@ -1641,7 +1623,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 574 "fpoptimizer_grammar_gen.y"
+#line 556 "fpoptimizer_grammar_gen.y"
 {
         yyval.r = new Rule(Rule::ReplaceParams, *yyvsp[-3].f, *yyvsp[-1].p);
         delete yyvsp[-3].f;
@@ -1649,7 +1631,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 582 "fpoptimizer_grammar_gen.y"
+#line 564 "fpoptimizer_grammar_gen.y"
 {
         yyval.r = new Rule(Rule::ReplaceParams, *yyvsp[-3].f, *yyvsp[-1].p);
         delete yyvsp[-3].f;
@@ -1657,74 +1639,74 @@ case 7:
       ;
     break;}
 case 10:
-#line 598 "fpoptimizer_grammar_gen.y"
+#line 580 "fpoptimizer_grammar_gen.y"
 {
          yyval.f = new FunctionType(yyvsp[-1].opcode, *yyvsp[0].p);
          delete yyvsp[0].p;
        ;
     break;}
 case 11:
-#line 607 "fpoptimizer_grammar_gen.y"
+#line 589 "fpoptimizer_grammar_gen.y"
 {
          yyval.f = new FunctionType(yyvsp[-1].opcode, *yyvsp[0].p);
          delete yyvsp[0].p;
        ;
     break;}
 case 12:
-#line 615 "fpoptimizer_grammar_gen.y"
+#line 597 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p;
           yyval.p->SetType(MatchedParams::PositionalParams);
         ;
     break;}
 case 13:
-#line 620 "fpoptimizer_grammar_gen.y"
+#line 602 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[0].p;
           yyval.p->SetType(MatchedParams::AnyParams);
         ;
     break;}
 case 14:
-#line 628 "fpoptimizer_grammar_gen.y"
+#line 610 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p;
           yyval.p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 15:
-#line 633 "fpoptimizer_grammar_gen.y"
+#line 615 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = new MatchedParams;
         ;
     break;}
 case 16:
-#line 639 "fpoptimizer_grammar_gen.y"
+#line 621 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[0].a;
          yyval.a->Negated = true;
        ;
     break;}
 case 17:
-#line 644 "fpoptimizer_grammar_gen.y"
+#line 626 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[0].a;
        ;
     break;}
 case 18:
-#line 651 "fpoptimizer_grammar_gen.y"
+#line 633 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p;
           yyval.p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 19:
-#line 656 "fpoptimizer_grammar_gen.y"
+#line 638 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = new MatchedParams;
         ;
     break;}
 case 21:
-#line 665 "fpoptimizer_grammar_gen.y"
+#line 647 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[-1].a;
          yyval.a->MinimumRepeat = 2;
@@ -1732,7 +1714,7 @@ case 21:
        ;
     break;}
 case 22:
-#line 672 "fpoptimizer_grammar_gen.y"
+#line 654 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[-1].a;
          yyval.a->MinimumRepeat = 1;
@@ -1740,38 +1722,38 @@ case 22:
        ;
     break;}
 case 23:
-#line 681 "fpoptimizer_grammar_gen.y"
+#line 663 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 24:
-#line 685 "fpoptimizer_grammar_gen.y"
+#line 667 "fpoptimizer_grammar_gen.y"
 {
-         yyval.a = new ParamSpec(yyvsp[0].index, 0.0);
+         yyval.a = new ParamSpec(yyvsp[0].index, ParamSpec::ImmedHolderTag());
        ;
     break;}
 case 25:
-#line 689 "fpoptimizer_grammar_gen.y"
+#line 671 "fpoptimizer_grammar_gen.y"
 {
-         yyval.a = new ParamSpec(yyvsp[0].index, (void*)0);
+         yyval.a = new ParamSpec(yyvsp[0].index, ParamSpec::RestHolderTag());
        ;
     break;}
 case 26:
-#line 693 "fpoptimizer_grammar_gen.y"
+#line 675 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new ParamSpec(yyvsp[-1].f);
        ;
     break;}
 case 27:
-#line 697 "fpoptimizer_grammar_gen.y"
+#line 679 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new ParamSpec(yyvsp[-3].opcode, yyvsp[-1].p->GetParams());
          delete yyvsp[-1].p;
        ;
     break;}
 case 28:
-#line 702 "fpoptimizer_grammar_gen.y"
+#line 684 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[0].a;
          switch(yyvsp[-1].opcode)
@@ -1782,16 +1764,17 @@ case 28:
        ;
     break;}
 case 29:
-#line 711 "fpoptimizer_grammar_gen.y"
+#line 693 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new ParamSpec(yyvsp[-3].opcode, yyvsp[-1].p->GetParams());
          delete yyvsp[-1].p;
        ;
     break;}
 case 30:
-#line 716 "fpoptimizer_grammar_gen.y"
+#line 698 "fpoptimizer_grammar_gen.y"
 {
-         yyval.a = new ParamSpec(*yyvsp[0].name);
+         unsigned nameindex = dumper.Dump(*yyvsp[0].name);
+         yyval.a = new ParamSpec(nameindex, ParamSpec::NamedHolderTag());
          delete yyvsp[0].name;
        ;
     break;}
@@ -1999,7 +1982,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 722 "fpoptimizer_grammar_gen.y"
+#line 705 "fpoptimizer_grammar_gen.y"
 
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
@@ -2127,7 +2110,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 std::ungetc(c, stdin);
                 break;
             }
-            
+
             /* TODO: figure out if this is a named constant,
                      an opcode, or a parse-time function name,
                      or just an identifier
@@ -2145,12 +2128,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 /* We generate a NaN. Anyone know a better way? */
                 lval->num = 0; lval->num /= 0.0; return NUMERIC_CONSTANT;
             }
-            
+
             if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE_MAYBEINV; }
             if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE_MAYBEINV; }
             if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE_MAYBEINV; }
             if(IdBuf == "cOr")  { lval->opcode = cOr; return OPCODE_MAYBEINV; }
-            
+
             if(IdBuf == "cNeg") { lval->opcode = cNeg; return OPCODE_NOTINV; }
             if(IdBuf == "cSub") { lval->opcode = cSub; return OPCODE_NOTINV; }
             if(IdBuf == "cDiv") { lval->opcode = cDiv; return OPCODE_NOTINV; }
@@ -2169,7 +2152,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE_NOTINV; }
             if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE_NOTINV; }
             if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE_NOTINV; }
-            
+
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
             {
                 // This has a chance of being an opcode token
@@ -2212,7 +2195,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                         lval->opcode = cMod;
                         return BUILTIN_FUNC_NAME;
                     }
-                    
+
                     fprintf(stderr, "Warning: Unrecognized opcode '%s' interpreted as cNop\n",
                         IdBuf.c_str());
                     lval->opcode = cNop;
@@ -2239,17 +2222,17 @@ int main()
     Grammar Grammar_Entry;
     Grammar Grammar_Intermediate;
     Grammar Grammar_Final;
-    
+
     std::string sectionname;
 
     for(;;)
     {
         FPoptimizerGrammarParser x;
         x.yyparse();
-        
+
         std::sort(x.grammar.rules.begin(),
                   x.grammar.rules.end());
-        
+
         if(sectionname == "ENTRY")
             Grammar_Entry = x.grammar;
         else if(sectionname == "INTERMEDIATE")
@@ -2259,10 +2242,10 @@ int main()
         else if(!sectionname.empty())
             fprintf(stderr, "Warning: Ignored rules in unknown section '%s'\n",
                 sectionname.c_str());
-        
+
         int c = std::fgetc(stdin);
         if(c != '[') break;
-        
+
         sectionname.clear();
         for(;;)
         {
@@ -2273,7 +2256,7 @@ int main()
         fprintf(stderr, "Parsing [%s]\n",
             sectionname.c_str());
     }
-    
+
     std::cout <<
         "/* This file is automatically generated. Do not edit... */\n"
         "#include \"fpoptimizer_grammar.hh\"\n"
@@ -2285,14 +2268,13 @@ int main()
         "\n"
         "Grammar Grammar_Entry, Grammar_Intermediate, Grammar_Final;\n"
         "\n";
-    
-    GrammarDumper dumper;
+
     size_t e = dumper.Dump(Grammar_Entry);
     size_t i = dumper.Dump(Grammar_Intermediate);
     size_t f = dumper.Dump(Grammar_Final);
-    
+
     dumper.Flush();
-    
+
     std::cout <<
         "\n"
         "void FPoptimizer_Grammar_Init()\n"
@@ -2301,6 +2283,6 @@ int main()
         "    Grammar_Intermediate.Read(pack, " << i << ");\n"
         "    Grammar_Final.Read(pack,        " << f << ");\n"
         "}\n";
-    
+
     return 0;
 }

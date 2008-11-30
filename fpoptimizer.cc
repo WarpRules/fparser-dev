@@ -29,7 +29,7 @@ void FunctionParser::Optimize()
     CodeTree* tree = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
     std::vector<unsigned> byteCode;
     std::vector<double> immed;
-    
+
     size_t stacktop_cur = 0;
     size_t stacktop_max = 0;
     tree->SynthesizeByteCode(byteCode, immed, stacktop_cur, stacktop_max);

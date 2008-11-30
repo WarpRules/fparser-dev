@@ -41,21 +41,21 @@ signed char powi_table[POWI_TABLE_SIZE] =
      56,   1,  57,  -5,  58,  13,  59, -17, /* 112 - 119 */
      60,   1,  61,  41,  62,  25,  -2,   1, /* 120 - 127 */
      64,   1,  65,   1,  66,   1,  67,  45, /* 128 - 135 */
-     68,   1,  69,   1,  70,  48,  16,   8, /* 136 - 143 */   
-     72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */   
-     76,  17,   1,  -5,  78,   1,  32,  53, /* 152 - 159 */   
-     80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */   
-     84,   1,  85,  57,  86,   8,  87,  35, /* 168 - 175 */   
-     88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */   
-     92,  37,  93,  17,  94,  -3,  64,   2, /* 184 - 191 */   
-     96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */   
-    100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */   
-    104,   1, 105,  16, 106,  24, 107,   1, /* 208 - 215 */   
-    108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */   
-    112,  45, 113,  32, 114,   1, 115, -33, /* 224 - 231 */   
-    116,   1, 117,  -5, 118,  48, 119,   1, /* 232 - 239 */   
-    120,   1, 121,  81, 122,  49, 123,  13, /* 240 - 247 */   
-    124,   1, 125,   1, 126,   1,  -2,  85  /* 248 - 255 */   
+     68,   1,  69,   1,  70,  48,  16,   8, /* 136 - 143 */
+     72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */
+     76,  17,   1,  -5,  78,   1,  32,  53, /* 152 - 159 */
+     80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */
+     84,   1,  85,  57,  86,   8,  87,  35, /* 168 - 175 */
+     88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */
+     92,  37,  93,  17,  94,  -3,  64,   2, /* 184 - 191 */
+     96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */
+    100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */
+    104,   1, 105,  16, 106,  24, 107,   1, /* 208 - 215 */
+    108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */
+    112,  45, 113,  32, 114,   1, 115, -33, /* 224 - 231 */
+    116,   1, 117,  -5, 118,  48, 119,   1, /* 232 - 239 */
+    120,   1, 121,  81, 122,  49, 123,  13, /* 240 - 247 */
+    124,   1, 125,   1, 126,   1,  -2,  85  /* 248 - 255 */
 }; /* as in gcc, but custom-optimized for stack calculation */
 static const int POWI_CACHE_SIZE = 256;
 
@@ -63,7 +63,7 @@ static const struct SequenceOpCode
 {
     double basevalue;
     unsigned op_flip;
-    unsigned op_normal, op_normal_flip;  
+    unsigned op_normal, op_normal_flip;
     unsigned op_inverse, op_inverse_flip;
 } AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub },
   MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
@@ -73,7 +73,7 @@ namespace
     using namespace FPoptimizer_CodeTree;
 
     bool AssembleSequence(
-                  CodeTree& tree, long count, 
+                  CodeTree& tree, long count,
                   const SequenceOpCode& sequencing,
                   std::vector<unsigned> &ByteCode,
                   std::vector<double>   &Immed,
@@ -85,7 +85,7 @@ namespace
     {
         size_t stackpos; // Stack offset where it is found
         int cache_val;   // Which value from cache is it, -1 = none
-        
+
         Subdivide_result(size_t s,int c=-1) : stackpos(s), cache_val(c) { }
         Subdivide_result() : stackpos(),cache_val() { }
     };
@@ -98,14 +98,14 @@ namespace
                   size_t& stacktop_cur,
                   size_t& stacktop_max);
 
-    Subdivide_result Subdivide_MakeResult(  
+    Subdivide_result Subdivide_MakeResult(
                   const Subdivide_result& a,
                   const Subdivide_result& b,
                   int cache_needed[POWI_CACHE_SIZE],
 
                   unsigned cumulation_opcode,
                   unsigned cimulation_opcode_flip,
-                  
+
                   std::vector<unsigned> &ByteCode,
                   size_t& stacktop_cur,
                   size_t& stacktop_max);
@@ -141,7 +141,7 @@ namespace FPoptimizer_CodeTree
             else { AddCmd(cFetch); AddCmd((n)); } \
             SimuPush(1); \
         } while(0)
-        
+
         switch(Opcode)
         {
             case cVar:
@@ -173,7 +173,7 @@ namespace FPoptimizer_CodeTree
                             break;
                         }
                 }
-                
+
                 // Try to ensure that Immeds don't have a sign
                 for(size_t a=0; a<Params.size(); ++a)
                 {
@@ -188,7 +188,7 @@ namespace FPoptimizer_CodeTree
                             case cOr:  param->NotTheImmed(); Params[a].sign=false; break;
                         }
                 }
-                
+
                 if(Opcode == cMul) // Special treatment for cMul sequences
                 {
                     // If the paramlist contains an Immed, and that Immed
@@ -202,7 +202,7 @@ namespace FPoptimizer_CodeTree
                         {
                             long value = param->GetLongIntegerImmed();
                             Params.erase(Params.begin()+a);
-                            
+
                             bool success = AssembleSequence(
                                 *this, value, AddSequence,
                                 ByteCode,Immed, stacktop_cur,stacktop_max,
@@ -211,7 +211,7 @@ namespace FPoptimizer_CodeTree
                             // Readd the token so that we don't need
                             // to deal with allocationd/deallocation here.
                             Params.insert(Params.begin()+a, p);
-                            
+
                             if(success)
                             {
                                 // this tree was treated just fine
@@ -226,10 +226,10 @@ namespace FPoptimizer_CodeTree
                 {
                     CodeTree*const & param = Params[a].param;
                     bool              sign = Params[a].sign;
-                    
+
                     param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
                     ++n_stacked;
-                    
+
                     if(sign)
                     {
                         if(n_stacked == 1)
@@ -312,7 +312,7 @@ namespace FPoptimizer_CodeTree
             {
                 const Param& p0 = Params[0];
                 const Param& p1 = Params[1];
-                
+
                 if(!p1.param->IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         *p0.param, p1.param->GetLongIntegerImmed(),
@@ -357,7 +357,7 @@ namespace FPoptimizer_CodeTree
                 ByteCode[ofs+2] = Immed.size();
 
                 SimuPush(1);
-                break;   
+                break;
             }
             case cFCall:
             {
@@ -419,7 +419,7 @@ namespace
             cache_needed[count] += need_count;
             if(cache[count]) return;
         }
-        
+
         long half = 1;
         if(count < POWI_TABLE_SIZE)
         {
@@ -433,12 +433,12 @@ namespace
         {
             half = count / 2;
         }
-        
+
         long otherhalf = count-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
-        
+
         FPO(fprintf(stderr, "count=%ld, half=%ld, otherhalf=%ld\n", count,half,otherhalf));
-        
+
         if(half == otherhalf)
         {
             PlanNtimesCache(half,      cache, cache_needed, 2, recursioncount+1);
@@ -467,7 +467,7 @@ namespace
         const size_t immedsize_backup    = Immed.size();
         const size_t stacktopcur_backup  = stacktop_cur;
         const size_t stacktopmax_backup  = stacktop_max;
-        
+
         if(count == 0)
         {
             SimuPush(1);
@@ -476,7 +476,7 @@ namespace
         else
         {
             tree.SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-            
+
             if(count < 0)
             {
                 AddCmd(sequencing.op_flip);
@@ -575,9 +575,9 @@ namespace
                 return Subdivide_result(cache[count], count);
             }
         }
-        
+
         long half = 1;
-        
+
         if(count < POWI_TABLE_SIZE)
         {
             half = powi_table[count];
@@ -594,7 +594,7 @@ namespace
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
         FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half));
-       
+
         Subdivide_result res;
         if(half == otherhalf)
         {
@@ -627,7 +627,7 @@ namespace
                 otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
                 ByteCode, stacktop_cur,stacktop_max);
         }
-        
+
         if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
         {
             FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
@@ -663,12 +663,12 @@ namespace
         // Figure out whether we can trample a and b
         int a_needed = 0;
         int b_needed = 0;
-        
+
         if(a.cache_val >= 0) a_needed = --cache_needed[a.cache_val];
         if(b.cache_val >= 0) b_needed = --cache_needed[b.cache_val];
 
         size_t apos = a.stackpos, bpos = b.stackpos;
-        
+
         bool flipped = false;
 
         #define DUP_BOTH() do { \

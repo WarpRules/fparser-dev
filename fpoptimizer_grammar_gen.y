@@ -44,7 +44,7 @@ namespace crc32 {
     // The whole table, index by steps of 16
     static const uint_least32_t table[256] =
     { R(0x00),R(0x10),R(0x20),R(0x30), R(0x40),R(0x50),R(0x60),R(0x70),
-      R(0x80),R(0x90),R(0xA0),R(0xB0), R(0xC0),R(0xD0),R(0xE0),R(0xF0) }; 
+      R(0x80),R(0x90),R(0xA0),R(0xB0), R(0xC0),R(0xD0),R(0xE0),R(0xF0) };
     #undef R
     #undef B4
     uint_fast32_t update(uint_fast32_t crc, unsigned/* char */b) // __attribute__((pure))
@@ -62,7 +62,6 @@ namespace crc32 {
         return calc_upd(startvalue, buf, size);
     }
 }
-
 
 
 /*********/
@@ -89,21 +88,21 @@ private:
     std::map<crc32_t,     size_t>    p_index;
     std::map<crc32_t,     size_t>    m_index;
     std::map<crc32_t,     size_t>    f_index;
-    
+
     std::vector<std::string>         nlist;
     std::vector<double>              clist;
     std::vector<ParamSpec_Const>     plist;
     std::vector<MatchedParams_Const> mlist;
     std::vector<FunctionType_Const>  flist;
     std::vector<RuleType_Const>      rlist;
-    std::vector<Grammar_Const>       glist;    
+    std::vector<Grammar_Const>       glist;
 public:
     GrammarDumper():
         n_index(), c_index(), p_index(), m_index(), f_index(),
         nlist(),clist(),plist(),mlist(),flist(),rlist(),glist()
     {
     }
-    
+
     std::string Dump(OpcodeType o)
     {
         switch(OPCODE(o))
@@ -197,7 +196,7 @@ public:
     std::string PDumpFix(const ParamSpec& p, const std::string& s)
     {
         std::string res = s;
-        if(p.Negated)   
+        if(p.Negated)
             res = "(" + res + ")->SetNegated()";
         if(p.MinimumRepeat != 1 || p.AnyRepetition)
         {
@@ -209,7 +208,7 @@ public:
         }
         return res;
     }
-    
+
     size_t Dump(const std::string& n)
     {
         std::map<std::string, size_t>::const_iterator i = n_index.find(n);
@@ -224,7 +223,7 @@ public:
         clist.push_back(v);
         return c_index[v] = clist.size()-1;
     }
-    
+
     void Dump(const std::vector<ParamSpec*>& params,
               size_t& index,
               size_t& count)
@@ -282,7 +281,7 @@ public:
         }
         return;
     }
-    
+
     size_t Dump(const ParamSpec& p)
     {
         ParamSpec_Const  pitem;
@@ -299,18 +298,8 @@ public:
                 pitem.count = 0;
                 break;
             }
-            case ParamSpec::ImmedHolder:
-            {
-                pitem.index = p.Index;
-                pitem.count = 0;
-                break;
-            }
             case ParamSpec::NamedHolder:
-            {
-                pitem.index = Dump(p.Name);
-                pitem.count = p.Name.size();
-                break;
-            }
+            case ParamSpec::ImmedHolder:
             case ParamSpec::RestHolder:
             {
                 pitem.index = p.Index;
@@ -343,13 +332,13 @@ public:
         Dump(m.Params, i, c);
         mitem.index = i;
         mitem.count = c;
-        
+
         crc32_t crc = crc32::calc((const unsigned char*)&mitem, sizeof(mitem));
         std::map<crc32_t, size_t>::const_iterator mi = m_index.find(crc);
         if(mi != m_index.end())
             return mi->second;
         m_index[crc] = mlist.size();
-        
+
         mlist.push_back(mitem);
         return mlist.size()-1;
     }
@@ -371,7 +360,7 @@ public:
     size_t Dump(const Rule& r)
     {
         RuleType_Const ritem;
-        ritem.type        = r.Type; 
+        ritem.type        = r.Type;
         ritem.input_index = Dump(r.Input);
         ritem.repl_index  = Dump(r.Replacement);
         rlist.push_back(ritem);
@@ -387,22 +376,12 @@ public:
         glist.push_back(gitem);
         return glist.size()-1;
     }
-    
+
     void Flush()
     {
         std::cout <<
             "namespace\n"
             "{\n"
-            "    const char* const nlist[] =\n"
-            "    {\n";
-        for(size_t a=0; a<nlist.size(); ++a)
-        {
-            std::cout <<
-            "        \"" << nlist[a] << "\", /* " << a << " */\n";
-        }
-        std::cout <<
-            "    };\n"
-            "\n"
             "    const double clist[] =\n"
             "    {\n";
         for(size_t a=0; a<clist.size(); ++a)
@@ -438,9 +417,10 @@ public:
                         << Dump(plist[a].opcode)
                         << ", " << plist[a].count
                         << ", " << plist[a].index
-                        << " }, /* " << a
-                                     << " " << crc32::calc((const unsigned char*)&plist[a], sizeof(plist[a]))
-                                     << " */\n";
+                        << " }, /* " << a;
+            if(plist[a].opcode == ParamSpec::NamedHolder)
+                std::cout << ", \"" << nlist[plist[a].index] << "\"";
+            std::cout << " */\n";
         }
         std::cout <<
             "    };\n"
@@ -499,11 +479,13 @@ public:
             "\n"
             "    const GrammarPack pack =\n"
             "    {\n"
-            "        nlist, clist, plist, mlist, flist, rlist, glist\n"
+            "        clist, plist, mlist, flist, rlist, glist\n"
             "    };\n"
             "}\n";
     }
 };
+
+static GrammarDumper dumper;
 
 %}
 
@@ -515,7 +497,7 @@ public:
     FunctionType*  f;
     MatchedParams* p;
     ParamSpec*     a;
-    
+
     double         num;
     std::string*   name;
     unsigned       index;
@@ -586,12 +568,12 @@ public:
       }
 
     ;
-    
+
     function:
        function_notinv
     |  function_maybeinv
     ;
- 
+
     function_notinv:
        OPCODE_NOTINV paramsmatchingspec
        /* Match a function with opcode=opcode and the given way of matching params */
@@ -622,7 +604,7 @@ public:
           $$->SetType(MatchedParams::AnyParams);
         }
     ;
-    
+
     param_maybeinv_list: /* left-recursive list of 0-n params with no delimiter */
         param_maybeinv_list maybeinv_param
         {
@@ -683,11 +665,11 @@ public:
        }
     |  IMMED_TOKEN              /* a placeholder for some immed */
        {
-         $$ = new ParamSpec($1, 0.0);
+         $$ = new ParamSpec($1, ParamSpec::ImmedHolderTag());
        }
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
-         $$ = new ParamSpec($1, (void*)0);
+         $$ = new ParamSpec($1, ParamSpec::RestHolderTag());
        }
     |  '(' function ')'         /* a subtree */
        {
@@ -714,7 +696,8 @@ public:
        }
     |  PARAMETER_TOKEN          /* any expression */
        {
-         $$ = new ParamSpec(*$1);
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = new ParamSpec(nameindex, ParamSpec::NamedHolderTag());
          delete $1;
        }
     ;
@@ -846,7 +829,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 std::ungetc(c, stdin);
                 break;
             }
-            
+
             /* TODO: figure out if this is a named constant,
                      an opcode, or a parse-time function name,
                      or just an identifier
@@ -864,12 +847,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 /* We generate a NaN. Anyone know a better way? */
                 lval->num = 0; lval->num /= 0.0; return NUMERIC_CONSTANT;
             }
-            
+
             if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE_MAYBEINV; }
             if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE_MAYBEINV; }
             if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE_MAYBEINV; }
             if(IdBuf == "cOr")  { lval->opcode = cOr; return OPCODE_MAYBEINV; }
-            
+
             if(IdBuf == "cNeg") { lval->opcode = cNeg; return OPCODE_NOTINV; }
             if(IdBuf == "cSub") { lval->opcode = cSub; return OPCODE_NOTINV; }
             if(IdBuf == "cDiv") { lval->opcode = cDiv; return OPCODE_NOTINV; }
@@ -888,7 +871,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE_NOTINV; }
             if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE_NOTINV; }
             if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE_NOTINV; }
-            
+
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
             {
                 // This has a chance of being an opcode token
@@ -931,7 +914,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                         lval->opcode = cMod;
                         return BUILTIN_FUNC_NAME;
                     }
-                    
+
                     fprintf(stderr, "Warning: Unrecognized opcode '%s' interpreted as cNop\n",
                         IdBuf.c_str());
                     lval->opcode = cNop;
@@ -958,17 +941,17 @@ int main()
     Grammar Grammar_Entry;
     Grammar Grammar_Intermediate;
     Grammar Grammar_Final;
-    
+
     std::string sectionname;
 
     for(;;)
     {
         FPoptimizerGrammarParser x;
         x.yyparse();
-        
+
         std::sort(x.grammar.rules.begin(),
                   x.grammar.rules.end());
-        
+
         if(sectionname == "ENTRY")
             Grammar_Entry = x.grammar;
         else if(sectionname == "INTERMEDIATE")
@@ -978,10 +961,10 @@ int main()
         else if(!sectionname.empty())
             fprintf(stderr, "Warning: Ignored rules in unknown section '%s'\n",
                 sectionname.c_str());
-        
+
         int c = std::fgetc(stdin);
         if(c != '[') break;
-        
+
         sectionname.clear();
         for(;;)
         {
@@ -992,7 +975,7 @@ int main()
         fprintf(stderr, "Parsing [%s]\n",
             sectionname.c_str());
     }
-    
+
     std::cout <<
         "/* This file is automatically generated. Do not edit... */\n"
         "#include \"fpoptimizer_grammar.hh\"\n"
@@ -1004,14 +987,13 @@ int main()
         "\n"
         "Grammar Grammar_Entry, Grammar_Intermediate, Grammar_Final;\n"
         "\n";
-    
-    GrammarDumper dumper;
+
     size_t e = dumper.Dump(Grammar_Entry);
     size_t i = dumper.Dump(Grammar_Intermediate);
     size_t f = dumper.Dump(Grammar_Final);
-    
+
     dumper.Flush();
-    
+
     std::cout <<
         "\n"
         "void FPoptimizer_Grammar_Init()\n"
@@ -1020,6 +1002,6 @@ int main()
         "    Grammar_Intermediate.Read(pack, " << i << ");\n"
         "    Grammar_Final.Read(pack,        " << f << ");\n"
         "}\n";
-    
+
     return 0;
 }

@@ -123,7 +123,7 @@ int main()
         for(long p=-128; p<=exponent/2; ++p)
         {
             if(!p) continue;
-            
+
             std::vector<unsigned> byteCode;
             std::vector<double>   immed;
             size_t stacktop_cur=1;
@@ -132,7 +132,7 @@ int main()
             powi_table[exponent] = p;
 
             fprintf(stderr, "For %ld, trying %ld... ", exponent, p);
-            
+
             try {
                 ct.AssembleSequence(st,
                     exponent,
@@ -171,7 +171,7 @@ int main()
             }
             fprintf(stderr, "\n");
             fflush(stderr);
-            
+
             PrintByteCode(byteCode, immed, std::cout);
         }
         powi_table[exponent] = bestp;

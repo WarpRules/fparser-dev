@@ -1253,7 +1253,7 @@ public:
     {
         size_t stackpos; // Stack offset where it is found
         int cache_val;   // Which value from cache is it, -1 = none
-        
+
         Subdivide_result(size_t s,int c=-1) : stackpos(s), cache_val(c) { }
         Subdivide_result() : stackpos(),cache_val() { }
     };
@@ -1273,7 +1273,7 @@ public:
 
                   unsigned cumulation_opcode,
                   unsigned cimulation_opcode_flip,
-                  
+
                   vector<unsigned> &byteCode,
                   size_t& stacktop_cur,
                   size_t& stacktop_max) const;
@@ -1772,7 +1772,7 @@ static void PlanNtimesCache
         cache_needed[count] += need_count;
         if(cache[count]) return;
     }
-    
+
     long half = 1;
     if(count < POWI_TABLE_SIZE)
     {
@@ -1786,12 +1786,12 @@ static void PlanNtimesCache
     {
         half = count / 2;
     }
-    
+
     long otherhalf = count-half;
     if(half > otherhalf || half<0) std::swap(half,otherhalf);
-    
+
     FPO(fprintf(stderr, "count=%ld, half=%ld, otherhalf=%ld\n", count,half,otherhalf));
-    
+
     if(half == otherhalf)
     {
         PlanNtimesCache(half,      cache, cache_needed, 2, recursioncount+1);
@@ -1820,7 +1820,7 @@ bool CodeTree::AssembleSequence(
     const size_t immedsize_backup    = immed.size();
     const size_t stacktopcur_backup  = stacktop_cur;
     const size_t stacktopmax_backup  = stacktop_max;
-    
+
     if(count == 0)
     {
         SimuPush(1);
@@ -1829,7 +1829,7 @@ bool CodeTree::AssembleSequence(
     else
     {
         tree->Assemble(byteCode, immed, stacktop_cur, stacktop_max);
-        
+
         if(count < 0)
         {
             AddCmd(sequencing.op_flip);
@@ -1927,9 +1927,9 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
             return Subdivide_result(cache[count], count);
         }
     }
-    
+
     long half = 1;
-    
+
     if(count < POWI_TABLE_SIZE)
     {
         half = powi_table[count];
@@ -1946,7 +1946,7 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
     if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
     FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half));
-   
+
     Subdivide_result res;
     if(half == otherhalf)
     {
@@ -1979,7 +1979,7 @@ CodeTree::Subdivide_result CodeTree::AssembleSequence_Subdivide(
             otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
             byteCode, stacktop_cur,stacktop_max);
     }
-    
+
     if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
     {
         FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
@@ -2014,12 +2014,12 @@ CodeTree::Subdivide_result CodeTree::Subdivide_MakeResult(
     // Figure out whether we can trample a and b
     int a_needed = 0;
     int b_needed = 0;
-    
+
     if(a.cache_val >= 0) a_needed = --cache_needed[a.cache_val];
     if(b.cache_val >= 0) b_needed = --cache_needed[b.cache_val];
 
     size_t apos = a.stackpos, bpos = b.stackpos;
-    
+
     bool flipped = false;
 
     #define DUP_BOTH() do { \
@@ -2432,7 +2432,7 @@ void FunctionParser::MakeTree(void *r) const
                     stack[stacktop-1].AddParam(
                         stack[stacktop-1].getp0());
                     break;
-                }                
+                }
                 // Binary operators
                 case cSub:
                 {

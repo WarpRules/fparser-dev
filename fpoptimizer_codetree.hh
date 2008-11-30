@@ -59,7 +59,7 @@ namespace FPoptimizer_CodeTree
     public:
         CodeTree();
         ~CodeTree();
-        
+
         /* Generates a CodeTree from the given bytecode */
         static CodeTree* GenerateFrom(
             const std::vector<unsigned>& byteCode,
@@ -71,31 +71,31 @@ namespace FPoptimizer_CodeTree
             std::vector<double>&   immed,
             size_t& stacktop_cur,
             size_t& stacktop_max);
-        
+
         /* Regenerates the hash.
          * child_triggered=false: Recurse to children
          * child_triggered=true:  Recurse to parents
          */
         void Rehash(bool child_triggered);
-        
+
         /* Clones the tree. (For parameter duplication) */
         CodeTree* Clone();
-        
+
         bool    IsImmed() const;
         double GetImmed() const { return Value; }
         bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
         double GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool      IsVar() const;
         unsigned GetVar() const { return Var; }
-        
+
         void NegateImmed() { if(IsImmed()) Value = -Value;       }
         void InvertImmed() { if(IsImmed()) Value = 1.0 / Value;  }
         void NotTheImmed() { if(IsImmed()) Value = Value == 0.0; }
-    
+
     private:
         void Recalculate_Hash_NoRecursion();
         void ConstantFolding();
-    
+
     private:
         CodeTree(const CodeTree&);
         CodeTree& operator=(const CodeTree&);

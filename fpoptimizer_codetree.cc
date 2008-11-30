@@ -16,14 +16,14 @@ namespace FPoptimizer_CodeTree
     CodeTree::CodeTree() : Opcode(), Params(), Hash(), Parent()
     {
     }
-    
+
     CodeTree::~CodeTree()
     {
         for(size_t a=0; a<Params.size(); ++a)
             delete Params[a].param;
     }
-    
-    
+
+
     void CodeTree::Rehash(
         bool child_triggered)
     {
@@ -33,9 +33,9 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<Params.size(); ++a)
                 Params[a].param->Rehash(false);
         }
-        
+
         Recalculate_Hash_NoRecursion();
-        
+
         /* If we were triggered by a child, recurse to the parent */
         if(child_triggered && Parent)
         {
@@ -69,7 +69,7 @@ namespace FPoptimizer_CodeTree
         }
 
     }
-    
+
     CodeTree* CodeTree::Clone()
     {
         CodeTree* result = new CodeTree;

@@ -5,6 +5,10 @@
 
 namespace FPoptimizer_Grammar
 {
+    struct MatchedParams::CodeTreeMatch
+    {
+    };
+
     struct OpcodeRuleCompare
     {
         bool operator() (unsigned opcode, const Rule& rule) const
@@ -16,17 +20,17 @@ namespace FPoptimizer_Grammar
             return rule.Input.Opcode < opcode;
         }
     };
-    
+
     bool Grammar::ApplyTo(FPoptimizer_CodeTree::CodeTree& tree, bool child_triggered) const
     {
         bool changed_once = false;
-        
+
         if(optimized_children.find(tree.Hash) == optimized_children.end())
         {
             for(;;)
             {
                 bool changed = false;
-                
+
                 if(!child_triggered)
                 {
                     /* First optimize all children */
@@ -38,7 +42,7 @@ namespace FPoptimizer_Grammar
                         }
                     }
                 }
-                
+
                 /* Figure out which rules _may_ match this tree */
                 typedef std::vector<Rule>::const_iterator ruleit;
                 std::pair<ruleit, ruleit> range = std::equal_range(rules.begin(), rules.end(), tree.Opcode,
@@ -52,16 +56,16 @@ namespace FPoptimizer_Grammar
                     }
                     ++range.first;
                 }
-                
+
                 if(!changed) break;
-                
+
                 // If we had a change at this point, mark up that we had one, and try again
                 changed_once = true;
             }
-            
+
             optimized_children.insert(tree.Hash);
         }
-        
+
         /* If any changes whatsoever were done, recurse the optimization to parents */
         if((child_triggered || changed_once) && tree.Parent)
         {
@@ -72,7 +76,7 @@ namespace FPoptimizer_Grammar
              * FIXME: Is it even safe at all?
              */
         }
-        
+
         return changed_once;
     }
 
@@ -80,9 +84,9 @@ namespace FPoptimizer_Grammar
     {
         // Simplest verifications first
         if(Input.Opcode != tree.Opcode) return false;
-        
+
         MatchedParams::CodeTreeMatch matchrec;
-        
+
         if(Input.Params.Match(tree, matchrec))
         {
             switch(Type)
@@ -102,12 +106,12 @@ namespace FPoptimizer_Grammar
     {
         return false;
     }
-    
+
     void MatchedParams::ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree, const MatchedParams& matcher, CodeTreeMatch& match) const
     {
         // Replace the 0-level params indicated in "match" with the ones we have
     }
-    
+
     void MatchedParams::ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree, const MatchedParams& matcher, CodeTreeMatch& match) const
     {
         // Replace the entire tree with one indicated by our Params[0]
