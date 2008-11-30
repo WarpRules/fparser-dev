@@ -7,12 +7,13 @@ PLAN:
     - either automatically or manually
     - avoid runtime parsing of .dat file
     - prefer static const structs over constructor code
-    DONE: See fpoptimizer_grammar_gen.y .
-          Produces fpoptimizer_grammar_init.cc .
+    *DONE: See fpoptimizer_grammar_gen.y .
+           Produces fpoptimizer_grammar_init.cc .
 
 2.  Augment the CodeTree mechanism the following ways:
     - Add mechanism that generates a hash value for the contents
       of the tree, for easy comparison of identical subtrees
+      *DONE
     - Any time a CodeTree changes in any way that may affect the
       hash, update the hash value for this node and recursively
       to all parents

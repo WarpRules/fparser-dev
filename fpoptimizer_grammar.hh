@@ -1,5 +1,11 @@
 #include <string>
 #include <vector>
+#include <set>
+
+namespace FPoptimizer_CodeTree
+{
+    class CodeTree;
+}
 
 namespace FPoptimizer_Grammar
 {
@@ -54,13 +60,12 @@ namespace FPoptimizer_Grammar
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p); // GroupFunction
         ParamSpec(unsigned i, double); // ImmedHolder
         ParamSpec(unsigned i, void*);  // RestHolder
+        ParamSpec(const GrammarPack& pack, size_t offs);
         
         ParamSpec* SetNegated()
             { Negated=true; return this; }
         ParamSpec* SetRepeat(unsigned min, bool any)
             { MinimumRepeat=min; AnyRepetition=any; return this; }
-
-        ParamSpec(const GrammarPack& pack, size_t offs);
         
         bool operator== (const ParamSpec& b) const;
         bool operator< (const ParamSpec& b) const;
@@ -80,23 +85,28 @@ namespace FPoptimizer_Grammar
         };
     public:
         TypeType Type;
-
         std::vector<ParamSpec*> Params;
+        
+        struct CodeTreeMatch
+        {
+        };
     public:
         MatchedParams()             : Type(), Params() { }
         MatchedParams(TypeType t)   : Type(t), Params() { }
         MatchedParams(ParamSpec* p) : Type(), Params() { Params.push_back(p); }
+        MatchedParams(const GrammarPack& pack, size_t offs);
         
         void SetType(TypeType t) { Type=t; }
         void AddParam(ParamSpec* p) { Params.push_back(p); }
         
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
-
-        MatchedParams(const GrammarPack& pack, size_t offs);
         
+        bool Match(FPoptimizer_CodeTree::CodeTree& tree, CodeTreeMatch& match) const;
+        void ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree, const MatchedParams& matcher, CodeTreeMatch& match) const;
+        void ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree,   const MatchedParams& matcher, CodeTreeMatch& match) const;
+
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
-
     };
 
     class FunctionType
@@ -105,9 +115,7 @@ namespace FPoptimizer_Grammar
         OpcodeType    Opcode;
         MatchedParams Params;
     public:
-        FunctionType(OpcodeType o, const MatchedParams& p)
-            : Opcode(o), Params(p) { }
-
+        FunctionType(OpcodeType o, const MatchedParams& p) : Opcode(o), Params(p) { }
         FunctionType(const GrammarPack& pack, size_t offs);
         
         bool operator== (const FunctionType& b) const
@@ -140,8 +148,9 @@ namespace FPoptimizer_Grammar
             : Type(t), Input(f), Replacement(r) { }
         Rule(TypeType t, const FunctionType& f, ParamSpec* p)
             : Type(t), Input(f), Replacement() { Replacement.AddParam(p); }
-
         Rule(const GrammarPack& pack, size_t offs);
+        
+        bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const;
         
         bool operator< (const Rule& b) const
         {
@@ -153,11 +162,14 @@ namespace FPoptimizer_Grammar
     {
     public:
         std::vector<Rule> rules;
+        mutable std::set<uint_fast64_t> optimized_children;
     public:
-        Grammar(): rules() { }
+        Grammar(): rules(), optimized_children() { }
     
         void AddRule(const Rule& r) { rules.push_back(r); }
         void Read(const GrammarPack& pack, size_t offs);
+        
+        bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree, bool child_triggered=false) const;
     };
 
     #ifdef __GNUC__

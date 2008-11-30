@@ -12,7 +12,8 @@ FP_MODULES=\
 		fpoptimizer_codetree_to_bytecode.o \
 		fpoptimizer_codetree.o \
 		fpoptimizer_grammar.o \
-		fpoptimizer_grammar_init.o
+		fpoptimizer_grammar_init.o \
+		fpoptimizer_optimize.o
 
 testbed:\
 		testbed.o $(FP_MODULES)
@@ -61,6 +62,7 @@ pack:\
 		fpoptimizer_codetree.cc \
 		fpoptimizer_grammar.cc \
 		fpoptimizer_grammar_init.cc \
+		fpoptimizer_optimize.cc \
 		fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer_bytecode_to_codetree.cc
 	zip -9 fparser3.0.3.zip $^

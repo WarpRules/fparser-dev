@@ -4,6 +4,12 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 
+namespace FPoptimizer_Grammar
+{
+    class Grammar;
+    class Rule;
+    class MatchedParams;
+}
 namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData;
@@ -11,6 +17,9 @@ namespace FPoptimizer_CodeTree
     class CodeTree
     {
         friend class CodeTreeParserData;
+        friend class FPoptimizer_Grammar::Grammar;
+        friend class FPoptimizer_Grammar::Rule;
+        friend class FPoptimizer_Grammar::MatchedParams;
     private:
         /* Describing the codetree node */
         unsigned Opcode;

@@ -75,7 +75,7 @@ namespace FPoptimizer_Grammar
             case Function:
                 return *Func < *b.Func;
             default:
-                if(Params.size() != b.Params.size()) return Params.size() < b.Params.size();
+                if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
                 for(size_t a=0; a<Params.size(); ++a)
                     if(!(*Params[a] == *b.Params[a]))
                         return *Params[a] < *b.Params[a];
@@ -97,7 +97,7 @@ namespace FPoptimizer_Grammar
     bool MatchedParams::operator< (const MatchedParams& b) const
     {
         if(Type !=  b.Type) return Type;
-        if(Params.size() != b.Params.size()) return Params.size() < b.Params.size();
+        if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
         for(size_t a=0; a < Params.size(); ++a)
             if(!(*Params[a] == *b.Params[a]))
                 return *Params[a] < *b.Params[a];
@@ -144,7 +144,8 @@ namespace FPoptimizer_Grammar
           MinimumRepeat(pack.plist[offs].minrepeat),
           AnyRepetition(pack.plist[offs].anyrepeat),
           Opcode(pack.plist[offs].opcode),
-          Params(), Name()
+          Params(), Name(),
+          EvalValue(0)
     {
         const ParamSpec_Const& pitem = pack.plist[offs];
         switch(Opcode)
