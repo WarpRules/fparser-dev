@@ -145,7 +145,7 @@ cExp [x]    -> cPow CONSTANT_E x
 cLog10 [x]  -> cMul (cLog x) CONSTANT_L10I
 
 # log2(x) = log(x) * CONSTANT_L2I
-cLog2 [x]  -> cMul (cLog x) CONSTANT_L2I
+cLog2 [x]   -> cMul (cLog x) CONSTANT_L2I
 
 # not(not(x)) = notnot(x)
 # Do this so that !!x won't get inadvertedly optimized into x
@@ -177,12 +177,12 @@ cMax x+    : x
 #### Flattening the topology of add/mul/min/max/and/or groups:
 
 # If a add-list contains another add-list, assimilate the child (but xor the signs)
-cAdd  (cAdd <1> ~<2>)  : <1>  ~<2>
-cAdd ~(cAdd <1> ~<2>)  : ~<1> <2>
+cAdd  (cAdd <1> ~<2>)  :  <1> ~<2>
+cAdd ~(cAdd <1> ~<2>)  : ~<1>  <2>
 
 # If a mul-list contains another mul-list, assimilate the child (but xor the signs)
-cMul  (cMul <1> ~<2>)  : <1> ~<2>
-cMul ~(cMul <1> ~<2>)  : ~<1> <2>
+cMul  (cMul <1> ~<2>)  :  <1> ~<2>
+cMul ~(cMul <1> ~<2>)  : ~<1>  <2>
 
 # If a min-list contains another min-list, assimilate the child
 cMin (cMin <1>)   : <1>

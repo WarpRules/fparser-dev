@@ -216,7 +216,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cRSub:
                         data.Eat(2, cAdd);
-                        data.SetLastOpParamSign(0);
+                        data.SetLastOpParamSign(0); // negate param0 instead of param1
                         break;
                     case cDiv:
                         data.Eat(2, cMul); // Divide is inverse multiply
@@ -224,7 +224,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cRDiv:
                         data.Eat(2, cMul);
-                        data.SetLastOpParamSign(0);
+                        data.SetLastOpParamSign(0); // invert param0 instead of param1
                         break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:

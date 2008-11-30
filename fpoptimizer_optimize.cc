@@ -2,6 +2,7 @@
 #include "fpoptimizer_codetree.hh"
 
 #include <algorithm>
+#include <map>
 
 namespace FPoptimizer_Grammar
 {
@@ -90,21 +91,32 @@ namespace FPoptimizer_Grammar
      */
     struct MatchedParams::CodeTreeMatch
     {
-        //
+        // Which parameters were matched -- these will be replaced if AnyParams are used
+        std::vector<size_t> param_numbers;
+
+        // Which values were saved for ImmedHolders?
+        std::map<unsigned, double> ImmedMap;
+        // Which codetrees were saved for each NameHolder?
+        std::map<unsigned, uint_fast64_t> NamedMap;
+        // Which codetrees were saved for each RestHolder?
+        std::map<unsigned,
+          std::vector<uint_fast64_t> > RestMap;
+
+        CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
-    
+
     bool Rule::ApplyTo(
         FPoptimizer_CodeTree::CodeTree& tree) const
     {
         const Function&      input  = pack.flist[input_index];
         const MatchedParams& params = pack.mlist[input.index];
         const MatchedParams& repl   = pack.mlist[repl_index];
-        
+
         // Simplest verifications first
         if(input.opcode != tree.Opcode) return false;
 
         MatchedParams::CodeTreeMatch matchrec;
-        
+
         if(params.Match(tree, matchrec))
         {
             switch(type)

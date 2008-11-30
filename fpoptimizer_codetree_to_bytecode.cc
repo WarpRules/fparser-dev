@@ -230,7 +230,7 @@ namespace FPoptimizer_CodeTree
                     param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
                     ++n_stacked;
 
-                    if(sign)
+                    if(sign) // Is the operand negated/inverted?
                     {
                         if(n_stacked == 1)
                         {

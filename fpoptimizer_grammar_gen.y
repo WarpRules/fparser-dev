@@ -15,6 +15,7 @@
 #include <iostream>
 #include <map>
 #include <algorithm>
+#include <assert.h>
 
 #include "crc32.hh"
 
@@ -96,9 +97,9 @@ namespace GrammarData
         std::vector<ParamSpec*> Params;
 
     public:
-        MatchedParams()                    : Type(), Params() { }
-        MatchedParams(ParamMatchingType t) : Type(t), Params() { }
-        MatchedParams(ParamSpec* p)        : Type(), Params() { Params.push_back(p); }
+        MatchedParams()                    : Type(PositionalParams), Params() { }
+        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
 
         void SetType(ParamMatchingType t) { Type=t; }
         void AddParam(ParamSpec* p) { Params.push_back(p); }
@@ -271,6 +272,8 @@ public:
 
     std::string Dump(OpcodeType o)
     {
+#if 1
+        /* Symbolic meanings for the opcodes? */
         const char* p = 0;
         switch(OPCODE(o))
         {
@@ -357,10 +360,17 @@ public:
           //case GroupFunction: p = "GroupFunction"; break;
         }
         std::stringstream tmp;
-        if(p) tmp << p;
-        else  tmp << o;
-        while(tmp.str().size() < 11) tmp << ' ';
+        assert(p);
+        tmp << p;
+        while(tmp.str().size() < 12) tmp << ' ';
         return tmp.str();
+#else
+        /* Just numeric meanings */
+        std::stringstream tmp;
+        tmp << o;
+        while(tmp.str().size() < 5) tmp << ' ';
+        return tmp.str();
+#endif
     }
     std::string PDumpFix(const GrammarData::ParamSpec& p, const std::string& s)
     {
@@ -692,8 +702,10 @@ static GrammarDumper dumper;
 %token SUBST_OP_ARROW
 
 %type <r> substitution
-%type <f> function function_notinv function_maybeinv
-%type <p> paramsmatchingspec param_maybeinv_list paramlist
+%type <f> function             function_notinv             function_maybeinv
+%type <f> function_fixedparams function_notinv_fixedparams function_maybeinv_fixedparams
+%type <p> params_maybeinv_list_maybefixed param_maybeinv_list_nobrackets
+%type <p> params_notinv_list_maybefixed   param_notinv_list_nobrackets
 %type <a> maybeinv_param param paramtoken
 
 %%
@@ -716,7 +728,7 @@ static GrammarDumper dumper;
       }
 
     | function SUBST_OP_ARROW function NEWLINE
-      /* Entire function changes, the paramlist is rewritten */
+      /* Entire function changes, the param_notinv_list is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
         $$ = new GrammarData::Rule(ProduceNewTree, *$1, new GrammarData::ParamSpec($3));
@@ -724,7 +736,7 @@ static GrammarDumper dumper;
         delete $1;
       }
 
-    | function_maybeinv SUBST_OP_COLON  param_maybeinv_list NEWLINE
+    | function_maybeinv SUBST_OP_COLON  param_maybeinv_list_nobrackets NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
@@ -732,7 +744,7 @@ static GrammarDumper dumper;
         delete $3;
       }
 
-    | function_notinv   SUBST_OP_COLON  paramlist NEWLINE
+    | function_notinv   SUBST_OP_COLON  param_notinv_list_nobrackets NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
@@ -742,22 +754,22 @@ static GrammarDumper dumper;
 
     ;
 
+    /**/
+    
     function:
        function_notinv
     |  function_maybeinv
     ;
-
     function_notinv:
-       OPCODE_NOTINV paramsmatchingspec
+       OPCODE_NOTINV params_notinv_list_maybefixed
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$2);
          delete $2;
        }
     ;
-
     function_maybeinv:
-       OPCODE_MAYBEINV paramsmatchingspec
+       OPCODE_MAYBEINV params_maybeinv_list_maybefixed
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$2);
@@ -765,21 +777,55 @@ static GrammarDumper dumper;
        }
     ;
 
-    paramsmatchingspec:
-       '[' param_maybeinv_list ']'  /* match this exact paramlist */
-        {
-          $$ = $2;
-          $$->SetType(PositionalParams);
-        }
-     |  param_maybeinv_list         /* find the specified params */
+    /**/
+    
+    function_fixedparams:
+       function_notinv_fixedparams
+    |  function_maybeinv_fixedparams
+    ;
+    function_notinv_fixedparams:
+       OPCODE_NOTINV '[' param_notinv_list_nobrackets ']'
+       /* Match a function with opcode=opcode and the given way of matching params */
+       {
+         $$ = new GrammarData::FunctionType($1, *$3);
+         delete $3;
+       }
+    ;
+    function_maybeinv_fixedparams:
+       OPCODE_MAYBEINV '[' param_maybeinv_list_nobrackets ']'
+       /* Match a function with opcode=opcode and the given way of matching params */
+       {
+         $$ = new GrammarData::FunctionType($1, *$3);
+         delete $3;
+       }
+    ;
+
+    /**/
+    
+    params_maybeinv_list_maybefixed:
+       '[' param_maybeinv_list_nobrackets ']'  /* match this exact param_notinv_list */
+        { $$ = $2 }
+     |  param_maybeinv_list_nobrackets         /* find the specified params */
         {
           $$ = $1;
           $$->SetType(AnyParams);
         }
     ;
 
-    param_maybeinv_list: /* left-recursive list of 0-n params with no delimiter */
-        param_maybeinv_list maybeinv_param
+    params_notinv_list_maybefixed:
+       '[' param_notinv_list_nobrackets ']'  /* match this exact param_notinv_list */
+        { $$ = $2 }
+     |  param_notinv_list_nobrackets         /* find the specified params */
+        {
+          $$ = $1;
+          $$->SetType(AnyParams);
+        }
+    ;
+
+    /**/
+    
+    param_maybeinv_list_nobrackets: /* left-recursive list of 0-n params with no delimiter */
+        param_maybeinv_list_nobrackets maybeinv_param
         {
           $$ = $1;
           $$->AddParam($2);
@@ -789,6 +835,21 @@ static GrammarDumper dumper;
           $$ = new GrammarData::MatchedParams;
         }
     ;
+    
+    param_notinv_list_nobrackets: /* left-recursive list of 0-n params with no delimiter */
+        param_notinv_list_nobrackets param
+        {
+          $$ = $1;
+          $$->AddParam($2);
+        }
+      | /* empty */
+        {
+          $$ = new GrammarData::MatchedParams;
+        }
+    ;
+
+    /**/
+    
     maybeinv_param:
        '~' param    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
        {
@@ -799,18 +860,6 @@ static GrammarDumper dumper;
        {
          $$ = $1;
        }
-    ;
-
-    paramlist: /* left-recursive list of 0-n params with no delimiter */
-        paramlist param
-        {
-          $$ = $1;
-          $$->AddParam($2);
-        }
-      | /* empty */
-        {
-          $$ = new GrammarData::MatchedParams;
-        }
     ;
 
     param:
@@ -831,6 +880,8 @@ static GrammarDumper dumper;
        }
     ;
 
+    /**/
+    
     paramtoken:
        NUMERIC_CONSTANT         /* particular immed */
        {
@@ -854,7 +905,7 @@ static GrammarDumper dumper;
        {
          $$ = new GrammarData::ParamSpec($2);
        }
-    |  GROUP_CONSTANT_OPERATOR '(' paramlist ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
+    |  GROUP_CONSTANT_OPERATOR '(' param_notinv_list_nobrackets ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
        {
          $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          delete $3;
@@ -868,7 +919,7 @@ static GrammarDumper dumper;
            case cInv: $$->Transformation = Invert; break;
          }
        }
-    |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
+    |  BUILTIN_FUNC_NAME '(' param_notinv_list_nobrackets ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
        {
          $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          delete $3;
