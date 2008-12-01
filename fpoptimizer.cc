@@ -51,9 +51,8 @@ void FunctionParser::Optimize()
 
     delete tree;
 
-    std::cout << std::flush;
+    /*std::cout << std::flush;
     std::cerr << std::flush;
-    /*
     fprintf(stderr, "Estimated stacktop %u\n", (unsigned)stacktop_max);
     fflush(stderr);*/
 

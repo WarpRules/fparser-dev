@@ -7,6 +7,9 @@
 // You don't need to include this file in your code. Include "fparser.hh"
 // only.
 
+#ifndef ONCE_FPARSER_TYPES_H_
+#define ONCE_FPARSER_TYPES_H_
+
 #include "fpconfig.hh"
 
 namespace FUNCTIONPARSERTYPES
@@ -243,4 +246,6 @@ struct FunctionParser::Data
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
 };
+#endif
+
 #endif

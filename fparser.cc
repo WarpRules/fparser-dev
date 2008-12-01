@@ -1228,12 +1228,12 @@ double FunctionParser::Eval(const double* Vars)
           default:
               Stack[++SP] = Vars[ByteCode[IP]-VarBegin];
         }
-        if(SP != (unsigned)-1 && SP >= data->StackSize)
+        /*if(SP != (unsigned)-1 && SP >= data->StackSize)
         {
             PrintByteCode(std::cout);
             fprintf(stderr, "eeh, stack overflow (%u, %u) at IP=%X, op=%u\n",
                 (unsigned)SP, (unsigned)data->StackSize, tmp, ByteCode[tmp]);
-        }
+        }*/
     }
 
     evalErrorType=0;

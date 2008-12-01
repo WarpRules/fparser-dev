@@ -51,19 +51,45 @@ fpoptimizer_grammar.cc: \
 	./fpoptimizer_grammar_gen < fpoptimizer.dat  > $@
 
 pack:\
-		example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
-		fptypes.hh \
+		example.cc fparser.cc fparser.hh fparser.txt \
+		fpconfig.hh fptypes.hh \
 		fpoptimizer_grammar_gen.y \
 		fpoptimizer_grammar_gen.cc \
-		fpoptimizer.hh \
+		fpoptimizer_codetree.hh \
+		fpoptimizer_grammar.hh \
 		fpoptimizer_consts.hh \
 		fpoptimizer.cc \
 		fpoptimizer_codetree.cc \
 		fpoptimizer_grammar.cc \
 		fpoptimizer_optimize.cc \
+		fpoptimizer_opcodename.cc \
+		fpoptimizer_opcodename.hh \
 		fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer_bytecode_to_codetree.cc
-	zip -9 fparser3.0.3.zip $^
+	#
+	rm -f fpoptimizer_sum.cc fpoptimizer_sum.hh
+	cat fpoptimizer_codetree.hh \
+	    fpoptimizer_grammar.hh \
+	    fpoptimizer_consts.hh \
+	    fpoptimizer_opcodename.hh \
+	    crc32.hh > fpoptimizer_sum.hh
+	echo '#include "fpoptimizer_sum.hh"' > fpoptimizer_sum.cc
+	cat fpoptimizer_opcodename.cc \
+	    fpoptimizer_codetree.cc \
+	    fpoptimizer_grammar.cc \
+	    fpoptimizer_optimize.cc \
+	    fpoptimizer.cc \
+	    fpoptimizer_codetree_to_bytecode.cc \
+	    fpoptimizer_bytecode_to_codetree.cc \
+		| grep -v '#include "fpoptimizer' \
+		| grep -v '#include "crc32' \
+		>> fpoptimizer_sum.cc
+	zip -9 fparser3.0.3.zip \
+		example.cc fparser.cc fparser.hh fparser.txt \
+		fpconfig.hh fptypes.hh \
+		fpoptimizer_sum.hh \
+		fpoptimizer_sum.cc
+	rm -f fpoptimizer_sum.cc fpoptimizer_sum.hh
 
 #%.o:		%.cc fparser.hh
 #	$(CXX) -c $<
@@ -75,7 +101,9 @@ clean:
 		fpoptimizer_grammar_gen.cc \
 		fpoptimizer_grammar_gen.output \
 		fpoptimizer_grammar_gen.h \
-		fpoptimizer_grammar.cc
+		fpoptimizer_grammar.cc \
+		fpoptimizer_grammar_sum.cc
+		fpoptimizer_grammar_sum.hh
 distclean: clean
 	rm -f	*~
 
