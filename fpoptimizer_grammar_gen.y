@@ -706,9 +706,20 @@ static GrammarDumper dumper;
 %type <r> substitution
 %type <f> function             function_notinv             function_maybeinv
 %type <f> function_fixedparams function_notinv_fixedparams function_maybeinv_fixedparams
-%type <p> params_maybeinv_list_maybefixed param_maybeinv_list_nobrackets
-%type <p> params_notinv_list_maybefixed   param_notinv_list_nobrackets param_notinv_list_nobrackets_numerable
-%type <a> maybeinv_param param numerable_param
+%type <p> param_maybeinv_list_maybefixed
+%type <p> param_maybeinv_list_nobrackets
+%type <p> param_maybeinv_list_isfixed
+%type <p> param_notinv_list_maybefixed 
+%type <p> param_notinv_list_nobrackets
+%type <p> param_notinv_list_isfixed
+%type <p> param_notinv_list_nobrackets_numerable
+%type <a> maybeinv_param
+%type <a> maybeinv_param_norepeat
+%type <a> param
+%type <a> param_norepeat
+%type <a> param_numerable
+%type <a> param_numerable_norepeat
+%type <a> param_numerable_repeat
 
 %%
     grammar:
@@ -729,7 +740,7 @@ static GrammarDumper dumper;
         delete $1;
       }
 
-    | function SUBST_OP_ARROW function NEWLINE
+    | function SUBST_OP_ARROW function_fixedparams NEWLINE
       /* Entire function changes, the param_notinv_list is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
@@ -763,7 +774,7 @@ static GrammarDumper dumper;
     |  function_maybeinv
     ;
     function_notinv:
-       OPCODE_NOTINV params_notinv_list_maybefixed
+       OPCODE_NOTINV param_notinv_list_maybefixed
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$2);
@@ -771,7 +782,7 @@ static GrammarDumper dumper;
        }
     ;
     function_maybeinv:
-       OPCODE_MAYBEINV params_maybeinv_list_maybefixed
+       OPCODE_MAYBEINV param_maybeinv_list_maybefixed
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$2);
@@ -786,7 +797,7 @@ static GrammarDumper dumper;
     |  function_maybeinv_fixedparams
     ;
     function_notinv_fixedparams:
-       OPCODE_NOTINV '[' param_notinv_list_nobrackets ']'
+       OPCODE_NOTINV '[' param_notinv_list_isfixed ']'
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$3);
@@ -794,7 +805,7 @@ static GrammarDumper dumper;
        }
     ;
     function_maybeinv_fixedparams:
-       OPCODE_MAYBEINV '[' param_maybeinv_list_nobrackets ']'
+       OPCODE_MAYBEINV '[' param_maybeinv_list_isfixed ']'
        /* Match a function with opcode=opcode and the given way of matching params */
        {
          $$ = new GrammarData::FunctionType($1, *$3);
@@ -804,8 +815,8 @@ static GrammarDumper dumper;
 
     /**/
     
-    params_maybeinv_list_maybefixed:
-       '[' param_maybeinv_list_nobrackets ']'  /* match this exact param_notinv_list */
+    param_maybeinv_list_maybefixed:
+       '[' param_maybeinv_list_isfixed ']'  /* match this exact param_notinv_list */
         { $$ = $2 }
      |  param_maybeinv_list_nobrackets         /* find the specified params */
         {
@@ -813,8 +824,8 @@ static GrammarDumper dumper;
         }
     ;
 
-    params_notinv_list_maybefixed:
-       '[' param_notinv_list_nobrackets ']'  /* match this exact param_notinv_list */
+    param_notinv_list_maybefixed:
+       '[' param_notinv_list_isfixed ']'  /* match this exact param_notinv_list */
         { $$ = $2 }
      |  param_notinv_list_nobrackets         /* find the specified params */
         {
@@ -845,9 +856,35 @@ static GrammarDumper dumper;
           $$ = new GrammarData::MatchedParams;
         }
     ;
+    
+    /**/
+
+    param_maybeinv_list_isfixed: /* left-recursive list of 0-n params with no delimiter */
+        param_maybeinv_list_isfixed maybeinv_param_norepeat
+        {
+          $$ = $1->AddParam($2);
+        }
+      | /* empty */
+        {
+          $$ = new GrammarData::MatchedParams;
+        }
+    ;
+    
+    param_notinv_list_isfixed: /* left-recursive list of 0-n params with no delimiter */
+        param_notinv_list_isfixed param_norepeat
+        {
+          $$ = $1->AddParam($2);
+        }
+      | /* empty */
+        {
+          $$ = new GrammarData::MatchedParams;
+        }
+    ;
+    
+    /**/
 
     param_notinv_list_nobrackets_numerable:
-        param_notinv_list_nobrackets numerable_param
+        param_notinv_list_nobrackets param_numerable
         {
           $$ = $1->AddParam($2);
         }
@@ -867,14 +904,19 @@ static GrammarDumper dumper;
      | param        /* non-negated/non-inverted param */
     ;
 
+    maybeinv_param_norepeat:
+       '~' param_norepeat    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
+       {
+         $$ = $2->SetNegated();
+       }
+     | param_norepeat        /* non-negated/non-inverted param */
+    ;
+
     /**/
     
-    param:
-       numerable_param
-    |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
-       }
+    /* Params that match a singular token, e.g. no "x+" or "<1>" */
+    param_norepeat:
+       param_numerable_norepeat
     |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
        {
          unsigned nameindex = dumper.Dump(*$1);
@@ -886,8 +928,22 @@ static GrammarDumper dumper;
          $$ = new GrammarData::ParamSpec($2);
        }
     ;
+
+    param: /* Same as param_norepeat, but also include "x+", "x*" and "<1>" */
+       param_norepeat
+    |  param_numerable_repeat
+    |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
+       }
+    ;
     
-    numerable_param:
+    param_numerable:
+       param_numerable_norepeat
+    |  param_numerable_repeat
+    ;
+    
+    param_numerable_norepeat:
        NUMERIC_CONSTANT         /* particular immed */
        {
          $$ = new GrammarData::ParamSpec($1);
@@ -901,15 +957,18 @@ static GrammarDumper dumper;
          $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          delete $3;
        }
-    |  UNARY_CONSTANT_NEGATE numerable_param   /* the negated literal value of the param */
+    |  UNARY_CONSTANT_NEGATE param_numerable   /* the negated literal value of the param */
        {
          $$ = $2->SetTransformation(Negate);
        }
-    |  UNARY_CONSTANT_INVERT numerable_param   /* the inverted literal value of the param */
+    |  UNARY_CONSTANT_INVERT param_numerable   /* the inverted literal value of the param */
        {
          $$ = $2->SetTransformation(Invert);
        }
-    |  PARAMETER_TOKEN '+'       /* any expression, indicated by "x", "a" etc. */
+    ;
+    
+    param_numerable_repeat:
+       PARAMETER_TOKEN '+'       /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -928,7 +987,7 @@ static GrammarDumper dumper;
          delete $1;
        }
     ;
-
+    
 %%
 
 void FPoptimizerGrammarParser::yyerror(char* msg)

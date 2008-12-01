@@ -104,55 +104,55 @@
 # the optimized opcodes are reconstructed where available.
 
 # x / y = x * 1/y
-cDiv [x y] -> cMul x ~y
-cRDiv [y x] -> cMul x ~y
+cDiv  [x y] -> cMul [x ~y]
+cRDiv [y x] -> cMul [x ~y]
 
 # x - y = x + -y
-cSub [x y] -> cAdd x ~y
-cRSub [y x] -> cAdd x ~y
+cSub  [x y] -> cAdd [x ~y]
+cRSub [y x] -> cAdd [x ~y]
 
 # 1/x   = <implied> * ~x
-cInv [x]   -> cMul ~x
+cInv [x]   -> cMul [~x]
 
 # -x    = <implied> + -x
-cNeg [x]   -> cAdd ~x
+cNeg [x]   -> cAdd [~x]
 
 # deg(x) = x * CONSTANT_DR
-cDeg [x]   -> cMul x CONSTANT_DR
+cDeg [x]   -> cMul [x CONSTANT_DR]
 
 # rad(x) = x * CONSTANT_RD
-cRad [x]   -> cMul x CONSTANT_RD
+cRad [x]   -> cMul [x CONSTANT_RD]
 
 # cot(x) = <implied> * ~tan(x)
-cCot [x]   -> cMul ~(cTan x)
+cCot [x]   -> cMul [~(cTan [x])]
 
 # csc(x) = <implied> * ~sin(x)
-cCsc [x]   -> cMul ~(cSin x)
+cCsc [x]   -> cMul [~(cSin [x])]
 
 # sec(x) = <implied> * ~cos(x)
-cSec [x]   -> cMul ~(cCos x)
+cSec [x]   -> cMul [~(cCos [x])]
 
 # sqrt(x) = x^0.5
-cSqrt [x]  -> cPow x 0.5
+cSqrt [x]  -> cPow [x 0.5]
 
 # sqr(x) = x*x
-cSqr [x]   -> cMul x x
+cSqr [x]   -> cMul [x x]
 
 # exp(x) = CONSTANT_E^x
-cExp [x]    -> cPow CONSTANT_E x
+cExp [x]    -> cPow [CONSTANT_E x]
 
 # log10(x) = log(x) * CONSTANT_L10I
-cLog10 [x]  -> cMul (cLog x) CONSTANT_L10I
+cLog10 [x]  -> cMul [(cLog [x]) CONSTANT_L10I]
 
 # log2(x) = log(x) * CONSTANT_L2I
-cLog2 [x]   -> cMul (cLog x) CONSTANT_L2I
+cLog2 [x]   -> cMul [(cLog [x]) CONSTANT_L2I]
 
 # not(not(x)) = notnot(x)
 # Do this so that !!x won't get inadvertedly optimized into x
 # However, optimizing !!!x into !x is allright, and we do quite
 # many things relating to cNot, so cNotNot helps protecting the
 # one special case without having to repeat protections everywhere.
-cNot[(cNot[x])] -> cNotNot x
+cNot[(cNot [x])] -> cNotNot [x]
 
 [INTERMEDIATE]
 
@@ -217,7 +217,7 @@ cOr ~(cOr <1> ~<2>)  : ~<1> <2>
 # Two notnots make one
 cNotNot [(cNotNot[x])] : x
 # A notnot-not is better expressed as not-notnot
-cNotNot [(cNot[x])] -> cNot (cNotNot x)
+cNotNot [(cNot[x])] -> cNot [(cNotNot [x])]
 
 
 #### Simplify empty groups:
@@ -245,19 +245,19 @@ cAdd [x]   -> x
 cMul [x]   -> x
 # A single-token and-list gets replaced with that single token
 cAnd [x]   -> x
-cAnd [~x]  -> cNot x
+cAnd [~x]  -> cNot [x]
 # A single-token or-list gets replaced with that single token
 cOr  [x]   -> x
-cOr  [~x]  -> cNot x
+cOr  [~x]  -> cNot [x]
 # If a pow has an exponent of 1, replace the pow with the base value
 cPow [x 1] -> x
 # If a pow has an exponent of 0, replace the pow with immed 1 (note: this makes 0^0 evaluate into 1, too)
 cPow [x 0] -> 1
 
 # A single-token and-list gets replaced with a notnot
-cAnd [x]  -> cNotNot x
+cAnd [x]  -> cNotNot [x]
 # A single-token or-list gets replaced with a notnot
-cOr [x]  -> cNotNot x
+cOr [x]  -> cNotNot [x]
 
 
 #### Linear combining
@@ -266,53 +266,53 @@ cOr [x]  -> cNotNot x
 # replace the element with a pow with an integer exponent
 # (note: inversions are treated as a negative exponent)
 # e.g. ...*x*x*x*x = ...*x^4
-cMul  x+                   : (cPow x  x+)
-cMul ~x+                   : (cPow x -x+)
+cMul  x+                   : (cPow  x  x+)
+cMul ~x+                   : (cPow [x -x+])
 # x^3 * x = x^4
-cMul  x*       (cPow[x %]) : (cPow x +(x* %))
-cMul  x*      ~(cPow[x %]) : (cPow x +(x* -%))
-cMul ~x*       (cPow[x %]) : (cPow x +(-x* %))
-cMul ~x*      ~(cPow[x %]) : (cPow x +(-x* -%))
+cMul  x*       (cPow[x %]) : (cPow [x +(x* %)])
+cMul  x*      ~(cPow[x %]) : (cPow [x +(x* -%)])
+cMul ~x*       (cPow[x %]) : (cPow [x +(-x* %)])
+cMul ~x*      ~(cPow[x %]) : (cPow [x +(-x* -%)])
 # x^y * x^z = x^(y+z)
-cMul  (cPow[x y])  (cPow[x z]) : (cPow x (cAdd y z))
+cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 # x^y / x^z = x^(y-z)
-cMul  (cPow[x y]) ~(cPow[x z]) : (cPow x (cAdd y ~z))
+cMul  (cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [y ~z])])
 # 1 / x^y / x^z = x^(-y-z)
-cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow x (cAdd ~y ~z))
+cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [~y ~z])])
 
 # If an add-list contains the same element four or more times,
 # replace the element with a mul with an integer factor
 # (note: negations are treated as a negative factor)
 # e.g. ...+x+x+x+x -> ...+x*4
-cAdd  x+                           :  (cMul x   x+)
-cAdd ~x+                           : ~(cMul x   x+)
+cAdd  x+                           :  (cMul  x   x+)
+cAdd ~x+                           : ~(cMul  x   x+)
 # Note: existence of x+ ~x+ is already dealt with by "cAdd x ~x :".
 # x*3 + x*z*y = x*(3+z*y)
-cAdd  x*          (cMul x <1> ~<2>)    : (cMul x   (cAdd  x*  (cMul <1> ~<2>)))
-cAdd  x*         ~(cMul x <1> ~<2>)    : (cMul x   (cAdd  x* ~(cMul <1> ~<2>)))
-cAdd ~x*          (cMul x <1> ~<2>)    : (cMul x   (cAdd ~x*  (cMul <1> ~<2>)))
-cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul x   (cAdd ~x* ~(cMul <1> ~<2>)))
+cAdd  x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd   x*  (cMul <1> ~<2>) )])
+cAdd  x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd   x* ~(cMul <1> ~<2>) )])
+cAdd ~x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x*  (cMul <1> ~<2>) )])
+cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) )])
 # a*b*c*p*q + a*b*c*r*s = a*b*c*(p*q + r*s)
 cAdd  (cMul <1> <2> ~<4>)  (cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>)  (cMul <3> ~<5>)))
 cAdd  (cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>) ~(cMul <3> ~<5>)))
 cAdd ~(cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd ~(cMul <2> ~<4>) ~(cMul <3> ~<5>)))
 # Note: The above might be difficult to match efficiently.
 # The below is a simpler version that only works with a single operand...
-cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd x y))
-cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd x ~y))
-cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd ~x ~y))
+cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x  y]))
+cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x ~y]))
+cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [~x ~y]))
 # Note: The above might be still difficult to match.
 # The below is an even simpler version...
-cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)         : (cMul x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>)))
-cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>)))
-cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>)))
+cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)         : (cMul [x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul [x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul [x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
 # The below is still simpler version...
-cAdd  (cMul  x %)  (cMul  x &)         : (cMul  x +(% &))
-cAdd  (cMul  x %) ~(cMul  x &)         : (cMul  x +(% -&))
-cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul  x +(-% -&))
-cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul ~x +(% &))
-cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul ~x +(% -&))
-cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul ~x +(-% -&))
+cAdd  (cMul  x %)  (cMul  x &)         : (cMul [ x +(% &)])
+cAdd  (cMul  x %) ~(cMul  x &)         : (cMul [ x +(% -&)])
+cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul [ x +(-% -&)])
+cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul [~x +(% &)])
+cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(% -&)])
+cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(-% -&)])
 
 #### Remote double negations/inversions
 
@@ -322,13 +322,13 @@ cAdd ~(cMul % <1>)            : (cMul -% <1>)
 
 # If a mul-list contains an inverted pow and the exponent is an immed,
 # un-negate the pow and negate the immed.
-cMul ~(cPow [x %])           : (cPow x -%)
+cMul ~(cPow [x %])           : (cPow [x -%])
 
 # (x^y)^z        -> x^(y*z)
-cPow [ (cPow[x y]) z ]       : x (cMul y z)
+cPow [ (cPow[x y]) z ]       : x (cMul [y z])
 
 # (x^y) * (x^z) -> x^(y+z)
-cMul (cPow[x y]) (cPow[x z]) : (cPow x (cAdd y z))
+cMul (cPow[x y]) (cPow[x z]) : (cPow [x (cAdd [y z])])
 
 
 #### Constant folding:
@@ -404,7 +404,7 @@ cOr ~a ~b ~<1>  : ~(cAnd a b <1>)
 
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
-cAnd (cEqual a b) (cEqual b c) (cEqual a c)  : (cEqual a b) (cEqual b c)
+cAnd (cEqual a b) (cEqual b c) (cEqual a c)  : (cEqual [a b]) (cEqual [b c])
 #   (a==b) & (a!=b)          -- this statement is always false
 cAnd (cEqual a b) (cNEqual a b) -> 0
 #   (a==b) | (a!=b)          -- this statement is always true
@@ -439,25 +439,25 @@ cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   : x (cMul <1>)
 cPow [z (cMul ~(cLog[z]) (cLog[x]) <1>)] : x (cMul <1>)
 
 # log(x^z) = z * log(x)
-cLog [(cPow [x z])] -> cMul z (cLog x)
+cLog [(cPow [x z])] -> cMul [z (cLog [x])]
 
 # log(x) + log(y) + log(z) = log(x*y*z)
 cAdd (cLog[x]) (cLog[y]) : (cLog (cMul x y))
 
 # log(x * CONSTANT_E^y) = log(x) + y
-cLog [(cMul x (cPow [CONSTANT_E y]))] -> cAdd (cLog x) y
+cLog [(cMul x (cPow [CONSTANT_E y]))] -> cAdd [(cLog [x]) y]
 
 # log(x * z^y) / log(z) = log(x) / log(z) + y
 # Note: z can also be an immed
-cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd (cMul (cLog x) ~(cLog z)) y
-cMul (cLog [(cMul x (cPow [% y]))]) ~LOG(%)     -> cAdd (cMul (cLog x) ~LOG(%)) y
+cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd [(cMul [(cLog [x]) ~(cLog[z])]) y]
+cMul (cLog [(cMul x (cPow [% y]))]) ~LOG(%)     -> cAdd [(cMul [(cLog [x]) ~LOG(%)]) y]
 
 
 #### Polynomic:
 # x*y + z*y = (x+z)*y
 # x/y + z/y = (x+z)/y
-cAdd (cMul  y <1>) (cMul  y <2>)  : (cMul  y (cAdd <1> <2>))
-cAdd (cMul ~y <1>) (cMul ~y <2>)  : (cMul ~y (cAdd <1> <2>))
+cAdd (cMul  y <1>) (cMul  y <2>)  : (cMul [ y (cAdd <1> <2>)])
+cAdd (cMul ~y <1>) (cMul ~y <2>)  : (cMul [~y (cAdd <1> <2>)])
 
 
 
@@ -479,63 +479,46 @@ cTan [(cAtan [x])] -> x
 # These optimizations are done only once, after the intermediate conversions.
 # This process generates optimized opcodes that are not expected to be found
 # in the intermediate stage.
+#
+# Do not generate cDiv, cRDiv, cInv, cSub, cRSub, cNeg or cNot here.
+# Those are done in the bytecode generation automatically.
+#
 
 # x * CONSTANT_DR = cDeg(x)
 # x * ~CONSTANT_RD = cDeg(x)
-cMul CONSTANT_DR <1>  -> cDeg (cMul <1>)
-cMul ~CONSTANT_RD <1> -> cDeg (cMul <1>)
+cMul CONSTANT_DR <1>  -> cDeg [(cMul <1>)]
+cMul ~CONSTANT_RD <1> -> cDeg [(cMul <1>)]
+# ^^Note: May need to run intermediate again after this step, due to the potentially short cMul list produced
 
 # x * CONSTANT_RD = cRad(x)
 # x * ~CONSTANT_DR = cRad(x)
-cMul CONSTANT_RD <1>  -> cRad (cMul <1>)
-cMul ~CONSTANT_DR <1> -> cRad (cMul <1>)
+cMul CONSTANT_RD <1>  -> cRad [(cMul <1>)]
+cMul ~CONSTANT_DR <1> -> cRad [(cMul <1>)]
+# ^^Note: May need to run intermediate again after this step, due to the potentially short cMul list produced
 
 # x^0.5 = sqrt(x)
-cPow [x 0.5]         -> cSqrt x
+cPow [x 0.5]         -> cSqrt [x]
 
 # pow(CONSTANT_E, x) = exp(x)
-cPow [CONSTANT_E x]  -> cExp x
+cPow [CONSTANT_E x]  -> cExp [x]
 
 # log(x) * CONSTANT_L10I = log10(x)
-cMul (cLog[x]) CONSTANT_L10I -> cLog10 x
+cMul (cLog[x]) CONSTANT_L10I -> cLog10 [x]
 
 # log(x) * CONSTANT_L2I = log2(x)
-cMul (cLog[x]) CONSTANT_L2I -> cLog2 x
+cMul (cLog[x]) CONSTANT_L2I -> cLog2 [x]
 
 # In a mul-list, ~sin(x) = csc(x)
-cMul ~(cSin[x])      : (cCsc x)
+cMul ~(cSin[x])      : (cCsc[x])
 
 # In a mul-list, ~cos(x) = sec(x)
-cMul ~(cCos[x])      : (cSec x)
+cMul ~(cCos[x])      : (cSec[x])
 
 # In a mul-list, ~tan(x) = cot(x)
-cMul ~(cTan[x])      : (cCot x)
+cMul ~(cTan[x])      : (cCot[x])
 
-# Reduce all add/mul/min/max/and/or lists to two-operand topology
-# Note: Don't do this if generating SSA format, because it hinders CSE
-# in e.g. (a+b+c+d)*(b+c+e) cases, as (((a+b)+c)+d)*((b+c)+e) has no
-# identical subtrees, even though (b+c) could be grouped.
-cAdd x y z     : x (cAdd y z)
-cAdd x y ~z    : x (cAdd y ~z)
-cAdd x ~y ~z   : x ~(cAdd y ~z)
-cAdd ~x ~y ~z  : ~x ~(cAdd y ~z)
-cMul x y z     : x (cMul y z)
-cMul x y ~z    : x (cMul y ~z)
-cMul x ~y ~z   : x ~(cMul y ~z)
-cMul ~x ~y ~z  : ~x ~(cMul y ~z)
-cAnd x y z     : x (cAnd y z)
-cAnd x y ~z    : x (cAnd y ~z)
-cAnd x ~y ~z   : x ~(cAnd y ~z)
-cAnd ~x ~y ~z  : ~x ~(cAnd y ~z)
-cMin x y z     : x (cMin y z)
-cMax x y z     : x (cMax y z)
-cOr x y z     : x (cOr y z)
-cOr x y ~z    : x (cOr y ~z)
-cOr x ~y ~z   : x ~(cOr y ~z)
-cOr ~x ~y ~z  : ~x ~(cOr y ~z)
+# Do not reduce add/mul/min/max/and/or lists to two-operand topology
+# Those are done in the bytecode generation automatically.
 
-# Extract all negations from and-groups and or-groups
-cAnd ~x        : (cNot x)
-cOr  ~x        : (cNot x)
 # Unprotect not-not
-cNotNot[x]     -> cNot (cNot x)
+cNotNot[x]     -> cNot [(cNot [x])]

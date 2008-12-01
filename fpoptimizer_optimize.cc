@@ -305,8 +305,8 @@ namespace FPoptimizer_Grammar
             }
             case RestHolder:
             {
-                // FIXME
-                break;
+                // FIXME: Match at least something!
+                return true;
             }
             case SubFunction:
             {
