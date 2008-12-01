@@ -637,9 +637,12 @@ const char* FunctionParser::CompileFunctionParams(const char* function,
             function = CompileExpression(function+1);
             if(!function) return 0;
         }
+        // No need for incStackPtr() because each parse parameter calls it
+        StackPtr -= requiredParams-1;
     }
     else
     {
+        incStackPtr(); // return value of function is pushed onto the stack
         ++function;
         while(isspace(*function)) ++function;
     }
