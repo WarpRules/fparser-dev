@@ -123,6 +123,10 @@ public:
 
     void DoPopNMov(size_t targetpos, size_t srcpos)
     {
+        ByteCode.push_back(cPopNMov);
+        ByteCode.push_back(targetpos);
+        ByteCode.push_back(srcpos);
+        
         SetStackTop(srcpos+1);
         StackHash[targetpos] = StackHash[srcpos];
         SetStackTop(targetpos+1);
@@ -240,6 +244,30 @@ namespace
                   CodeTree::ByteCodeSynth& synth);
 }
 
+namespace
+{
+    typedef
+        std::map<uint_fast64_t,  std::pair<size_t, CodeTree*> >
+        TreeCountType;
+    
+    void FindTreeCounts(TreeCountType& TreeCounts, CodeTree* tree)
+    {
+        std::pair<size_t, CodeTree*>& p = TreeCounts[tree->Hash];
+        ++p.first;
+        p.second = tree;
+        
+        for(size_t a=0; a<tree->Params.size(); ++a)
+            FindTreeCounts(TreeCounts, tree->Params[a].param);
+    }
+    
+    void RememberRecursivelyHashList(std::set<uint_fast64_t>& hashlist,
+                                     CodeTree* tree)
+    {
+        hashlist.insert(tree->Hash);
+        for(size_t a=0; a<tree->Params.size(); ++a)
+            RememberRecursivelyHashList(hashlist, tree->Params[a].param);
+    }
+}
 
 namespace FPoptimizer_CodeTree
 {
@@ -249,8 +277,52 @@ namespace FPoptimizer_CodeTree
         size_t& stacktop_max)
     {
         ByteCodeSynth synth;
-        SynthesizeByteCode(synth);
 
+        /* Find common subtrees */
+        TreeCountType TreeCounts;
+        FindTreeCounts(TreeCounts, this);
+        
+        /* Synthesize some of the most common ones */
+        std::set<uint_fast64_t> AlreadyDoneTrees;
+    FindMore: ;
+        size_t best_score = 0;
+        TreeCountType::const_iterator synth_it;
+        for(TreeCountType::const_iterator
+            i = TreeCounts.begin();
+            i != TreeCounts.end();
+            ++i)
+        {
+            size_t score = i->second.first;
+            if(score < 2) continue; // It must always occur at least twice
+            if(i->second.second->Depth < 2) continue; // And it must not be a simple expression
+            if(AlreadyDoneTrees.find(i->first) 
+            != AlreadyDoneTrees.end()) continue; // And it must not yet have been synthesized
+            score *= i->second.second->Depth;
+            if(score > best_score)
+                { best_score = score; synth_it = i; }
+        }
+        if(best_score > 0)
+        {
+            /* Synthesize the selected tree */
+            synth_it->second.second->SynthesizeByteCode(synth);
+            /* Add the tree and all its children to the AlreadyDoneTrees list,
+             * to prevent it from being re-synthesized
+             */
+            RememberRecursivelyHashList(AlreadyDoneTrees, synth_it->second.second);
+            goto FindMore;
+        }
+
+        /* Then synthesize the actual expression */
+        SynthesizeByteCode(synth);
+      #ifndef FP_DISABLE_EVAL
+        /* Ensure that the expression result is
+         * the only thing that remains in the stack
+         */
+        /* Removed: Fparser does not seem to care! */
+        /* But if cEval is supported, it still needs to be done. */
+        if(synth.GetStackTop() > 1)
+            synth.DoPopNMov(0, synth.GetStackTop()-1);
+      #endif
         synth.Pull(ByteCode, Immed, stacktop_max);
     }
 
@@ -262,35 +334,6 @@ namespace FPoptimizer_CodeTree
         {
             return;
         }
-
-        /*
-        #define AddCmd(op) do { \
-            unsigned o = (op); \
-            if(o == cMul && !ByteCode.empty() && ByteCode.back() == cDup) \
-                ByteCode.back() = cSqr; \
-            else \
-                ByteCode.push_back(o); \
-        } while(0)
-        #define PushConst(v) do { \
-            SimuPush(1); \
-            ByteCode.push_back(cImmed); \
-            Immed.push_back((v)); \
-        } while(0)
-        #define PushVar(v) do { \
-            SimuPush(1); \
-            AddCmd(v); \
-        } while(0)
-        #define SimuPush(n) stacktop_cur += (n)
-        #define SimuPop(n) do { \
-            if(stacktop_cur > stacktop_max) stacktop_max = stacktop_cur; \
-            stacktop_cur -= (n); \
-        } while(0)
-        #define SimuDupPushFrom(n) do { \
-            if((n) == stacktop_cur-1) AddCmd(cDup); \
-            else { AddCmd(cFetch); AddCmd((n)); } \
-            SimuPush(1); \
-        } while(0)
-        */
 
         switch(Opcode)
         {
@@ -365,6 +408,7 @@ namespace FPoptimizer_CodeTree
                             if(success)
                             {
                                 // this tree was treated just fine
+                                synth.StackTopIs(Hash);
                                 return;
                             }
                         }
@@ -517,6 +561,7 @@ namespace FPoptimizer_CodeTree
                 break;
             }
         }
+        synth.StackTopIs(Hash);
     }
 }
 

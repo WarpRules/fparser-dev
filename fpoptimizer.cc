@@ -56,7 +56,7 @@ void FunctionParser::Optimize()
     fprintf(stderr, "Estimated stacktop %u\n", (unsigned)stacktop_max);
     fflush(stderr);*/
 
-    if(data->StackSize < stacktop_max)
+    if(data->StackSize != stacktop_max)
     {
         data->StackSize = stacktop_max;
         data->Stack.resize(stacktop_max);

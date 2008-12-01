@@ -186,9 +186,9 @@ double f19(double* p)
 
 double f20(double* p)
 {
-#define P20 "(!(x != y) & !x) + !(!y)", "x,y", f20, 2, -100, 100, 1, false
+#define P20 "(!(x != y) & !x) + !(!(!(!y)))", "x,y", f20, 2, -100, 100, 1, false
     const double x = p[0], y = p[1];
-    return (!(x != y) && !x) + (!(!y));
+    return  (!(x != y) && !x) + !(!(!(!y)));
 }
 
 double f21(double* p)

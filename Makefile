@@ -102,7 +102,7 @@ clean:
 		fpoptimizer_grammar_gen.output \
 		fpoptimizer_grammar_gen.h \
 		fpoptimizer_grammar.cc \
-		fpoptimizer_grammar_sum.cc
+		fpoptimizer_grammar_sum.cc \
 		fpoptimizer_grammar_sum.hh
 distclean: clean
 	rm -f	*~

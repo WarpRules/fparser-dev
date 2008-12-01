@@ -13,6 +13,8 @@
 #include "fptypes.hh"
 using namespace FUNCTIONPARSERTYPES;
 
+//#define DEBUG_SUBSTITUTIONS
+
 namespace FPoptimizer_CodeTree
 {
     void CodeTree::ConstantFolding()
@@ -37,7 +39,9 @@ namespace FPoptimizer_Grammar
         }
     };
 
+#ifdef DEBUG_SUBSTITUTIONS
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+#endif
 
     /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
@@ -146,6 +150,7 @@ namespace FPoptimizer_Grammar
         CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
 
+#ifdef DEBUG_SUBSTITUTIONS
     void DumpMatch(const Function& input,
                    const FPoptimizer_CodeTree::CodeTree& tree,
                    const MatchedParams& replacement,
@@ -154,6 +159,7 @@ namespace FPoptimizer_Grammar
     void DumpFunction(const Function& input);
     void DumpParam(const ParamSpec& p);
     void DumpParams(const MatchedParams& mitem);
+#endif
 
     /* Apply the rule to a given CodeTree */
     bool Rule::ApplyTo(
@@ -166,22 +172,28 @@ namespace FPoptimizer_Grammar
         if(input.opcode == tree.Opcode
         && pack.mlist[input.index].Match(tree, matchrec, false))
         {
+#ifdef DEBUG_SUBSTITUTIONS
             DumpMatch(input, tree, repl, matchrec);
+#endif
 
             const MatchedParams& params = pack.mlist[input.index];
             switch(type)
             {
                 case ReplaceParams:
                     repl.ReplaceParams(tree, params, matchrec);
+#ifdef DEBUG_SUBSTITUTIONS
                     std::cout << "  Produced(.): ";
                     DumpTree(tree);
                     std::cout << "\n";
+#endif
                     return true;
                 case ProduceNewTree:
                     repl.ReplaceTree(tree,   params, matchrec);
+#ifdef DEBUG_SUBSTITUTIONS
                     std::cout << "  Produced(*): ";
                     DumpTree(tree);
                     std::cout << "\n";
+#endif
                     return true;
             }
         }
@@ -236,8 +248,6 @@ namespace FPoptimizer_Grammar
          *        Match (cAdd x) to (a+b) may first capture "a" into "x",
          *        and then Match(cAdd x) for (c+b) will fail,
          *        because there's no "a" there.
-         *
-         * FIXME: Repetition are not observed either, yet.
          */
         switch(type)
         {
@@ -287,6 +297,43 @@ namespace FPoptimizer_Grammar
 
                             if(param.Match(*tree.Params[b].param, match))
                             {
+                                if(param.opcode == NamedHolder)
+                                {
+                                    // Verify the MinRepeat & AnyRepeat case
+                                    unsigned MinRepeat = param.minrepeat;
+                                    bool AnyRepeat     = param.anyrepeat;
+                                    unsigned HadRepeat = 1;
+                                    
+                                    for(size_t c = b+1;
+                                        c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
+                                        ++c)
+                                    {
+                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash)
+                                        {
+                                            ++HadRepeat;
+                                        }
+                                    }
+                                    if(HadRepeat < MinRepeat)
+                                        continue; // No sufficient repeat count here
+                                    
+                                    HadRepeat = 0;
+                                    for(size_t c = b;
+                                        c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
+                                        ++c)
+                                    {
+                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash)
+                                        {
+                                            ++HadRepeat;
+                                            used[c] = true;
+                                            if(!recursion)
+                                                match.param_numbers.push_back(c);
+                                        }
+                                    }
+                                    match.NamedMap[param.index].second = HadRepeat;
+                                    position[a].parampos = b+1;
+                                    goto ok;
+                                }
+                                
                                 used[b] = true;
                                 if(!recursion)
                                     match.param_numbers.push_back(b);
@@ -374,8 +421,6 @@ namespace FPoptimizer_Grammar
             }
             case NamedHolder:
             {
-                if(minrepeat >= 2) return false;
-
                 /* FIXME: Repetitions */
                 std::map<unsigned, std::pair<uint_fast64_t, size_t> >::iterator
                     i = match.NamedMap.find(index);
@@ -675,6 +720,7 @@ namespace FPoptimizer_Grammar
         }
     }
 
+#ifdef DEBUG_SUBSTITUTIONS
     void DumpParam(const ParamSpec& p)
     {
         //std::cout << "/*p" << (&p-pack.plist) << "*/";
@@ -751,7 +797,7 @@ namespace FPoptimizer_Grammar
                     std::cout << ':' << tree.Funcno;
         }
         std::cout << '(';
-        if(tree.Params.size() <= 1) std::cout << (sep2+1) << ' ';
+        if(tree.Params.size() <= 1 && *sep2) std::cout << (sep2+1) << ' ';
         for(size_t a=0; a<tree.Params.size(); ++a)
         {
             if(a > 0) std::cout << ' ';
@@ -819,4 +865,5 @@ namespace FPoptimizer_Grammar
                 std::cout << "         <" << i->first << "> = <empty>\n";
         }
     }
+#endif
 }
