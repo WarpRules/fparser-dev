@@ -27,8 +27,56 @@ class GrammarDumper;
 
 namespace GrammarData
 {
-    class FunctionType;
-    
+    class ParamSpec;
+
+    class MatchedParams
+    {
+    public:
+        ParamMatchingType Type;
+        std::vector<ParamSpec*> Params;
+
+    public:
+        MatchedParams()                    : Type(PositionalParams), Params() { }
+        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
+
+        MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
+        MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
+
+        const std::vector<ParamSpec*>& GetParams() const { return Params; }
+
+        void RecursivelySetParamMatchingType(ParamMatchingType t);
+        bool EnsureNoInversions();
+
+        bool operator== (const MatchedParams& b) const;
+        bool operator< (const MatchedParams& b) const;
+    };
+
+    class FunctionType
+    {
+    public:
+        OpcodeType    Opcode;
+        MatchedParams Params;
+    public:
+        FunctionType(OpcodeType o, const MatchedParams& p) : Opcode(o), Params(p) { }
+
+        bool operator== (const FunctionType& b) const
+        {
+            return Opcode == b.Opcode && Params == b.Params;
+        }
+        bool operator< (const FunctionType& b) const
+        {
+            if(Opcode != b.Opcode) return Opcode < b.Opcode;
+            return Params < b.Params;
+        }
+
+        void RecursivelySetParamMatchingType(ParamMatchingType t)
+        {
+            Params.Type = t;
+            Params.RecursivelySetParamMatchingType(t);
+        }
+    };
+
     class ParamSpec
     {
     public:
@@ -44,7 +92,7 @@ namespace GrammarData
         {
             double ConstantValue;           // for NumConstant
             unsigned Index;                 // for ImmedHolder, RestHolder, NamedHolder
-            FunctionType* Func;             // for Function
+            FunctionType* Func;             // for SubFunction
         };
         std::vector<ParamSpec*> Params;
 
@@ -84,51 +132,35 @@ namespace GrammarData
         ParamSpec* SetTransformation(TransformationType t)
             { Transformation = t; return this; }
 
+        void RecursivelySetParamMatchingType(ParamMatchingType t)
+        {
+            for(size_t a=0; a<Params.size(); ++a)
+                Params[a]->RecursivelySetParamMatchingType(t);
+            if(Opcode == SubFunction)
+                Func->RecursivelySetParamMatchingType(t);
+        }
+        bool VerifyIsConstant()
+        {
+            switch(SpecialOpcode(Opcode))
+            {
+                case NumConstant: return true;
+                case ImmedHolder: return true;
+                case NamedHolder: return AnyRepetition; // x+ is constant, x is not
+                case RestHolder: return false; // <1> is not constant
+                case SubFunction: return false; // subfunctions are not constant
+            }
+            // For GroupFunctions, all params must be const.
+            for(size_t a=0; a<Params.size(); ++a)
+                if(!Params[a]->VerifyIsConstant()) return false;
+            return true;
+        }
+
         bool operator== (const ParamSpec& b) const;
         bool operator< (const ParamSpec& b) const;
 
     private:
         ParamSpec(const ParamSpec&);
         ParamSpec& operator= (const ParamSpec&);
-    };
-
-    class MatchedParams
-    {
-    public:
-        ParamMatchingType Type;
-        std::vector<ParamSpec*> Params;
-
-    public:
-        MatchedParams()                    : Type(PositionalParams), Params() { }
-        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
-        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
-
-        MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
-        MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
-
-        const std::vector<ParamSpec*>& GetParams() const { return Params; }
-
-        bool operator== (const MatchedParams& b) const;
-        bool operator< (const MatchedParams& b) const;
-    };
-
-    class FunctionType
-    {
-    public:
-        OpcodeType    Opcode;
-        MatchedParams Params;
-    public:
-        FunctionType(OpcodeType o, const MatchedParams& p) : Opcode(o), Params(p) { }
-
-        bool operator== (const FunctionType& b) const
-        {
-            return Opcode == b.Opcode && Params == b.Params;
-        }
-        bool operator< (const FunctionType& b) const
-        {
-            if(Opcode != b.Opcode) return Opcode < b.Opcode;
-            return Params < b.Params;
-        }
     };
 
     class Rule
@@ -160,8 +192,22 @@ namespace GrammarData
 
         void AddRule(const Rule& r) { rules.push_back(r); }
     };
-    
+
     ////////////////////
+
+    void MatchedParams::RecursivelySetParamMatchingType(ParamMatchingType t)
+    {
+        for(size_t a=0; a<Params.size(); ++a)
+            Params[a]->RecursivelySetParamMatchingType(t);
+    }
+
+    bool MatchedParams::EnsureNoInversions()
+    {
+        for(size_t a=0; a<Params.size(); ++a)
+            if(Params[a]->Negated)
+                return false;
+        return true;
+    }
 
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
@@ -683,43 +729,29 @@ static GrammarDumper dumper;
     GrammarData::MatchedParams* p;
     GrammarData::ParamSpec*     a;
 
-    double         num;
-    std::string*   name;
-    unsigned       index;
-    OpcodeType     opcode;
+    double             num;
+    std::string*       name;
+    unsigned           index;
+    OpcodeType         opcode;
+    TransformationType transform;
 }
 
-%token <num>    NUMERIC_CONSTANT
-%token <name>   PARAMETER_TOKEN
-%token <index>  PLACEHOLDER_TOKEN
-%token <index>  IMMED_TOKEN
-%token <opcode> BUILTIN_FUNC_NAME
-%token <opcode> OPCODE_NOTINV
-%token <opcode> OPCODE_MAYBEINV
-%token <opcode> UNARY_CONSTANT_NEGATE
-%token <opcode> UNARY_CONSTANT_INVERT
+%token <num>       NUMERIC_CONSTANT
+%token <name>      PARAMETER_TOKEN
+%token <index>     PLACEHOLDER_TOKEN
+%token <index>     IMMED_TOKEN
+%token <opcode>    BUILTIN_FUNC_NAME
+%token <opcode>    OPCODE
+%token <transform> UNARY_TRANSFORMATION
 %token NEWLINE
 
 %token SUBST_OP_COLON
 %token SUBST_OP_ARROW
 
 %type <r> substitution
-%type <f> function             function_notinv             function_maybeinv
-%type <f> function_fixedparams function_notinv_fixedparams function_maybeinv_fixedparams
-%type <p> param_maybeinv_list_maybefixed
-%type <p> param_maybeinv_list_nobrackets
-%type <p> param_maybeinv_list_isfixed
-%type <p> param_notinv_list_maybefixed 
-%type <p> param_notinv_list_nobrackets
-%type <p> param_notinv_list_isfixed
-%type <p> param_notinv_list_nobrackets_numerable
-%type <a> maybeinv_param
-%type <a> maybeinv_param_norepeat
+%type <f> function
+%type <p> paramlist
 %type <a> param
-%type <a> param_norepeat
-%type <a> param_numerable
-%type <a> param_numerable_norepeat
-%type <a> param_numerable_repeat
 
 %%
     grammar:
@@ -736,155 +768,83 @@ static GrammarDumper dumper;
       function SUBST_OP_ARROW param NEWLINE
       /* Entire function is changed into the particular param */
       {
+        $3->RecursivelySetParamMatchingType(PositionalParams);
+
         $$ = new GrammarData::Rule(ProduceNewTree, *$1, $3);
         delete $1;
       }
 
-    | function SUBST_OP_ARROW function_fixedparams NEWLINE
+    | function SUBST_OP_ARROW function NEWLINE
       /* Entire function changes, the param_notinv_list is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
+        $3->RecursivelySetParamMatchingType(PositionalParams);
+
         $$ = new GrammarData::Rule(ProduceNewTree, *$1, new GrammarData::ParamSpec($3));
         //std::cout << GrammarDumper().Dump(*new ParamSpec($3)) << "\n";
         delete $1;
       }
 
-    | function_maybeinv SUBST_OP_COLON  param_maybeinv_list_nobrackets NEWLINE
+    | function SUBST_OP_COLON  paramlist NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
+        $3->RecursivelySetParamMatchingType(PositionalParams);
+
+        if($1->Opcode != cAdd && $1->Opcode != cMul && $1->Opcode != cAnd && $1->Opcode != cOr)
+        {
+            /* If function opcode is "notinv", verify that $23 has no inversions */
+            if(!$3->EnsureNoInversions())
+            {
+                yyerror("Can have no inversions"); YYERROR;
+            }
+        }
+
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
-
-    | function_notinv   SUBST_OP_COLON  param_notinv_list_nobrackets NEWLINE
-      /* The params provided are replaced with the new param_maybeinv_list */
-      {
-        $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
-        delete $1;
-        delete $3;
-      }
-
     ;
 
-    /**/
-    
     function:
-       function_notinv
-    |  function_maybeinv
-    ;
-    function_notinv:
-       OPCODE_NOTINV param_notinv_list_maybefixed
-       /* Match a function with opcode=opcode and the given way of matching params */
+       OPCODE '[' paramlist ']'
+       /* Match a function with opcode=opcode,
+        * and the exact parameter list as specified
+        */
        {
-         $$ = new GrammarData::FunctionType($1, *$2);
-         delete $2;
-       }
-    ;
-    function_maybeinv:
-       OPCODE_MAYBEINV param_maybeinv_list_maybefixed
-       /* Match a function with opcode=opcode and the given way of matching params */
-       {
-         $$ = new GrammarData::FunctionType($1, *$2);
-         delete $2;
-       }
-    ;
-
-    /**/
-    
-    function_fixedparams:
-       function_notinv_fixedparams
-    |  function_maybeinv_fixedparams
-    ;
-    function_notinv_fixedparams:
-       OPCODE_NOTINV '[' param_notinv_list_isfixed ']'
-       /* Match a function with opcode=opcode and the given way of matching params */
-       {
+         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         {
+             /* If function opcode is "notinv", verify that $3 has no inversions */
+             if(!$3->EnsureNoInversions())
+             {
+                 yyerror("Can have no inversions"); YYERROR;
+             }
+         }
          $$ = new GrammarData::FunctionType($1, *$3);
          delete $3;
        }
-    ;
-    function_maybeinv_fixedparams:
-       OPCODE_MAYBEINV '[' param_maybeinv_list_isfixed ']'
+    |  OPCODE paramlist
        /* Match a function with opcode=opcode and the given way of matching params */
+       /* Match the parameters the way you find them */
        {
-         $$ = new GrammarData::FunctionType($1, *$3);
-         delete $3;
+         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         {
+             /* If function opcode is "notinv", verify that $2 has no inversions */
+             if(!$2->EnsureNoInversions())
+             {
+                 yyerror("Can have no inversions"); YYERROR;
+             }
+         }
+         $$ = new GrammarData::FunctionType($1, *$2->SetType(AnyParams));
+         delete $2;
        }
     ;
 
-    /**/
-    
-    param_maybeinv_list_maybefixed:
-       '[' param_maybeinv_list_isfixed ']'  /* match this exact param_notinv_list */
-        { $$ = $2 }
-     |  param_maybeinv_list_nobrackets         /* find the specified params */
+    paramlist: /* left-recursive list of 0-n params with no delimiter */
+        paramlist '~' param
         {
-          $$ = $1->SetType(AnyParams);
+          $$ = $1->AddParam($3->SetNegated());
         }
-    ;
-
-    param_notinv_list_maybefixed:
-       '[' param_notinv_list_isfixed ']'  /* match this exact param_notinv_list */
-        { $$ = $2 }
-     |  param_notinv_list_nobrackets         /* find the specified params */
-        {
-          $$ = $1->SetType(AnyParams);
-        }
-    ;
-
-    /**/
-    
-    param_maybeinv_list_nobrackets: /* left-recursive list of 0-n params with no delimiter */
-        param_maybeinv_list_nobrackets maybeinv_param
-        {
-          $$ = $1->AddParam($2);
-        }
-      | /* empty */
-        {
-          $$ = new GrammarData::MatchedParams;
-        }
-    ;
-    
-    param_notinv_list_nobrackets: /* left-recursive list of 0-n params with no delimiter */
-        param_notinv_list_nobrackets param
-        {
-          $$ = $1->AddParam($2);
-        }
-      | /* empty */
-        {
-          $$ = new GrammarData::MatchedParams;
-        }
-    ;
-    
-    /**/
-
-    param_maybeinv_list_isfixed: /* left-recursive list of 0-n params with no delimiter */
-        param_maybeinv_list_isfixed maybeinv_param_norepeat
-        {
-          $$ = $1->AddParam($2);
-        }
-      | /* empty */
-        {
-          $$ = new GrammarData::MatchedParams;
-        }
-    ;
-    
-    param_notinv_list_isfixed: /* left-recursive list of 0-n params with no delimiter */
-        param_notinv_list_isfixed param_norepeat
-        {
-          $$ = $1->AddParam($2);
-        }
-      | /* empty */
-        {
-          $$ = new GrammarData::MatchedParams;
-        }
-    ;
-    
-    /**/
-
-    param_notinv_list_nobrackets_numerable:
-        param_notinv_list_nobrackets param_numerable
+      | paramlist param
         {
           $$ = $1->AddParam($2);
         }
@@ -894,56 +854,7 @@ static GrammarDumper dumper;
         }
     ;
 
-    /**/
-    
-    maybeinv_param:
-       '~' param    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
-       {
-         $$ = $2->SetNegated();
-       }
-     | param        /* non-negated/non-inverted param */
-    ;
-
-    maybeinv_param_norepeat:
-       '~' param_norepeat    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
-       {
-         $$ = $2->SetNegated();
-       }
-     | param_norepeat        /* non-negated/non-inverted param */
-    ;
-
-    /**/
-    
-    /* Params that match a singular token, e.g. no "x+" or "<1>" */
-    param_norepeat:
-       param_numerable_norepeat
-    |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
-       {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
-         delete $1;
-       }
-    |  '(' function ')'         /* a subtree */
-       {
-         $$ = new GrammarData::ParamSpec($2);
-       }
-    ;
-
-    param: /* Same as param_norepeat, but also include "x+", "x*" and "<1>" */
-       param_norepeat
-    |  param_numerable_repeat
-    |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
-       }
-    ;
-    
-    param_numerable:
-       param_numerable_norepeat
-    |  param_numerable_repeat
-    ;
-    
-    param_numerable_norepeat:
+    param:
        NUMERIC_CONSTANT         /* particular immed */
        {
          $$ = new GrammarData::ParamSpec($1);
@@ -952,23 +863,37 @@ static GrammarDumper dumper;
        {
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
        }
-    |  BUILTIN_FUNC_NAME '(' param_notinv_list_nobrackets_numerable ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
+    |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
+         /* Verify that $3 contains no inversions */
+         if(!$3->EnsureNoInversions())
+         {
+             yyerror("Can have no inversions"); YYERROR;
+         }
+         /* Verify that $3 consists of constants */
          $$ = new GrammarData::ParamSpec($1, $3->GetParams());
+         if(!$$->VerifyIsConstant())
+         {
+             yyerror("Not constant"); YYERROR;
+         }
          delete $3;
        }
-    |  UNARY_CONSTANT_NEGATE param_numerable   /* the negated literal value of the param */
+    |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
        {
-         $$ = $2->SetTransformation(Negate);
+         /* Verify that $2 is constant */
+         if(!$2->VerifyIsConstant())
+         {
+             yyerror("Not constant"); YYERROR;
+         }         
+         $$ = $2->SetTransformation($1);
        }
-    |  UNARY_CONSTANT_INVERT param_numerable   /* the inverted literal value of the param */
+    |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
        {
-         $$ = $2->SetTransformation(Invert);
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
+         delete $1;
        }
-    ;
-    
-    param_numerable_repeat:
-       PARAMETER_TOKEN '+'       /* any expression, indicated by "x", "a" etc. */
+    |  PARAMETER_TOKEN '+'       /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -986,8 +911,15 @@ static GrammarDumper dumper;
             ->SetRepeat(1, true);
          delete $1;
        }
+    |  '(' function ')'         /* a subtree */
+       {
+         $$ = new GrammarData::ParamSpec($2);
+       }
+    |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
+       }
     ;
-    
 %%
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
@@ -1052,10 +984,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(c2 == '>')
                 return SUBST_OP_ARROW;
             std::ungetc(c2, stdin);
-            return UNARY_CONSTANT_NEGATE;
+            lval->transform = Negate;
+            return UNARY_TRANSFORMATION;
         }
         case '/':
-            return UNARY_CONSTANT_INVERT;
+            lval->transform = Invert;
+            return UNARY_TRANSFORMATION;
         case '%': { lval->index = 0; return IMMED_TOKEN; }
         case '&': { lval->index = 1; return IMMED_TOKEN; }
         case '<':
@@ -1130,29 +1064,29 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 lval->num = 0; lval->num /= 0.0; return NUMERIC_CONSTANT;
             }
 
-            if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE_MAYBEINV; }
-            if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE_MAYBEINV; }
-            if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE_MAYBEINV; }
-            if(IdBuf == "cOr")  { lval->opcode = cOr; return OPCODE_MAYBEINV; }
+            if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE; }
+            if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE; }
+            if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE; }
+            if(IdBuf == "cOr")  { lval->opcode = cOr; return OPCODE; }
 
-            if(IdBuf == "cNeg") { lval->opcode = cNeg; return OPCODE_NOTINV; }
-            if(IdBuf == "cSub") { lval->opcode = cSub; return OPCODE_NOTINV; }
-            if(IdBuf == "cDiv") { lval->opcode = cDiv; return OPCODE_NOTINV; }
-            if(IdBuf == "cMod") { lval->opcode = cMod; return OPCODE_NOTINV; }
-            if(IdBuf == "cEqual") { lval->opcode = cEqual; return OPCODE_NOTINV; }
-            if(IdBuf == "cNEqual") { lval->opcode = cNEqual; return OPCODE_NOTINV; }
-            if(IdBuf == "cLess") { lval->opcode = cLess; return OPCODE_NOTINV; }
-            if(IdBuf == "cLessOrEq") { lval->opcode = cLessOrEq; return OPCODE_NOTINV; }
-            if(IdBuf == "cGreater") { lval->opcode = cGreater; return OPCODE_NOTINV; }
-            if(IdBuf == "cGreaterOrEq") { lval->opcode = cGreaterOrEq; return OPCODE_NOTINV; }
-            if(IdBuf == "cNot") { lval->opcode = cNot; return OPCODE_NOTINV; }
-            if(IdBuf == "cNotNot") { lval->opcode = cNotNot; return OPCODE_NOTINV; }
-            if(IdBuf == "cDeg")  { lval->opcode = cDeg; return OPCODE_NOTINV; }
-            if(IdBuf == "cRad")  { lval->opcode = cRad; return OPCODE_NOTINV; }
-            if(IdBuf == "cInv")  { lval->opcode = cInv; return OPCODE_NOTINV; }
-            if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE_NOTINV; }
-            if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE_NOTINV; }
-            if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE_NOTINV; }
+            if(IdBuf == "cNeg") { lval->opcode = cNeg; return OPCODE; }
+            if(IdBuf == "cSub") { lval->opcode = cSub; return OPCODE; }
+            if(IdBuf == "cDiv") { lval->opcode = cDiv; return OPCODE; }
+            if(IdBuf == "cMod") { lval->opcode = cMod; return OPCODE; }
+            if(IdBuf == "cEqual") { lval->opcode = cEqual; return OPCODE; }
+            if(IdBuf == "cNEqual") { lval->opcode = cNEqual; return OPCODE; }
+            if(IdBuf == "cLess") { lval->opcode = cLess; return OPCODE; }
+            if(IdBuf == "cLessOrEq") { lval->opcode = cLessOrEq; return OPCODE; }
+            if(IdBuf == "cGreater") { lval->opcode = cGreater; return OPCODE; }
+            if(IdBuf == "cGreaterOrEq") { lval->opcode = cGreaterOrEq; return OPCODE; }
+            if(IdBuf == "cNot") { lval->opcode = cNot; return OPCODE; }
+            if(IdBuf == "cNotNot") { lval->opcode = cNotNot; return OPCODE; }
+            if(IdBuf == "cDeg")  { lval->opcode = cDeg; return OPCODE; }
+            if(IdBuf == "cRad")  { lval->opcode = cRad; return OPCODE; }
+            if(IdBuf == "cInv")  { lval->opcode = cInv; return OPCODE; }
+            if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE; }
+            if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE; }
+            if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE; }
 
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
             {
@@ -1164,13 +1098,13 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 if(func)
                 {
                     lval->opcode = func->opcode;
-                    return OPCODE_NOTINV;
+                    return OPCODE;
                 }
                 fprintf(stderr,
                     "Warning: Unrecognized opcode '%s' interpreted as cNop\n",
                         IdBuf.c_str());
                 lval->opcode = cNop;
-                return OPCODE_NOTINV;
+                return OPCODE;
             }
             // If it is typed entirely in capitals, it has a chance of being
             // a group token

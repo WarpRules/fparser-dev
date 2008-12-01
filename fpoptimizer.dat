@@ -286,21 +286,23 @@ cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [~y ~z])])
 # e.g. ...+x+x+x+x -> ...+x*4
 cAdd  x+                           :  (cMul  x   x+)
 cAdd ~x+                           : ~(cMul  x   x+)
+
 # Note: existence of x+ ~x+ is already dealt with by "cAdd x ~x :".
 # x*3 + x*z*y = x*(3+z*y)
 cAdd  x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd   x*  (cMul <1> ~<2>) )])
 cAdd  x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd   x* ~(cMul <1> ~<2>) )])
 cAdd ~x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x*  (cMul <1> ~<2>) )])
 cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) )])
-# a*b*c*p*q + a*b*c*r*s = a*b*c*(p*q + r*s)
-cAdd  (cMul <1> <2> ~<4>)  (cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>)  (cMul <3> ~<5>)))
-cAdd  (cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>) ~(cMul <3> ~<5>)))
-cAdd ~(cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd ~(cMul <2> ~<4>) ~(cMul <3> ~<5>)))
-# Note: The above might be difficult to match efficiently.
-# The below is a simpler version that only works with a single operand...
-cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x  y]))
-cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x ~y]))
-cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [~x ~y]))
+
+## a*b*c*p*q + a*b*c*r*s = a*b*c*(p*q + r*s)
+#cAdd  (cMul <1> <2> ~<4>)  (cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>)  (cMul <3> ~<5>)))
+#cAdd  (cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>) ~(cMul <3> ~<5>)))
+#cAdd ~(cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd ~(cMul <2> ~<4>) ~(cMul <3> ~<5>)))
+## Note: The above might be difficult to match efficiently.
+## The below is a simpler version that only works with a single operand...
+#cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x  y]))
+#cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x ~y]))
+#cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [~x ~y]))
 # Note: The above might be still difficult to match.
 # The below is an even simpler version...
 cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)         : (cMul [x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
@@ -449,7 +451,7 @@ cLog [(cMul x (cPow [CONSTANT_E y]))] -> cAdd [(cLog [x]) y]
 
 # log(x * z^y) / log(z) = log(x) / log(z) + y
 # Note: z can also be an immed
-cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd [(cMul [(cLog [x]) ~(cLog[z])]) y]
+cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd [(cMul [(cLog [x]) ~(cLog [z])]) y]
 cMul (cLog [(cMul x (cPow [% y]))]) ~LOG(%)     -> cAdd [(cMul [(cLog [x]) ~LOG(%)]) y]
 
 
@@ -503,19 +505,19 @@ cPow [x 0.5]         -> cSqrt [x]
 cPow [CONSTANT_E x]  -> cExp [x]
 
 # log(x) * CONSTANT_L10I = log10(x)
-cMul (cLog[x]) CONSTANT_L10I -> cLog10 [x]
+cMul (cLog [x]) CONSTANT_L10I -> cLog10 [x]
 
 # log(x) * CONSTANT_L2I = log2(x)
-cMul (cLog[x]) CONSTANT_L2I -> cLog2 [x]
+cMul (cLog [x]) CONSTANT_L2I -> cLog2 [x]
 
 # In a mul-list, ~sin(x) = csc(x)
-cMul ~(cSin[x])      : (cCsc[x])
+cMul ~(cSin [x])      : (cCsc [x])
 
 # In a mul-list, ~cos(x) = sec(x)
-cMul ~(cCos[x])      : (cSec[x])
+cMul ~(cCos [x])      : (cSec [x])
 
 # In a mul-list, ~tan(x) = cot(x)
-cMul ~(cTan[x])      : (cCot[x])
+cMul ~(cTan [x])      : (cCot [x])
 
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology
 # Those are done in the bytecode generation automatically.
