@@ -4,8 +4,18 @@
 #include <algorithm>
 #include <map>
 
+namespace FPoptimizer_CodeTree
+{
+    void CodeTree::ConstantFolding()
+    {
+        // Insert here any hardcoded constant-folding optimizations
+        // that you want to be done at bytecode->codetree conversion time.
+    }
+}
+
 namespace FPoptimizer_Grammar
 {
+    /* A helper for std::equal_range */
     struct OpcodeRuleCompare
     {
         bool operator() (unsigned opcode, const Rule& rule) const
@@ -18,6 +28,7 @@ namespace FPoptimizer_Grammar
         }
     };
 
+    /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
         std::set<uint_fast64_t>& optimized_children,
         FPoptimizer_CodeTree::CodeTree& tree,
@@ -105,6 +116,7 @@ namespace FPoptimizer_Grammar
         CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
 
+    /* Apply the rule to a given CodeTree */
     bool Rule::ApplyTo(
         FPoptimizer_CodeTree::CodeTree& tree) const
     {

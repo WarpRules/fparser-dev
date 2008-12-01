@@ -1,5 +1,4 @@
 #include <cmath>
-#include <list>
 #include <cassert>
 
 #include "fpoptimizer_codetree.hh"
@@ -107,15 +106,15 @@ namespace FPoptimizer_CodeTree
         const FunctionParser::Data& fpdata)
     {
         CodeTreeParserData data;
-        std::list<size_t> labels;
+        std::vector<size_t> labels;
 
         for(size_t IP=0, DP=0; ; ++IP)
         {
-            while(!labels.empty() && *labels.begin() == IP)
+            while(!labels.empty() && labels.back() == IP)
             {
                 // The "else" of an "if" ends here
                 data.Eat(3, cIf);
-                labels.erase(labels.begin());
+                labels.erase(labels.end()-1);
             }
             if(IP >= ByteCode.size()) break;
 
@@ -133,7 +132,7 @@ namespace FPoptimizer_CodeTree
                         IP += 2;
                         continue;
                     case cJump:
-                        labels.push_front(ByteCode[IP+1]+1);
+                        labels.push_back(ByteCode[IP+1]+1);
                         IP += 2;
                         continue;
                     case cImmed:
