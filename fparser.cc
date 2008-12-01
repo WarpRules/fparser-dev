@@ -1237,9 +1237,10 @@ namespace
 {
     inline void printHex(std::ostream& dest, unsigned n)
     {
+        std::ios::fmtflags flags = dest.flags();
         dest.width(8); dest.fill('0'); std::hex(dest); //uppercase(dest);
         dest << n;
-        std::dec(dest);
+        dest.flags(flags);
     }
 }
 
