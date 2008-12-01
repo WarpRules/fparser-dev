@@ -43,9 +43,17 @@ namespace FPoptimizer_Grammar
     bool Grammar::ApplyTo(
         std::set<uint_fast64_t>& optimized_children,
         FPoptimizer_CodeTree::CodeTree& tree,
-        bool child_triggered) const
+        bool child_triggered,
+        bool recursion) const
     {
         bool changed_once = false;
+
+        if(!recursion)
+        {
+            std::cout << "Input: ";
+            DumpTree(tree);
+            std::cout << "\n";
+        }
 
         if(optimized_children.find(tree.Hash) == optimized_children.end())
         {
@@ -58,7 +66,7 @@ namespace FPoptimizer_Grammar
                     /* First optimize all children */
                     for(size_t a=0; a<tree.Params.size(); ++a)
                     {
-                        if( ApplyTo( optimized_children, *tree.Params[a].param ) )
+                        if( ApplyTo( optimized_children, *tree.Params[a].param, false, true ) )
                         {
                             changed = true;
                         }
@@ -106,7 +114,7 @@ namespace FPoptimizer_Grammar
         /* If any changes whatsoever were done, recurse the optimization to parents */
         if((child_triggered || changed_once) && tree.Parent)
         {
-            //ApplyTo( optimized_children, *tree.Parent, true );
+            //ApplyTo( optimized_children, *tree.Parent, true , true);
 
             /* As this step may cause the tree we were passed to actually not exist,
              * don't touch the tree after this.
@@ -115,12 +123,12 @@ namespace FPoptimizer_Grammar
              */
         }
 
-        /*if(!child_triggered)
+        if(!recursion)
         {
             std::cout << "Output: ";
             DumpTree(tree);
             std::cout << "\n";
-        }*/
+        }
 
         return changed_once;
     }
@@ -237,7 +245,7 @@ namespace FPoptimizer_Grammar
          *        and then Match(cAdd x) for (c+b) will fail,
          *        because there's no "a" there.
          *
-         * FIXME: Repetition and RestHolder are not observed either, yet.
+         * FIXME: Repetition are not observed either, yet.
          */
         switch(type)
         {
@@ -258,6 +266,7 @@ namespace FPoptimizer_Grammar
             case AnyParams:
             {
                 if(count > n_tree_params) return false;
+                if(recursion && count != n_tree_params) return false;
 
                 std::vector<ParamMatchSnapshot> position(count);
                 std::vector<bool>               used(count);
@@ -269,14 +278,22 @@ namespace FPoptimizer_Grammar
                     position[a].snapshot  = match;
                     position[a].parampos  = 0;
                     position[a].used      = used;
+
+                    if(param.opcode == RestHolder)
+                    {
+                        // RestHolders always match. They're filled afterwards.
+                        continue;
+                    }
+
                     size_t b = 0;
                 backtrack:
                     for(; b<n_tree_params; ++b)
                     {
                         if(!used[b])
                         {
-                            if(param.sign == tree.Params[b].sign
-                            && param.Match(*tree.Params[b].param, match))
+                            if(param.sign != tree.Params[b].sign) continue;
+
+                            if(param.Match(*tree.Params[b].param, match))
                             {
                                 used[b] = true;
                                 if(!recursion)
@@ -305,6 +322,28 @@ namespace FPoptimizer_Grammar
                 ok:;
                 }
                 // Match = no mismatch.
+
+                // Now feed any possible RestHolders the remaining parameters.
+                for(size_t a=0; a<count; ++a)
+                {
+                    const ParamSpec& param = pack.plist[index+a];
+                    if(param.opcode == RestHolder)
+                    {
+                        std::vector<uint_fast64_t>& RestList
+                            = match.RestMap[param.index]; // mark it up
+
+                        for(size_t b=0; b<n_tree_params; ++b)
+                            if(tree.Params[b].sign == param.sign && !used[b])
+                            {
+                                if(!recursion)
+                                    match.param_numbers.push_back(b);
+                                uint_fast64_t hash = tree.Params[b].param->Hash;
+                                RestList.push_back(hash);
+                                match.trees.insert(
+                                    std::make_pair(hash, tree.Params[b].param) );
+                            }
+                    }
+                }
                 return true;
             }
         }
@@ -315,6 +354,8 @@ namespace FPoptimizer_Grammar
         FPoptimizer_CodeTree::CodeTree& tree,
         MatchedParams::CodeTreeMatch& match) const
     {
+        assert(opcode != RestHolder); // RestHolders are supposed to be handler by the caller
+
         switch(OpcodeType(opcode))
         {
             case NumConstant:
@@ -355,16 +396,7 @@ namespace FPoptimizer_Grammar
                 return true;
             }
             case RestHolder:
-            {
-                // FIXME: Match at least something!
-                //  ... match.trees.insert(std::make_pair(tree.Hash, &tree));
-
-                return false;
-
-                match.RestMap[index] .size();
-
-                return true;
-            }
+                break;
             case SubFunction:
             {
                 return pack.flist[index].Match(tree, match);
@@ -496,11 +528,19 @@ namespace FPoptimizer_Grammar
         for(size_t a=0; a<count; ++a)
         {
             const ParamSpec& param = pack.plist[index+a];
-            FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
-            param.SynthesizeTree(*subtree, matcher, match);
-            subtree->Parent = &tree;
-            subtree->Rehash(false);
-            tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, param.sign) );
+            if(param.opcode == RestHolder)
+            {
+                // Add children directly to this tree
+                param.SynthesizeTree(tree, matcher, match);
+            }
+            else
+            {
+                FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
+                param.SynthesizeTree(*subtree, matcher, match);
+                subtree->Parent = &tree;
+                subtree->Recalculate_Hash_NoRecursion();
+                tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, param.sign) );
+            }
         }
 
         // Remove the indicated params
@@ -511,7 +551,9 @@ namespace FPoptimizer_Grammar
             delete tree.Params[num].param;
             tree.Params.erase(tree.Params.begin() + num);
         }
-        tree.Rehash(true);
+        tree.Sort();
+        //tree.Recalculate_Hash_NoRecursion();
+        tree.Rehash(true); // rehash this and its parents
     }
 
     void MatchedParams::ReplaceTree(
@@ -529,8 +571,9 @@ namespace FPoptimizer_Grammar
 
         tree.Parent = parent_backup;
 
-        tree.Rehash(false); // rehash children
-        tree.Rehash(true);  // rehash parents
+        tree.Sort();
+        //tree.Recalculate_Hash_NoRecursion();
+        tree.Rehash(true);  // rehash this and its parents
     }
 
     /* Synthesizes a new tree based on the given information
@@ -551,6 +594,11 @@ namespace FPoptimizer_Grammar
 
                 assert(i != match.RestMap.end());
 
+                /*std::cout << std::flush;
+                fprintf(stderr, "Restmap %u, sign %d, size is %u -- params %u\n",
+                    (unsigned) i->first, sign, (unsigned) i->second.size(),
+                    (unsigned) tree.Params.size());*/
+
                 for(size_t a=0; a<i->second.size(); ++a)
                 {
                     uint_fast64_t hash = i->second[a];
@@ -563,6 +611,8 @@ namespace FPoptimizer_Grammar
                     tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(
                         j->second->Clone(), sign) );
                 }
+                /*fprintf(stderr, "- params size became %u\n", (unsigned)tree.Params.size());
+                fflush(stderr);*/
                 break;
             }
             case SubFunction:
@@ -573,10 +623,20 @@ namespace FPoptimizer_Grammar
                 for(unsigned a=0; a<mitem.count; ++a)
                 {
                     const ParamSpec& param = pack.plist[mitem.index + a];
-                    FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
-                    param.SynthesizeTree(*subtree, matcher, match);
-                    subtree->Parent = &tree;
-                    tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, sign^param.sign) );
+                    if(param.opcode == RestHolder)
+                    {
+                        // Add children directly to this tree
+                        param.SynthesizeTree(tree, matcher, match);
+                    }
+                    else
+                    {
+                        FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
+                        param.SynthesizeTree(*subtree, matcher, match);
+                        subtree->Parent = &tree;
+                        subtree->Sort();
+                        subtree->Recalculate_Hash_NoRecursion();
+                        tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, sign^param.sign) );
+                    }
                 }
                 break;
             }
@@ -680,10 +740,15 @@ namespace FPoptimizer_Grammar
     }
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
     {
+        //std::cout << "/*" << tree.Depth << "*/";
         switch(tree.Opcode)
         {
             case cImmed: std::cout << tree.Value; return;
             case cVar:   std::cout << "Var" << tree.Var; return;
+            case cAdd: std::cout << '+'; break;
+            case cMul: std::cout << '*'; break;
+            case cAnd: std::cout << '&'; break;
+            case cOr: std::cout << '|'; break;
             default:
                 std::cout << FP_GetOpcodeName(tree.Opcode);
                 if(tree.Opcode == cFCall || tree.Opcode == cPCall)
@@ -711,9 +776,42 @@ namespace FPoptimizer_Grammar
         std::cout << "\n"
             "  Replacement: ";
         DumpParams(replacement);
-        std::cout << "\n"
+        std::cout << "\n";
+
+        std::cout <<
             "  Tree       : ";
         DumpTree(tree);
         std::cout << "\n";
+
+        for(std::map<unsigned, std::pair<uint_fast64_t, size_t> >::const_iterator
+            i = matchrec.NamedMap.begin(); i != matchrec.NamedMap.end(); ++i)
+        {
+            static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
+            std::cout << "           " << NamedHolderNames[i->first] << " = ";
+            DumpTree(*matchrec.trees.find(i->second.first)->second);
+            std::cout << std::endl;
+        }
+
+        for(std::map<unsigned, double>::const_iterator
+            i = matchrec.ImmedMap.begin(); i != matchrec.ImmedMap.end(); ++i)
+        {
+            static const char ImmedHolderNames[2][2] = {"%","&"};
+            std::cout << "           " << ImmedHolderNames[i->first] << " = ";
+            std::cout << i->second << std::endl;
+        }
+
+        for(std::map<unsigned, std::vector<uint_fast64_t> >::const_iterator
+            i = matchrec.RestMap.begin(); i != matchrec.RestMap.end(); ++i)
+        {
+            for(size_t a=0; a<i->second.size(); ++a)
+            {
+                uint_fast64_t hash = i->second[a];
+                std::cout << "         <" << i->first << "> = ";
+                DumpTree(*matchrec.trees.find(hash)->second);
+                std::cout << std::endl;
+            }
+            if(i->second.empty())
+                std::cout << "         <" << i->first << "> = <empty>\n";
+        }
     }
 }

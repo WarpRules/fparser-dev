@@ -169,9 +169,32 @@ cMul  1    :
 # In a mul-list, an occurrence of the immed 0 deletes all items
 cMul  0    -> 0
 # In a min-list, two identical components are reduced into one
-cMin x+    : x
+cMin x x    : x
 # In a max-list, two identical components are reduced into one
-cMax x+    : x
+cMax x x    : x
+
+# If both branches of an If() are identical, the test becomes unnecessary
+cIf [y x x] -> x
+# If the If() condition never matches, take the else-branch
+cIf [0 x y] -> y
+# If the If() condition always matches, take the then-branch
+cIf [1 x y] -> x
+# If the If() condition begins with a not, remove the not and swap the branches
+cIf [(cNot x) y z]    -> cIf [x z y]
+# Notnots are unnecessary in an If()
+cIf [(cNotNot x) y z] -> cIf [x y z]
+
+# There are more optimizations that could be done with If(),
+# but they are likely too specific.
+# For example:
+cIf [y       x           (cAdd x <1> ~<2>)] -> cAdd[x (cIf [y 0               (cAdd <1> ~<2>)])]
+cIf [y (cAdd x <1> ~<2>) (cAdd x <3> ~<4>)] -> cAdd[x (cIf [y (cAdd <1> ~<2>) (cAdd <3> ~<4>)])]
+cIf [y       x           (cMul x <1> ~<2>)] -> cMul[x (cIf [y 1               (cMul <1> ~<2>)])]
+cIf [y (cMul x <1> ~<2>) (cMul x <3> ~<4>)] -> cMul[x (cIf [y (cMul <1> ~<2>) (cMul <3> ~<4>)])]
+cIf [y       x           (cAnd x <1> ~<2>)] -> cAnd[x (cIf [y 0               (cAnd <1> ~<2>)])]
+cIf [y (cAnd x <1> ~<2>) (cAnd x <3> ~<4>)] -> cAnd[x (cIf [y (cAnd <1> ~<2>) (cAnd <3> ~<4>)])]
+cIf [y       x           (cOr  x <1> ~<2>)] -> cOr [x (cIf [y 1               (cOr  <1> ~<2>)])]
+cIf [y (cOr  x <1> ~<2>) (cOr  x <3> ~<4>)] -> cOr [x (cIf [y (cOr  <1> ~<2>) (cOr  <3> ~<4>)])]
 
 
 #### Flattening the topology of add/mul/min/max/and/or groups:
@@ -385,11 +408,11 @@ cMod[% &]    -> MOD(% &)
 #### Logical optimizations
 
 # Repetitions in and-lists don't help
-cAnd  x+    : x
-cAnd ~x+    : ~x
+cAnd  x x   : x
+cAnd ~x ~x  : ~x
 # Nor in or-lists
-cOr   x+    : x
-cOr  ~x+    : ~x
+cOr   x  x  : x
+cOr  ~x ~x  : ~x
 
 # In an and-list, having x and !x invalides the whole list
 cAnd x ~x   -> 0
@@ -410,6 +433,7 @@ cAnd (cEqual a b) (cEqual b c) (cEqual a c)  : (cEqual [a b]) (cEqual [b c])
 cAnd (cEqual a b) (cNEqual a b) -> 0
 #   (a==b) | (a!=b)          -- this statement is always true
 cOr  (cEqual a b) (cNEqual a b) -> 1
+#   (a==b) & (a==b)          -- one of these is redundant
 
 #   x==x -- this statement is always true (note: might be not when we have NaN, but we don't care)
 cEqual[x x]                     -> 1
@@ -481,11 +505,53 @@ cMul (cLog [(cMul x (cPow [z y]))]) ~(cLog[z])  -> cAdd [(cMul [(cLog [x]) ~(cLo
 cMul (cLog [(cMul x (cPow [% y]))]) ~LOG(%)     -> cAdd [(cMul [(cLog [x]) ~LOG(%)]) y]
 
 
+#### Trigonometric:
+# sin(x)/cos(x) = tan(x)
+cMul  (cSin[x]) ~(cCos[x]) :  (cTan[x])
+cMul ~(cSin[x])  (cCos[x]) : ~(cTan[x])
+cMul  (cSinh[x]) ~(cCosh[x]) :  (cTanh[x])
+cMul ~(cSinh[x])  (cCosh[x]) : ~(cTanh[x])
+
+# cos(pi/2 - x) = sin(x)
+cCos [(cAdd *(CONSTANT_PI 0.5) x)] -> cSin[x]
+# sin(pi/2 - x) = cos(x)
+cSin [(cAdd *(CONSTANT_PI 0.5) x)] -> cCos[x]
+# cot(pi/2 - x) = 1/tan(pi/2 - x) = tan(x)
+cMul [~(cTan [(cAdd *(CONSTANT_PI 0.5) x)])] -> cTan[x]
+
+# sin(x)^2 + cos(x)^2 = 1
+cAdd (cMul [(cSin[x]) (cSin[x])]) (cMul [(cCos[x]) (cCos[x])]) : 1
+cAdd (cPow [(cSin[x])         2]) (cPow [(cCos[x])         2]) : 1
+cAdd (cMul [(cSin[x]) (cSin[x])]) (cPow [(cCos[x])         2]) : 1
+cAdd (cPow [(cSin[x])         2]) (cMul [(cCos[x]) (cCos[x])]) : 1
+# 1/sin(x)^2 = cos(x)^2+1
+# 1/cos(x)^2 = sin(x)^2+1
+cMul ~(cSin[x]) ~(cSin[x])  : (cAdd 1 (cPow [(cCos[x]) 2]))
+cMul ~(cPow[ (cSin[x]) 2])  : (cAdd 1 (cPow [(cCos[x]) 2]))
+cMul ~(cCos[x]) ~(cCos[x])  : (cAdd 1 (cPow [(cSin[x]) 2]))
+cMul ~(cPow[ (cCos[x]) 2])  : (cAdd 1 (cPow [(cSin[x]) 2]))
+
+# sin(x)*cos(y) + cos(x)*sin(y) = sin(x+y)
+# sin(x)*cos(y) - cos(x)*sin(y) = sin(x-y)
+# cos(x)*cos(y) + sin(x)*sin(y) = cos(x+y)
+# cos(x)*cos(y) - sin(x)*sin(y) = cos(x-y)
+
+cAdd  (cMul (cSin[x]) (cCos[y]))  (cMul (cCos[x]) (cSin[y])) : (cSin (cAdd[x  y]))
+cAdd  (cMul (cSin[x]) (cCos[y])) ~(cMul (cCos[x]) (cSin[y])) : (cSin (cAdd[x ~y]))
+cAdd  (cMul (cCos[x]) (cCos[y]))  (cMul (cSin[x]) (cSin[y])) : (cCos (cAdd[x  y]))
+cAdd  (cMul (cCos[x]) (cCos[y])) ~(cMul (cSin[x]) (cSin[y])) : (cCos (cAdd[x ~y]))
+
+cAdd ~(cMul (cSin[x]) (cCos[y])) ~(cMul (cCos[x]) (cSin[y])) : ~(cSin (cAdd[x  y]))
+cAdd ~(cMul (cCos[x]) (cCos[y])) ~(cMul (cSin[x]) (cSin[y])) : ~(cCos (cAdd[x  y]))
+cAdd ~(cMul (cCos[x]) (cCos[y]))  (cMul (cSin[x]) (cSin[y])) : ~(cCos (cAdd[x ~y]))
+# This one is redudant, I think:
+#cAdd ~(cMul (cSin[x]) (cCos[y]))  (cMul (cCos[x]) (cSin[y])) : ~(cSin (cAdd[x ~y]))
+
 #### Polynomic:
 # x*y + z*y = (x+z)*y
 # x/y + z/y = (x+z)/y
-cAdd (cMul  y <1>) (cMul  y <2>)  : (cMul [ y (cAdd <1> <2>)])
-cAdd (cMul ~y <1>) (cMul ~y <2>)  : (cMul [~y (cAdd <1> <2>)])
+cAdd (cMul  y <1> ~<3>) (cMul  y <2> ~<4>)  : (cMul [ y (cAdd (cMul <1> ~<3>) (cMul <2> ~<4>))])
+cAdd (cMul ~y <1> ~<3>) (cMul ~y <2> ~<4>)  : (cMul [~y (cAdd (cMul <1> ~<3>) (cMul <2> ~<4>))])
 
 
 

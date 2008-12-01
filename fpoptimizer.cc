@@ -20,6 +20,8 @@ void FunctionParser::Optimize()
     if(isOptimized) return;
     CopyOnWrite();
 
+    PrintByteCode(std::cout);
+
     FPoptimizer_CodeTree::CodeTree* tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
@@ -40,11 +42,20 @@ void FunctionParser::Optimize()
         if(brk) break;
     }
 
+    tree->Sort_Recursive();
+
     std::vector<unsigned> byteCode;
     std::vector<double> immed;
-    size_t stacktop_cur = 0;
     size_t stacktop_max = 0;
-    tree->SynthesizeByteCode(byteCode, immed, stacktop_cur, stacktop_max);
+    tree->SynthesizeByteCode(byteCode, immed, stacktop_max);
+
+    delete tree;
+
+    std::cout << std::flush;
+    std::cerr << std::flush;
+    fprintf(stderr, "Estimated stacktop %u\n",
+        (unsigned)stacktop_max);
+    fflush(stderr);
 
     if(data->StackSize < stacktop_max)
     {
@@ -54,6 +65,8 @@ void FunctionParser::Optimize()
 
     data->ByteCode.swap(byteCode);
     data->Immed.swap(immed);
+
+    PrintByteCode(std::cout);
 
     isOptimized = true;
 }

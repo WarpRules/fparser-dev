@@ -80,9 +80,9 @@ double f2(double* p)
 }
 double f3(double* p)
 {
-#define P3 "1+2-3.1*4e2/.5 + x*x+y*y+z*z", "x,y,z", f3, 3, -10, 10, .5, false
+#define P3 "(x=y & y=x)+  1+2-3.1*4e2/.5 + x*x+y*y+z*z", "x,y,z", f3, 3, -10, 10, .5, false
     double x = p[0], y = p[1], z = p[2];
-    return 1.0+2.0-3.1*4e2/.5 + x*x+y*y+z*z;
+    return (x==y && y==x)+ 1.0+2.0-3.1*4e2/.5 + x*x+y*y+z*z;
 }
 double f4(double* p)
 {
@@ -338,7 +338,7 @@ namespace
 {
     Test tests[] =
     {
-        { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
+        /*{ P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 },*/ { P9 },
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },

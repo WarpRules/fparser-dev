@@ -68,6 +68,142 @@ static const struct SequenceOpCode
 } AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub },
   MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
 
+class FPoptimizer_CodeTree::CodeTree::ByteCodeSynth
+{
+public:
+    ByteCodeSynth()
+        : ByteCode(), Immed(), StackTop(0), StackMax(0)
+    {
+    }
+
+    void Pull(std::vector<unsigned>& bc,
+              std::vector<double>&   imm,
+              size_t& StackTop_max)
+    {
+        ByteCode.swap(bc);
+        Immed.swap(imm);
+        StackTop_max = StackMax;
+    }
+
+    size_t GetByteCodeSize() const { return ByteCode.size(); }
+    size_t GetStackTop()     const { return StackTop; }
+
+    void PushVar(unsigned varno)
+    {
+        ByteCode.push_back(varno);
+        SetStackTop(StackTop+1);
+    }
+
+    void PushImmed(double immed)
+    {
+        ByteCode.push_back(cImmed);
+        Immed.push_back(immed);
+        SetStackTop(StackTop+1);
+    }
+
+    void StackTopIs(uint_fast64_t hash)
+    {
+        if(StackTop > 0)
+        {
+            StackHash[StackTop-1].first = true;
+            StackHash[StackTop-1].second = hash;
+        }
+    }
+
+    void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
+    {
+        SetStackTop(StackTop - eat_count);
+
+        if(opcode == cMul && ByteCode.back() == cDup)
+            ByteCode.back() = cSqr;
+        else
+            ByteCode.push_back(opcode);
+        SetStackTop(StackTop + produce_count);
+    }
+
+    void DoPopNMov(size_t targetpos, size_t srcpos)
+    {
+        SetStackTop(srcpos+1);
+        StackHash[targetpos] = StackHash[srcpos];
+        SetStackTop(targetpos+1);
+    }
+
+    void DoDup(size_t src_pos)
+    {
+        if(src_pos == StackTop-1)
+        {
+            ByteCode.push_back(cDup);
+        }
+        else
+        {
+            ByteCode.push_back(cFetch);
+            ByteCode.push_back(src_pos);
+        }
+        SetStackTop(StackTop + 1);
+        StackHash[StackTop-1] = StackHash[src_pos];
+    }
+
+    bool FindAndDup(uint_fast64_t hash)
+    {
+        for(size_t a=StackHash.size(); a-->0; )
+        {
+            if(StackHash[a].first && StackHash[a].second == hash)
+            {
+                DoDup(a);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void SynthIfStep1(size_t& ofs)
+    {
+        SetStackTop(StackTop-1); // the If condition was popped.
+
+        ofs = ByteCode.size();
+        ByteCode.push_back(cIf);
+        ByteCode.push_back(0); // code index
+        ByteCode.push_back(0); // Immed index
+    }
+    void SynthIfStep2(size_t& ofs)
+    {
+        SetStackTop(StackTop-1); // ignore the pushed then-branch result.
+
+        ByteCode[ofs+1] = ByteCode.size()+2;
+        ByteCode[ofs+2] = Immed.size();
+
+        ofs = ByteCode.size();
+        ByteCode.push_back(cJump);
+        ByteCode.push_back(0); // code index
+        ByteCode.push_back(0); // Immed index
+    }
+    void SynthIfStep3(size_t& ofs)
+    {
+        SetStackTop(StackTop-1); // ignore the pushed else-branch result.
+
+        ByteCode[ofs+1] = ByteCode.size()-1;
+        ByteCode[ofs+2] = Immed.size();
+
+        SetStackTop(StackTop+1); // one or the other was pushed.
+    }
+
+private:
+    void SetStackTop(size_t value)
+    {
+        StackTop = value;
+        if(StackTop > StackMax) StackMax = StackTop;
+        StackHash.resize(value);
+    }
+
+private:
+    std::vector<unsigned> ByteCode;
+    std::vector<double>   Immed;
+
+    std::vector<std::pair<bool/*known*/, uint_fast64_t/*hash*/> > StackHash;
+    size_t StackTop;
+    size_t StackMax;
+};
+
 namespace
 {
     using namespace FPoptimizer_CodeTree;
@@ -75,10 +211,7 @@ namespace
     bool AssembleSequence(
                   CodeTree& tree, long count,
                   const SequenceOpCode& sequencing,
-                  std::vector<unsigned> &ByteCode,
-                  std::vector<double>   &Immed,
-                  size_t& stacktop_cur,
-                  size_t& stacktop_max,
+                  CodeTree::ByteCodeSynth& synth,
                   size_t max_bytecode_grow_length);
 
     struct Subdivide_result
@@ -94,9 +227,7 @@ namespace
                   long count,
                   int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
                   const SequenceOpCode& sequencing,
-                  std::vector<unsigned> &ByteCode,
-                  size_t& stacktop_cur,
-                  size_t& stacktop_max);
+                  CodeTree::ByteCodeSynth& synth);
 
     Subdivide_result Subdivide_MakeResult(
                   const Subdivide_result& a,
@@ -106,9 +237,7 @@ namespace
                   unsigned cumulation_opcode,
                   unsigned cimulation_opcode_flip,
 
-                  std::vector<unsigned> &ByteCode,
-                  size_t& stacktop_cur,
-                  size_t& stacktop_max);
+                  CodeTree::ByteCodeSynth& synth);
 }
 
 
@@ -117,9 +246,24 @@ namespace FPoptimizer_CodeTree
     void CodeTree::SynthesizeByteCode(
         std::vector<unsigned>& ByteCode,
         std::vector<double>&   Immed,
-        size_t& stacktop_cur,
         size_t& stacktop_max)
     {
+        ByteCodeSynth synth;
+        SynthesizeByteCode(synth);
+
+        synth.Pull(ByteCode, Immed, stacktop_max);
+    }
+
+    void CodeTree::SynthesizeByteCode(ByteCodeSynth& synth)
+    {
+        // If the synth can already locate our operand in the stack,
+        // never mind synthesizing it again, just dup it.
+        if(synth.FindAndDup(Hash))
+        {
+            return;
+        }
+
+        /*
         #define AddCmd(op) do { \
             unsigned o = (op); \
             if(o == cMul && !ByteCode.empty() && ByteCode.back() == cDup) \
@@ -127,9 +271,14 @@ namespace FPoptimizer_CodeTree
             else \
                 ByteCode.push_back(o); \
         } while(0)
-        #define AddConst(v) do { \
+        #define PushConst(v) do { \
+            SimuPush(1); \
             ByteCode.push_back(cImmed); \
             Immed.push_back((v)); \
+        } while(0)
+        #define PushVar(v) do { \
+            SimuPush(1); \
+            AddCmd(v); \
         } while(0)
         #define SimuPush(n) stacktop_cur += (n)
         #define SimuPop(n) do { \
@@ -141,16 +290,17 @@ namespace FPoptimizer_CodeTree
             else { AddCmd(cFetch); AddCmd((n)); } \
             SimuPush(1); \
         } while(0)
+        */
 
         switch(Opcode)
         {
             case cVar:
-                SimuPush(1);
-                AddCmd(GetVar());
+                synth.PushVar(GetVar());
+                synth.StackTopIs(Hash);
                 break;
             case cImmed:
-                SimuPush(1);
-                AddConst(GetImmed());
+                synth.PushImmed(GetImmed());
+                synth.StackTopIs(Hash);
                 break;
             case cAdd:
             case cMul:
@@ -205,7 +355,7 @@ namespace FPoptimizer_CodeTree
 
                             bool success = AssembleSequence(
                                 *this, value, AddSequence,
-                                ByteCode,Immed, stacktop_cur,stacktop_max,
+                                synth,
                                 MAX_MULI_BYTECODE_LENGTH);
 
                             // Readd the token so that we don't need
@@ -227,7 +377,7 @@ namespace FPoptimizer_CodeTree
                     CodeTree*const & param = Params[a].param;
                     bool              sign = Params[a].sign;
 
-                    param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
+                    param->SynthesizeByteCode(synth);
                     ++n_stacked;
 
                     if(sign) // Is the operand negated/inverted?
@@ -238,14 +388,14 @@ namespace FPoptimizer_CodeTree
                             switch(Opcode)
                             {
                                 case cAdd:
-                                    AddCmd(cNeg);
+                                    synth.AddOperation(cNeg, 1); // stack state: -1+1 = +0
                                     break;
                                 case cMul:
-                                    AddCmd(cInv);
+                                    synth.AddOperation(cInv, 1); // stack state: -1+1 = +0
                                     break;
                                 case cAnd:
                                 case cOr:
-                                    AddCmd(cNot);
+                                    synth.AddOperation(cNot, 1); // stack state: -1+1 = +0
                                     break;
                             }
                             // Note: We could use RDiv or RSub when the first
@@ -262,15 +412,15 @@ namespace FPoptimizer_CodeTree
                             switch(Opcode)
                             {
                                 case cAdd:
-                                    AddCmd(cSub);
+                                    synth.AddOperation(cSub, 2); // stack state: -2+1 = -1
                                     break;
                                 case cMul:
-                                    AddCmd(cDiv);
+                                    synth.AddOperation(cDiv, 2); // stack state: -2+1 = -1
                                     break;
                                 case cAnd:
                                 case cOr:
-                                    AddCmd(cNot);
-                                    AddCmd(Opcode);
+                                    synth.AddOperation(cNot,   1);   // stack state: -1+1 = +0
+                                    synth.AddOperation(Opcode, 2); // stack state: -2+1 = -1
                                     break;
                             }
                             n_stacked = n_stacked - 2 + 1;
@@ -279,7 +429,7 @@ namespace FPoptimizer_CodeTree
                     else if(n_stacked > 1)
                     {
                         // Cumulate at the earliest opportunity.
-                        AddCmd(Opcode);
+                        synth.AddOperation(Opcode, 2); // stack state: -2+1 = -1
                         n_stacked = n_stacked - 2 + 1;
                     }
                 }
@@ -292,16 +442,16 @@ namespace FPoptimizer_CodeTree
                     {
                         case cAdd:
                         case cOr:
-                            AddConst(0);
+                            synth.PushImmed(0);
                             break;
                         case cMul:
                         case cAnd:
-                            AddConst(1);
+                            synth.PushImmed(1);
                             break;
                         case cMin:
                         case cMax:
-                            //AddConst(NaN);
-                            AddConst(0);
+                            //synth.PushImmed(NaN);
+                            synth.PushImmed(0);
                             break;
                     }
                     ++n_stacked;
@@ -318,78 +468,52 @@ namespace FPoptimizer_CodeTree
                 || !AssembleSequence( /* Optimize integer exponents */
                         *p0.param, p1.param->GetLongIntegerImmed(),
                         MulSequence,
-                        ByteCode, Immed, stacktop_cur, stacktop_max,
+                        synth,
                         MAX_POWI_BYTECODE_LENGTH)
                   )
                 {
-                    p0.param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-                    p1.param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-                    AddCmd(Opcode);
-                    SimuPop(1);
+                    p0.param->SynthesizeByteCode(synth);
+                    p1.param->SynthesizeByteCode(synth);
+                    synth.AddOperation(Opcode, 2);
                 }
                 break;
             }
             case cIf:
             {
+                size_t ofs;
                 // If the parameter amount is != 3, we're screwed.
-                Params[0].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max); // expression
-                SimuPop(1);
-
-                size_t ofs = ByteCode.size();
-                AddCmd(cIf);
-                AddCmd(0); // code index
-                AddCmd(0); // Immed index
-
-                Params[1].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max); // true branch
-                SimuPop(1);
-
-                ByteCode[ofs+1] = ByteCode.size()+2;
-                ByteCode[ofs+2] = Immed.size();
-
-                ofs = ByteCode.size();
-                AddCmd(cJump);
-                AddCmd(0); // code index
-                AddCmd(0); // Immed index
-
-                Params[2].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max); // false branch
-                SimuPop(1);
-
-                ByteCode[ofs+1] = ByteCode.size()-1;
-                ByteCode[ofs+2] = Immed.size();
-
-                SimuPush(1);
+                Params[0].param->SynthesizeByteCode(synth); // expression
+                synth.SynthIfStep1(ofs);
+                Params[1].param->SynthesizeByteCode(synth); // true branch
+                synth.SynthIfStep2(ofs);
+                Params[2].param->SynthesizeByteCode(synth); // false branch
+                synth.SynthIfStep3(ofs);
                 break;
             }
             case cFCall:
             {
                 // If the parameter count is invalid, we're screwed.
-                size_t was_stacktop = stacktop_cur;
                 for(size_t a=0; a<Params.size(); ++a)
-                    Params[a].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-                AddCmd(Opcode);
-                AddCmd(Funcno);
-                SimuPop(stacktop_cur - was_stacktop - 1);
+                    Params[a].param->SynthesizeByteCode(synth);
+                synth.AddOperation(Opcode, Params.size());
+                synth.AddOperation(Funcno, 0, 0);
                 break;
             }
             case cPCall:
             {
                 // If the parameter count is invalid, we're screwed.
-                size_t was_stacktop = stacktop_cur;
                 for(size_t a=0; a<Params.size(); ++a)
-                    Params[a].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-                AddCmd(Opcode);
-                AddCmd(Funcno);
-                SimuPop(stacktop_cur - was_stacktop - 1);
+                    Params[a].param->SynthesizeByteCode(synth);
+                synth.AddOperation(Opcode, Params.size());
+                synth.AddOperation(Funcno, 0, 0);
                 break;
             }
             default:
             {
                 // If the parameter count is invalid, we're screwed.
-                size_t was_stacktop = stacktop_cur;
                 for(size_t a=0; a<Params.size(); ++a)
-                    Params[a].param->SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
-                AddCmd(Opcode);
-                SimuPop(stacktop_cur - was_stacktop - 1);
+                    Params[a].param->SynthesizeByteCode(synth);
+                synth.AddOperation(Opcode, Params.size());
                 break;
             }
         }
@@ -458,29 +582,23 @@ namespace
     bool AssembleSequence(
         CodeTree& tree, long count,
         const SequenceOpCode& sequencing,
-        std::vector<unsigned> &ByteCode,
-        std::vector<double>   &Immed,
-        size_t& stacktop_cur,
-        size_t& stacktop_max,
+        CodeTree::ByteCodeSynth& synth,
         size_t max_bytecode_grow_length)
     {
-        const size_t bytecodesize_backup = ByteCode.size();
-        const size_t immedsize_backup    = Immed.size();
-        const size_t stacktopcur_backup  = stacktop_cur;
-        const size_t stacktopmax_backup  = stacktop_max;
+        CodeTree::ByteCodeSynth backup = synth;
+        const size_t bytecodesize_backup = synth.GetByteCodeSize();
 
         if(count == 0)
         {
-            SimuPush(1);
-            AddConst(sequencing.basevalue);
+            synth.PushImmed(sequencing.basevalue);
         }
         else
         {
-            tree.SynthesizeByteCode(ByteCode, Immed, stacktop_cur, stacktop_max);
+            tree.SynthesizeByteCode(synth);
 
             if(count < 0)
             {
-                AddCmd(sequencing.op_flip);
+                synth.AddOperation(sequencing.op_flip, 1);
                 count = -count;
             }
 
@@ -502,11 +620,11 @@ namespace
                 cache[1] = 1; // We have this value already.
                 PlanNtimesCache(count, cache, cache_needed, 1);
 
-                cache[1] = stacktop_cur-1;
+                cache[1] = synth.GetStackTop()-1;
                 for(int n=2; n<POWI_CACHE_SIZE; ++n)
                     cache[n] = -1; /* Stack location for each component */
 
-                size_t stacktop_desired = stacktop_cur;
+                size_t stacktop_desired = synth.GetStackTop();
 
                 /*// Cache all the required components
                 for(int n=2; n<POWI_CACHE_SIZE; ++n)
@@ -515,7 +633,7 @@ namespace
                         FPO(fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]));
                         Subdivide_result res = AssembleSequence_Subdivide(
                             n, cache, cache_needed, sequencing,
-                            ByteCode, Immed, stacktop_cur, stacktop_max);
+                            synth);
                         FPO(fprintf(stderr, "Cache[%d] = %u,%d\n",
                             n, (unsigned)res.stackpos, res.cache_val));
                         cache[n] = res.stackpos;
@@ -531,27 +649,21 @@ namespace
                 FPO(fprintf(stderr, "Calculating result for %ld...\n", count));
                 Subdivide_result res = AssembleSequence_Subdivide(
                     count, cache, cache_needed, sequencing,
-                    ByteCode, stacktop_cur, stacktop_max);
+                    synth);
 
-                size_t n_excess = stacktop_cur - stacktop_desired;
+                size_t n_excess = synth.GetStackTop() - stacktop_desired;
                 if(n_excess > 0 || res.stackpos != stacktop_desired-1)
                 {
                     // Remove the cache values
-                    AddCmd(cPopNMov);
-                    AddCmd(stacktop_desired-1);
-                    AddCmd(res.stackpos);
-                    SimuPop(n_excess);
+                    synth.DoPopNMov(stacktop_desired-1, res.stackpos);
                 }
             }
         }
 
-        size_t bytecode_grow_amount = ByteCode.size() - bytecodesize_backup;
+        size_t bytecode_grow_amount = synth.GetByteCodeSize() - bytecodesize_backup;
         if(bytecode_grow_amount > max_bytecode_grow_length)
         {
-            ByteCode.resize(bytecodesize_backup);
-            Immed.resize(immedsize_backup);
-            stacktop_cur = stacktopcur_backup;
-            stacktop_max = stacktopmax_backup;
+            synth = backup;
             return false;
         }
         return true;
@@ -562,9 +674,7 @@ namespace
         long count,
         int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
         const SequenceOpCode& sequencing,
-        std::vector<unsigned> &ByteCode,
-        size_t& stacktop_cur,
-        size_t& stacktop_max)
+        CodeTree::ByteCodeSynth& synth)
     {
         if(count < POWI_CACHE_SIZE)
         {
@@ -602,31 +712,31 @@ namespace
             Subdivide_result half_res = AssembleSequence_Subdivide(
                 half,
                 cache, cache_needed, sequencing,
-                ByteCode, stacktop_cur,stacktop_max);
+                synth);
 
             // self-cumulate the subdivide result
             res = Subdivide_MakeResult(half_res, half_res, cache_needed,
                 sequencing.op_normal, sequencing.op_normal_flip,
-                ByteCode, stacktop_cur,stacktop_max);
+                synth);
         }
         else
         {
             Subdivide_result half_res = AssembleSequence_Subdivide(
                 half,
                 cache, cache_needed, sequencing,
-                ByteCode, stacktop_cur,stacktop_max);
+                synth);
 
             Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
                 otherhalf>0?otherhalf:-otherhalf,
                 cache, cache_needed, sequencing,
-                ByteCode, stacktop_cur,stacktop_max);
+                synth);
 
             FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", count, half, otherhalf));
 
             res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
                 otherhalf>0 ? sequencing.op_normal      : sequencing.op_inverse,
                 otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
-                ByteCode, stacktop_cur,stacktop_max);
+                synth);
         }
 
         if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
@@ -652,14 +762,12 @@ namespace
         int cache_needed[POWI_CACHE_SIZE],
         unsigned cumulation_opcode,
         unsigned cumulation_opcode_flip,
-        std::vector<unsigned> &ByteCode,
-        size_t& stacktop_cur,
-        size_t& stacktop_max)
+        CodeTree::ByteCodeSynth& synth)
     {
         FPO(fprintf(stderr, "== making result for (sp=%u, val=%d, needs=%d) and (sp=%u, val=%d, needs=%d), stacktop=%u\n",
             (unsigned)a.stackpos, a.cache_val, a.cache_val>=0 ? cache_needed[a.cache_val] : -1,
             (unsigned)b.stackpos, b.cache_val, b.cache_val>=0 ? cache_needed[b.cache_val] : -1,
-            (unsigned)stacktop_cur));
+            (unsigned)synth.GetStackTop()));
 
         // Figure out whether we can trample a and b
         int a_needed = 0;
@@ -675,11 +783,11 @@ namespace
         #define DUP_BOTH() do { \
             if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; flipped=!flipped; } \
             FPO(fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos)); \
-            SimuDupPushFrom(apos); \
-            SimuDupPushFrom(apos==bpos ? stacktop_cur-1 : bpos); } while(0)
+            synth.DoDup(apos); \
+            synth.DoDup(apos==bpos ? synth.GetStackTop()-1 : bpos); } while(0)
         #define DUP_ONE(p) do { \
             FPO(fprintf(stderr, "-> dup(%u) op\n", (unsigned)p)); \
-            SimuDupPushFrom(p); \
+            synth.DoDup(p); \
         } while(0)
 
         if(a_needed > 0 && b_needed > 0)
@@ -725,7 +833,7 @@ namespace
             //  Output: x A B x x R
 
             // if B is not at the top, dup both.
-            if(bpos != stacktop_cur-1)
+            if(bpos != synth.GetStackTop()-1)
                 DUP_BOTH();    // dup both
             else
             {
@@ -737,7 +845,7 @@ namespace
         {
             // B must be preserved, but A can be trampled over
             // This is a mirror image of the a_needed>0 case, so I'll cut the chase
-            if(apos != stacktop_cur-1)
+            if(apos != synth.GetStackTop()-1)
                 DUP_BOTH();
             else
                 DUP_ONE(bpos);
@@ -768,18 +876,18 @@ namespace
             //   Temp:  x x x C C   (c is both A and B)
             //  Output: x x x R
 
-            if(apos == bpos && apos == stacktop_cur-1)
+            if(apos == bpos && apos == synth.GetStackTop()-1)
                 DUP_ONE(apos); // scenario 6
-            else if(apos == stacktop_cur-1 && bpos == stacktop_cur-2)
+            else if(apos == synth.GetStackTop()-1 && bpos == synth.GetStackTop()-2)
             {
                 FPO(fprintf(stderr, "-> op\n")); // scenario 3
                 flipped=!flipped;
             }
-            else if(apos == stacktop_cur-2 && bpos == stacktop_cur-1)
+            else if(apos == synth.GetStackTop()-2 && bpos == synth.GetStackTop()-1)
                 FPO(fprintf(stderr, "-> op\n")); // scenario 4
-            else if(apos == stacktop_cur-1)
+            else if(apos == synth.GetStackTop()-1)
                 DUP_ONE(bpos); // scenario 1
-            else if(bpos == stacktop_cur-1)
+            else if(bpos == synth.GetStackTop()-1)
             {
                 DUP_ONE(apos); // scenario 2
                 flipped=!flipped;
@@ -788,11 +896,10 @@ namespace
                 DUP_BOTH(); // scenario 5
         }
         // Add them together.
-        AddCmd(flipped ? cumulation_opcode_flip : cumulation_opcode);
-        SimuPop(1);
+        synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
         // The return value will not need to be preserved.
         int cache_val = -1;
-        FPO(fprintf(stderr, "== producing %u:%d\n", (unsigned)(stacktop_cur-1), cache_val));
-        return Subdivide_result(stacktop_cur-1, cache_val);
+        FPO(fprintf(stderr, "== producing %u:%d\n", (unsigned)(synth.GetStackTop()-1), cache_val));
+        return Subdivide_result(synth.GetStackTop()-1, cache_val);
     }
 }

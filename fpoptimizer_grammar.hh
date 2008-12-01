@@ -120,7 +120,8 @@ namespace FPoptimizer_Grammar
 
         bool ApplyTo(std::set<uint_fast64_t>& optimized_children,
                      FPoptimizer_CodeTree::CodeTree& tree,
-                     bool child_triggered=false) const;
+                     bool child_triggered=false,
+                     bool recursion=false) const;
     };
 
     extern const struct GrammarPack

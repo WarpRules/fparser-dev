@@ -49,6 +49,7 @@ namespace FPoptimizer_CodeTree
 
         /* Internal operation */
         uint_fast64_t Hash;
+        size_t        Depth;
         CodeTree*     Parent;
     public:
         CodeTree();
@@ -60,17 +61,22 @@ namespace FPoptimizer_CodeTree
             const std::vector<double>& immed,
             const FunctionParser::Data& data);
 
+        class ByteCodeSynth;
         void SynthesizeByteCode(
             std::vector<unsigned>& byteCode,
             std::vector<double>&   immed,
-            size_t& stacktop_cur,
             size_t& stacktop_max);
+        void SynthesizeByteCode(ByteCodeSynth& synth);
 
         /* Regenerates the hash.
          * child_triggered=false: Recurse to children
          * child_triggered=true:  Recurse to parents
          */
         void Rehash(bool child_triggered);
+        void Recalculate_Hash_NoRecursion();
+
+        void Sort();
+        void Sort_Recursive();
 
         /* Clones the tree. (For parameter duplication) */
         CodeTree* Clone();
@@ -87,7 +93,6 @@ namespace FPoptimizer_CodeTree
         void NotTheImmed() { if(IsImmed()) Value = Value == 0.0; }
 
     private:
-        void Recalculate_Hash_NoRecursion();
         void ConstantFolding();
 
     private:

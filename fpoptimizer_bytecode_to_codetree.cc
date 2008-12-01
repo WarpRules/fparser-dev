@@ -86,6 +86,7 @@ namespace FPoptimizer_CodeTree
             CodeTree* result = stack.back();
             stack.resize(stack.size()-1);
             result->Rehash(false);
+            result->Sort_Recursive();
             return result;
         }
 

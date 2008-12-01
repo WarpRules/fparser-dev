@@ -15,6 +15,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <set>
 #include <algorithm>
 #include <assert.h>
 
@@ -48,6 +49,9 @@ namespace GrammarData
 
         void RecursivelySetParamMatchingType(ParamMatchingType t);
         bool EnsureNoInversions();
+        bool EnsureNoVariableCoverageParams_InPositionalParamLists();
+        bool EnsureNoRepeatedRestHolders();
+        bool EnsureNoRepeatedRestHolders(std::set<unsigned>& used);
 
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
@@ -207,6 +211,56 @@ namespace GrammarData
         for(size_t a=0; a<Params.size(); ++a)
             if(Params[a]->Negated)
                 return false;
+        return true;
+    }
+    
+    bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
+    {
+        if(Type != PositionalParams) return true;
+        
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == RestHolder)
+                return false;
+            if(Params[a]->MinimumRepeat != 1
+            || Params[a]->AnyRepetition)
+                return false;
+            
+            if(Params[a]->Opcode == SubFunction)
+                if(!Params[a]->Func->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
+                    return false;
+        }
+        return true;
+    }
+    
+    bool MatchedParams::EnsureNoRepeatedRestHolders()
+    {
+        std::set<unsigned> Used_RestHolders;
+        return EnsureNoRepeatedRestHolders(Used_RestHolders);
+    }
+    
+    bool MatchedParams::EnsureNoRepeatedRestHolders(std::set<unsigned>& used)
+    {
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            switch(SpecialOpcode(Params[a]->Opcode))
+            {
+                case RestHolder:
+                    if(used.find(Params[a]->Index) != used.end()) return false;
+                    used.insert(Params[a]->Index);
+                    break;
+                case NumConstant:
+                case ImmedHolder:
+                case NamedHolder:
+                    break;
+                case SubFunction:
+                    if(!Params[a]->Func->Params.EnsureNoRepeatedRestHolders(used))
+                        return false;
+                    break;
+                default: // GroupFunction:
+                    break;
+            }
+        }
         return true;
     }
 
@@ -733,7 +787,7 @@ static GrammarDumper dumper;
 %token SUBST_OP_ARROW
 
 %type <r> substitution
-%type <f> function
+%type <f> function function_match
 %type <p> paramlist
 %type <a> param
 
@@ -749,7 +803,7 @@ static GrammarDumper dumper;
     ;
 
     substitution:
-      function SUBST_OP_ARROW param NEWLINE
+      function_match SUBST_OP_ARROW param NEWLINE
       /* Entire function is changed into the particular param */
       {
         $3->RecursivelySetParamMatchingType(PositionalParams);
@@ -758,7 +812,7 @@ static GrammarDumper dumper;
         delete $1;
       }
 
-    | function SUBST_OP_ARROW function NEWLINE
+    | function_match SUBST_OP_ARROW function NEWLINE
       /* Entire function changes, the param_notinv_list is rewritten */
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
@@ -770,7 +824,7 @@ static GrammarDumper dumper;
         delete $1;
       }
 
-    | function SUBST_OP_COLON  paramlist NEWLINE
+    | function_match SUBST_OP_COLON  paramlist NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
         $3->RecursivelySetParamMatchingType(PositionalParams);
@@ -783,11 +837,22 @@ static GrammarDumper dumper;
                 yyerror("Can have no inversions"); YYERROR;
             }
         }
-
+        
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
+    ;
+    
+    function_match:
+       function
+       {
+           if(!$1->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
+           {
+               yyerror("Variable coverage parameters, such as x* or <1>, must not occur in bracketed param lists on the matching side"); YYERROR;
+           }
+           $$ = $1;
+       }
     ;
 
     function:
@@ -804,6 +869,10 @@ static GrammarDumper dumper;
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
+         if(!$3->EnsureNoRepeatedRestHolders())
+         {
+             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+         }
          $$ = new GrammarData::FunctionType($1, *$3);
          delete $3;
        }
@@ -818,6 +887,10 @@ static GrammarDumper dumper;
              {
                  yyerror("Can have no inversions"); YYERROR;
              }
+         }
+         if(!$2->EnsureNoRepeatedRestHolders())
+         {
+             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
          $$ = new GrammarData::FunctionType($1, *$2->SetType(AnyParams));
          delete $2;
