@@ -48,12 +48,12 @@ namespace FPoptimizer_Grammar
     {
         bool changed_once = false;
 
-        if(!recursion)
+        /*if(!recursion)
         {
             std::cout << "Input: ";
             DumpTree(tree);
             std::cout << "\n";
-        }
+        }*/
 
         if(optimized_children.find(tree.Hash) == optimized_children.end())
         {
@@ -123,12 +123,12 @@ namespace FPoptimizer_Grammar
              */
         }
 
-        if(!recursion)
+        /*if(!recursion)
         {
             std::cout << "Output: ";
             DumpTree(tree);
             std::cout << "\n";
-        }
+        }*/
 
         return changed_once;
     }
@@ -565,11 +565,9 @@ namespace FPoptimizer_Grammar
         // Note: The tree is still constructed using the holders indicated in "match".
         std::vector<FPoptimizer_CodeTree::CodeTree::Param> OldParams = tree.Params;
         tree.Params.clear();
-        FPoptimizer_CodeTree::CodeTree* parent_backup = tree.Parent;
-
         pack.plist[index].SynthesizeTree(tree, matcher, match);
-
-        tree.Parent = parent_backup;
+        for(size_t a=0; a<OldParams.size(); ++a)
+            delete OldParams[a].param;
 
         tree.Sort();
         //tree.Recalculate_Hash_NoRecursion();
@@ -608,8 +606,9 @@ namespace FPoptimizer_Grammar
 
                     assert(j != match.trees.end());
 
-                    tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(
-                        j->second->Clone(), sign) );
+                    FPoptimizer_CodeTree::CodeTree::Param p(j->second->Clone(), sign);
+                    p.param->Parent = &tree;
+                    tree.Params.push_back(p);
                 }
                 /*fprintf(stderr, "- params size became %u\n", (unsigned)tree.Params.size());
                 fflush(stderr);*/
@@ -632,10 +631,11 @@ namespace FPoptimizer_Grammar
                     {
                         FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
                         param.SynthesizeTree(*subtree, matcher, match);
-                        subtree->Parent = &tree;
                         subtree->Sort();
                         subtree->Recalculate_Hash_NoRecursion();
-                        tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, sign^param.sign) );
+                        FPoptimizer_CodeTree::CodeTree::Param p(subtree, sign^param.sign) ;
+                        p.param->Parent = &tree;
+                        tree.Params.push_back(p);
                     }
                 }
                 break;
@@ -666,7 +666,10 @@ namespace FPoptimizer_Grammar
                     }
                     tree.Params = j->second->Params;
                     for(size_t a=0; a<tree.Params.size(); ++a)
+                    {
                         tree.Params[a].param = tree.Params[a].param->Clone();
+                        tree.Params[a].param->Parent = &tree;
+                    }
                     break;
                 }
                 // passthru; x+ is synthesized as the number, not as the tree
@@ -741,25 +744,35 @@ namespace FPoptimizer_Grammar
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
     {
         //std::cout << "/*" << tree.Depth << "*/";
+        const char* sep2 = "";
         switch(tree.Opcode)
         {
             case cImmed: std::cout << tree.Value; return;
             case cVar:   std::cout << "Var" << tree.Var; return;
-            case cAdd: std::cout << '+'; break;
-            case cMul: std::cout << '*'; break;
-            case cAnd: std::cout << '&'; break;
-            case cOr: std::cout << '|'; break;
+            case cAdd: sep2 = " +"; break;
+            case cMul: sep2 = " *"; break;
+            case cAnd: sep2 = " &&"; break;
+            case cOr: sep2 = " or"; break;
             default:
                 std::cout << FP_GetOpcodeName(tree.Opcode);
                 if(tree.Opcode == cFCall || tree.Opcode == cPCall)
                     std::cout << ':' << tree.Funcno;
         }
         std::cout << '(';
+        if(tree.Params.size() <= 1) std::cout << (sep2+1) << ' ';
         for(size_t a=0; a<tree.Params.size(); ++a)
         {
             if(a > 0) std::cout << ' ';
             if(tree.Params[a].sign) std::cout << '~';
+            
             DumpTree(*tree.Params[a].param);
+            
+            if(tree.Params[a].param->Parent != &tree)
+            {
+                std::cout << "(?""?""?))";
+            }
+            
+            if(a+1 < tree.Params.size()) std::cout << sep2;
         }
         std::cout << ')';
     }

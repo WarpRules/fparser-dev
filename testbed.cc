@@ -234,10 +234,15 @@ double f26(double* p)
 
 double f27(double* p)
 {
+/*
 #define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", f27, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
     return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+
         1.0/tan(x)+1.0/sin(x) + pow(x,y);
+*/
+#define P27 "cot(x) + csc(y) + x", "x,y", f27, 2, .1, .9, .025, false
+    const double x = p[0], y = p[1];
+    return 1.0/tan(x) + 1.0/sin(y) + x;
 }
 
 double f28(double* p)
@@ -338,7 +343,7 @@ namespace
 {
     Test tests[] =
     {
-        /*{ P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 },*/ { P9 },
+        { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },

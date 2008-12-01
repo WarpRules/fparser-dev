@@ -149,7 +149,10 @@ namespace FPoptimizer_CodeTree
         }
         result->Params = Params;
         for(size_t a=0; a<Params.size(); ++a)
+        {
             result->Params[a].param = Params[a].param->Clone();
+            result->Params[a].param->Parent = result;
+        }
         result->Hash   = Hash;
         result->Depth  = Depth;
         result->Parent = Parent;
