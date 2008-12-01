@@ -41,25 +41,6 @@ namespace FPoptimizer_Grammar
 
     /***/
 
-    struct ParamSpec
-    {
-        OpcodeType opcode : 16;
-        bool     negated   : 1;
-        TransformationType
-           transformation  : 3;
-        unsigned minrepeat : 3;
-        bool     anyrepeat : 1;
-
-        // For NumConstant:   index to clist[]
-        // For ImmedHolder:   index is the slot
-        // For RestHolder:    index is the slot
-        // For NamedHolder:   index is the slot
-        // For Function:      index to flist[]
-        // For anything else
-        //  =  GroupFunction: index,count to plist[]
-        unsigned count : 8;
-        unsigned index : 16;
-    };
     struct MatchedParams
     {
         ParamMatchingType type : 8;
@@ -78,11 +59,39 @@ namespace FPoptimizer_Grammar
         void ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree,
                          const MatchedParams& matcher, CodeTreeMatch& match) const;
     };
+
+    struct ParamSpec
+    {
+        OpcodeType opcode : 16;
+        bool     sign     : 1;
+        TransformationType
+           transformation  : 3;
+        unsigned minrepeat : 3;
+        bool     anyrepeat : 1;
+
+        // For NumConstant:   index to clist[]
+        // For ImmedHolder:   index is the slot
+        // For RestHolder:    index is the slot
+        // For NamedHolder:   index is the slot
+        // For SubFunction:   index to flist[]
+        // For anything else
+        //  =  GroupFunction: index,count to plist[]
+        unsigned count : 8;
+        unsigned index : 16;
+
+        bool Match(FPoptimizer_CodeTree::CodeTree& tree,
+                   MatchedParams::CodeTreeMatch& match) const;
+
+        double GetConst(MatchedParams::CodeTreeMatch& match, bool& impossible) const;
+    };
     struct Function
     {
         OpcodeType opcode : 16;
         // index to mlist[]
         unsigned   index  : 16;
+
+        bool Match(FPoptimizer_CodeTree::CodeTree& tree,
+                   MatchedParams::CodeTreeMatch& match) const;
     };
     struct Rule
     {

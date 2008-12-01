@@ -8,7 +8,9 @@ namespace FPoptimizer_Grammar
 {
     class Grammar;
     class Rule;
+    class Function;
     class MatchedParams;
+    class ParamSpec;
 }
 namespace FPoptimizer_CodeTree
 {
@@ -19,6 +21,8 @@ namespace FPoptimizer_CodeTree
         friend class CodeTreeParserData;
         friend class FPoptimizer_Grammar::Grammar;
         friend class FPoptimizer_Grammar::Rule;
+        friend class FPoptimizer_Grammar::Function;
+        friend class FPoptimizer_Grammar::ParamSpec;
         friend class FPoptimizer_Grammar::MatchedParams;
     private:
         /* Describing the codetree node */

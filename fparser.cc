@@ -1072,7 +1072,7 @@ double FunctionParser::Eval(const double* Vars)
           case   cLog: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
                        Stack[SP] = log(Stack[SP]); break;
           case  cLog2: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
-                       Stack[SP] = log(Stack[SP]) / 0.6931471805599453094;
+                       Stack[SP] = log(Stack[SP]) * 1.4426950408889634074;
                        //Stack[SP] = log2(Stack[SP]);
                        break;
           case cLog10: if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
