@@ -21,7 +21,8 @@ namespace
         1, /* 8 */
         0.0 / 0.0, /* 9 */
         0.0 / 0.0, /* 10 */
-        2, /* 11 */
+        0, /* 11 */
+        2, /* 12 */
     };
 
     const ParamSpec plist[] =
@@ -272,7 +273,7 @@ namespace
         {ImmedHolder , false, None  , 1, false, 0,	1	}, /* 243    	*/
         {cPow        , false, None  , 1, false, 2,	242	}, /* 244    	*/
         {NamedHolder , false, None  , 1, false, 0,	0	}, /* 245 "x"	*/
-        {NumConstant , false, None  , 1, false, 0,	7	}, /* 246    	*/
+        {NumConstant , false, None  , 1, false, 0,	11	}, /* 246    	*/
         {NamedHolder , false, None  , 1, false, 0,	0	}, /* 247 "x"	*/
         {NumConstant , false, None  , 1, false, 0,	8	}, /* 248    	*/
         {SubFunction , true , None  , 1, false, 0,	130	}, /* 249    	*/
@@ -316,13 +317,13 @@ namespace
         {SubFunction , false, None  , 1, false, 0,	150	}, /* 287    	*/
         {SubFunction , false, None  , 1, false, 0,	151	}, /* 288    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 289    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 290    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 290    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 291    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 292    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 292    	*/
         {SubFunction , false, None  , 1, false, 0,	152	}, /* 293    	*/
         {SubFunction , false, None  , 1, false, 0,	153	}, /* 294    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 295    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 296    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 296    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 297    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 298    	*/
         {SubFunction , false, None  , 1, false, 0,	155	}, /* 299    	*/
@@ -482,7 +483,7 @@ namespace
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 453    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 454    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 455    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 456    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 456    	*/
         {SubFunction , false, None  , 1, false, 0,	224	}, /* 457    	*/
         {SubFunction , false, None  , 1, false, 0,	225	}, /* 458    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 459    	*/
@@ -732,7 +733,7 @@ namespace
         {SubFunction , true , None  , 1, false, 0,	14	}, /* 703    	*/
         {SubFunction , true , None  , 1, false, 0,	14	}, /* 704    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 705    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 706    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 706    	*/
         {NumConstant , false, None  , 1, false, 0,	8	}, /* 707    	*/
         {SubFunction , false, None  , 1, false, 0,	339	}, /* 708    	*/
         {SubFunction , false, None  , 1, false, 0,	340	}, /* 709    	*/
@@ -762,7 +763,7 @@ namespace
         {SubFunction , true , None  , 1, false, 0,	4	}, /* 733    	*/
         {SubFunction , true , None  , 1, false, 0,	4	}, /* 734    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 735    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 736    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 736    	*/
         {NumConstant , false, None  , 1, false, 0,	8	}, /* 737    	*/
         {SubFunction , false, None  , 1, false, 0,	354	}, /* 738    	*/
         {SubFunction , false, None  , 1, false, 0,	355	}, /* 739    	*/
@@ -798,18 +799,18 @@ namespace
         {ImmedHolder , false, Negate, 1, false, 0,	0	}, /* 769    	*/
         {SubFunction , false, None  , 1, false, 0,	371	}, /* 770    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 771    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 772    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 772    	*/
         {SubFunction , true , None  , 1, false, 0,	372	}, /* 773    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 774    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 775    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 775    	*/
         {NumConstant , false, None  , 1, false, 0,	8	}, /* 776    	*/
         {SubFunction , false, None  , 1, false, 0,	374	}, /* 777    	*/
         {SubFunction , false, None  , 1, false, 0,	375	}, /* 778    	*/
         {SubFunction , false, None  , 1, false, 0,	4	}, /* 779    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 780    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 780    	*/
         {SubFunction , true , None  , 1, false, 0,	376	}, /* 781    	*/
         {SubFunction , false, None  , 1, false, 0,	14	}, /* 782    	*/
-        {NumConstant , false, None  , 1, false, 0,	11	}, /* 783    	*/
+        {NumConstant , false, None  , 1, false, 0,	12	}, /* 783    	*/
         {NumConstant , false, None  , 1, false, 0,	8	}, /* 784    	*/
         {SubFunction , false, None  , 1, false, 0,	378	}, /* 785    	*/
         {SubFunction , false, None  , 1, false, 0,	379	}, /* 786    	*/
@@ -921,18 +922,24 @@ namespace
         {NumConstant , false, None  , 1, false, 0,	4	}, /* 892    	*/
         {RestHolder  , false, None  , 1, false, 0,	1	}, /* 893    	*/
         {SubFunction , false, None  , 1, false, 0,	474	}, /* 894    	*/
-        {SubFunction , false, None  , 1, false, 0,	9	}, /* 895    	*/
-        {NumConstant , false, None  , 1, false, 0,	2	}, /* 896    	*/
-        {SubFunction , false, None  , 1, false, 0,	11	}, /* 897    	*/
-        {SubFunction , false, None  , 1, false, 0,	8	}, /* 898    	*/
-        {NumConstant , true , None  , 1, false, 0,	5	}, /* 899    	*/
-        {RestHolder  , false, None  , 1, false, 0,	1	}, /* 900    	*/
-        {NumConstant , true , None  , 1, false, 0,	4	}, /* 901    	*/
-        {RestHolder  , false, None  , 1, false, 0,	1	}, /* 902    	*/
-        {SubFunction , false, None  , 1, false, 0,	13	}, /* 903    	*/
-        {SubFunction , false, None  , 1, false, 0,	3	}, /* 904    	*/
-        {SubFunction , false, None  , 1, false, 0,	0	}, /* 905    	*/
-        {SubFunction , false, None  , 1, false, 0,	25	}, /* 906    	*/
+        {NamedHolder , false, None  , 1, false, 0,	0	}, /* 895 "x"	*/
+        {NamedHolder , false, None  , 1, false, 0,	0	}, /* 896 "x"	*/
+        {SubFunction , false, None  , 1, false, 0,	33	}, /* 897    	*/
+        {SubFunction , false, None  , 1, false, 0,	9	}, /* 898    	*/
+        {NumConstant , false, None  , 1, false, 0,	2	}, /* 899    	*/
+        {SubFunction , false, None  , 1, false, 0,	11	}, /* 900    	*/
+        {SubFunction , false, None  , 1, false, 0,	8	}, /* 901    	*/
+        {NumConstant , true , None  , 1, false, 0,	5	}, /* 902    	*/
+        {RestHolder  , false, None  , 1, false, 0,	1	}, /* 903    	*/
+        {NumConstant , true , None  , 1, false, 0,	4	}, /* 904    	*/
+        {RestHolder  , false, None  , 1, false, 0,	1	}, /* 905    	*/
+        {NamedHolder , true , None  , 1, false, 0,	0	}, /* 906 "x"	*/
+        {NamedHolder , true , None  , 1, false, 0,	0	}, /* 907 "x"	*/
+        {SubFunction , true , None  , 1, false, 0,	33	}, /* 908    	*/
+        {SubFunction , false, None  , 1, false, 0,	13	}, /* 909    	*/
+        {SubFunction , false, None  , 1, false, 0,	3	}, /* 910    	*/
+        {SubFunction , false, None  , 1, false, 0,	0	}, /* 911    	*/
+        {SubFunction , false, None  , 1, false, 0,	25	}, /* 912    	*/
     };
 
     const MatchedParams mlist[] =
@@ -1244,7 +1251,7 @@ namespace
         {PositionalParams, 2, 569 }, /* 304 */
         {PositionalParams, 2, 571 }, /* 305 */
         {PositionalParams, 1, 573 }, /* 306 */
-        {AnyParams       , 1, 68 }, /* 307 */
+        {AnyParams       , 1, 246 }, /* 307 */
         {AnyParams       , 2, 78 }, /* 308 */
         {AnyParams       , 1, 574 }, /* 309 */
         {AnyParams       , 1, 575 }, /* 310 */
@@ -1261,7 +1268,7 @@ namespace
         {AnyParams       , 1, 591 }, /* 321 */
         {PositionalParams, 2, 592 }, /* 322 */
         {PositionalParams, 1, 594 }, /* 323 */
-        {PositionalParams, 1, 68 }, /* 324 */
+        {PositionalParams, 1, 246 }, /* 324 */
         {AnyParams       , 2, 595 }, /* 325 */
         {PositionalParams, 1, 599 }, /* 326 */
         {AnyParams       , 2, 600 }, /* 327 */
@@ -1448,17 +1455,21 @@ namespace
         {PositionalParams, 1, 894 }, /* 508 */
         {AnyParams       , 2, 895 }, /* 509 */
         {PositionalParams, 1, 897 }, /* 510 */
-        {AnyParams       , 2, 8 }, /* 511 */
-        {PositionalParams, 1, 898 }, /* 512 */
-        {AnyParams       , 2, 899 }, /* 513 */
-        {AnyParams       , 2, 901 }, /* 514 */
-        {AnyParams       , 1, 14 }, /* 515 */
-        {PositionalParams, 1, 903 }, /* 516 */
-        {AnyParams       , 1, 3 }, /* 517 */
-        {PositionalParams, 1, 904 }, /* 518 */
-        {AnyParams       , 1, 1 }, /* 519 */
-        {PositionalParams, 1, 905 }, /* 520 */
-        {PositionalParams, 1, 906 }, /* 521 */
+        {AnyParams       , 2, 898 }, /* 511 */
+        {PositionalParams, 1, 900 }, /* 512 */
+        {AnyParams       , 2, 8 }, /* 513 */
+        {PositionalParams, 1, 901 }, /* 514 */
+        {AnyParams       , 2, 902 }, /* 515 */
+        {AnyParams       , 2, 904 }, /* 516 */
+        {AnyParams       , 2, 906 }, /* 517 */
+        {PositionalParams, 1, 908 }, /* 518 */
+        {AnyParams       , 1, 14 }, /* 519 */
+        {PositionalParams, 1, 909 }, /* 520 */
+        {AnyParams       , 1, 3 }, /* 521 */
+        {PositionalParams, 1, 910 }, /* 522 */
+        {AnyParams       , 1, 1 }, /* 523 */
+        {PositionalParams, 1, 911 }, /* 524 */
+        {PositionalParams, 1, 912 }, /* 525 */
     };
 
     const Function flist[] =
@@ -1941,10 +1952,12 @@ namespace
         {cMul        , 509 }, /* 475 */
         {cMul        , 511 }, /* 476 */
         {cMul        , 513 }, /* 477 */
-        {cMul        , 514 }, /* 478 */
-        {cMul        , 515 }, /* 479 */
+        {cMul        , 515 }, /* 478 */
+        {cMul        , 516 }, /* 479 */
         {cMul        , 517 }, /* 480 */
         {cMul        , 519 }, /* 481 */
+        {cMul        , 521 }, /* 482 */
+        {cMul        , 523 }, /* 483 */
     };
 
     const Rule rlist[] =
@@ -2162,14 +2175,16 @@ namespace
         {ProduceNewTree, 470, 503 }, /* 210 */
         {ProduceNewTree, 471, 506 }, /* 211 */
         {ProduceNewTree, 473, 508 }, /* 212 */
-        {ProduceNewTree, 475, 510 }, /* 213 */
+        {ReplaceParams , 475, 510 }, /* 213 */
         {ProduceNewTree, 476, 512 }, /* 214 */
-        {ProduceNewTree, 477, 508 }, /* 215 */
-        {ProduceNewTree, 478, 506 }, /* 216 */
-        {ReplaceParams , 479, 516 }, /* 217 */
+        {ProduceNewTree, 477, 514 }, /* 215 */
+        {ProduceNewTree, 478, 508 }, /* 216 */
+        {ProduceNewTree, 479, 506 }, /* 217 */
         {ReplaceParams , 480, 518 }, /* 218 */
         {ReplaceParams , 481, 520 }, /* 219 */
-        {ProduceNewTree, 26, 521 }, /* 220 */
+        {ReplaceParams , 482, 522 }, /* 220 */
+        {ReplaceParams , 483, 524 }, /* 221 */
+        {ProduceNewTree, 26, 525 }, /* 222 */
     };
 }
 
@@ -2181,7 +2196,7 @@ namespace FPoptimizer_Grammar
         {
             {0, 17 }, /* 0 */
             {17, 192 }, /* 1 */
-            {209, 12 }, /* 2 */
+            {209, 14 }, /* 2 */
         }
     };
 }

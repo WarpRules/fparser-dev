@@ -611,6 +611,9 @@ cMul ~(cCos [x])      : (cSec [x])
 # In a mul-list, ~tan(x) = cot(x)
 cMul ~(cTan [x])      : (cCot [x])
 
+cMul x x              :  (cSqr[x])
+cMul ~x ~x            : ~(cSqr[x])
+
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology
 # Those are done in the bytecode generation automatically.
 

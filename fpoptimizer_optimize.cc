@@ -82,15 +82,6 @@ namespace FPoptimizer_Grammar
                                        tree.Opcode,
                                        OpcodeRuleCompare());
 
-                /*std::cout << "Equal-range for " << FP_GetOpcodeName(tree.Opcode)
-                           << " in " << index << "-" << (index+count)
-                           << " is "
-                           << range.first
-                           << "-"
-                           << range.second
-                           << " (size = " << (range.second-range.first)
-                           << ")\n";
-                */
                 while(range.first < range.second)
                 {
                     /* Check if this rule matches */
@@ -163,6 +154,7 @@ namespace FPoptimizer_Grammar
     void DumpFunction(const Function& input);
     void DumpParam(const ParamSpec& p);
     void DumpParams(const MatchedParams& mitem);
+
     /* Apply the rule to a given CodeTree */
     bool Rule::ApplyTo(
         FPoptimizer_CodeTree::CodeTree& tree) const
@@ -764,14 +756,14 @@ namespace FPoptimizer_Grammar
         {
             if(a > 0) std::cout << ' ';
             if(tree.Params[a].sign) std::cout << '~';
-            
+
             DumpTree(*tree.Params[a].param);
-            
+
             if(tree.Params[a].param->Parent != &tree)
             {
                 std::cout << "(?""?""?))";
             }
-            
+
             if(a+1 < tree.Params.size()) std::cout << sep2;
         }
         std::cout << ')';
