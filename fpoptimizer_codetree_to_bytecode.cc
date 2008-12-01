@@ -339,11 +339,9 @@ namespace FPoptimizer_CodeTree
         {
             case cVar:
                 synth.PushVar(GetVar());
-                synth.StackTopIs(Hash);
                 break;
             case cImmed:
                 synth.PushImmed(GetImmed());
-                synth.StackTopIs(Hash);
                 break;
             case cAdd:
             case cMul:

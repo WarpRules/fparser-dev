@@ -74,9 +74,9 @@ double f1(double* p)
 }
 double f2(double* p)
 {
-#define P2 " 2 * x+ sin ( x ) / 5", "x", f2, 1, -1000, 1000, .1, false
+#define P2 " 2 * x+ sin ( x ) / 5 + 2-sin(x)*sin(x)", "x", f2, 1, -1000, 1000, .1, false
     double x = p[0];
-    return 2*x+sin(x)/5;
+    return 2*x+sin(x)/5 + 2-sin(x)*sin(x);
 }
 double f3(double* p)
 {
@@ -86,9 +86,9 @@ double f3(double* p)
 }
 double f4(double* p)
 {
-#define P4 " ( ((( ( x) -( ((y) *2) -3)) )* 4)) ", "x,y", f4, 2, -100, 100, .5, false
+#define P4 " ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y) ", "x,y", f4, 2, -100, 100, .5, false
     double x = p[0], y = p[1];
-    return ( ((( ( x) -( ((y) *2) -3)) )* 4));
+    return ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y);
 }
 double f5(double* p)
 {

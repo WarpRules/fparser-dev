@@ -213,11 +213,11 @@ namespace GrammarData
                 return false;
         return true;
     }
-    
+
     bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
     {
         if(Type != PositionalParams) return true;
-        
+
         for(size_t a=0; a<Params.size(); ++a)
         {
             if(Params[a]->Opcode == RestHolder)
@@ -225,20 +225,20 @@ namespace GrammarData
             if(Params[a]->MinimumRepeat != 1
             || Params[a]->AnyRepetition)
                 return false;
-            
+
             if(Params[a]->Opcode == SubFunction)
                 if(!Params[a]->Func->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
                     return false;
         }
         return true;
     }
-    
+
     bool MatchedParams::EnsureNoRepeatedRestHolders()
     {
         std::set<unsigned> Used_RestHolders;
         return EnsureNoRepeatedRestHolders(Used_RestHolders);
     }
-    
+
     bool MatchedParams::EnsureNoRepeatedRestHolders(std::set<unsigned>& used)
     {
         for(size_t a=0; a<Params.size(); ++a)
@@ -837,13 +837,13 @@ static GrammarDumper dumper;
                 yyerror("Can have no inversions"); YYERROR;
             }
         }
-        
+
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
       }
     ;
-    
+
     function_match:
        function
        {
@@ -1027,6 +1027,10 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             int c2 = std::fgetc(stdin);
             if(c2 == '>') return SUBST_OP_ARROW;
             std::ungetc(c2, stdin);
+            if(c2 >= '0' && c2 <= '9')
+            {
+                goto GotNumeric;
+            }
             lval->transform = Negate;
             return UNARY_TRANSFORMATION;
         }
@@ -1065,6 +1069,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
         {
+        GotNumeric:;
             std::string NumBuf;
             NumBuf += (char)c;
             bool had_comma = false;

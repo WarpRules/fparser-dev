@@ -458,10 +458,10 @@ cMul ~(cLog[(cPow [% y])])  LOG(%)  : ~y
 cPow [CONSTANT_E (cLog[x])]   -> x
 
 # CONSTANT_E^(log(x)*y) = x^y
-cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   : x (cMul <1>)
+cPow [CONSTANT_E (cMul (cLog[x]) <1> ~<2>)]   : x (cMul <1> ~<2>)
 
 # z^(log(x)/log(z)*y) = x^y
-cPow [z (cMul ~(cLog[z]) (cLog[x]) <1>)] : x (cMul <1>)
+cPow [z (cMul ~(cLog[z]) (cLog[x]) <1> ~<2>)] : x (cMul <1> ~<2>)
 
 # log(x^z) = z * log(x)
 cLog [(cPow [x z])] -> cMul [z (cLog [x])]
@@ -493,16 +493,11 @@ cSin [(cAdd *(CONSTANT_PI 0.5) x)] -> cCos[x]
 cMul [~(cTan [(cAdd *(CONSTANT_PI 0.5) x)])] -> cTan[x]
 
 # sin(x)^2 + cos(x)^2 = 1
-cAdd (cMul [(cSin[x]) (cSin[x])]) (cMul [(cCos[x]) (cCos[x])]) : 1
-cAdd (cPow [(cSin[x])         2]) (cPow [(cCos[x])         2]) : 1
-cAdd (cMul [(cSin[x]) (cSin[x])]) (cPow [(cCos[x])         2]) : 1
-cAdd (cPow [(cSin[x])         2]) (cMul [(cCos[x]) (cCos[x])]) : 1
-# 1/sin(x)^2 = cos(x)^2+1
-# 1/cos(x)^2 = sin(x)^2+1
-cMul ~(cSin[x]) ~(cSin[x])  : (cAdd 1 (cPow [(cCos[x]) 2]))
-cMul ~(cPow[ (cSin[x]) 2])  : (cAdd 1 (cPow [(cCos[x]) 2]))
-cMul ~(cCos[x]) ~(cCos[x])  : (cAdd 1 (cPow [(cSin[x]) 2]))
-cMul ~(cPow[ (cCos[x]) 2])  : (cAdd 1 (cPow [(cSin[x]) 2]))
+cAdd  (cPow[ (cSin[x]) 2]) (cPow [(cCos[x]) 2]) : 1
+# y-sin(x)^2 = cos(x)^2+(y-1)
+# y-cos(x)^2 = sin(x)^2+(y-1)
+cAdd 1 ~(cPow[ (cSin[x]) 2]) : (cPow [(cCos[x]) 2])
+cAdd 1 ~(cPow[ (cCos[x]) 2]) : (cPow [(cSin[x]) 2])
 
 # sin(x)*cos(y) + cos(x)*sin(y) = sin(x+y)
 # sin(x)*cos(y) - cos(x)*sin(y) = sin(x-y)

@@ -52,13 +52,14 @@ namespace FPoptimizer_Grammar
     {
         bool changed_once = false;
 
-        /*if(!recursion)
+#ifdef DEBUG_SUBSTITUTIONS
+        if(!recursion)
         {
-            std::cout << "Input: ";
+            std::cout << "Input:  ";
             DumpTree(tree);
             std::cout << "\n";
-        }*/
-
+        }
+#endif
         if(optimized_children.find(tree.Hash) == optimized_children.end())
         {
             for(;;)
@@ -118,13 +119,14 @@ namespace FPoptimizer_Grammar
              */
         }
 
-        /*if(!recursion)
+#ifdef DEBUG_SUBSTITUTIONS
+        if(!recursion)
         {
             std::cout << "Output: ";
             DumpTree(tree);
             std::cout << "\n";
-        }*/
-
+        }
+#endif
         return changed_once;
     }
 
@@ -253,22 +255,47 @@ namespace FPoptimizer_Grammar
         {
             case PositionalParams:
             {
+                /*DumpTree(tree);
+                std::cout << "<->";
+                DumpParams(*this);
+                std::cout << " -- ";*/
+
                 if(count != n_tree_params) return false;
                 for(size_t a=0; a<count; ++a)
                 {
                     const ParamSpec& param = pack.plist[index+a];
-                    if(param.sign != tree.Params[a].sign) return false;
-                    if(!param.Match(*tree.Params[a].param, match)) return false;
+                    if(param.sign != tree.Params[a].sign
+                    || !param.Match(*tree.Params[a].param, match))
+                    {
+                        /*std::cout << " drats at " << a << "!\n";*/
+                        return false;
+                    }
                     if(!recursion)
                         match.param_numbers.push_back(a);
                 }
+                /*std::cout << " yay?\n";*/
                 // Match = no mismatch.
                 return true;
             }
             case AnyParams:
             {
                 if(count > n_tree_params) return false;
-                if(recursion && count != n_tree_params) return false;
+
+                bool HasRestHolders = false;
+                for(size_t a=0; a<count; ++a)
+                {
+                    const ParamSpec& param = pack.plist[index+a];
+                    if(param.opcode == RestHolder) { HasRestHolders = true; break; }
+                }
+
+                if(!HasRestHolders && recursion && count != n_tree_params)
+                {
+                    /*DumpTree(tree);
+                    std::cout << "<->";
+                    DumpParams(*this);
+                    std::cout << " -- fail due to recursion&&count!=n_tree_params";*/
+                    return false;
+                }
 
                 std::vector<ParamMatchSnapshot> position(count);
                 std::vector<bool>               used(count);
@@ -295,8 +322,19 @@ namespace FPoptimizer_Grammar
                         {
                             if(param.sign != tree.Params[b].sign) continue;
 
+                            /*std::cout << "Maybe ";
+                            DumpParam(param);
+                            std::cout << " <-> ";
+                            DumpTree(*tree.Params[b].param);
+                            std::cout << "...?\n";*/
+
                             if(param.Match(*tree.Params[b].param, match))
                             {
+                                /*std::cout << "woo... " << a << ", " << b << "\n";*/
+                                /* NamedHolders require a special treatment,
+                                 * because a repetition count may be issued
+                                 * for them.
+                                 */
                                 if(param.opcode == NamedHolder)
                                 {
                                     // Verify the MinRepeat & AnyRepeat case
@@ -308,7 +346,8 @@ namespace FPoptimizer_Grammar
                                         c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
                                         ++c)
                                     {
-                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash)
+                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
+                                        && tree.Params[c].sign == param.sign)
                                         {
                                             ++HadRepeat;
                                         }
@@ -316,17 +355,20 @@ namespace FPoptimizer_Grammar
                                     if(HadRepeat < MinRepeat)
                                         continue; // No sufficient repeat count here
 
-                                    HadRepeat = 0;
-                                    for(size_t c = b;
+                                    used[b] = true;
+                                    if(!recursion) match.param_numbers.push_back(b);
+
+                                    HadRepeat = 1;
+                                    for(size_t c = b+1;
                                         c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
                                         ++c)
                                     {
-                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash)
+                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
+                                        && tree.Params[c].sign == param.sign)
                                         {
                                             ++HadRepeat;
                                             used[c] = true;
-                                            if(!recursion)
-                                                match.param_numbers.push_back(c);
+                                            if(!recursion) match.param_numbers.push_back(c);
                                         }
                                     }
                                     match.NamedMap[param.index].second = HadRepeat;
@@ -335,13 +377,18 @@ namespace FPoptimizer_Grammar
                                 }
 
                                 used[b] = true;
-                                if(!recursion)
-                                    match.param_numbers.push_back(b);
+                                if(!recursion) match.param_numbers.push_back(b);
                                 position[a].parampos = b+1;
                                 goto ok;
                             }
                         }
                     }
+
+                    /*DumpParam(param);
+                    std::cout << " didn't match anything in ";
+                    DumpTree(tree);
+                    std::cout << "\n";*/
+
                     // No match for this param, try backtracking.
                     while(a > 0)
                     {
@@ -357,8 +404,12 @@ namespace FPoptimizer_Grammar
                         }
                     }
                     // If we cannot backtrack, break. No possible match.
+                    /*if(!recursion)
+                        std::cout << "Drats!\n";*/
                     return false;
                 ok:;
+                    /*if(!recursion)
+                        std::cout << "Match for param " << a << " at " << b << std::endl;*/
                 }
                 // Match = no mismatch.
 
