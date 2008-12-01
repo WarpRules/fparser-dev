@@ -51,7 +51,8 @@ namespace FPoptimizer_Grammar
         struct CodeTreeMatch;
 
         bool Match(FPoptimizer_CodeTree::CodeTree& tree,
-                   CodeTreeMatch& match) const;
+                   CodeTreeMatch& match,
+                   bool recursion = true) const;
 
         void ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree,
                            const MatchedParams& matcher, CodeTreeMatch& match) const;
@@ -79,10 +80,18 @@ namespace FPoptimizer_Grammar
         unsigned count : 8;
         unsigned index : 16;
 
-        bool Match(FPoptimizer_CodeTree::CodeTree& tree,
-                   MatchedParams::CodeTreeMatch& match) const;
+        bool Match(
+            FPoptimizer_CodeTree::CodeTree& tree,
+            MatchedParams::CodeTreeMatch& match) const;
 
-        double GetConst(MatchedParams::CodeTreeMatch& match, bool& impossible) const;
+        double GetConst(
+            MatchedParams::CodeTreeMatch& match,
+            bool& impossible) const;
+
+        void SynthesizeTree(
+            FPoptimizer_CodeTree::CodeTree& tree,
+            const MatchedParams& matcher,
+            MatchedParams::CodeTreeMatch& match) const;
     };
     struct Function
     {

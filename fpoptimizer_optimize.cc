@@ -1,10 +1,12 @@
 #include "fpoptimizer_grammar.hh"
 #include "fpoptimizer_codetree.hh"
 #include "fpoptimizer_consts.hh"
+#include "fpoptimizer_opcodename.hh"
 
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <assert.h>
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -34,6 +36,8 @@ namespace FPoptimizer_Grammar
             return pack.flist[rule.input_index].opcode < opcode;
         }
     };
+
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
 
     /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
@@ -70,6 +74,15 @@ namespace FPoptimizer_Grammar
                                        tree.Opcode,
                                        OpcodeRuleCompare());
 
+                /*std::cout << "Equal-range for " << FP_GetOpcodeName(tree.Opcode)
+                           << " in " << index << "-" << (index+count)
+                           << " is "
+                           << range.first
+                           << "-"
+                           << range.second
+                           << " (size = " << (range.second-range.first)
+                           << ")\n";
+                */
                 while(range.first < range.second)
                 {
                     /* Check if this rule matches */
@@ -93,13 +106,21 @@ namespace FPoptimizer_Grammar
         /* If any changes whatsoever were done, recurse the optimization to parents */
         if((child_triggered || changed_once) && tree.Parent)
         {
-            ApplyTo( optimized_children, *tree.Parent, true );
+            //ApplyTo( optimized_children, *tree.Parent, true );
+
             /* As this step may cause the tree we were passed to actually not exist,
              * don't touch the tree after this.
              *
              * FIXME: Is it even safe at all?
              */
         }
+
+        /*if(!child_triggered)
+        {
+            std::cout << "Output: ";
+            DumpTree(tree);
+            std::cout << "\n";
+        }*/
 
         return changed_once;
     }
@@ -120,29 +141,53 @@ namespace FPoptimizer_Grammar
         std::map<unsigned,
           std::vector<uint_fast64_t> > RestMap;
 
+        // Examples of each codetree
+        std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*> trees;
+
         CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
 
+    void DumpMatch(const Function& input,
+                   const FPoptimizer_CodeTree::CodeTree& tree,
+                   const MatchedParams& replacement,
+                   const MatchedParams::CodeTreeMatch& matchrec,
+                   bool DidMatch=true);
+    void DumpFunction(const Function& input);
+    void DumpParam(const ParamSpec& p);
+    void DumpParams(const MatchedParams& mitem);
     /* Apply the rule to a given CodeTree */
     bool Rule::ApplyTo(
         FPoptimizer_CodeTree::CodeTree& tree) const
     {
         const Function&      input  = pack.flist[input_index];
-        const MatchedParams& params = pack.mlist[input.index];
         const MatchedParams& repl   = pack.mlist[repl_index];
 
         MatchedParams::CodeTreeMatch matchrec;
-        if(input.Match(tree, matchrec))
+        if(input.opcode == tree.Opcode
+        && pack.mlist[input.index].Match(tree, matchrec, false))
         {
+            DumpMatch(input, tree, repl, matchrec);
+
+            const MatchedParams& params = pack.mlist[input.index];
             switch(type)
             {
                 case ReplaceParams:
                     repl.ReplaceParams(tree, params, matchrec);
+                    std::cout << "  Produced(.): ";
+                    DumpTree(tree);
+                    std::cout << "\n";
                     return true;
                 case ProduceNewTree:
                     repl.ReplaceTree(tree,   params, matchrec);
+                    std::cout << "  Produced(*): ";
+                    DumpTree(tree);
+                    std::cout << "\n";
                     return true;
             }
+        }
+        else
+        {
+            //DumpMatch(input, tree, repl, matchrec, false);
         }
         return false;
     }
@@ -175,7 +220,8 @@ namespace FPoptimizer_Grammar
      */
     bool MatchedParams::Match(
         FPoptimizer_CodeTree::CodeTree& tree,
-        MatchedParams::CodeTreeMatch& match) const
+        MatchedParams::CodeTreeMatch& match,
+        bool recursion) const
     {
         const size_t n_tree_params = tree.Params.size();
 
@@ -203,7 +249,8 @@ namespace FPoptimizer_Grammar
                     const ParamSpec& param = pack.plist[index+a];
                     if(param.sign != tree.Params[a].sign) return false;
                     if(!param.Match(*tree.Params[a].param, match)) return false;
-                    match.param_numbers.push_back(a);
+                    if(!recursion)
+                        match.param_numbers.push_back(a);
                 }
                 // Match = no mismatch.
                 return true;
@@ -232,7 +279,8 @@ namespace FPoptimizer_Grammar
                             && param.Match(*tree.Params[b].param, match))
                             {
                                 used[b] = true;
-                                match.param_numbers.push_back(b);
+                                if(!recursion)
+                                    match.param_numbers.push_back(b);
                                 position[a].parampos = b+1;
                                 goto ok;
                             }
@@ -293,6 +341,8 @@ namespace FPoptimizer_Grammar
             }
             case NamedHolder:
             {
+                if(minrepeat >= 2) return false;
+
                 /* FIXME: Repetitions */
                 std::map<unsigned, std::pair<uint_fast64_t, size_t> >::iterator
                     i = match.NamedMap.find(index);
@@ -301,11 +351,18 @@ namespace FPoptimizer_Grammar
                     return tree.Hash == i->second.first;
                 }
                 match.NamedMap[index] = std::make_pair(tree.Hash, 1);
+                match.trees.insert(std::make_pair(tree.Hash, &tree));
                 return true;
             }
             case RestHolder:
             {
                 // FIXME: Match at least something!
+                //  ... match.trees.insert(std::make_pair(tree.Hash, &tree));
+
+                return false;
+
+                match.RestMap[index] .size();
+
                 return true;
             }
             case SubFunction:
@@ -423,7 +480,7 @@ namespace FPoptimizer_Grammar
             }
         }
         if(transformation == Negate) result = -result;
-        if(transformation == Negate) result = 1.0 / result;
+        if(transformation == Invert) result = 1.0 / result;
         return result;
     }
 
@@ -433,6 +490,28 @@ namespace FPoptimizer_Grammar
         MatchedParams::CodeTreeMatch& match) const
     {
         // Replace the 0-level params indicated in "match" with the ones we have
+
+        // First, construct the tree recursively using the "match" info
+
+        for(size_t a=0; a<count; ++a)
+        {
+            const ParamSpec& param = pack.plist[index+a];
+            FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
+            param.SynthesizeTree(*subtree, matcher, match);
+            subtree->Parent = &tree;
+            subtree->Rehash(false);
+            tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, param.sign) );
+        }
+
+        // Remove the indicated params
+        std::sort(match.param_numbers.begin(), match.param_numbers.end());
+        for(size_t a=match.param_numbers.size(); a-->0; )
+        {
+            size_t num = match.param_numbers[a];
+            delete tree.Params[num].param;
+            tree.Params.erase(tree.Params.begin() + num);
+        }
+        tree.Rehash(true);
     }
 
     void MatchedParams::ReplaceTree(
@@ -442,5 +521,199 @@ namespace FPoptimizer_Grammar
     {
         // Replace the entire tree with one indicated by our Params[0]
         // Note: The tree is still constructed using the holders indicated in "match".
+        std::vector<FPoptimizer_CodeTree::CodeTree::Param> OldParams = tree.Params;
+        tree.Params.clear();
+        FPoptimizer_CodeTree::CodeTree* parent_backup = tree.Parent;
+
+        pack.plist[index].SynthesizeTree(tree, matcher, match);
+
+        tree.Parent = parent_backup;
+
+        tree.Rehash(false); // rehash children
+        tree.Rehash(true);  // rehash parents
+    }
+
+    /* Synthesizes a new tree based on the given information
+     * in ParamSpec. Assume the tree is empty, don't deallocate
+     * anything. Don't touch Hash, Parent.
+     */
+    void ParamSpec::SynthesizeTree(
+        FPoptimizer_CodeTree::CodeTree& tree,
+        const MatchedParams& matcher,
+        MatchedParams::CodeTreeMatch& match) const
+    {
+        switch(ParamMatchingType(opcode))
+        {
+            case RestHolder:
+            {
+                std::map<unsigned, std::vector<uint_fast64_t> >
+                    ::const_iterator i = match.RestMap.find(index);
+
+                assert(i != match.RestMap.end());
+
+                for(size_t a=0; a<i->second.size(); ++a)
+                {
+                    uint_fast64_t hash = i->second[a];
+
+                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*>
+                        ::const_iterator j = match.trees.find(hash);
+
+                    assert(j != match.trees.end());
+
+                    tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(
+                        j->second->Clone(), sign) );
+                }
+                break;
+            }
+            case SubFunction:
+            {
+                const Function& fitem = pack.flist[index];
+                tree.Opcode = fitem.opcode;
+                const MatchedParams& mitem = pack.mlist[fitem.index];
+                for(unsigned a=0; a<mitem.count; ++a)
+                {
+                    const ParamSpec& param = pack.plist[mitem.index + a];
+                    FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
+                    param.SynthesizeTree(*subtree, matcher, match);
+                    subtree->Parent = &tree;
+                    tree.Params.push_back( FPoptimizer_CodeTree::CodeTree::Param(subtree, sign^param.sign) );
+                }
+                break;
+            }
+            case NamedHolder:
+                if(!anyrepeat && minrepeat == 1)
+                {
+                    /* Literal parameter */
+                    std::map<unsigned, std::pair<uint_fast64_t, size_t> >
+                        ::const_iterator i = match.NamedMap.find(index);
+
+                    assert(i != match.NamedMap.end());
+
+                    uint_fast64_t hash = i->second.first;
+
+                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*>
+                        ::const_iterator j = match.trees.find(hash);
+
+                    assert(j != match.trees.end());
+
+                    tree.Opcode = j->second->Opcode;
+                    switch(tree.Opcode)
+                    {
+                        case cImmed: tree.Value = j->second->Value; break;
+                        case cVar:   tree.Var   = j->second->Var;  break;
+                        case cFCall:
+                        case cPCall: tree.Funcno = j->second->Funcno; break;
+                    }
+                    tree.Params = j->second->Params;
+                    for(size_t a=0; a<tree.Params.size(); ++a)
+                        tree.Params[a].param = tree.Params[a].param->Clone();
+                    break;
+                }
+                // passthru; x+ is synthesized as the number, not as the tree
+            case NumConstant:
+            case ImmedHolder:
+            default:
+                tree.Opcode = cImmed;
+                bool impossible = false;
+                tree.Value  = GetConst(match, impossible);
+                break;
+        }
+    }
+
+    void DumpParam(const ParamSpec& p)
+    {
+        //std::cout << "/*p" << (&p-pack.plist) << "*/";
+
+        static const char ImmedHolderNames[2][2] = {"%","&"};
+        static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
+
+        if(p.sign) std::cout << '~';
+        if(p.transformation == Negate) std::cout << '-';
+        if(p.transformation == Invert) std::cout << '/';
+
+        switch(SpecialOpcode(p.opcode))
+        {
+            case NumConstant: std::cout << pack.clist[p.index]; break;
+            case ImmedHolder: std::cout << ImmedHolderNames[p.index]; break;
+            case NamedHolder: std::cout << NamedHolderNames[p.index]; break;
+            case RestHolder: std::cout << '<' << p.index << '>'; break;
+            case SubFunction: DumpFunction(pack.flist[p.index]); break;
+            default:
+            {
+                std::string opcode = FP_GetOpcodeName(p.opcode).substr(1);
+                for(size_t a=0; a<opcode.size(); ++a) opcode[a] = std::toupper(opcode[a]);
+                std::cout << opcode << '(';
+                for(unsigned a=0; a<p.count; ++a)
+                {
+                    if(a > 0) std::cout << ' ';
+                    DumpParam(pack.plist[p.index+a]);
+                }
+                std::cout << " )";
+            }
+        }
+        if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
+        if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
+    }
+
+    void DumpParams(const MatchedParams& mitem)
+    {
+        //std::cout << "/*m" << (&mitem-pack.mlist) << "*/";
+
+        if(mitem.type == PositionalParams) std::cout << '[';
+
+        for(unsigned a=0; a<mitem.count; ++a)
+        {
+            std::cout << ' ';
+            DumpParam(pack.plist[mitem.index + a]);
+        }
+
+        if(mitem.type == PositionalParams) std::cout << " ]";
+    }
+
+    void DumpFunction(const Function& fitem)
+    {
+        //std::cout << "/*f" << (&fitem-pack.flist) << "*/";
+
+        std::cout << '(' << FP_GetOpcodeName(fitem.opcode);
+        DumpParams(pack.mlist[fitem.index]);
+        std::cout << ')';
+    }
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
+    {
+        switch(tree.Opcode)
+        {
+            case cImmed: std::cout << tree.Value; return;
+            case cVar:   std::cout << "Var" << tree.Var; return;
+            default:
+                std::cout << FP_GetOpcodeName(tree.Opcode);
+                if(tree.Opcode == cFCall || tree.Opcode == cPCall)
+                    std::cout << ':' << tree.Funcno;
+        }
+        std::cout << '(';
+        for(size_t a=0; a<tree.Params.size(); ++a)
+        {
+            if(a > 0) std::cout << ' ';
+            if(tree.Params[a].sign) std::cout << '~';
+            DumpTree(*tree.Params[a].param);
+        }
+        std::cout << ')';
+    }
+    void DumpMatch(const Function& input,
+                   const FPoptimizer_CodeTree::CodeTree& tree,
+                   const MatchedParams& replacement,
+                   const MatchedParams::CodeTreeMatch& matchrec,
+                   bool DidMatch)
+    {
+        std::cout <<
+            "Found " << (DidMatch ? "match" : "mismatch") << ":\n"
+            "  Pattern    : ";
+        DumpFunction(input);
+        std::cout << "\n"
+            "  Replacement: ";
+        DumpParams(replacement);
+        std::cout << "\n"
+            "  Tree       : ";
+        DumpTree(tree);
+        std::cout << "\n";
     }
 }

@@ -4,14 +4,6 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 
-namespace FPoptimizer_Grammar
-{
-    class Grammar;
-    class Rule;
-    class Function;
-    class MatchedParams;
-    class ParamSpec;
-}
 namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData;
@@ -19,12 +11,7 @@ namespace FPoptimizer_CodeTree
     class CodeTree
     {
         friend class CodeTreeParserData;
-        friend class FPoptimizer_Grammar::Grammar;
-        friend class FPoptimizer_Grammar::Rule;
-        friend class FPoptimizer_Grammar::Function;
-        friend class FPoptimizer_Grammar::ParamSpec;
-        friend class FPoptimizer_Grammar::MatchedParams;
-    private:
+    public:
         /* Describing the codetree node */
         unsigned Opcode;
         union
@@ -37,6 +24,9 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree* param; // param node
             bool      sign;  // true = negated or inverted
+
+            Param() : param(),sign() {}
+            Param(CodeTree*p, bool s): param(p),sign(s) {}
         };
         // Parameters for the function
         //  These use the sign:
@@ -56,7 +46,7 @@ namespace FPoptimizer_CodeTree
         //   For cIf:  operand 1 = condition, operand 2 = yes-branch, operand 3 = no-branch
         //   For anything else: the parameters required by the operation/function
         std::vector<Param> Params;
-    private:
+
         /* Internal operation */
         uint_fast64_t Hash;
         CodeTree*     Parent;

@@ -12,7 +12,8 @@ FP_MODULES=\
 		fpoptimizer_codetree_to_bytecode.o \
 		fpoptimizer_codetree.o \
 		fpoptimizer_grammar.o \
-		fpoptimizer_optimize.o
+		fpoptimizer_optimize.o \
+		fpoptimizer_opcodename.o
 
 testbed:\
 		testbed.o $(FP_MODULES)
@@ -36,7 +37,8 @@ powi_speedtest:\
 
 
 fpoptimizer_grammar_gen: \
-		fpoptimizer_grammar_gen.o
+		fpoptimizer_grammar_gen.o \
+		fpoptimizer_opcodename.o
 	$(LD) -o $@ $^
 
 fpoptimizer_grammar_gen.cc: \

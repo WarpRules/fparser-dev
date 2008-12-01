@@ -109,12 +109,13 @@ Maintained by Magnus Ekdahl <magnus@debian.org>
 
 #include "fpoptimizer_grammar.hh"
 #include "fpoptimizer_consts.hh"
+#include "fpoptimizer_opcodename.hh"
 
 #include <cstdio>
 #include <cctype>
 #include <cstdlib>
-#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <map>
 #include <algorithm>
 #include <assert.h>
@@ -420,107 +421,9 @@ public:
     {
     }
 
-    std::string Dump(OpcodeType o)
+    std::string Dump(unsigned o)
     {
-#if 1
-        /* Symbolic meanings for the opcodes? */
-        const char* p = 0;
-        switch(OPCODE(o))
-        {
-            case cAbs: p = "cAbs"; break;
-            case cAcos: p = "cAcos"; break;
-#ifndef FP_NO_ASINH
-            case cAcosh: p = "cAcosh"; break;
-#endif
-            case cAsin: p = "cAsin"; break;
-#ifndef FP_NO_ASINH
-            case cAsinh: p = "cAsinh"; break;
-#endif
-            case cAtan: p = "cAtan"; break;
-            case cAtan2: p = "cAtan2"; break;
-#ifndef FP_NO_ASINH
-            case cAtanh: p = "cAtanh"; break;
-#endif
-            case cCeil: p = "cCeil"; break;
-            case cCos: p = "cCos"; break;
-            case cCosh: p = "cCosh"; break;
-            case cCot: p = "cCot"; break;
-            case cCsc: p = "cCsc"; break;
-#ifndef FP_DISABLE_EVAL
-            case cEval: p = "cEval"; break;
-#endif
-            case cExp: p = "cExp"; break;
-            case cFloor: p = "cFloor"; break;
-            case cIf: p = "cIf"; break;
-            case cInt: p = "cInt"; break;
-            case cLog: p = "cLog"; break;
-            case cLog2: p = "cLog2"; break;
-            case cLog10: p = "cLog10"; break;
-            case cMax: p = "cMax"; break;
-            case cMin: p = "cMin"; break;
-            case cPow: p = "cPow"; break;
-            case cSec: p = "cSec"; break;
-            case cSin: p = "cSin"; break;
-            case cSinh: p = "cSinh"; break;
-            case cSqrt: p = "cSqrt"; break;
-            case cTan: p = "cTan"; break;
-            case cTanh: p = "cTanh"; break;
-            case cImmed: p = "cImmed"; break;
-            case cJump: p = "cJump"; break;
-            case cNeg: p = "cNeg"; break;
-            case cAdd: p = "cAdd"; break;
-            case cSub: p = "cSub"; break;
-            case cMul: p = "cMul"; break;
-            case cDiv: p = "cDiv"; break;
-            case cMod: p = "cMod"; break;
-            case cEqual: p = "cEqual"; break;
-            case cNEqual: p = "cNEqual"; break;
-            case cLess: p = "cLess"; break;
-            case cLessOrEq: p = "cLessOrEq"; break;
-            case cGreater: p = "cGreater"; break;
-            case cGreaterOrEq: p = "cGreaterOrEq"; break;
-            case cNot: p = "cNot"; break;
-            case cAnd: p = "cAnd"; break;
-            case cOr: p = "cOr"; break;
-            case cDeg: p = "cDeg"; break;
-            case cRad: p = "cRad"; break;
-            case cFCall: p = "cFCall"; break;
-            case cPCall: p = "cPCall"; break;
-#ifdef FP_SUPPORT_OPTIMIZER
-            case cVar: p = "cVar"; break;
-            case cDup: p = "cDup"; break;
-            case cInv: p = "cInv"; break;
-            case cFetch: p = "cFetch"; break;
-            case cPopNMov: p = "cPopNMov"; break;
-            case cSqr: p = "cSqr"; break;
-            case cRDiv: p = "cRDiv"; break;
-            case cRSub: p = "cRSub"; break;
-            case cNotNot: p = "cNotNot"; break;
-#endif
-            case cNop: p = "cNop"; break;
-            case VarBegin: p = "VarBegin"; break;
-        }
-        switch( SpecialOpcode(o) )
-        {
-            case NumConstant:   p = "NumConstant"; break;
-            case ImmedHolder:   p = "ImmedHolder"; break;
-            case NamedHolder:   p = "NamedHolder"; break;
-            case RestHolder:    p = "RestHolder"; break;
-            case SubFunction:   p = "SubFunction"; break;
-          //case GroupFunction: p = "GroupFunction"; break;
-        }
-        std::stringstream tmp;
-        assert(p);
-        tmp << p;
-        while(tmp.str().size() < 12) tmp << ' ';
-        return tmp.str();
-#else
-        /* Just numeric meanings */
-        std::stringstream tmp;
-        tmp << o;
-        while(tmp.str().size() < 5) tmp << ' ';
-        return tmp.str();
-#endif
+        return FP_GetOpcodeName(o, true);
     }
     std::string PDumpFix(const GrammarData::ParamSpec& p, const std::string& s)
     {
@@ -557,16 +460,25 @@ public:
               size_t& index,
               size_t& count)
     {
-        count = params.size();
-        index = plist.size();
         std::vector<crc32_t> crc32list;
+        std::vector<ParamSpec> pitems;
+        pitems.reserve(params.size());
         for(size_t a=0; a<params.size(); ++a)
         {
-            size_t pos = Dump(*params[a]);
+            pitems.push_back(Dump(*params[a]));
+        }
+        count = params.size();
+        index = plist.size();
+        plist.reserve(plist.size() + pitems.size());
+        for(size_t a=0; a<pitems.size(); ++a)
+        {
+            size_t pos = plist.size();
+            plist.push_back(pitems[a]);
             crc32list.push_back(crc32::calc(
                 (const unsigned char*)&plist[pos],
                                 sizeof(plist[pos])));
         }
+      #if 1
         size_t candidate_begin = 0;
         bool fail = false;
         for(size_t a=0; a<count; ++a)
@@ -608,10 +520,11 @@ public:
             plist.resize(index);
             index = candidate_begin;
         }
+      #endif
         return;
     }
 
-    size_t Dump(const GrammarData::ParamSpec& p)
+    ParamSpec Dump(const GrammarData::ParamSpec& p)
     {
         ParamSpec  pitem;
         pitem.sign           = p.Negated;
@@ -650,8 +563,7 @@ public:
                 break;
             }
         }
-        plist.push_back(pitem);
-        return plist.size()-1;
+        return pitem;
     }
     size_t Dump(const GrammarData::MatchedParams& m)
     {
@@ -661,13 +573,13 @@ public:
         Dump(m.Params, i, c);
         mitem.index = i;
         mitem.count = c;
-
+      #if 1
         crc32_t crc = crc32::calc((const unsigned char*)&mitem, sizeof(mitem));
         std::map<crc32_t, size_t>::const_iterator mi = m_index.find(crc);
         if(mi != m_index.end())
             return mi->second;
         m_index[crc] = mlist.size();
-
+      #endif
         mlist.push_back(mitem);
         return mlist.size()-1;
     }
@@ -676,13 +588,13 @@ public:
         Function fitem;
         fitem.opcode = f.Opcode;
         fitem.index  = Dump(f.Params);
-
+      #if 1
         crc32_t crc = crc32::calc((const unsigned char*)&fitem, sizeof(fitem));
         std::map<crc32_t, size_t>::const_iterator fi = f_index.find(crc);
         if(fi != f_index.end())
             return fi->second;
         f_index[crc] = flist.size();
-
+      #endif
         flist.push_back(fitem);
         return flist.size()-1;
     }
@@ -708,6 +620,16 @@ public:
 
     void Flush()
     {
+        /*
+        std::cout << "/""*\n";
+        for(size_t a=0; a<rlist.size(); ++a)
+        {
+            std::cout << ""; DumpFunction(flist[rlist[a].input_index]);
+            std::cout << " --> "; DumpParams(mlist[rlist[a].repl_index]);
+            std::cout << "\n";
+        }
+        std::cout << "*""/\n";*/
+
         std::cout <<
             "namespace\n"
             "{\n"
@@ -733,7 +655,7 @@ public:
         {
             std::cout <<
             "        {"
-                        << Dump(plist[a].opcode)
+                        << Dump(OpcodeType(plist[a].opcode))
                         << ", "
                         << (plist[a].sign ? "true " : "false")
                         << ", "
@@ -777,7 +699,8 @@ public:
         for(size_t a=0; a<flist.size(); ++a)
         {
             std::cout <<
-            "        {" << Dump(flist[a].opcode) << ", " << flist[a].index
+            "        {" << Dump(OpcodeType(flist[a].opcode))
+                        << ", " << flist[a].index
                         << " }, /* " << a << " */\n";
         }
         std::cout <<
@@ -816,12 +739,73 @@ public:
             "    };\n"
             "}\n";
     }
+private:
+  /*
+    void DumpParam(const ParamSpec& p)
+    {
+        //std::cout << "/""*p" << (&p-plist) << "*""/";
+
+        static const char ImmedHolderNames[2][2] = {"%","&"};
+        static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
+
+        if(p.sign) std::cout << '~';
+        if(p.transformation == Negate) std::cout << '-';
+        if(p.transformation == Invert) std::cout << '/';
+
+        switch(SpecialOpcode(p.opcode))
+        {
+            case NumConstant: std::cout << clist[p.index]; break;
+            case ImmedHolder: std::cout << ImmedHolderNames[p.index]; break;
+            case NamedHolder: std::cout << NamedHolderNames[p.index]; break;
+            case RestHolder: std::cout << '<' << p.index << '>'; break;
+            case SubFunction: DumpFunction(flist[p.index]); break;
+            default:
+            {
+                std::string opcode = FP_GetOpcodeName(p.opcode).substr(1);
+                for(size_t a=0; a<opcode.size(); ++a) opcode[a] = std::toupper(opcode[a]);
+                std::cout << opcode << '(';
+                for(unsigned a=0; a<p.count; ++a)
+                {
+                    if(a > 0) std::cout << ' ';
+                    DumpParam(plist[p.index+a]);
+                }
+                std::cout << " )";
+            }
+        }
+        if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
+        if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
+    }
+
+    void DumpParams(const MatchedParams& mitem)
+    {
+        //std::cout << "/""*m" << (&mitem-mlist) << "*""/";
+
+        if(mitem.type == PositionalParams) std::cout << '[';
+
+        for(unsigned a=0; a<mitem.count; ++a)
+        {
+            std::cout << ' ';
+            DumpParam(plist[mitem.index + a]);
+        }
+
+        if(mitem.type == PositionalParams) std::cout << " ]";
+    }
+
+    void DumpFunction(const Function& fitem)
+    {
+        //std::cout << "/""*f" << (&fitem-flist) << "*""/";
+
+        std::cout << '(' << FP_GetOpcodeName(fitem.opcode);
+        DumpParams(mlist[fitem.index]);
+        std::cout << ')';
+    }
+  */
 };
 
 static GrammarDumper dumper;
 
 
-#line 726 "fpoptimizer_grammar_gen.y"
+#line 710 "fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1238,8 +1222,8 @@ static const short yyrhs[] = {    20,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   757,   763,   764,   767,   777,   788,   808,   825,   842,   847,
-   851,   857,   862,   866,   881,   890,   896,   905,   914,   918
+   741,   747,   748,   751,   761,   773,   793,   810,   827,   832,
+   836,   842,   847,   851,   866,   875,   881,   890,   899,   903
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1804,14 +1788,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 759 "fpoptimizer_grammar_gen.y"
+#line 743 "fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 770 "fpoptimizer_grammar_gen.y"
+#line 754 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1820,17 +1804,18 @@ case 4:
       ;
     break;}
 case 5:
-#line 780 "fpoptimizer_grammar_gen.y"
+#line 764 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
 
         yyval.r = new GrammarData::Rule(ProduceNewTree, *yyvsp[-3].f, new GrammarData::ParamSpec(yyvsp[-1].f));
-        //std::cout << GrammarDumper().Dump(*new ParamSpec($3)) << "\n";
+
+        //std::cout << GrammarDumper().Dump(*new GrammarData::ParamSpec($3)) << "\n";
         delete yyvsp[-3].f;
       ;
     break;}
 case 6:
-#line 790 "fpoptimizer_grammar_gen.y"
+#line 775 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1849,7 +1834,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 813 "fpoptimizer_grammar_gen.y"
+#line 798 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1864,7 +1849,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 828 "fpoptimizer_grammar_gen.y"
+#line 813 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAdd && yyvsp[-1].opcode != cMul && yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -1879,37 +1864,37 @@ case 8:
        ;
     break;}
 case 9:
-#line 844 "fpoptimizer_grammar_gen.y"
+#line 829 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
 case 10:
-#line 848 "fpoptimizer_grammar_gen.y"
+#line 833 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 11:
-#line 852 "fpoptimizer_grammar_gen.y"
+#line 837 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 12:
-#line 859 "fpoptimizer_grammar_gen.y"
+#line 844 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 13:
-#line 863 "fpoptimizer_grammar_gen.y"
+#line 848 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::ImmedHolderTag());
        ;
     break;}
 case 14:
-#line 867 "fpoptimizer_grammar_gen.y"
+#line 852 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -1926,18 +1911,18 @@ case 14:
        ;
     break;}
 case 15:
-#line 882 "fpoptimizer_grammar_gen.y"
+#line 867 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
          {
              yyerror("Not constant"); YYERROR;
-         }         
+         }
          yyval.a = yyvsp[0].a->SetTransformation(yyvsp[-1].transform);
        ;
     break;}
 case 16:
-#line 891 "fpoptimizer_grammar_gen.y"
+#line 876 "fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.Dump(*yyvsp[0].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
@@ -1945,7 +1930,7 @@ case 16:
        ;
     break;}
 case 17:
-#line 897 "fpoptimizer_grammar_gen.y"
+#line 882 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -1956,7 +1941,7 @@ case 17:
        ;
     break;}
 case 18:
-#line 906 "fpoptimizer_grammar_gen.y"
+#line 891 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -1967,13 +1952,13 @@ case 18:
        ;
     break;}
 case 19:
-#line 915 "fpoptimizer_grammar_gen.y"
+#line 900 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].f);
        ;
     break;}
 case 20:
-#line 919 "fpoptimizer_grammar_gen.y"
+#line 904 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
@@ -2182,7 +2167,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 923 "fpoptimizer_grammar_gen.y"
+#line 908 "fpoptimizer_grammar_gen.y"
 
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
@@ -2227,6 +2212,17 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(c == '(') { lval->opcode = cMul; return BUILTIN_FUNC_NAME; }
             return '*';
         }
+        case '-':
+        {
+            int c2 = std::fgetc(stdin);
+            if(c2 == '>') return SUBST_OP_ARROW;
+            std::ungetc(c2, stdin);
+            lval->transform = Negate;
+            return UNARY_TRANSFORMATION;
+        }
+        case '/':
+            lval->transform = Invert;
+            return UNARY_TRANSFORMATION;
 
         case '~':
         case '[':
@@ -2241,18 +2237,6 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return yylex(lval); // Counts as tail recursion, I hope
         case ':':
             return SUBST_OP_COLON;
-        case '-':
-        {
-            int c2 = std::fgetc(stdin);
-            if(c2 == '>')
-                return SUBST_OP_ARROW;
-            std::ungetc(c2, stdin);
-            lval->transform = Negate;
-            return UNARY_TRANSFORMATION;
-        }
-        case '/':
-            lval->transform = Invert;
-            return UNARY_TRANSFORMATION;
         case '%': { lval->index = 0; return IMMED_TOKEN; }
         case '&': { lval->index = 1; return IMMED_TOKEN; }
         case '<':

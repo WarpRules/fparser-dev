@@ -270,6 +270,7 @@ namespace FPoptimizer_CodeTree
                                 case cAnd:
                                 case cOr:
                                     AddCmd(cNot);
+                                    AddCmd(Opcode);
                                     break;
                             }
                             n_stacked = n_stacked - 2 + 1;

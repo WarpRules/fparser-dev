@@ -3,6 +3,7 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_grammar.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
@@ -19,10 +20,28 @@ void FunctionParser::Optimize()
     if(isOptimized) return;
     CopyOnWrite();
 
-    CodeTree* tree = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
+    FPoptimizer_CodeTree::CodeTree* tree
+        = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
+
+    std::set<uint_fast64_t> optimized_children;
+    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(optimized_children, *tree, false))
+        {}
+
+    for(;;)
+    {
+        optimized_children.clear();
+        while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(optimized_children, *tree, false))
+            {}
+
+        bool brk = true;
+        optimized_children.clear();
+        while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(optimized_children, *tree, false))
+            {brk=false;}
+        if(brk) break;
+    }
+
     std::vector<unsigned> byteCode;
     std::vector<double> immed;
-
     size_t stacktop_cur = 0;
     size_t stacktop_max = 0;
     tree->SynthesizeByteCode(byteCode, immed, stacktop_cur, stacktop_max);

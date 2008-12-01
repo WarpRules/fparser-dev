@@ -320,7 +320,7 @@ cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(-% -&)])
 
 # If an addlist contains a negated mul and that mul-list contains a factor,
 # un-negate the mul-list and negate the factor in the mul-list.
-cAdd ~(cMul % <1>)            : (cMul -% <1>)
+cAdd ~(cMul % <1> ~<2>)      : (cMul -% <1> ~<2>)
 
 # If a mul-list contains an inverted pow and the exponent is an immed,
 # un-negate the pow and negate the immed.
@@ -337,13 +337,12 @@ cMul (cPow[x y]) (cPow[x z]) : (cPow [x (cAdd [y z])])
 
 # Negate literal negated params...
 cAdd ~%      : -%
+# Note: Don't invert literal inverted params liberally; doing so may lose precision.
 
 # If a add-list contains two or more immeds, replace those immeds
 # with a single non-negated immed that has the sum of those original
 # immeds.
 cAdd  %  &   : +(% &)
-
-# Note: Don't invert literal inverted params liberally; doing so may lose precision.
 
 # If a mul-list contains two or more immeds, replace those immeds
 # with a single non-inverted immed that has the product of those original
@@ -420,6 +419,33 @@ cGreaterOrEq[x x]               -> 1
 cNEqual[x x]                    -> 1
 cLess[x x]                      -> 1
 cGreater[x x]                   -> 1
+
+cAnd ~(cNEqual[a b])      : (cEqual[a b])
+cAnd ~(cEqual[a b])       : (cNEqual[a b])
+cAnd ~(cLess[a b])        : (cGreaterOrEq[a b])
+cAnd ~(cGreater[a b])     : (cLessOrEq[a b])
+cAnd ~(cLessOrEq[a b])    : (cGreater[a b])
+cAnd ~(cGreaterOrEq[a b]) : (cLess[a b])
+cOr ~(cNEqual[a b])       : (cEqual[a b])
+cOr ~(cEqual[a b])        : (cNEqual[a b])
+cOr ~(cLess[a b])         : (cGreaterOrEq[a b])
+cOr ~(cGreater[a b])      : (cLessOrEq[a b])
+cOr ~(cLessOrEq[a b])     : (cGreater[a b])
+cOr ~(cGreaterOrEq[a b])  : (cLess[a b])
+cNot (cNEqual[a b])      -> cEqual[a b]
+cNot (cEqual[a b])       -> cNEqual[a b]
+cNot (cLess[a b])        -> cGreaterOrEq[a b]
+cNot (cGreater[a b])     -> cLessOrEq[a b]
+cNot (cLessOrEq[a b])    -> cGreater[a b]
+cNot (cGreaterOrEq[a b]) -> cLess[a b]
+cNotNot (cNEqual[a b])      -> cNEqual[a b]
+cNotNot (cEqual[a b])       -> cEqual[a b]
+cNotNot (cLess[a b])        -> cLess[a b]
+cNotNot (cGreater[a b])     -> cGreater[a b]
+cNotNot (cLessOrEq[a b])    -> cLessOrEq[a b]
+cNotNot (cGreaterOrEq[a b]) -> cGreaterOrEq[a b]
+cNotNot (cAnd <1> ~<2>)     -> cAnd <1> ~<2>
+cNotNot (cOr  <1> ~<2>)     -> cOr  <1> ~<2>
 
 
 #### Logarithm optimizations
