@@ -126,7 +126,7 @@ public:
         ByteCode.push_back(cPopNMov);
         ByteCode.push_back(targetpos);
         ByteCode.push_back(srcpos);
-        
+
         SetStackTop(srcpos+1);
         StackHash[targetpos] = StackHash[srcpos];
         SetStackTop(targetpos+1);
@@ -249,17 +249,17 @@ namespace
     typedef
         std::map<uint_fast64_t,  std::pair<size_t, CodeTree*> >
         TreeCountType;
-    
+
     void FindTreeCounts(TreeCountType& TreeCounts, CodeTree* tree)
     {
         std::pair<size_t, CodeTree*>& p = TreeCounts[tree->Hash];
         ++p.first;
         p.second = tree;
-        
+
         for(size_t a=0; a<tree->Params.size(); ++a)
             FindTreeCounts(TreeCounts, tree->Params[a].param);
     }
-    
+
     void RememberRecursivelyHashList(std::set<uint_fast64_t>& hashlist,
                                      CodeTree* tree)
     {
@@ -281,7 +281,7 @@ namespace FPoptimizer_CodeTree
         /* Find common subtrees */
         TreeCountType TreeCounts;
         FindTreeCounts(TreeCounts, this);
-        
+
         /* Synthesize some of the most common ones */
         std::set<uint_fast64_t> AlreadyDoneTrees;
     FindMore: ;
@@ -295,7 +295,7 @@ namespace FPoptimizer_CodeTree
             size_t score = i->second.first;
             if(score < 2) continue; // It must always occur at least twice
             if(i->second.second->Depth < 2) continue; // And it must not be a simple expression
-            if(AlreadyDoneTrees.find(i->first) 
+            if(AlreadyDoneTrees.find(i->first)
             != AlreadyDoneTrees.end()) continue; // And it must not yet have been synthesized
             score *= i->second.second->Depth;
             if(score > best_score)

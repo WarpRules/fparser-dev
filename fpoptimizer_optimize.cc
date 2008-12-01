@@ -303,7 +303,7 @@ namespace FPoptimizer_Grammar
                                     unsigned MinRepeat = param.minrepeat;
                                     bool AnyRepeat     = param.anyrepeat;
                                     unsigned HadRepeat = 1;
-                                    
+
                                     for(size_t c = b+1;
                                         c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
                                         ++c)
@@ -315,7 +315,7 @@ namespace FPoptimizer_Grammar
                                     }
                                     if(HadRepeat < MinRepeat)
                                         continue; // No sufficient repeat count here
-                                    
+
                                     HadRepeat = 0;
                                     for(size_t c = b;
                                         c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
@@ -333,7 +333,7 @@ namespace FPoptimizer_Grammar
                                     position[a].parampos = b+1;
                                     goto ok;
                                 }
-                                
+
                                 used[b] = true;
                                 if(!recursion)
                                     match.param_numbers.push_back(b);

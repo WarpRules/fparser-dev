@@ -6,19 +6,17 @@
 
 # Substitution rule syntax:
 #
-# %token NUMERIC_CONSTANT        # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
-# %token PARAMETER_TOKEN         # placeholders such as x, y, a, b
-# %token PLACEHOLDER_TOKEN       # placeholders such as <1>, <2>, <7>
-# %token IMMED_TOKEN             # placeholders % and &
-# %token BUILTIN_FUNC_NAME       # such as COS, CEIL, POW
-# %token OPCODE_MAYBEINV         # opcodes cAnd, cOr, cAdd, cMul
-# %token OPCODE_NOTINV           # other opcodes
-# %token GROUP_CONSTANT_OPERATOR # +, *, MIN, MAX
-# %token UNARY_CONSTANT_OPERATOR # /, -, !  # inverts/negates/inverts the param
-# %token NEWLINE                 # newline
+# %token NUMERIC_CONSTANT     # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
+# %token PARAMETER_TOKEN      # placeholders such as x, y, a, b
+# %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
+# %token IMMED_TOKEN          # placeholders % and &
+# %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
+# %token OPCODE               # opcodes
+# %token UNARY_TRANSFORMATION  # /, -, !  # inverts/negates/inverts the param
+# %token NEWLINE              # newline
 #
-# %token SUBST_OP_COLON          # :
-# %token SUBST_OP_ARROW          # ->
+# %token SUBST_OP_COLON       # :
+# %token SUBST_OP_ARROW       # ->
 #
 # %%
 #     grammar:
@@ -28,72 +26,43 @@
 #     ;
 #
 #     substitution:
-#       function SUBST_OP_ARROW paramtoken NEWLINE
+#       function SUBST_OP_ARROW param NEWLINE
 #       /* Entire function is changed into the particular param */
 #
 #     | function SUBST_OP_ARROW function NEWLINE
-#       /* Entire function changes, the paramlist is rewritten */
+#       /* Entire function changes, the param_notinv_list is rewritten */
 #       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
 #
-#     | function_maybeinv SUBST_OP_COLON  param_maybeinv_list NEWLINE
+#     | function SUBST_OP_COLON  paramlist NEWLINE
 #       /* The params provided are replaced with the new param_maybeinv_list */
-#
-#     | function_notinv   SUBST_OP_COLON  paramlist NEWLINE
-#       /* The params provided are replaced with the new param_maybeinv_list */
-#
 #     ;
 #
 #     function:
-#        function_notinv
-#     |  function_maybeinv
-#     ;
-#
-#     function_notinv:
-#        OPCODE_NOTINV paramsmatchingspec
+#        OPCODE '[' paramlist ']'
+#        /* Match a function with opcode=opcode,
+#         * and the exact parameter list as specified
+#         */
+#     |  OPCODE paramlist
 #        /* Match a function with opcode=opcode and the given way of matching params */
-#     ;
-#
-#     function_maybeinv:
-#        OPCODE_MAYBEINV paramsmatchingspec
-#        /* Match a function with opcode=opcode and the given way of matching params */
-#     ;
-#
-#     paramsmatchingspec:
-#        '[' param_maybeinv_list ']'  /* match this exact paramlist */
-#      |  param_maybeinv_list         /* find the specified params */
-#     ;
-#
-#     param_maybeinv_list: /* left-recursive list of 0-n params with no delimiter */
-#         param_maybeinv_list maybeinv_param
-#       | /* empty */
-#     ;
-#     maybeinv_param:
-#        '~' param    /* negated/inverted param (negations&inversions only exist with cMul and cAdd) */
-#      | param        /* non-negated/non-inverted param */
+#        /* Match the parameters the way you find them */
 #     ;
 #
 #     paramlist: /* left-recursive list of 0-n params with no delimiter */
-#         paramlist param
+#         paramlist '~' param /* negated/inverted param */
+#       | paramlist param
 #       | /* empty */
 #     ;
 #
 #     param:
-#        paramtoken
-#     |  paramtoken '+'  /* In matching, matches TWO or more identical repetitions of namedparam */
-#                        /* In substitution, yields an immed containing the number of repetitions */
-#     |  paramtoken '*'  /* In matching, matches ONE or more identical repetitions of namedparam */
-#                        /* In substitution, yields an immed containing the number of repetitions */
-#     ;
-#
-#     paramtoken:
-#        NUMERIC_CONSTANT         /* particular immed - may be specified by name or by value */
+#        NUMERIC_CONSTANT         /* particular immed */
 #     |  IMMED_TOKEN              /* a placeholder for some immed */
-#     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-#     |  PARAMETER_TOKEN          /* any expression */
+#     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
+#     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
+#     |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
+#     |  PARAMETER_TOKEN '+'      /* any expression, indicated by "x", "a" etc, repeated 2..N times. */
+#     |  PARAMETER_TOKEN '*'      /* any expression, indicated by "x", "a" etc, repeated 1..N times. */
 #     |  '(' function ')'         /* a subtree */
-#     |  GROUP_CONSTANT_OPERATOR '(' paramlist ')'    /* the literal sum/product/minimum/maximum of the provided immed-type params */
-#     |  UNARY_CONSTANT_OPERATOR paramtoken           /* the negated/inverted literal value of the paramtoken */
-#     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params */
+#     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
 #     ;
 
 
@@ -321,16 +290,19 @@ cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) 
 #cAdd  (cMul <1> <2> ~<4>)  (cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>)  (cMul <3> ~<5>)))
 #cAdd  (cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>) ~(cMul <3> ~<5>)))
 #cAdd ~(cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd ~(cMul <2> ~<4>) ~(cMul <3> ~<5>)))
+#
 ## Note: The above might be difficult to match efficiently.
 ## The below is a simpler version that only works with a single operand...
-#cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x  y]))
-#cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [ x ~y]))
-#cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)     : (cMul <1> ~<2> (cAdd [~x ~y]))
+#cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [ x  y]))
+#cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [ x ~y]))
+#cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [~x ~y]))
+
 # Note: The above might be still difficult to match.
 # The below is an even simpler version...
-cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)         : (cMul [x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
-cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul [x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
-cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)         : (cMul [x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)   : (cMul [x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+
 # The below is still simpler version...
 cAdd  (cMul  x %)  (cMul  x &)         : (cMul [ x +(% &)])
 cAdd  (cMul  x %) ~(cMul  x &)         : (cMul [ x +(% -&)])
@@ -426,6 +398,33 @@ cAnd ~a ~b ~<1> : ~(cOr a b <1>)
 #   !a | !b = !(a & b)
 cOr ~a ~b ~<1>  : ~(cAnd a b <1>)
 
+cAnd ~(cNEqual[a b])      : (cEqual[a b])
+cAnd ~(cEqual[a b])       : (cNEqual[a b])
+cAnd ~(cLess[a b])        : (cGreaterOrEq[a b])
+cAnd ~(cGreater[a b])     : (cLessOrEq[a b])
+cAnd ~(cLessOrEq[a b])    : (cGreater[a b])
+cAnd ~(cGreaterOrEq[a b]) : (cLess[a b])
+cOr ~(cNEqual[a b])       : (cEqual[a b])
+cOr ~(cEqual[a b])        : (cNEqual[a b])
+cOr ~(cLess[a b])         : (cGreaterOrEq[a b])
+cOr ~(cGreater[a b])      : (cLessOrEq[a b])
+cOr ~(cLessOrEq[a b])     : (cGreater[a b])
+cOr ~(cGreaterOrEq[a b])  : (cLess[a b])
+cNot [(cNEqual[a b])]      -> cEqual[a b]
+cNot [(cEqual[a b])]       -> cNEqual[a b]
+cNot [(cLess[a b])]        -> cGreaterOrEq[a b]
+cNot [(cGreater[a b])]     -> cLessOrEq[a b]
+cNot [(cLessOrEq[a b])]    -> cGreater[a b]
+cNot [(cGreaterOrEq[a b])] -> cLess[a b]
+cNotNot [(cNEqual[a b])]      -> cNEqual[a b]
+cNotNot [(cEqual[a b])]       -> cEqual[a b]
+cNotNot [(cLess[a b])]        -> cLess[a b]
+cNotNot [(cGreater[a b])]     -> cGreater[a b]
+cNotNot [(cLessOrEq[a b])]    -> cLessOrEq[a b]
+cNotNot [(cGreaterOrEq[a b])] -> cGreaterOrEq[a b]
+cNotNot [(cAnd <1> ~<2>)]     -> cAnd <1> ~<2>
+cNotNot [(cOr  <1> ~<2>)]     -> cOr  <1> ~<2>
+
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
 cAnd (cEqual a b) (cEqual b c) (cEqual a c)  : (cEqual [a b]) (cEqual [b c])
@@ -444,32 +443,6 @@ cNEqual[x x]                    -> 1
 cLess[x x]                      -> 1
 cGreater[x x]                   -> 1
 
-cAnd ~(cNEqual[a b])      : (cEqual[a b])
-cAnd ~(cEqual[a b])       : (cNEqual[a b])
-cAnd ~(cLess[a b])        : (cGreaterOrEq[a b])
-cAnd ~(cGreater[a b])     : (cLessOrEq[a b])
-cAnd ~(cLessOrEq[a b])    : (cGreater[a b])
-cAnd ~(cGreaterOrEq[a b]) : (cLess[a b])
-cOr ~(cNEqual[a b])       : (cEqual[a b])
-cOr ~(cEqual[a b])        : (cNEqual[a b])
-cOr ~(cLess[a b])         : (cGreaterOrEq[a b])
-cOr ~(cGreater[a b])      : (cLessOrEq[a b])
-cOr ~(cLessOrEq[a b])     : (cGreater[a b])
-cOr ~(cGreaterOrEq[a b])  : (cLess[a b])
-cNot (cNEqual[a b])      -> cEqual[a b]
-cNot (cEqual[a b])       -> cNEqual[a b]
-cNot (cLess[a b])        -> cGreaterOrEq[a b]
-cNot (cGreater[a b])     -> cLessOrEq[a b]
-cNot (cLessOrEq[a b])    -> cGreater[a b]
-cNot (cGreaterOrEq[a b]) -> cLess[a b]
-cNotNot (cNEqual[a b])      -> cNEqual[a b]
-cNotNot (cEqual[a b])       -> cEqual[a b]
-cNotNot (cLess[a b])        -> cLess[a b]
-cNotNot (cGreater[a b])     -> cGreater[a b]
-cNotNot (cLessOrEq[a b])    -> cLessOrEq[a b]
-cNotNot (cGreaterOrEq[a b]) -> cGreaterOrEq[a b]
-cNotNot (cAnd <1> ~<2>)     -> cAnd <1> ~<2>
-cNotNot (cOr  <1> ~<2>)     -> cOr  <1> ~<2>
 
 
 #### Logarithm optimizations
