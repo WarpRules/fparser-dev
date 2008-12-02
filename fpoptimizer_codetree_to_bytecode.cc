@@ -59,6 +59,9 @@ signed char powi_table[POWI_TABLE_SIZE] =
 }; /* as in gcc, but custom-optimized for stack calculation */
 static const int POWI_CACHE_SIZE = 256;
 
+#define FPO(x) /**/
+//#define FPO(x) x
+
 static const struct SequenceOpCode
 {
     double basevalue;
@@ -74,6 +77,9 @@ public:
     ByteCodeSynth()
         : ByteCode(), Immed(), StackTop(0), StackMax(0)
     {
+        /* estimate the initial requirements as such */
+        ByteCode.reserve(64);
+        Immed.reserve(8);
     }
 
     void Pull(std::vector<unsigned>& bc,
@@ -218,30 +224,105 @@ namespace
                   CodeTree::ByteCodeSynth& synth,
                   size_t max_bytecode_grow_length);
 
-    struct Subdivide_result
+    class PowiCache
     {
-        size_t stackpos; // Stack offset where it is found
-        int cache_val;   // Which value from cache is it, -1 = none
+    private:
+        int cache[POWI_CACHE_SIZE];
+        int cache_needed[POWI_CACHE_SIZE];
+        
+    public:
+        PowiCache()
+            : cache(), cache_needed() /* Assume we have no factors in the cache */
+        {
+            /* Decide which factors we would need multiple times.
+             * Output:
+             *   cache[]        = these factors were generated
+             *   cache_needed[] = number of times these factors were desired
+             */
+            cache[1] = 1; // We have this value already.
+        }
+    
+        bool Plan_Add(long value, int count)
+        {
+            if(value >= POWI_CACHE_SIZE) return false;
+            //FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
+            cache_needed[value] += count;
+            return cache[value];
+        }
+        
+        void Plan_Has(long value)
+        {
+            if(value < POWI_CACHE_SIZE)
+                cache[value] = 1; // This value has been generated
+        }
+        
+        void Start(size_t value1_pos)
+        {
+            for(int n=2; n<POWI_CACHE_SIZE; ++n)
+                cache[n] = -1; /* Stack location for each component */
 
-        Subdivide_result(size_t s,int c=-1) : stackpos(s), cache_val(c) { }
-        Subdivide_result() : stackpos(),cache_val() { }
+            Remember(1, value1_pos);
+
+            DumpContents();
+        }
+        
+        int Find(long value) const
+        {
+            if(value < POWI_CACHE_SIZE)
+            {
+                if(cache[value] >= 0)
+                {
+                    // found from the cache
+                    FPO(fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
+                        value, (unsigned)cache[value], cache_needed[value]));
+                    return cache[value];
+                }
+            }
+            return -1;
+        }
+        
+        void Remember(long value, size_t stackpos)
+        {
+            if(value >= POWI_CACHE_SIZE) return;
+            
+            FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
+                value, (unsigned)stackpos, cache_needed[value]));
+            cache[value] = stackpos;
+        }
+        
+        void DumpContents() const
+        {
+            FPO(for(int a=1; a<POWI_CACHE_SIZE; ++a)
+                if(cache[a] >= 0 || cache_needed[a] > 0)
+                {
+                    fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
+                        cache[a], a, cache_needed[a]);
+                })
+        }
+        
+        int UseGetNeeded(long value)
+        {
+            if(value >= 0 && value < POWI_CACHE_SIZE)
+                return --cache_needed[value];
+            return 0;
+        }
     };
 
-    Subdivide_result AssembleSequence_Subdivide(
-                  long count,
-                  int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
-                  const SequenceOpCode& sequencing,
-                  CodeTree::ByteCodeSynth& synth);
+    size_t AssembleSequence_Subdivide(
+        long count,
+        PowiCache& cache,
+        const SequenceOpCode& sequencing,
+        CodeTree::ByteCodeSynth& synth);
 
-    Subdivide_result Subdivide_MakeResult(
-                  const Subdivide_result& a,
-                  const Subdivide_result& b,
-                  int cache_needed[POWI_CACHE_SIZE],
+    void Subdivide_Combine(
+        size_t apos, long aval,
+        size_t bpos, long bval,
+        PowiCache& cache,
 
-                  unsigned cumulation_opcode,
-                  unsigned cimulation_opcode_flip,
+        unsigned cumulation_opcode,
+        unsigned cimulation_opcode_flip,
 
-                  CodeTree::ByteCodeSynth& synth);
+        CodeTree::ByteCodeSynth& synth);
 }
 
 namespace
@@ -252,9 +333,11 @@ namespace
 
     void FindTreeCounts(TreeCountType& TreeCounts, CodeTree* tree)
     {
-        std::pair<size_t, CodeTree*>& p = TreeCounts[tree->Hash];
-        ++p.first;
-        p.second = tree;
+        TreeCountType::iterator i = TreeCounts.lower_bound(tree->Hash);
+        if(i == TreeCounts.end() || i->first != tree->Hash)
+            TreeCounts.insert(i, std::make_pair(tree->Hash, std::make_pair(size_t(1), tree)));
+        else
+            i->second.first += 1;
 
         for(size_t a=0; a<tree->Params.size(); ++a)
             FindTreeCounts(TreeCounts, tree->Params[a].param);
@@ -565,61 +648,51 @@ namespace FPoptimizer_CodeTree
 
 namespace
 {
-    #define FPO(x) /**/
-    //#define FPO(x) x
-
     void PlanNtimesCache
-        (long count,
-         int cache[POWI_CACHE_SIZE],
-         int cache_needed[POWI_CACHE_SIZE],
+        (long value,
+         PowiCache& cache,
          int need_count,
          int recursioncount=0)
     {
-        if(count < 1) return;
+        if(value < 1) return;
 
     #ifdef FP_GENERATING_POWI_TABLE
         if(recursioncount > 32) throw false;
     #endif
 
-        if(count < POWI_CACHE_SIZE)
-        {
-            //FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
-            cache_needed[count] += need_count;
-            if(cache[count]) return;
-        }
+        if(cache.Plan_Add(value, need_count)) return;
 
         long half = 1;
-        if(count < POWI_TABLE_SIZE)
+        if(value < POWI_TABLE_SIZE)
         {
-            half = powi_table[count];
+            half = powi_table[value];
         }
-        else if(count & 1)
+        else if(value & 1)
         {
-            half = count & ((1 << POWI_WINDOW_SIZE) - 1); // that is, count & 7
+            half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
         }
         else
         {
-            half = count / 2;
+            half = value / 2;
         }
 
-        long otherhalf = count-half;
+        long otherhalf = value-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
-        FPO(fprintf(stderr, "count=%ld, half=%ld, otherhalf=%ld\n", count,half,otherhalf));
+        FPO(fprintf(stderr, "value=%ld, half=%ld, otherhalf=%ld\n", value,half,otherhalf));
 
         if(half == otherhalf)
         {
-            PlanNtimesCache(half,      cache, cache_needed, 2, recursioncount+1);
+            PlanNtimesCache(half,      cache, 2, recursioncount+1);
         }
         else
         {
-            PlanNtimesCache(half,      cache, cache_needed, 1, recursioncount+1);
+            PlanNtimesCache(half,      cache, 1, recursioncount+1);
             PlanNtimesCache(otherhalf>0?otherhalf:-otherhalf,
-                                       cache, cache_needed, 1, recursioncount+1);
+                                       cache, 1, recursioncount+1);
         }
-
-        if(count < POWI_CACHE_SIZE)
-            cache[count] = 1; // This value has been generated
+        
+        cache.Plan_Has(value);
     }
 
     bool AssembleSequence(
@@ -649,56 +722,23 @@ namespace
             {
                 /* To prevent calculating the same factors over and over again,
                  * we use a cache. */
-                int cache[POWI_CACHE_SIZE], cache_needed[POWI_CACHE_SIZE];
-
-                /* Assume we have no factors in the cache */
-                for(int n=0; n<POWI_CACHE_SIZE; ++n) { cache[n] = 0; cache_needed[n] = 0; }
-
-
-                /* Decide which factors we would need multiple times.
-                 * Output:
-                 *   cache[]        = these factors were generated
-                 *   cache_needed[] = number of times these factors were desired
-                 */
-                cache[1] = 1; // We have this value already.
-                PlanNtimesCache(count, cache, cache_needed, 1);
-
-                cache[1] = synth.GetStackTop()-1;
-                for(int n=2; n<POWI_CACHE_SIZE; ++n)
-                    cache[n] = -1; /* Stack location for each component */
-
+                PowiCache cache;
+                PlanNtimesCache(count, cache, 1);
+                
                 size_t stacktop_desired = synth.GetStackTop();
 
-                /*// Cache all the required components
-                for(int n=2; n<POWI_CACHE_SIZE; ++n)
-                    if(cache_needed[n] > 1)
-                    {
-                        FPO(fprintf(stderr, "Will need %d, %d times, caching...\n", n, cache_needed[n]));
-                        Subdivide_result res = AssembleSequence_Subdivide(
-                            n, cache, cache_needed, sequencing,
-                            synth);
-                        FPO(fprintf(stderr, "Cache[%d] = %u,%d\n",
-                            n, (unsigned)res.stackpos, res.cache_val));
-                        cache[n] = res.stackpos;
-                    }*/
-
-                for(int a=1; a<POWI_CACHE_SIZE; ++a)
-                    if(cache[a] >= 0 || cache_needed[a] > 0)
-                    {
-                        FPO(fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
-                            cache[a], a, cache_needed[a]));
-                    }
+                cache.Start( synth.GetStackTop()-1 );
 
                 FPO(fprintf(stderr, "Calculating result for %ld...\n", count));
-                Subdivide_result res = AssembleSequence_Subdivide(
-                    count, cache, cache_needed, sequencing,
+                size_t res_stackpos = AssembleSequence_Subdivide(
+                    count, cache, sequencing,
                     synth);
 
                 size_t n_excess = synth.GetStackTop() - stacktop_desired;
-                if(n_excess > 0 || res.stackpos != stacktop_desired-1)
+                if(n_excess > 0 || res_stackpos != stacktop_desired-1)
                 {
                     // Remove the cache values
-                    synth.DoPopNMov(stacktop_desired-1, res.stackpos);
+                    synth.DoPopNMov(stacktop_desired-1, res_stackpos);
                 }
             }
         }
@@ -712,114 +752,83 @@ namespace
         return true;
     }
 
-    Subdivide_result
-    AssembleSequence_Subdivide(
-        long count,
-        int cache[POWI_CACHE_SIZE], int cache_needed[POWI_CACHE_SIZE],
+    size_t AssembleSequence_Subdivide(
+        long value,
+        PowiCache& cache,
         const SequenceOpCode& sequencing,
         CodeTree::ByteCodeSynth& synth)
     {
-        if(count < POWI_CACHE_SIZE)
+        int cachepos = cache.Find(value);
+        if(cachepos >= 0)
         {
-            if(cache[count] >= 0)
-            {
-                // found from the cache
-                FPO(fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
-                    count, (unsigned)cache[count], cache_needed[count]));
-                return Subdivide_result(cache[count], count);
-            }
+            // found from the cache
+            return cachepos;
         }
 
         long half = 1;
-
-        if(count < POWI_TABLE_SIZE)
+        if(value < POWI_TABLE_SIZE)
         {
-            half = powi_table[count];
+            half = powi_table[value];
         }
-        else if(count & 1)
+        else if(value & 1)
         {
-            half = count & ((1 << POWI_WINDOW_SIZE) - 1); // that is, count & 7
+            half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
         }
         else
         {
-            half = count / 2;
+            half = value / 2;
         }
-        long otherhalf = count-half;
+        long otherhalf = value-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
-        FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", count, half, count-half));
+        FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", value, half, value-half));
 
-        Subdivide_result res;
         if(half == otherhalf)
         {
-            Subdivide_result half_res = AssembleSequence_Subdivide(
-                half,
-                cache, cache_needed, sequencing,
-                synth);
+            size_t half_pos = AssembleSequence_Subdivide(half, cache, sequencing, synth);
 
             // self-cumulate the subdivide result
-            res = Subdivide_MakeResult(half_res, half_res, cache_needed,
+            Subdivide_Combine(half_pos,half, half_pos,half, cache,
                 sequencing.op_normal, sequencing.op_normal_flip,
                 synth);
         }
         else
         {
-            Subdivide_result half_res = AssembleSequence_Subdivide(
-                half,
-                cache, cache_needed, sequencing,
-                synth);
+            long part1 = half;
+            long part2 = otherhalf>0?otherhalf:-otherhalf;
+            
+            size_t part1_pos = AssembleSequence_Subdivide(part1, cache, sequencing, synth);
+            size_t part2_pos = AssembleSequence_Subdivide(part2, cache, sequencing, synth);
 
-            Subdivide_result otherhalf_res = AssembleSequence_Subdivide(
-                otherhalf>0?otherhalf:-otherhalf,
-                cache, cache_needed, sequencing,
-                synth);
+            FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", value, half, otherhalf));
 
-            FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", count, half, otherhalf));
-
-            res = Subdivide_MakeResult(half_res,otherhalf_res, cache_needed,
+            Subdivide_Combine(part1_pos,part1, part2_pos,part2, cache,
                 otherhalf>0 ? sequencing.op_normal      : sequencing.op_inverse,
                 otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
                 synth);
         }
-
-        if(res.cache_val < 0 && count < POWI_CACHE_SIZE)
-        {
-            FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
-                count, (unsigned)res.stackpos, cache_needed[count]));
-            cache[count] = res.stackpos;
-            res.cache_val = count;
-        }
-        for(int a=1; a<POWI_CACHE_SIZE; ++a)
-            if(cache[a] >= 0 || cache_needed[a] > 0)
-            {
-                FPO(fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
-                    cache[a], a, cache_needed[a]));
-            }
-        return res;
+        size_t stackpos = synth.GetStackTop()-1;
+        cache.Remember(value, stackpos);
+        cache.DumpContents();
+        return stackpos;
     }
 
-    Subdivide_result
-    Subdivide_MakeResult(
-        const Subdivide_result& a,
-        const Subdivide_result& b,
-        int cache_needed[POWI_CACHE_SIZE],
+    void Subdivide_Combine(
+        size_t apos, long aval,
+        size_t bpos, long bval,
+        PowiCache& cache,
         unsigned cumulation_opcode,
         unsigned cumulation_opcode_flip,
         CodeTree::ByteCodeSynth& synth)
     {
-        FPO(fprintf(stderr, "== making result for (sp=%u, val=%d, needs=%d) and (sp=%u, val=%d, needs=%d), stacktop=%u\n",
-            (unsigned)a.stackpos, a.cache_val, a.cache_val>=0 ? cache_needed[a.cache_val] : -1,
-            (unsigned)b.stackpos, b.cache_val, b.cache_val>=0 ? cache_needed[b.cache_val] : -1,
-            (unsigned)synth.GetStackTop()));
+        /*FPO(fprintf(stderr, "== making result for (sp=%u, val=%d, needs=%d) and (sp=%u, val=%d, needs=%d), stacktop=%u\n",
+            (unsigned)apos, aval, aval>=0 ? cache_needed[aval] : -1,
+            (unsigned)bpos, bval, bval>=0 ? cache_needed[bval] : -1,
+            (unsigned)synth.GetStackTop()));*/
 
         // Figure out whether we can trample a and b
-        int a_needed = 0;
-        int b_needed = 0;
-
-        if(a.cache_val >= 0) a_needed = --cache_needed[a.cache_val];
-        if(b.cache_val >= 0) b_needed = --cache_needed[b.cache_val];
-
-        size_t apos = a.stackpos, bpos = b.stackpos;
+        int a_needed = cache.UseGetNeeded(aval);
+        int b_needed = cache.UseGetNeeded(bval);
 
         bool flipped = false;
 
@@ -833,55 +842,57 @@ namespace
             synth.DoDup(p); \
         } while(0)
 
-        if(a_needed > 0 && b_needed > 0)
+        if(a_needed > 0)
         {
-            // If they must both be preserved, make duplicates
-            // First push the one that is at the larger stack
-            // address. This increases the odds of possibly using cDup.
-            DUP_BOTH();
+            if(b_needed > 0)
+            {
+                // If they must both be preserved, make duplicates
+                // First push the one that is at the larger stack
+                // address. This increases the odds of possibly using cDup.
+                DUP_BOTH();
 
-            //SCENARIO 1:
-            // Input:  x B A x x
-            // Temp:   x B A x x A B
-            // Output: x B A x x R
-            //SCENARIO 2:
-            // Input:  x A B x x
-            // Temp:   x A B x x B A
-            // Output: x A B x x R
-        }
-        // So, either one could be trampled over
-        else if(a_needed > 0)
-        {
-            // A must be preserved, but B can be trampled over
-
-            // SCENARIO 1:
-            //  Input:  x B x x A
-            //   Temp:  x B x x A A B   (dup both, later first)
-            //  Output: x B x x A R
-            // SCENARIO 2:
-            //  Input:  x A x x B
-            //   Temp:  x A x x B A
-            //  Output: x A x x R       -- only commutative cases
-            // SCENARIO 3:
-            //  Input:  x x x B A
-            //   Temp:  x x x B A A B   (dup both, later first)
-            //  Output: x x x B A R
-            // SCENARIO 4:
-            //  Input:  x x x A B
-            //   Temp:  x x x A B A     -- only commutative cases
-            //  Output: x x x A R
-            // SCENARIO 5:
-            //  Input:  x A B x x
-            //   Temp:  x A B x x A B   (dup both, later first)
-            //  Output: x A B x x R
-
-            // if B is not at the top, dup both.
-            if(bpos != synth.GetStackTop()-1)
-                DUP_BOTH();    // dup both
+                //SCENARIO 1:
+                // Input:  x B A x x
+                // Temp:   x B A x x A B
+                // Output: x B A x x R
+                //SCENARIO 2:
+                // Input:  x A B x x
+                // Temp:   x A B x x B A
+                // Output: x A B x x R
+            }
             else
             {
-                DUP_ONE(apos); // just dup A
-                flipped=!flipped;
+                // A must be preserved, but B can be trampled over
+
+                // SCENARIO 1:
+                //  Input:  x B x x A
+                //   Temp:  x B x x A A B   (dup both, later first)
+                //  Output: x B x x A R
+                // SCENARIO 2:
+                //  Input:  x A x x B
+                //   Temp:  x A x x B A
+                //  Output: x A x x R       -- only commutative cases
+                // SCENARIO 3:
+                //  Input:  x x x B A
+                //   Temp:  x x x B A A B   (dup both, later first)
+                //  Output: x x x B A R
+                // SCENARIO 4:
+                //  Input:  x x x A B
+                //   Temp:  x x x A B A     -- only commutative cases
+                //  Output: x x x A R
+                // SCENARIO 5:
+                //  Input:  x A B x x
+                //   Temp:  x A B x x A B   (dup both, later first)
+                //  Output: x A B x x R
+
+                // if B is not at the top, dup both.
+                if(bpos != synth.GetStackTop()-1)
+                    DUP_BOTH();    // dup both
+                else
+                {
+                    DUP_ONE(apos); // just dup A
+                    flipped=!flipped;
+                }
             }
         }
         else if(b_needed > 0)
@@ -940,9 +951,5 @@ namespace
         }
         // Add them together.
         synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
-        // The return value will not need to be preserved.
-        int cache_val = -1;
-        FPO(fprintf(stderr, "== producing %u:%d\n", (unsigned)(synth.GetStackTop()-1), cache_val));
-        return Subdivide_result(synth.GetStackTop()-1, cache_val);
     }
 }
