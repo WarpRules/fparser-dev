@@ -17,6 +17,9 @@
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
 
+#define FIRST_TEST 0
+//#define FIRST_TEST 29
+
 namespace
 {
     // Auxiliary functions
@@ -1094,7 +1097,7 @@ int main()
 
     // Main testing loop
     // -----------------
-    for(unsigned i = 0; i < testsAmount; ++i)
+    for(unsigned i = FIRST_TEST; i < testsAmount; ++i)
     {
         int retval = fp.Parse(tests[i].funcString, tests[i].paramString,
                               tests[i].useDegrees);

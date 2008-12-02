@@ -229,7 +229,7 @@ namespace
     private:
         int cache[POWI_CACHE_SIZE];
         int cache_needed[POWI_CACHE_SIZE];
-        
+
     public:
         PowiCache()
             : cache(), cache_needed() /* Assume we have no factors in the cache */
@@ -241,7 +241,7 @@ namespace
              */
             cache[1] = 1; // We have this value already.
         }
-    
+
         bool Plan_Add(long value, int count)
         {
             if(value >= POWI_CACHE_SIZE) return false;
@@ -249,13 +249,13 @@ namespace
             cache_needed[value] += count;
             return cache[value];
         }
-        
+
         void Plan_Has(long value)
         {
             if(value < POWI_CACHE_SIZE)
                 cache[value] = 1; // This value has been generated
         }
-        
+
         void Start(size_t value1_pos)
         {
             for(int n=2; n<POWI_CACHE_SIZE; ++n)
@@ -265,7 +265,7 @@ namespace
 
             DumpContents();
         }
-        
+
         int Find(long value) const
         {
             if(value < POWI_CACHE_SIZE)
@@ -280,16 +280,16 @@ namespace
             }
             return -1;
         }
-        
+
         void Remember(long value, size_t stackpos)
         {
             if(value >= POWI_CACHE_SIZE) return;
-            
+
             FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
                 value, (unsigned)stackpos, cache_needed[value]));
             cache[value] = stackpos;
         }
-        
+
         void DumpContents() const
         {
             FPO(for(int a=1; a<POWI_CACHE_SIZE; ++a)
@@ -299,7 +299,7 @@ namespace
                         cache[a], a, cache_needed[a]);
                 })
         }
-        
+
         int UseGetNeeded(long value)
         {
             if(value >= 0 && value < POWI_CACHE_SIZE)
@@ -691,7 +691,7 @@ namespace
             PlanNtimesCache(otherhalf>0?otherhalf:-otherhalf,
                                        cache, 1, recursioncount+1);
         }
-        
+
         cache.Plan_Has(value);
     }
 
@@ -724,7 +724,7 @@ namespace
                  * we use a cache. */
                 PowiCache cache;
                 PlanNtimesCache(count, cache, 1);
-                
+
                 size_t stacktop_desired = synth.GetStackTop();
 
                 cache.Start( synth.GetStackTop()-1 );
@@ -796,7 +796,7 @@ namespace
         {
             long part1 = half;
             long part2 = otherhalf>0?otherhalf:-otherhalf;
-            
+
             size_t part1_pos = AssembleSequence_Subdivide(part1, cache, sequencing, synth);
             size_t part2_pos = AssembleSequence_Subdivide(part2, cache, sequencing, synth);
 

@@ -41,7 +41,8 @@ namespace
     CreateFunction(func4, FUNC4)
 
     const FuncData funcData[] =
-    { { Stringify(FUNC0), "x,y", func0 },
+    {
+      { Stringify(FUNC0), "x,y", func0 },
       { Stringify(FUNC1), "x,y", func1 },
       { Stringify(FUNC2), "x,y", func2 },
       { Stringify(FUNC3), "x,y", func3 },

@@ -20,7 +20,7 @@ void FunctionParser::Optimize()
     if(isOptimized) return;
     CopyOnWrite();
 
-    /*PrintByteCode(std::cout);*/
+    //PrintByteCode(std::cout);
 
     FPoptimizer_CodeTree::CodeTree* tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
@@ -60,7 +60,7 @@ void FunctionParser::Optimize()
     data->ByteCode.swap(byteCode);
     data->Immed.swap(immed);
 
-    /*PrintByteCode(std::cout);*/
+    //PrintByteCode(std::cout);
 
     isOptimized = true;
 }
