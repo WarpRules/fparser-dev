@@ -1,6 +1,6 @@
 /***************************************************************************\
-|* Function parser v3.0.3 by Warp                                          *|
-|* ------------------------------                                          *|
+|* Function parser v3.1 by Warp                                            *|
+|* ----------------------------                                            *|
 |* Parses and evaluates the given function with the given variable values. *|
 |* See fparser.txt for details.                                            *|
 |*                                                                         *|

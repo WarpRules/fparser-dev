@@ -1,6 +1,6 @@
-//================================
-// Function parser v3.0.3 by Warp
-//================================
+//==============================
+// Function parser v3.1 by Warp
+//==============================
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -984,7 +984,6 @@ double FunctionParser::Eval(const double* Vars)
 
     for(IP=0; IP<ByteCodeSize; ++IP)
     {
-        unsigned tmp = IP;
         switch(ByteCode[IP])
         {
 // Functions:
@@ -1228,12 +1227,6 @@ double FunctionParser::Eval(const double* Vars)
           default:
               Stack[++SP] = Vars[ByteCode[IP]-VarBegin];
         }
-        /*if(SP != (unsigned)-1 && SP >= data->StackSize)
-        {
-            PrintByteCode(std::cout);
-            fprintf(stderr, "eeh, stack overflow (%u, %u) at IP=%X, op=%u\n",
-                (unsigned)SP, (unsigned)data->StackSize, tmp, ByteCode[tmp]);
-        }*/
     }
 
     evalErrorType=0;

@@ -7,8 +7,7 @@
 #include <iostream>
 #include <cmath>
 
-//#define FUNC0 x*x+y*y
-#define FUNC0 pow(x,14)
+#define FUNC0 pow(x,14)+pow(y,8)
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10)-(4*pow(y,3)+2*y*y-10*y+2))*10
 
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
@@ -42,11 +41,11 @@ namespace
 
     const FuncData funcData[] =
     {
-//      { Stringify(FUNC0), "x,y", func0 },
-  //    { Stringify(FUNC1), "x,y", func1 },
-   //   { Stringify(FUNC2), "x,y", func2 },
-      { Stringify(FUNC3), "x,y", func3 },
-   //   { Stringify(FUNC4), "x,y", func4 }
+        { Stringify(FUNC0), "x,y", func0 },
+        { Stringify(FUNC1), "x,y", func1 },
+        { Stringify(FUNC2), "x,y", func2 },
+        { Stringify(FUNC3), "x,y", func3 },
+        { Stringify(FUNC4), "x,y", func4 }
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
@@ -82,16 +81,9 @@ int main()
             return 1;
         }
 
-        /*
-        std::cout << "fparser returns " << fp.Eval(values)
-                  << ", C++ returns " << funcData[i].function(values)
-                  << std::endl;
-        */
-
         const unsigned ParseLoops = 2000000;
-        const unsigned EvalLoops = 10000000;
-        const unsigned JitLoops = 50000000;
-        const unsigned OptimizationLoops = 100000;
+        const unsigned EvalLoops = 20000000;
+        const unsigned OptimizationLoops = 20000;
         const unsigned FuncLoops = 100000000;
 
 
@@ -106,7 +98,6 @@ int main()
 #ifndef MEASURE_PARSING_SPEED_ONLY
         // Measure evaluation speed
         // ------------------------
-        fp.PrintByteCode(std::cout);
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)
             fp.Eval(values);
@@ -118,8 +109,6 @@ int main()
         fp2 = fp;
         fp2.Optimize();
 
-        fp2.PrintByteCode(std::cout);
-
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)
             fp2.Eval(values);
@@ -130,6 +119,7 @@ int main()
 #ifdef TEST_JIT
         // Measure evaluation speed, jit-compiled
         // --------------------------------------
+        const unsigned JitLoops = 50000000;
         fp2.CreateJIT();
 
         iclock = std::clock();

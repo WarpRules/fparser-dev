@@ -3,117 +3,116 @@ CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_
 #LD=g++ -s
 LD=g++
 
-CXX += -g
-LD  += -g
+#CXX += -g
+#LD  += -g
 
 #CXX += -pg
 #LD  += -pg
 
-all: testbed speedtest example ftest powi_speedtest
+all: testbed speedtest example
 
-FP_MODULES=\
-		fparser.o \
-		fpoptimizer.o \
-		fpoptimizer_bytecode_to_codetree.o \
-		fpoptimizer_codetree_to_bytecode.o \
-		fpoptimizer_codetree.o \
-		fpoptimizer_grammar.o \
-		fpoptimizer_optimize.o \
-		fpoptimizer_opcodename.o
+FP_MODULES = 	fparser.o \
+		fpoptimizer/fpoptimizer_main.o \
+		fpoptimizer/fpoptimizer_bytecode_to_codetree.o \
+		fpoptimizer/fpoptimizer_codetree_to_bytecode.o \
+		fpoptimizer/fpoptimizer_codetree.o \
+		fpoptimizer/fpoptimizer_grammar.o \
+		fpoptimizer/fpoptimizer_optimize.o \
+		fpoptimizer/fpoptimizer_opcodename.o
 
-testbed:\
-		testbed.o $(FP_MODULES)
+testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-speedtest:\
-		speedtest.o $(FP_MODULES)
+fpoptimizer.o: fpoptimizer.cc
+
+testbed_release: testbed.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
-example:\
-		example.o $(FP_MODULES)
+speedtest: speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-ftest:\
-		ftest.o $(FP_MODULES)
+example: example.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-powi_speedtest:\
-		powi_speedtest.o $(FP_MODULES)
+ftest: ftest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-
-fpoptimizer_grammar_gen: \
-		fpoptimizer_grammar_gen.o \
-		fpoptimizer_opcodename.o
+powi_speedtest: powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-fpoptimizer_grammar_gen.cc: \
-		fpoptimizer_grammar_gen.y
+fpoptimizer/fpoptimizer_grammar_gen: \
+		fpoptimizer/fpoptimizer_grammar_gen.o \
+		fpoptimizer/fpoptimizer_opcodename.o
+	$(LD) -o $@ $^
+
+fpoptimizer/fpoptimizer_grammar_gen.cc: \
+		fpoptimizer/fpoptimizer_grammar_gen.y
 	bison++ --output=$@ $<
 
-fpoptimizer_grammar.cc: \
-		fpoptimizer_grammar_gen.y fpoptimizer.dat
-	$(MAKE) fpoptimizer_grammar_gen
-	./fpoptimizer_grammar_gen < fpoptimizer.dat  > $@
+fpoptimizer_grammar.o: fpoptimizer/fpoptimizer_grammar.cc
 
-pack:\
-		example.cc fparser.cc fparser.hh fparser.txt \
-		fpconfig.hh fptypes.hh \
-		fpoptimizer_grammar_gen.y \
-		fpoptimizer_grammar_gen.cc \
-		fpoptimizer_codetree.hh \
-		fpoptimizer_grammar.hh \
-		fpoptimizer_consts.hh \
-		fpoptimizer.cc \
-		fpoptimizer_codetree.cc \
-		fpoptimizer_grammar.cc \
-		fpoptimizer_optimize.cc \
-		fpoptimizer_opcodename.cc \
-		fpoptimizer_opcodename.hh \
-		fpoptimizer_codetree_to_bytecode.cc \
-		fpoptimizer_bytecode_to_codetree.cc
-	#
-	rm -f fpoptimizer_sum.cc fpoptimizer_sum.hh
-	cat fpoptimizer_codetree.hh \
-	    fpoptimizer_grammar.hh \
-	    fpoptimizer_consts.hh \
-	    fpoptimizer_opcodename.hh \
-	    crc32.hh > fpoptimizer_sum.hh
-	echo '#include "fpoptimizer_sum.hh"' > fpoptimizer_sum.cc
-	cat fpoptimizer_opcodename.cc \
-	    fpoptimizer_codetree.cc \
-	    fpoptimizer_grammar.cc \
-	    fpoptimizer_optimize.cc \
-	    fpoptimizer.cc \
-	    fpoptimizer_codetree_to_bytecode.cc \
-	    fpoptimizer_bytecode_to_codetree.cc \
+fpoptimizer/fpoptimizer_grammar.cc: \
+		fpoptimizer/fpoptimizer_grammar_gen \
+		fpoptimizer/fpoptimizer_grammar_gen.y \
+		fpoptimizer/fpoptimizer.dat
+	fpoptimizer/fpoptimizer_grammar_gen < fpoptimizer/fpoptimizer.dat > $@
+
+fpoptimizer.cc: fpoptimizer/fpoptimizer_grammar_gen.y \
+		fpoptimizer/fpoptimizer_grammar_gen.cc \
+		fpoptimizer/fpoptimizer_codetree.hh \
+		fpoptimizer/fpoptimizer_grammar.hh \
+		fpoptimizer/fpoptimizer_consts.hh \
+		fpoptimizer/fpoptimizer_main.cc \
+		fpoptimizer/fpoptimizer_codetree.cc \
+		fpoptimizer/fpoptimizer_grammar.cc \
+		fpoptimizer/fpoptimizer_optimize.cc \
+		fpoptimizer/fpoptimizer_opcodename.cc \
+		fpoptimizer/fpoptimizer_opcodename.hh \
+		fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
+		fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+		fpoptimizer/fpoptimizer_header.txt \
+		fpoptimizer/fpoptimizer_footer.txt
+	rm -f fpoptimizer.cc
+	cat fpoptimizer/fpoptimizer_header.txt \
+	    fpoptimizer/fpoptimizer_codetree.hh \
+	    fpoptimizer/fpoptimizer_grammar.hh \
+	    fpoptimizer/fpoptimizer_consts.hh \
+	    fpoptimizer/fpoptimizer_opcodename.hh \
+	    fpoptimizer/crc32.hh \
+	    fpoptimizer/fpoptimizer_opcodename.cc \
+	    fpoptimizer/fpoptimizer_codetree.cc \
+	    fpoptimizer/fpoptimizer_grammar.cc \
+	    fpoptimizer/fpoptimizer_optimize.cc \
+	    fpoptimizer/fpoptimizer_main.cc \
+	    fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
+	    fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+	    fpoptimizer/fpoptimizer_footer.txt \
 		| grep -v '#include "fpoptimizer' \
 		| grep -v '#include "crc32' \
-		>> fpoptimizer_sum.cc
-	zip -9 fparser3.0.3.zip \
-		example.cc fparser.cc fparser.hh fparser.txt \
-		fpconfig.hh fptypes.hh \
-		fpoptimizer_sum.hh \
-		fpoptimizer_sum.cc
-	rm -f fpoptimizer_sum.cc fpoptimizer_sum.hh
+		> $@
 
-#%.o:		%.cc fparser.hh
-#	$(CXX) -c $<
+pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \
+	fpconfig.hh fptypes.hh
+	zip -9 fparser3.1.zip $^
+
+devel_pack:
+	tar -cjvf fparser3.1_devel.tar.bz2 \
+	Makefile example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
+	fptypes.hh speedtest.cc testbed.cc \
+	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
+	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y
 
 clean:
-	rm -f	testbed speedtest example ftest \
-		powi_speedtest fpoptimizer_grammar_gen \
-		*.o .dep \
-		fpoptimizer_grammar_gen.cc \
-		fpoptimizer_grammar_gen.output \
-		fpoptimizer_grammar_gen.h \
-		fpoptimizer_grammar.cc \
-		fpoptimizer_grammar_sum.cc \
-		fpoptimizer_grammar_sum.hh
+	rm -f	testbed testbed_release speedtest example ftest \
+		powi_speedtest fpoptimizer/fpoptimizer_grammar_gen \
+		*.o fpoptimizer/*.o \
+		fpoptimizer/fpoptimizer_grammar_gen.output
+
 distclean: clean
 	rm -f	*~
 
 .dep:
 	g++ -MM $(wildcard *.cc) > .dep
+	g++ -MM $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 
 -include .dep
