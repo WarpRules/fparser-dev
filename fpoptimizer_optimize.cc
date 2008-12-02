@@ -29,28 +29,46 @@ namespace FPoptimizer_Grammar
     /* A helper for std::equal_range */
     struct OpcodeRuleCompare
     {
-        bool operator() (unsigned opcode, const Rule& rule) const
+        bool operator() (const FPoptimizer_CodeTree::CodeTree& tree, const Rule& rule) const
         {
-            return opcode < pack.flist[rule.input_index].opcode;
+            if(tree.Opcode != rule.func.opcode)
+                return tree.Opcode < rule.func.opcode;
+
+            if(tree.Params.size() < rule.n_minimum_params)
+                return true;
+
+            return false;
         }
-        bool operator() (const Rule& rule, unsigned opcode) const
+        bool operator() (const Rule& rule, const FPoptimizer_CodeTree::CodeTree& tree) const
         {
-            return pack.flist[rule.input_index].opcode < opcode;
+            if(rule.func.opcode != tree.Opcode)
+                return rule.func.opcode < tree.Opcode;
+
+            if(rule.n_minimum_params == tree.Params.size())
+            {
+                // For PositionalParams, we want rules where n_required_params == tree_params
+                // For others, we want rules where           n_required_params <= tree_params
+                return pack.mlist[rule.func.index].type == PositionalParams
+                    ? false : true;
+            }
+
+            return rule.n_minimum_params < tree.Params.size();
         }
     };
 
 #ifdef DEBUG_SUBSTITUTIONS
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+    static const char ImmedHolderNames[2][2] = {"%","&"};
+    static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
 #endif
 
     /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
         std::set<uint_fast64_t>& optimized_children,
         FPoptimizer_CodeTree::CodeTree& tree,
-        bool child_triggered,
         bool recursion) const
     {
-        bool changed_once = false;
+        bool changed = false;
 
 #ifdef DEBUG_SUBSTITUTIONS
         if(!recursion)
@@ -62,61 +80,37 @@ namespace FPoptimizer_Grammar
 #endif
         if(optimized_children.find(tree.Hash) == optimized_children.end())
         {
-            for(;;)
+            /* First optimize all children */
+            for(size_t a=0; a<tree.Params.size(); ++a)
             {
-                bool changed = false;
-
-                if(!child_triggered)
+                if( ApplyTo( optimized_children, *tree.Params[a].param, true ) )
                 {
-                    /* First optimize all children */
-                    for(size_t a=0; a<tree.Params.size(); ++a)
-                    {
-                        if( ApplyTo( optimized_children, *tree.Params[a].param, false, true ) )
-                        {
-                            changed = true;
-                        }
-                    }
+                    changed = true;
                 }
-
-                /* Figure out which rules _may_ match this tree */
-                typedef const Rule* ruleit;
-
-                std::pair<ruleit, ruleit> range
-                    = std::equal_range(pack.rlist + index,
-                                       pack.rlist + index + count,
-                                       tree.Opcode,
-                                       OpcodeRuleCompare());
-
-                while(range.first < range.second)
-                {
-                    /* Check if this rule matches */
-                    if(range.first->ApplyTo(tree))
-                    {
-                        changed = true;
-                        break;
-                    }
-                    ++range.first;
-                }
-
-                if(!changed) break;
-
-                // If we had a change at this point, mark up that we had one, and try again
-                changed_once = true;
             }
 
-            optimized_children.insert(tree.Hash);
-        }
+            /* Figure out which rules _may_ match this tree */
+            typedef const Rule* ruleit;
 
-        /* If any changes whatsoever were done, recurse the optimization to parents */
-        if((child_triggered || changed_once) && tree.Parent)
-        {
-            //ApplyTo( optimized_children, *tree.Parent, true , true);
+            std::pair<ruleit, ruleit> range
+                = std::equal_range(pack.rlist + index,
+                                   pack.rlist + index + count,
+                                   tree,
+                                   OpcodeRuleCompare());
 
-            /* As this step may cause the tree we were passed to actually not exist,
-             * don't touch the tree after this.
-             *
-             * FIXME: Is it even safe at all?
-             */
+            while(range.first < range.second)
+            {
+                /* Check if this rule matches */
+                if(range.first->ApplyTo(tree))
+                {
+                    changed = true;
+                    break;
+                }
+                ++range.first;
+            }
+
+            if(!changed)
+                optimized_children.insert(tree.Hash);
         }
 
 #ifdef DEBUG_SUBSTITUTIONS
@@ -127,7 +121,7 @@ namespace FPoptimizer_Grammar
             std::cout << "\n";
         }
 #endif
-        return changed_once;
+        return changed;
     }
 
     /* Store information about a potential match,
@@ -167,7 +161,7 @@ namespace FPoptimizer_Grammar
     bool Rule::ApplyTo(
         FPoptimizer_CodeTree::CodeTree& tree) const
     {
-        const Function&      input  = pack.flist[input_index];
+        const Function&      input  = func;
         const MatchedParams& repl   = pack.mlist[repl_index];
 
         MatchedParams::CodeTreeMatch matchrec;
@@ -776,9 +770,6 @@ namespace FPoptimizer_Grammar
     {
         //std::cout << "/*p" << (&p-pack.plist) << "*/";
 
-        static const char ImmedHolderNames[2][2] = {"%","&"};
-        static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
-
         if(p.sign) std::cout << '~';
         if(p.transformation == Negate) std::cout << '-';
         if(p.transformation == Invert) std::cout << '/';
@@ -840,8 +831,8 @@ namespace FPoptimizer_Grammar
             case cVar:   std::cout << "Var" << tree.Var; return;
             case cAdd: sep2 = " +"; break;
             case cMul: sep2 = " *"; break;
-            case cAnd: sep2 = " &&"; break;
-            case cOr: sep2 = " or"; break;
+            case cAnd: sep2 = " &"; break;
+            case cOr: sep2 = " |"; break;
             default:
                 std::cout << FP_GetOpcodeName(tree.Opcode);
                 if(tree.Opcode == cFCall || tree.Opcode == cPCall)
@@ -888,7 +879,6 @@ namespace FPoptimizer_Grammar
         for(std::map<unsigned, std::pair<uint_fast64_t, size_t> >::const_iterator
             i = matchrec.NamedMap.begin(); i != matchrec.NamedMap.end(); ++i)
         {
-            static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
             std::cout << "           " << NamedHolderNames[i->first] << " = ";
             DumpTree(*matchrec.trees.find(i->second.first)->second);
             std::cout << std::endl;
@@ -897,7 +887,6 @@ namespace FPoptimizer_Grammar
         for(std::map<unsigned, double>::const_iterator
             i = matchrec.ImmedMap.begin(); i != matchrec.ImmedMap.end(); ++i)
         {
-            static const char ImmedHolderNames[2][2] = {"%","&"};
             std::cout << "           " << ImmedHolderNames[i->first] << " = ";
             std::cout << i->second << std::endl;
         }

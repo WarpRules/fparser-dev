@@ -55,6 +55,8 @@ namespace GrammarData
 
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
+
+        size_t CalcRequiredParamsCount() const;
     };
 
     class FunctionType
@@ -264,6 +266,18 @@ namespace GrammarData
         return true;
     }
 
+    size_t MatchedParams::CalcRequiredParamsCount() const
+    {
+        size_t res = 0;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == RestHolder)
+                continue; // Completely optional
+            res += Params[a]->MinimumRepeat;
+        }
+        return res;
+    }
+
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return false;
@@ -320,7 +334,12 @@ namespace GrammarData
 
     bool MatchedParams::operator== (const MatchedParams& b) const
     {
+        size_t a_req =   CalcRequiredParamsCount();
+        size_t b_req = b.CalcRequiredParamsCount();
+        if(a_req != b_req) return false;
+
         if(Type != b.Type) return false;
+
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
             if(!(*Params[a] == *b.Params[a]))
@@ -330,7 +349,12 @@ namespace GrammarData
 
     bool MatchedParams::operator< (const MatchedParams& b) const
     {
-        if(Type !=  b.Type) return Type;
+        size_t a_req =   CalcRequiredParamsCount();
+        size_t b_req = b.CalcRequiredParamsCount();
+        if(a_req != b_req) return a_req < b_req;
+
+        if(Type !=  b.Type) return Type < b.Type;
+
         if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
         for(size_t a=0; a < Params.size(); ++a)
             if(!(*Params[a] == *b.Params[a]))
@@ -554,8 +578,10 @@ public:
     {
         Rule ritem;
         ritem.type        = r.Type;
-        ritem.input_index = Dump(r.Input);
+        ritem.func.opcode = r.Input.Opcode;
+        ritem.func.index  = Dump(r.Input.Params);
         ritem.repl_index  = Dump(r.Replacement);
+        ritem.n_minimum_params = r.Input.Params.CalcRequiredParamsCount();
         rlist.push_back(ritem);
         return rlist.size()-1;
     }
@@ -563,25 +589,19 @@ public:
     {
         Grammar gitem;
         gitem.index = rlist.size();
+        gitem.count = 0;
         for(size_t a=0; a<g.rules.size(); ++a)
+        {
+            if(g.rules[a].Input.Opcode == cNop) continue;
             Dump(g.rules[a]);
-        gitem.count = g.rules.size();
+            ++gitem.count;
+        }
         glist.push_back(gitem);
         return glist.size()-1;
     }
 
     void Flush()
     {
-        /*
-        std::cout << "/""*\n";
-        for(size_t a=0; a<rlist.size(); ++a)
-        {
-            std::cout << ""; DumpFunction(flist[rlist[a].input_index]);
-            std::cout << " --> "; DumpParams(mlist[rlist[a].repl_index]);
-            std::cout << "\n";
-        }
-        std::cout << "*""/\n";*/
-
         std::cout <<
             "namespace\n"
             "{\n"
@@ -663,12 +683,15 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             std::cout <<
-            "        {" << (rlist[a].type == ProduceNewTree  ? "ProduceNewTree"
+            "        {" << rlist[a].n_minimum_params
+                        << ", "
+                        << (rlist[a].type == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].type == ReplaceParams ?*/ "ReplaceParams "
                            )
-                        << ", " << rlist[a].input_index
-                        << ", " << rlist[a].repl_index
-                        << " }, /* " << a << " */\n";
+                        << ",    " << rlist[a].repl_index
+                        << ",\t{ " << Dump(OpcodeType(rlist[a].func.opcode))
+                        <<   ", " << rlist[a].func.index
+                        <<  " } }, /* " << a << " */\n";
         }
         std::cout <<
             "    };\n"

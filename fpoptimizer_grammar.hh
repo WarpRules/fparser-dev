@@ -104,11 +104,12 @@ namespace FPoptimizer_Grammar
     };
     struct Rule
     {
-        RuleType  type        : 4;
-        // index to flist[]
-        unsigned  input_index : 14;
+        unsigned  n_minimum_params : 8;
+        RuleType  type             : 8;
         // index to mlist[]
-        unsigned  repl_index  : 14;
+        unsigned  repl_index       : 16;
+
+        Function  func;
 
         bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const;
     };
@@ -120,7 +121,6 @@ namespace FPoptimizer_Grammar
 
         bool ApplyTo(std::set<uint_fast64_t>& optimized_children,
                      FPoptimizer_CodeTree::CodeTree& tree,
-                     bool child_triggered=false,
                      bool recursion=false) const;
     };
 

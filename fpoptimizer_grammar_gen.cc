@@ -157,6 +157,8 @@ namespace GrammarData
 
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
+
+        size_t CalcRequiredParamsCount() const;
     };
 
     class FunctionType
@@ -366,6 +368,18 @@ namespace GrammarData
         return true;
     }
 
+    size_t MatchedParams::CalcRequiredParamsCount() const
+    {
+        size_t res = 0;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == RestHolder)
+                continue; // Completely optional
+            res += Params[a]->MinimumRepeat;
+        }
+        return res;
+    }
+
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return false;
@@ -422,7 +436,12 @@ namespace GrammarData
 
     bool MatchedParams::operator== (const MatchedParams& b) const
     {
+        size_t a_req =   CalcRequiredParamsCount();
+        size_t b_req = b.CalcRequiredParamsCount();
+        if(a_req != b_req) return false;
+
         if(Type != b.Type) return false;
+
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
             if(!(*Params[a] == *b.Params[a]))
@@ -432,7 +451,12 @@ namespace GrammarData
 
     bool MatchedParams::operator< (const MatchedParams& b) const
     {
-        if(Type !=  b.Type) return Type;
+        size_t a_req =   CalcRequiredParamsCount();
+        size_t b_req = b.CalcRequiredParamsCount();
+        if(a_req != b_req) return a_req < b_req;
+
+        if(Type !=  b.Type) return Type < b.Type;
+
         if(Params.size() != b.Params.size()) return Params.size() > b.Params.size();
         for(size_t a=0; a < Params.size(); ++a)
             if(!(*Params[a] == *b.Params[a]))
@@ -656,8 +680,10 @@ public:
     {
         Rule ritem;
         ritem.type        = r.Type;
-        ritem.input_index = Dump(r.Input);
+        ritem.func.opcode = r.Input.Opcode;
+        ritem.func.index  = Dump(r.Input.Params);
         ritem.repl_index  = Dump(r.Replacement);
+        ritem.n_minimum_params = r.Input.Params.CalcRequiredParamsCount();
         rlist.push_back(ritem);
         return rlist.size()-1;
     }
@@ -665,25 +691,19 @@ public:
     {
         Grammar gitem;
         gitem.index = rlist.size();
+        gitem.count = 0;
         for(size_t a=0; a<g.rules.size(); ++a)
+        {
+            if(g.rules[a].Input.Opcode == cNop) continue;
             Dump(g.rules[a]);
-        gitem.count = g.rules.size();
+            ++gitem.count;
+        }
         glist.push_back(gitem);
         return glist.size()-1;
     }
 
     void Flush()
     {
-        /*
-        std::cout << "/""*\n";
-        for(size_t a=0; a<rlist.size(); ++a)
-        {
-            std::cout << ""; DumpFunction(flist[rlist[a].input_index]);
-            std::cout << " --> "; DumpParams(mlist[rlist[a].repl_index]);
-            std::cout << "\n";
-        }
-        std::cout << "*""/\n";*/
-
         std::cout <<
             "namespace\n"
             "{\n"
@@ -765,12 +785,15 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             std::cout <<
-            "        {" << (rlist[a].type == ProduceNewTree  ? "ProduceNewTree"
+            "        {" << rlist[a].n_minimum_params
+                        << ", "
+                        << (rlist[a].type == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].type == ReplaceParams ?*/ "ReplaceParams "
                            )
-                        << ", " << rlist[a].input_index
-                        << ", " << rlist[a].repl_index
-                        << " }, /* " << a << " */\n";
+                        << ",    " << rlist[a].repl_index
+                        << ",\t{ " << Dump(OpcodeType(rlist[a].func.opcode))
+                        <<   ", " << rlist[a].func.index
+                        <<  " } }, /* " << a << " */\n";
         }
         std::cout <<
             "    };\n"
@@ -859,7 +882,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 764 "fpoptimizer_grammar_gen.y"
+#line 787 "fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1277,9 +1300,9 @@ static const short yyrhs[] = {    20,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   795,   801,   802,   805,   815,   827,   847,   858,   879,   900,
-   905,   909,   915,   920,   924,   939,   948,   954,   963,   972,
-   976
+   818,   824,   825,   828,   838,   850,   870,   881,   902,   923,
+   928,   932,   938,   943,   947,   962,   971,   977,   986,   995,
+   999
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1846,14 +1869,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 797 "fpoptimizer_grammar_gen.y"
+#line 820 "fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 808 "fpoptimizer_grammar_gen.y"
+#line 831 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1862,7 +1885,7 @@ case 4:
       ;
     break;}
 case 5:
-#line 818 "fpoptimizer_grammar_gen.y"
+#line 841 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1873,7 +1896,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 829 "fpoptimizer_grammar_gen.y"
+#line 852 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1892,7 +1915,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 849 "fpoptimizer_grammar_gen.y"
+#line 872 "fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -1902,7 +1925,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 863 "fpoptimizer_grammar_gen.y"
+#line 886 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1921,7 +1944,7 @@ case 8:
        ;
     break;}
 case 9:
-#line 882 "fpoptimizer_grammar_gen.y"
+#line 905 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAdd && yyvsp[-1].opcode != cMul && yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -1940,37 +1963,37 @@ case 9:
        ;
     break;}
 case 10:
-#line 902 "fpoptimizer_grammar_gen.y"
+#line 925 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
 case 11:
-#line 906 "fpoptimizer_grammar_gen.y"
+#line 929 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 12:
-#line 910 "fpoptimizer_grammar_gen.y"
+#line 933 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 13:
-#line 917 "fpoptimizer_grammar_gen.y"
+#line 940 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 14:
-#line 921 "fpoptimizer_grammar_gen.y"
+#line 944 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::ImmedHolderTag());
        ;
     break;}
 case 15:
-#line 925 "fpoptimizer_grammar_gen.y"
+#line 948 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -1987,7 +2010,7 @@ case 15:
        ;
     break;}
 case 16:
-#line 940 "fpoptimizer_grammar_gen.y"
+#line 963 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -1998,7 +2021,7 @@ case 16:
        ;
     break;}
 case 17:
-#line 949 "fpoptimizer_grammar_gen.y"
+#line 972 "fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.Dump(*yyvsp[0].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
@@ -2006,7 +2029,7 @@ case 17:
        ;
     break;}
 case 18:
-#line 955 "fpoptimizer_grammar_gen.y"
+#line 978 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2017,7 +2040,7 @@ case 18:
        ;
     break;}
 case 19:
-#line 964 "fpoptimizer_grammar_gen.y"
+#line 987 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2028,13 +2051,13 @@ case 19:
        ;
     break;}
 case 20:
-#line 973 "fpoptimizer_grammar_gen.y"
+#line 996 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].f);
        ;
     break;}
 case 21:
-#line 977 "fpoptimizer_grammar_gen.y"
+#line 1000 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
@@ -2243,7 +2266,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 981 "fpoptimizer_grammar_gen.y"
+#line 1004 "fpoptimizer_grammar_gen.y"
 
 
 void FPoptimizerGrammarParser::yyerror(char* msg)

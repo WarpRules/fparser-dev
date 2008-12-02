@@ -209,6 +209,11 @@ namespace FPoptimizer_CodeTree
                         data.AddConst(CONSTANT_L10I);
                         data.Eat(2, cMul);
                         break;
+                    case cLog2:
+                        data.Eat(1, cLog);
+                        data.AddConst(CONSTANT_L2I);
+                        data.Eat(2, cMul);
+                        break;
                     // Binary operators requiring special attention
                     case cSub:
                         data.Eat(2, cAdd); // Minus is negative adding

@@ -73,48 +73,62 @@
 # the optimized opcodes are reconstructed where available.
 
 # x / y = x * 1/y
-cDiv  [x y] -> cMul [x ~y]
-cRDiv [y x] -> cMul [x ~y]
+# Note: Already done by bytecode interpreter
+#cDiv  [x y] -> cMul [x ~y]
+#cRDiv [y x] -> cMul [x ~y]
 
 # x - y = x + -y
-cSub  [x y] -> cAdd [x ~y]
-cRSub [y x] -> cAdd [x ~y]
+# Note: Already done by bytecode interpreter
+#cSub  [x y] -> cAdd [x ~y]
+#cRSub [y x] -> cAdd [x ~y]
 
 # 1/x   = <implied> * ~x
-cInv [x]   -> cMul [~x]
+# Note: Already done by bytecode interpreter
+#cInv [x]   -> cMul [~x]
 
 # -x    = <implied> + -x
-cNeg [x]   -> cAdd [~x]
+# Note: Already done by bytecode interpreter
+#cNeg [x]   -> cAdd [~x]
 
 # deg(x) = x * CONSTANT_DR
-cDeg [x]   -> cMul [x CONSTANT_DR]
+# Note: Already done by bytecode interpreter
+#cDeg [x]   -> cMul [x CONSTANT_DR]
 
 # rad(x) = x * CONSTANT_RD
-cRad [x]   -> cMul [x CONSTANT_RD]
+# Note: Already done by bytecode interpreter
+#cRad [x]   -> cMul [x CONSTANT_RD]
 
 # cot(x) = <implied> * ~tan(x)
-cCot [x]   -> cMul [~(cTan [x])]
+# Note: Already done by bytecode interpreter
+#cCot [x]   -> cMul [~(cTan [x])]
 
 # csc(x) = <implied> * ~sin(x)
-cCsc [x]   -> cMul [~(cSin [x])]
+# Note: Already done by bytecode interpreter
+#cCsc [x]   -> cMul [~(cSin [x])]
 
 # sec(x) = <implied> * ~cos(x)
-cSec [x]   -> cMul [~(cCos [x])]
+# Note: Already done by bytecode interpreter
+#cSec [x]   -> cMul [~(cCos [x])]
 
 # sqrt(x) = x^0.5
-cSqrt [x]  -> cPow [x 0.5]
+# Note: Already done by bytecode interpreter
+#cSqrt [x]  -> cPow [x 0.5]
 
 # sqr(x) = x*x
-cSqr [x]   -> cMul [x x]
+# Note: Already done by bytecode interpreter
+#cSqr [x]   -> cMul [x x]
 
 # exp(x) = CONSTANT_E^x
-cExp [x]    -> cPow [CONSTANT_E x]
+# Note: Already done by bytecode interpreter
+#cExp [x]    -> cPow [CONSTANT_E x]
 
 # log10(x) = log(x) * CONSTANT_L10I
-cLog10 [x]  -> cMul [(cLog [x]) CONSTANT_L10I]
+# Note: Already done by bytecode interpreter
+#cLog10 [x]  -> cMul [(cLog [x]) CONSTANT_L10I]
 
 # log2(x) = log(x) * CONSTANT_L2I
-cLog2 [x]   -> cMul [(cLog [x]) CONSTANT_L2I]
+# Note: Already done by bytecode interpreter
+#cLog2 [x]   -> cMul [(cLog [x]) CONSTANT_L2I]
 
 # not(not(x)) = notnot(x)
 # Do this so that !!x won't get inadvertedly optimized into x
@@ -548,15 +562,16 @@ cTan [(cAtan [x])] -> x
 
 # x * CONSTANT_DR = cDeg(x)
 # x * ~CONSTANT_RD = cDeg(x)
-cMul CONSTANT_DR <1>  -> cDeg [(cMul <1>)]
-cMul ~CONSTANT_RD <1> -> cDeg [(cMul <1>)]
-# ^^Note: May need to run intermediate again after this step, due to the potentially short cMul list produced
+cMul  CONSTANT_DR <1> ~<2> -> cDeg [(cMul <1> ~<2>)]
+cMul ~CONSTANT_RD <1> ~<2> -> cDeg [(cMul <1> ~<2>)]
+# Note: This may produce one-operand cMul lists.
+# Those are treated properly in the bytecode generation,
+# and do not need to be handled by [INTERMEDIATE].
 
 # x * CONSTANT_RD = cRad(x)
 # x * ~CONSTANT_DR = cRad(x)
-cMul CONSTANT_RD <1>  -> cRad [(cMul <1>)]
-cMul ~CONSTANT_DR <1> -> cRad [(cMul <1>)]
-# ^^Note: May need to run intermediate again after this step, due to the potentially short cMul list produced
+cMul  CONSTANT_RD <1> ~<2> -> cRad [(cMul <1> ~<2>)]
+cMul ~CONSTANT_DR <1> ~<2> -> cRad [(cMul <1> ~<2>)]
 
 # x^0.5 = sqrt(x)
 cPow [x 0.5]         -> cSqrt [x]
@@ -564,11 +579,17 @@ cPow [x 0.5]         -> cSqrt [x]
 # pow(CONSTANT_E, x) = exp(x)
 cPow [CONSTANT_E x]  -> cExp [x]
 
-# log(x) * CONSTANT_L10I = log10(x)
-cMul (cLog [x]) CONSTANT_L10I -> cLog10 [x]
+# log(x) / CONSTANT_L10  = log10(x)
+cMul  (cLog [x]) ~CONSTANT_L10  :  (cLog10 [x])
+cMul  (cLog [x]) CONSTANT_L10I  :  (cLog10 [x])
+cMul ~(cLog [x])   CONSTANT_L10 : ~(cLog10 [x])
+cMul ~(cLog [x]) ~CONSTANT_L10I : ~(cLog10 [x])
 
-# log(x) * CONSTANT_L2I = log2(x)
-cMul (cLog [x]) CONSTANT_L2I -> cLog2 [x]
+# log(x) / CONSTANT_L2 = log2(x)
+cMul  (cLog [x]) ~CONSTANT_L2  :  (cLog2 [x])
+cMul  (cLog [x]) CONSTANT_L2I  :  (cLog2 [x])
+cMul ~(cLog [x])   CONSTANT_L2 : ~(cLog2 [x])
+cMul ~(cLog [x]) ~CONSTANT_L2I : ~(cLog2 [x])
 
 # In a mul-list, ~sin(x) = csc(x)
 cMul ~(cSin [x])      : (cCsc [x])
@@ -579,8 +600,9 @@ cMul ~(cCos [x])      : (cSec [x])
 # In a mul-list, ~tan(x) = cot(x)
 cMul ~(cTan [x])      : (cCot [x])
 
-cMul x x              :  (cSqr[x])
-cMul ~x ~x            : ~(cSqr[x])
+# These should not occur after [INTERMEDIATE]
+#cMul x x              :  (cSqr[x])
+#cMul ~x ~x            : ~(cSqr[x])
 
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology
 # Those are done in the bytecode generation automatically.

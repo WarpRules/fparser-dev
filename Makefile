@@ -97,7 +97,7 @@ pack:\
 clean:
 	rm -f	testbed speedtest example ftest \
 		powi_speedtest fpoptimizer_grammar_gen \
-		*.o \
+		*.o .dep \
 		fpoptimizer_grammar_gen.cc \
 		fpoptimizer_grammar_gen.output \
 		fpoptimizer_grammar_gen.h \
