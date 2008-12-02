@@ -328,10 +328,10 @@ namespace
 namespace
 {
     typedef
-        std::map<uint_fast64_t,  std::pair<size_t, CodeTree*> >
+        std::map<uint_fast64_t,  std::pair<size_t, CodeTreeP> >
         TreeCountType;
 
-    void FindTreeCounts(TreeCountType& TreeCounts, CodeTree* tree)
+    void FindTreeCounts(TreeCountType& TreeCounts, CodeTreeP tree)
     {
         TreeCountType::iterator i = TreeCounts.lower_bound(tree->Hash);
         if(i == TreeCounts.end() || i->first != tree->Hash)
@@ -344,7 +344,7 @@ namespace
     }
 
     void RememberRecursivelyHashList(std::set<uint_fast64_t>& hashlist,
-                                     CodeTree* tree)
+                                     CodeTreeP tree)
     {
         hashlist.insert(tree->Hash);
         for(size_t a=0; a<tree->Params.size(); ++a)
@@ -451,7 +451,7 @@ namespace FPoptimizer_CodeTree
                 // Try to ensure that Immeds don't have a sign
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    CodeTree*& param = Params[a].param;
+                    CodeTreeP& param = Params[a].param;
                     if(Params[a].sign && param->IsImmed())
                         switch(Opcode)
                         {
@@ -471,7 +471,7 @@ namespace FPoptimizer_CodeTree
                     for(size_t a=0; a<Params.size(); ++a)
                     {
                         Param p = Params[a];
-                        CodeTree*& param = p.param;
+                        CodeTreeP& param = p.param;
                         if(!p.sign && param->IsLongIntegerImmed())
                         {
                             long value = param->GetLongIntegerImmed();
@@ -499,8 +499,8 @@ namespace FPoptimizer_CodeTree
                 int n_stacked = 0;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    CodeTree*const & param = Params[a].param;
-                    bool              sign = Params[a].sign;
+                    CodeTreeP const & param = Params[a].param;
+                    bool               sign = Params[a].sign;
 
                     param->SynthesizeByteCode(synth);
                     ++n_stacked;

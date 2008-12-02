@@ -14,16 +14,14 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_CodeTree
 {
-    CodeTree::CodeTree() : Opcode(), Params(), Hash(), Depth(1), Parent()
+    CodeTree::CodeTree()
+        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), Parent()
     {
     }
 
     CodeTree::~CodeTree()
     {
-        for(size_t a=0; a<Params.size(); ++a)
-            delete Params[a].param;
     }
-
 
     void CodeTree::Rehash(
         bool child_triggered)
@@ -40,6 +38,7 @@ namespace FPoptimizer_CodeTree
         /* If we were triggered by a child, recurse to the parent */
         if(child_triggered && Parent)
         {
+            //assert(Parent->RefCount > 0);
             Parent->Rehash(true);
         }
     }
@@ -147,15 +146,39 @@ namespace FPoptimizer_CodeTree
                 result->Funcno = Funcno;
                 break;
         }
-        result->Params = Params;
-        for(size_t a=0; a<Params.size(); ++a)
-        {
-            result->Params[a].param = Params[a].param->Clone();
-            result->Params[a].param->Parent = result;
-        }
+        result->SetParams(Params);
         result->Hash   = Hash;
         result->Depth  = Depth;
+        //assert(Parent->RefCount > 0);
         result->Parent = Parent;
         return result;
+    }
+
+    void CodeTree::AddParam(const Param& param)
+    {
+        Params.push_back(param);
+        Params.back().param->Parent = this;
+    }
+
+    void CodeTree::SetParams(const std::vector<Param>& RefParams)
+    {
+        Params = RefParams;
+        /**
+        *** Note: The only reason we need to CLONE the children here
+        ***       is because they must have the correct Parent field.
+        ***       The Parent is required because of backward-recursive
+        ***       hash regeneration. Is there any way around this?
+        */
+
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            Params[a].param = Params[a].param->Clone();
+            Params[a].param->Parent = this;
+        }
+    }
+
+    void CodeTree::DelParam(size_t index)
+    {
+        Params.erase(Params.begin() + index);
     }
 }

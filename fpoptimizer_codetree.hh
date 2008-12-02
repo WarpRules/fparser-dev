@@ -7,10 +7,39 @@
 namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData;
+    class CodeTree;
+
+    class CodeTreeP
+    {
+    public:
+        CodeTreeP()                   : p(0)   { }
+        CodeTreeP(CodeTree*        b) : p(b)   { Birth(); }
+        CodeTreeP(const CodeTreeP& b) : p(&*b) { Birth(); }
+
+        inline CodeTree& operator* () const { return *p; }
+        inline CodeTree* operator->() const { return p; }
+
+        CodeTreeP& operator= (CodeTree*        b) { Set(b); return *this; }
+        CodeTreeP& operator= (const CodeTreeP& b) { Set(&*b); return *this; }
+
+        ~CodeTreeP() { Forget(); }
+
+    private:
+        inline static void Have(CodeTree* p2);
+        inline void Forget();
+        inline void Birth();
+        inline void Set(CodeTree* p2);
+    private:
+        CodeTree* p;
+    };
 
     class CodeTree
     {
         friend class CodeTreeParserData;
+        friend class CodeTreeP;
+
+        int RefCount;
+
     public:
         /* Describing the codetree node */
         unsigned Opcode;
@@ -22,11 +51,12 @@ namespace FPoptimizer_CodeTree
         };
         struct Param
         {
-            CodeTree* param; // param node
+            CodeTreeP param; // param node
             bool      sign;  // true = negated or inverted
 
-            Param() : param(),sign() {}
-            Param(CodeTree*p, bool s): param(p),sign(s) {}
+            Param()                           : param(),  sign()  {}
+            Param(CodeTree*        p, bool s) : param(p), sign(s) {}
+            Param(const CodeTreeP& p, bool s) : param(p), sign(s) {}
         };
         // Parameters for the function
         //  These use the sign:
@@ -56,7 +86,7 @@ namespace FPoptimizer_CodeTree
         ~CodeTree();
 
         /* Generates a CodeTree from the given bytecode */
-        static CodeTree* GenerateFrom(
+        static CodeTreeP GenerateFrom(
             const std::vector<unsigned>& byteCode,
             const std::vector<double>& immed,
             const FunctionParser::Data& data);
@@ -77,6 +107,10 @@ namespace FPoptimizer_CodeTree
 
         void Sort();
         void Sort_Recursive();
+
+        void SetParams(const std::vector<Param>& RefParams);
+        void AddParam(const Param& param);
+        void DelParam(size_t index);
 
         /* Clones the tree. (For parameter duplication) */
         CodeTree* Clone();
@@ -99,4 +133,26 @@ namespace FPoptimizer_CodeTree
         CodeTree(const CodeTree&);
         CodeTree& operator=(const CodeTree&);
     };
+
+    inline void CodeTreeP::Forget()
+    {
+        if(!p) return;
+        p->RefCount -= 1;
+        if(!p->RefCount) delete p;
+        //assert(p->RefCount >= 0);
+    }
+    inline void CodeTreeP::Have(CodeTree* p2)
+    {
+        if(p2) ++(p2->RefCount);
+    }
+    inline void CodeTreeP::Birth()
+    {
+        Have(p);
+    }
+    inline void CodeTreeP::Set(CodeTree* p2)
+    {
+        Have(p2);
+        Forget();
+        p = p2;
+    }
 }

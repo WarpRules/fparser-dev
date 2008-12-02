@@ -59,6 +59,11 @@ namespace FPoptimizer_Grammar
 
         void ReplaceTree(FPoptimizer_CodeTree::CodeTree& tree,
                          const MatchedParams& matcher, CodeTreeMatch& match) const;
+
+        void SynthesizeTree(
+            FPoptimizer_CodeTree::CodeTree& tree,
+            const MatchedParams& matcher,
+            MatchedParams::CodeTreeMatch& match) const;
     };
 
     struct ParamSpec

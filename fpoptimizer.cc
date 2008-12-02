@@ -22,7 +22,7 @@ void FunctionParser::Optimize()
 
     //PrintByteCode(std::cout);
 
-    FPoptimizer_CodeTree::CodeTree* tree
+    FPoptimizer_CodeTree::CodeTreeP tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
     std::set<uint_fast64_t> optimized_children;
@@ -43,8 +43,6 @@ void FunctionParser::Optimize()
     std::vector<double> immed;
     size_t stacktop_max = 0;
     tree->SynthesizeByteCode(byteCode, immed, stacktop_max);
-
-    delete tree;
 
     /*std::cout << std::flush;
     std::cerr << std::flush;

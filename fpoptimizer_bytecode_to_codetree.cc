@@ -17,18 +17,13 @@ namespace FPoptimizer_CodeTree
     class CodeTreeParserData
     {
     private:
-        std::vector<CodeTree*> stack;
+        std::vector<CodeTreeP> stack;
     public:
         CodeTreeParserData() : stack() { }
-        ~CodeTreeParserData()
-        {
-            for(size_t a=0; a<stack.size(); ++a)
-                delete stack[a];
-        }
 
         void Eat(unsigned nparams, OPCODE opcode)
         {
-            CodeTree* newnode = new CodeTree;
+            CodeTreeP newnode = new CodeTree;
             newnode->Opcode = opcode;
             size_t stackhead = stack.size() - nparams;
             for(unsigned a=0; a<nparams; ++a)
@@ -36,8 +31,7 @@ namespace FPoptimizer_CodeTree
                 CodeTree::Param param;
                 param.param = stack[stackhead + a];
                 param.sign  = false;
-                param.param->Parent = newnode;
-                newnode->Params.push_back(param);
+                newnode->AddParam(param);
             }
             stack.resize(stackhead);
             stack.push_back(newnode);
@@ -51,7 +45,7 @@ namespace FPoptimizer_CodeTree
 
         void AddConst(double value)
         {
-            CodeTree* newnode = new CodeTree;
+            CodeTreeP newnode = new CodeTree;
             newnode->Opcode = cImmed;
             newnode->Value  = value;
             stack.push_back(newnode);
@@ -59,7 +53,7 @@ namespace FPoptimizer_CodeTree
 
         void AddVar(unsigned varno)
         {
-            CodeTree* newnode = new CodeTree;
+            CodeTreeP newnode = new CodeTree;
             newnode->Opcode = cVar;
             newnode->Var    = varno;
             stack.push_back(newnode);
@@ -81,9 +75,9 @@ namespace FPoptimizer_CodeTree
             stack.push_back(stack.back()->Clone());
         }
 
-        CodeTree* PullResult()
+        CodeTreeP PullResult()
         {
-            CodeTree* result = stack.back();
+            CodeTreeP result = stack.back();
             stack.resize(stack.size()-1);
             result->Rehash(false);
             result->Sort_Recursive();
@@ -93,7 +87,7 @@ namespace FPoptimizer_CodeTree
         void CheckConst()
         {
             // Check if the last token on stack can be optimized with constant math
-            CodeTree* result = stack.back();
+            CodeTreeP result = stack.back();
             result->ConstantFolding();
         }
     private:
@@ -101,7 +95,7 @@ namespace FPoptimizer_CodeTree
         CodeTreeParserData& operator=(const CodeTreeParserData&);
     };
 
-    CodeTree* CodeTree::GenerateFrom(
+    CodeTreeP CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
         const FunctionParser::Data& fpdata)

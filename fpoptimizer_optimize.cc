@@ -154,7 +154,7 @@ namespace FPoptimizer_Grammar
           std::vector<uint_fast64_t> > RestMap;
 
         // Examples of each codetree
-        std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*> trees;
+        std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP> trees;
 
         CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
@@ -704,16 +704,12 @@ namespace FPoptimizer_Grammar
         return result;
     }
 
-    void MatchedParams::ReplaceParams(
+    void MatchedParams::SynthesizeTree(
         FPoptimizer_CodeTree::CodeTree& tree,
         const MatchedParams& matcher,
         MatchedParams::CodeTreeMatch& match) const
     {
-        // Replace the 0-level params indicated in "match" with the ones we have
-
-        // First, construct the tree recursively using the "match" info
-
-        for(size_t a=0; a<count; ++a)
+        for(unsigned a=0; a<count; ++a)
         {
             const ParamSpec& param = pack.plist[index+a];
             if(param.opcode == RestHolder)
@@ -726,24 +722,32 @@ namespace FPoptimizer_Grammar
                 FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
                 param.SynthesizeTree(*subtree, matcher, match);
                 subtree->Sort();
-                subtree->Recalculate_Hash_NoRecursion();
+                subtree->Recalculate_Hash_NoRecursion(); // rehash this, but not the children, nor the parent
                 FPoptimizer_CodeTree::CodeTree::Param p(subtree, param.sign) ;
-                p.param->Parent = &tree;
-                tree.Params.push_back(p);
+                tree.AddParam(p);
             }
         }
+    }
+
+    void MatchedParams::ReplaceParams(
+        FPoptimizer_CodeTree::CodeTree& tree,
+        const MatchedParams& matcher,
+        MatchedParams::CodeTreeMatch& match) const
+    {
+        // Replace the 0-level params indicated in "match" with the ones we have
+
+        // First, construct the tree recursively using the "match" info
+        SynthesizeTree(tree, matcher, match);
 
         // Remove the indicated params
         std::sort(match.param_numbers.begin(), match.param_numbers.end());
         for(size_t a=match.param_numbers.size(); a-->0; )
         {
             size_t num = match.param_numbers[a];
-            delete tree.Params[num].param;
-            tree.Params.erase(tree.Params.begin() + num);
+            tree.DelParam(num);
         }
         tree.Sort();
-        //tree.Recalculate_Hash_NoRecursion();
-        tree.Rehash(true); // rehash this and its parents
+        tree.Rehash(true); // rehash this and its parents, but not its children
     }
 
     void MatchedParams::ReplaceTree(
@@ -756,12 +760,9 @@ namespace FPoptimizer_Grammar
         std::vector<FPoptimizer_CodeTree::CodeTree::Param> OldParams = tree.Params;
         tree.Params.clear();
         pack.plist[index].SynthesizeTree(tree, matcher, match);
-        for(size_t a=0; a<OldParams.size(); ++a)
-            delete OldParams[a].param;
 
         tree.Sort();
-        //tree.Recalculate_Hash_NoRecursion();
-        tree.Rehash(true);  // rehash this and its parents
+        tree.Rehash(true);  // rehash this and its parents, but not its children
     }
 
     /* Synthesizes a new tree based on the given information
@@ -791,14 +792,14 @@ namespace FPoptimizer_Grammar
                 {
                     uint_fast64_t hash = i->second[a];
 
-                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*>
+                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP>
                         ::const_iterator j = match.trees.find(hash);
 
                     assert(j != match.trees.end());
 
-                    FPoptimizer_CodeTree::CodeTree::Param p(j->second->Clone(), sign);
-                    p.param->Parent = &tree;
-                    tree.Params.push_back(p);
+                    FPoptimizer_CodeTree::CodeTree* subtree = j->second->Clone();
+                    FPoptimizer_CodeTree::CodeTree::Param p(subtree, sign);
+                    tree.AddParam(p);
                 }
                 /*fprintf(stderr, "- params size became %u\n", (unsigned)tree.Params.size());
                 fflush(stderr);*/
@@ -809,25 +810,7 @@ namespace FPoptimizer_Grammar
                 const Function& fitem = pack.flist[index];
                 tree.Opcode = fitem.opcode;
                 const MatchedParams& mitem = pack.mlist[fitem.index];
-                for(unsigned a=0; a<mitem.count; ++a)
-                {
-                    const ParamSpec& param = pack.plist[mitem.index + a];
-                    if(param.opcode == RestHolder)
-                    {
-                        // Add children directly to this tree
-                        param.SynthesizeTree(tree, matcher, match);
-                    }
-                    else
-                    {
-                        FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
-                        param.SynthesizeTree(*subtree, matcher, match);
-                        subtree->Sort();
-                        subtree->Recalculate_Hash_NoRecursion();
-                        FPoptimizer_CodeTree::CodeTree::Param p(subtree, param.sign) ;
-                        p.param->Parent = &tree;
-                        tree.Params.push_back(p);
-                    }
-                }
+                mitem.SynthesizeTree(tree, matcher, match);
                 break;
             }
             case NamedHolder:
@@ -841,7 +824,7 @@ namespace FPoptimizer_Grammar
 
                     uint_fast64_t hash = i->second.first;
 
-                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTree*>
+                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP>
                         ::const_iterator j = match.trees.find(hash);
 
                     assert(j != match.trees.end());
@@ -854,12 +837,8 @@ namespace FPoptimizer_Grammar
                         case cFCall:
                         case cPCall: tree.Funcno = j->second->Funcno; break;
                     }
-                    tree.Params = j->second->Params;
-                    for(size_t a=0; a<tree.Params.size(); ++a)
-                    {
-                        tree.Params[a].param = tree.Params[a].param->Clone();
-                        tree.Params[a].param->Parent = &tree;
-                    }
+
+                    tree.SetParams(j->second->Params);
                     break;
                 }
                 // passthru; x+ is synthesized as the number, not as the tree
