@@ -42,11 +42,11 @@ namespace
 
     const FuncData funcData[] =
     {
-      { Stringify(FUNC0), "x,y", func0 },
-      { Stringify(FUNC1), "x,y", func1 },
-      { Stringify(FUNC2), "x,y", func2 },
+//      { Stringify(FUNC0), "x,y", func0 },
+  //    { Stringify(FUNC1), "x,y", func1 },
+   //   { Stringify(FUNC2), "x,y", func2 },
       { Stringify(FUNC3), "x,y", func3 },
-      { Stringify(FUNC4), "x,y", func4 }
+   //   { Stringify(FUNC4), "x,y", func4 }
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
@@ -106,7 +106,7 @@ int main()
 #ifndef MEASURE_PARSING_SPEED_ONLY
         // Measure evaluation speed
         // ------------------------
-        //fp.PrintByteCode(std::cout);
+        fp.PrintByteCode(std::cout);
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)
             fp.Eval(values);
@@ -118,7 +118,7 @@ int main()
         fp2 = fp;
         fp2.Optimize();
 
-        //fp2.PrintByteCode(std::cout);
+        fp2.PrintByteCode(std::cout);
 
         iclock = std::clock();
         for(unsigned counter = 0; counter < EvalLoops; ++counter)

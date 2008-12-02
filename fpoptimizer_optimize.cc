@@ -58,6 +58,7 @@ namespace FPoptimizer_Grammar
                 switch(pack.mlist[rule.func.index].type)
                 {
                     case PositionalParams:
+                    case SelectedParams:
                         return true; // Failure
                     case AnyParams:
                         return false; // Not a failure
@@ -340,6 +341,22 @@ namespace FPoptimizer_Grammar
             return false;
         }
 
+        if(type != AnyParams)
+        {
+            if(NeedList.polarity[0].Immeds < 0
+            || NeedList.polarity[0].SubTrees < 0
+            || NeedList.polarity[0].Others < 0
+            || NeedList.polarity[1].Immeds < 0
+            || NeedList.polarity[1].SubTrees < 0
+            || NeedList.polarity[1].Others < 0
+            || count != tree.Params.size())
+            {
+                // Something was too much.
+                return false;
+            }
+
+        }
+
         switch(type)
         {
             case PositionalParams:
@@ -348,19 +365,6 @@ namespace FPoptimizer_Grammar
                 std::cout << "<->";
                 DumpParams(*this);
                 std::cout << " -- ";*/
-
-                if(NeedList.polarity[0].Immeds < 0
-                || NeedList.polarity[0].SubTrees < 0
-                || NeedList.polarity[0].Others < 0
-                || NeedList.polarity[1].Immeds < 0
-                || NeedList.polarity[1].SubTrees < 0
-                || NeedList.polarity[1].Others < 0
-                || count != tree.Params.size())
-                {
-                    // Something was too much.
-                    return false;
-                }
-
                 for(unsigned a=0; a<count; ++a)
                 {
                     const ParamSpec& param = pack.plist[index+a];
@@ -378,6 +382,7 @@ namespace FPoptimizer_Grammar
                 return true;
             }
             case AnyParams:
+            case SelectedParams:
             {
                 const size_t n_tree_params = tree.Params.size();
 
@@ -387,6 +392,14 @@ namespace FPoptimizer_Grammar
                     const ParamSpec& param = pack.plist[index+a];
                     if(param.opcode == RestHolder) { HasRestHolders = true; break; }
                 }
+
+                #ifdef DEBUG_SUBSTITUTIONS
+                if((type == AnyParams) && recursion && !HasRestHolders)
+                {
+                    std::cout << "Recursed AnyParams with no RestHolders?\n";
+                    DumpParams(*this);
+                }
+                #endif
 
                 if(!HasRestHolders && recursion && count != n_tree_params)
                 {
@@ -593,20 +606,18 @@ namespace FPoptimizer_Grammar
             {
                 if(!tree.IsImmed()) return false;
                 double res = tree.GetImmed();
-                bool impossible = false;
-                if(res == GetConst(match, impossible))
-                    return !impossible;
-                return false;
+
+                double constval;
+                return GetConst(match, constval) && res == constval;
             }
         }
         return false;
     }
 
-    double ParamSpec::GetConst(
-        MatchedParams::CodeTreeMatch& match,
-        bool& impossible) const
+    bool ParamSpec::GetConst(
+        const MatchedParams::CodeTreeMatch& match,
+        double& result) const
     {
-        double result = 1;
         switch(OpcodeType(opcode))
         {
             case NumConstant:
@@ -616,7 +627,7 @@ namespace FPoptimizer_Grammar
             {
                 std::map<unsigned, double>::const_iterator
                     i = match.ImmedMap.find(index);
-                if(i == match.ImmedMap.end()) { impossible=true; return 1; }
+                if(i == match.ImmedMap.end()) return false; // impossible
                 result = i->second;
                 break;
             }
@@ -624,21 +635,19 @@ namespace FPoptimizer_Grammar
             {
                 std::map<unsigned, std::pair<uint_fast64_t, size_t> >::const_iterator
                     i = match.NamedMap.find(index);
-                if(i == match.NamedMap.end()) { impossible=true; return 1; }
+                if(i == match.NamedMap.end()) return false; // impossible
                 result = i->second.second;
                 break;
             }
             case RestHolder:
             {
                 // Not enumerable
-                impossible = true;
-                return 1;
+                return false;
             }
             case SubFunction:
             {
                 // Not enumerable
-                impossible = true;
-                return 1;
+                return false;
             }
             default:
             {
@@ -647,61 +656,99 @@ namespace FPoptimizer_Grammar
                     case cAdd:
                         result=0;
                         for(unsigned p=0; p<count; ++p)
-                            result += pack.plist[index+p].GetConst(match, impossible);
+                        {
+                            double tmp;
+                            if(!pack.plist[index+p].GetConst(match, tmp)) return false;
+                            result += tmp;
+                        }
                         break;
                     case cMul:
                         result=1;
                         for(unsigned p=0; p<count; ++p)
-                            result *= pack.plist[index+p].GetConst(match, impossible);
+                        {
+                            double tmp;
+                            if(!pack.plist[index+p].GetConst(match, tmp)) return false;
+                            result *= tmp;
+                        }
                         break;
                     case cMin:
                         for(unsigned p=0; p<count; ++p)
                         {
-                            double tmp = pack.plist[index+p].GetConst(match, impossible);
+                            double tmp;
+                            if(!pack.plist[index+p].GetConst(match, tmp)) return false;
                             if(p == 0 || tmp < result) result = tmp;
                         }
                         break;
                     case cMax:
                         for(unsigned p=0; p<count; ++p)
                         {
-                            double tmp = pack.plist[index+p].GetConst(match, impossible);
+                            double tmp;
+                            if(!pack.plist[index+p].GetConst(match, tmp)) return false;
                             if(p == 0 || tmp > result) result = tmp;
                         }
                         break;
-                    case cSin: result = std::sin( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cCos: result = std::cos( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cTan: result = std::tan( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cAsin: result = std::asin( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cAcos: result = std::acos( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cAtan: result = std::atan( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cSinh: result = std::sinh( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cCosh: result = std::cosh( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cTanh: result = std::tanh( pack.plist[index].GetConst(match, impossible) ); break;
+                    case cSin: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::sin(result); break;
+                    case cCos: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::cos(result); break;
+                    case cTan: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::tan(result); break;
+                    case cAsin: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::asin(result); break;
+                    case cAcos: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::acos(result); break;
+                    case cAtan: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::atan(result); break;
+                    case cSinh: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::sinh(result); break;
+                    case cCosh: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::cosh(result); break;
+                    case cTanh: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::tanh(result); break;
 #ifndef FP_NO_ASINH
-                    case cAsinh: result = std::asinh( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cAcosh: result = std::acosh( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cAtanh: result = std::atanh( pack.plist[index].GetConst(match, impossible) ); break;
+                    case cAsinh: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::asinh(result); break;
+                    case cAcosh: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::acosh(result); break;
+                    case cAtanh: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::atanh(result); break;
 #endif
-                    case cCeil: result = std::ceil( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cFloor: result = std::floor( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cLog: result = std::log( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cLog2:
-                        result = std::log( pack.plist[index].GetConst(match, impossible) ) * CONSTANT_L2I;
-                        //result = std::log2( pack.plist[index].GetConst(match, impossible) );
+                    case cCeil: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::ceil(result); break;
+                    case cFloor: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::floor(result); break;
+                    case cLog: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::log(result); break;
+                    case cLog2: if(!pack.plist[index].GetConst(match, result))return false;
+                                result = std::log(result) * CONSTANT_L2I;
+                                //result = std::log2(result);
+                                break;
+                    case cLog10: if(!pack.plist[index].GetConst(match, result))return false;
+                                 result = std::log10(result); break;
+                    case cPow:
+                    {
+                        if(!pack.plist[index+0].GetConst(match, result))return false;
+                        double tmp;
+                        if(!pack.plist[index+1].GetConst(match, tmp))return false;
+                        result = std::pow(result, tmp);
                         break;
-                    case cLog10: result = std::log10( pack.plist[index].GetConst(match, impossible) ); break;
-                    case cPow: result = std::pow( pack.plist[index+0].GetConst(match, impossible),
-                                                  pack.plist[index+1].GetConst(match, impossible) ); break;
-                    case cMod: result = std::fmod( pack.plist[index+0].GetConst(match, impossible),
-                                                   pack.plist[index+1].GetConst(match, impossible) ); break;
+                    }
+                    case cMod:
+                    {
+                        if(!pack.plist[index+0].GetConst(match, result))return false;
+                        double tmp;
+                        if(!pack.plist[index+1].GetConst(match, tmp))return false;
+                        result = std::fmod(result, tmp);
+                        break;
+                    }
                     default:
-                        impossible = true;
+                        return false;
                 }
             }
         }
         if(transformation == Negate) result = -result;
         if(transformation == Invert) result = 1.0 / result;
-        return result;
+        return true;
     }
 
     void MatchedParams::SynthesizeTree(
@@ -846,8 +893,7 @@ namespace FPoptimizer_Grammar
             case ImmedHolder:
             default:
                 tree.Opcode = cImmed;
-                bool impossible = false;
-                tree.Value  = GetConst(match, impossible);
+                GetConst(match, tree.Value); // note: return value is ignored
                 break;
         }
     }
@@ -890,6 +936,7 @@ namespace FPoptimizer_Grammar
         //std::cout << "/*m" << (&mitem-pack.mlist) << "*/";
 
         if(mitem.type == PositionalParams) std::cout << '[';
+        if(mitem.type == SelectedParams) std::cout << '{';
 
         for(unsigned a=0; a<mitem.count; ++a)
         {
@@ -898,6 +945,7 @@ namespace FPoptimizer_Grammar
         }
 
         if(mitem.type == PositionalParams) std::cout << " ]";
+        if(mitem.type == SelectedParams) std::cout << " }";
     }
 
     void DumpFunction(const Function& fitem)

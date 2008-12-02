@@ -22,15 +22,16 @@ namespace FPoptimizer_Grammar
         NumConstant = 0xFFFB, // Holds a particular value (syntax-time constant)
         ImmedHolder,          // Holds a particular immed
         NamedHolder,          // Holds a particular named param (of any kind)
-        RestHolder,           // Holds anything else
-        SubFunction           // Holds an opcode and the params
+        SubFunction,          // Holds an opcode and the params
+        RestHolder            // Holds anything else
       //GroupFunction         // For parse-time functions
     };
 
     enum ParamMatchingType
     {
-        PositionalParams,
-        AnyParams
+        PositionalParams, // this set of params in this order
+        SelectedParams,   // this set of params in any order
+        AnyParams         // these params are included
     };
 
     enum RuleType
@@ -89,9 +90,9 @@ namespace FPoptimizer_Grammar
             FPoptimizer_CodeTree::CodeTree& tree,
             MatchedParams::CodeTreeMatch& match) const;
 
-        double GetConst(
-            MatchedParams::CodeTreeMatch& match,
-            bool& impossible) const;
+        bool GetConst(
+            const MatchedParams::CodeTreeMatch& match,
+            double& result) const;
 
         void SynthesizeTree(
             FPoptimizer_CodeTree::CodeTree& tree,

@@ -218,7 +218,8 @@ namespace GrammarData
 
     bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
     {
-        if(Type != PositionalParams) return true;
+        if(Type != PositionalParams
+        && Type != SelectedParams) return true;
 
         for(size_t a=0; a<Params.size(); ++a)
         {
@@ -657,6 +658,7 @@ public:
         {
             std::cout <<
             "        {" << (mlist[a].type == PositionalParams ? "PositionalParams"
+                         :  mlist[a].type == SelectedParams   ? "SelectedParams  "
                          :/*mlist[a].type == AnyParams      ?*/ "AnyParams       "
                            )
                         << ", " << mlist[a].count
@@ -899,6 +901,26 @@ static GrammarDumper dumper;
          $$ = new GrammarData::FunctionType($1, *$3);
          delete $3;
        }
+    |  OPCODE '{' paramlist '}'
+       /* Match a function with opcode=opcode,
+        * and the exact parameter list as specified
+        */
+       {
+         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         {
+             /* If function opcode is "notinv", verify that $3 has no inversions */
+             if(!$3->EnsureNoInversions())
+             {
+                 yyerror("Can have no inversions"); YYERROR;
+             }
+         }
+         if(!$3->EnsureNoRepeatedRestHolders())
+         {
+             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+         }
+         $$ = new GrammarData::FunctionType($1, *$3->SetType(SelectedParams));
+         delete $3;
+       }
     |  OPCODE paramlist
        /* Match a function with opcode=opcode and the given way of matching params */
        /* Match the parameters the way you find them */
@@ -1062,8 +1084,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return UNARY_TRANSFORMATION;
 
         case '~':
-        case '[':
-        case ']':
+        case '[': case '{':
+        case ']': case '}':
         case '(':
         case ')':
             return c;

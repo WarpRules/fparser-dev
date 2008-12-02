@@ -320,7 +320,8 @@ namespace GrammarData
 
     bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
     {
-        if(Type != PositionalParams) return true;
+        if(Type != PositionalParams
+        && Type != SelectedParams) return true;
 
         for(size_t a=0; a<Params.size(); ++a)
         {
@@ -759,6 +760,7 @@ public:
         {
             std::cout <<
             "        {" << (mlist[a].type == PositionalParams ? "PositionalParams"
+                         :  mlist[a].type == SelectedParams   ? "SelectedParams  "
                          :/*mlist[a].type == AnyParams      ?*/ "AnyParams       "
                            )
                         << ", " << mlist[a].count
@@ -882,7 +884,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 787 "fpoptimizer_grammar_gen.y"
+#line 789 "fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1243,18 +1245,18 @@ YY_FPoptimizerGrammarParser_CONSTRUCTOR_CODE;
  #line 352 "/usr/share/bison++/bison.cc"
 
 
-#define	YYFINAL		38
+#define	YYFINAL		41
 #define	YYFLAG		-32768
-#define	YYNTBASE	20
+#define	YYNTBASE	22
 
-#define YYTRANSLATE(x) ((unsigned)(x) <= 267 ? yytranslate[x] : 26)
+#define YYTRANSLATE(x) ((unsigned)(x) <= 267 ? yytranslate[x] : 28)
 
 static const char yytranslate[] = {     0,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,     2,     2,     2,     2,    16,
-    17,    19,    18,     2,     2,     2,     2,     2,     2,     2,
+     2,     2,     2,     2,     2,     2,     2,     2,     2,    18,
+    19,    21,    20,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1262,7 +1264,7 @@ static const char yytranslate[] = {     0,
     13,     2,    14,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-     2,     2,     2,     2,     2,    15,     2,     2,     2,     2,
+     2,     2,    15,     2,    16,    17,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
      2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1281,98 +1283,102 @@ static const char yytranslate[] = {     0,
 
 #if YY_FPoptimizerGrammarParser_DEBUG != 0
 static const short yyprhs[] = {     0,
-     0,     3,     6,     7,    12,    17,    22,    24,    29,    32,
-    36,    39,    40,    42,    44,    49,    52,    54,    57,    60,
-    64
+     0,     3,     6,     7,    12,    17,    22,    24,    29,    34,
+    37,    41,    44,    45,    47,    49,    54,    57,    59,    62,
+    65,    69
 };
 
-static const short yyrhs[] = {    20,
-    21,     0,    20,    10,     0,     0,    22,    12,    25,    10,
-     0,    22,    12,    23,    10,     0,    22,    11,    24,    10,
-     0,    23,     0,     8,    13,    24,    14,     0,     8,    24,
-     0,    24,    15,    25,     0,    24,    25,     0,     0,     3,
-     0,     6,     0,     7,    16,    24,    17,     0,     9,    25,
-     0,     4,     0,     4,    18,     0,     4,    19,     0,    16,
-    23,    17,     0,     5,     0
+static const short yyrhs[] = {    22,
+    23,     0,    22,    10,     0,     0,    24,    12,    27,    10,
+     0,    24,    12,    25,    10,     0,    24,    11,    26,    10,
+     0,    25,     0,     8,    13,    26,    14,     0,     8,    15,
+    26,    16,     0,     8,    26,     0,    26,    17,    27,     0,
+    26,    27,     0,     0,     3,     0,     6,     0,     7,    18,
+    26,    19,     0,     9,    27,     0,     4,     0,     4,    20,
+     0,     4,    21,     0,    18,    25,    19,     0,     5,     0
 };
 
 #endif
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   818,   824,   825,   828,   838,   850,   870,   881,   902,   923,
-   928,   932,   938,   943,   947,   962,   971,   977,   986,   995,
-   999
+   820,   826,   827,   830,   840,   852,   872,   883,   904,   924,
+   945,   950,   954,   960,   965,   969,   984,   993,   999,  1008,
+  1017,  1021
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
 "PARAMETER_TOKEN","PLACEHOLDER_TOKEN","IMMED_TOKEN","BUILTIN_FUNC_NAME","OPCODE",
 "UNARY_TRANSFORMATION","NEWLINE","SUBST_OP_COLON","SUBST_OP_ARROW","'['","']'",
-"'~'","'('","')'","'+'","'*'","grammar","substitution","function_match","function",
-"paramlist","param",""
+"'{'","'}'","'~'","'('","')'","'+'","'*'","grammar","substitution","function_match",
+"function","paramlist","param",""
 };
 #endif
 
 static const short yyr1[] = {     0,
-    20,    20,    20,    21,    21,    21,    22,    23,    23,    24,
-    24,    24,    25,    25,    25,    25,    25,    25,    25,    25,
-    25
+    22,    22,    22,    23,    23,    23,    24,    25,    25,    25,
+    26,    26,    26,    27,    27,    27,    27,    27,    27,    27,
+    27,    27
 };
 
 static const short yyr2[] = {     0,
-     2,     2,     0,     4,     4,     4,     1,     4,     2,     3,
-     2,     0,     1,     1,     4,     2,     1,     2,     2,     3,
-     1
+     2,     2,     0,     4,     4,     4,     1,     4,     4,     2,
+     3,     2,     0,     1,     1,     4,     2,     1,     2,     2,
+     3,     1
 };
 
 static const short yydefact[] = {     3,
-     0,    12,     2,     1,     0,     7,    12,     9,    12,     0,
-     0,    13,    17,    21,    14,     0,     0,     0,     0,    11,
-     0,     0,     0,     8,    18,    19,    12,    16,    10,     0,
-     6,     5,     4,     0,    20,    15,     0,     0
+     0,    13,     2,     1,     0,     7,    13,    13,    10,    13,
+     0,     0,     0,    14,    18,    22,    15,     0,     0,     0,
+     0,    12,     0,     0,     0,     8,     9,    19,    20,    13,
+    17,    11,     0,     6,     5,     4,     0,    21,    16,     0,
+     0
 };
 
 static const short yydefgoto[] = {     1,
-     4,     5,     6,     8,    20
+     4,     5,     6,     9,    22
 };
 
 static const short yypact[] = {-32768,
-    70,    -5,-32768,-32768,     2,-32768,-32768,    46,-32768,    60,
-    18,-32768,    10,-32768,-32768,    -4,    68,    68,    22,-32768,
-    32,    16,    21,-32768,-32768,-32768,-32768,-32768,-32768,    23,
--32768,-32768,-32768,     0,-32768,-32768,    43,-32768
+    75,    22,-32768,-32768,    27,-32768,-32768,-32768,    56,-32768,
+    63,     8,    24,-32768,    31,-32768,-32768,   -16,    73,    73,
+    28,-32768,    40,    -1,     6,-32768,-32768,-32768,-32768,-32768,
+-32768,-32768,     2,-32768,-32768,-32768,     1,-32768,-32768,    32,
+-32768
 };
 
 static const short yypgoto[] = {-32768,
--32768,-32768,    -9,    -7,     1
+-32768,-32768,    13,    -7,    76
 };
 
 
-#define	YYLAST		84
+#define	YYLAST		96
 
 
-static const short yytable[] = {    11,
-    22,    21,    12,    13,    14,    15,    16,     7,    17,    30,
-    23,    27,     9,    10,    18,    19,    36,    28,    29,    34,
-    12,    13,    14,    15,    16,    32,    17,    25,    26,     2,
-    33,    24,    18,    19,    12,    13,    14,    15,    16,    35,
-    17,    31,    38,     0,     0,     0,    18,    19,    12,    13,
-    14,    15,    16,     0,    17,     0,     0,     0,     0,     0,
-    18,    19,    12,    13,    14,    15,    16,     2,    17,    37,
-    12,    13,    14,    15,    16,    19,    17,     2,     0,     3,
-     0,     0,     0,    19
+static const short yytable[] = {    12,
+    13,    30,    23,    14,    15,    16,    17,    18,    35,    19,
+    14,    15,    16,    17,    18,    36,    19,    20,    21,    39,
+    38,    26,    37,    24,    20,    21,    14,    15,    16,    17,
+    18,    41,    19,    33,     7,     2,     8,    10,    11,    27,
+    20,    21,    14,    15,    16,    17,    18,     0,    19,    34,
+    28,    29,     0,     0,     0,     0,    20,    21,    14,    15,
+    16,    17,    18,     0,    19,    14,    15,    16,    17,    18,
+     2,    19,    20,    21,    40,    14,    15,    16,    17,    18,
+    21,    19,     2,     0,     3,     0,    25,     0,     0,     0,
+    21,     0,     0,     0,    31,    32
 };
 
 static const short yycheck[] = {     7,
-    10,     9,     3,     4,     5,     6,     7,    13,     9,    19,
-    10,    16,    11,    12,    15,    16,    17,    17,    18,    27,
-     3,     4,     5,     6,     7,    10,     9,    18,    19,     8,
-    10,    14,    15,    16,     3,     4,     5,     6,     7,    17,
-     9,    10,     0,    -1,    -1,    -1,    15,    16,     3,     4,
-     5,     6,     7,    -1,     9,    -1,    -1,    -1,    -1,    -1,
-    15,    16,     3,     4,     5,     6,     7,     8,     9,     0,
-     3,     4,     5,     6,     7,    16,     9,     8,    -1,    10,
-    -1,    -1,    -1,    16
+     8,    18,    10,     3,     4,     5,     6,     7,    10,     9,
+     3,     4,     5,     6,     7,    10,     9,    17,    18,    19,
+    19,    14,    30,    11,    17,    18,     3,     4,     5,     6,
+     7,     0,     9,    21,    13,     8,    15,    11,    12,    16,
+    17,    18,     3,     4,     5,     6,     7,    -1,     9,    10,
+    20,    21,    -1,    -1,    -1,    -1,    17,    18,     3,     4,
+     5,     6,     7,    -1,     9,     3,     4,     5,     6,     7,
+     8,     9,    17,    18,     0,     3,     4,     5,     6,     7,
+    18,     9,     8,    -1,    10,    -1,    11,    -1,    -1,    -1,
+    18,    -1,    -1,    -1,    19,    20
 };
 
 #line 352 "/usr/share/bison++/bison.cc"
@@ -1869,14 +1875,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 820 "fpoptimizer_grammar_gen.y"
+#line 822 "fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 831 "fpoptimizer_grammar_gen.y"
+#line 833 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1885,7 +1891,7 @@ case 4:
       ;
     break;}
 case 5:
-#line 841 "fpoptimizer_grammar_gen.y"
+#line 843 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1896,7 +1902,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 852 "fpoptimizer_grammar_gen.y"
+#line 854 "fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1915,7 +1921,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 872 "fpoptimizer_grammar_gen.y"
+#line 874 "fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -1925,7 +1931,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 886 "fpoptimizer_grammar_gen.y"
+#line 888 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1944,7 +1950,26 @@ case 8:
        ;
     break;}
 case 9:
-#line 905 "fpoptimizer_grammar_gen.y"
+#line 908 "fpoptimizer_grammar_gen.y"
+{
+         if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
+         {
+             /* If function opcode is "notinv", verify that $3 has no inversions */
+             if(!yyvsp[-1].p->EnsureNoInversions())
+             {
+                 yyerror("Can have no inversions"); YYERROR;
+             }
+         }
+         if(!yyvsp[-1].p->EnsureNoRepeatedRestHolders())
+         {
+             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+         }
+         yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p->SetType(SelectedParams));
+         delete yyvsp[-1].p;
+       ;
+    break;}
+case 10:
+#line 927 "fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAdd && yyvsp[-1].opcode != cMul && yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -1962,38 +1987,38 @@ case 9:
          delete yyvsp[0].p;
        ;
     break;}
-case 10:
-#line 925 "fpoptimizer_grammar_gen.y"
+case 11:
+#line 947 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
-case 11:
-#line 929 "fpoptimizer_grammar_gen.y"
+case 12:
+#line 951 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
-case 12:
-#line 933 "fpoptimizer_grammar_gen.y"
+case 13:
+#line 955 "fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
-case 13:
-#line 940 "fpoptimizer_grammar_gen.y"
+case 14:
+#line 962 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
-case 14:
-#line 944 "fpoptimizer_grammar_gen.y"
+case 15:
+#line 966 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::ImmedHolderTag());
        ;
     break;}
-case 15:
-#line 948 "fpoptimizer_grammar_gen.y"
+case 16:
+#line 970 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -2009,8 +2034,8 @@ case 15:
          delete yyvsp[-1].p;
        ;
     break;}
-case 16:
-#line 963 "fpoptimizer_grammar_gen.y"
+case 17:
+#line 985 "fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2020,16 +2045,16 @@ case 16:
          yyval.a = yyvsp[0].a->SetTransformation(yyvsp[-1].transform);
        ;
     break;}
-case 17:
-#line 972 "fpoptimizer_grammar_gen.y"
+case 18:
+#line 994 "fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.Dump(*yyvsp[0].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
          delete yyvsp[0].name;
        ;
     break;}
-case 18:
-#line 978 "fpoptimizer_grammar_gen.y"
+case 19:
+#line 1000 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2039,8 +2064,8 @@ case 18:
          delete yyvsp[-1].name;
        ;
     break;}
-case 19:
-#line 987 "fpoptimizer_grammar_gen.y"
+case 20:
+#line 1009 "fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2050,14 +2075,14 @@ case 19:
          delete yyvsp[-1].name;
        ;
     break;}
-case 20:
-#line 996 "fpoptimizer_grammar_gen.y"
+case 21:
+#line 1018 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].f);
        ;
     break;}
-case 21:
-#line 1000 "fpoptimizer_grammar_gen.y"
+case 22:
+#line 1022 "fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
@@ -2266,7 +2291,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1004 "fpoptimizer_grammar_gen.y"
+#line 1026 "fpoptimizer_grammar_gen.y"
 
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
@@ -2328,8 +2353,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return UNARY_TRANSFORMATION;
 
         case '~':
-        case '[':
-        case ']':
+        case '[': case '{':
+        case ']': case '}':
         case '(':
         case ')':
             return c;

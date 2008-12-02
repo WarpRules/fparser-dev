@@ -42,9 +42,13 @@
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list as specified
 #         */
+#        OPCODE '{' paramlist '}'
+#        /* Match a function with opcode=opcode,
+#         * and the exact parameter list in any order
+#         */
 #     |  OPCODE paramlist
 #        /* Match a function with opcode=opcode and the given way of matching params */
-#        /* Match the parameters the way you find them */
+#        /* There may be more parameters, don't care about them */
 #     ;
 #
 #     paramlist: /* left-recursive list of 0-n params with no delimiter */
@@ -318,12 +322,12 @@ cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd  (cMul <1> ~<3>) ~
 cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
 
 # The below is still simpler version...
-cAdd  (cMul  x %)  (cMul  x &)         : (cMul [ x +(% &)])
-cAdd  (cMul  x %) ~(cMul  x &)         : (cMul [ x +(% -&)])
-cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul [ x +(-% -&)])
-cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul [~x +(% &)])
-cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(% -&)])
-cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(-% -&)])
+#cAdd  (cMul  x %)  (cMul  x &)         : (cMul [ x +(% &)])
+#cAdd  (cMul  x %) ~(cMul  x &)         : (cMul [ x +(% -&)])
+#cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul [ x +(-% -&)])
+#cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul [~x +(% &)])
+#cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(% -&)])
+#cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(-% -&)])
 
 #### Remote double negations/inversions
 
@@ -484,7 +488,7 @@ cLog [(cPow [x z])] -> cMul [z (cLog [x])]
 cAdd (cLog[x]) (cLog[y]) : (cLog (cMul x y))
 
 # log(x * CONSTANT_E^y) = log(x) + y
-cLog [(cMul x (cPow [CONSTANT_E y]))] -> cAdd [(cLog [x]) y]
+cLog [(cMul (cPow [CONSTANT_E y]) <1> ~<2>)] -> cAdd [(cLog [(cMul <1> ~<2>)]) y]
 
 # log(x * z^y) / log(z) = log(x) / log(z) + y
 # Note: z can also be an immed
@@ -518,16 +522,16 @@ cAdd 1 ~(cPow[ (cCos[x]) 2]) : (cPow [(cSin[x]) 2])
 # cos(x)*cos(y) + sin(x)*sin(y) = cos(x+y)
 # cos(x)*cos(y) - sin(x)*sin(y) = cos(x-y)
 
-cAdd  (cMul (cSin[x]) (cCos[y]))  (cMul (cCos[x]) (cSin[y])) : (cSin (cAdd[x  y]))
-cAdd  (cMul (cSin[x]) (cCos[y])) ~(cMul (cCos[x]) (cSin[y])) : (cSin (cAdd[x ~y]))
-cAdd  (cMul (cCos[x]) (cCos[y]))  (cMul (cSin[x]) (cSin[y])) : (cCos (cAdd[x  y]))
-cAdd  (cMul (cCos[x]) (cCos[y])) ~(cMul (cSin[x]) (cSin[y])) : (cCos (cAdd[x ~y]))
+cAdd  (cMul {(cSin[x]) (cCos[y])})  (cMul {(cCos[x]) (cSin[y])}) : (cSin (cAdd[x  y]))
+cAdd  (cMul {(cSin[x]) (cCos[y])}) ~(cMul {(cCos[x]) (cSin[y])}) : (cSin (cAdd[x ~y]))
+cAdd  (cMul {(cCos[x]) (cCos[y])})  (cMul {(cSin[x]) (cSin[y])}) : (cCos (cAdd[x  y]))
+cAdd  (cMul {(cCos[x]) (cCos[y])}) ~(cMul {(cSin[x]) (cSin[y])}) : (cCos (cAdd[x ~y]))
 
-cAdd ~(cMul (cSin[x]) (cCos[y])) ~(cMul (cCos[x]) (cSin[y])) : ~(cSin (cAdd[x  y]))
-cAdd ~(cMul (cCos[x]) (cCos[y])) ~(cMul (cSin[x]) (cSin[y])) : ~(cCos (cAdd[x  y]))
-cAdd ~(cMul (cCos[x]) (cCos[y]))  (cMul (cSin[x]) (cSin[y])) : ~(cCos (cAdd[x ~y]))
+cAdd ~(cMul {(cSin[x]) (cCos[y])}) ~(cMul {(cCos[x]) (cSin[y])}) : ~(cSin (cAdd[x  y]))
+cAdd ~(cMul {(cCos[x]) (cCos[y])}) ~(cMul {(cSin[x]) (cSin[y])}) : ~(cCos (cAdd[x  y]))
+cAdd ~(cMul {(cCos[x]) (cCos[y])})  (cMul {(cSin[x]) (cSin[y])}) : ~(cCos (cAdd[x ~y]))
 # This one is redudant, I think:
-#cAdd ~(cMul (cSin[x]) (cCos[y]))  (cMul (cCos[x]) (cSin[y])) : ~(cSin (cAdd[x ~y]))
+#cAdd ~(cMul {(cSin[x]) (cCos[y])})  (cMul {(cCos[x]) (cSin[y])}) : ~(cSin (cAdd[x ~y]))
 
 #### Polynomic:
 # x*y + z*y = (x+z)*y
