@@ -49,8 +49,6 @@ fpoptimizer/fpoptimizer_grammar_gen.cc: \
 		fpoptimizer/fpoptimizer_grammar_gen.y
 	bison++ --output=$@ $<
 
-fpoptimizer_grammar.o: fpoptimizer/fpoptimizer_grammar.cc
-
 fpoptimizer/fpoptimizer_grammar.cc: \
 		fpoptimizer/fpoptimizer_grammar_gen \
 		fpoptimizer/fpoptimizer_grammar_gen.y \
