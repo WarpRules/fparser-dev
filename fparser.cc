@@ -174,6 +174,29 @@ namespace
         const char* endPtr = readIdentifier(name.c_str());
         return *endPtr == '\0';
     }
+
+    inline int doubleToInt(double d)
+    {
+        return d<0 ? -int((-d)+.5) : int(d+.5);
+    }
+
+    inline double Min(double d1, double d2)
+    {
+        return d1<d2 ? d1 : d2;
+    }
+    inline double Max(double d1, double d2)
+    {
+        return d1>d2 ? d1 : d2;
+    }
+
+    inline double DegreesToRadians(double degrees)
+    {
+        return degrees*(M_PI/180.0);
+    }
+    inline double RadiansToDegrees(double radians)
+    {
+        return radians*(180.0/M_PI);
+    }
 }
 
 
@@ -721,6 +744,7 @@ const char* FunctionParser::CompileElement(const char* function)
                       (endPtr, data->FuncPtrs[nameData->index].params);
                   data->ByteCode.push_back(cFCall);
                   data->ByteCode.push_back(nameData->index);
+                  data->ByteCode.push_back(cNop);
                   return function;
 
               case NameData::PARSER_PTR:
@@ -728,6 +752,7 @@ const char* FunctionParser::CompileElement(const char* function)
                       (endPtr, data->FuncParsers[nameData->index].params);
                   data->ByteCode.push_back(cPCall);
                   data->ByteCode.push_back(nameData->index);
+                  data->ByteCode.push_back(cNop);
                   return function;
             }
         }
@@ -753,11 +778,16 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
             const NameData* nameData = nameIter->second;
             if(nameData->type == NameData::UNIT)
             {
-                data->Immed.push_back(nameData->value);
-                data->ByteCode.push_back(cImmed);
-                incStackPtr();
-                data->ByteCode.push_back(cMul);
-                --StackPtr;
+                if(data->ByteCode.back() == cImmed)
+                    data->Immed.back() *= nameData->value;
+                else
+                {
+                    data->Immed.push_back(nameData->value);
+                    data->ByteCode.push_back(cImmed);
+                    incStackPtr();
+                    data->ByteCode.push_back(cMul);
+                    --StackPtr;
+                }
                 return endPtr;
             }
         }
@@ -778,7 +808,19 @@ const char* FunctionParser::CompilePow(const char* function)
         while(isspace(*function)) ++function;
         function = CompileUnaryMinus(function);
         if(!function) return 0;
-        data->ByteCode.push_back(cPow);
+
+        // If operator is applied to two literals, calculate it now:
+        if(data->ByteCode.back() == cImmed &&
+           data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            data->Immed[data->Immed.size()-2] =
+                pow(data->Immed[data->Immed.size()-2], data->Immed.back());
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
+        else // add opcode
+            data->ByteCode.push_back(cPow);
+
         --StackPtr;
     }
     return function;
@@ -806,7 +848,15 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
 
             else data->ByteCode.push_back(cNeg);
         }
-        else data->ByteCode.push_back(cNot);
+        else
+        {
+            // if notting a constant, change the constant itself:
+            if(data->ByteCode.back() == cImmed)
+                data->Immed.back() = !doubleToInt(data->Immed.back());
+
+            else
+                data->ByteCode.push_back(cNot);
+        }
     }
     else
         function = CompilePow(function);
@@ -826,12 +876,43 @@ inline const char* FunctionParser::CompileMult(const char* function)
         while(isspace(*function)) ++function;
         function = CompileUnaryMinus(function);
         if(!function) return 0;
-        switch(op)
+
+        // If operator is applied to two literals, calculate it now:
+        if(data->ByteCode.back() == cImmed &&
+           data->ByteCode[data->ByteCode.size()-2] == cImmed)
         {
-          case '*': data->ByteCode.push_back(cMul); break;
-          case '/': data->ByteCode.push_back(cDiv); break;
-          case '%': data->ByteCode.push_back(cMod); break;
+            switch(op)
+            {
+              case '*':
+                  data->Immed[data->Immed.size()-2] *= data->Immed.back();
+                  break;
+
+              case '/':
+                  if(data->Immed.back() == 0.0) goto generateDivOpcode;
+                  data->Immed[data->Immed.size()-2] /= data->Immed.back();
+                  break;
+
+              default:
+                  if(data->Immed.back() == 0.0) goto generateModOpcode;
+                  data->Immed[data->Immed.size()-2] =
+                      fmod(data->Immed[data->Immed.size()-2],
+                           data->Immed.back());
+            }
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
         }
+        else // add opcode
+        {
+            switch(op)
+            {
+              case '*': data->ByteCode.push_back(cMul); break;
+              generateDivOpcode:
+              case '/': data->ByteCode.push_back(cDiv); break;
+              generateModOpcode:
+              case '%': data->ByteCode.push_back(cMod); break;
+            }
+        }
+
         --StackPtr;
     }
     return function;
@@ -849,7 +930,21 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         while(isspace(*function)) ++function;
         function = CompileMult(function);
         if(!function) return 0;
-        data->ByteCode.push_back(op=='+' ? cAdd : cSub);
+
+        // If operator is applied to two literals, calculate it now:
+        if(data->ByteCode.back() == cImmed &&
+           data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            if(op == '+')
+                data->Immed[data->Immed.size()-2] += data->Immed.back();
+            else
+                data->Immed[data->Immed.size()-2] -= data->Immed.back();
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
+        else // add opcode
+            data->ByteCode.push_back(op=='+' ? cAdd : cSub);
+
         --StackPtr;
     }
     return function;
@@ -937,33 +1032,6 @@ const char* FunctionParser::CompileExpression(const char* function)
 //===========================================================================
 // Function evaluation
 //===========================================================================
-namespace
-{
-    inline int doubleToInt(double d)
-    {
-        return d<0 ? -int((-d)+.5) : int(d+.5);
-    }
-
-    inline double Min(double d1, double d2)
-    {
-        return d1<d2 ? d1 : d2;
-    }
-    inline double Max(double d1, double d2)
-    {
-        return d1>d2 ? d1 : d2;
-    }
-
-
-    inline double DegreesToRadians(double degrees)
-    {
-        return degrees*(M_PI/180.0);
-    }
-    inline double RadiansToDegrees(double radians)
-    {
-        return radians*(180.0/M_PI);
-    }
-}
-
 double FunctionParser::Eval(const double* Vars)
 {
     const unsigned* const ByteCode = &(data->ByteCode[0]);

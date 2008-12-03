@@ -707,11 +707,11 @@ namespace FPoptimizer_Grammar
                                  result = std::tanh(result); break;
 #ifndef FP_NO_ASINH
                     case cAsinh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = std::asinh(result); break;
+                                 result = asinh(result); break;
                     case cAcosh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = std::acosh(result); break;
+                                 result = acosh(result); break;
                     case cAtanh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = std::atanh(result); break;
+                                 result = atanh(result); break;
 #endif
                     case cCeil: if(!pack.plist[index].GetConst(match, result))return false;
                                 result = std::ceil(result); break;

@@ -1,5 +1,5 @@
-  Function parser for C++  v3.0.3 by Warp.
-  =======================================
+  Function parser for C++  v3.1 by Warp.
+  ======================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
 
@@ -7,34 +7,27 @@
   The usage license of this library is located at the end of this text file.
 
 
-  What's new in v3.0.3
-  --------------------
-  - Fixed bug that caused functions like "-if(x, 1, 2)" to be parsed
-    incorrectly. (This bug is a very old one, and caused by the change
-    related to the unary minus in the version 2.7 of the library.)
-  - Changed version numbering to a more logical format.
-
-  What's new in v3.0.2
-  --------------------
-  - Added support for specifying a delimiter character.
-
-  What's new in v3.0.1
-  --------------------
-  - Improved UTF8 support, and minor tweaking and fixes.
-
-  What's new in v3.0
+  What's new in v3.1
   ------------------
-  - Rewrote the parser from scratch. It uses the same parsing technique as
-    the old parser (iow. it's a recursive descent parser), but because of
-    simplification, refactoring and optimizations the new Parse() function
-    is over 5 times faster than the old one for most inputs.
-  - Support for UTF8-encoded unicode characters in user-defined variable,
-    constant, unit and function names.
-  - Unit names are no longer in a distinct namespace from all the other
-    names. Thus now unit names must also be distinct from everything else.
-  - Added the pow() function (which takes two parameters) to the function
-    syntax. Its behavior is identical to that of the ^ operator.
-
+  - The optimizer has been completely rewritten. The new optimizer contains
+    more and better optimization rules than before, and is more easily
+    extensible.
+  - The Parse() function now precalculates simple constant expressions
+    which can be calculated without compromising parsing speed. For example
+    the input function "x+7/2" will be byte-compiled into the equivalent of
+    "x+3.5". (Note that precalculation of constant expressions at parse
+    time is limited and doesn't work in all possible situations. For example
+    a function like "x+1+2" cannot be precalculated into "x+3" because of
+    the way single-token lookahead recursive descent parsing works. The
+    Optimize() function will do a much more comprehensive optimization work.)
+  - A new development version of the library is available. The development
+    version of the library contains the full optimizer sources, an extensive
+    regression testbed, a Makefile and other tools.
+  - Fixed bug: The size of the internal stack was incorrectly calculated
+    in certain situations where a user-defined function taking 0 parameters
+    was used. In some rare circumstances this could potentially cause an
+    out-of-boundaries array access.
+  - A new HTML version of this documentation is available.
 
 
   Table of contents:
@@ -90,7 +83,7 @@ link them to the main program. In some developement environments it's
 enough to add those two files to your current project.
 
   If you are not going to use the optimizer (ie. you have commented out
-SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
+FP_SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
 
 
   * Configuring the compilation:
@@ -123,9 +116,9 @@ SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
 
   FP_SUPPORT_OPTIMIZER : (Default on)
        If you are not going to use the Optimize() method, you can comment
-       this line out to speed-up the compilation of fparser.cc a bit, as
-       well as making the binary a bit smaller. (Optimize() can still be
-       called, but it will not do anything.)
+       this line out to speed-up the compilation a bit, as well as making
+       the binary a bit smaller. (Optimize() can still be called, but it
+       will not do anything.)
 
        You can also disable the optimizer by specifying the
        FP_NO_SUPPORT_OPTIMIZER precompiler constant in your compiler.
@@ -473,7 +466,7 @@ void Optimize();
     Optimize() and checking EvalError().
 
       If the destination application is not going to use this method,
-    the compiler constant SUPPORT_OPTIMIZER can be undefined in fpconfig.hh
+    the compiler constant FP_SUPPORT_OPTIMIZER can be undefined in fpconfig.hh
     to make the library smaller (Optimize() can still be called, but it will
     not do anything).
 
@@ -876,7 +869,7 @@ make loops or anything.
   Usage license:
 =============================================================================
 
-Copyright © 2003-2005 Juha Nieminen, Joel Yliluoma
+Copyright © 2003-2008 Juha Nieminen, Joel Yliluoma
 
   This library is distributed under two distinct usage licenses depending
 on the software ("Software" below) which uses the Function Parser library

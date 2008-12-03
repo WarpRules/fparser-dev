@@ -12,6 +12,14 @@
   - The optimizer has been completely rewritten. The new optimizer contains
     more and better optimization rules than before, and is more easily
     extensible.
+  - The Parse() function now precalculates simple constant expressions
+    which can be calculated without compromising parsing speed. For example
+    the input function "x+7/2" will be byte-compiled into the equivalent of
+    "x+3.5". (Note that precalculation of constant expressions at parse
+    time is limited and doesn't work in all possible situations. For example
+    a function like "x+1+2" cannot be precalculated into "x+3" because of
+    the way single-token lookahead recursive descent parsing works. The
+    Optimize() function will do a much more comprehensive optimization work.)
   - A new development version of the library is available. The development
     version of the library contains the full optimizer sources, an extensive
     regression testbed, a Makefile and other tools.
@@ -19,6 +27,7 @@
     in certain situations where a user-defined function taking 0 parameters
     was used. In some rare circumstances this could potentially cause an
     out-of-boundaries array access.
+  - A new HTML version of this documentation is available.
 
 
   Table of contents:
@@ -74,7 +83,7 @@ link them to the main program. In some developement environments it's
 enough to add those two files to your current project.
 
   If you are not going to use the optimizer (ie. you have commented out
-SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
+FP_SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
 
 
   * Configuring the compilation:
@@ -107,9 +116,9 @@ SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
 
   FP_SUPPORT_OPTIMIZER : (Default on)
        If you are not going to use the Optimize() method, you can comment
-       this line out to speed-up the compilation of fparser.cc a bit, as
-       well as making the binary a bit smaller. (Optimize() can still be
-       called, but it will not do anything.)
+       this line out to speed-up the compilation a bit, as well as making
+       the binary a bit smaller. (Optimize() can still be called, but it
+       will not do anything.)
 
        You can also disable the optimizer by specifying the
        FP_NO_SUPPORT_OPTIMIZER precompiler constant in your compiler.
@@ -457,7 +466,7 @@ void Optimize();
     Optimize() and checking EvalError().
 
       If the destination application is not going to use this method,
-    the compiler constant SUPPORT_OPTIMIZER can be undefined in fpconfig.hh
+    the compiler constant FP_SUPPORT_OPTIMIZER can be undefined in fpconfig.hh
     to make the library smaller (Optimize() can still be called, but it will
     not do anything).
 

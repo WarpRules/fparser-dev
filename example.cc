@@ -33,15 +33,6 @@ int main()
         std::cout << std::string(res+7, ' ') << "^\n"
                   << fparser.ErrorMsg() << "\n\n";
     }
-    std::cout << "----------- Original -----------\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-    fparser.PrintByteCode(std::cout);
-#endif
-    fparser.Optimize();
-    std::cout << "----------- Optimized -----------\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-    fparser.PrintByteCode(std::cout);
-#endif
 
     std::cout << "min x: ";
     std::cin >> minx;

@@ -237,15 +237,10 @@ double f26(double* p)
 
 double f27(double* p)
 {
-/*
 #define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", f27, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
     return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+
         1.0/tan(x)+1.0/sin(x) + pow(x,y);
-*/
-#define P27 "cot(x) + csc(y) + x", "x,y", f27, 2, .1, .9, .025, false
-    const double x = p[0], y = p[1];
-    return 1.0/tan(x) + 1.0/sin(y) + x;
 }
 
 double f28(double* p)
@@ -334,13 +329,25 @@ double f35(double* p)
 double f36(double* p)
 {
 #define P36 "-if(x<0, x, -x) + -if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
-//#define P36 "-if(x<0, x, -x)", "x", f36, 1, -10, 10, .1, false
-//#define P36 "-if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
     double x = p[0];
     return -(x<0 ? x : -x) + -(x<5 ? 2 : 3);
-    //return -(x<0 ? x : -x);
-    //return -(x<5 ? 2 : 3);
 }
+
+double f37(double* p)
+{
+#define P37 "5 + 7.5*8 / 3 - 2^4*2 + 7%2+4 + x", "x", f37, 1, -10, 10, .1, false
+    double x = p[0];
+    return 5 + 7.5*8 / 3 - pow(2,4)*2 + 7%2+4 + x;
+}
+
+#ifndef FP_NO_ASINH
+double f38(double* p)
+{
+#define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", f38, 3, -.9, .9, .05, false
+    double x = p[0], y = p[1], z = p[2];
+    return asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z);
+}
+#endif
 
 namespace
 {
@@ -350,7 +357,10 @@ namespace
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
-        { P34 }, { P35 }, { P36 }
+        { P34 }, { P35 }, { P36 }, { P37 }
+#ifndef FP_NO_ASINH
+        , { P38 }
+#endif
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);

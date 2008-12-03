@@ -30,7 +30,7 @@ most significant digit is nevertheless quite accurate.)
 <ul>
  <li>Parse time: 1.0 microseconds (990&nbsp;099 parses/s)
  <li>Eval time: 0.21 microseconds (4&nbsp;640&nbsp;371 evals/s)
- <li>Optimized: 0.11 microseconds (9&nbsp;174&nbsp;312 evals/s)
+ <li>Optimized: 0.1 microseconds (10&nbsp;256&nbsp;410 evals/s)
  <li>Optimization time: 37 microseconds (27&nbsp;027 optimizes/s)
 </ul>
 
@@ -38,27 +38,27 @@ most significant digit is nevertheless quite accurate.)
 <p>Function:
 <code>"((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10"</code>
 <ul>
- <li>Parse time: 4.6 microseconds (215&nbsp;983 parses/s)
+ <li>Parse time: 4.96 microseconds (201&nbsp;410 parses/s)
  <li>Eval time: 0.68 microseconds (1&nbsp;477&nbsp;105 evals/s)
- <li>Optimized: 0.5 microseconds (1&nbsp;994&nbsp;018 evals/s)
- <li>Optimization time: 1230 microseconds (813 optimizes/s)
+ <li>Optimized: 0.47 microseconds (2&nbsp;132&nbsp;196 evals/s)
+ <li>Optimization time: 1662 microseconds (602 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7 + (8*x+5*y+(7-x))*4)-10*3+4"</code>
 <ul>
- <li>Parse time: 4.95 microseconds (201&nbsp;816 parses/s)
- <li>Eval time: 0.6 microseconds (1&nbsp;642&nbsp;036 evals/s)
+ <li>Parse time: 5.3 microseconds (187&nbsp;266 parses/s)
+ <li>Eval time: 0.53 microseconds (1&nbsp;881&nbsp;468 evals/s)
  <li>Optimized: 0.35 microseconds (2&nbsp;840&nbsp;909 evals/s)
- <li>Optimization time: 1474 microseconds (678 optimizes/s)
+ <li>Optimization time: 1332 microseconds (750 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"sin(sqrt(10-x*x+y*y)) + cos(sqrt(5-x*x-y*y)) + sin(x*x+y*y)"</code>
 <ul>
- <li>Parse time: 2.8 microseconds (357&nbsp;782 parses/s)
+ <li>Parse time: 3.3 microseconds (304&nbsp;414 parses/s)
  <li>Eval time: 0.42 microseconds (2&nbsp;392&nbsp;344 evals/s)
  <li>Optimized: 0.39 microseconds (2&nbsp;583&nbsp;979 evals/s)
  <li>Optimization time: 464 microseconds (2&nbsp;153 optimizes/s)
@@ -68,10 +68,10 @@ most significant digit is nevertheless quite accurate.)
 <p>Function:
 <code>"exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(x^4-4*x^3+3*x^2-2*x+2*5-3) - cos(-2*y^4+5*y^3-14*x^2+8*x-120/2+4)"</code>
 <ul>
- <li>Parse time: 8.4 microseconds (119&nbsp;190 parses/s)
- <li>Eval time: 1.54 microseconds (651&nbsp;042 evals/s)
- <li>Optimized: 1.3 microseconds (771&nbsp;010 evals/s)
- <li>Optimization time: 1616 microseconds (619 optimizes/s)
+ <li>Parse time: 8.8 microseconds (112&nbsp;867 parses/s)
+ <li>Eval time: 1.4 microseconds (697&nbsp;107 evals/s)
+ <li>Optimized: 1.2 microseconds (815&nbsp;328 evals/s)
+ <li>Optimization time: 1502 microseconds (668 optimizes/s)
 </ul>
 
 </body></html>
