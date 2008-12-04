@@ -4,6 +4,11 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 
+namespace FPoptimizer_Grammar
+{
+    class Grammar;
+}
+
 namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData;
@@ -58,6 +63,7 @@ namespace FPoptimizer_CodeTree
             Param(CodeTree*        p, bool s) : param(p), sign(s) {}
             Param(const CodeTreeP& p, bool s) : param(p), sign(s) {}
         };
+
         // Parameters for the function
         //  These use the sign:
         //   For cAdd: operands to add together (0 to n)
@@ -81,6 +87,7 @@ namespace FPoptimizer_CodeTree
         uint_fast64_t Hash;
         size_t        Depth;
         CodeTree*     Parent;
+        const FPoptimizer_Grammar::Grammar* OptimizedUsing;
     public:
         CodeTree();
         ~CodeTree();

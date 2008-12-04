@@ -174,6 +174,7 @@ cIf [(cNotNot x) y z] -> cIf [x y z]
 # There are more optimizations that could be done with If(),
 # but they are likely too specific.
 # For example:
+#  Move branch invariants. if(y, x+a, x+b) -> x+if(y, a, b)
 cIf [y       x           (cAdd x <1> ~<2>)] -> cAdd[x (cIf [y 0               (cAdd <1> ~<2>)])]
 cIf [y (cAdd x <1> ~<2>) (cAdd x <3> ~<4>)] -> cAdd[x (cIf [y (cAdd <1> ~<2>) (cAdd <3> ~<4>)])]
 cIf [y       x           (cMul x <1> ~<2>)] -> cMul[x (cIf [y 1               (cMul <1> ~<2>)])]
@@ -272,7 +273,7 @@ cAnd [x]  -> cNotNot [x]
 cOr [x]  -> cNotNot [x]
 
 
-#### Linear combining
+#### Linear combining and polynomials
 
 # If a mul-list contains the same element two or more times,
 # replace the element with a pow with an integer exponent
@@ -306,38 +307,84 @@ cAdd  x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd   x* ~(cMul <1> ~<2>) 
 cAdd ~x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x*  (cMul <1> ~<2>) )])
 cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) )])
 
-## a*b*c*p*q + a*b*c*r*s = a*b*c*(p*q + r*s)
-#cAdd  (cMul <1> <2> ~<4>)  (cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>)  (cMul <3> ~<5>)))
-#cAdd  (cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd  (cMul <2> ~<4>) ~(cMul <3> ~<5>)))
-#cAdd ~(cMul <1> <2> ~<4>) ~(cMul <1> <3> ~<5>) : (cMul <1> (cAdd ~(cMul <2> ~<4>) ~(cMul <3> ~<5>)))
-#
-## Note: The above might be difficult to match efficiently.
-## The below is a simpler version that only works with a single operand...
-#cAdd  (cMul <1> ~<2> x)  (cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [ x  y]))
-#cAdd  (cMul <1> ~<2> x) ~(cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [ x ~y]))
-#cAdd ~(cMul <1> ~<2> x) ~(cMul <1> ~<2> y)  : (cMul <1> ~<2> (cAdd [~x ~y]))
-
-# Note: The above might be still difficult to match.
-# The below is an even simpler version...
 #  +(x*A*B/C) +(x*D*E/F) = x*(+A*B/C +D*E/F)
-cAdd  (cMul x <1> ~<3>)  (cMul x <2> ~<4>)   : (cMul [x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
-cAdd  (cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
-cAdd ~(cMul x <1> ~<3>) ~(cMul x <2> ~<4>)   : (cMul [x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd  (cMul  x <1> ~<3>)  (cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+cAdd  (cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd ~(cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd  (cMul ~x <1> ~<3>)  (cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+cAdd  (cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+cAdd ~(cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
 
-# The below is still simpler version...
-#cAdd  (cMul  x %)  (cMul  x &)         : (cMul [ x +(% &)])
-#cAdd  (cMul  x %) ~(cMul  x &)         : (cMul [ x +(% -&)])
-#cAdd ~(cMul  x %) ~(cMul  x &)         : (cMul [ x +(-% -&)])
-#cAdd  (cMul ~x %)  (cMul ~x &)         : (cMul [~x +(% &)])
-#cAdd  (cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(% -&)])
-#cAdd ~(cMul ~x %) ~(cMul ~x &)         : (cMul [~x +(-% -&)])
+## x^2 + x*y = x*(x+y)
+## Disabled. This rule conflicts with (x+y)^2 optimization.
+#cAdd (cPow [x 2])  (cMul x <1> ~<2>) : (cMul x (cAdd x  (cMul <1> ~<2>)))
+#cAdd (cPow [x 2]) ~(cMul x <1> ~<2>) : (cMul x (cAdd x ~(cMul <1> ~<2>)))
 
+# Note: These rules can be applied recursively, causing
+# that such as a*b*d*e*f - c*d*e*f*g is first
+# changed   to d*(a*b*e*f - c*e*f*g)
+# and then  to d*(f*(a*b*e - c*e*g))
+# and then  to d*(f*(e*(a*b - c*g)))
+# which yields d*f*e*(a*b - c*g)
+
+#
+# How about (a+b)*(c+d)?
+# It becomes a*c + b*c + a*d + b*d...
+# We would like to do optimizations like that in reverse.
+# Using the rules specified above,
+# a*c + b*c + a*d + b*d might be
+# changed  to a*(c+d) + b*(c+d),
+# and then to (a+b)*(c+d).
+# This seems nice enough.
+# But what about (a+b)*(a+b)? This expands into a^2 + 2*a*b + b^2.
+# Or,      about (a-b)*(a-b)? This expands into a^2 - 2*a*b + b^2.
+# Or,      about (a+b)*(a-b)? This expands into a^2 - b^2.
+# It would be nice if these could also be converted back.
+# At least we can handle this a^2 - b^2 special case:
+#cAdd (cPow[a 2]) ~(cPow[b 2]) : (cMul [(cAdd[a b]) (cAdd[a ~b])])
+# ^With this rule,   eval=0.241051 us, optimized = 0.065257 us
+# ^Without the rule, eval=0.227828 us, optimized = 0.060658  us
+# Tested expression was "pow(x,14)+pow(y,8)+x*x-y*y"
+# Oh well. The benchmark results are too varying.
+# It does generate some additional opcodes, but it gets one multiplication less.
+# Since the difference is not very noticeable, don't use the rule.
+
+# a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
+cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1> ~<2>) : (cPow [(cAdd [a b]) 2]) (cMul [a b (cAdd [(cMul <1> ~<2>) -2])])
+# For optimizing x^2+2*x*y+y^2:
+#  With this rule,    eval=0.287154 us, optimized = 0.0758879 us
+#  Without this rule, eval=0.314538 us, optimized = 0.0831386 us
+# For optimizing x^2+3*x*y+y^2:
+#  With this rule,    eval=0.295956 us, optimized = 0.0781288 us
+#  Without this rule, eval=0.300723 us, optimized = 0.075689 us
+# The benchmark results seem too varying, so it is hard to tell
+# whether this rule had some advantage. It _looks_ like it did
+# though, so better keep it, I suppose. -Bisqwit
+#
+# How about this?
+# (a+b+c)^2 = c^2 + 2*b*c + 2*a*c + b^2 + 2*a*b + a^2
+# Seems that it becomes:
+# a^2 + b^2 + c^2 + 2*((a+b)*c + a*b)
+# Is it worth adding rule for making that into (a+b+c)^2?
+# Too specific, I suppose.
 
 #### Remote double negations/inversions
 
 # If an addlist contains a negated mul and that mul-list contains a factor,
 # un-negate the mul-list and negate the factor in the mul-list.
 cAdd ~(cMul % <1> ~<2>)      : (cMul -% <1> ~<2>)
+
+# If a mul-list contains the immed -1, remove
+# the immed and wrap the rest in a negated cAdd.
+# Note: This is not done to all negative immeds,
+#       otherwise the rule above will revert it.
+cMul -1 <1> ~<2>             -> cAdd ~(cMul <1> ~<2>)
+
+# If an exponent is negated, negate it and wrap
+# the rest in an inverted cMul.
+cPow [ x (cAdd [~a]) ]       -> cMul ~(cPow [x a])
+#cPow [ x (cAdd [~a ~b]) ]    -> cMul ~(cPow [x (cAdd [a b])])
+#cPow [ x (cAdd [~a ~b c]) ]  -> cMul ~(cPow [x (cAdd [a b ~c])])
 
 # If a mul-list contains an inverted pow and the exponent is an immed,
 # un-negate the pow and negate the immed.
@@ -508,6 +555,13 @@ cMul ~(cSin[x])  (cCos[x]) : ~(cTan[x])
 cMul  (cSinh[x]) ~(cCosh[x]) :  (cTanh[x])
 cMul ~(cSinh[x])  (cCosh[x]) : ~(cTanh[x])
 
+# sin(-x) = -sin(x)
+cSin [(cAdd [~x])] -> cAdd ~(cSin [x])
+# tan(-x) = -tan(x)
+cTan [(cAdd [~x])] -> cAdd ~(cTan [x])
+# cos(-x) = cos(x)
+cCos [(cAdd [~x])] : x
+
 # cos(pi/2 - x) = sin(x)
 cCos [(cAdd *(CONSTANT_PI 0.5) x)] -> cSin[x]
 # sin(pi/2 - x) = cos(x)
@@ -527,15 +581,15 @@ cAdd 1 ~(cPow[ (cCos[x]) 2]) : (cPow [(cSin[x]) 2])
 # cos(x)*cos(y) + sin(x)*sin(y) = cos(x+y)
 # cos(x)*cos(y) - sin(x)*sin(y) = cos(x-y)
 
-cAdd  (cMul {(cSin[x]) (cCos[y])})  (cMul {(cCos[x]) (cSin[y])}) : (cSin (cAdd[x  y]))
-cAdd  (cMul {(cSin[x]) (cCos[y])}) ~(cMul {(cCos[x]) (cSin[y])}) : (cSin (cAdd[x ~y]))
-cAdd  (cMul {(cCos[x]) (cCos[y])})  (cMul {(cSin[x]) (cSin[y])}) : (cCos (cAdd[x  y]))
-cAdd  (cMul {(cCos[x]) (cCos[y])}) ~(cMul {(cSin[x]) (cSin[y])}) : (cCos (cAdd[x ~y]))
+cAdd  (cMul {(cSin[x]) (cCos[y])})  (cMul {(cCos[x]) (cSin[y])}) :  (cSin (cAdd[x  y]))
+cAdd  (cMul {(cSin[x]) (cCos[y])}) ~(cMul {(cCos[x]) (cSin[y])}) :  (cSin (cAdd[x ~y]))
+cAdd  (cMul {(cCos[x]) (cCos[y])})  (cMul {(cSin[x]) (cSin[y])}) :  (cCos (cAdd[x  y]))
+cAdd  (cMul {(cCos[x]) (cCos[y])}) ~(cMul {(cSin[x]) (cSin[y])}) :  (cCos (cAdd[x ~y]))
 
 cAdd ~(cMul {(cSin[x]) (cCos[y])}) ~(cMul {(cCos[x]) (cSin[y])}) : ~(cSin (cAdd[x  y]))
 cAdd ~(cMul {(cCos[x]) (cCos[y])}) ~(cMul {(cSin[x]) (cSin[y])}) : ~(cCos (cAdd[x  y]))
 cAdd ~(cMul {(cCos[x]) (cCos[y])})  (cMul {(cSin[x]) (cSin[y])}) : ~(cCos (cAdd[x ~y]))
-# This one is redudant, I think:
+# This one is redudant: It just reaffirms that sin(x) = -sin(-x).
 #cAdd ~(cMul {(cSin[x]) (cCos[y])})  (cMul {(cCos[x]) (cSin[y])}) : ~(cSin (cAdd[x ~y]))
 
 
@@ -565,7 +619,6 @@ cTan [(cAtan [x])] -> x
 # x * CONSTANT_DR = cDeg(x)
 # x * ~CONSTANT_RD = cDeg(x)
 cMul  CONSTANT_DR <1> ~<2> -> cDeg [(cMul <1> ~<2>)]
-cMul ~CONSTANT_RD <1> ~<2> -> cDeg [(cMul <1> ~<2>)]
 # Note: This may produce one-operand cMul lists.
 # Those are treated properly in the bytecode generation,
 # and do not need to be handled by [INTERMEDIATE].
@@ -573,7 +626,6 @@ cMul ~CONSTANT_RD <1> ~<2> -> cDeg [(cMul <1> ~<2>)]
 # x * CONSTANT_RD = cRad(x)
 # x * ~CONSTANT_DR = cRad(x)
 cMul  CONSTANT_RD <1> ~<2> -> cRad [(cMul <1> ~<2>)]
-cMul ~CONSTANT_DR <1> ~<2> -> cRad [(cMul <1> ~<2>)]
 
 # x^0.5 = sqrt(x)
 cPow [x 0.5]         -> cSqrt [x]
@@ -582,16 +634,12 @@ cPow [x 0.5]         -> cSqrt [x]
 cPow [CONSTANT_E x]  -> cExp [x]
 
 # log(x) / CONSTANT_L10  = log10(x)
-cMul  (cLog [x]) ~CONSTANT_L10  :  (cLog10 [x])
 cMul  (cLog [x]) CONSTANT_L10I  :  (cLog10 [x])
 cMul ~(cLog [x])   CONSTANT_L10 : ~(cLog10 [x])
-cMul ~(cLog [x]) ~CONSTANT_L10I : ~(cLog10 [x])
 
 # log(x) / CONSTANT_L2 = log2(x)
-cMul  (cLog [x]) ~CONSTANT_L2  :  (cLog2 [x])
 cMul  (cLog [x]) CONSTANT_L2I  :  (cLog2 [x])
 cMul ~(cLog [x])   CONSTANT_L2 : ~(cLog2 [x])
-cMul ~(cLog [x]) ~CONSTANT_L2I : ~(cLog2 [x])
 
 # In a mul-list, ~sin(x) = csc(x)
 cMul ~(cSin [x])      : (cCsc [x])

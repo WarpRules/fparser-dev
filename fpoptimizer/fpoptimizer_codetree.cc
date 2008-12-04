@@ -15,7 +15,7 @@ using namespace FUNCTIONPARSERTYPES;
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
-        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), Parent()
+        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), Parent(), OptimizedUsing(0)
     {
     }
 
@@ -101,33 +101,42 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::Recalculate_Hash_NoRecursion()
     {
-        Hash = Opcode * 0x3A83A83A83A83A0ULL;
+        uint_fast64_t NewHash = Opcode * 0x3A83A83A83A83A0ULL;
         Depth = 1;
         switch(Opcode)
         {
             case cImmed:
                 // FIXME: not portable - we're casting double* into uint_least64_t*
                 if(Value != 0.0)
-                    Hash ^= *(uint_least64_t*)&Value;
-                return; // no params
+                    NewHash ^= *(uint_least64_t*)&Value;
+                break; // no params
             case cVar:
-                Hash ^= (Var<<24) | (Var>>24);
-                return; // no params
+                NewHash ^= (Var<<24) | (Var>>24);
+                break; // no params
             case cFCall: case cPCall:
-                Hash ^= (Funcno<<24) | (Funcno>>24);
-                break;
-        }
-        size_t MaxChildDepth = 0;
-        for(size_t a=0; a<Params.size(); ++a)
-        {
-            if(Params[a].param->Depth > MaxChildDepth)
-                MaxChildDepth = Params[a].param->Depth;
+                NewHash ^= (Funcno<<24) | (Funcno>>24);
+                /* passthru */
+            default:
+            {
+                size_t MaxChildDepth = 0;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    if(Params[a].param->Depth > MaxChildDepth)
+                        MaxChildDepth = Params[a].param->Depth;
 
-            Hash += (1+Params[a].sign)*0x2492492492492492ULL;
-            Hash *= 1099511628211ULL;
-            Hash += Params[a].param->Hash;
+                    NewHash += (1+Params[a].sign)*0x2492492492492492ULL;
+                    NewHash *= 1099511628211ULL;
+                    //assert(&*Params[a].param != this);
+                    NewHash += Params[a].param->Hash;
+                }
+                Depth += MaxChildDepth;
+            }
         }
-        Depth += MaxChildDepth;
+        if(Hash != NewHash)
+        {
+            Hash = NewHash;
+            OptimizedUsing = 0;
+        }
     }
 
     CodeTree* CodeTree::Clone()

@@ -350,6 +350,86 @@ namespace
         for(size_t a=0; a<tree->Params.size(); ++a)
             RememberRecursivelyHashList(hashlist, tree->Params[a].param);
     }
+#if 0
+    void PowiTreeSequence(CodeTree& tree, const CodeTreeP param, long value)
+    {
+        tree.Params.clear();
+        if(value < 0)
+        {
+            tree.Opcode = cInv;
+            CodeTree* subtree = new CodeTree;
+            PowiTreeSequence(*subtree, param, -value);
+            tree.AddParam( CodeTree::Param(subtree, false) );
+            tree.Recalculate_Hash_NoRecursion();
+        }
+        else
+        {
+            assert(value != 0 && value != 1);
+            long half = 1;
+            if(value < POWI_TABLE_SIZE)
+                half = powi_table[value];
+            else if(value & 1)
+                half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
+            else
+                half = value / 2;
+            long otherhalf = value-half;
+            if(half > otherhalf || half<0) std::swap(half,otherhalf);
+
+            if(half == 1)
+                tree.AddParam( CodeTree::Param(param->Clone(), false) );
+            else
+            {
+                CodeTree* subtree = new CodeTree;
+                PowiTreeSequence(*subtree, param, half);
+                tree.AddParam( CodeTree::Param(subtree, false) );
+            }
+
+            bool otherhalf_sign = otherhalf < 0;
+            if(otherhalf < 0) otherhalf = -otherhalf;
+
+            if(otherhalf == 1)
+                tree.AddParam( CodeTree::Param(param->Clone(), otherhalf_sign) );
+            else
+            {
+                CodeTree* subtree = new CodeTree;
+                PowiTreeSequence(*subtree, param, otherhalf);
+                tree.AddParam( CodeTree::Param(subtree, otherhalf_sign) );
+            }
+
+            tree.Opcode = cMul;
+
+            tree.Sort();
+            tree.Recalculate_Hash_NoRecursion();
+        }
+    }
+    void ConvertPowi(CodeTree& tree)
+    {
+        if(tree.Opcode == cPow)
+        {
+            const CodeTree::Param& p0 = tree.Params[0];
+            const CodeTree::Param& p1 = tree.Params[1];
+
+            if(p1.param->IsLongIntegerImmed())
+            {
+                FPoptimizer_CodeTree::CodeTree::ByteCodeSynth temp_synth;
+
+                if(AssembleSequence(*p0.param, p1.param->GetLongIntegerImmed(),
+                    MulSequence,
+                    temp_synth,
+                    MAX_POWI_BYTECODE_LENGTH)
+                  )
+                {
+                    // Seems like a good candidate!
+                    // Redo the tree as a powi sequence.
+                    CodeTreeP param = p0.param;
+                    PowiTreeSequence(tree, param, p1.param->GetLongIntegerImmed());
+                }
+            }
+        }
+        for(size_t a=0; a<tree.Params.size(); ++a)
+            ConvertPowi(*tree.Params[a].param);
+    }
+#endif
 }
 
 namespace FPoptimizer_CodeTree
@@ -360,6 +440,13 @@ namespace FPoptimizer_CodeTree
         size_t& stacktop_max)
     {
         ByteCodeSynth synth;
+    #if 0
+        /* Convert integer powi sequences into trees
+         * to put them into the scope of the CSE
+         */
+        /* Disabled: Seems to actually slow down */
+        ConvertPowi(*this);
+    #endif
 
         /* Find common subtrees */
         TreeCountType TreeCounts;
@@ -664,17 +751,11 @@ namespace
 
         long half = 1;
         if(value < POWI_TABLE_SIZE)
-        {
             half = powi_table[value];
-        }
         else if(value & 1)
-        {
             half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
-        }
         else
-        {
             half = value / 2;
-        }
 
         long otherhalf = value-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
@@ -767,17 +848,11 @@ namespace
 
         long half = 1;
         if(value < POWI_TABLE_SIZE)
-        {
             half = powi_table[value];
-        }
         else if(value & 1)
-        {
             half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
-        }
         else
-        {
             half = value / 2;
-        }
         long otherhalf = value-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
 

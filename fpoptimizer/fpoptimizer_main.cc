@@ -25,16 +25,13 @@ void FunctionParser::Optimize()
     FPoptimizer_CodeTree::CodeTreeP tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    std::set<uint_fast64_t> optimized_children;
-    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(optimized_children, *tree))
+    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(*tree))
         {}
 
-    optimized_children.clear();
-    while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(optimized_children, *tree))
+    while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(*tree))
         {}
 
-    optimized_children.clear();
-    while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(optimized_children, *tree))
+    while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(*tree))
         {}
 
     tree->Sort_Recursive();

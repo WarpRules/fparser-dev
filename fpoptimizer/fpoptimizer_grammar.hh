@@ -1,4 +1,3 @@
-#include <set>
 #include <stdint.h> /* for uint_fast64_t */
 
 namespace FPoptimizer_CodeTree
@@ -14,7 +13,8 @@ namespace FPoptimizer_Grammar
     {
         None,    // default
         Negate,  // 0-x
-        Invert   // 1/x
+        Invert,  // 1/x
+        NotThe   // !x
     };
 
     enum SpecialOpcode
@@ -88,7 +88,8 @@ namespace FPoptimizer_Grammar
 
         bool Match(
             FPoptimizer_CodeTree::CodeTree& tree,
-            MatchedParams::CodeTreeMatch& match) const;
+            MatchedParams::CodeTreeMatch& match,
+            TransformationType transf) const;
 
         bool GetConst(
             const MatchedParams::CodeTreeMatch& match,
@@ -125,8 +126,7 @@ namespace FPoptimizer_Grammar
         unsigned index : 16;
         unsigned count : 16;
 
-        bool ApplyTo(std::set<uint_fast64_t>& optimized_children,
-                     FPoptimizer_CodeTree::CodeTree& tree,
+        bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree,
                      bool recursion=false) const;
     };
 

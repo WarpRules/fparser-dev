@@ -76,7 +76,6 @@ namespace FPoptimizer_Grammar
 
     /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
-        std::set<uint_fast64_t>& optimized_children,
         FPoptimizer_CodeTree::CodeTree& tree,
         bool recursion) const
     {
@@ -90,14 +89,12 @@ namespace FPoptimizer_Grammar
             std::cout << "\n";
         }
 #endif
-        std::set<uint_fast64_t>::iterator
-            i = optimized_children.lower_bound(tree.Hash);
-        if(i == optimized_children.end() || *i != tree.Hash)
+        if(tree.OptimizedUsing != this)
         {
             /* First optimize all children */
             for(size_t a=0; a<tree.Params.size(); ++a)
             {
-                if( ApplyTo( optimized_children, *tree.Params[a].param, true ) )
+                if( ApplyTo( *tree.Params[a].param, true ) )
                 {
                     changed = true;
                 }
@@ -124,7 +121,9 @@ namespace FPoptimizer_Grammar
             }
 
             if(!changed)
-                optimized_children.insert(i, tree.Hash);
+            {
+                tree.OptimizedUsing = this;
+            }
         }
 
 #ifdef DEBUG_SUBSTITUTIONS
@@ -265,18 +264,21 @@ namespace FPoptimizer_Grammar
         {
             struct Needs_Pol
             {
-                int Immeds;
                 int SubTrees;
                 int Others;
                 unsigned SubTreesDetail[VarBegin];
 
-                Needs_Pol(): Immeds(0), SubTrees(0), Others(0), SubTreesDetail()
+                Needs_Pol(): SubTrees(0), Others(0), SubTreesDetail()
                 {
                 }
             } polarity[2]; // 0=positive, 1=negative
+            int Immeds;
+            
+            Needs(): polarity(), Immeds() { }
         } NeedList;
 
         // Figure out what we need
+        size_t minimum_need = 0;
         for(unsigned a=0; a<count; ++a)
         {
             const ParamSpec& param = pack.plist[index+a];
@@ -287,19 +289,23 @@ namespace FPoptimizer_Grammar
                     needs.SubTrees += 1;
                     assert( pack.flist[param.index].opcode < VarBegin );
                     needs.SubTreesDetail[ pack.flist[param.index].opcode ] += 1;
+                    ++minimum_need;
                     break;
                 case NumConstant:
                 case ImmedHolder:
-                default:
-                    needs.Immeds += 1;
+                default: // GroupFunction:
+                    NeedList.Immeds += 1;
+                    ++minimum_need;
                     break;
                 case NamedHolder:
                     needs.Others += param.minrepeat;
+                    ++minimum_need;
                     break;
                 case RestHolder:
                     break;
             }
         }
+        if(tree.Params.size() < minimum_need) return false;
 
         // Figure out what we have (note: we already assume that the opcode of the tree matches!)
         for(size_t a=0; a<tree.Params.size(); ++a)
@@ -309,7 +315,7 @@ namespace FPoptimizer_Grammar
             switch(opcode)
             {
                 case cImmed:
-                    if(needs.Immeds > 0) needs.Immeds -= 1;
+                    if(NeedList.Immeds > 0) NeedList.Immeds -= 1;
                     else needs.Others -= 1;
                     break;
                 case cVar:
@@ -330,10 +336,9 @@ namespace FPoptimizer_Grammar
         }
 
         // Check whether all needs were satisfied
-        if(NeedList.polarity[0].Immeds > 0
+        if(NeedList.Immeds > 0
         || NeedList.polarity[0].SubTrees > 0
         || NeedList.polarity[0].Others > 0
-        || NeedList.polarity[1].Immeds > 0
         || NeedList.polarity[1].SubTrees > 0
         || NeedList.polarity[1].Others > 0)
         {
@@ -343,10 +348,9 @@ namespace FPoptimizer_Grammar
 
         if(type != AnyParams)
         {
-            if(NeedList.polarity[0].Immeds < 0
+            if(NeedList.Immeds < 0
             || NeedList.polarity[0].SubTrees < 0
             || NeedList.polarity[0].Others < 0
-            || NeedList.polarity[1].Immeds < 0
             || NeedList.polarity[1].SubTrees < 0
             || NeedList.polarity[1].Others < 0
             || count != tree.Params.size())
@@ -354,7 +358,15 @@ namespace FPoptimizer_Grammar
                 // Something was too much.
                 return false;
             }
-
+        }
+        
+        TransformationType transf = None;
+        switch(tree.Opcode)
+        {
+            case cAdd: transf = Negate; break;
+            case cMul: transf = Invert; break;
+            case cAnd:
+            case cOr:  transf = NotThe; break;
         }
 
         switch(type)
@@ -368,8 +380,7 @@ namespace FPoptimizer_Grammar
                 for(unsigned a=0; a<count; ++a)
                 {
                     const ParamSpec& param = pack.plist[index+a];
-                    if(param.sign != tree.Params[a].sign
-                    || !param.Match(*tree.Params[a].param, match))
+                    if(!param.Match(*tree.Params[a].param, match, tree.Params[a].sign ? transf : None))
                     {
                         /*std::cout << " drats at " << a << "!\n";*/
                         return false;
@@ -440,8 +451,7 @@ namespace FPoptimizer_Grammar
                             DumpTree(*tree.Params[b].param);
                             std::cout << "...?\n";*/
 
-                            if(param.sign == tree.Params[b].sign
-                            && param.Match(*tree.Params[b].param, match))
+                            if(param.Match(*tree.Params[b].param, match, tree.Params[b].sign ? transf : None))
                             {
                                 /*std::cout << "woo... " << a << ", " << b << "\n";*/
                                 /* NamedHolders require a special treatment,
@@ -460,7 +470,7 @@ namespace FPoptimizer_Grammar
                                         ++c)
                                     {
                                         if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
-                                        && tree.Params[c].sign == param.sign)
+                                        && tree.Params[c].sign == tree.Params[b].sign)
                                         {
                                             ++HadRepeat;
                                         }
@@ -477,7 +487,7 @@ namespace FPoptimizer_Grammar
                                         ++c)
                                     {
                                         if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
-                                        && tree.Params[c].sign == param.sign)
+                                        && tree.Params[c].sign == tree.Params[b].sign)
                                         {
                                             ++HadRepeat;
                                             used[c] = true;
@@ -556,7 +566,8 @@ namespace FPoptimizer_Grammar
 
     bool ParamSpec::Match(
         FPoptimizer_CodeTree::CodeTree& tree,
-        MatchedParams::CodeTreeMatch& match) const
+        MatchedParams::CodeTreeMatch& match,
+        TransformationType transf) const
     {
         assert(opcode != RestHolder); // RestHolders are supposed to be handler by the caller
 
@@ -568,7 +579,11 @@ namespace FPoptimizer_Grammar
                 double res = tree.GetImmed();
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
-                if(res != pack.clist[index]) return false;
+                double res2 = pack.clist[index];
+                if(transf == Negate) res2 = -res2;
+                if(transf == Invert) res2 = 1/res2;
+                if(transf == NotThe) res2 = res2 != 0;
+                if(res != res2) return false;
                 return true;
             }
             case ImmedHolder:
@@ -580,12 +595,21 @@ namespace FPoptimizer_Grammar
                 std::map<unsigned, double>::iterator
                     i = match.ImmedMap.lower_bound(index);
                 if(i != match.ImmedMap.end() && i->first == index)
-                    return res == i->second;
+                {
+                    double res2 = i->second;
+                    if(transf == Negate) res2 = -res2;
+                    if(transf == Invert) res2 = 1/res2;
+                    if(transf == NotThe) res2 = res2 != 0;
+                    return res == res2;
+                }
+                if(sign != (transf != None)) return false;
+                
                 match.ImmedMap.insert(i, std::make_pair((unsigned)index, res));
                 return true;
             }
             case NamedHolder:
             {
+                if(sign != (transf != None)) return false;
                 std::map<unsigned, std::pair<uint_fast64_t, size_t> >::iterator
                     i = match.NamedMap.lower_bound(index);
                 if(i != match.NamedMap.end() && i->first == index)
@@ -600,15 +624,21 @@ namespace FPoptimizer_Grammar
                 break;
             case SubFunction:
             {
+                if(sign != (transf != None)) return false;
                 return pack.flist[index].Match(tree, match);
             }
             default:
             {
                 if(!tree.IsImmed()) return false;
                 double res = tree.GetImmed();
-
-                double constval;
-                return GetConst(match, constval) && res == constval;
+                if(transformation == Negate) res = -res;
+                if(transformation == Invert) res = 1/res;
+                double res2;
+                if(!GetConst(match, res2)) return false;
+                if(transf == Negate) res2 = -res2;
+                if(transf == Invert) res2 = 1/res2;
+                if(transf == NotThe) res2 = res2 != 0;
+                return res == res2;
             }
         }
         return false;

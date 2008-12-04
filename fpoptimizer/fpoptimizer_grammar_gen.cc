@@ -1,7 +1,7 @@
 #define YY_FPoptimizerGrammarParser_h_included
 #define YY_USE_CLASS
 
-/*  A Bison++ parser, made from fpoptimizer_grammar_gen.y  */
+/*  A Bison++ parser, made from fpoptimizer/fpoptimizer_grammar_gen.y  */
 
  /* with Bison++ version bison++ Version 1.21.9-1, adapted from GNU bison by coetmeur@icdc.fr
 Maintained by Magnus Ekdahl <magnus@debian.org>
@@ -99,9 +99,12 @@ Maintained by Magnus Ekdahl <magnus@debian.org>
 #define YYBISON 1  
 
  #line 88 "/usr/share/bison++/bison.cc"
-#line 1 "fpoptimizer_grammar_gen.y"
+#line 1 "fpoptimizer/fpoptimizer_grammar_gen.y"
 
 #define YYDEBUG 1
+#define YYERROR_VERBOSE 1
+#define YY_FPoptimizerGrammarParser_ERROR_VERBOSE 1
+#include <string.h> // for error reporting
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -884,7 +887,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 789 "fpoptimizer_grammar_gen.y"
+#line 792 "fpoptimizer/fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1302,9 +1305,9 @@ static const short yyrhs[] = {    22,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   820,   826,   827,   830,   840,   852,   872,   883,   904,   924,
-   945,   950,   954,   960,   965,   969,   984,   993,   999,  1008,
-  1017,  1021
+   823,   829,   830,   833,   843,   855,   875,   886,   907,   927,
+   948,   953,   957,   963,   968,   972,   987,   996,  1002,  1011,
+  1020,  1024
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1875,14 +1878,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 822 "fpoptimizer_grammar_gen.y"
+#line 825 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 833 "fpoptimizer_grammar_gen.y"
+#line 836 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1891,7 +1894,7 @@ case 4:
       ;
     break;}
 case 5:
-#line 843 "fpoptimizer_grammar_gen.y"
+#line 846 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1902,7 +1905,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 854 "fpoptimizer_grammar_gen.y"
+#line 857 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1921,7 +1924,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 874 "fpoptimizer_grammar_gen.y"
+#line 877 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -1931,7 +1934,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 888 "fpoptimizer_grammar_gen.y"
+#line 891 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1950,7 +1953,7 @@ case 8:
        ;
     break;}
 case 9:
-#line 908 "fpoptimizer_grammar_gen.y"
+#line 911 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1969,7 +1972,7 @@ case 9:
        ;
     break;}
 case 10:
-#line 927 "fpoptimizer_grammar_gen.y"
+#line 930 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAdd && yyvsp[-1].opcode != cMul && yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -1988,37 +1991,37 @@ case 10:
        ;
     break;}
 case 11:
-#line 947 "fpoptimizer_grammar_gen.y"
+#line 950 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
 case 12:
-#line 951 "fpoptimizer_grammar_gen.y"
+#line 954 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 13:
-#line 955 "fpoptimizer_grammar_gen.y"
+#line 958 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 14:
-#line 962 "fpoptimizer_grammar_gen.y"
+#line 965 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 15:
-#line 966 "fpoptimizer_grammar_gen.y"
+#line 969 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::ImmedHolderTag());
        ;
     break;}
 case 16:
-#line 970 "fpoptimizer_grammar_gen.y"
+#line 973 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -2035,7 +2038,7 @@ case 16:
        ;
     break;}
 case 17:
-#line 985 "fpoptimizer_grammar_gen.y"
+#line 988 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2046,7 +2049,7 @@ case 17:
        ;
     break;}
 case 18:
-#line 994 "fpoptimizer_grammar_gen.y"
+#line 997 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.Dump(*yyvsp[0].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
@@ -2054,7 +2057,7 @@ case 18:
        ;
     break;}
 case 19:
-#line 1000 "fpoptimizer_grammar_gen.y"
+#line 1003 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2065,7 +2068,7 @@ case 19:
        ;
     break;}
 case 20:
-#line 1009 "fpoptimizer_grammar_gen.y"
+#line 1012 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2076,13 +2079,13 @@ case 20:
        ;
     break;}
 case 21:
-#line 1018 "fpoptimizer_grammar_gen.y"
+#line 1021 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].f);
        ;
     break;}
 case 22:
-#line 1022 "fpoptimizer_grammar_gen.y"
+#line 1025 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
@@ -2291,7 +2294,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1026 "fpoptimizer_grammar_gen.y"
+#line 1029 "fpoptimizer/fpoptimizer_grammar_gen.y"
 
 
 void FPoptimizerGrammarParser::yyerror(char* msg)

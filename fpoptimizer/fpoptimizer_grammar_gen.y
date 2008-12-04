@@ -1,5 +1,8 @@
 %{
 #define YYDEBUG 1
+#define YYERROR_VERBOSE 1
+#define YY_FPoptimizerGrammarParser_ERROR_VERBOSE 1
+#include <string.h> // for error reporting
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -903,7 +906,7 @@ static GrammarDumper dumper;
        }
     |  OPCODE '{' paramlist '}'
        /* Match a function with opcode=opcode,
-        * and the exact parameter list as specified
+        * and the exact parameter list in any order
         */
        {
          if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
@@ -923,7 +926,7 @@ static GrammarDumper dumper;
        }
     |  OPCODE paramlist
        /* Match a function with opcode=opcode and the given way of matching params */
-       /* Match the parameters the way you find them */
+       /* There may be more parameters, don't care about them */
        {
          if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
          {
