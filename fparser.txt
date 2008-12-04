@@ -901,6 +901,10 @@ A) If the Software using the Library is distributed under the GPL license,
    with the sources of the Library. (Documentation about possible
    modifications to the library should be put in a different text file.)
 
+   As per the GPL license, the copyright notification at the beginning of
+   this section should accompany any significant portions of the Library.
+   Proper credits in any Software using the Library is appreciated.
+
 B) If the Software using the Library is not distributed under the GPL
    license but under any other license, then the following usage license
    applies to the Library:
@@ -931,9 +935,10 @@ B) If the Software using the Library is not distributed under the GPL
      provide the source code, proper credits MUST be included. Trying to
      obfuscate the fact that this library is not made by you or that it is
      free is expressly prohibited. When crediting the usage of this library,
-     it's enough to include my name and email address, that is:
-     "Juha Nieminen (warp@iki.fi)". Also a URL to the library download page
-     would be nice, although not required. The official URL is:
+     it's enough to include a copyright notice and the name of the authors,
+     that is: Juha Nieminen, Joel Yliluoma.
+     Also a URL to the library download page would be nice, although not
+     required. The official URL is:
        http://iki.fi/warp/FunctionParser/
 
   6. And the necessary "lawyer stuff":
