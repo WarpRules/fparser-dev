@@ -7,7 +7,9 @@
 #include <iostream>
 #include <cmath>
 
-#define FUNC0 pow(x,14)+pow(y,8)
+#include <sys/time.h>
+
+#define FUNC0 pow(x,14)+pow(y,8)+pow(x,2)+2*x*y+pow(y,2)
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10)-(4*pow(y,3)+2*y*y-10*y+2))*10
 
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
@@ -51,16 +53,56 @@ namespace
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
 }
 
-void printInfo(const char* title, const char* unit,
-               clock_t iclock, unsigned loops)
+class Test
 {
-    iclock = std::clock()-iclock;
-    const unsigned perSecond =
-        unsigned(std::floor(double(loops)*CLOCKS_PER_SEC/iclock+.5));
-    std::cout << title << ": "
-              << iclock * (1000000.0 / loops) / CLOCKS_PER_SEC << " us. ("
-              << perSecond << " " << unit << "/s)" << std::endl;
-}
+public:
+    void Start(unsigned nloops)
+    {
+        this->nloops = nloops;
+        this->iter   = 0;
+        this->result = 0;
+        this->reset_threshold = nloops / 10;
+        this->nloops = this->reset_threshold * 10;
+        gettimeofday(&this->begin, 0);
+    }
+    bool Loop()
+    {
+        if(this->iter >= this->nloops) return false;
+        
+        this->iter += 1;
+        if(!(this->iter % this->reset_threshold))
+        {
+            TakeResult();
+        }
+        return true;
+    }
+    void Report(const char* title, const char* unit)
+    {
+        std::cout << title << ": "
+                  << (result) << " us. ("
+                  << (1e6/result) << " " << unit << "/s)\n";
+    }
+    void TakeResult()
+    {
+        struct timeval end;
+        gettimeofday(&end, 0);
+        double begin_d = begin.tv_sec * 1e6 + begin.tv_usec;
+        double   end_d =   end.tv_sec * 1e6 +   end.tv_usec;
+        double diff_d = (end_d - begin_d) / this->reset_threshold;
+        if(iter == this->reset_threshold
+        || diff_d < result)
+        {
+            result = diff_d;
+        }
+        begin = end;
+    }
+private:
+    unsigned nloops;
+    unsigned iter;
+    unsigned reset_threshold;
+    struct timeval begin;
+    double result;
+};
 
 int main()
 {
@@ -82,38 +124,41 @@ int main()
         }
 
         const unsigned ParseLoops = 2000000;
-        const unsigned EvalLoops = 20000000;
+        const unsigned EvalLoops = 200000000;
         const unsigned OptimizationLoops = 20000;
         const unsigned FuncLoops = 100000000;
+        
+        Test tester;
 
 
         // Measure parsing speed
         // ---------------------
-        clock_t iclock = std::clock();
-        for(unsigned counter = 0; counter < ParseLoops; ++counter)
+        tester.Start(ParseLoops);
+        while(tester.Loop())
             fp.Parse(funcData[i].funcStr, funcData[i].paramStr);
-
-        printInfo("Parse time", "parses", iclock, ParseLoops);
+        tester.Report("Parse time", "parses");
 
 #ifndef MEASURE_PARSING_SPEED_ONLY
+//        fp.PrintByteCode(std::cout);
+        
         // Measure evaluation speed
         // ------------------------
-        iclock = std::clock();
-        for(unsigned counter = 0; counter < EvalLoops; ++counter)
+        tester.Start(EvalLoops);
+        while(tester.Loop())
             fp.Eval(values);
-
-        printInfo("Eval time", "evals", iclock, EvalLoops);
+        tester.Report("Eval time", "evals");
 
         // Measure evaluation speed, optimized
         // -----------------------------------
         fp2 = fp;
         fp2.Optimize();
 
-        iclock = std::clock();
-        for(unsigned counter = 0; counter < EvalLoops; ++counter)
-            fp2.Eval(values);
+//        fp2.PrintByteCode(std::cout);
 
-        printInfo("Optimized", "evals", iclock, EvalLoops);
+        tester.Start(EvalLoops);
+        while(tester.Loop())
+            fp2.Eval(values);
+        tester.Report("Optimized", "evals");
 
 
 #ifdef TEST_JIT
@@ -122,33 +167,31 @@ int main()
         const unsigned JitLoops = 50000000;
         fp2.CreateJIT();
 
-        iclock = std::clock();
-        for(unsigned counter = 0; counter < JitLoops; ++counter)
+        tester.Start(JitLoops);
+        while(tester.Loop())
             fp2.Eval(values);
-
-        printInfo("JIT-compiled", "evals", iclock, JitLoops);
+        tester.Report("JIT-compiled", "evals");
 #endif
 
 
         // Measure optimization speed
         // --------------------------
-        iclock = std::clock();
-        for(unsigned counter = 0; counter < OptimizationLoops; ++counter)
+        tester.Start(OptimizationLoops);
+        while(tester.Loop())
         {
             fp2 = fp;
             fp2.Optimize();
         }
-
-        printInfo("Optimization time", "optimizes", iclock, OptimizationLoops);
+        tester.Report("Optimization time", "optimizes");
 
 
         // Measure C++ function speed
         // --------------------------
-        iclock = std::clock();
-        for(unsigned counter = 0; counter < FuncLoops; ++counter)
+        tester.Start(FuncLoops);
+        while(tester.Loop())
             funcData[i].function(values);
 
-        printInfo("C++ function time", "evals", iclock, FuncLoops);
+        tester.Report("C++ function time", "evals");
 #endif
     }
 
