@@ -273,7 +273,7 @@ namespace FPoptimizer_Grammar
                 }
             } polarity[2]; // 0=positive, 1=negative
             int Immeds;
-            
+
             Needs(): polarity(), Immeds() { }
         } NeedList;
 
@@ -359,7 +359,7 @@ namespace FPoptimizer_Grammar
                 return false;
             }
         }
-        
+
         TransformationType transf = None;
         switch(tree.Opcode)
         {
@@ -537,6 +537,44 @@ namespace FPoptimizer_Grammar
                 }
                 // Match = no mismatch.
 
+                // If the rule cares about the balance of
+                // negative restholdings versus positive restholdings,
+                // verify them.
+                if(balance != BalanceDontCare)
+                {
+                    unsigned n_pos_restholdings = 0;
+                    unsigned n_neg_restholdings = 0;
+
+                    for(unsigned a=0; a<count; ++a)
+                    {
+                        const ParamSpec& param = pack.plist[index+a];
+                        if(param.opcode == RestHolder)
+                        {
+                            for(size_t b=0; b<n_tree_params; ++b)
+                                if(tree.Params[b].sign == param.sign && !used[b])
+                                {
+                                    if(param.sign)
+                                        n_neg_restholdings += 1;
+                                    else
+                                        n_pos_restholdings += 1;
+                                }
+                        }
+                    }
+                    switch(balance)
+                    {
+                        case BalanceMoreNeg:
+                            if(n_neg_restholdings <= n_pos_restholdings) return false;
+                            break;
+                        case BalanceMorePos:
+                            if(n_pos_restholdings <= n_neg_restholdings) return false;
+                            break;
+                        case BalanceEqual:
+                            if(n_pos_restholdings != n_neg_restholdings) return false;
+                            break;
+                        case BalanceDontCare: ;
+                    }
+                }
+
                 // Now feed any possible RestHolders the remaining parameters.
                 for(unsigned a=0; a<count; ++a)
                 {
@@ -603,7 +641,7 @@ namespace FPoptimizer_Grammar
                     return res == res2;
                 }
                 if(sign != (transf != None)) return false;
-                
+
                 match.ImmedMap.insert(i, std::make_pair((unsigned)index, res));
                 return true;
             }
@@ -972,6 +1010,14 @@ namespace FPoptimizer_Grammar
         {
             std::cout << ' ';
             DumpParam(pack.plist[mitem.index + a]);
+        }
+
+        switch(mitem.balance)
+        {
+            case BalanceMorePos: std::cout << " =+"; break;
+            case BalanceMoreNeg: std::cout << " =-"; break;
+            case BalanceEqual:   std::cout << " =="; break;
+            case BalanceDontCare: break;
         }
 
         if(mitem.type == PositionalParams) std::cout << " ]";

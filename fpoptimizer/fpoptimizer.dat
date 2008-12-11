@@ -38,15 +38,15 @@
 #     ;
 #
 #     function:
-#        OPCODE '[' paramlist ']'
+#        OPCODE '[' paramlist sign_spec ']'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list as specified
 #         */
-#        OPCODE '{' paramlist '}'
+#        OPCODE '{' paramlist sign_spec '}'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list in any order
 #         */
-#     |  OPCODE paramlist
+#     |  OPCODE paramlist sign_spec
 #        /* Match a function with opcode=opcode and the given way of matching params */
 #        /* There may be more parameters, don't care about them */
 #     ;
@@ -54,6 +54,13 @@
 #     paramlist: /* left-recursive list of 0-n params with no delimiter */
 #         paramlist '~' param /* negated/inverted param */
 #       | paramlist param
+#       | /* empty */
+#     ;
+#
+#     sign_spec: /* Can be used to specify a proportion of negativeness to positiveness */
+#         '=-' /* ~<number> matched more elements than <number> did */
+#       | '=+' /* ~<number> matched fewer elements than <number> did */
+#       | '==' /* ~<number> matched as many elements than <number> did */
 #       | /* empty */
 #     ;
 #
@@ -195,6 +202,12 @@ cAdd ~(cAdd <1> ~<2>)  : ~<1>  <2>
 cMul  (cMul <1> ~<2>)  :  <1> ~<2>
 cMul ~(cMul <1> ~<2>)  : ~<1>  <2>
 
+# If an add-list contains a mul-list with a negated entry, assimilate the negation.
+# I.e.  a + b + (c * (-d-e+f))  ->  a + b - (c * (+d+e-f))
+# Or    a + b - (c * (-d-e+f))  ->  a + b + (c * (+d+e-f))
+cAdd  (cMul (cAdd <3> ~<4> =-) <1> ~<2>) : ~(cMul (cAdd ~<3> <4>) <1> ~<2>)
+cAdd ~(cMul (cAdd <3> ~<4> =-) <1> ~<2>) :  (cMul (cAdd ~<3> <4>) <1> ~<2>)
+
 # If a min-list contains another min-list, assimilate the child
 cMin (cMin <1>)   : <1>
 
@@ -255,10 +268,10 @@ cAdd [x]   -> x
 # A single-token mul-list gets replaced with that single token (note: NOT when inverted)
 cMul [x]   -> x
 # A single-token and-list gets replaced with that single token
-cAnd [x]   -> x
+cAnd  [x]  -> cNotNot [x]
 cAnd [~x]  -> cNot [x]
 # A single-token or-list gets replaced with that single token
-cOr  [x]   -> x
+cOr   [x]  -> cNotNot [x]
 cOr  [~x]  -> cNot [x]
 # If a pow has an exponent of 1, replace the pow with the base value
 cPow [x 1]  -> x
@@ -266,12 +279,10 @@ cPow [x 1]  -> x
 cPow [x -1] -> cMul [~x]
 # If a pow has an exponent of 0, replace the pow with immed 1 (note: this makes 0^0 evaluate into 1, too)
 cPow [x 0]  -> 1
-
-# A single-token and-list gets replaced with a notnot
-cAnd [x]  -> cNotNot [x]
-# A single-token or-list gets replaced with a notnot
-cOr [x]  -> cNotNot [x]
-
+# 0 raised to anything is 0 (note: this makes 0^0 evaluate into 0, and potentially conflicts with the previous rule)
+cPow [0 x]  -> 0
+# 1 raised to anything is 1
+cPow [1 x]  -> 1
 
 #### Linear combining and polynomials
 
@@ -282,10 +293,10 @@ cOr [x]  -> cNotNot [x]
 cMul  x+                   : (cPow  x  x+)
 cMul ~x+                   : (cPow [x -x+])
 # x^3 * x = x^4
-cMul  x*       (cPow[x %]) : (cPow [x +(x* %)])
-cMul  x*      ~(cPow[x %]) : (cPow [x +(x* -%)])
-cMul ~x*       (cPow[x %]) : (cPow [x +(-x* %)])
-cMul ~x*      ~(cPow[x %]) : (cPow [x +(-x* -%)])
+cMul  x*       (cPow[x y]) : (cPow [x (cAdd x* y)])
+cMul  x*      ~(cPow[x y]) : (cPow [x (cAdd x* ~y)])
+cMul ~x*       (cPow[x y]) : (cPow [x (cAdd -x* y)])
+cMul ~x*      ~(cPow[x y]) : (cPow [x (cAdd -x* ~y)])
 # x^y * x^z = x^(y+z)
 cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 # x^y / x^z = x^(y-z)
@@ -382,9 +393,7 @@ cMul -1 <1> ~<2>             -> cAdd ~(cMul <1> ~<2>)
 
 # If an exponent is negated, negate it and wrap
 # the rest in an inverted cMul.
-cPow [ x (cAdd [~a]) ]       -> cMul ~(cPow [x a])
-#cPow [ x (cAdd [~a ~b]) ]    -> cMul ~(cPow [x (cAdd [a b])])
-#cPow [ x (cAdd [~a ~b c]) ]  -> cMul ~(cPow [x (cAdd [a b ~c])])
+cPow [ x (cAdd <1> ~<2> =-) ]       -> cMul ~(cPow [x (cAdd ~<1> <2>)])
 
 # If a mul-list contains an inverted pow and the exponent is an immed,
 # un-negate the pow and negate the immed.

@@ -40,11 +40,20 @@ namespace FPoptimizer_Grammar
         ReplaceParams   // replace indicate params with replaced_params
     };
 
+    enum SignBalanceType
+    {
+        BalanceDontCare,
+        BalanceMoreNeg,
+        BalanceMorePos,
+        BalanceEqual
+    };
+
     /***/
 
     struct MatchedParams
     {
-        ParamMatchingType type : 8;
+        ParamMatchingType type    : 6;
+        SignBalanceType   balance : 2;
         // count,index to plist[]
         unsigned         count : 8;
         unsigned         index : 16;

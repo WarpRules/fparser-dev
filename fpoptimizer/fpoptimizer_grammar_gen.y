@@ -38,14 +38,16 @@ namespace GrammarData
     {
     public:
         ParamMatchingType Type;
+        SignBalanceType   Balance;
         std::vector<ParamSpec*> Params;
 
     public:
-        MatchedParams()                    : Type(PositionalParams), Params() { }
-        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
-        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
+        MatchedParams()                    : Type(PositionalParams), Balance(BalanceDontCare), Params() { }
+        MatchedParams(ParamMatchingType t) : Type(t),                Balance(BalanceDontCare), Params() { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Balance(BalanceDontCare), Params() { Params.push_back(p); }
 
         MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
+        MatchedParams* SetBalance(SignBalanceType b) { Balance=b; return this; }
         MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
 
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
@@ -548,7 +550,8 @@ public:
     size_t Dump(const GrammarData::MatchedParams& m)
     {
         MatchedParams mitem;
-        mitem.type  = m.Type;
+        mitem.type    = m.Type;
+        mitem.balance = m.Balance;
         size_t i, c;
         Dump(m.Params, i, c);
         mitem.index = i;
@@ -663,6 +666,12 @@ public:
             "        {" << (mlist[a].type == PositionalParams ? "PositionalParams"
                          :  mlist[a].type == SelectedParams   ? "SelectedParams  "
                          :/*mlist[a].type == AnyParams      ?*/ "AnyParams       "
+                           )
+                        << ", "
+                        << (mlist[a].balance == BalanceMoreNeg    ? "BalanceMoreNeg "
+                         :  mlist[a].balance == BalanceMorePos    ? "BalanceMorePos "
+                         :  mlist[a].balance == BalanceEqual      ? "BalanceEqual   "
+                         :/*mlist[a].balance == BalanceDontCare ?*/ "BalanceDontCare"
                            )
                         << ", " << mlist[a].count
                         << ", " << mlist[a].index
@@ -813,10 +822,13 @@ static GrammarDumper dumper;
 
 %token SUBST_OP_COLON
 %token SUBST_OP_ARROW
+%token BALANCE_POS
+%token BALANCE_EQUAL
+%token BALANCE_NEG
 
 %type <r> substitution
 %type <f> function function_match
-%type <p> paramlist
+%type <p> paramlist paramlist_loop
 %type <a> param
 
 %%
@@ -944,13 +956,20 @@ static GrammarDumper dumper;
          delete $2;
        }
     ;
+    
+    paramlist:
+        paramlist_loop
+      | paramlist_loop BALANCE_POS   { $$ = $1->SetBalance(BalanceMorePos); }
+      | paramlist_loop BALANCE_NEG   { $$ = $1->SetBalance(BalanceMoreNeg); }
+      | paramlist_loop BALANCE_EQUAL { $$ = $1->SetBalance(BalanceEqual); }
+    ;
 
-    paramlist: /* left-recursive list of 0-n params with no delimiter */
-        paramlist '~' param
+    paramlist_loop: /* left-recursive list of 0-n params with no delimiter */
+        paramlist_loop '~' param
         {
           $$ = $1->AddParam($3->SetNegated());
         }
-      | paramlist param
+      | paramlist_loop param
         {
           $$ = $1->AddParam($2);
         }
@@ -969,7 +988,7 @@ static GrammarDumper dumper;
        {
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
        }
-    |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
+    |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
          /* Verify that $3 contains no inversions */
          if(!$3->EnsureNoInversions())
@@ -1086,6 +1105,15 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             lval->transform = Invert;
             return UNARY_TRANSFORMATION;
 
+        case '=':
+        {
+            int c2 = std::fgetc(stdin);
+            if(c2 == '-') return BALANCE_NEG;
+            if(c2 == '+') return BALANCE_POS;
+            if(c2 == '=') return BALANCE_EQUAL;
+            std::ungetc(c2, stdin);
+            return '=';
+        }
         case '~':
         case '[': case '{':
         case ']': case '}':
