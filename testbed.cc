@@ -77,9 +77,9 @@ double f1(double* p)
 }
 double f2(double* p)
 {
-#define P2 " 2 * x+ sin ( x ) / 5 + 2-sin(x)*sin(x)", "x", f2, 1, -1000, 1000, .1, false
+#define P2 " 2 * x+ sin ( x ) / .5 + 2-sin(x)*sin(x)", "x", f2, 1, -1000, 1000, .1, false
     double x = p[0];
-    return 2*x+sin(x)/5 + 2-sin(x)*sin(x);
+    return 2*x+sin(x)/.5 + 2-sin(x)*sin(x);
 }
 double f3(double* p)
 {
@@ -376,14 +376,13 @@ bool TestCopyingNoDeepCopy(FunctionParser p)
 
     if(std::fabs(p.Eval(vars) - 13) > Epsilon)
     {
+        std::cout << "- Giving as function parameter (no deep copy): ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p.PrintByteCode(std::cout);
 #endif
         return false;
     }
-    else
-        std::cout << "Ok." << std::endl;
     return true;
 }
 
@@ -395,20 +394,19 @@ bool TestCopyingDeepCopy(FunctionParser p)
 
     if(std::fabs(p.Eval(vars) - 14) > Epsilon)
     {
+        std::cout << "- Giving as function parameter (deep copy): ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p.PrintByteCode(std::cout);
 #endif
         return false;
     }
-    else
-        std::cout << "Ok." << std::endl;
     return true;
 }
 
 bool TestCopying()
 {
-    std::cout << "*** Testing copy constructor and assignment:" << std::endl;
+    std::cout << "*** Testing copy constructor and assignment..." << std::endl;
 
     bool retval = true;
     double vars[2] = { 2, 5 };
@@ -416,59 +414,50 @@ bool TestCopying()
     FunctionParser p1, p3;
     p1.Parse("x*y-2", "x,y");
 
-    std::cout << "- Copy constructor with no deep copy: ";
     FunctionParser p2(p1);
     if(std::fabs(p2.Eval(vars) - 8) > Epsilon)
     {
+        std::cout << "- Copy constructor with no deep copy: ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p2.PrintByteCode(std::cout);
 #endif
         retval = false;
     }
-    else
-        std::cout << "Ok." << std::endl;
 
-    std::cout << "- With deep copy: ";
     p2.Parse("x*y-1", "x,y");
     if(std::fabs(p2.Eval(vars) - 9) > Epsilon)
     {
         retval = false;
+        std::cout << "- Copy constructor with deep copy: ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p2.PrintByteCode(std::cout);
 #endif
     }
-    else
-        std::cout << "Ok." << std::endl;
 
-    std::cout << "- Assignment with no deep copy: ";
     p3 = p1;
     if(std::fabs(p3.Eval(vars) - 8) > Epsilon)
     {
         retval = false;
+        std::cout << "- Assignment with no deep copy: ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p3.PrintByteCode(std::cout);
 #endif
     }
-    else
-        std::cout << "Ok." << std::endl;
 
-    std::cout << "- With deep copy: ";
     p3.Parse("x*y-1", "x,y");
     if(std::fabs(p3.Eval(vars) - 9) > Epsilon)
     {
         retval = false;
+        std::cout << "- Assignment with deep copy: ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p3.PrintByteCode(std::cout);
 #endif
     }
-    else
-        std::cout << "Ok." << std::endl;
 
-    std::cout << "- Giving as function parameter (no deep copy): ";
     if(!TestCopyingNoDeepCopy(p1))
         retval = false;
 
@@ -479,7 +468,6 @@ bool TestCopying()
         retval = false;
     }
 
-    std::cout << "- Giving as function parameter (deep copy): ";
     if(!TestCopyingDeepCopy(p1))
         retval = false;
 
