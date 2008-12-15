@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <cmath>
+#include <sstream>
 
 #include <sys/time.h>
 
@@ -52,6 +53,16 @@ namespace
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
+
+    std::string beautify(int value)
+    {
+        std::ostringstream os;
+        os << value;
+        std::string result = os.str();
+        for(size_t i = result.size(); i > 3;)
+            result.insert(i -= 3, 1, ' ');
+        return result;
+    }
 }
 
 class Test
@@ -69,7 +80,7 @@ public:
     bool Loop()
     {
         if(this->iter >= this->nloops) return false;
-        
+
         this->iter += 1;
         if(!(this->iter % this->reset_threshold))
         {
@@ -81,7 +92,7 @@ public:
     {
         std::cout << title << ": "
                   << (result) << " us. ("
-                  << (1e6/result) << " " << unit << "/s)\n";
+                  << beautify(int(1e6/result)) << " " << unit << "/s)\n";
     }
     void TakeResult()
     {
@@ -125,10 +136,10 @@ int main()
         }
 
         const unsigned ParseLoops = 2000000;
-        const unsigned EvalLoops = 200000000;
+        const unsigned EvalLoops = 20000000;
         const unsigned OptimizationLoops = 20000;
         const unsigned FuncLoops = 100000000;
-        
+
         Test tester;
 
 
@@ -141,7 +152,7 @@ int main()
 
 #ifndef MEASURE_PARSING_SPEED_ONLY
 //        fp.PrintByteCode(std::cout);
-        
+
         // Measure evaluation speed
         // ------------------------
         tester.Start(EvalLoops);
