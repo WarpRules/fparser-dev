@@ -469,9 +469,9 @@ cOr x ~x    -> 1
 
 # Eschew so many negations.
 #   !a & !b = !(a | b)
-cAnd ~a ~b ~<1> : ~(cOr a b <1>)
+cAnd <1> ~<2> =- : ~(cOr <2> ~<1>)
 #   !a | !b = !(a & b)
-cOr ~a ~b ~<1>  : ~(cAnd a b <1>)
+cOr <1> ~<2> =- : ~(cAnd <2> ~<1>)
 
 cAnd ~(cNEqual[a b])      : (cEqual[a b])
 cAnd ~(cEqual[a b])       : (cNEqual[a b])
