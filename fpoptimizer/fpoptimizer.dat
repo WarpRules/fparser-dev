@@ -507,7 +507,6 @@ cAnd (cEqual a b) (cEqual b c) (cEqual a c)  : (cEqual [a b]) (cEqual [b c])
 cAnd (cEqual a b) (cNEqual a b) -> 0
 #   (a==b) | (a!=b)          -- this statement is always true
 cOr  (cEqual a b) (cNEqual a b) -> 1
-#   (a==b) & (a==b)          -- one of these is redundant
 
 #   x==x -- this statement is always true (note: might be not when we have NaN, but we don't care)
 cEqual[x x]                     -> 1
