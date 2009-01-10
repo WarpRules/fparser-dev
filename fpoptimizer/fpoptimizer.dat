@@ -514,9 +514,9 @@ cEqual[x x]                     -> 1
 cLessOrEq[x x]                  -> 1
 cGreaterOrEq[x x]               -> 1
 #   x!=x -- this statement is always false (note: we ignore NaN cases)
-cNEqual[x x]                    -> 1
-cLess[x x]                      -> 1
-cGreater[x x]                   -> 1
+cNEqual[x x]                    -> 0
+cLess[x x]                      -> 0
+cGreater[x x]                   -> 0
 
 
 

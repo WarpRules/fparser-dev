@@ -2071,10 +2071,10 @@ namespace
         {2, ReplaceParams ,    417,	{ cMul        , 300 } }, /* 130 */
         {2, ProduceNewTree,    419,	{ cMod        , 418 } }, /* 131 */
         {2, ProduceNewTree,    186,	{ cEqual      , 420 } }, /* 132 */
-        {2, ProduceNewTree,    186,	{ cNEqual     , 421 } }, /* 133 */
-        {2, ProduceNewTree,    186,	{ cLess       , 422 } }, /* 134 */
+        {2, ProduceNewTree,    102,	{ cNEqual     , 421 } }, /* 133 */
+        {2, ProduceNewTree,    102,	{ cLess       , 422 } }, /* 134 */
         {2, ProduceNewTree,    186,	{ cLessOrEq   , 423 } }, /* 135 */
-        {2, ProduceNewTree,    186,	{ cGreater    , 424 } }, /* 136 */
+        {2, ProduceNewTree,    102,	{ cGreater    , 424 } }, /* 136 */
         {2, ProduceNewTree,    186,	{ cGreaterOrEq, 425 } }, /* 137 */
         {1, ProduceNewTree,    429,	{ cNot        , 427 } }, /* 138 */
         {1, ProduceNewTree,    433,	{ cNot        , 431 } }, /* 139 */
