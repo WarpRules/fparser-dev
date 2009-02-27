@@ -1,4 +1,5 @@
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -DFP_SUPPORT_ASINH
+CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL
+#CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -DFP_SUPPORT_ASINH
 #CXX=g++ -Wall -W -pedantic -ansi -g -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT -DFP_ENABLE_EVAL -DFP_SUPPORT_ASINH
 #LD=g++ -s
 LD=g++
@@ -91,10 +92,10 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_grammar_gen.y \
 
 pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \
 	fpconfig.hh fptypes.hh fparser.html style.css
-	zip -9 fparser3.1.zip $^
+	zip -9 fparser3.1b.zip $^
 
 devel_pack:
-	tar -cjvf fparser3.1_devel.tar.bz2 \
+	tar -cjvf fparser3.1b_devel.tar.bz2 \
 	Makefile example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \

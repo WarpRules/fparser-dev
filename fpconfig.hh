@@ -52,7 +52,7 @@
  the library.
 */
 #ifndef FP_NO_SUPPORT_OPTIMIZER
-#define FP_SUPPORT_OPTIMIZER
+//#define FP_SUPPORT_OPTIMIZER
 #endif
 
 

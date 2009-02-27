@@ -47,7 +47,7 @@ namespace FUNCTIONPARSERTYPES
 
         cFCall, cPCall,
 
-#ifdef FP_SUPPORT_OPTIMIZER
+//#ifdef FP_SUPPORT_OPTIMIZER
         cVar,   /* Denotes a variable in CodeTree (not used by bytecode) */
         cDup,   /* Duplicates the last value in the stack: Pop A, Push A, Push A */
         cInv,   /* Inverts the last value in the stack (x = 1/x) */
@@ -57,7 +57,7 @@ namespace FUNCTIONPARSERTYPES
         cRDiv,  /* reverse division (not x/y, but y/x) */
         cRSub,  /* reverse subtraction (not x-y, but y-x) */
         cNotNot, /* Protects the double-not sequence from optimizations */
-#endif
+//#endif
 
         cNop,
         VarBegin
