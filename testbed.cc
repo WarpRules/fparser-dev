@@ -99,6 +99,7 @@ double f5(double* p)
     double x = p[0], y = p[1];
     return pow(x,y);
 }
+#ifndef FP_DISABLE_EVAL
 double f6(double* p)
 {
 #define P6 "if(x>0&y>0,x*y+eval(x-1,y-1),0)+1", "x,y", f6, 2, .1, 10, .1, false
@@ -106,6 +107,7 @@ double f6(double* p)
     double v[2] = { x-1, y-1 };
     return (x>1e-14 && y>1e-14 ? x*y+f6(v) : 0)+1;
 }
+#endif
 double f7(double* p)
 {
 #define P7 "cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5))", "x", f7, 1, -10, 10, .001, false
@@ -353,7 +355,11 @@ namespace
 {
     Test tests[] =
     {
-        { P1 }, { P2 }, { P3 }, { P4 }, { P5 }, { P6 }, { P7 }, { P8 }, { P9 },
+        { P1 }, { P2 }, { P3 }, { P4 }, { P5 },
+#ifndef FP_DISABLE_EVAL
+        { P6 },
+#endif
+        { P7 }, { P8 }, { P9 },
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
