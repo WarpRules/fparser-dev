@@ -1,11 +1,17 @@
-  Function parser for C++  v3.1 by Warp.
-  ======================================
+  Function parser for C++  v3.1.1 by Warp.
+  ========================================
 
   Optimization code contributed by Bisqwit (http://iki.fi/bisqwit/)
 
 
   The usage license of this library is located at the end of this text file.
 
+
+  What's new in v3.1.1
+  --------------------
+  - Due to several bugs in the new optimizer, the old optimizer (from the
+    library version 3.0.3) has been temporarily restored, until these bugs
+    are fixed. The other new library features are not affected.
 
   What's new in v3.1
   ------------------

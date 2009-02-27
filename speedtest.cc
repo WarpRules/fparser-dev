@@ -11,7 +11,8 @@
 #include <sys/time.h>
 
 //#define FUNC0 x+y+(sin(x)*cos(x)*log(x)*(-x-y+log(y)-sin(x)))
-#define FUNC0 pow(x,14)+pow(y,8)+pow(x,2)+2*x*y+pow(y,2)
+//#define FUNC0 pow(x,14)+pow(y,8)+pow(x,2)+2*x*y+pow(y,2)
+#define FUNC0 pow(x,14)+pow(y,8)
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10)-(4*pow(y,3)+2*y*y-10*y+2))*10
 
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4

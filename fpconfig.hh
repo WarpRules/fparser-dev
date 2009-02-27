@@ -1,6 +1,6 @@
-//==============================
-// Function parser v3.1 by Warp
-//==============================
+//================================
+// Function parser v3.1.1 by Warp
+//================================
 
 // Configuration file
 // ------------------
@@ -52,7 +52,7 @@
  the library.
 */
 #ifndef FP_NO_SUPPORT_OPTIMIZER
-//#define FP_SUPPORT_OPTIMIZER
+#define FP_SUPPORT_OPTIMIZER
 #endif
 
 

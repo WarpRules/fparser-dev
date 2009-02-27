@@ -5,17 +5,15 @@ FEATURE_FLAGS += -DFP_SUPPORT_ASINH
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
 
-CXX=g++ -Wall -W -pedantic -ansi -O3 -ffast-math -march=native -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT $(FEATURE_FLAGS)
-#CXX=g++ -Wall -W -pedantic -ansi -g -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT $(FEATURE_FLAGS)
+OPTIMIZATION=-O3 -ffast-math -march=native
+#OPTIMIZATION=-g
+#OPTIMIZATION=-g -pg
 
-#LD=g++ -s
+CXX=g++
 LD=g++
 
-#CXX += -g
-#LD  += -g
-
-#CXX += -pg
-#LD  += -pg
+FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+CXXFLAGS=-Wall -W -pedantic -ansi $(OPTIMIZATION) $(FEATURE_FLAGS)
 
 all: testbed speedtest example
 
@@ -37,6 +35,9 @@ testbed_release: testbed.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 speedtest: speedtest.o $(FP_MODULES)
+	$(LD) -o $@ $^
+
+speedtest_release: speedtest.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 example: example.o $(FP_MODULES)
@@ -63,7 +64,8 @@ fpoptimizer/fpoptimizer_grammar.cc: \
 		fpoptimizer/fpoptimizer.dat
 	fpoptimizer/fpoptimizer_grammar_gen < fpoptimizer/fpoptimizer.dat > $@
 
-fpoptimizer.cc: fpoptimizer/fpoptimizer_grammar_gen.y \
+fpoptimizer_new.cc: \
+		fpoptimizer/fpoptimizer_grammar_gen.y \
 		fpoptimizer/fpoptimizer_grammar_gen.cc \
 		fpoptimizer/fpoptimizer_codetree.hh \
 		fpoptimizer/fpoptimizer_grammar.hh \
@@ -97,16 +99,20 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_grammar_gen.y \
 		| grep -v '#include "crc32' \
 		> $@
 
+fpoptimizer.cc: fpoptimizer_3.0.3.cc
+	cp $^ $@
+
 pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \
 	fpconfig.hh fptypes.hh fparser.html style.css
-	zip -9 fparser3.1b.zip $^
+	zip -9 fparser3.1.1.zip $^
 
 devel_pack:
-	tar -cjvf fparser3.1b_devel.tar.bz2 \
+	tar -cjvf fparser3.1.1_devel.tar.bz2 \
 	Makefile example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
-	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y
+	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y \
+	fpoptimizer_3.0.3.cc
 
 clean:
 	rm -f	testbed testbed_release speedtest example ftest \

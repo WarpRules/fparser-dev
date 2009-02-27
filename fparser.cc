@@ -1,6 +1,6 @@
-//==============================
-// Function parser v3.1 by Warp
-//==============================
+//================================
+// Function parser v3.1.1 by Warp
+//================================
 
 #include "fpconfig.hh"
 #include "fparser.hh"
