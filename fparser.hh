@@ -118,8 +118,6 @@ private:
     const char* CompileComparison(const char*);
     const char* CompileAnd(const char*);
     const char* CompileExpression(const char*);
-
-    void MakeTree(void*) const;
 };
 
 #endif

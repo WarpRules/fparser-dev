@@ -7,6 +7,7 @@
 
 using namespace FUNCTIONPARSERTYPES;
 
+#ifdef FP_SUPPORT_OPTIMIZER
 namespace FPoptimizer_CodeTree
 {
     bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
@@ -59,3 +60,5 @@ void FunctionParser::Optimize()
 
     isOptimized = true;
 }
+
+#endif

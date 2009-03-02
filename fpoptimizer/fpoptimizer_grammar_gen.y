@@ -620,7 +620,7 @@ public:
             "        ";
             std::cout.precision(50);
             if(clist[a]+2-2 != clist[a] || clist[a]+1 == clist[a])
-                std::cout << "0.0 / 0.0";
+                std::cout << "FPOPT_NAN_CONST";
             else
                 std::cout << clist[a];
             std::cout << ", /* " << a << " */\n";
@@ -956,7 +956,7 @@ static GrammarDumper dumper;
          delete $2;
        }
     ;
-    
+
     paramlist:
         paramlist_loop
       | paramlist_loop BALANCE_POS   { $$ = $1->SetBalance(BalanceMorePos); }
@@ -1046,6 +1046,10 @@ static GrammarDumper dumper;
        }
     ;
 %%
+
+#ifndef FP_SUPPORT_OPTIMIZER
+enum { cVar,cDup,cInv,cFetch,cPopNMov,cSqr,cRDiv,cRSub,cNotNot };
+#endif
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
 {
@@ -1199,7 +1203,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "NaN")
             {
                 /* We generate a NaN. Anyone know a better way? */
-                lval->num = 0; lval->num /= 0.0; return NUMERIC_CONSTANT;
+                lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT;
             }
 
             if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE; }

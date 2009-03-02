@@ -15,6 +15,12 @@ LD=g++
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 CXXFLAGS=-Wall -W -pedantic -ansi $(OPTIMIZATION) $(FEATURE_FLAGS)
 
+# For compilation with ICC:
+#OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3
+#CXX=icc
+#LD=icc  -L/opt/intel/Compiler/11.0/074/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
+#CXXFLAGS=-Wall $(OPTIMIZATION) $(FEATURE_FLAGS)
+
 all: testbed speedtest example
 
 FP_MODULES = 	fparser.o \

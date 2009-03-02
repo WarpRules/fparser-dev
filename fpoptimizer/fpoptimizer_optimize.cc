@@ -11,6 +11,9 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
+
+#ifdef FP_SUPPORT_OPTIMIZER
+
 using namespace FUNCTIONPARSERTYPES;
 
 //#define DEBUG_SUBSTITUTIONS
@@ -26,6 +29,20 @@ namespace FPoptimizer_CodeTree
 
 namespace FPoptimizer_Grammar
 {
+    static double GetPackConst(size_t index)
+    {
+        double res = pack.clist[index];
+        if(res == FPOPT_NAN_CONST)
+        {
+        #ifdef NAN
+            return NAN;
+        #else
+            return 0.0 / 0.0;
+        #endif
+        }
+        return res;
+    }
+
     /* A helper for std::equal_range */
     struct OpcodeRuleCompare
     {
@@ -617,7 +634,7 @@ namespace FPoptimizer_Grammar
                 double res = tree.GetImmed();
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
-                double res2 = pack.clist[index];
+                double res2 = GetPackConst(index);
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
@@ -689,7 +706,7 @@ namespace FPoptimizer_Grammar
         switch(OpcodeType(opcode))
         {
             case NumConstant:
-                result = pack.clist[index];
+                result = GetPackConst(index);
                 break;
             case ImmedHolder:
             {
@@ -977,7 +994,7 @@ namespace FPoptimizer_Grammar
 
         switch(SpecialOpcode(p.opcode))
         {
-            case NumConstant: std::cout << pack.clist[p.index]; break;
+            case NumConstant: std::cout << GetPackConst(p.index); break;
             case ImmedHolder: std::cout << ImmedHolderNames[p.index]; break;
             case NamedHolder: std::cout << NamedHolderNames[p.index]; break;
             case RestHolder: std::cout << '<' << p.index << '>'; break;
@@ -1118,3 +1135,5 @@ namespace FPoptimizer_Grammar
     }
 #endif
 }
+
+#endif

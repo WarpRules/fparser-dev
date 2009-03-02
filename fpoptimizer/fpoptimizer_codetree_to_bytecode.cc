@@ -6,6 +6,7 @@
 #include "fptypes.hh"
 #include "fpoptimizer_consts.hh"
 
+#ifdef FP_SUPPORT_OPTIMIZER
 
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
@@ -1028,3 +1029,5 @@ namespace
         synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
     }
 }
+
+#endif

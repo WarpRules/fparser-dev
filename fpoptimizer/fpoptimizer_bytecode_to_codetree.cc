@@ -8,6 +8,8 @@
 #include "fparser.hh"
 
 
+#ifdef FP_SUPPORT_OPTIMIZER
+
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
 
@@ -259,3 +261,5 @@ namespace FPoptimizer_CodeTree
         return data.PullResult();
     }
 }
+
+#endif

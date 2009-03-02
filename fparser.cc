@@ -1447,7 +1447,6 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
-void FunctionParser::MakeTree(void *) const {}
 void FunctionParser::Optimize()
 {
     // Do nothing if no optimizations are supported.

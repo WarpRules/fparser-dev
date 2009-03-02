@@ -29,7 +29,9 @@ namespace
     inline double max(double x, double y) { return x>y ? x : y; }
     inline double r2d(double x) { return x*180.0/M_PI; }
     inline double d2r(double x) { return x*M_PI/180.0; }
+#ifndef __ICC /* workaround for compiler bug? (ICC 11.0) */
     inline double cot(double x) { return 1.0 / std::tan(x); }
+#endif
     inline double csc(double x) { return 1.0 / std::sin(x); }
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
