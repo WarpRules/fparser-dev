@@ -18,6 +18,87 @@ using namespace FUNCTIONPARSERTYPES;
 
 //#define DEBUG_SUBSTITUTIONS
 
+namespace
+{
+    /* Little birds tell me that std::equal_range() is practically worthless
+     * due to the insane limitation that the two parameters for Comp() must
+     * be of the same type. Hence we must reinvent the wheel and implement
+     * our own here. This is practically identical to the one from
+     * GNU libstdc++, except rewritten. -Bisqwit
+     */
+    template<typename It, typename T, typename Comp>
+    std::pair<It, It>
+    MyEqualRange(It first, It last, const T& val, Comp comp)
+    {
+        size_t len = last-first;
+        while(len > 0)
+        {
+            size_t half = len/2;
+            It middle(first); middle += half;
+            if(comp(*middle, val))
+            {
+                first = middle;
+                ++first;
+                len = len - half - 1;
+            }
+            else if(comp(val, *middle))
+            {
+                len = half;
+            }
+            else
+            {
+                // The following implements this:
+                // // left = lower_bound(first, middle, val, comp);
+                It left(first);
+              {///
+                It& first2 = left;
+                It last2(middle);
+                size_t len2 = last2-first2;
+                while(len2 > 0)
+                {
+                    size_t half2 = len2 / 2;
+                    It middle2(first2); middle2 += half2;
+                    if(comp(*middle2, val))
+                    {
+                        first2 = middle2;
+                        ++first2;
+                        len2 = len2 - half2 - 1;
+                    }
+                    else
+                        len2 = half2;
+                }
+                // left = first2;  - not needed, already happens due to reference
+              }///
+                first += len;
+                // The following implements this:
+                // // right = upper_bound(++middle, first, val, comp);
+                It right(++middle);
+              {///
+                It& first2 = right;
+                It& last2 = first;
+                size_t len2 = last2-first2;
+                while(len2 > 0)
+                {
+                    size_t half2 = len2 / 2;
+                    It middle2(first2); middle2 += half2;
+                    if(comp(val, *middle2))
+                        len2 = half2;
+                    else
+                    {
+                        first2 = middle2;
+                        ++first2;
+                        len2 = len2 - half2 - 1;
+                    }
+                }
+                // right = first2;  - not needed, already happens due to reference
+              }///
+                return std::pair<It,It> (left,right);
+            }
+        }
+        return std::pair<It,It> (first,first);
+    }
+}
+
 namespace FPoptimizer_CodeTree
 {
     void CodeTree::ConstantFolding()
@@ -121,10 +202,10 @@ namespace FPoptimizer_Grammar
             typedef const Rule* ruleit;
 
             std::pair<ruleit, ruleit> range
-                = std::equal_range(pack.rlist + index,
-                                   pack.rlist + index + count,
-                                   tree,
-                                   OpcodeRuleCompare());
+                = MyEqualRange(pack.rlist + index,
+                               pack.rlist + index + count,
+                               tree,
+                               OpcodeRuleCompare());
 
             while(range.first < range.second)
             {
