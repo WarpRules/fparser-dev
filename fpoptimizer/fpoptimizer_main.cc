@@ -15,7 +15,6 @@ namespace FPoptimizer_CodeTree
 
 using namespace FPoptimizer_CodeTree;
 
-#ifdef FP_SUPPORT_OPTIMIZER
 void FunctionParser::Optimize()
 {
     if(isOptimized) return;
@@ -60,4 +59,3 @@ void FunctionParser::Optimize()
 
     isOptimized = true;
 }
-#endif
