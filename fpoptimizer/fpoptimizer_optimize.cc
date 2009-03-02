@@ -113,6 +113,7 @@ namespace FPoptimizer_Grammar
     static double GetPackConst(size_t index)
     {
         double res = pack.clist[index];
+    #if 0
         if(res == FPOPT_NAN_CONST)
         {
         #ifdef NAN
@@ -121,6 +122,7 @@ namespace FPoptimizer_Grammar
             return 0.0 / 0.0;
         #endif
         }
+    #endif
         return res;
     }
 

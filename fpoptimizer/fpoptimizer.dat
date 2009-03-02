@@ -247,9 +247,9 @@ cNotNot [(cNot[x])] -> cNot [(cNotNot [x])]
 #### Simplify empty groups:
 
 # An empty min-list gets replaced with immed NaN
-cMin  []   -> NaN
+#cMin  []   -> NaN
 # An empty max-list gets replaced with immed NaN
-cMax  []   -> NaN
+#cMax  []   -> NaN
 # An empty add-list gets replaced with immed 0
 cAdd  []   -> 0
 # An empty mul-list gets replaced with immed 1
