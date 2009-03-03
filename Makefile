@@ -88,7 +88,6 @@ fpoptimizer/fpoptimizer_grammar.cc: \
 	fpoptimizer/fpoptimizer_grammar_gen < fpoptimizer/fpoptimizer.dat > $@
 
 fpoptimizer.cc: \
-		fpoptimizer/fpoptimizer_int_types.hh \
 		fpoptimizer/fpoptimizer_grammar_gen.y \
 		fpoptimizer/fpoptimizer_grammar_gen.cc \
 		fpoptimizer/fpoptimizer_codetree.hh \

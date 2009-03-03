@@ -522,7 +522,7 @@ namespace FPoptimizer_Grammar
                 }
 
                 std::vector<ParamMatchSnapshot> position(count);
-                std::vector<bool>               used(count);
+                std::vector<bool>               used(n_tree_params);
 
                 for(unsigned a=0; a<count; ++a)
                 {
