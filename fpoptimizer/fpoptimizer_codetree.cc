@@ -102,14 +102,14 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::Recalculate_Hash_NoRecursion()
     {
-        uint_fast64_t NewHash = Opcode * 0x3A83A83A83A83A0ULL;
+        fphash_t NewHash = Opcode * FPHASH_CONST(0x3A83A83A83A83A0);
         Depth = 1;
         switch(Opcode)
         {
             case cImmed:
                 // FIXME: not portable - we're casting double* into uint_least64_t*
                 if(Value != 0.0)
-                    NewHash ^= *(uint_least64_t*)&Value;
+                    NewHash ^= *(fphash_t*)&Value;
                 break; // no params
             case cVar:
                 NewHash ^= (Var<<24) | (Var>>24);
@@ -125,8 +125,8 @@ namespace FPoptimizer_CodeTree
                     if(Params[a].param->Depth > MaxChildDepth)
                         MaxChildDepth = Params[a].param->Depth;
 
-                    NewHash += (1+Params[a].sign)*0x2492492492492492ULL;
-                    NewHash *= 1099511628211ULL;
+                    NewHash += (1+Params[a].sign)*FPHASH_CONST(0x2492492492492492);
+                    NewHash *= FPHASH_CONST(1099511628211);
                     //assert(&*Params[a].param != this);
                     NewHash += Params[a].param->Hash;
                 }

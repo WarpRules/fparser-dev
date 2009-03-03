@@ -76,6 +76,7 @@ fpoptimizer_new.cc: \
 		fpoptimizer/fpoptimizer_codetree.hh \
 		fpoptimizer/fpoptimizer_grammar.hh \
 		fpoptimizer/fpoptimizer_consts.hh \
+		fpoptimizer/fpoptimizer_hash.hh \
 		fpoptimizer/fpoptimizer_main.cc \
 		fpoptimizer/fpoptimizer_codetree.cc \
 		fpoptimizer/fpoptimizer_grammar.cc \
@@ -92,6 +93,7 @@ fpoptimizer_new.cc: \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
 	    fpoptimizer/fpoptimizer_opcodename.hh \
+	    fpoptimizer/fpoptimizer_hash.hh \
 	    fpoptimizer/crc32.hh \
 	    fpoptimizer/fpoptimizer_opcodename.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
@@ -105,7 +107,7 @@ fpoptimizer_new.cc: \
 		| grep -v '#include "crc32' \
 		> $@
 
-fpoptimizer.cc: fpoptimizer_3.0.3.cc
+fpoptimizer.cc: fpoptimizer_new.cc
 	cp $^ $@
 
 pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \

@@ -1,8 +1,9 @@
-#include <stdint.h>
 #include <vector>
 
 #include "fpconfig.hh"
 #include "fparser.hh"
+
+#include "fpoptimizer_hash.hh"
 
 namespace FPoptimizer_Grammar
 {
@@ -84,7 +85,7 @@ namespace FPoptimizer_CodeTree
         std::vector<Param> Params;
 
         /* Internal operation */
-        uint_fast64_t Hash;
+        fphash_t      Hash;
         size_t        Depth;
         CodeTree*     Parent;
         const FPoptimizer_Grammar::Grammar* OptimizedUsing;

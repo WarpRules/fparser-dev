@@ -248,13 +248,13 @@ namespace FPoptimizer_Grammar
         // Which values were saved for ImmedHolders?
         std::map<unsigned, double> ImmedMap;
         // Which codetrees were saved for each NameHolder? And how many?
-        std::map<unsigned, std::pair<uint_fast64_t, size_t> > NamedMap;
+        std::map<unsigned, std::pair<fphash_t, size_t> > NamedMap;
         // Which codetrees were saved for each RestHolder?
         std::map<unsigned,
-          std::vector<uint_fast64_t> > RestMap;
+          std::vector<fphash_t> > RestMap;
 
         // Examples of each codetree
-        std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP> trees;
+        std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP> trees;
 
         CodeTreeMatch() : param_numbers(), ImmedMap(), NamedMap(), RestMap() { }
     };
@@ -681,7 +681,7 @@ namespace FPoptimizer_Grammar
                     const ParamSpec& param = pack.plist[index+a];
                     if(param.opcode == RestHolder)
                     {
-                        std::vector<uint_fast64_t>& RestList
+                        std::vector<fphash_t>& RestList
                             = match.RestMap[param.index]; // mark it up
 
                         for(size_t b=0; b<n_tree_params; ++b)
@@ -689,7 +689,7 @@ namespace FPoptimizer_Grammar
                             {
                                 if(!recursion)
                                     match.param_numbers.push_back(b);
-                                uint_fast64_t hash = tree.Params[b].param->Hash;
+                                fphash_t hash = tree.Params[b].param->Hash;
                                 RestList.push_back(hash);
                                 match.trees.insert(
                                     std::make_pair(hash, tree.Params[b].param) );
@@ -748,7 +748,7 @@ namespace FPoptimizer_Grammar
             case NamedHolder:
             {
                 if(sign != (transf != None)) return false;
-                std::map<unsigned, std::pair<uint_fast64_t, size_t> >::iterator
+                std::map<unsigned, std::pair<fphash_t, size_t> >::iterator
                     i = match.NamedMap.lower_bound(index);
                 if(i != match.NamedMap.end() && i->first == index)
                 {
@@ -801,7 +801,7 @@ namespace FPoptimizer_Grammar
             }
             case NamedHolder:
             {
-                std::map<unsigned, std::pair<uint_fast64_t, size_t> >::const_iterator
+                std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
                     i = match.NamedMap.find(index);
                 if(i == match.NamedMap.end()) return false; // impossible
                 result = i->second.second;
@@ -993,7 +993,7 @@ namespace FPoptimizer_Grammar
         {
             case RestHolder:
             {
-                std::map<unsigned, std::vector<uint_fast64_t> >
+                std::map<unsigned, std::vector<fphash_t> >
                     ::const_iterator i = match.RestMap.find(index);
 
                 assert(i != match.RestMap.end());
@@ -1005,9 +1005,9 @@ namespace FPoptimizer_Grammar
 
                 for(size_t a=0; a<i->second.size(); ++a)
                 {
-                    uint_fast64_t hash = i->second[a];
+                    fphash_t hash = i->second[a];
 
-                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP>
+                    std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP>
                         ::const_iterator j = match.trees.find(hash);
 
                     assert(j != match.trees.end());
@@ -1032,14 +1032,14 @@ namespace FPoptimizer_Grammar
                 if(!anyrepeat && minrepeat == 1)
                 {
                     /* Literal parameter */
-                    std::map<unsigned, std::pair<uint_fast64_t, size_t> >
+                    std::map<unsigned, std::pair<fphash_t, size_t> >
                         ::const_iterator i = match.NamedMap.find(index);
 
                     assert(i != match.NamedMap.end());
 
-                    uint_fast64_t hash = i->second.first;
+                    fphash_t hash = i->second.first;
 
-                    std::map<uint_fast64_t, FPoptimizer_CodeTree::CodeTreeP>
+                    std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP>
                         ::const_iterator j = match.trees.find(hash);
 
                     assert(j != match.trees.end());
@@ -1187,7 +1187,7 @@ namespace FPoptimizer_Grammar
         DumpTree(tree);
         std::cout << "\n";
 
-        for(std::map<unsigned, std::pair<uint_fast64_t, size_t> >::const_iterator
+        for(std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
             i = matchrec.NamedMap.begin(); i != matchrec.NamedMap.end(); ++i)
         {
             std::cout << "           " << NamedHolderNames[i->first] << " = ";
@@ -1202,12 +1202,12 @@ namespace FPoptimizer_Grammar
             std::cout << i->second << std::endl;
         }
 
-        for(std::map<unsigned, std::vector<uint_fast64_t> >::const_iterator
+        for(std::map<unsigned, std::vector<fphash_t> >::const_iterator
             i = matchrec.RestMap.begin(); i != matchrec.RestMap.end(); ++i)
         {
             for(size_t a=0; a<i->second.size(); ++a)
             {
-                uint_fast64_t hash = i->second[a];
+                fphash_t hash = i->second[a];
                 std::cout << "         <" << i->first << "> = ";
                 DumpTree(*matchrec.trees.find(hash)->second);
                 std::cout << std::endl;

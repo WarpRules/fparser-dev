@@ -108,7 +108,7 @@ public:
         SetStackTop(StackTop+1);
     }
 
-    void StackTopIs(uint_fast64_t hash)
+    void StackTopIs(fphash_t hash)
     {
         if(StackTop > 0)
         {
@@ -154,7 +154,7 @@ public:
         StackHash[StackTop-1] = StackHash[src_pos];
     }
 
-    bool FindAndDup(uint_fast64_t hash)
+    bool FindAndDup(fphash_t hash)
     {
         for(size_t a=StackHash.size(); a-->0; )
         {
@@ -210,7 +210,7 @@ private:
     std::vector<unsigned> ByteCode;
     std::vector<double>   Immed;
 
-    std::vector<std::pair<bool/*known*/, uint_fast64_t/*hash*/> > StackHash;
+    std::vector<std::pair<bool/*known*/, fphash_t/*hash*/> > StackHash;
     size_t StackTop;
     size_t StackMax;
 };
@@ -329,7 +329,7 @@ namespace
 namespace
 {
     typedef
-        std::map<uint_fast64_t,  std::pair<size_t, CodeTreeP> >
+        std::map<fphash_t,  std::pair<size_t, CodeTreeP> >
         TreeCountType;
 
     void FindTreeCounts(TreeCountType& TreeCounts, CodeTreeP tree)
@@ -344,7 +344,7 @@ namespace
             FindTreeCounts(TreeCounts, tree->Params[a].param);
     }
 
-    void RememberRecursivelyHashList(std::set<uint_fast64_t>& hashlist,
+    void RememberRecursivelyHashList(std::set<fphash_t>& hashlist,
                                      CodeTreeP tree)
     {
         hashlist.insert(tree->Hash);
@@ -454,7 +454,7 @@ namespace FPoptimizer_CodeTree
         FindTreeCounts(TreeCounts, this);
 
         /* Synthesize some of the most common ones */
-        std::set<uint_fast64_t> AlreadyDoneTrees;
+        std::set<fphash_t> AlreadyDoneTrees;
     FindMore: ;
         size_t best_score = 0;
         TreeCountType::const_iterator synth_it;
