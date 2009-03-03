@@ -1,5 +1,5 @@
 //================================
-// Function parser v3.1.1 by Warp
+// Function parser v3.1.2 by Warp
 //================================
 
 // NOTE:
@@ -62,6 +62,7 @@ namespace FUNCTIONPARSERTYPES
         unsigned nameLength;
         unsigned opcode;
         unsigned params;
+        bool enabled;
 
         // This is basically strcmp(), but taking 'nameLength' as string
         // length (not ending '\0'):
@@ -78,40 +79,51 @@ namespace FUNCTIONPARSERTYPES
         }
     };
 
+#ifndef FP_NO_ASINH
+#define FP_ASINH_FUNCTIONS_ENABLED true
+#else
+#define FP_ASINH_FUNCTIONS_ENABLED false
+#endif
+
+#ifndef FP_DISABLE_EVAL
+#define FP_EVAL_FUNCTION_ENABLED true
+#else
+#define FP_EVAL_FUNCTION_ENABLED false
+#endif
 
 // This list must be in alphabetical order:
     const FuncDefinition Functions[]=
     {
-        { "abs", 3, cAbs, 1 },
-        { "acos", 4, cAcos, 1 },
-        { "acosh", 5, cAcosh, 1 },
-        { "asin", 4, cAsin, 1 },
-        { "asinh", 5, cAsinh, 1 },
-        { "atan", 4, cAtan, 1 },
-        { "atan2", 5, cAtan2, 2 },
-        { "atanh", 5, cAtanh, 1 },
-        { "ceil", 4, cCeil, 1 },
-        { "cos", 3, cCos, 1 },
-        { "cosh", 4, cCosh, 1 },
-        { "cot", 3, cCot, 1 },
-        { "csc", 3, cCsc, 1 },
-        { "eval", 4, cEval, 0 },
-        { "exp", 3, cExp, 1 },
-        { "floor", 5, cFloor, 1 },
-        { "if", 2, cIf, 0 },
-        { "int", 3, cInt, 1 },
-        { "log", 3, cLog, 1 },
-        { "log10", 5, cLog10, 1 },
-        { "log2", 4, cLog2, 1 },
-        { "max", 3, cMax, 2 },
-        { "min", 3, cMin, 2 },
-        { "pow", 3, cPow, 2 },
-        { "sec", 3, cSec, 1 },
-        { "sin", 3, cSin, 1 },
-        { "sinh", 4, cSinh, 1 },
-        { "sqrt", 4, cSqrt, 1 },
-        { "tan", 3, cTan, 1 },
-        { "tanh", 4, cTanh, 1 }
+        { "abs", 3, cAbs, 1, true },
+        { "acos", 4, cAcos, 1, true },
+        { "acosh", 5, cAcosh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "asin", 4, cAsin, 1, true },
+        { "asinh", 5, cAsinh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "atan", 4, cAtan, 1, true },
+        { "atan2", 5, cAtan2, 2, true },
+        { "atanh", 5, cAtanh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "ceil", 4, cCeil, 1, true },
+        { "cos", 3, cCos, 1, true },
+        { "cosh", 4, cCosh, 1, true },
+        { "cot", 3, cCot, 1, true },
+        { "csc", 3, cCsc, 1, true },
+        { "eval", 4, cEval, 0, FP_EVAL_FUNCTION_ENABLED },
+        { "exp", 3, cExp, 1, true },
+        { "floor", 5, cFloor, 1, true },
+        { "if", 2, cIf, 0, true },
+        { "int", 3, cInt, 1, true },
+        { "log", 3, cLog, 1, true },
+        { "log10", 5, cLog10, 1, true },
+        { "log2", 4, cLog2, 1, true },
+        { "max", 3, cMax, 2, true },
+        { "min", 3, cMin, 2, true },
+        { "pow", 3, cPow, 2, true },
+        { "sec", 3, cSec, 1, true },
+        { "sin", 3, cSin, 1, true },
+        { "sinh", 4, cSinh, 1, true },
+        { "sqrt", 4, cSqrt, 1, true },
+        { "tan", 3, cTan, 1, true },
+        { "tanh", 4, cTanh, 1, true }
     };
 
     struct NamePtr
