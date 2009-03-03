@@ -18,22 +18,14 @@ namespace FUNCTIONPARSERTYPES
     enum OPCODE
     {
         cAbs, cAcos,
-#ifndef FP_NO_ASINH
         cAcosh,
-#endif
         cAsin,
-#ifndef FP_NO_ASINH
         cAsinh,
-#endif
         cAtan,
         cAtan2,
-#ifndef FP_NO_ASINH
         cAtanh,
-#endif
         cCeil, cCos, cCosh, cCot, cCsc,
-#ifndef FP_DISABLE_EVAL
         cEval,
-#endif
         cExp, cFloor, cIf, cInt, cLog, cLog2, cLog10, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
@@ -92,26 +84,18 @@ namespace FUNCTIONPARSERTYPES
     {
         { "abs", 3, cAbs, 1 },
         { "acos", 4, cAcos, 1 },
-#ifndef FP_NO_ASINH
         { "acosh", 5, cAcosh, 1 },
-#endif
         { "asin", 4, cAsin, 1 },
-#ifndef FP_NO_ASINH
         { "asinh", 5, cAsinh, 1 },
-#endif
         { "atan", 4, cAtan, 1 },
         { "atan2", 5, cAtan2, 2 },
-#ifndef FP_NO_ASINH
         { "atanh", 5, cAtanh, 1 },
-#endif
         { "ceil", 4, cCeil, 1 },
         { "cos", 3, cCos, 1 },
         { "cosh", 4, cCosh, 1 },
         { "cot", 3, cCot, 1 },
         { "csc", 3, cCsc, 1 },
-#ifndef FP_DISABLE_EVAL
         { "eval", 4, cEval, 0 },
-#endif
         { "exp", 3, cExp, 1 },
         { "floor", 5, cFloor, 1 },
         { "if", 2, cIf, 0 },

@@ -91,11 +91,11 @@ fpoptimizer_new.cc: \
 		fpoptimizer/fpoptimizer_footer.txt
 	rm -f fpoptimizer.cc
 	cat fpoptimizer/fpoptimizer_header.txt \
+	    fpoptimizer/fpoptimizer_hash.hh \
 	    fpoptimizer/fpoptimizer_codetree.hh \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
 	    fpoptimizer/fpoptimizer_opcodename.hh \
-	    fpoptimizer/fpoptimizer_hash.hh \
 	    fpoptimizer/crc32.hh \
 	    fpoptimizer/fpoptimizer_opcodename.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
