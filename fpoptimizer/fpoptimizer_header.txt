@@ -1,6 +1,6 @@
-//===========================================
-// Function parser v3.1 optimizer by Bisqwit
-//===========================================
+//=============================================
+// Function parser v3.1.2 optimizer by Bisqwit
+//=============================================
 
 /* NOTE:
    This is a concatenation of all the header and source files of the

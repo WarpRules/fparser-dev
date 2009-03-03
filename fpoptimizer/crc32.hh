@@ -1,6 +1,7 @@
 /* crc32 */
-#include <stdint.h>
+#include "fpoptimizer_int_types.hh"
 typedef uint_least32_t crc32_t;
+
 namespace crc32
 {
     enum { startvalue = 0xFFFFFFFFUL, poly = 0xEDB88320UL };

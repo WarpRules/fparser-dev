@@ -1,5 +1,5 @@
 //================================
-// Function parser v3.1.1 by Warp
+// Function parser v3.1.2 by Warp
 //================================
 
 #include "fpconfig.hh"
@@ -34,8 +34,10 @@ namespace
                         std::map<NamePtr, const NameData*>& namePtrs,
                         const NameData& newData)
     {
-        if(findFunction(NamePtr(&(newData.name[0]),
-                                unsigned(newData.name.size()))))
+        const FuncDefinition* funcDef =
+            findFunction(NamePtr(&(newData.name[0]),
+                                 unsigned(newData.name.size())));
+        if(funcDef && funcDef->enabled)
             return false;
 
         std::set<NameData>::iterator dataIter = nameData.find(newData);
@@ -431,9 +433,10 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
         if(endPtr == beginPtr) return false;
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        NamePtr namePtr(beginPtr, endPtr - beginPtr);
+        NamePtr namePtr(beginPtr, unsigned(endPtr - beginPtr));
 
-        if(findFunction(namePtr)) return false;
+        const FuncDefinition* funcDef = findFunction(namePtr);
+        if(funcDef && funcDef->enabled) return false;
 
         std::map<NamePtr, const NameData*>::iterator nameIter =
             data->namePtrs.find(namePtr);
@@ -457,7 +460,7 @@ int FunctionParser::Parse(const char* Function, const std::string& Vars,
     if(!ParseVariables(Vars))
     {
         parseErrorType = INVALID_VARS;
-        return strlen(Function);
+        return int(strlen(Function));
     }
 
     return ParseFunction(Function, useDegrees);
@@ -471,7 +474,7 @@ int FunctionParser::Parse(const std::string& Function, const std::string& Vars,
     if(!ParseVariables(Vars))
     {
         parseErrorType = INVALID_VARS;
-        return Function.size();
+        return int(Function.size());
     }
 
     return ParseFunction(Function.c_str(), useDegrees);
@@ -491,14 +494,14 @@ int FunctionParser::ParseFunction(const char* function, bool useDegrees)
     data->StackSize = StackPtr = 0;
 
     const char* ptr = CompileExpression(function);
-    if(parseErrorType != FP_NO_ERROR) return errorLocation - function;
+    if(parseErrorType != FP_NO_ERROR) return int(errorLocation - function);
 
     assert(ptr); // Should never be null at this point. It's a bug otherwise.
     if(*ptr)
     {
         if(delimiterChar == 0 || *ptr != delimiterChar)
             parseErrorType = EXPECT_OPERATOR;
-        return ptr - function;
+        return int(ptr - function);
     }
 
 #ifndef FP_USE_THREAD_SAFE_EVAL
@@ -696,7 +699,7 @@ const char* FunctionParser::CompileElement(const char* function)
         while(isspace(*endPtr)) ++endPtr;
 
         const FuncDefinition* funcDef = findFunction(name);
-        if(funcDef) // is function
+        if(funcDef && funcDef->enabled) // is function
         {
             if(funcDef->opcode == cIf) // "if" is a special case
                 return CompileIf(endPtr);

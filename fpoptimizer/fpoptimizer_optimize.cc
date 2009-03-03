@@ -118,7 +118,7 @@ namespace FPoptimizer_Grammar
         #ifdef NAN
             return NAN;
         #else
-            return 0.0 / 0.0;
+            return 0.0; // Should be 0.0/0.0, but some compilers don't like that
         #endif
         }
         return res;

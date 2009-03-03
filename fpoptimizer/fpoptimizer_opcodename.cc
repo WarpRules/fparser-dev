@@ -21,26 +21,18 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
     {
         case cAbs: p = "cAbs"; break;
         case cAcos: p = "cAcos"; break;
-#ifndef FP_NO_ASINH
         case cAcosh: p = "cAcosh"; break;
-#endif
         case cAsin: p = "cAsin"; break;
-#ifndef FP_NO_ASINH
         case cAsinh: p = "cAsinh"; break;
-#endif
         case cAtan: p = "cAtan"; break;
         case cAtan2: p = "cAtan2"; break;
-#ifndef FP_NO_ASINH
         case cAtanh: p = "cAtanh"; break;
-#endif
         case cCeil: p = "cCeil"; break;
         case cCos: p = "cCos"; break;
         case cCosh: p = "cCosh"; break;
         case cCot: p = "cCot"; break;
         case cCsc: p = "cCsc"; break;
-#ifndef FP_DISABLE_EVAL
         case cEval: p = "cEval"; break;
-#endif
         case cExp: p = "cExp"; break;
         case cFloor: p = "cFloor"; break;
         case cIf: p = "cIf"; break;

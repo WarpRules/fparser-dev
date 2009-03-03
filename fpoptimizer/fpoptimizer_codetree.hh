@@ -1,4 +1,5 @@
-#include <stdint.h>
+#include "fpoptimizer_int_types.hh"
+
 #include <vector>
 
 #include "fpconfig.hh"
