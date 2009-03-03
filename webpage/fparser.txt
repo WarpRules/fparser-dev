@@ -9,8 +9,10 @@
 
   What's new in v3.1.2
   --------------------
-  -Fixed the bugs in the new optimizer code, and thus the new optimizer
-   has been restored.
+  - Fixed the bugs in the new optimizer code, and thus the new optimizer
+    has been restored.
+  - Small bugfixes and fine-tuning to make the library more compatible with
+    other compilers (especially MSVC++).
 
   What's new in v3.1.1
   --------------------

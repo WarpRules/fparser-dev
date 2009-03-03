@@ -1038,7 +1038,7 @@ const char* FunctionParser::CompileExpression(const char* function)
 double FunctionParser::Eval(const double* Vars)
 {
     const unsigned* const ByteCode = &(data->ByteCode[0]);
-    const double* const Immed = &(data->Immed[0]);
+    const double* const Immed = data->Immed.empty() ? 0 : &(data->Immed[0]);
     const unsigned ByteCodeSize = unsigned(data->ByteCode.size());
     unsigned IP, DP=0;
     int SP=-1;

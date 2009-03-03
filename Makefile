@@ -28,7 +28,8 @@ CXX=g++
 LD=g++
 
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION) $(FEATURE_FLAGS)
+CPPFLAGS=$(FEATURE_FLAGS)
+CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 
 # For compilation with ICC:
 #OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3
@@ -36,7 +37,7 @@ CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION) $(FEATURE_FLAGS)
 #LD=icc  -L/opt/intel/Compiler/11.0/074/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
 #CXXFLAGS=-Wall $(OPTIMIZATION) $(FEATURE_FLAGS)
 
-CXXFLAGS += -I"`pwd`"
+CPPFLAGS += -I"`pwd`"
 
 all: testbed speedtest example
 
@@ -154,7 +155,7 @@ distclean: clean
 	rm -f	*~
 
 .dep:
-	g++ -MM $(CXXFLAGS) $(wildcard *.cc) > .dep
-	g++ -MM $(CXXFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
+	g++ -MM $(CPPFLAGS) $(wildcard *.cc) > .dep
+	g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 
 -include .dep
