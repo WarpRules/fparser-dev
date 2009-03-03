@@ -24,7 +24,9 @@ namespace
 {
     // Auxiliary functions
     // -------------------
+#ifndef _MSC_VER /* workaround for compiler bug? MSC 15.0 */
     inline double abs(double d) { return fabs(d); }
+#endif
     inline double min(double x, double y) { return x<y ? x : y; }
     inline double max(double x, double y) { return x>y ? x : y; }
     inline double r2d(double x) { return x*180.0/M_PI; }
@@ -214,8 +216,8 @@ double f22(double* p)
 
 double f23(double* p)
 {
-#define P23 "(x/(2*acos(0)))*180", "x", f23, 1, -1000, 1000, .1, false
-    return (p[0]/(2*acos(0)))*180;
+#define P23 "(x/(2*acos(0.0)))*180", "x", f23, 1, -1000, 1000, .1, false
+    return (p[0]/(2*acos(0.0)))*180;
 }
 
 double f24(double* p)
@@ -265,19 +267,19 @@ double f30(double* p)
 {
 #define P30 "x - y*1 + (x%y) + x / (y^1.1) + 2^3 + 5%3 + x^(y^0) + x^0.5", "x,y", f30, 2, 3, 10, 1, false
     const double x = p[0], y = p[1];
-    return x - y*1 + fmod(x,y) + x / pow(y,1.1) + pow(2,3) + fmod(5,3) +
-        pow(x,pow(y,0)) + pow(x,0.5);
+    return x - y*1 + fmod(x,y) + x / pow(y,1.1) + pow(2.0,3.0) + fmod(5.0,3.0) +
+        pow(x,pow(y,0.0)) + pow(x,0.5);
 }
 
 double f31(double* p)
 {
     const double x = p[0], y = p[1], z = p[2];
-#define P31 "x - (y*(y*(y*-1))*1) + log(x*exp(1)^y) - log(x^y) + exp(1)^log(x+6) + 10^(log(x+6)/log(y+6)*log(z+6)/log(10)) - exp(1)^(log(x+6)*y) - 5^(log(x+7)/log(5)) + (x*z+17)^3 * (x*z+17)^2 / (x*z+17)^4", "x,y,z", f31, 3, .1, 4, .1, false
+#define P31 "x - (y*(y*(y*-1))*1) + log(x*exp(1.0)^y) - log(x^y) + exp(1.0)^log(x+6) + 10^(log(x+6)/log(y+6)*log(z+6)/log(10)) - exp(1.0)^(log(x+6)*y) - 5^(log(x+7)/log(5)) + (x*z+17)^3 * (x*z+17)^2 / (x*z+17)^4", "x,y,z", f31, 3, .1, 4, .1, false
 
-    return x - (y*(y*(y*-1))*1) + log(x*pow(exp(1),y)) - log(pow(x,y)) +
-        pow(exp(1),log(x+6)) + pow(10,log(x+6)/log(y+6)*log(z+6)/log(10)) -
-        pow(exp(1), log(x+6)*y) - pow(5,log(x+7)/log(5)) +
-        pow(x*z+17,3) * pow(x*z+17,2) / pow(x*z+17,4);
+    return x - (y*(y*(y*-1))*1) + log(x*pow(exp(1.0),y)) - log(pow(x,y)) +
+        pow(exp(1.0),log(x+6)) + pow(10,log(x+6)/log(y+6)*log(z+6)/log(10.0)) -
+        pow(exp(1.0), log(x+6)*y) - pow(5.0,log(x+7)/log(5.0)) +
+        pow(x*z+17,3) * pow(x*z+17,2.0) / pow(x*z+17,4.0);
 }
 
 double f32(double* p)
@@ -289,9 +291,9 @@ double f32(double* p)
     +(x-2+2)+(x*0.5*2)+y*0\
     +min(min(min(4.0,x),1.0),min(x,min(min(y,4.0),z)))\
     +max(max(max(4.0,x),1.0),max(x,max(max(y,4.0),z)))\
-    +(abs(1)+acos(1)+asin(1)+atan(1)+ceil(1.1)+cos(0)\
-     +cosh(0)+floor(1.1)+log(1)+sin(0)+sinh(0)+tan(1)\
-     +tanh(1)+atan2(1,1))\
+    +(abs(1.0)+acos(1.0)+asin(1.0)+atan(1.0)+ceil(1.1)+cos(0.0)\
+     +cosh(0.0)+floor(1.1)+log(1.0)+sin(0.0)+sinh(0.0)+tan(1.0)\
+     +tanh(1.0)+atan2(1.0,1.0))\
     +(x-(y-z))\
     +(x+y) + (x*y)\
     +max(x,max(x,max(x,max(x,x))))*-1.0\
@@ -341,7 +343,7 @@ double f37(double* p)
 {
 #define P37 "5 + 7.5*8 / 3 - 2^4*2 + 7%2+4 + x", "x", f37, 1, -10, 10, .1, false
     double x = p[0];
-    return 5 + 7.5*8 / 3 - pow(2,4)*2 + 7%2+4 + x;
+    return 5 + 7.5*8 / 3 - pow(2.0,4.0)*2 + 7%2+4 + x;
 }
 
 #ifndef FP_NO_ASINH
@@ -972,7 +974,7 @@ bool runTest(unsigned testIndex, FunctionParser& fp)
     while(true)
     {
         unsigned i = 0;
-        while(i < tests[testIndex].paramAmount and
+        while(i < tests[testIndex].paramAmount &&
               (vars[i] += tests[testIndex].paramStep) >
               tests[testIndex].paramMax)
         {

@@ -21,6 +21,8 @@ CXXFLAGS=-Wall -W -pedantic -ansi $(OPTIMIZATION) $(FEATURE_FLAGS)
 #LD=icc  -L/opt/intel/Compiler/11.0/074/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
 #CXXFLAGS=-Wall $(OPTIMIZATION) $(FEATURE_FLAGS)
 
+CXXFLAGS += -I"`pwd`"
+
 all: testbed speedtest example
 
 FP_MODULES = 	fparser.o \
@@ -132,7 +134,7 @@ distclean: clean
 	rm -f	*~
 
 .dep:
-	g++ -MM $(wildcard *.cc) > .dep
-	g++ -MM $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
+	g++ -MM $(CXXFLAGS) $(wildcard *.cc) > .dep
+	g++ -MM $(CXXFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 
 -include .dep
