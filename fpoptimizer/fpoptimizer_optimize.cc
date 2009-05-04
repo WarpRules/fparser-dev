@@ -989,7 +989,7 @@ namespace FPoptimizer_Grammar
         const MatchedParams& matcher,
         MatchedParams::CodeTreeMatch& match) const
     {
-        switch(ParamMatchingType(opcode))
+        switch(SpecialOpcode(opcode))
         {
             case RestHolder:
             {
