@@ -89,7 +89,7 @@ private:
     struct Data;
     Data* data;
 
-    bool useDegreeConversion, isOptimized;
+    bool useDegreeConversion;
     unsigned evalRecursionLevel;
     unsigned StackPtr;
     const char* errorLocation;

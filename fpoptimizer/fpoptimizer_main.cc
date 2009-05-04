@@ -18,7 +18,6 @@ using namespace FPoptimizer_CodeTree;
 
 void FunctionParser::Optimize()
 {
-    if(isOptimized) return;
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
@@ -57,8 +56,6 @@ void FunctionParser::Optimize()
     data->Immed.swap(immed);
 
     //PrintByteCode(std::cout);
-
-    isOptimized = true;
 }
 
 #endif
