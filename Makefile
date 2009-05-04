@@ -131,10 +131,10 @@ fpoptimizer.cc: \
 
 pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \
 	fpconfig.hh fptypes.hh fparser.html style.css
-	zip -9 fparser3.1.2.zip $^
+	zip -9 fparser3.1.3.zip $^
 
 devel_pack:
-	tar -cjvf fparser3.1.2_devel.tar.bz2 \
+	tar -cjvf fparser3.1.3_devel.tar.bz2 \
 	Makefile example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
