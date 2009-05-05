@@ -238,6 +238,10 @@ namespace FPoptimizer_CodeTree
                         data.Eat(2, cMul);
                         data.SetLastOpParamSign(0); // invert param0 instead of param1
                         break;
+                    case cRSqrt: // from fpoptimizer
+                        data.AddConst(-0.5);
+                        data.Eat(2, cPow);
+                        break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:
                     case cMod: case cPow:

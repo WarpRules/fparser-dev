@@ -80,6 +80,7 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
         case cRDiv: p = "cRDiv"; break;
         case cRSub: p = "cRSub"; break;
         case cNotNot: p = "cNotNot"; break;
+        case cRSqrt: p = "cRSqrt"; break;
 #endif
         case cNop: p = "cNop"; break;
         case VarBegin: p = "VarBegin"; break;

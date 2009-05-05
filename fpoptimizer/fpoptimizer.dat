@@ -652,6 +652,9 @@ cMul  CONSTANT_RD <1> ~<2> -> cRad [(cMul <1> ~<2>)]
 # x^0.5 = sqrt(x)
 cPow [x 0.5]         -> cSqrt [x]
 
+# x^-0.5 = rsqrt(x)
+cPow [x -0.5]        -> cRSqrt [x]
+
 # pow(CONSTANT_E, x) = exp(x)
 cPow [CONSTANT_E x]  -> cExp [x]
 

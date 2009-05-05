@@ -48,6 +48,7 @@ namespace FUNCTIONPARSERTYPES
         cSqr,   /* squares the last operand in the stack, no push/pop */
         cRDiv,  /* reverse division (not x/y, but y/x) */
         cRSub,  /* reverse subtraction (not x-y, but y-x) */
+        cRSqrt, /* inverse square-root) */
         cNotNot, /* Protects the double-not sequence from optimizations */
 #endif
 

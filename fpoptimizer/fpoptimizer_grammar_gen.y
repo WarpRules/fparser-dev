@@ -1056,7 +1056,7 @@ static GrammarDumper dumper;
 %%
 
 #ifndef FP_SUPPORT_OPTIMIZER
-enum { cVar,cDup,cInv,cFetch,cPopNMov,cSqr,cRDiv,cRSub,cNotNot };
+enum { cVar,cDup,cInv,cFetch,cPopNMov,cSqr,cRDiv,cRSub,cNotNot,cRSqrt };
 #endif
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
@@ -1237,6 +1237,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE; }
             if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE; }
             if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE; }
+            if(IdBuf == "cRSqrt") { lval->opcode = cRSqrt; return OPCODE; }
 
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
             {
