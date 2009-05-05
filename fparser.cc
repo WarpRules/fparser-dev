@@ -1287,7 +1287,8 @@ double FunctionParser::Eval(const double* Vars)
           case   cRSub: Stack[SP-1] = Stack[SP] - Stack[SP-1]; --SP; break;
           case   cRDiv: if(Stack[SP-1] == 0) { evalErrorType=1; return 0; }
                         Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
-          case   cRSqrt: Stack[SP] = 1.0 / sqrt(Stack[SP]); break;
+          case   cRSqrt: if(Stack[SP] == 0) { evalErrorType=1; return 0; }
+                         Stack[SP] = 1.0 / sqrt(Stack[SP]); break;
 #endif
 
           case cNop: break;

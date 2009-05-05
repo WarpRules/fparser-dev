@@ -27,7 +27,9 @@ int main()
     {
         std::cout << "f(x) = ";
         std::getline(std::cin, function);
-        int res = fparser.Parse(function, "x,y,a,b,c");
+        if(std::cin.fail()) return 0;
+
+        int res = fparser.Parse(function, "x");
         if(res < 0) break;
 
         std::cout << std::string(res+7, ' ') << "^\n"
@@ -40,8 +42,9 @@ int main()
     std::cin >> maxx;
     std::cout << "step: ";
     std::cin >> step;
+    if(std::cin.fail()) return 0;
 
-    double vals[5] = {0,1,2,3,4};
+    double vals[] = { 0 };
     for(vals[0] = minx; vals[0] <= maxx; vals[0] += step)
     {
         std::cout << "f(" << vals[0] << ") = " << fparser.Eval(vals)

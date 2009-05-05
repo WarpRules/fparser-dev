@@ -356,6 +356,23 @@ double f38(double* p)
 }
 #endif
 
+double f39(double* p)
+{
+#define P39Code sin(x+cos(y*1.5))-cos(x+sin(y*1.5))+z*z*z*sin(z*z*z-x*x-y*y)-cos(y*1.5)*sin(x+cos(y*1.5))+x*y*z+x*y*2.5+x*y*z*cos(x)+x*y*cos(x)+x*z*cos(x)+y*z*2.5+(x*y*z*cos(x)-x*y*z-y*cos(x)-x*z*y+x*y+x*z-cos(x)*x)
+#define P39 Stringify(P39Code), "x,y,z", f39, 3, -2, 2, .075, false
+    double x = p[0], y = p[1], z = p[2];
+    return P39Code;
+}
+
+double f40(double* p)
+{
+#define P40CodePart x+x+x+x+x+x+x+x+x+x+x+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z
+#define P40Code (P40CodePart)*(P40CodePart)+2*(P40CodePart)-x*y*(P40CodePart)+x*(P40CodePart)
+#define P40 Stringify(P40Code), "x,y,z", f40, 3, -2, 2, .075, false
+    double x = p[0], y = p[1], z = p[2];
+    return P40Code;
+}
+
 namespace
 {
     Test tests[] =
@@ -368,10 +385,11 @@ namespace
         { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
-        { P34 }, { P35 }, { P36 }, { P37 }
+        { P34 }, { P35 }, { P36 }, { P37 },
 #ifndef FP_NO_ASINH
-        , { P38 }
+        { P38 },
 #endif
+        { P39 }, { P40 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
