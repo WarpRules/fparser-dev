@@ -362,9 +362,17 @@ cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) 
 
 cAdd (cMul <1> ~<2> <3> ~<4>)  (cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>)  (cMul <5> ~<6>)))
 cAdd (cMul <1> ~<2> <3> ~<4>) ~(cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>) ~(cMul <5> ~<6>)))
+# Note: The above two lines can require extremely time-consuming
+#       searching.
 
-#cAdd (cMul x <1> ~<2>)  (cMul y <1> ~<2>) : (cMul <1> ~<2> cAdd(x  y))
-#cAdd (cMul x <1> ~<2>) ~(cMul y <1> ~<2>) : (cMul <1> ~<2> cAdd(x ~y))
+# These are the same as above, but work also if pow() is expanded
+# Note: It would work even with y and z instead of % and &, but we
+# limit into numeric literals for simplicity.
+cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))]))  (cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))]))  (cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))])) ~(cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
+cAdd (cMul x           <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin 1 &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd 1 ~(cMin 1 &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin 1 &))]))))
 
 # a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
 cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1> ~<2>) : (cPow [(cAdd [a b]) 2]) (cMul [a b (cAdd [(cMul <1> ~<2>) -2])])
