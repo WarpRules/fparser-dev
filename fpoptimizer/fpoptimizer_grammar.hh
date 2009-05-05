@@ -48,6 +48,29 @@ namespace FPoptimizer_Grammar
         BalanceEqual
     };
 
+    struct MatchResultType
+    {
+        bool found:16;
+        bool has_more:16;
+
+        MatchResultType(bool f,bool m) : found(f),has_more(m) { }
+    };
+    static const MatchResultType
+        NoMatch(false,false),       // No match, don't try to increment match_index
+        TryMore(false,true),        // No match, but try to increment match_index
+        FoundSomeMatch(true,true),  // Found match, but we may have more
+        FoundLastMatch(true,false); // Found match, don't have more
+
+    // For iterating through match candidates
+    template<typename Payload>
+    struct MatchPositionSpec
+    {
+        unsigned roundno;
+        bool     done;
+        Payload  data;
+        MatchPositionSpec() : roundno(0), done(false), data() { }
+    };
+
     /***/
 
     struct MatchedParams
@@ -60,9 +83,11 @@ namespace FPoptimizer_Grammar
 
         struct CodeTreeMatch;
 
-        bool Match(FPoptimizer_CodeTree::CodeTree& tree,
-                   CodeTreeMatch& match,
-                   bool recursion = true) const;
+        MatchResultType
+            Match(FPoptimizer_CodeTree::CodeTree& tree,
+                  CodeTreeMatch& match,
+                  unsigned long match_index,
+                  bool recursion) const;
 
         void ReplaceParams(FPoptimizer_CodeTree::CodeTree& tree,
                            const MatchedParams& matcher, CodeTreeMatch& match) const;
@@ -95,10 +120,11 @@ namespace FPoptimizer_Grammar
         unsigned count : 8;
         unsigned index : 16;
 
-        bool Match(
+        MatchResultType Match(
             FPoptimizer_CodeTree::CodeTree& tree,
             MatchedParams::CodeTreeMatch& match,
-            TransformationType transf) const;
+            TransformationType transf,
+            unsigned long match_index) const;
 
         bool GetConst(
             const MatchedParams::CodeTreeMatch& match,
@@ -115,8 +141,10 @@ namespace FPoptimizer_Grammar
         // index to mlist[]
         unsigned   index  : 16;
 
-        bool Match(FPoptimizer_CodeTree::CodeTree& tree,
-                   MatchedParams::CodeTreeMatch& match) const;
+        MatchResultType
+            Match(FPoptimizer_CodeTree::CodeTree& tree,
+                  MatchedParams::CodeTreeMatch& match,
+                  unsigned long match_index) const;
     };
     struct Rule
     {

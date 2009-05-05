@@ -157,8 +157,10 @@ namespace GrammarData
         void RecursivelySetParamMatchingType(ParamMatchingType t);
         bool EnsureNoInversions();
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
+/*
         bool EnsureNoRepeatedRestHolders();
         bool EnsureNoRepeatedRestHolders(std::set<unsigned>& used);
+*/
 
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
@@ -342,7 +344,7 @@ namespace GrammarData
         }
         return true;
     }
-
+/*
     bool MatchedParams::EnsureNoRepeatedRestHolders()
     {
         std::set<unsigned> Used_RestHolders;
@@ -373,7 +375,7 @@ namespace GrammarData
         }
         return true;
     }
-
+*/
     size_t MatchedParams::CalcRequiredParamsCount() const
     {
         size_t res = 0;
@@ -896,7 +898,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 801 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 803 "fpoptimizer/fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1328,9 +1330,9 @@ static const short yyrhs[] = {    25,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   835,   841,   842,   845,   855,   867,   887,   898,   919,   939,
-   960,   962,   963,   964,   967,   972,   976,   982,   987,   991,
-  1006,  1015,  1021,  1030,  1039,  1043
+   837,   843,   844,   847,   857,   869,   889,   900,   923,   945,
+   968,   970,   971,   972,   975,   980,   984,   990,   995,   999,
+  1014,  1023,  1029,  1038,  1047,  1051
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1896,14 +1898,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 837 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 839 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 848 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 850 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1912,7 +1914,7 @@ case 4:
       ;
     break;}
 case 5:
-#line 858 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 860 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1923,7 +1925,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 869 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 871 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1942,7 +1944,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 889 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 891 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -1952,7 +1954,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 903 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 905 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1962,16 +1964,18 @@ case 8:
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-         if(!yyvsp[-1].p->EnsureNoRepeatedRestHolders())
+/*
+         if(!$3->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
+*/
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p);
          delete yyvsp[-1].p;
        ;
     break;}
 case 9:
-#line 923 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 927 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAdd && yyvsp[-3].opcode != cMul && yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -1981,16 +1985,18 @@ case 9:
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-         if(!yyvsp[-1].p->EnsureNoRepeatedRestHolders())
+/*
+         if(!$3->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
+*/
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p->SetType(SelectedParams));
          delete yyvsp[-1].p;
        ;
     break;}
 case 10:
-#line 942 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 948 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAdd && yyvsp[-1].opcode != cMul && yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -2000,58 +2006,60 @@ case 10:
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-         if(!yyvsp[0].p->EnsureNoRepeatedRestHolders())
+/*
+         if(!$2->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
+*/
          yyval.f = new GrammarData::FunctionType(yyvsp[-1].opcode, *yyvsp[0].p->SetType(AnyParams));
          delete yyvsp[0].p;
        ;
     break;}
 case 12:
-#line 962 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 970 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceMorePos); ;
     break;}
 case 13:
-#line 963 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 971 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceMoreNeg); ;
     break;}
 case 14:
-#line 964 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 972 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceEqual); ;
     break;}
 case 15:
-#line 969 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 977 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
 case 16:
-#line 973 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 981 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 17:
-#line 977 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 985 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 18:
-#line 984 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 992 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 19:
-#line 988 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 996 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::ImmedHolderTag());
        ;
     break;}
 case 20:
-#line 992 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1000 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -2068,7 +2076,7 @@ case 20:
        ;
     break;}
 case 21:
-#line 1007 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1015 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2079,7 +2087,7 @@ case 21:
        ;
     break;}
 case 22:
-#line 1016 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1024 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.Dump(*yyvsp[0].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
@@ -2087,7 +2095,7 @@ case 22:
        ;
     break;}
 case 23:
-#line 1022 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1030 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2098,7 +2106,7 @@ case 23:
        ;
     break;}
 case 24:
-#line 1031 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1039 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2109,13 +2117,13 @@ case 24:
        ;
     break;}
 case 25:
-#line 1040 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1048 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].f);
        ;
     break;}
 case 26:
-#line 1044 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1052 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
@@ -2324,7 +2332,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1048 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1056 "fpoptimizer/fpoptimizer_grammar_gen.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER

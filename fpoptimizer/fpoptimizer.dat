@@ -319,12 +319,12 @@ cAdd ~x*          (cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x*  (cMul <1> ~<2>) 
 cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) )])
 
 #  +(x*A*B/C) +(x*D*E/F) = x*(+A*B/C +D*E/F)
-cAdd  (cMul  x <1> ~<3>)  (cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
-cAdd  (cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
-cAdd ~(cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
-cAdd  (cMul ~x <1> ~<3>)  (cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
-cAdd  (cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
-cAdd ~(cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+#cAdd  (cMul  x <1> ~<3>)  (cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+#cAdd  (cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+#cAdd ~(cMul  x <1> ~<3>) ~(cMul  x <2> ~<4>)   : (cMul [ x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+#cAdd  (cMul ~x <1> ~<3>)  (cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>)  (cMul <2> ~<4>))])
+#cAdd  (cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd  (cMul <1> ~<3>) ~(cMul <2> ~<4>))])
+#cAdd ~(cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd ~(cMul <1> ~<3>) ~(cMul <2> ~<4>))])
 
 ## x^2 + x*y = x*(x+y)
 ## Disabled. This rule conflicts with (x+y)^2 optimization.
@@ -359,6 +359,12 @@ cAdd ~(cMul ~x <1> ~<3>) ~(cMul ~x <2> ~<4>)   : (cMul [~x (cAdd ~(cMul <1> ~<3>
 # Oh well. The benchmark results are too varying.
 # It does generate some additional opcodes, but it gets one multiplication less.
 # Since the difference is not very noticeable, don't use the rule.
+
+cAdd (cMul <1> ~<2> <3> ~<4>)  (cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>)  (cMul <5> ~<6>)))
+cAdd (cMul <1> ~<2> <3> ~<4>) ~(cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>) ~(cMul <5> ~<6>)))
+
+#cAdd (cMul x <1> ~<2>)  (cMul y <1> ~<2>) : (cMul <1> ~<2> cAdd(x  y))
+#cAdd (cMul x <1> ~<2>) ~(cMul y <1> ~<2>) : (cMul <1> ~<2> cAdd(x ~y))
 
 # a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
 cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1> ~<2>) : (cPow [(cAdd [a b]) 2]) (cMul [a b (cAdd [(cMul <1> ~<2>) -2])])

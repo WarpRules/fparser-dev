@@ -186,7 +186,7 @@ namespace FPoptimizer_Grammar
         {
             std::cout << "Input:  ";
             DumpTree(tree);
-            std::cout << "\n";
+            std::cout << "\n" << std::flush;
         }
 #endif
         if(tree.OptimizedUsing != this)
@@ -231,7 +231,7 @@ namespace FPoptimizer_Grammar
         {
             std::cout << "Output: ";
             DumpTree(tree);
-            std::cout << "\n";
+            std::cout << "\n" << std::flush;
         }
 #endif
         return changed;
@@ -277,33 +277,41 @@ namespace FPoptimizer_Grammar
         const Function&      input  = func;
         const MatchedParams& repl   = pack.mlist[repl_index];
 
-        MatchedParams::CodeTreeMatch matchrec;
-        if(input.opcode == tree.Opcode
-        && pack.mlist[input.index].Match(tree, matchrec, false))
+        if(input.opcode == tree.Opcode)
         {
-#ifdef DEBUG_SUBSTITUTIONS
-            DumpMatch(input, tree, repl, matchrec);
-#endif
-
-            const MatchedParams& params = pack.mlist[input.index];
-            switch(type)
+            for(unsigned long match_index=0; ; ++match_index)
             {
-                case ReplaceParams:
-                    repl.ReplaceParams(tree, params, matchrec);
-#ifdef DEBUG_SUBSTITUTIONS
-                    std::cout << "  ParmReplace: ";
-                    DumpTree(tree);
-                    std::cout << "\n";
-#endif
-                    return true;
-                case ProduceNewTree:
-                    repl.ReplaceTree(tree,   params, matchrec);
-#ifdef DEBUG_SUBSTITUTIONS
-                    std::cout << "  TreeReplace: ";
-                    DumpTree(tree);
-                    std::cout << "\n";
-#endif
-                    return true;
+                MatchedParams::CodeTreeMatch matchrec;
+                MatchResultType mr =
+                    pack.mlist[input.index].Match(tree, matchrec,match_index, false);
+                if(!mr.found && mr.has_more) continue;
+                if(!mr.found) break;
+
+    #ifdef DEBUG_SUBSTITUTIONS
+                DumpMatch(input, tree, repl, matchrec);
+    #endif
+
+                const MatchedParams& params = pack.mlist[input.index];
+                switch(type)
+                {
+                    case ReplaceParams:
+                        repl.ReplaceParams(tree, params, matchrec);
+    #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "  ParmReplace: ";
+                        DumpTree(tree);
+                        std::cout << "\n" << std::flush;
+    #endif
+                        return true;
+                    case ProduceNewTree:
+                        repl.ReplaceTree(tree,   params, matchrec);
+    #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "  TreeReplace: ";
+                        DumpTree(tree);
+                        std::cout << "\n" << std::flush;
+    #endif
+                        return true;
+                }
+                break; // should be unreachable
             }
         }
         else
@@ -316,12 +324,13 @@ namespace FPoptimizer_Grammar
 
     /* Match the given function to the given CodeTree.
      */
-    bool Function::Match(
+    MatchResultType Function::Match(
         FPoptimizer_CodeTree::CodeTree& tree,
-        MatchedParams::CodeTreeMatch& match) const
+        MatchedParams::CodeTreeMatch& match,
+        unsigned long match_index) const
     {
-        return opcode == tree.Opcode
-            && pack.mlist[index].Match(tree, match);
+        if(opcode != tree.Opcode) return NoMatch;
+        return pack.mlist[index].Match(tree, match, match_index, true);
     }
 
 
@@ -332,6 +341,8 @@ namespace FPoptimizer_Grammar
                                     // Snapshot of the state so far
         size_t            parampos; // Which position was last chosen?
         std::vector<bool> used;     // Which params were allocated?
+
+        size_t            matchpos;
     };
 
     /* Match the given list of ParamSpecs using the given ParamMatchingType
@@ -339,13 +350,13 @@ namespace FPoptimizer_Grammar
      * The CodeTree is already assumed to be a function type
      * -- i.e. it is assumed that the caller has tested the Opcode of the tree.
      */
-    bool MatchedParams::Match(
+    MatchResultType MatchedParams::Match(
         FPoptimizer_CodeTree::CodeTree& tree,
         MatchedParams::CodeTreeMatch& match,
+        unsigned long match_index,
         bool recursion) const
     {
-        /* FIXME: This algorithm still does not cover the possibility
-         *        that the ParamSpec needs backtracking.
+        /*        match_index is a feature for backtracking.
          *
          *        For example,
          *          cMul (cAdd x) (cAdd x)
@@ -355,6 +366,10 @@ namespace FPoptimizer_Grammar
          *        Match (cAdd x) to (a+b) may first capture "a" into "x",
          *        and then Match(cAdd x) for (c+b) will fail,
          *        because there's no "a" there.
+         *
+         *        However, match_index can be used to indicate that the
+         *        _second_ matching will be used, so that "b" will be
+         *        captured into "x".
          */
 
 
@@ -405,7 +420,11 @@ namespace FPoptimizer_Grammar
                     break;
             }
         }
-        if(tree.Params.size() < minimum_need) return false;
+        if(tree.Params.size() < minimum_need)
+        {
+            // Impossible to satisfy
+            return NoMatch;
+        }
 
         // Figure out what we have (note: we already assume that the opcode of the tree matches!)
         for(size_t a=0; a<tree.Params.size(); ++a)
@@ -442,8 +461,8 @@ namespace FPoptimizer_Grammar
         || NeedList.polarity[1].SubTrees > 0
         || NeedList.polarity[1].Others > 0)
         {
-            // Something came short.
-            return false;
+            // Something came short, impossible to satisfy.
+            return NoMatch;
         }
 
         if(type != AnyParams)
@@ -456,7 +475,7 @@ namespace FPoptimizer_Grammar
             || count != tree.Params.size())
             {
                 // Something was too much.
-                return false;
+                return NoMatch;
             }
         }
 
@@ -477,32 +496,78 @@ namespace FPoptimizer_Grammar
                 std::cout << "<->";
                 DumpParams(*this);
                 std::cout << " -- ";*/
+
+                std::vector<MatchPositionSpec<CodeTreeMatch> > specs;
+                specs.reserve(count);
+                //fprintf(stderr, "Enter loop %lu\n", match_index);
                 for(unsigned a=0; a<count; ++a)
                 {
-                    const ParamSpec& param = pack.plist[index+a];
-                    if(!param.Match(*tree.Params[a].param, match, tree.Params[a].sign ? transf : None))
+                    specs.resize(a+1);
+
+                PositionalParamsMatchingLoop:;
+                    // Match this parameter.
+                    MatchResultType mr = pack.plist[index+a].Match(
+                        *tree.Params[a].param, match,
+                        tree.Params[a].sign ? transf : None,
+                        specs[a].roundno);
+
+                    specs[a].done = !mr.has_more;
+
+                    // If it was not found, backtrack...
+                    if(!mr.found)
                     {
-                        /*std::cout << " drats at " << a << "!\n";*/
-                        return false;
+                    LoopThisRound:
+                        while(specs[a].done)
+                        {
+                            // Backtrack
+                            if(a <= 0) return NoMatch; //
+                            specs.resize(a);
+                            --a;
+                            match = specs[a].data;
+                        }
+                        ++specs[a].roundno;
+                        goto PositionalParamsMatchingLoop;
                     }
+                    // If found...
                     if(!recursion)
                         match.param_numbers.push_back(a);
+                    specs[a].data = match;
+
+                    if(a == count-1 && match_index > 0)
+                    {
+                        // Skip this match
+                        --match_index;
+                        goto LoopThisRound;
+                    }
                 }
                 /*std::cout << " yay?\n";*/
                 // Match = no mismatch.
-                return true;
+                bool final_try = true;
+                for(unsigned a=0; a<count; ++a)
+                    if(!specs[a].done) { final_try = false; break; }
+                //fprintf(stderr, "Exit  loop %lu\n", match_index);
+                return MatchResultType(true, !final_try);
             }
             case AnyParams:
             case SelectedParams:
             {
                 const size_t n_tree_params = tree.Params.size();
 
-                bool HasRestHolders = false;
+                unsigned N_PositiveRestHolders = 0;
+                unsigned N_NegativeRestHolders = 0;
                 for(unsigned a=0; a<count; ++a)
                 {
                     const ParamSpec& param = pack.plist[index+a];
-                    if(param.opcode == RestHolder) { HasRestHolders = true; break; }
+                    if(param.opcode == RestHolder)
+                    {
+                        if(param.sign)
+                            ++N_NegativeRestHolders;
+                        else
+                            ++N_PositiveRestHolders;
+                    }
                 }
+
+                bool HasRestHolders = N_PositiveRestHolders || N_NegativeRestHolders;
 
                 #ifdef DEBUG_SUBSTITUTIONS
                 if((type == AnyParams) && recursion && !HasRestHolders)
@@ -518,110 +583,159 @@ namespace FPoptimizer_Grammar
                     std::cout << "<->";
                     DumpParams(*this);
                     std::cout << " -- fail due to recursion&&count!=n_tree_params";*/
-                    return false;
+                    return NoMatch; // Impossible match.
                 }
+
+                /*std::cout << "Matching ";
+                DumpTree(tree); std::cout << " with ";
+                DumpParams(*this);
+                std::cout << " , match_index=" << match_index << "\n" << std::flush;*/
 
                 std::vector<ParamMatchSnapshot> position(count);
                 std::vector<bool>               used(n_tree_params);
 
-                for(unsigned a=0; a<count; ++a)
+                unsigned p=0;
+
+                for(; p<count; ++p)
                 {
-                    position[a].snapshot  = match;
-                    position[a].parampos  = 0;
-                    position[a].used      = used;
+                    position[p].snapshot  = match;
+                    position[p].parampos  = 0;
+                    position[p].matchpos  = 0;
+                    position[p].used      = used;
 
-                    size_t b = 0;
+                    //fprintf(stderr, "posA: p=%u count=%u\n", p, count);
+
                 backtrack:
-                    const ParamSpec& param = pack.plist[index+a];
-
-                    if(param.opcode == RestHolder)
+                  {
+                    if(pack.plist[index+p].opcode == RestHolder)
                     {
                         // RestHolders always match. They're filled afterwards.
+                        position[p].parampos = n_tree_params;
+                        position[p].matchpos = 0;
                         continue;
                     }
 
-                    for(; b<n_tree_params; ++b)
+                    size_t whichparam = position[p].parampos;
+                    size_t whichmatch = position[p].matchpos;
+
+                    /* a          = param index in the syntax specification
+                     * whichparam = param index in the tree received from parser
+                     */
+
+                    /*fprintf(stderr, "posB: p=%u, whichparam=%lu, whichmatch=%lu\n",
+                        p,whichparam,whichmatch);*/
+                    while(whichparam < n_tree_params)
                     {
-                        if(!used[b])
+                        if(used[whichparam])
                         {
-                            /*std::cout << "Maybe [" << a << "]:";
-                            DumpParam(param);
-                            std::cout << " <-> ";
-                            if(tree.Params[b].sign) std::cout << '~';
-                            DumpTree(*tree.Params[b].param);
-                            std::cout << "...?\n";*/
-
-                            if(param.Match(*tree.Params[b].param, match, tree.Params[b].sign ? transf : None))
-                            {
-                                /*std::cout << "woo... " << a << ", " << b << "\n";*/
-                                /* NamedHolders require a special treatment,
-                                 * because a repetition count may be issued
-                                 * for them.
-                                 */
-                                if(param.opcode == NamedHolder)
-                                {
-                                    // Verify the MinRepeat & AnyRepeat case
-                                    unsigned MinRepeat = param.minrepeat;
-                                    bool AnyRepeat     = param.anyrepeat;
-                                    unsigned HadRepeat = 1;
-
-                                    for(size_t c = b+1;
-                                        c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
-                                        ++c)
-                                    {
-                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
-                                        && tree.Params[c].sign == tree.Params[b].sign)
-                                        {
-                                            ++HadRepeat;
-                                        }
-                                    }
-                                    if(HadRepeat < MinRepeat)
-                                        continue; // No sufficient repeat count here
-
-                                    used[b] = true;
-                                    if(!recursion) match.param_numbers.push_back(b);
-
-                                    HadRepeat = 1;
-                                    for(size_t c = b+1;
-                                        c < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
-                                        ++c)
-                                    {
-                                        if(tree.Params[c].param->Hash == tree.Params[b].param->Hash
-                                        && tree.Params[c].sign == tree.Params[b].sign)
-                                        {
-                                            ++HadRepeat;
-                                            used[c] = true;
-                                            if(!recursion) match.param_numbers.push_back(c);
-                                        }
-                                    }
-                                    if(AnyRepeat)
-                                        match.NamedMap[param.index].second = HadRepeat;
-                                    position[a].parampos = b+1;
-                                    goto ok;
-                                }
-
-                                used[b] = true;
-                                if(!recursion) match.param_numbers.push_back(b);
-                                position[a].parampos = b+1;
-                                goto ok;
-                            }
+                        NextParamNumber:
+                            ++whichparam;
+                            whichmatch = 0;
+                            continue;
+                        NextMatchNumber:
+                            ++whichmatch;
                         }
+
+                        /*std::cout << "Maybe [" << a << "]:";
+                        DumpParam(param);
+                        std::cout << " <-> ";
+                        if(tree.Params[whichparam].sign) std::cout << '~';
+                        DumpTree(*tree.Params[whichparam].param);
+                        std::cout << "...?\n" << std::flush;*/
+
+                        MatchResultType mr = pack.plist[index+p].Match(
+                            *tree.Params[whichparam].param, match,
+                            tree.Params[whichparam].sign ? transf : None,
+                            whichmatch);
+
+                        /*std::cout << "In ";
+                        DumpTree(tree); std::cout << std::flush;
+                        fprintf(stderr, ", trying param %lu, match %lu (matchindex %lu); got %s,%s: ",
+                            whichparam,whichmatch, match_index,
+                            mr.found?"found":"not found",
+                            mr.has_more?"more":"no more"); fflush(stderr);
+                        DumpParam(pack.plist[index+p]); std::cout << "\n" << std::flush;*/
+
+                        if(!mr.found)
+                        {
+                        NextParamTest:
+                            if(!mr.has_more) goto NextParamNumber;
+                            goto NextMatchNumber;
+                        }
+
+                        /*std::cout << "woo... " << a << ", " << b << "\n";*/
+                        /* NamedHolders require a special treatment,
+                         * because a repetition count may be issued
+                         * for them.
+                         */
+                        if(pack.plist[index+p].opcode == NamedHolder)
+                        {
+                            // Verify the MinRepeat & AnyRepeat case
+                            unsigned MinRepeat = pack.plist[index+p].minrepeat;
+                            bool AnyRepeat     = pack.plist[index+p].anyrepeat;
+                            unsigned HadRepeat = 1;
+
+                            for(size_t repeat_pos = whichparam+1;
+                                repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
+                                ++repeat_pos)
+                            {
+                                if(tree.Params[repeat_pos].param->Hash
+                                == tree.Params[whichparam].param->Hash
+                                && tree.Params[repeat_pos].sign
+                                == tree.Params[whichparam].sign)
+                                {
+                                    ++HadRepeat;
+                                }
+                            }
+                            if(HadRepeat < MinRepeat)
+                                goto NextParamTest; // No sufficient repeat count here
+
+                            used[whichparam] = true;
+                            if(!recursion) match.param_numbers.push_back(whichparam);
+
+                            HadRepeat = 1;
+                            for(size_t repeat_pos = whichparam+1;
+                                repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
+                                ++repeat_pos)
+                            {
+                                if(tree.Params[repeat_pos].param->Hash
+                                == tree.Params[whichparam].param->Hash
+                                && tree.Params[repeat_pos].sign
+                                == tree.Params[whichparam].sign)
+                                {
+                                    ++HadRepeat;
+                                    used[repeat_pos] = true;
+                                    if(!recursion) match.param_numbers.push_back(repeat_pos);
+                                }
+                            }
+                            if(AnyRepeat)
+                                match.NamedMap[pack.plist[index+p].index].second = HadRepeat;
+                        }
+                        else
+                        {
+                            used[whichparam] = true;
+                            if(!recursion) match.param_numbers.push_back(whichparam);
+                        }
+                        position[p].parampos = mr.has_more ? whichparam : (whichparam+1);
+                        position[p].matchpos = mr.has_more ? (whichmatch+1) : 0;
+                        goto ok;
                     }
 
                     /*DumpParam(param);
                     std::cout << " didn't match anything in ";
                     DumpTree(tree);
                     std::cout << "\n";*/
+                  }
 
                     // No match for this param, try backtracking.
-                    while(a > 0)
+                DiscardedThisAttempt:
+                    while(p > 0)
                     {
-                        --a;
-                        ParamMatchSnapshot& prevpos = position[a];
+                        --p;
+                        ParamMatchSnapshot& prevpos = position[p];
                         if(prevpos.parampos < n_tree_params)
                         {
                             // Try another combination.
-                            b     = prevpos.parampos;
                             match = prevpos.snapshot;
                             used  = prevpos.used;
                             goto backtrack;
@@ -630,12 +744,23 @@ namespace FPoptimizer_Grammar
                     // If we cannot backtrack, break. No possible match.
                     /*if(!recursion)
                         std::cout << "Drats!\n";*/
-                    return false;
+                    if(match_index == 0)
+                        return NoMatch;
+                    break;
                 ok:;
                     /*if(!recursion)
                         std::cout << "Match for param " << a << " at " << b << std::endl;*/
+
+                    if(p == count-1 && match_index > 0)
+                    {
+                        // Skip this match
+                        --match_index;
+                        goto DiscardedThisAttempt;
+                    }
                 }
-                // Match = no mismatch.
+                /*fprintf(stderr, "End loop, match_index=%lu\n", match_index); fflush(stderr);*/
+
+                /* We got a match. */
 
                 // If the rule cares about the balance of
                 // negative restholdings versus positive restholdings,
@@ -663,49 +788,145 @@ namespace FPoptimizer_Grammar
                     switch(balance)
                     {
                         case BalanceMoreNeg:
-                            if(n_neg_restholdings <= n_pos_restholdings) return false;
+                            if(n_neg_restholdings <= n_pos_restholdings) return NoMatch;
                             break;
                         case BalanceMorePos:
-                            if(n_pos_restholdings <= n_neg_restholdings) return false;
+                            if(n_pos_restholdings <= n_neg_restholdings) return NoMatch;
                             break;
                         case BalanceEqual:
-                            if(n_pos_restholdings != n_neg_restholdings) return false;
+                            if(n_pos_restholdings != n_neg_restholdings) return NoMatch;
                             break;
                         case BalanceDontCare: ;
                     }
                 }
 
-                // Now feed any possible RestHolders the remaining parameters.
+                unsigned pos_rest_remain = N_PositiveRestHolders;
+                unsigned neg_rest_remain = N_NegativeRestHolders;
+
+                // Verify if we have RestHolder constraints.
                 for(unsigned a=0; a<count; ++a)
                 {
                     const ParamSpec& param = pack.plist[index+a];
                     if(param.opcode == RestHolder)
                     {
-                        std::vector<fphash_t>& RestList
-                            = match.RestMap[param.index]; // mark it up
+                        std::map<unsigned, std::vector<fphash_t> >::iterator
+                            i = match.RestMap.lower_bound(param.index);
 
-                        for(size_t b=0; b<n_tree_params; ++b)
-                            if(tree.Params[b].sign == param.sign && !used[b])
+                        if(i != match.RestMap.end() && i->first == param.index)
+                        {
+                            unsigned& n_remaining_restholders_of_this_kind =
+                                param.sign ? neg_rest_remain : pos_rest_remain;
+                            /*fprintf(stderr, "Does restholder %u match in", param.index);
+                            fflush(stderr); DumpTree(tree); std::cout << "? " << std::flush;*/
+
+                            const std::vector<fphash_t>& RefRestList = i->second;
+                            for(size_t r=0; r<RefRestList.size(); ++r)
                             {
-                                if(!recursion)
-                                    match.param_numbers.push_back(b);
-                                fphash_t hash = tree.Params[b].param->Hash;
-                                RestList.push_back(hash);
-                                match.trees.insert(
-                                    std::make_pair(hash, tree.Params[b].param) );
+                                for(size_t b=0; b<n_tree_params; ++b)
+                                    if(tree.Params[b].sign == param.sign
+                                    && !used[b]
+                                    && tree.Params[b].param->Hash == RefRestList[r])
+                                    {
+                                        used[b] = true;
+                                        goto SatisfiedRestHolder;
+                                    }
+                                // Unsatisfied RestHolder constraint
+                                /*fprintf(stderr, "- no\n");*/
+                                p=count-1;
+                                goto DiscardedThisAttempt;
+                            SatisfiedRestHolder:;
                             }
+                            --n_remaining_restholders_of_this_kind;
+                            /*fprintf(stderr, "- yes\n");*/
+                        }
                     }
                 }
-                return true;
+
+                // Now feed any possible RestHolders the remaining parameters.
+                bool more_restholder_options = false;
+                for(unsigned a=0; a<count; ++a)
+                {
+                    const ParamSpec& param = pack.plist[index+a];
+                    if(param.opcode == RestHolder)
+                    {
+                        std::map<unsigned, std::vector<fphash_t> >::iterator
+                            i = match.RestMap.lower_bound(param.index);
+                        if(i != match.RestMap.end() && i->first == param.index) continue;
+
+                        std::vector<fphash_t>& RestList = match.RestMap[param.index]; // mark it up
+
+                        unsigned& n_remaining_restholders_of_this_kind =
+                            param.sign ? neg_rest_remain : pos_rest_remain;
+
+                        unsigned n_remaining_params = 0;
+                        for(size_t b=0; b<n_tree_params; ++b)
+                            if(tree.Params[b].sign == param.sign && !used[b])
+                                ++n_remaining_params;
+
+                        /*fprintf(stderr, "[index %lu] For restholder %u, %u remains, %u remaining of kind\n",
+                            match_index,
+                            (unsigned)param.index, (unsigned)n_remaining_params,
+                            (unsigned)n_remaining_restholders_of_this_kind);
+                            fflush(stderr);*/
+
+                        if(n_remaining_params > 0)
+                        {
+                            if(n_remaining_params > 8) n_remaining_params = 8;
+                            unsigned n_remaining_combinations = 1 << n_remaining_params;
+
+                            unsigned n_options = n_remaining_restholders_of_this_kind > 1
+                                ? n_remaining_combinations
+                                : 1;
+                            unsigned selection = n_remaining_combinations - 1;
+                            if(n_options > 1)
+                            {
+                                --n_options;
+                                selection = match_index % (n_options); ++selection;
+                                match_index /= n_options;
+                            }
+                            if(selection+1 < n_options) more_restholder_options = true;
+
+                            /*fprintf(stderr, "- selected %u/%u\n", selection, n_options); fflush(stderr);*/
+
+                            unsigned matchbit = 1;
+                            for(size_t b=0; b<n_tree_params; ++b)
+                                if(tree.Params[b].sign == param.sign && !used[b])
+                                {
+                                    if(selection & matchbit)
+                                    {
+                                        /*fprintf(stderr, "- uses param %lu\n", b);*/
+                                        if(!recursion)
+                                            match.param_numbers.push_back(b);
+                                        fphash_t hash = tree.Params[b].param->Hash;
+                                        RestList.push_back(hash);
+                                        match.trees.insert(
+                                            std::make_pair(hash, tree.Params[b].param) );
+
+                                        used[b] = true;
+                                    }
+                                    if(matchbit < 0x80U) matchbit <<= 1;
+                                }
+                        }
+                        --n_remaining_restholders_of_this_kind;
+                    }
+                }
+                /*std::cout << "Returning match for ";
+                DumpTree(tree);
+                std::cout << "\n               with ";
+                DumpParams(*this); std::cout << std::flush;
+                fprintf(stderr, ", %s hope for more (now %lu)\n",
+                    more_restholder_options ? "with" : "without", match_index); fflush(stderr);*/
+                return more_restholder_options ? FoundSomeMatch : FoundLastMatch;
             }
         }
-        return false;
+        return NoMatch;
     }
 
-    bool ParamSpec::Match(
+    MatchResultType ParamSpec::Match(
         FPoptimizer_CodeTree::CodeTree& tree,
         MatchedParams::CodeTreeMatch& match,
-        TransformationType transf) const
+        TransformationType transf,
+        unsigned long match_index) const
     {
         assert(opcode != RestHolder); // RestHolders are supposed to be handler by the caller
 
@@ -713,7 +934,7 @@ namespace FPoptimizer_Grammar
         {
             case NumConstant:
             {
-                if(!tree.IsImmed()) return false;
+                if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
@@ -721,12 +942,12 @@ namespace FPoptimizer_Grammar
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
-                if(res != res2) return false;
-                return true;
+                if(res != res2) return NoMatch;
+                return FoundLastMatch;
             }
             case ImmedHolder:
             {
-                if(!tree.IsImmed()) return false;
+                if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
@@ -738,48 +959,52 @@ namespace FPoptimizer_Grammar
                     if(transf == Negate) res2 = -res2;
                     if(transf == Invert) res2 = 1/res2;
                     if(transf == NotThe) res2 = res2 != 0;
-                    return res == res2;
+                    return res == res2 ? FoundLastMatch : NoMatch;
                 }
-                if(sign != (transf != None)) return false;
+                if(sign != (transf != None)) return NoMatch;
 
                 match.ImmedMap.insert(i, std::make_pair((unsigned)index, res));
-                return true;
+                return FoundLastMatch;
             }
             case NamedHolder:
             {
-                if(sign != (transf != None)) return false;
+                if(sign != (transf != None)) return NoMatch;
                 std::map<unsigned, std::pair<fphash_t, size_t> >::iterator
                     i = match.NamedMap.lower_bound(index);
                 if(i != match.NamedMap.end() && i->first == index)
                 {
-                    return tree.Hash == i->second.first;
+                    return tree.Hash == i->second.first
+                           ? FoundLastMatch
+                           : NoMatch;
                 }
                 match.NamedMap.insert(i, std::make_pair(index, std::make_pair(tree.Hash, 1)));
                 match.trees.insert(std::make_pair(tree.Hash, &tree));
-                return true;
+                return FoundLastMatch;
             }
             case RestHolder:
+            {
                 break;
+            }
             case SubFunction:
             {
-                if(sign != (transf != None)) return false;
-                return pack.flist[index].Match(tree, match);
+                if(sign != (transf != None)) return NoMatch;
+                return pack.flist[index].Match(tree, match, match_index);
             }
             default:
             {
-                if(!tree.IsImmed()) return false;
+                if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
                 double res2;
-                if(!GetConst(match, res2)) return false;
+                if(!GetConst(match, res2)) return NoMatch;
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
-                return res == res2;
+                return res == res2 ? FoundLastMatch : NoMatch;
             }
         }
-        return false;
+        return NoMatch;
     }
 
     bool ParamSpec::GetConst(
@@ -804,7 +1029,7 @@ namespace FPoptimizer_Grammar
                 std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
                     i = match.NamedMap.find(index);
                 if(i == match.NamedMap.end()) return false; // impossible
-                result = i->second.second;
+                result = (double) i->second.second;
                 break;
             }
             case RestHolder:
@@ -1215,6 +1440,7 @@ namespace FPoptimizer_Grammar
             if(i->second.empty())
                 std::cout << "         <" << i->first << "> = <empty>\n";
         }
+        std::cout << std::flush;
     }
 #endif
 }
