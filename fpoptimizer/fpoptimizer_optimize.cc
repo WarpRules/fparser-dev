@@ -3,6 +3,8 @@
 #include "fpoptimizer_consts.hh"
 #include "fpoptimizer_opcodename.hh"
 
+//#include <stdio.h>
+
 #include <algorithm>
 #include <cmath>
 #include <map>
@@ -314,10 +316,11 @@ namespace FPoptimizer_Grammar
                 break; // should be unreachable
             }
         }
-        else
-        {
-            //DumpMatch(input, tree, repl, matchrec, false);
-        }
+        #ifdef DEBUG_SUBSTITUTIONS
+        // Report mismatch
+        MatchedParams::CodeTreeMatch matchrec;
+        DumpMatch(input, tree, repl, matchrec, false);
+        #endif
         return false;
     }
 
@@ -636,8 +639,8 @@ namespace FPoptimizer_Grammar
                             ++whichmatch;
                         }
 
-                        /*std::cout << "Maybe [" << a << "]:";
-                        DumpParam(param);
+                        /*std::cout << "Maybe [" << p << "]:";
+                        DumpParam(pack.plist[index+p]);
                         std::cout << " <-> ";
                         if(tree.Params[whichparam].sign) std::cout << '~';
                         DumpTree(*tree.Params[whichparam].param);
@@ -679,16 +682,28 @@ namespace FPoptimizer_Grammar
                                 repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
                                 ++repeat_pos)
                             {
+                                /*fprintf(stderr, "Req @ %lu = %d:%16lX, got @ %lu = %d:%16lX\n",
+                                    whichparam, tree.Params[whichparam].sign,
+                                                tree.Params[whichparam].param->Hash,
+                                    repeat_pos, tree.Params[repeat_pos].sign,
+                                                tree.Params[repeat_pos].param->Hash);*/
+
                                 if(tree.Params[repeat_pos].param->Hash
                                 == tree.Params[whichparam].param->Hash
                                 && tree.Params[repeat_pos].sign
-                                == tree.Params[whichparam].sign)
+                                == tree.Params[whichparam].sign
+                                && !used[repeat_pos])
                                 {
                                     ++HadRepeat;
                                 }
                             }
+                            /*fprintf(stderr, "Got repeat %u, needs %u\n", HadRepeat,MinRepeat);*/
                             if(HadRepeat < MinRepeat)
+                            {
+                                match = position[p].snapshot;
+                                used  = position[p].used;
                                 goto NextParamTest; // No sufficient repeat count here
+                            }
 
                             used[whichparam] = true;
                             if(!recursion) match.param_numbers.push_back(whichparam);
@@ -701,7 +716,8 @@ namespace FPoptimizer_Grammar
                                 if(tree.Params[repeat_pos].param->Hash
                                 == tree.Params[whichparam].param->Hash
                                 && tree.Params[repeat_pos].sign
-                                == tree.Params[whichparam].sign)
+                                == tree.Params[whichparam].sign
+                                && !used[repeat_pos])
                                 {
                                     ++HadRepeat;
                                     used[repeat_pos] = true;
@@ -943,7 +959,7 @@ namespace FPoptimizer_Grammar
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
                 if(res != res2) return NoMatch;
-                return FoundLastMatch;
+                return FoundLastMatch; // Previously unknown NumConstant, good
             }
             case ImmedHolder:
             {
@@ -964,7 +980,7 @@ namespace FPoptimizer_Grammar
                 if(sign != (transf != None)) return NoMatch;
 
                 match.ImmedMap.insert(i, std::make_pair((unsigned)index, res));
-                return FoundLastMatch;
+                return FoundLastMatch; // Previously unknown ImmedHolder, good
             }
             case NamedHolder:
             {
@@ -973,13 +989,14 @@ namespace FPoptimizer_Grammar
                     i = match.NamedMap.lower_bound(index);
                 if(i != match.NamedMap.end() && i->first == index)
                 {
+                    /*fprintf(stderr, "NamedHolder found: %16lX -- tested against %16lX\n", i->second.first, tree.Hash);*/
                     return tree.Hash == i->second.first
                            ? FoundLastMatch
                            : NoMatch;
                 }
                 match.NamedMap.insert(i, std::make_pair(index, std::make_pair(tree.Hash, 1)));
                 match.trees.insert(std::make_pair(tree.Hash, &tree));
-                return FoundLastMatch;
+                return FoundLastMatch; // Previously unknown NamedHolder, good
             }
             case RestHolder:
             {
@@ -1361,6 +1378,7 @@ namespace FPoptimizer_Grammar
     {
         //std::cout << "/*" << tree.Depth << "*/";
         const char* sep2 = "";
+        //std::cout << '[' << std::hex << tree.Hash << ']' << std::dec;
         switch(tree.Opcode)
         {
             case cImmed: std::cout << tree.Value; return;
