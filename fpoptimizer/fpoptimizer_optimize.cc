@@ -190,6 +190,8 @@ namespace FPoptimizer_Grammar
             DumpTree(tree);
             std::cout << "\n" << std::flush;
         }
+#else
+        recursion=recursion;
 #endif
         if(tree.OptimizedUsing != this)
         {
@@ -536,7 +538,7 @@ namespace FPoptimizer_Grammar
                         match.param_numbers.push_back(a);
                     specs[a].data = match;
 
-                    if(a == count-1 && match_index > 0)
+                    if(a == count-1U && match_index > 0)
                     {
                         // Skip this match
                         --match_index;
@@ -767,7 +769,7 @@ namespace FPoptimizer_Grammar
                     /*if(!recursion)
                         std::cout << "Match for param " << a << " at " << b << std::endl;*/
 
-                    if(p == count-1 && match_index > 0)
+                    if(p == count-1U && match_index > 0)
                     {
                         // Skip this match
                         --match_index;
@@ -893,7 +895,7 @@ namespace FPoptimizer_Grammar
                             unsigned n_options = n_remaining_restholders_of_this_kind > 1
                                 ? n_remaining_combinations
                                 : 1;
-                            unsigned selection = n_remaining_combinations - 1;
+                            size_t selection = n_remaining_combinations - 1;
                             if(n_options > 1)
                             {
                                 --n_options;

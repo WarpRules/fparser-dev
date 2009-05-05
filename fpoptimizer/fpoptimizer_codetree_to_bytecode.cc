@@ -131,8 +131,8 @@ public:
     void DoPopNMov(size_t targetpos, size_t srcpos)
     {
         ByteCode.push_back(cPopNMov);
-        ByteCode.push_back(targetpos);
-        ByteCode.push_back(srcpos);
+        ByteCode.push_back( (unsigned) targetpos);
+        ByteCode.push_back( (unsigned) srcpos);
 
         SetStackTop(srcpos+1);
         StackHash[targetpos] = StackHash[srcpos];
@@ -148,7 +148,7 @@ public:
         else
         {
             ByteCode.push_back(cFetch);
-            ByteCode.push_back(src_pos);
+            ByteCode.push_back( (unsigned) src_pos);
         }
         SetStackTop(StackTop + 1);
         StackHash[StackTop-1] = StackHash[src_pos];
@@ -180,8 +180,8 @@ public:
     {
         SetStackTop(StackTop-1); // ignore the pushed then-branch result.
 
-        ByteCode[ofs+1] = ByteCode.size()+2;
-        ByteCode[ofs+2] = Immed.size();
+        ByteCode[ofs+1] = unsigned( ByteCode.size()+2 );
+        ByteCode[ofs+2] = unsigned( Immed.size()      );
 
         ofs = ByteCode.size();
         ByteCode.push_back(cJump);
@@ -192,8 +192,8 @@ public:
     {
         SetStackTop(StackTop-1); // ignore the pushed else-branch result.
 
-        ByteCode[ofs+1] = ByteCode.size()-1;
-        ByteCode[ofs+2] = Immed.size();
+        ByteCode[ofs+1] = unsigned( ByteCode.size()-1 );
+        ByteCode[ofs+2] = unsigned( Immed.size()      );
 
         SetStackTop(StackTop+1); // one or the other was pushed.
     }
@@ -248,7 +248,7 @@ namespace
             if(value >= POWI_CACHE_SIZE) return false;
             //FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
             cache_needed[value] += count;
-            return cache[value];
+            return cache[value] != 0;
         }
 
         void Plan_Has(long value)
@@ -288,7 +288,7 @@ namespace
 
             FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
                 value, (unsigned)stackpos, cache_needed[value]));
-            cache[value] = stackpos;
+            cache[value] = (int) stackpos;
         }
 
         void DumpContents() const
@@ -708,7 +708,7 @@ namespace FPoptimizer_CodeTree
                 // If the parameter count is invalid, we're screwed.
                 for(size_t a=0; a<Params.size(); ++a)
                     Params[a].param->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, Params.size());
+                synth.AddOperation(Opcode, (unsigned) Params.size());
                 synth.AddOperation(Funcno, 0, 0);
                 break;
             }
@@ -717,7 +717,7 @@ namespace FPoptimizer_CodeTree
                 // If the parameter count is invalid, we're screwed.
                 for(size_t a=0; a<Params.size(); ++a)
                     Params[a].param->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, Params.size());
+                synth.AddOperation(Opcode, (unsigned) Params.size());
                 synth.AddOperation(Funcno, 0, 0);
                 break;
             }
@@ -726,7 +726,7 @@ namespace FPoptimizer_CodeTree
                 // If the parameter count is invalid, we're screwed.
                 for(size_t a=0; a<Params.size(); ++a)
                     Params[a].param->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, Params.size());
+                synth.AddOperation(Opcode, (unsigned) Params.size());
                 break;
             }
         }

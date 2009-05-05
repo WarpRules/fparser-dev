@@ -48,7 +48,7 @@ void FunctionParser::Optimize()
 
     if(data->StackSize != stacktop_max)
     {
-        data->StackSize = stacktop_max;
+        data->StackSize = stacktop_max; // note: gcc warning is meaningful
         data->Stack.resize(stacktop_max);
     }
 
