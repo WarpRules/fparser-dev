@@ -397,13 +397,14 @@ cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul x           <5> ~<6>) : (cMul (cPow[x (c
 cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
 cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))])) ~(cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
 cAdd (cMul x           <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin 1 &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd 1 ~(cMin 1 &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin 1 &))]))))
-# x^5 + x^4*y -> x^4*(x^(5-4)+y)
+# x^7 + x^4*y -> x^4*(x^(7-4) + x^(4-4)*y)
+# x^4 + x^7*y -> x^4*(x^(4-4) + x^(7-4)*y)
 # x^4 + x^5*y -> x^4*(1 + x*y) BETTER THAN
 # x^4 + x^5*y -> x^5*(x^-1 + y)
 # Generalized as:
-# x^A + x^B*y -> x^MIN(A,B) * (x^(MAX(A,B)-MIN(A,B)) + y)
+# x^A + x^B*y -> x^MIN(A,B) * (x^(A-MIN(A,B)) + x^(B-MIN(A,B))*y)
 
-cAdd (cPow[x %]) (cMul (cPow[x &]) <1> ~<2>) : (cMul (cPow[x (cMin % &)]) (cAdd (cPow[x (cAdd (cMax % &) ~(cMin % &))]) (cMul <1> ~<2>)))
+#cAdd (cPow[x %]) (cMul (cPow[x +(% -1)]) <1> ~<2>) : (cMul (cPow[x (cMin % &)]) (cAdd (cPow[x (cAdd % ~(cMin % &))]) (cMul (cPow[x (cAdd & ~(cMin % &))]) <1> ~<2>)))
 
 
 
