@@ -74,6 +74,9 @@ ftest: ftest.o $(FP_MODULES)
 powi_speedtest: powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
+koe: koe.o $(FP_MODULES)
+	$(LD) -o $@ $^
+
 fpoptimizer/fpoptimizer_grammar_gen: \
 		fpoptimizer/fpoptimizer_grammar_gen.o \
 		fpoptimizer/fpoptimizer_opcodename.o
