@@ -303,6 +303,9 @@ cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 cMul  (cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [y ~z])])
 # 1 / x^y / x^z = x^(-y-z)
 cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [~y ~z])])
+# x^3 + 
+
+
 
 # If an add-list contains the same element two or more times,
 # replace the element with a mul with an integer factor
@@ -360,20 +363,6 @@ cAdd ~x*         ~(cMul x <1> ~<2>)    : (cMul [x   (cAdd  ~x* ~(cMul <1> ~<2>) 
 # It does generate some additional opcodes, but it gets one multiplication less.
 # Since the difference is not very noticeable, don't use the rule.
 
-cAdd (cMul <1> ~<2> <3> ~<4>)  (cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>)  (cMul <5> ~<6>)))
-cAdd (cMul <1> ~<2> <3> ~<4>) ~(cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>) ~(cMul <5> ~<6>)))
-# Note: The above two lines can require extremely time-consuming
-#       searching.
-
-# These are the same as above, but work also if pow() is expanded
-# Note: It would work even with y and z instead of % and &, but we
-# limit into numeric literals for simplicity.
-cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))]))  (cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
-cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))]))  (cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
-cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
-cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))])) ~(cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
-cAdd (cMul x           <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin 1 &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd 1 ~(cMin 1 &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin 1 &))]))))
-
 # a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
 cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1> ~<2>) : (cPow [(cAdd [a b]) 2]) (cMul [a b (cAdd [(cMul <1> ~<2>) -2])])
 # For optimizing x^2+2*x*y+y^2:
@@ -392,6 +381,31 @@ cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1> ~<2>) : (cPow [(cAdd [a b]) 2]) (cMul
 # a^2 + b^2 + c^2 + 2*((a+b)*c + a*b)
 # Is it worth adding rule for making that into (a+b+c)^2?
 # Too specific, I suppose.
+
+
+
+cAdd (cMul <1> ~<2> <3> ~<4>)  (cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>)  (cMul <5> ~<6>)))
+cAdd (cMul <1> ~<2> <3> ~<4>) ~(cMul <1> ~<2> <5> ~<6>) : (cMul <1> ~<2> (cAdd (cMul <3> ~<4>) ~(cMul <5> ~<6>)))
+# Note: The above two lines can require extremely time-consuming
+#       searching.
+
+# These are the same as above, but work also if pow() is expanded
+# Note: It would work even with y and z instead of % and &, but we
+# limit into numeric literals for simplicity.
+cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))]))  (cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>)  (cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))]))  (cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin % &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin % &))]))))
+cAdd (cMul (cPow[x %]) <3> ~<4>) ~(cMul x           <5> ~<6>) : (cMul (cPow[x (cMin % 1)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd % ~(cMin % 1))])) ~(cMul <5> ~<6> (cPow[x (cAdd 1 ~(cMin % 1))]))))
+cAdd (cMul x           <3> ~<4>) ~(cMul (cPow[x &]) <5> ~<6>) : (cMul (cPow[x (cMin 1 &)]) (cAdd (cMul <3> ~<4> (cPow[x (cAdd 1 ~(cMin 1 &))])) ~(cMul <5> ~<6> (cPow[x (cAdd & ~(cMin 1 &))]))))
+# x^5 + x^4*y -> x^4*(x^(5-4)+y)
+# x^4 + x^5*y -> x^4*(1 + x*y) BETTER THAN
+# x^4 + x^5*y -> x^5*(x^-1 + y)
+# Generalized as:
+# x^A + x^B*y -> x^MIN(A,B) * (x^(MAX(A,B)-MIN(A,B)) + y)
+
+cAdd (cPow[x %]) (cMul (cPow[x &]) <1> ~<2>) : (cMul (cPow[x (cMin % &)]) (cAdd (cPow[x (cAdd (cMax % &) ~(cMin % &))]) (cMul <1> ~<2>)))
+
+
 
 #### Remote double negations/inversions
 
