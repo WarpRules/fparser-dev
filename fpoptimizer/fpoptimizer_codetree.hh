@@ -126,7 +126,7 @@ namespace FPoptimizer_CodeTree
         bool    IsImmed() const;
         double GetImmed() const { return Value; }
         bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
-        double GetLongIntegerImmed() const { return (long)GetImmed(); }
+        long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool      IsVar() const;
         unsigned GetVar() const { return Var; }
 
