@@ -236,9 +236,10 @@ double f25(double* p)
 
 double f26(double* p)
 {
-#define P26 "sin(x) + cos(x*1.5) + asin(x*2.5) + acos(x*2.7)", "x", f26, 1, -100, 100, .1, true
+#define P26 "sin(x) + cos(x*1.5) + asin(x/110) + acos(x/120)", "x", f26, 1, -100, 100, .1, true
     const double x = p[0];
-    return sin(d2r(x)) + cos(d2r(x*1.5)) + r2d(asin(x*2.5)) + r2d(acos(x*2.7));
+    return sin(d2r(x)) + cos(d2r(x*1.5)) +
+        r2d(asin(x/110.0)) + r2d(acos(x/120.0));
 }
 
 double f27(double* p)
@@ -285,7 +286,6 @@ double f31(double* p)
 
 double f32(double* p)
 {
-    const double x = p[0], y = p[1], z = p[2];
 #define P32code \
     x\
     +y/y-min(3,4)-x-max(4,3)+max(3,4)-min(4,3)+0+(z*1)\
@@ -299,24 +299,25 @@ double f32(double* p)
     +(x+y) + (x*y)\
     +max(x,max(x,max(x,max(x,x))))*-1.0\
     +(z-z)\
-    +1/sin(x) + 1/cos(y) + 1/tan(z)\
-    +log10(cot(z) + csc(y) + sec(x))\
+    +1/sin(x/5) + 1/cos(y/5) + 1/tan(z/5)\
+    +log10(cot(z/5) + csc(y/5) + sec(x/5))\
     +log(30+x)*log(40+y)/log(50+z)\
     +sin(x/57.295779513082320877)\
     +asin(x/10)*57.295779513082320877\
     +floor(-x) + 1/ceil(x)\
     +sqrt(5 * 0.2)\
     +(-x+-x+-x+-x+-x+-x)
-#define P32 Stringify(P32code), "x,y,z", f32, 3, 1, 2, .1, false
+#define P32 Stringify(P32code), "x,y,z", f32, 3, 1, 2, .05, false
 
+    const double x = p[0], y = p[1], z = p[2];
     return P32code;
 }
 
 double f33(double* p)
 {
-#define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)", "x,y", f33, 1, -100, 100, .1, false
+#define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y)", "x,y", f33, 1, -2, 2, .001, false
     const double x = p[0], y = p[1];
-    return sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y);
+    return sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y);
 }
 
 double f34(double* p)
@@ -373,6 +374,15 @@ double f40(double* p)
     return P40Code;
 }
 
+double f41(double* p)
+{
+#define P41CodePart (sin(x)+cos(y))
+#define P41Code x*3+x*y+x*z+x*sin(y*z) - P41CodePart*4+P41CodePart*x+P41CodePart*y+P41CodePart*z
+#define P41 Stringify(P41Code), "x,y,z", f41, 3, -2, 2, .075, false
+    double x = p[0], y = p[1], z = p[2];
+    return P41Code;
+}
+
 namespace
 {
     Test tests[] =
@@ -389,7 +399,7 @@ namespace
 #ifndef FP_NO_ASINH
         { P38 },
 #endif
-        { P39 }, { P40 }
+        { P39 }, { P40 }, { P41 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);

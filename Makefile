@@ -7,6 +7,8 @@
 # The optimizer code generator requires bison++
 #===========================================================================
 
+RELEASE_VERSION=3.1.4
+
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
 ifeq ($(FP_FEATURE_FLAGS),)
@@ -16,6 +18,7 @@ FEATURE_FLAGS += -DFP_SUPPORT_ASINH
 #FEATURE_FLAGS += -DFP_NO_SUPPORT_OPTIMIZER
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
+FEATURE_FLAGS += -DFP_NO_EVALUATION_CHECKS
 #FEATURE_FLAGS += -D_GLIBCXX_DEBUG
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
@@ -50,6 +53,9 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_optimize.o \
 		fpoptimizer/fpoptimizer_opcodename.o
+
+RELEASE_PACK_FILES = example.cc fparser.cc fparser.hh fpoptimizer.cc \
+	fpconfig.hh fptypes.hh fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^
@@ -132,13 +138,19 @@ fpoptimizer.cc: \
 #fpoptimizer.cc: fpoptimizer_3.0.3.cc
 #	cp $^ $@
 
-pack: example.cc fparser.cc fparser.hh fpoptimizer.cc fparser.txt \
-	fpconfig.hh fptypes.hh fparser.html style.css
-	zip -9 fparser3.1.3.zip $^
+VersionChanger: VersionChanger.cc
+	g++ -O3 $^ -s -o $@
 
-devel_pack:
-	tar -cjvf fparser3.1.3_devel.tar.bz2 \
-	Makefile example.cc fparser.cc fparser.hh fparser.txt fpconfig.hh \
+set_version_string: VersionChanger
+	./VersionChanger $(RELEASE_VERSION) fparser.cc fparser.hh fpconfig.hh \
+	fpoptimizer.cc fptypes.hh fparser.html webpage/index.html
+
+pack: $(RELEASE_PACK_FILES) set_version_string
+	zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES)
+
+devel_pack: set_version_string
+	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
+	Makefile example.cc fparser.cc fparser.hh fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
 	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y \

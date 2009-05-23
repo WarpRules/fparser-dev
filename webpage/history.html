@@ -9,6 +9,18 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v3.1.4
+<ul>
+ <li>Added new optimizer rules (among others, one which groups common factors
+     of subexpressions, ie. it optimizes functions of the form
+     <code>"a*b+a*c"</code> into <code>"a*(b+c)"</code>, where <code>a</code>,
+     <code>b</code> and <code>c</code> are any expressions).
+ <li>Added support for compiling without evaluation checks (because it's
+     impossible to catch all possible error situations in the first place).
+     See the documentation for more info.
+ <li>Dropped the plain text documentation file in favor of the html file.
+</ul>
+
 <p>What's new in v3.1.3
 <ul>
  <li>Fixed a bug in the optimizer which manifested itself at least in gcc 4.4
