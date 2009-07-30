@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <cstdio>
 #include <sstream>
+#include <algorithm>
 
 #define Epsilon (1e-9)
 
@@ -997,6 +998,111 @@ bool UTF8Test()
 
 
 //=========================================================================
+// Test identifier adding and removal
+//=========================================================================
+bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
+{
+    static FunctionParser anotherParser;
+    static bool anotherParserInitialized = false;
+    if(!anotherParserInitialized)
+    {
+        anotherParser.Parse("x", "x");
+        anotherParserInitialized = true;
+    }
+
+    switch(type)
+    {
+      case 0: return fp.AddConstant(name, 123);
+      case 1: return fp.AddUnit(name, 456);
+      case 2: return fp.AddFunction(name, Sqr, 1);
+      case 3: return fp.AddFunction(name, anotherParser);
+    }
+    return false;
+}
+
+bool TestIdentifiers()
+{
+    std::cout << "*** Testing identifiers..." << std::endl;
+
+    FunctionParser fParser;
+    std::vector<std::string> identifierNames(26*26, std::string("AA"));
+
+    unsigned nameInd = 0;
+    for(int i1 = 0; i1 < 26; ++i1)
+    {
+        for(int i2 = 0; i2 < 26; ++i2)
+        {
+            identifierNames.at(nameInd)[0] = char('A' + i1);
+            identifierNames[nameInd][1] = char('A' + i2);
+
+            if(!AddIdentifier(fParser, identifierNames[nameInd], (i1+26*i2)%3))
+            {
+                std::cout << "Failed to add identifier '"
+                          << identifierNames[nameInd] << "'\n";
+                return false;
+            }
+
+            ++nameInd;
+        }
+    }
+
+    std::random_shuffle(identifierNames.begin(), identifierNames.end());
+
+    for(unsigned nameInd = 0; nameInd <= identifierNames.size(); ++nameInd)
+    {
+        for(unsigned removedInd = 0; removedInd < nameInd; ++removedInd)
+        {
+            if(!AddIdentifier(fParser, identifierNames[removedInd], 3))
+            {
+                std::cout << "Failure: Identifier '"
+                          << identifierNames[removedInd]
+                          << "' was still reserved even after removing it.\n";
+                return false;
+            }
+            if(!fParser.RemoveIdentifier(identifierNames[removedInd]))
+            {
+                std::cout << "Failure: Removing the identifier '"
+                          << identifierNames[removedInd]
+                          << "' after adding it again failed.\n";
+                return false;
+            }
+        }
+
+        for(unsigned existingInd = nameInd;
+            existingInd < identifierNames.size(); ++existingInd)
+        {
+            if(AddIdentifier(fParser, identifierNames[existingInd], 3))
+            {
+                std::cout << "Failure: Trying to add identifier '"
+                          << identifierNames[existingInd]
+                          << "' for a second time didn't fail.\n";
+                return false;
+            }
+        }
+
+        if(nameInd < identifierNames.size())
+        {
+            if(!fParser.RemoveIdentifier(identifierNames[nameInd]))
+            {
+                std::cout << "Failure: Trying to remove identifier '"
+                          << identifierNames[nameInd] << "' failed.\n";
+                return false;
+            }
+            if(fParser.RemoveIdentifier(identifierNames[nameInd]))
+            {
+                std::cout << "Failure: Trying to remove identifier '"
+                          << identifierNames[nameInd]
+                          << "' for a second time didn't fail.\n";
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+//=========================================================================
 // Main test function
 //=========================================================================
 bool runTest(unsigned testIndex, FunctionParser& fp)
@@ -1138,6 +1244,7 @@ int main()
     }
 
 
+#if(1)
     // Main testing loop
     // -----------------
     for(unsigned i = FIRST_TEST; i < testsAmount; ++i)
@@ -1174,12 +1281,13 @@ int main()
 
         std::cout << "Ok." << std::endl;
     }
+#endif
 
 
     // Misc. tests
     // -----------
     if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
-       !TestIntPow() || !UTF8Test())
+       !TestIntPow() || !UTF8Test() || !TestIdentifiers())
         return 1;
 
     std::cout << "==================================================\n"
