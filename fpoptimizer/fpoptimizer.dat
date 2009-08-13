@@ -643,6 +643,10 @@ cTan [(cAtan [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
+cAbs [(cNeg [x])] : x
+
+# TODO: abs sqr -> sqr, sqr abs -> sqr, sqrt abs -> sqrt, sqrt abs sqr -> ""
+
 
 [FINAL]
 # These optimizations are done only once, after the intermediate conversions.
