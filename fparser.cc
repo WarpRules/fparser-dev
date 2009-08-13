@@ -1183,6 +1183,12 @@ double FunctionParser::Eval(const double* Vars)
 #                    endif
                        Stack[SP] = log(Stack[SP]); break;
 
+          case cLog10:
+#                    ifndef FP_NO_EVALUATION_CHECKS
+                       if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+#                    endif
+                       Stack[SP] = log10(Stack[SP]); break;
+
           case  cLog2:
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
@@ -1190,12 +1196,6 @@ double FunctionParser::Eval(const double* Vars)
                        Stack[SP] = log(Stack[SP]) * 1.4426950408889634074;
                        //Stack[SP] = log2(Stack[SP]);
                        break;
-
-          case cLog10:
-#                    ifndef FP_NO_EVALUATION_CHECKS
-                       if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
-#                    endif
-                       Stack[SP] = log10(Stack[SP]); break;
 
           case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);
                        --SP; break;
@@ -1297,6 +1297,8 @@ double FunctionParser::Eval(const double* Vars)
                          --SP; break;
 #endif
 
+          case   cNot: Stack[SP] = !doubleToInt(Stack[SP]); break;
+
           case   cAnd: Stack[SP-1] =
                            (doubleToInt(Stack[SP-1]) &&
                             doubleToInt(Stack[SP]));
@@ -1306,8 +1308,6 @@ double FunctionParser::Eval(const double* Vars)
                            (doubleToInt(Stack[SP-1]) ||
                             doubleToInt(Stack[SP]));
                        --SP; break;
-
-          case   cNot: Stack[SP] = !doubleToInt(Stack[SP]); break;
 
 // Degrees-radians conversion:
           case   cDeg: Stack[SP] = RadiansToDegrees(Stack[SP]); break;
@@ -1347,7 +1347,6 @@ double FunctionParser::Eval(const double* Vars)
 
 #ifdef FP_SUPPORT_OPTIMIZER
           case   cVar: break;  // Paranoia. These should never exist
-          case cNotNot: break; // Paranoia. These should never exist
 
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
 
@@ -1356,10 +1355,6 @@ double FunctionParser::Eval(const double* Vars)
               if(Stack[SP] == 0.0) { evalErrorType=1; return 0; }
 #           endif
               Stack[SP] = 1.0/Stack[SP];
-              break;
-
-          case   cSqr:
-              Stack[SP] = Stack[SP]*Stack[SP];
               break;
 
           case   cFetch:
@@ -1378,7 +1373,9 @@ double FunctionParser::Eval(const double* Vars)
                   break;
               }
 
-          case   cRSub: Stack[SP-1] = Stack[SP] - Stack[SP-1]; --SP; break;
+          case   cSqr:
+              Stack[SP] = Stack[SP]*Stack[SP];
+              break;
 
           case   cRDiv:
 #                    ifndef FP_NO_EVALUATION_CHECKS
@@ -1386,11 +1383,15 @@ double FunctionParser::Eval(const double* Vars)
 #                    endif
                         Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
 
+          case   cRSub: Stack[SP-1] = Stack[SP] - Stack[SP-1]; --SP; break;
+
           case   cRSqrt:
 #                      ifndef FP_NO_EVALUATION_CHECKS
                          if(Stack[SP] == 0) { evalErrorType=1; return 0; }
 #                      endif
                          Stack[SP] = 1.0 / sqrt(Stack[SP]); break;
+
+          case cNotNot: break; // Paranoia. These should never exist
 #endif
 
           case cNop: break;

@@ -19,16 +19,14 @@ namespace FUNCTIONPARSERTYPES
 // The functions must be in alphabetical order:
     enum OPCODE
     {
-        cAbs, cAcos,
-        cAcosh,
-        cAsin,
-        cAsinh,
-        cAtan,
-        cAtan2,
-        cAtanh,
-        cCeil, cCos, cCosh, cCot, cCsc,
+        cAbs,
+        cAcos, cAcosh,
+        cAsin, cAsinh,
+        cAtan, cAtan2, cAtanh,
+        cCeil,
+        cCos, cCosh, cCot, cCsc,
         cEval,
-        cExp, cFloor, cIf, cInt, cLog, cLog2, cLog10, cMax, cMin,
+        cExp, cFloor, cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
 // These do not need any ordering:
