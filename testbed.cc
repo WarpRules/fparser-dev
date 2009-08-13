@@ -384,6 +384,13 @@ double f41(double* p)
     return P41Code;
 }
 
+double f42(double* p)
+{
+#define P42 "sqrt(x*x)" , "x", f42, 1, -10, 10, .025, false
+    double x = p[0];
+    return sqrt(x*x);
+}
+
 namespace
 {
     Test tests[] =
@@ -400,7 +407,7 @@ namespace
 #ifndef FP_NO_ASINH
         { P38 },
 #endif
-        { P39 }, { P40 }, { P41 }
+        { P39 }, { P40 }, { P41 }, { P42 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
