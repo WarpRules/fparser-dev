@@ -23,12 +23,12 @@ namespace FPoptimizer_CodeTree
     public:
         CodeTreeParserData() : stack() { }
 
-        void Eat(unsigned nparams, OPCODE opcode)
+        void Eat(size_t nparams, OPCODE opcode)
         {
             CodeTreeP newnode = new CodeTree;
             newnode->Opcode = opcode;
             size_t stackhead = stack.size() - nparams;
-            for(unsigned a=0; a<nparams; ++a)
+            for(size_t a=0; a<nparams; ++a)
             {
                 CodeTree::Param param;
                 param.param = stack[stackhead + a];
@@ -39,7 +39,7 @@ namespace FPoptimizer_CodeTree
             stack.push_back(newnode);
         }
 
-        void EatFunc(unsigned params, OPCODE opcode, unsigned funcno)
+        void EatFunc(size_t params, OPCODE opcode, unsigned funcno)
         {
             Eat(params, opcode);
             stack.back()->Funcno = funcno;
@@ -271,7 +271,7 @@ namespace FPoptimizer_CodeTree
 #ifndef FP_DISABLE_EVAL
                     case cEval:
                     {
-                        unsigned paramcount = fpdata.variableRefs.size();
+                        size_t paramcount = fpdata.variableRefs.size();
                         data.Eat(paramcount, OPCODE(opcode));
                         break;
                     }
