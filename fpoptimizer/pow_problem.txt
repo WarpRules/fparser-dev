@@ -1,0 +1,148 @@
+struct Pow_Boundary_Estimation_Problem
+{
+    struct ParameterInformation
+    {
+        double minimum_value;       /* minimum value (if unknown, assume -inf) */
+        bool   minimum_value_known;
+
+        double maximum_value;       /* maximum value (if unknown, assume +inf) */
+        bool   maximum_value_known;
+
+        enum { it_is_even,   /* an even integer within the given range */
+               it_is_odd,    /* an odd integer within the given range */
+               it_is_unknown /* no idea whether even/odd, may be non-integer */
+             } evenoddness;
+    };
+
+    ParameterInformation param0; // base
+    ParameterInformation param1; // exponent
+
+    /* TEHTÄVÄ: Kirjoita tämä funktio. Funktion tulee
+     * palauttaa ParameterInformation-tyyppinen tietue,
+     * jossa on ilmaistu, minkälaisia arvoja pow()-funktio
+     * voi palauttaa minimissään ja maksimissaan silloin,
+     * kun sille on annettu parametrinä arvot, joihin pätee
+     * ne tiedot, jotka param0:ssa ja param1:ssä on ilmaistuina.
+     * Huomaa, että sekä param0:lle että param1:lle on mahdollista,
+     * ettei niiden minimiä tai maksimia tunneta, tai sitä, onko
+     * kyseessä pariton tai parillinen luku.
+     *
+     * Huomaa ettei funktion tarvitse palauttaa tarkkoja arvoja; se
+     * voi hyvin yliarvioida arvoalueen tai antaa unknownia; se ei
+     * kuitenkaan saa aliarvioida (esim. jos oikea vastaus on -2..+5, funktio
+     * saa väittää -3..+8 tai -2..unknown, mutta ei saa väittää -1..+4).
+     *
+     * evenoddness-kentässä ei tarvitse palauttaa muuta kuin unknownia.
+     */
+    ParameterInformation Estimate() const;
+};
+
+
+/* Toteutus */
+Pow_Boundary_Estimation_Problem::ParameterInformation
+    Pow_Boundary_Estimation_Problem::Estimate() const
+{
+    /* A naive implementation that has no insight whatsoever */
+    Pow_Boundary_Estimation_Problem result;
+    result.minimum_value_known = false;
+    result.maximum_value_known = false;
+    result.evenoddness = ParameterInformation::it_is_unknown;
+    return result;
+}
+
+
+/*
+Tästä totuustaulusta voi olla apua:
+
+   |
+   | Estimating whether pow() result is positive/negative:
+   |
+   |  P=positive, N=negative
+   |  E=even, O=odd, U=not integer
+   |  *=unknown, X=NaN (treated as unknown), x=possible NaN (treated as unknown)
+   |
+   |  param1:| PE PO P* NE NO N* PU NU E* O* *
+   | param0:-+--------------------------------
+   |   PE    | P  P  P  P  P  P  P  P  P  P  P
+   |   PO    | P  P  P  P  P  P  P  P  P  P  P
+   |   PU    | P  P  P  P  P  P  P  P  P  P  P
+   |   P*    | P  P  P  P  P  P  P  P  P  P  P
+   |   NE    | P  N  *  P  N  *  X  X  P  N  x
+   |   NO    | P  N  *  P  N  *  X  X  P  N  x
+   |   NU    | P  N  *  P  N  *  X  X  P  N  x
+   |   N*    | P  N  *  P  N  *  X  X  P  N  x
+   |   E*    | P  *  *  P  *  *  x  x  P  *  x
+   |   O*    | P  *  *  P  *  *  x  x  P  *  x
+   |   *     | P  *  *  P  *  *  x  x  P  *  x
+*/
+
+typedef Pow_Boundary_Estimation_Problem::ParameterInformation prm;
+
+void esimerkki1()
+{
+    Pow_Boundary_Estimation_Problem problem;
+
+    problem.param0.minimum_value       = 1;
+    problem.param0.minimum_value_known = true;
+    problem.param0.maximum_value       = 10;
+    problem.param0.maximum_value_known = true;
+    problem.param0.evenoddness = prm::it_is_unknown;
+    problem.param1.minimum_value       = 1;
+    problem.param1.minimum_value_known = true;
+    problem.param1.maximum_value       = 10;
+    problem.param1.maximum_value_known = true;
+    problem.param1.evenoddness = prm::it_is_unknown;
+
+    prm result = problem.Estimate();
+
+    if(result.minimum_value_known && result.minimum_value == 1.0
+    && result.maximum_value_known && result.maximum_value == 1e10)
+        printf("oikein\n");
+    else
+        printf("väärin\n");
+}
+
+void esimerkki2()
+{
+    Pow_Boundary_Estimation_Problem problem;
+
+    problem.param0.minimum_value       = -10;
+    problem.param0.minimum_value_known = true;
+    problem.param0.maximum_value_known = false;
+    problem.param0.evenoddness = prm::it_is_unknown;
+    problem.param1.minimum_value_known = false;
+    problem.param1.maximum_value_known = false;
+    problem.param1.evenoddness = prm::it_is_even;
+
+    prm result = problem.Estimate();
+
+    if(result.minimum_value_known && result.minimum_value == 0.0 /* never negative */
+    && result.maximum_value_known == false /* upper boundary approaches +inf, for example 999^998 */
+      )
+        printf("oikein\n");
+    else
+        printf("väärin\n");
+}
+
+void esimerkki3()
+{
+    Pow_Boundary_Estimation_Problem problem;
+
+    problem.param0.minimum_value       = -3;
+    problem.param0.minimum_value_known = true;
+    problem.param0.maximum_value_known = false;
+    problem.param0.evenoddness = prm::it_is_unknown;
+    problem.param1.minimum_value_known = false;
+    problem.param1.maximum_value       = 7.0;
+    problem.param1.maximum_value_known = true;
+    problem.param1.evenoddness = prm::it_is_odd;
+
+    prm result = problem.Estimate();
+
+    if(result.minimum_value_known == false /* lower boundary approaches -inf, for example (-3)^(-201) */
+    && result.maximum_value_known == false /* upper boundary approaches +inf, for example 9e999^7 */
+      )
+        printf("oikein\n");
+    else
+        printf("väärin\n");
+}

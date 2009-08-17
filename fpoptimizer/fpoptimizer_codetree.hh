@@ -1,4 +1,5 @@
 #include <vector>
+#include <utility>
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -93,6 +94,8 @@ namespace FPoptimizer_CodeTree
         CodeTree();
         ~CodeTree();
 
+        explicit CodeTree(double v); // produce an immed
+
         /* Generates a CodeTree from the given bytecode */
         static CodeTreeP GenerateFrom(
             const std::vector<unsigned>& byteCode,
@@ -133,6 +136,31 @@ namespace FPoptimizer_CodeTree
         void NegateImmed() { if(IsImmed()) Value = -Value;       }
         void InvertImmed() { if(IsImmed()) Value = 1.0 / Value;  }
         void NotTheImmed() { if(IsImmed()) Value = Value == 0.0; }
+
+        struct MinMaxTree
+        {
+            double min,max;
+            bool has_min, has_max;
+            MinMaxTree() : min(),max(),has_min(false),has_max(false) { }
+            MinMaxTree(double mi,double ma): min(mi),max(ma),has_min(true),has_max(true) { }
+            MinMaxTree(bool,double ma): min(),max(ma),has_min(false),has_max(true) { }
+            MinMaxTree(double mi,bool): min(mi),max(),has_min(true),has_max(false) { }
+        };
+        /* This function calculates the minimum and maximum values
+         * of the tree's result. If an estimate cannot be made,
+         * has_min/has_max are indicated as false.
+         */
+        MinMaxTree CalculateResultBoundaries() const;
+
+        enum TriTruthValue { IsAlways, IsNever, Unknown };
+        TriTruthValue GetPositivityInfo() const; // positive, negative or unknown
+        TriTruthValue GetEvennessInfo() const;
+
+        bool IsAlwaysSigned(bool negative) const
+            { return GetPositivityInfo() == (negative?IsNever:IsAlways); }
+        bool IsAlwaysParity(bool uneven) const
+            { return GetEvennessInfo() == (uneven?IsNever:IsAlways); }
+        bool IsAlwaysInteger() const;
 
     private:
         void ConstantFolding();

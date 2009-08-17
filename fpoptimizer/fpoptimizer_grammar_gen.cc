@@ -2476,10 +2476,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 break;
             }
 
-            /* TODO: figure out if this is a named constant,
-                     an opcode, or a parse-time function name,
-                     or just an identifier
+            /* This code figures out if this is a named constant,
+               an opcode, or a parse-time function name,
+               or just an identifier
              */
+            
+            /* Detect named constants */
             if(IdBuf == "CONSTANT_E") { lval->num = CONSTANT_E; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_RD") { lval->num = CONSTANT_RD; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_DR") { lval->num = CONSTANT_DR; return NUMERIC_CONSTANT; }
@@ -2489,12 +2491,9 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "CONSTANT_L10I") { lval->num = CONSTANT_L10I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2") { lval->num = CONSTANT_L2; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10") { lval->num = CONSTANT_L10; return NUMERIC_CONSTANT; }
-            if(IdBuf == "NaN")
-            {
-                /* We generate a NaN. Anyone know a better way? */
-                lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT;
-            }
-
+            if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
+            
+            /* Detect opcodes */
             if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE; }
             if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE; }
             if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE; }
@@ -2520,6 +2519,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE; }
             if(IdBuf == "cRSqrt") { lval->opcode = cRSqrt; return OPCODE; }
 
+            /* Detect other function opcodes */
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
             {
                 // This has a chance of being an opcode token
@@ -2538,6 +2538,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 lval->opcode = cNop;
                 return OPCODE;
             }
+            
             // If it is typed entirely in capitals, it has a chance of being
             // a group token
             if(true)

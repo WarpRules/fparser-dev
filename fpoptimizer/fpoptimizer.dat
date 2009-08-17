@@ -303,7 +303,7 @@ cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 cMul  (cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [y ~z])])
 # 1 / x^y / x^z = x^(-y-z)
 cMul ~(cPow[x y]) ~(cPow[x z]) : (cPow [x (cAdd [~y ~z])])
-# x^3 + 
+# x^3 +
 
 
 

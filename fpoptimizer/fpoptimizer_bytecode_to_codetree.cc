@@ -47,9 +47,7 @@ namespace FPoptimizer_CodeTree
 
         void AddConst(double value)
         {
-            CodeTreeP newnode = new CodeTree;
-            newnode->Opcode = cImmed;
-            newnode->Value  = value;
+            CodeTreeP newnode = new CodeTree(value);
             stack.push_back(newnode);
         }
 

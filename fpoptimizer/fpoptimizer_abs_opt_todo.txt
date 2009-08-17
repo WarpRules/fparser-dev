@@ -1,0 +1,90 @@
+Date: Thu, 13 Aug 2009 14:03:59 +0300
+From: Juha Nieminen <juha.nieminen@gmail.com>
+------------------------
+Eli t‰ss‰ olisi se pyydetty tiivistelm‰:
+
+
+1) T‰ll‰ hetkell‰ optimoija optimoi esim "sqrt(x*x)" -> "x", mik‰ on
+v‰‰rin. Samaten esimerkiksi "(x^2)^(1/4)" -> "sqrt(x)", mik‰ on v‰‰rin.
+
+Ratkaisuehdotus:
+
+Lausekkeissa muotoa "(x^y)^z" k‰ytet‰‰n kahta s‰‰ntˆ‰:
+
+- Mik‰li y on parillinen kokonaisluku: -> "abs(x)^(y*z)"
+- Muissa tapauksissa normaalisti: -> "x^(y*z)"
+
+T‰m‰n lis‰ksi lopputulokselle pit‰‰ ajaa kasa abs-optimointeja, jotta
+tuosta tulevat mahdolliset turhat abs-kutsut optimoidaan pois.
+
+(Tarkistettava, ettei tuo mahdollisesti aiheuta ikuisia silmukoita.)
+
+
+2) Samantyyppinen bugi: "log(x^2)" -> "log(x)*2", mik‰ on v‰‰rin.
+
+Ratkaisuehdotus on vastaava:
+
+Lausekkeissa muotoa "log(x^y)" k‰ytet‰‰n kahta s‰‰ntˆ‰:
+
+- Mik‰li y on parillinen kokonaisluku, -> "log(abs(x))*y"
+- Muissa tapauksissa normaalisti -> "log(x)*y"
+
+(Mielenkiintoinen kysymys on, kumpi on tehokkaampaa funktion
+"log(x^2)" tapauksessa: "push x; sqr; log", vai "push x; abs; log;
+dup; add". No, ehk‰ ero on niin pieni, ja tullee niin harvoin vastaan,
+ettei siit‰ tarvinne v‰litt‰‰.)
+----------------------
+Date: Thu, 13 Aug 2009 15:30:30 +0300
+From: Juha Nieminen <juha.nieminen@gmail.com>
+----------------------
+
+  J‰i edellisest‰ meilist‰ lista niist‰ abs-optimoinneista.
+
+  T‰ss‰ olisivat t‰rkeimm‰t (erityisesti sen edellisen bugikorjauksen
+kannalta):
+
+"abs(x)^(even int)" -> "x^(even int)"
+"abs(x^(even int))" -> "x^(even int)"
+"abs(sqrt(x))" -> "sqrt(x)"
+"abs(abs(x))" -> "abs(x)"
+"abs(-x)" -> "abs(x)"
+
+*******
+
+  Jos on motivaatiota, niin tuon viimeisen s‰‰nnˆn voi yleist‰‰ muotoon:
+
+- p = positiivinen vakio
+- n = negatiivinen vakio
+
+"abs(p*x)" -> "p*abs(x)"
+"abs(n*x)" -> "(-n)*abs(x)"
+
+  Noilla tulisi siis: "abs(-x)" -> "abs(-1*x)" -> "1*abs(x)" -> "abs(x)"
+
+  Mutta lis‰ksi noista voi tulla optimointia muissakin tilanteissa, esim:
+"2*abs(3*x)" -> "6*abs(x)"
+"2*abs(-3*x)" -> "6*abs(x)"
+
+*******
+
+  Jos ollaan oikein yleist‰mistuulella, niin voidaan tehd‰ myˆs t‰llainen:
+
+- P = mik‰ tahansa funktio, joka antaa vain ei-negatiivisia arvoja.
+
+  Toisin sanoen
+
+- P = { <ei-negatiivinen vakio> | abs() | acos() | sqrt() }
+
+  Ja:
+
+- <op> = mik‰ tahansa operaattori paitsi '-'
+
+  T‰llˆin voidaan yleist‰‰:
+
+"abs(P)" -> "P"
+"abs(P <op> P)" -> "P <op> P"
+"abs(P <op> P <op> P)" -> "P <op> P <op> P"
+jne.
+
+  (En t‰h‰n h‰t‰‰n keksinyt selke‰‰ tapaa kirjoittaa tuota yhdell‰
+rivill‰, esim. BNF- tai regexp-muodossa. Selke‰mp‰‰ tuolleen.)

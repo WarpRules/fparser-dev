@@ -15,4 +15,6 @@
 #define CONSTANT_DR    (180.0 / M_PI)          // 180/pi
 #define CONSTANT_RD    (M_PI / 180.0)          // pi/180
 
+#define CONSTANT_POS_INF     HUGE_VAL  // positive infinity, from math.h
+#define CONSTANT_NEG_INF   (-HUGE_VAL) // negative infinity
 #define CONSTANT_PIHALF (M_PI / 2)
