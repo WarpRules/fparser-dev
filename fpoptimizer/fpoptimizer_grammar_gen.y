@@ -118,29 +118,29 @@ namespace GrammarData
 
         ParamSpec(FunctionType* f)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(SubFunction), Func(f),          Constraint(), Params()
+              Opcode(SubFunction), Func(f),          Constraint(AnyValue), Params()
               {
               }
 
         ParamSpec(double d)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NumConstant), ConstantValue(d), Constraint(), Params() { }
+              Opcode(NumConstant), ConstantValue(d), Constraint(AnyValue), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(o),                             Constraint(), Params(p) { }
+              Opcode(o),                             Constraint(AnyValue), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NamedHolder), Index(i),         Constraint(), Params() { }
+              Opcode(NamedHolder), Index(i),         Constraint(AnyValue), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(ImmedHolder), Index(i),         Constraint(), Params() { }
+              Opcode(ImmedHolder), Index(i),         Constraint(AnyValue), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(RestHolder),  Index(i),         Constraint(), Params() { }
+              Opcode(RestHolder),  Index(i),         Constraint(AnyValue), Params() { }
 
         ParamSpec* SetNegated()                      { Negated=true; return this; }
         ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
@@ -518,6 +518,7 @@ public:
         ParamSpec  pitem;
         pitem.sign           = p.Negated;
         pitem.transformation = p.Transformation;
+        pitem.constraint     = p.Constraint;
         pitem.minrepeat      = p.MinimumRepeat;
         pitem.anyrepeat      = p.AnyRepetition;
         pitem.opcode         = p.Opcode;
@@ -660,6 +661,7 @@ public:
                          :  plist[a].constraint == Positive ? "Positive"
                          :  plist[a].constraint == Negative ? "Negative"
                          :  plist[a].constraint == Even     ? "Even    "
+                         :  plist[a].constraint == NonEven  ? "NonEven "
                          :/*plist[a].constraint == Odd    ?*/ "Odd     "
                            )
                         << " }, /* " << a;
@@ -830,6 +832,7 @@ static GrammarDumper dumper;
 %token <name>      POSITIVE_PARAM_TOKEN
 %token <name>      NEGATIVE_PARAM_TOKEN
 %token <name>      EVEN_PARAM_TOKEN
+%token <name>      NONEVEN_PARAM_TOKEN
 %token <name>      ODD_PARAM_TOKEN
 %token <index>     PLACEHOLDER_TOKEN
 %token <index>     IMMED_TOKEN
@@ -1068,6 +1071,41 @@ static GrammarDumper dumper;
        {
          unsigned nameindex = dumper.Dump(*$1);
          $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
+         delete $1;
+       }
+     | POSITIVE_PARAM_TOKEN
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
+                ->SetConstraint(Positive);
+         delete $1;
+       }
+     | NEGATIVE_PARAM_TOKEN
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
+                ->SetConstraint(Negative);
+         delete $1;
+       }
+     | EVEN_PARAM_TOKEN
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
+                ->SetConstraint(Even);
+         delete $1;
+       }
+     | NONEVEN_PARAM_TOKEN
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
+                ->SetConstraint(NonEven);
+         delete $1;
+       }
+     | ODD_PARAM_TOKEN
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
+                ->SetConstraint(Odd);
          delete $1;
        }
     ;
@@ -1319,6 +1357,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 return NEGATIVE_PARAM_TOKEN;
             if(IdBuf == "e" || IdBuf == "f")
                 return EVEN_PARAM_TOKEN;
+            if(IdBuf == "g" || IdBuf == "h")
+                return NONEVEN_PARAM_TOKEN;
             if(IdBuf == "o" || IdBuf == "r")
                 return ODD_PARAM_TOKEN;
             return PARAMETER_TOKEN;

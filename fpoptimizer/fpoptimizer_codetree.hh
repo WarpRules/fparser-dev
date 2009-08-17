@@ -157,8 +157,12 @@ namespace FPoptimizer_CodeTree
 
         bool IsAlwaysSigned(bool positive) const
             { MinMaxTree tmp = CalculateResultBoundaries();
-              if(positive) return tmp.has_min && tmp.has_min && tmp.min >= 0.0 && tmp.max >= 0.0;
-              return tmp.has_min && tmp.has_min && tmp.min < 0.0 && tmp.max < 0.0;
+              if(positive)
+                  return tmp.has_min && tmp.min >= 0.0
+                    && (!tmp.has_max || tmp.max >= 0.0);
+              else
+                  return tmp.has_max && tmp.max < 0.0
+                    && (!tmp.has_min || tmp.min < 0.0);
             }
         bool IsAlwaysParity(bool odd) const
             { return GetEvennessInfo() == (odd?IsNever:IsAlways); }

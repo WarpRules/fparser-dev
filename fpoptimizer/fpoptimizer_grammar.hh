@@ -22,6 +22,7 @@ namespace FPoptimizer_Grammar
         Positive,
         Negative,
         Even,
+        NonEven,
         Odd
     };
 

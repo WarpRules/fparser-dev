@@ -951,13 +951,20 @@ namespace FPoptimizer_Grammar
         switch(constraint)
         {
             case Positive:
-                if(!tree.IsAlwaysSigned(false)) return NoMatch;
-            case Negative:
                 if(!tree.IsAlwaysSigned(true)) return NoMatch;
+                break;
+            case Negative:
+                if(!tree.IsAlwaysSigned(false)) return NoMatch;
+                break;
             case Even:
-                if(!tree.IsAlwaysParity(true)) return NoMatch;
-            case Odd:
                 if(!tree.IsAlwaysParity(false)) return NoMatch;
+                break;
+            case NonEven:
+                if(tree.IsAlwaysParity(false)) return NoMatch;
+                break;
+            case Odd:
+                if(!tree.IsAlwaysParity(true)) return NoMatch;
+                break;
             case AnyValue: break;
         }
 
@@ -1354,7 +1361,14 @@ namespace FPoptimizer_Grammar
         }
         if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
         if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
-        /* TODO: indicate constraint */
+        switch(p.constraint)
+        {
+            case Positive: std::cout << "(pos)"; break;
+            case Negative: std::cout << "(neg)"; break;
+            case Even: std::cout << "(even)"; break;
+            case NonEven: std::cout << "(!even)"; break;
+            case Odd: std::cout << "(odd)"; break;
+        }
     }
 
     void DumpParams(const MatchedParams& mitem)

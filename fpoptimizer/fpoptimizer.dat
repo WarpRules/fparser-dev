@@ -11,6 +11,7 @@
 # %token POSITIVE_PARAM_TOKEN # placeholders p and q, which match POSITIVE params only
 # %token NEGATIVE_PARAM_TOKEN # placeholders m and n, which match NEGATIVE params only
 # %token EVEN_PARAM_TOKEN     # placeholders e and f, which match EVEN params only
+# %token NONEVEN_PARAM_TOKEN  # placeholders g and h, which match anything but EVEN params
 # %token ODD_PARAM_TOKEN      # placeholders o and r, which match ODD params only
 # %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
 # %token IMMED_TOKEN          # placeholders % and &
@@ -82,6 +83,11 @@
 #
 #     expression_param:
 #        PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
+#      | POSITIVE_PARAM_TOKEN
+#      | NEGATIVE_PARAM_TOKEN
+#      | EVEN_PARAM_TOKEN
+#      | NONEVEN_PARAM_TOKEN
+#      | ODD_PARAM_TOKEN
 #     ;
 
 
@@ -439,8 +445,11 @@ cPow [ x (cAdd <1> ~<2> =-) ]       -> cMul ~(cPow [x (cAdd ~<1> <2>)])
 # un-negate the pow and negate the immed.
 cMul ~(cPow [x %])           : (cPow [x -%])
 
-# (x^y)^z        -> x^(y*z)
-cPow [ (cPow[x y]) z ]       : x (cMul [y z])
+# (x^g)^z        -> x^(g*z)  (g is not an even integer)
+cPow [ (cPow[x g]) z ]       : x (cMul [g z])
+
+# (x^e)^z        -> abs(x)^(e*z)  (e is an even integer)
+cPow [ (cPow[x e]) z ]       : (cAbs [x]) (cMul [e z])
 
 
 #### Constant folding:
@@ -580,8 +589,10 @@ cPow [z (cMul ~(cLog[z]) (cLog[x]) <1> ~<2>)] : x (cMul <1> ~<2>)
 cPow [% (cMul ~LOG(%)    (cLog[x]) <1> ~<2>)] : x (cMul <1> ~<2>)
 cPow [% (cMul /LOG(%)    (cLog[x]) <1> ~<2>)] : x (cMul <1> ~<2>)
 
-# log(x^z) = z * log(x)
-cLog [(cPow [x z])] -> cMul [z (cLog [x])]
+# log(x^g) = g * log(x)   (g is not an even integer)
+cLog [(cPow [x g])] -> cMul [g (cLog [x])]
+# log(x^e) = e * log(abs(x))   (e is an even integer)
+cLog [(cPow [x e])] -> cMul [e (cLog [(cAbs [x])])]
 
 # log(x) + log(y) + log(z) = log(x*y*z)
 cAdd (cLog[x]) (cLog[y]) : (cLog (cMul x y))
@@ -692,7 +703,25 @@ cTan [(cAtan [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
-cAbs [(cNeg [x])] : x
+cAbs [(cAdd [~x])] : x
+
+# abs(negative thing) -> -(negative thing)
+cAbs [m]           -> (cAdd ~m)
+# abs(positive thing) -> positive thing
+cAbs [p]           -> p
+
+# nested abs is redundant
+cAbs [(cAbs [x])] : x
+
+# abs(x)^e -> x^e when e=even integer
+cPow [(cAbs[x]) e] : x e
+
+# abs(p*x) -> p*abs(x)     where p = positive expression
+# abs(n*x) -> (-n)*abs(x)  where n = negative expression
+cAbs [(cMul  p <1> ~<2>)] -> cMul  p (cAbs [(cMul <1> ~<2>)])
+cAbs [(cMul ~p <1> ~<2>)] -> cMul ~p (cAbs [(cMul <1> ~<2>)])
+cAbs [(cMul  n <1> ~<2>)] -> cMul  (cAdd ~n) (cAbs [(cMul <1> ~<2>)])
+cAbs [(cMul ~n <1> ~<2>)] -> cMul ~(cAdd ~n) (cAbs [(cMul <1> ~<2>)])
 
 # TODO: abs sqr -> sqr, sqr abs -> sqr, sqrt abs -> sqrt, sqrt abs sqr -> ""
 
