@@ -386,9 +386,18 @@ double f41(double* p)
 
 double f42(double* p)
 {
-#define P42 "sqrt(x*x)" , "x", f42, 1, -10, 10, .025, false
+#define P42 "sqrt(x*x) + 1.5*((y*y)^.25)" , "x,y", f42, 2, -10, 10, .025, false
+    double x = p[0], y = p[1];
+    double xx = x*x, yy = y*y; // to avoid gcc bug with -ffast-math
+    return sqrt(xx) + 1.5*(pow(yy, .25));
+}
+
+double f43(double* p)
+{
+#define P43 "log(x*x)" , "x", f43, 1, -100, 100, .03, false
     double x = p[0];
-    return sqrt(x*x);
+    double xx = x*x;
+    return log(xx);
 }
 
 namespace
@@ -407,7 +416,7 @@ namespace
 #ifndef FP_NO_ASINH
         { P38 },
 #endif
-        { P39 }, { P40 }, { P41 }, { P42 }
+        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
