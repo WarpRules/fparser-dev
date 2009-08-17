@@ -16,6 +16,14 @@ namespace FPoptimizer_Grammar
         Invert,  // 1/x
         NotThe   // !x
     };
+    enum ConstraintType
+    {
+        AnyValue, // default
+        Positive,
+        Negative,
+        Even,
+        Odd
+    };
 
     enum SpecialOpcode
     {
@@ -118,7 +126,8 @@ namespace FPoptimizer_Grammar
         // For anything else
         //  =  GroupFunction: index,count to plist[]
         unsigned count : 8;
-        unsigned index : 16;
+        unsigned index : 13;
+        ConstraintType constraint : 3;
 
         MatchResultType Match(
             FPoptimizer_CodeTree::CodeTree& tree,

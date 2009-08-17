@@ -8,6 +8,10 @@
 #
 # %token NUMERIC_CONSTANT     # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
 # %token PARAMETER_TOKEN      # placeholders such as x, y, a, b
+# %token POSITIVE_PARAM_TOKEN # placeholders p and q, which match POSITIVE params only
+# %token NEGATIVE_PARAM_TOKEN # placeholders m and n, which match NEGATIVE params only
+# %token EVEN_PARAM_TOKEN     # placeholders e and f, which match EVEN params only
+# %token ODD_PARAM_TOKEN      # placeholders o and r, which match ODD params only
 # %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
 # %token IMMED_TOKEN          # placeholders % and &
 # %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
@@ -69,11 +73,15 @@
 #     |  IMMED_TOKEN              /* a placeholder for some immed */
 #     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
-#     |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
-#     |  PARAMETER_TOKEN '+'      /* any expression, indicated by "x", "a" etc, repeated 2..N times. */
-#     |  PARAMETER_TOKEN '*'      /* any expression, indicated by "x", "a" etc, repeated 1..N times. */
+#     |  expression_param         /* expression param */
+#     |  expression_param '+'      /* expression param, repeated 2..N times. */
+#     |  expression_param '*'      /* expression param, repeated 1..N times. */
 #     |  '(' function ')'         /* a subtree */
 #     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
+#     ;
+#
+#     expression_param:
+#        PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
 #     ;
 
 

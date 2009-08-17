@@ -108,6 +108,7 @@ namespace GrammarData
             unsigned Index;                 // for ImmedHolder, RestHolder, NamedHolder
             FunctionType* Func;             // for SubFunction
         };
+        ConstraintType     Constraint;
         std::vector<ParamSpec*> Params;
 
     public:
@@ -117,34 +118,36 @@ namespace GrammarData
 
         ParamSpec(FunctionType* f)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(SubFunction), Func(f),          Params()
+              Opcode(SubFunction), Func(f),          Constraint(), Params()
               {
               }
 
         ParamSpec(double d)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NumConstant), ConstantValue(d), Params() { }
+              Opcode(NumConstant), ConstantValue(d), Constraint(), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(o),                             Params(p) { }
+              Opcode(o),                             Constraint(), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NamedHolder), Index(i),         Params() { }
+              Opcode(NamedHolder), Index(i),         Constraint(), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(ImmedHolder), Index(i),         Params() { }
+              Opcode(ImmedHolder), Index(i),         Constraint(), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(RestHolder),  Index(i),         Params() { }
+              Opcode(RestHolder),  Index(i),         Constraint(), Params() { }
 
         ParamSpec* SetNegated()                      { Negated=true; return this; }
         ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
         ParamSpec* SetTransformation(TransformationType t)
             { Transformation = t; return this; }
+        ParamSpec* SetConstraint(ConstraintType c)
+            { Constraint = c; return this; }
 
         void RecursivelySetParamMatchingType(ParamMatchingType t)
         {
@@ -292,6 +295,7 @@ namespace GrammarData
         if(Transformation != b.Transformation) return false;
         if(MinimumRepeat != b.MinimumRepeat) return false;
         if(AnyRepetition != b.AnyRepetition) return false;
+        if(Constraint != b.Constraint) return false;
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
         {
@@ -319,6 +323,7 @@ namespace GrammarData
         if(Transformation != b.Transformation) return Transformation < b.Transformation;
         if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
         if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
+        if(Constraint != b.Constraint) return Constraint < b.Constraint;
         if(Opcode != b.Opcode) return Opcode < b.Opcode;
         switch(Opcode)
         {
@@ -650,7 +655,14 @@ public:
                         << (plist[a].anyrepeat ? "true " : "false")
                         << ", " << plist[a].count
                         << ",\t" << plist[a].index
-                        << "\t}, /* " << a;
+                        << ",\t"
+                        << (plist[a].constraint == AnyValue ? "AnyValue"
+                         :  plist[a].constraint == Positive ? "Positive"
+                         :  plist[a].constraint == Negative ? "Negative"
+                         :  plist[a].constraint == Even     ? "Even    "
+                         :/*plist[a].constraint == Odd    ?*/ "Odd     "
+                           )
+                        << " }, /* " << a;
             if(plist[a].opcode == NamedHolder)
                 std::cout << " \"" << nlist[plist[a].index] << "\"";
             else
@@ -815,6 +827,10 @@ static GrammarDumper dumper;
 
 %token <num>       NUMERIC_CONSTANT
 %token <name>      PARAMETER_TOKEN
+%token <name>      POSITIVE_PARAM_TOKEN
+%token <name>      NEGATIVE_PARAM_TOKEN
+%token <name>      EVEN_PARAM_TOKEN
+%token <name>      ODD_PARAM_TOKEN
 %token <index>     PLACEHOLDER_TOKEN
 %token <index>     IMMED_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
@@ -832,6 +848,7 @@ static GrammarDumper dumper;
 %type <f> function function_match
 %type <p> paramlist paramlist_loop
 %type <a> param
+%type <a> expression_param
 
 %%
     grammar:
@@ -1020,29 +1037,21 @@ static GrammarDumper dumper;
          }
          $$ = $2->SetTransformation($1);
        }
-    |  PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
+    |  expression_param         /* any expression, indicated by "x", "a" etc. */
        {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
-         delete $1;
+         $$ = $1;
        }
-    |  PARAMETER_TOKEN '+'       /* any expression, indicated by "x", "a" etc. */
+    |  expression_param '+'       /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-            ->SetRepeat(2, true);
-         delete $1;
+         $$ = $1->SetRepeat(2, true);
        }
-    |  PARAMETER_TOKEN '*'       /* any expression, indicated by "x", "a" etc. */
+    |  expression_param '*'       /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-            ->SetRepeat(1, true);
-         delete $1;
+         $$ = $1->SetRepeat(1, true);
        }
     |  '(' function ')'         /* a subtree */
        {
@@ -1051,6 +1060,15 @@ static GrammarDumper dumper;
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
+       }
+    ;
+
+    expression_param:
+       PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
+       {
+         unsigned nameindex = dumper.Dump(*$1);
+         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
+         delete $1;
        }
     ;
 %%
@@ -1294,6 +1312,15 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             // Anything else is an identifier
             lval->name = new std::string(IdBuf);
             // fprintf(stderr, "'%s' interpreted as PARAM\n", IdBuf.c_str());
+
+            if(IdBuf == "p" || IdBuf == "q")
+                return POSITIVE_PARAM_TOKEN;
+            if(IdBuf == "m" || IdBuf == "n")
+                return NEGATIVE_PARAM_TOKEN;
+            if(IdBuf == "e" || IdBuf == "f")
+                return EVEN_PARAM_TOKEN;
+            if(IdBuf == "o" || IdBuf == "r")
+                return ODD_PARAM_TOKEN;
             return PARAMETER_TOKEN;
         }
         default:

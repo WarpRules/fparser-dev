@@ -946,7 +946,20 @@ namespace FPoptimizer_Grammar
         TransformationType transf,
         unsigned long match_index) const
     {
-        assert(opcode != RestHolder); // RestHolders are supposed to be handler by the caller
+        assert(opcode != RestHolder); // RestHolders are supposed to be handled by the caller
+
+        switch(constraint)
+        {
+            case Positive:
+                if(!tree.IsAlwaysSigned(false)) return NoMatch;
+            case Negative:
+                if(!tree.IsAlwaysSigned(true)) return NoMatch;
+            case Even:
+                if(!tree.IsAlwaysParity(true)) return NoMatch;
+            case Odd:
+                if(!tree.IsAlwaysParity(false)) return NoMatch;
+            case AnyValue: break;
+        }
 
         switch(OpcodeType(opcode))
         {
@@ -1341,6 +1354,7 @@ namespace FPoptimizer_Grammar
         }
         if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
         if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
+        /* TODO: indicate constraint */
     }
 
     void DumpParams(const MatchedParams& mitem)
