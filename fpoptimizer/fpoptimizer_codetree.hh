@@ -153,13 +153,15 @@ namespace FPoptimizer_CodeTree
         MinMaxTree CalculateResultBoundaries() const;
 
         enum TriTruthValue { IsAlways, IsNever, Unknown };
-        TriTruthValue GetPositivityInfo() const; // positive, negative or unknown
         TriTruthValue GetEvennessInfo() const;
 
-        bool IsAlwaysSigned(bool negative) const
-            { return GetPositivityInfo() == (negative?IsNever:IsAlways); }
-        bool IsAlwaysParity(bool uneven) const
-            { return GetEvennessInfo() == (uneven?IsNever:IsAlways); }
+        bool IsAlwaysSigned(bool positive) const
+            { MinMaxTree tmp = CalculateResultBoundaries();
+              if(positive) return tmp.has_min && tmp.has_min && tmp.min >= 0.0 && tmp.max >= 0.0;
+              return tmp.has_min && tmp.has_min && tmp.min < 0.0 && tmp.max < 0.0;
+            }
+        bool IsAlwaysParity(bool odd) const
+            { return GetEvennessInfo() == (odd?IsNever:IsAlways); }
         bool IsAlwaysInteger() const;
 
     private:

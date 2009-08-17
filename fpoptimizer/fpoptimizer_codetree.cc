@@ -228,8 +228,11 @@ namespace FPoptimizer_CodeTree
                 /* cAbs always produces a positive value */
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
                 if(m.min < 0.0 && m.max >= 0.0)
-                    { double tmp = -m.min; if(tmp > m.max) m.max = tmp;
-                    m.min = 0.0; }
+                {
+                    /* -x..+y: spans across zero. min=0, max=greater of |x| and |y|. */
+                    double tmp = -m.min; if(tmp > m.max) m.max = tmp;
+                    m.min = 0.0;
+                }
                 else if(m.min < 0.0)
                     { double tmp = m.max; m.max = -m.min; m.min = -tmp; }
                 return m;
@@ -529,9 +532,18 @@ namespace FPoptimizer_CodeTree
                 else
                     return MinMaxTree();
             }
-          #if 0
             case cPow:
             {
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                TriTruthValue p0_positivity =
+                    (p0.has_min && p0.has_max)
+                        ? ( (p0.min >= 0.0 && p0.max >= 0.0) ? IsAlways
+                          : (p0.min <  0.0 && p0.max <  0.0) ? IsNever
+                          : Unknown)
+                        : Unknown;
+                TriTruthValue p1_evenness = Params[1].param->GetEvennessInfo();
+
                 /* If param0 IsAlways, the return value is also IsAlways */
                 /* If param1 is even, the return value is IsAlways */
                 /* If param1 is odd, the return value is same as param0's */
@@ -560,40 +572,36 @@ namespace FPoptimizer_CodeTree
                  *       cRSqrt (param0, NU) (x^-0.5)
                  *       cExp   (PU, param1) (CONSTANT_E^x)
                  */
-                switch(Params[0].param->GetPositivityInfo())
+                TriTruthValue result_positivity = Unknown;
+                switch(p0_positivity)
                 {
                     case IsAlways:
                         // e.g.   5^x = positive.
-                        return IsAlways;
+                        result_positivity = IsAlways;
+                        break;
                     case IsNever:
-                        return Params[1].param->GetEvennessInfo();
-                        // ^Simplifies the code below, same meaning
-                        /* switch(Params[1].param->GetEvennessInfo())
-                        {
-                            case IsAlways:
-                                // e.g. (-5)^( 4) = positive
-                                // e.g. (-5)^(-4) = positive
-                                return IsAlways;
-                            case IsNever:
-                                // e.g. (-5)^( 3) = negative
-                                // e.g. (-5)^(-3) = negative
-                                return IsNever;
-                        } */
+                        result_positivity = p1_evenness;
+                        break;
                     default:
-                        switch(Params[1].param->GetEvennessInfo())
+                        switch(p1_evenness)
                         {
                             case IsAlways:
                                 // e.g. x^( 4) = positive
                                 // e.g. x^(-4) = positive
-                                return IsAlways;
+                                result_positivity = IsAlways;
+                                break;
                             default:
                                 break;
                         }
                 }
+                switch(result_positivity)
+                {
+                    case IsAlways: return MinMaxTree(0.0, false);
+                    case IsNever: return MinMaxTree(false, 0.0);
+                    default: break;
+                }
                 break;
             }
-          #endif
-
 
             /* The following opcodes are processed by GenerateFrom()
              * within fpoptimizer_bytecode_to_codetree.cc and thus
@@ -641,248 +649,6 @@ namespace FPoptimizer_CodeTree
                 break;
         }
         return MinMaxTree(); /* Cannot deduce */
-    }
-
-    /* Indicates whether we know whether the result is positive or negative. */
-    /* Note: zero is assumed positive */
-    CodeTree::TriTruthValue CodeTree::GetPositivityInfo() const
-    {
-        switch( (OPCODE) Opcode)
-        {
-            case cImmed:
-                return (Value >= 0.0) ? IsAlways : IsNever;
-            case cAnd:
-            case cOr:
-            case cNot:
-            case cNotNot:
-            case cEqual:
-            case cNEqual:
-            case cLess:
-            case cLessOrEq:
-            case cGreater:
-            case cGreaterOrEq:
-                /* These operations always produce truth values (0 or 1) */
-                return IsAlways; /* 0 and 1 are both positive */
-            case cAbs:
-                /* cAbs always produces a positive value */
-                return IsAlways;
-
-            /* cLog produces positive values if the input is >= 1, negative if < 1
-             * could include it here if we had a boundary mechanism...
-             */
-
-            case cAcos:
-                return IsAlways; /* 0..pi */
-#         ifndef FP_NO_ASINH
-            case cAcosh:
-                return IsAlways; /* 0..infinity */
-#         endif
-            case cCosh:
-                return IsAlways; /* positive */
-
-            case cCeil:
-            case cFloor:
-            case cInt:
-            case cSinh:
-            case cTanh:
-#         ifndef FP_NO_ASINH
-            case cAtanh:
-#endif
-                /* For these unary functions, the return value
-                 * happens to be exactly as positive as the input value
-                 */
-                return Params[0].param->GetPositivityInfo();
-            case cMin:
-            {
-                /* IsNever  if one of the values is also IsNever */
-                /* IsAlways if all values are IsAlways */
-                /* Otherwise unknown */
-                bool all_are_positive = true;
-                for(size_t a=0; a<Params.size(); ++a)
-                    switch(Params[a].param->GetPositivityInfo())
-                    {
-                        case IsNever:
-                            return IsNever;
-                        case IsAlways:
-                            break;
-                        default:
-                            all_are_positive = false;
-                    }
-                return all_are_positive ? IsAlways : Unknown;
-            }
-            case cMax:
-            {
-                /* IsNever  if all values are IsNever */
-                /* IsAlways if one of the values is also IsAlways */
-                /* Otherwise unknown */
-                bool all_are_negative = true;
-                for(size_t a=0; a<Params.size(); ++a)
-                    switch(Params[a].param->GetPositivityInfo())
-                    {
-                        case IsAlways:
-                            return IsAlways;
-                        case IsNever:
-                            break;
-                        default:
-                            all_are_negative = false;
-                    }
-                return all_are_negative ? IsNever : Unknown;
-            }
-            case cPow:
-            {
-                /* If param0 IsAlways, the return value is also IsAlways */
-                /* If param1 is even, the return value is IsAlways */
-                /* If param1 is odd, the return value is same as param0's */
-                /* If param0 is negative and param1 is not integer,
-                 * the return value is imaginary (assumed Unknown)
-                 *
-                 * Illustrated in this truth table:
-                 *  P=positive, N=negative
-                 *  E=even, O=odd, U=not integer
-                 *  *=unknown, X=invalid (unknown), x=maybe invalid (unknown)
-                 *
-                 *   param1: PE PO P* NE NO N* PU NU *
-                 * param0:
-                 *   PE      P  P  P  P  P  P  P  P  P
-                 *   PO      P  P  P  P  P  P  P  P  P
-                 *   PU      P  P  P  P  P  P  P  P  P
-                 *   P*      P  P  P  P  P  P  P  P  P
-                 *   NE      P  N  *  P  N  *  X  X  x
-                 *   NO      P  N  *  P  N  *  X  X  x
-                 *   NU      P  N  *  P  N  *  X  X  x
-                 *   N*      P  N  *  P  N  *  X  X  x
-                 *   *       P  *  *  P  *  *  x  x  *
-                 *
-                 * Note: This also deals with the following opcodes:
-                 *       cSqrt  (param0, PU) (x^0.5)
-                 *       cRSqrt (param0, NU) (x^-0.5)
-                 *       cExp   (PU, param1) (CONSTANT_E^x)
-                 */
-                switch(Params[0].param->GetPositivityInfo())
-                {
-                    case IsAlways:
-                        // e.g.   5^x = positive.
-                        return IsAlways;
-                    case IsNever:
-                        return Params[1].param->GetEvennessInfo();
-                        // ^Simplifies the code below, same meaning
-                        /* switch(Params[1].param->GetEvennessInfo())
-                        {
-                            case IsAlways:
-                                // e.g. (-5)^( 4) = positive
-                                // e.g. (-5)^(-4) = positive
-                                return IsAlways;
-                            case IsNever:
-                                // e.g. (-5)^( 3) = negative
-                                // e.g. (-5)^(-3) = negative
-                                return IsNever;
-                        } */
-                    default:
-                        switch(Params[1].param->GetEvennessInfo())
-                        {
-                            case IsAlways:
-                                // e.g. x^( 4) = positive
-                                // e.g. x^(-4) = positive
-                                return IsAlways;
-                            default:
-                                break;
-                        }
-                }
-                break;
-            }
-            case cMul:
-            {
-                /* If there are Unknowns, return value is Unknown */
-                /* Otherwise the return value is the xor of number of IsNevers */
-                /* ~-bits (which indicate dividing operations) are irrelevant. */
-                /* Note: This also deals with the following opcodes:
-                 *       cInv, cDiv, cRDiv, cRad, cDeg, cSqr
-                 *       cCot, Sec, cCsc, cLog2, cLog10
-                 */
-                bool decidedly_positive = true;
-                for(size_t a=0; a<Params.size(); ++a)
-                    switch(Params[a].param->GetPositivityInfo())
-                    {
-                        case Unknown:
-                            return Unknown;
-                        case IsNever:
-                            decidedly_positive = !decidedly_positive;
-                            break;
-                        default:
-                            break;
-                    }
-                return decidedly_positive ? IsAlways : IsNever;
-            }
-            case cAdd:
-            {
-                /* It's complicated. Follow the logic below. */
-                /* Note: This also deals with the following opcodes:
-                 *       cNeg, cSub, cRSub
-                 */
-                unsigned num_negatives = 0, num_positives = 0;
-                for(size_t a=0; a<Params.size(); ++a)
-                {
-                    const Param& p = Params[a];
-                    if(p.sign) // subtraction
-                        switch(p.param->GetPositivityInfo())
-                        {
-                            case IsAlways:
-                                ++num_negatives; // -positive = negative
-                                break;
-                            case IsNever:
-                                ++num_positives; // -negative = positive
-                                break;
-                            default:
-                                return Unknown; // could be anything
-                        }
-                    else // addition
-                        switch(p.param->GetPositivityInfo())
-                        {
-                            case IsAlways:
-                                ++num_positives;
-                                break;
-                            case IsNever:
-                                ++num_negatives;
-                                break;
-                            default:
-                                return Unknown; // could be anything
-                        }
-                    /* If both positives and negatives are present,
-                     * the result can be either.
-                     */
-                    if(num_positives && num_negatives)
-                        return Unknown; // could by anything
-                }
-                return num_negatives ? IsNever : IsAlways;
-            }
-
-            /* The following opcodes are processed by GenerateFrom()
-             * within fpoptimizer_bytecode_to_codetree.cc and thus
-             * they will never occur in the calling context:
-             */
-            case cNeg: // converted into cAdd ~x
-            case cInv: // converted into cMul ~x
-            case cDiv: // converted into cMul ~x
-            case cRDiv: // similar to above
-            case cSub: // converted into cAdd ~x
-            case cRSub: // similar to above
-            case cRad: // converted into cMul x CONSTANT_RD
-            case cDeg: // converted into cMul x CONSTANT_DR
-            case cSqr: // converted into cMul x x
-            case cExp: // converted into cPow CONSTANT_E x
-            case cSqrt: // converted into cPow x 0.5
-            case cRSqrt: // converted into cPow x -0.5
-            case cCot: // converted into cMul ~(cTan x)
-            case cSec: // converted into cMul ~(cCos x)
-            case cCsc: // converted into cMul ~(cSin x)
-            case cLog2: // converted into cMul CONSTANT_L2I (cLog x)
-            case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
-                break; /* Should never occur */
-
-            default:
-                break;
-        }
-        return Unknown; /* Cannot deduce */
     }
 
     /* Is the value of this tree definitely odd(true) or even(false)? */
