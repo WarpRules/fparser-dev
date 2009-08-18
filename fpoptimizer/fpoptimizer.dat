@@ -420,6 +420,9 @@ cAdd ~(cMul % <1> ~<2>)      : (cMul -% <1> ~<2>)
 #       otherwise the rule above will revert it.
 cMul -1 <1> ~<2>             -> cAdd ~(cMul <1> ~<2>)
 
+# -x * -y -> -(x*y)
+cMul (cAdd [~x]) (cAdd [~y]) : (cAdd ~(cMul [x y]))
+
 # If an exponent is negated, negate it and wrap
 # the rest in an inverted cMul.
 cPow [ x (cAdd <1> ~<2> =-) ]       -> cMul ~(cPow [x (cAdd ~<1> <2>)])
