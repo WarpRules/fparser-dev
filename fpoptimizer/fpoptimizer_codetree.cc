@@ -34,6 +34,7 @@ namespace FPoptimizer_CodeTree
         : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), Parent(), OptimizedUsing(0)
     {
         Value = i;
+        Recalculate_Hash_NoRecursion();
     }
 
     CodeTree::~CodeTree()

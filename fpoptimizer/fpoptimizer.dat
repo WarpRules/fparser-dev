@@ -730,10 +730,11 @@ cPow [(cAbs[x]) e] : x e
 
 # abs(p*x) -> p*abs(x)     where p = positive expression
 # abs(n*x) -> (-n)*abs(x)  where n = negative expression
-cAbs [(cMul  p <1> ~<2>)] -> cMul  p (cAbs [(cMul <1> ~<2>)])
-cAbs [(cMul ~p <1> ~<2>)] -> cMul ~p (cAbs [(cMul <1> ~<2>)])
-cAbs [(cMul  n <1> ~<2>)] -> cMul  (cAdd ~n) (cAbs [(cMul <1> ~<2>)])
-cAbs [(cMul ~n <1> ~<2>)] -> cMul ~(cAdd ~n) (cAbs [(cMul <1> ~<2>)])
+# (Now done in ConstantFolding())
+#cAbs [(cMul  p <1> ~<2>)] -> cMul  p (cAbs [(cMul <1> ~<2>)])
+#cAbs [(cMul ~p <1> ~<2>)] -> cMul ~p (cAbs [(cMul <1> ~<2>)])
+#cAbs [(cMul  n <1> ~<2>)] -> cMul  (cAdd ~n) (cAbs [(cMul <1> ~<2>)])
+#cAbs [(cMul ~n <1> ~<2>)] -> cMul ~(cAdd ~n) (cAbs [(cMul <1> ~<2>)])
 
 
 [FINAL]

@@ -520,6 +520,71 @@ namespace FPoptimizer_CodeTree
                 {
                     Opcode = cAdd;
                     Params[0].sign = true;
+                    break;
+                }
+                /* If the operand is a cMul group, find elements
+                 * that are always positive and always negative,
+                 * and move them out, e.g. abs(p*n*x*y) = p*(-n)*abs(x*y)
+                 */
+                if(Params[0].param->Opcode == cMul)
+                {
+                    CodeTree& p = *Params[0].param;
+                    std::vector<Param> pos_set;
+                    std::vector<Param> neg_set;
+                    for(size_t a=0; a<p.Params.size(); ++a)
+                    {
+                        p0 = p.Params[a].param->CalculateResultBoundaries();
+                        if(p0.has_min && p0.min >= 0.0)
+                            { pos_set.push_back(p.Params[a]); }
+                        if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
+                            { neg_set.push_back(p.Params[a]); }
+                    }
+                    fprintf(stderr, "Abs: mul group has %u pos, %u neg\n",
+                        (unsigned)pos_set.size(),
+                        (unsigned)neg_set.size());
+
+                    if(!pos_set.empty() || !neg_set.empty())
+                    {
+                        for(size_t a=p.Params.size(); a-- > 0; )
+                        {
+                            p0 = p.Params[a].param->CalculateResultBoundaries();
+                            if((p0.has_min && p0.min >= 0.0)
+                            || (p0.has_max && p0.max <= NEGATIVE_MAXIMUM))
+                                p.Params.erase(p.Params.begin() + a);
+                        }
+                        p.ConstantFolding();
+
+                        CodeTreeP subtree = new CodeTree;
+                        p.Parent = &*subtree;
+                        subtree->Opcode = cAbs;
+                        subtree->Params.swap(Params); // subtree = abs(x*y)
+                        subtree->ConstantFolding();
+                        subtree->Sort();
+                        subtree->Recalculate_Hash_NoRecursion();
+                        Opcode = cMul;
+                        for(size_t a=0; a<pos_set.size(); ++a)
+                            AddParam(pos_set[a]);
+                        AddParam(Param(subtree, false)); // we = p*abs(x*y)
+
+                        if(!neg_set.empty())
+                        {
+                            CodeTreeP subtree3 = new CodeTree;
+                            subtree3->Opcode = cMul;
+                            for(size_t a=0; a<neg_set.size(); ++a)
+                                subtree3->AddParam(neg_set[a]);
+                            subtree3->ConstantFolding(); // subtree3 = n
+                            subtree3->Sort();
+                            subtree3->Recalculate_Hash_NoRecursion();
+
+                            CodeTreeP subtree2 = new CodeTree;
+                            subtree2->Opcode = cAdd;
+                            subtree2->AddParam( Param(subtree3, true) ); // subtree2 = -n
+                            subtree2->ConstantFolding();
+                            subtree2->Sort();
+                            subtree2->Recalculate_Hash_NoRecursion();
+                            AddParam( Param(subtree2, false) ); // we = p*(-n)*abs(x*y)
+                        }
+                    }
                 }
                 break;
             }
@@ -598,6 +663,9 @@ namespace FPoptimizer_CodeTree
                         Params[a].param->Parent = &*subtree;
                     subtree->Opcode = cMul;
                     subtree->Params.swap(Params); // subtree = y/x
+                    subtree->ConstantFolding();
+                    subtree->Sort();
+                    subtree->Recalculate_Hash_NoRecursion();
                     Opcode = cAtan;
                     AddParam(Param(subtree, false)); // we = atan(y/x)
                 }
@@ -665,6 +733,11 @@ namespace FPoptimizer_CodeTree
 #endif
                 break;
         }
+        /*
+        if(Parent)
+            Parent->ConstantFolding();
+
+        */
     }
 }
 
@@ -754,6 +827,8 @@ namespace FPoptimizer_Grammar
         if(tree.OptimizedUsing != this)
         {
             /* First optimize all children */
+            tree.ConstantFolding();
+
             for(size_t a=0; a<tree.Params.size(); ++a)
             {
                 if( ApplyTo( *tree.Params[a].param, true ) )
