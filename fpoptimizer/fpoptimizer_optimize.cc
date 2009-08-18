@@ -22,7 +22,7 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    /* Little birds tell me that std::equal_range() is practically worthless
+    /* I have heard that std::equal_range() is practically worthless
      * due to the insane limitation that the two parameters for Comp() must
      * be of the same type. Hence we must reinvent the wheel and implement
      * our own here. This is practically identical to the one from
