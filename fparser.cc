@@ -1084,6 +1084,16 @@ double FunctionParser::Eval(const double* Vars)
 #       ifndef FP_NO_ASINH
           case cAcosh: Stack[SP] = acosh(Stack[SP]); break;
 #       endif
+/*
+Note: FP_NO_ASINH functions could be implemented as such:
+        asinh: log(x + sqrt(x*x + 1))
+        acosh: log(x + sqrt(x*x - 1))
+        atanh: log( (1+x) / (1-x)) / 2
+     The hyperbolic functions themselves are:
+        sinh: (exp(x)-exp(-x)) / 2
+        cosh: (exp(x)+exp(-x)) / 2
+        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
+*/
 
           case  cAsin:
 #                    ifndef FP_NO_EVALUATION_CHECKS
