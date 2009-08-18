@@ -20,6 +20,13 @@ using namespace FUNCTIONPARSERTYPES;
 
 //#define DEBUG_SUBSTITUTIONS
 
+#ifdef DEBUG_SUBSTITUTIONS
+namespace FPoptimizer_Grammar
+{
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+}
+#endif
+
 namespace
 {
     /* I have heard that std::equal_range() is practically worthless
@@ -105,8 +112,532 @@ namespace FPoptimizer_CodeTree
 {
     void CodeTree::ConstantFolding()
     {
+        using namespace std;
+
         // Insert here any hardcoded constant-folding optimizations
-        // that you want to be done at bytecode->codetree conversion time.
+        // that you want to be done whenever a new subtree is generated.
+        /* Not recursive. */
+
+        if(Opcode != cImmed)
+        {
+            MinMaxTree p = CalculateResultBoundaries();
+            if(p.has_min && p.has_max && p.min == p.max)
+            {
+                // Replace us with this immed
+                Params.clear();
+                Opcode = cImmed;
+                Value  = p.min;
+                return;
+            }
+        }
+
+        double const_value = 1.0;
+        size_t which_param = 0;
+
+        switch( (OPCODE) Opcode)
+        {
+            case cImmed:
+                break; // nothing to do
+            case cVar:
+                break; // nothing to do
+
+            ReplaceTreeWithOne:
+                const_value = 1.0;
+                goto ReplaceTreeWithConstValue;
+            ReplaceTreeWithZero:
+                const_value = 0.0;
+            ReplaceTreeWithConstValue:
+                /*std::cout << "Replacing "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << " with " << const_value << "\n";*/
+                Params.clear();
+                Opcode = cImmed;
+                Value  = const_value;
+                break;
+            ReplaceTreeWithParam0:
+                which_param = 0;
+            ReplaceTreeWithParam:
+                /*std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << "\n";*/
+                Opcode = Params[which_param].param->Opcode;
+                Var    = Params[which_param].param->Var;
+                Value  = Params[which_param].param->Value;
+                Params.swap(Params[which_param].param->Params);
+                for(size_t a=0; a<Params.size(); ++a)
+                    Params[a].param->Parent = this;
+                /*std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << "\n";*/
+                break;
+
+            case cAnd:
+            {
+                // If the and-list contains an expression that evaluates to approx. zero,
+                // the whole list evaluates to zero.
+                // If all expressions within the and-list evaluate to approx. nonzero,
+                // the whole list evaluates to one.
+                bool all_values_are_nonzero = true;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    if(p.has_min && p.has_max
+                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    {
+                        if(!Params[a].sign) goto ReplaceTreeWithZero;
+                        all_values_are_nonzero = false;
+                    }
+                    else if( (p.has_max && p.max <= -0.5)
+                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    {
+                        if(Params[a].sign) goto ReplaceTreeWithZero;
+                    }
+                    else
+                        all_values_are_nonzero = false;
+                }
+                if(all_values_are_nonzero) goto ReplaceTreeWithOne;
+                if(Params.size() == 1)
+                {
+                    // Replace self with the single operand
+                    Opcode = Params[0].sign ? cNot : cNotNot;
+                    Params[0].sign = false;
+                }
+                break;
+            }
+            case cOr:
+            {
+                // If the or-list contains an expression that evaluates to approx. nonzero,
+                // the whole list evaluates to one.
+                // If all expressions within the and-list evaluate to approx. zero,
+                // the whole list evaluates to zero.
+                bool all_values_are_zero = true;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    if(p.has_min && p.has_max
+                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    {
+                        if(Params[a].sign) goto ReplaceTreeWithOne;
+                    }
+                    else if( (p.has_max && p.max <= -0.5)
+                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    {
+                        if(!Params[a].sign) goto ReplaceTreeWithOne;
+                        all_values_are_zero = false;
+                    }
+                    else
+                        all_values_are_zero = false;
+                }
+                if(all_values_are_zero) goto ReplaceTreeWithZero;
+                if(Params.size() == 1)
+                {
+                    // Replace self with the single operand
+                    Opcode = Params[0].sign ? cNot : cNotNot;
+                    Params[0].sign = false;
+                }
+                break;
+            }
+            case cNot:
+            {
+                // If the sub-expression evaluates to approx. zero, yield one.
+                // If the sub-expression evaluates to approx. nonzero, yield zero.
+                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                if(p.has_min && p.has_max
+                && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                {
+                    goto ReplaceTreeWithOne;
+                }
+                else if( (p.has_max && p.max <= -0.5)
+                      || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    goto ReplaceTreeWithZero;
+                break;
+            }
+            case cNotNot:
+            {
+                // If the sub-expression evaluates to approx. zero, yield zero.
+                // If the sub-expression evaluates to approx. nonzero, yield one.
+                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                if(p.has_min && p.has_max
+                && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                {
+                    goto ReplaceTreeWithZero;
+                }
+                else if( (p.has_max && p.max <= -0.5)
+                      || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    goto ReplaceTreeWithOne;
+                break;
+            }
+            case cIf:
+            {
+                // If the sub-expression evaluates to approx. zero, yield param3.
+                // If the sub-expression evaluates to approx. nonzero, yield param2.
+                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                if(p.has_min && p.has_max
+                && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                {
+                    which_param = 2;
+                    goto ReplaceTreeWithParam;
+                }
+                else if( (p.has_max && p.max <= -0.5)
+                      || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                {
+                    which_param = 1;
+                    goto ReplaceTreeWithParam;
+                }
+                break;
+            }
+            case cMul:
+            {
+                // If one sub-expression evalutes to exact zero, yield zero.
+              {
+                double mul_immed_sum = 1.0, div_immed_sum = 1.0;
+                size_t n_mul_immeds = 0, n_div_immeds = 0; bool needs_resynth=false;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    if(!Params[a].param->IsImmed()) continue;
+                    // ^ Only check constant values
+                    if(!Params[a].sign && Params[a].param->GetImmed() == 0.0)
+                        goto ReplaceTreeWithZero;
+                    if(Params[a].param->GetImmed() == 1.0) needs_resynth = true;
+                    if(Params[a].sign)
+                         { div_immed_sum *= Params[a].param->GetImmed(); ++n_div_immeds; }
+                    else { mul_immed_sum *= Params[a].param->GetImmed(); ++n_mul_immeds; }
+                }
+                // Merge immeds.
+                if(n_div_immeds + n_mul_immeds > 1) needs_resynth = true;
+                if(mul_immed_sum != 1.0 && div_immed_sum != 1.0)
+                    { mul_immed_sum /= div_immed_sum; div_immed_sum = 1.0; }
+                if(needs_resynth)
+                {
+                    // delete immeds and add new ones
+                    //std::cout << "cMul: Will add new immed " << mul_immed_sum << " / " << div_immed_sum << "\n";
+                    for(size_t a=Params.size(); a-->0; )
+                        if(Params[a].param->IsImmed())
+                        {
+                            //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
+                            //if(Params[a].sign) std::cout << " (inverted)";
+                            //std::cout << "\n";
+                            Params.erase(Params.begin()+a);
+                        }
+                    if(mul_immed_sum != 1.0)
+                        AddParam( Param(new CodeTree(mul_immed_sum), false) );
+                    if(div_immed_sum != 1.0)
+                        AddParam( Param(new CodeTree(div_immed_sum), true) );
+                }
+              }
+                if(Params.size() == 1 && !Params[0].sign)
+                {
+                    // Replace self with the single operand
+                    goto ReplaceTreeWithParam0;
+                }
+                break;
+            }
+            case cAdd:
+            {
+                double immed_sum = 0.0;
+                size_t n_immeds = 0; bool needs_resynth=false;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    if(!Params[a].param->IsImmed()) continue;
+                    // ^ Only check constant values
+                    if(Params[a].param->GetImmed() == 0.0) needs_resynth = true;
+                    if(Params[a].sign)
+                         { immed_sum -= Params[a].param->GetImmed(); ++n_immeds; needs_resynth = true; }
+                    else { immed_sum += Params[a].param->GetImmed(); ++n_immeds; }
+                }
+                // Merge immeds.
+                if(n_immeds > 1) needs_resynth = true;
+                if(needs_resynth)
+                {
+                    // delete immeds and add new ones
+                    //std::cout << "cAdd: Will add new immed " << immed_sum << "\n";
+                    //std::cout << "In: "; FPoptimizer_Grammar::DumpTree(*this);
+                    //std::cout << "\n";
+
+                    for(size_t a=Params.size(); a-->0; )
+                        if(Params[a].param->IsImmed())
+                        {
+                            //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
+                            //if(Params[a].sign) std::cout << " (negated)";
+                            //std::cout << "\n";
+                            Params.erase(Params.begin()+a);
+                        }
+                    if(immed_sum != 0.0)
+                        AddParam( Param(new CodeTree(immed_sum), false) );
+                }
+                if(Params.size() == 1 && !Params[0].sign)
+                {
+                    // Replace self with the single operand
+                    goto ReplaceTreeWithParam0;
+                }
+                break;
+            }
+            case cMin:
+            {
+                /* Goal: If there is any pair of two operands, where
+                 * their ranges form a disconnected set, i.e. as below:
+                 *     xxxxx
+                 *            yyyyyy
+                 * Then remove the larger one.
+                 *
+                 * Algorithm: 1. figure out the smallest maximum of all operands.
+                 *            2. eliminate all operands where their minimum is
+                 *               larger than the selected maximum.
+                 */
+                MinMaxTree smallest_maximum;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    if(p.has_max && (!smallest_maximum.has_max || p.max < smallest_maximum.max))
+                    {
+                        smallest_maximum.max = p.max;
+                        smallest_maximum.has_max = true;
+                }   }
+                if(smallest_maximum.has_max)
+                    for(size_t a=Params.size(); a-- > 0; )
+                    {
+                        MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                        if(p.has_min && p.min > smallest_maximum.max)
+                            Params.erase(Params.begin() + a);
+                    }
+                //fprintf(stderr, "Remains: %u\n", (unsigned)Params.size());
+                if(Params.size() == 1)
+                {
+                    // Replace self with the single operand
+                    goto ReplaceTreeWithParam0;
+                }
+                break;
+            }
+            case cMax:
+            {
+                /* Goal: If there is any pair of two operands, where
+                 * their ranges form a disconnected set, i.e. as below:
+                 *     xxxxx
+                 *            yyyyyy
+                 * Then remove the smaller one.
+                 *
+                 * Algorithm: 1. figure out the biggest minimum of all operands.
+                 *            2. eliminate all operands where their maximum is
+                 *               smaller than the selected minimum.
+                 */
+                MinMaxTree biggest_minimum;
+                for(size_t a=0; a<Params.size(); ++a)
+                {
+                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    if(p.has_min && (!biggest_minimum.has_min || p.min > biggest_minimum.min))
+                    {
+                        biggest_minimum.min = p.min;
+                        biggest_minimum.has_min = true;
+                }   }
+                if(biggest_minimum.has_min)
+                {
+                    //fprintf(stderr, "Removing all where max < %g\n", biggest_minimum.min);
+                    for(size_t a=Params.size(); a-- > 0; )
+                    {
+                        MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                        if(p.has_max && p.max < biggest_minimum.min)
+                        {
+                            //fprintf(stderr, "Removing %g\n", p.max);
+                            Params.erase(Params.begin() + a);
+                        }
+                    }
+                }
+                //fprintf(stderr, "Remains: %u\n", (unsigned)Params.size());
+                if(Params.size() == 1)
+                {
+                    // Replace self with the single operand
+                    goto ReplaceTreeWithParam0;
+                }
+                break;
+            }
+
+            case cEqual:
+            {
+                /* If we know the two operands' ranges don't overlap, we get zero.
+                 * The opposite is more complex and is done in .dat code.
+                 */
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if((p0.has_max && p1.has_min && p1.min > p0.max)
+                || (p1.has_max && p0.has_min && p0.min > p1.max))
+                    goto ReplaceTreeWithZero;
+                break;
+            }
+
+            case cNEqual:
+            {
+                /* If we know the two operands' ranges don't overlap, we get one.
+                 * The opposite is more complex and is done in .dat code.
+                 */
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if((p0.has_max && p1.has_min && p1.min > p0.max)
+                || (p1.has_max && p0.has_min && p0.min > p1.max))
+                    goto ReplaceTreeWithOne;
+                break;
+            }
+
+            case cLess:
+            case cLessOrEq:
+            {
+                // Note: Eq case not handled
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if(p0.has_max && p1.has_min && p0.max < p1.min)
+                    goto ReplaceTreeWithOne; // We know p0 < p1
+                if(p1.has_max && p0.has_min && p1.max < p0.min)
+                    goto ReplaceTreeWithZero; // We know p1 > p0
+                break;
+            }
+
+            case cGreater:
+            case cGreaterOrEq:
+            {
+                // Note: Eq case not handled
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if(p0.has_max && p1.has_min && p0.max < p1.min)
+                    goto ReplaceTreeWithZero; // We know p0 < p1
+                if(p1.has_max && p0.has_min && p1.max < p0.min)
+                    goto ReplaceTreeWithOne; // We know p1 > p0
+                break;
+            }
+
+            case cAbs:
+            {
+                /* If we know the operand is always positive, cAbs is redundant.
+                 * If we know the operand is always negative, use actual negation.
+                 */
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                if(p0.has_min && p0.min >= 0.0)
+                    goto ReplaceTreeWithParam0;
+                if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
+                {
+                    Opcode = cAdd;
+                    Params[0].sign = true;
+                }
+                break;
+            }
+
+            #define HANDLE_UNARY_CONST_FUNC(funcname) \
+                if(Params[0].param->IsImmed()) \
+                    { const_value = funcname(Params[0].param->GetImmed()); \
+                      goto ReplaceTreeWithConstValue; }
+
+            case cLog:   HANDLE_UNARY_CONST_FUNC(log); break;
+#         ifndef FP_NO_ASINH
+            case cAcosh: HANDLE_UNARY_CONST_FUNC(acosh); break;
+            case cAsinh: HANDLE_UNARY_CONST_FUNC(asinh); break;
+            case cAtanh: HANDLE_UNARY_CONST_FUNC(atanh); break;
+#         endif
+            case cAcos: HANDLE_UNARY_CONST_FUNC(acos); break;
+            case cAsin: HANDLE_UNARY_CONST_FUNC(asin); break;
+            case cAtan: HANDLE_UNARY_CONST_FUNC(atan); break;
+            case cCosh: HANDLE_UNARY_CONST_FUNC(cosh); break;
+            case cSinh: HANDLE_UNARY_CONST_FUNC(sinh); break;
+            case cTanh: HANDLE_UNARY_CONST_FUNC(tanh); break;
+            case cSin: HANDLE_UNARY_CONST_FUNC(sin); break;
+            case cCos: HANDLE_UNARY_CONST_FUNC(cos); break;
+            case cTan: HANDLE_UNARY_CONST_FUNC(tan); break;
+            case cCeil: HANDLE_UNARY_CONST_FUNC(ceil); break;
+            case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
+            case cInt:
+                if(Params[0].param->IsImmed())
+                    { const_value = floor(Params[0].param->GetImmed() + 0.5);
+                      goto ReplaceTreeWithConstValue; }
+                break;
+
+            case cAtan2:
+            {
+                /* Range based optimizations for (y,x):
+                 * If y is +0 and x <= -0, +pi is returned
+                 * If y is -0 and x <= -0, -pi is returned (assumed never happening)
+                 * If y is +0 and x >= +0, +0 is returned
+                 * If y is -0 and x >= +0, -0 is returned  (assumed never happening)
+                 * If x is +-0 and y < 0, -pi/2 is returned
+                 * If x is +-0 and y > 0, +pi/2 is returned
+                 * Otherwise, perform constant folding when available
+                 */
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if(p0.has_min && p0.has_max && p0.min == 0.0)
+                {
+                    if(p1.has_max && p1.max < 0)
+                        { const_value = CONSTANT_PI; goto ReplaceTreeWithConstValue; }
+                    const_value = p0.min; goto ReplaceTreeWithConstValue;
+                }
+                if(p1.has_min && p1.has_max && p1.min == 0.0)
+                {
+                    if(p0.has_max && p0.max < 0)
+                        { const_value = -CONSTANT_PIHALF; goto ReplaceTreeWithConstValue; }
+                    if(p0.has_min && p0.min > 0)
+                        { const_value =  CONSTANT_PIHALF; goto ReplaceTreeWithConstValue; }
+                }
+                if(Params[0].param->IsImmed()
+                && Params[1].param->IsImmed())
+                    { const_value = atan2(Params[0].param->GetImmed(),
+                                          Params[1].param->GetImmed());
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            }
+
+            case cPow:
+            {
+                if(Params[0].param->IsImmed()
+                && Params[1].param->IsImmed())
+                    { const_value = pow(Params[0].param->GetImmed(),
+                                        Params[1].param->GetImmed());
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            }
+
+            case cMod:
+            {
+                /* Can more be done than this? */
+                if(Params[0].param->IsImmed()
+                && Params[1].param->IsImmed())
+                    { const_value = fmod(Params[0].param->GetImmed(),
+                                         Params[1].param->GetImmed());
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            }
+
+            /* The following opcodes are processed by GenerateFrom()
+             * within fpoptimizer_bytecode_to_codetree.cc and thus
+             * they will never occur in the calling context:
+             */
+            case cNeg: // converted into cAdd ~x
+            case cInv: // converted into cMul ~x
+            case cDiv: // converted into cMul ~x
+            case cRDiv: // similar to above
+            case cSub: // converted into cAdd ~x
+            case cRSub: // similar to above
+            case cRad: // converted into cMul x CONSTANT_RD
+            case cDeg: // converted into cMul x CONSTANT_DR
+            case cSqr: // converted into cMul x x
+            case cExp: // converted into cPow CONSTANT_E x
+            case cSqrt: // converted into cPow x 0.5
+            case cRSqrt: // converted into cPow x -0.5
+            case cCot: // converted into cMul ~(cTan x)
+            case cSec: // converted into cMul ~(cCos x)
+            case cCsc: // converted into cMul ~(cSin x)
+            case cLog2: // converted into cMul CONSTANT_L2I (cLog x)
+            case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
+                break; /* Should never occur */
+
+            /* Opcodes that do not occur in the tree for other reasons */
+            case cDup:
+            case cFetch:
+            case cPopNMov:
+            case cNop:
+            case cJump:
+            case VarBegin:
+                break; /* Should never occur */
+            /* Opcodes that we can't do anything about */
+            case cPCall:
+            case cFCall:
+#         ifndef FP_DISABLE_EVAL
+            case cEval:
+#endif
+                break;
+        }
     }
 }
 
@@ -1200,6 +1731,7 @@ namespace FPoptimizer_Grammar
             {
                 FPoptimizer_CodeTree::CodeTree* subtree = new FPoptimizer_CodeTree::CodeTree;
                 param.SynthesizeTree(*subtree, matcher, match);
+                subtree->ConstantFolding();
                 subtree->Sort();
                 subtree->Recalculate_Hash_NoRecursion(); // rehash this, but not the children, nor the parent
                 FPoptimizer_CodeTree::CodeTree::Param p(subtree, param.sign) ;
@@ -1225,6 +1757,9 @@ namespace FPoptimizer_Grammar
             size_t num = match.param_numbers[a];
             tree.DelParam(num);
         }
+
+        tree.ConstantFolding();
+
         tree.Sort();
         tree.Rehash(true); // rehash this and its parents, but not its children
     }
@@ -1239,6 +1774,8 @@ namespace FPoptimizer_Grammar
         std::vector<FPoptimizer_CodeTree::CodeTree::Param> OldParams = tree.Params;
         tree.Params.clear();
         pack.plist[index].SynthesizeTree(tree, matcher, match);
+
+        tree.ConstantFolding();
 
         tree.Sort();
         tree.Rehash(true);  // rehash this and its parents, but not its children
@@ -1483,7 +2020,7 @@ namespace FPoptimizer_Grammar
 
             if(tree.Params[a].param->Parent != &tree)
             {
-                std::cout << "(?""?""?))";
+                std::cout << "(?parent?)";
             }
 
             if(a+1 < tree.Params.size()) std::cout << sep2;

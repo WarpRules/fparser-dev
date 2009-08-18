@@ -6,6 +6,12 @@
 
 #include "fpoptimizer_hash.hh"
 
+#ifdef FP_EPSILON
+ #define NEGATIVE_MAXIMUM (-FP_EPSILON)
+#else
+ #define NEGATIVE_MAXIMUM (-1e-14)
+#endif
+
 namespace FPoptimizer_Grammar
 {
     class Grammar;
@@ -161,7 +167,6 @@ namespace FPoptimizer_CodeTree
             { return GetEvennessInfo() == (odd?IsNever:IsAlways); }
         bool IsAlwaysInteger() const;
 
-    private:
         void ConstantFolding();
 
     private:

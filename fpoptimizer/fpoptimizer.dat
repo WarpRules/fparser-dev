@@ -183,10 +183,10 @@ cMax x x    : x
 
 # If both branches of an If() are identical, the test becomes unnecessary
 cIf [y x x] -> x
-# If the If() condition never matches, take the else-branch
-cIf [0 x y] -> y
-# If the If() condition always matches, take the then-branch
-cIf [1 x y] -> x
+# If the If() condition never matches, take the else-branch (Now done in ConstantFolding())
+#cIf [0 x y] -> y
+# If the If() condition always matches, take the then-branch (Now done in ConstantFolding())
+#cIf [1 x y] -> x
 # If the If() condition begins with a not, remove the not and swap the branches
 cIf [(cNot x) y z]    -> cIf [x z y]
 # Notnots are unnecessary in an If()
@@ -273,20 +273,20 @@ cAnd  []   -> 0
 # An empty or-list gets replaced with immed 1
 cOr   []   -> 1
 
-# A single-token min-list gets replaced with that single token
-cMin [x]   -> x
-# A single-token max-list gets replaced with that single token
-cMax [x]   -> x
-# A single-token add-list gets replaced with that single token (note: NOT when negated)
-cAdd [x]   -> x
-# A single-token mul-list gets replaced with that single token (note: NOT when inverted)
-cMul [x]   -> x
-# A single-token and-list gets replaced with that single token
-cAnd  [x]  -> cNotNot [x]
-cAnd [~x]  -> cNot [x]
-# A single-token or-list gets replaced with that single token
-cOr   [x]  -> cNotNot [x]
-cOr  [~x]  -> cNot [x]
+# A single-token min-list gets replaced with that single token (Now done in ConstantFolding())
+#cMin [x]   -> x
+# A single-token max-list gets replaced with that single token (Now done in ConstantFolding())
+#cMax [x]   -> x
+# A single-token add-list gets replaced with that single token (note: NOT when negated) (Now done in ConstantFolding())
+#cAdd [x]   -> x
+# A single-token mul-list gets replaced with that single token (note: NOT when inverted) (Now done in ConstantFolding())
+#cMul [x]   -> x
+# A single-token and-list gets replaced with that single token (Now done in ConstantFolding())
+#cAnd  [x]  -> cNotNot [x]
+#cAnd [~x]  -> cNot [x]
+# A single-token or-list gets replaced with that single token (Now done in ConstantFolding())
+#cOr   [x]  -> cNotNot [x]
+#cOr  [~x]  -> cNot [x]
 # If a pow has an exponent of 1, replace the pow with the base value
 cPow [x 1]  -> x
 # If a pow has an exponent of -1, replace the pow with the base value inverted
@@ -446,6 +446,8 @@ cPow [ x (cAdd <1> ~<2> =-) ]       -> cMul ~(cPow [x (cAdd ~<1> <2>)])
 cMul ~(cPow [x %])           : (cPow [x -%])
 
 # (x^g)^z        -> x^(g*z)  (g is not an even integer)
+# FIXME: Should this be only done for odd integers?
+# Because "not even" _can_ be even, we just don't know for sure
 cPow [ (cPow[x g]) z ]       : x (cMul [g z])
 # (x^e)^z        -> abs(x)^(e*z)  (e is an even integer)
 cPow [ (cPow[x e]) z ]       : (cAbs [x]) (cMul [e z])
@@ -454,59 +456,61 @@ cPow [(cPow [p y]) z]        : p (cMul [y z])
 
 #### Constant folding:
 
-# Negate literal negated params...
-cAdd ~%      : -%
+# Negate literal negated params... (Now done in ConstantFolding())
+#cAdd ~%      : -%
 # Note: Don't invert literal inverted params liberally; doing so may lose precision.
 
 # If a add-list contains two or more immeds, replace those immeds
 # with a single non-negated immed that has the sum of those original
-# immeds.
-cAdd  %  &   : +(% &)
+# immeds.  (Now done in ConstantFolding())
+#cAdd  %  &   : +(% &)
 
 # If a mul-list contains two or more immeds, replace those immeds
 # with a single non-inverted immed that has the product of those original
 # immeds (paying attention to the polarity of those immeds)
-cMul  %  &   : *(% &)
-cMul  % ~&   : *(% /&)
-# Note: To preserve precision, this is not done as *(/# /&).
-cMul ~% ~&   : ~*(% &)
+# (Now done in ConstantFolding())
+#cMul  %  &   : *(% &)
+#cMul  % ~&   : *(% /&)
+## Note: To preserve precision, this is not done as *(/# /&).
+#cMul ~% ~&   : ~*(% &)
 
 # If a min-list contains two or more immeds, replace those immeds
 # with a single immed that is the minimum of the original immeds
-cMin % &     : MIN(% &)
+# (Now done in ConstantFolding())
+#cMin % &     : MIN(% &)
 
 # If a max-list contains two or more immeds, replace those immeds
 # with a single immed that is the maximum of the original immeds
-cMax % &     : MAX(% &)
+# (Now done in ConstantFolding())
+#cMax % &     : MAX(% &)
 
 # If a min-list contains a positive and a negative expression, delete the positive one
-cMin n p     : n
+# (Now done in ConstantFolding())
+#cMin n p     : n
 # Similar for max-list
-cMax n p     : p
-# NOTE: These rules can be deleted once Range Based Constant Folding is implemented.
+#cMax n p     : p
 
 
 # Function call optimization with constant params
 # such as sin(immed)->newimmed, log(immed)->newimmed etc.
-cSin[%]      -> SIN(%)
-cCos[%]      -> COS(%)
-cTan[%]      -> TAN(%)
-cAsin[%]     -> ASIN(%)
-cAcos[%]     -> ACOS(%)
-cAtan[%]     -> ATAN(%)
-cSinh[%]     -> SINH(%)
-cCosh[%]     -> COSH(%)
-cTanh[%]     -> TANH(%)
-cAsinh[%]    -> ASINH(%)
-cAcosh[%]    -> ACOSH(%)
-cAtanh[%]    -> ATANH(%)
-cPow[% &]    -> POW(% &)
-cCeil[%]     -> CEIL(%)
-cFloor[%]    -> FLOOR(%)
-cLog[%]      -> LOG(%)
-cMod[% &]    -> MOD(% &)
-# TODO: equal,nequal,less,lessoreq,greater,greatoreq,not,and,or
-
+# (Now done in ConstantFolding())
+#cSin[%]      -> SIN(%)
+#cCos[%]      -> COS(%)
+#cTan[%]      -> TAN(%)
+#cAsin[%]     -> ASIN(%)
+#cAcos[%]     -> ACOS(%)
+#cAtan[%]     -> ATAN(%)
+#cSinh[%]     -> SINH(%)
+#cCosh[%]     -> COSH(%)
+#cTanh[%]     -> TANH(%)
+#cAsinh[%]    -> ASINH(%)
+#cAcosh[%]    -> ACOSH(%)
+#cAtanh[%]    -> ATANH(%)
+#cPow[% &]    -> POW(% &)
+#cCeil[%]     -> CEIL(%)
+#cFloor[%]    -> FLOOR(%)
+#cLog[%]      -> LOG(%)
+#cMod[% &]    -> MOD(% &)
 
 #### Logical optimizations
 
@@ -712,10 +716,10 @@ cTan [(cAtan [x])] -> x
 
 cAbs [(cAdd [~x])] : x
 
-# abs(negative thing) -> -(negative thing)
-cAbs [m]           -> (cAdd ~m)
-# abs(positive thing) -> positive thing
-cAbs [p]           -> p
+# abs(negative thing) -> -(negative thing) (Now done in ConstantFolding())
+#cAbs [m]           -> (cAdd ~m)
+# abs(positive thing) -> positive thing (Now done in ConstantFolding())
+#cAbs [p]           -> p
 
 # nested abs is redundant
 # but it is already caught by cAbs[p], so the rule itself is redundant
