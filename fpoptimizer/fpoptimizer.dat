@@ -735,6 +735,3 @@ cMul ~(cTan [x])      : (cCot [x])
 
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology
 # Those are done in the bytecode generation automatically.
-
-# Unprotect not-not
-cNotNot[x]     -> cNot [(cNot [x])]

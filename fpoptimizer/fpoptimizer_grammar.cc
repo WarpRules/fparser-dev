@@ -1228,7 +1228,6 @@ namespace
         {SubFunction , true , None  , 1, false, 0,	52	}, /* 1196    	*/
         {NumConstant , false, None  , 1, false, 0,	14	}, /* 1197    	*/
         {SubFunction , true , None  , 1, false, 0,	391	}, /* 1198    	*/
-        {SubFunction , false, None  , 1, false, 0,	393	}, /* 1199    	*/
     };
 
     const MatchedParams mlist[] =
@@ -1920,7 +1919,6 @@ namespace
         {PositionalParams, BalanceDontCare, 1, 1195 }, /* 684 */
         {AnyParams       , BalanceDontCare, 2, 1196 }, /* 685 */
         {PositionalParams, BalanceDontCare, 1, 1198 }, /* 686 */
-        {PositionalParams, BalanceDontCare, 1, 1199 }, /* 687 */
     };
 
     const Function flist[] =
@@ -2318,7 +2316,6 @@ namespace
         {cCot        , 0 }, /* 390 */
         {cLog10      , 0 }, /* 391 */
         {cLog2       , 0 }, /* 392 */
-        {cNot        , 1 }, /* 393 */
     };
 
     const Rule rlist[] =
@@ -2545,7 +2542,6 @@ namespace
         {2, ReplaceParams ,    682,	{ cMul        , 681 } }, /* 219 */
         {2, ReplaceParams ,    684,	{ cMul        , 683 } }, /* 220 */
         {2, ReplaceParams ,    686,	{ cMul        , 685 } }, /* 221 */
-        {1, ProduceNewTree,    687,	{ cNotNot     , 0 } }, /* 222 */
     };
 }
 
@@ -2557,7 +2553,7 @@ namespace FPoptimizer_Grammar
         {
             {0, 1 }, /* 0 */
             {1, 209 }, /* 1 */
-            {210, 13 }, /* 2 */
+            {210, 12 }, /* 2 */
         }
     };
 }

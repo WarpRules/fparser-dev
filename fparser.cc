@@ -1391,7 +1391,7 @@ double FunctionParser::Eval(const double* Vars)
 #                      endif
                          Stack[SP] = 1.0 / sqrt(Stack[SP]); break;
 
-          case cNotNot: break; // Paranoia. These should never exist
+          case cNotNot: Stack[SP] = !!doubleToInt(Stack[SP]); break;
 #endif
 
           case cNop: break;
