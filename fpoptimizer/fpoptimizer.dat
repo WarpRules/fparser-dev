@@ -635,11 +635,11 @@ cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 
 
 # cos(pi/2 - x) = sin(x)
-cCos [(cAdd *(CONSTANT_PI 0.5) x)] -> cSin[x]
+cCos [(cAdd CONSTANT_PIHALF x)] -> cSin[x]
 # sin(pi/2 - x) = cos(x)
-cSin [(cAdd *(CONSTANT_PI 0.5) x)] -> cCos[x]
+cSin [(cAdd CONSTANT_PIHALF x)] -> cCos[x]
 # cot(pi/2 - x) = 1/tan(pi/2 - x) = tan(x)
-cMul [~(cTan [(cAdd *(CONSTANT_PI 0.5) x)])] -> cTan[x]
+cMul [~(cTan [(cAdd CONSTANT_PIHALF x)])] -> cTan[x]
 
 # sin(x)^2 + cos(x)^2 = 1
 cAdd  (cPow[ (cSin[x]) 2]) (cPow [(cCos[x]) 2]) : 1
