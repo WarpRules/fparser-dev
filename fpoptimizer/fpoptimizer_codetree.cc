@@ -14,6 +14,14 @@
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
 
+//#define DEBUG_SUBSTITUTIONS
+
+#ifdef DEBUG_SUBSTITUTIONS
+namespace FPoptimizer_Grammar
+{
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+}
+#endif
 
 namespace FPoptimizer_CodeTree
 {
@@ -201,9 +209,24 @@ namespace FPoptimizer_CodeTree
     }
 
     CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries() const
+#ifdef DEBUG_SUBSTITUTIONS
+    {
+        MinMaxTree tmp = CalculateResultBoundaries_do();
+        std::cout << std::flush;
+        fprintf(stderr, "Estimated boundaries: %g%s .. %g%s: ",
+            tmp.min, tmp.has_min?"":"(unknown)",
+            tmp.max, tmp.has_max?"":"(unknown)");
+        fflush(stderr);
+        FPoptimizer_Grammar::DumpTree(*this);
+        std::cout << std::flush;
+        fprintf(stderr, " \n");
+        fflush(stderr);
+        return tmp;
+    }
+    CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries_do() const
+#endif
     {
         using namespace std;
-
         switch( (OPCODE) Opcode)
         {
             case cImmed:
@@ -227,14 +250,30 @@ namespace FPoptimizer_CodeTree
             {
                 /* cAbs always produces a positive value */
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
-                if(m.min < 0.0 && m.max >= 0.0)
+                if(m.has_min && m.has_max)
                 {
-                    /* -x..+y: spans across zero. min=0, max=greater of |x| and |y|. */
-                    double tmp = -m.min; if(tmp > m.max) m.max = tmp;
-                    m.min = 0.0;
+                    if(m.min < 0.0 && m.max >= 0.0) // ex. -10..+6 or -6..+10
+                    {
+                        /* -x..+y: spans across zero. min=0, max=greater of |x| and |y|. */
+                        double tmp = -m.min; if(tmp > m.max) m.max = tmp;
+                        m.min = 0.0; m.has_min = true;
+                    }
+                    else if(m.min < 0.0) // ex. -10..-4
+                        { double tmp = m.max; m.max = -m.min; m.min = -tmp; }
                 }
-                else if(m.min < 0.0)
-                    { double tmp = m.max; m.max = -m.min; m.min = -tmp; }
+                else if(!m.has_min && m.has_max && m.max < 0.0) // ex. -inf..-10
+                {
+                    m.min = fabs(m.max); m.has_min = true; m.has_max = false;
+                }
+                else if(!m.has_max && m.has_min && m.min > 0.0) // ex. +10..+inf
+                {
+                    m.min = fabs(m.min); m.has_min = true; m.has_max = false;
+                }
+                else // ex. -inf..+inf, -inf..+10, -10..+inf
+                {
+                    // all of these span across zero, and have one end in infinity
+                    m.min = 0.0; m.has_min = true; m.has_max = false;
+                }
                 return m;
             }
 
@@ -374,7 +413,10 @@ namespace FPoptimizer_CodeTree
                 {
                     m.has_min = true; m.min = 1.0; // always a lower boundary
                     if(m.has_max) // max, no min
-                        m.max = cosh(m.max); // 1..inf
+                    {
+                        m.min = cosh(m.max); // n..inf
+                        m.has_max = false; // No upper boundary
+                    }
                     else // no max, no min
                         m.has_max = false; // No upper boundary
                 }
@@ -387,7 +429,7 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree res1 = Params[1].param->CalculateResultBoundaries();
                 MinMaxTree res2 = Params[2].param->CalculateResultBoundaries();
                 if(!res2.has_min) res1.has_min = false; else if(res2.min < res1.min) res1.min = res2.min;
-                if(!res2.has_max) res2.has_max = false; else if(res2.max > res1.max) res2.max = res2.max;
+                if(!res2.has_max) res1.has_max = false; else if(res2.max > res1.max) res1.max = res2.max;
                 return res1;
             }
 
@@ -472,6 +514,7 @@ namespace FPoptimizer_CodeTree
             }
             case cMul:
             {
+                break;
                 /* It's complicated. Follow the logic below. */
                 /* Note: This also deals with the following opcodes:
                  *       cInv, cDiv, cRDiv, cRad, cDeg, cSqr
@@ -482,6 +525,9 @@ namespace FPoptimizer_CodeTree
                 {
                     const Param& p = Params[a];
                     MinMaxTree item = p.param->CalculateResultBoundaries();
+                    if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
+
+                    // item has either a minimum, a maximum, or both
 
                     if(p.sign) // division
                     {
@@ -493,7 +539,43 @@ namespace FPoptimizer_CodeTree
                     }
                     else // multiplication
                     {
+                        if(item.has_max && item.max > 0)
+                        {
+                            if(result.has_min && result.min < 0) result.min *= item.max;
+                            if(result.has_max && result.max > 0) result.max *= item.max;
+                        }
+                        if(!item.has_max)
+                        {
+                            if(result.has_max && result.max > 0) result.has_max = false;
+                            if(result.has_min && result.min < 0) result.has_min = false;
+                        }
+
+                        if(item.has_min && item.min < 0)
+                        {
+                        }
+
+                        if(!item.has_max)
+                        {
+                            // If result can be negative, negative values can be infinite now
+                            // If result can be positive, positive values can be infinite now
+                            if(result.has_min && result.min < 0)  result.has_min = false;
+                            if(result.has_max && result.max > 0)  result.has_max = false;
+                        }
+                        if(!item.has_min)
+                        {
+                            /* FIXME: Is THIS right? */
+                            // If result can be negative, positive values can be infinite now
+                            // If result can be positive, negative values can be infinite now
+                            if(result.has_min && result.min < 0)  result.has_max = false;
+                            if(result.has_max && result.max > 0)  result.has_min = false;
+                        }
+                        if(item.has_min && item.has_max)
+                        {
+
+                        }
+
                         /* FIXME: is this right? */
+                        /* No it's not. -1 * -1 gives us 1 */
                         if(item.has_min) result.min *= item.min;
                         else             result.has_min = false;
                         if(item.has_max) result.max *= item.max;
@@ -526,7 +608,7 @@ namespace FPoptimizer_CodeTree
                         if(!x.has_max || x.max >= 0)
                             return MinMaxTree(y.max, -y.max);
                         else
-                            return MinMaxTree(y.max, -0.0);
+                            return MinMaxTree(y.max, NEGATIVE_MAXIMUM);
                     }
                 }
                 else
@@ -580,8 +662,10 @@ namespace FPoptimizer_CodeTree
                         result_positivity = IsAlways;
                         break;
                     case IsNever:
+                    {
                         result_positivity = p1_evenness;
                         break;
+                    }
                     default:
                         switch(p1_evenness)
                         {
@@ -590,15 +674,58 @@ namespace FPoptimizer_CodeTree
                                 // e.g. x^(-4) = positive
                                 result_positivity = IsAlways;
                                 break;
-                            default:
+                            case IsNever:
                                 break;
+                            case Unknown:
+                            {
+                                /* If p1 is const non-integer,
+                                 * assume the result is positive
+                                 * though it may be NaN instead.
+                                 */
+                                if(Params[1].param->IsImmed()
+                                && !Params[1].param->IsAlwaysInteger()
+                                && Params[1].param->GetImmed() >= 0.0)
+                                {
+                                    result_positivity = IsAlways;
+                                }
+                                break;
+                            }
                         }
                 }
                 switch(result_positivity)
                 {
-                    case IsAlways: return MinMaxTree(0.0, false);
-                    case IsNever: return MinMaxTree(false, 0.0);
-                    default: break;
+                    case IsAlways:
+                    {
+                        /* The result is always positive.
+                         * Figure out whether we know the minimum value. */
+                        double min = 0.0;
+                        if(p0.has_min && p1.has_min)
+                        {
+                            min = pow(p0.min, p1.min);
+                            if(p0.min < 0.0 && (!p1.has_max || p1.max >= 0.0) && min >= 0.0)
+                                min = 0.0;
+                        }
+                        if(p0.has_min && p0.min >= 0.0 && p0.has_max && p1.has_max)
+                        {
+                            double max = pow(p0.max, p1.max);
+                            if(min > max) std::swap(min, max);
+                            return MinMaxTree(min, max);
+                        }
+                        return MinMaxTree(min, false);
+                    }
+                    case IsNever:
+                    {
+                        /* The result is always negative.
+                         * TODO: Figure out whether we know the maximum value.
+                         */
+                        return MinMaxTree(false, NEGATIVE_MAXIMUM);
+                    }
+                    default:
+                    {
+                        /* It can be negative or positive.
+                         * We know nothing about the boundaries. */
+                        break;
+                    }
                 }
                 break;
             }
@@ -681,6 +808,18 @@ namespace FPoptimizer_CodeTree
                 break;
         }
         return false; /* Don't know whether it's integer. */
+    }
+
+    bool CodeTree::IsAlwaysSigned(bool positive) const
+    {
+        MinMaxTree tmp = CalculateResultBoundaries();
+
+        if(positive)
+            return tmp.has_min && tmp.min >= 0.0
+              && (!tmp.has_max || tmp.max >= 0.0);
+        else
+            return tmp.has_max && tmp.max < 0.0
+              && (!tmp.has_min || tmp.min < 0.0);
     }
 }
 

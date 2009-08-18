@@ -398,10 +398,10 @@ double f42(double* p)
 
 double f43(double* p)
 {
-#define P43 "log(x*x)" , "x", f43, 1, -100, 100, .03, false
+#define P43 "log(x*x)+abs(exp(abs(x)+1))" , "x", f43, 1, -100, 100, .03, false
     double x = p[0];
     double xx = x*x;
-    return log(xx);
+    return log(xx)+abs(exp(abs(x)+1));
 }
 
 double f44(double* p)

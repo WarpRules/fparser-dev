@@ -447,10 +447,10 @@ cMul ~(cPow [x %])           : (cPow [x -%])
 
 # (x^g)^z        -> x^(g*z)  (g is not an even integer)
 cPow [ (cPow[x g]) z ]       : x (cMul [g z])
-
 # (x^e)^z        -> abs(x)^(e*z)  (e is an even integer)
 cPow [ (cPow[x e]) z ]       : (cAbs [x]) (cMul [e z])
 
+cPow [(cPow [p y]) z]        : p (cMul [y z])
 
 #### Constant folding:
 

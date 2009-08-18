@@ -1404,42 +1404,6 @@ namespace FPoptimizer_Grammar
         DumpParams(pack.mlist[fitem.index]);
         std::cout << ')';
     }
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
-    {
-        //std::cout << "/*" << tree.Depth << "*/";
-        const char* sep2 = "";
-        //std::cout << '[' << std::hex << tree.Hash << ']' << std::dec;
-        switch(tree.Opcode)
-        {
-            case cImmed: std::cout << tree.Value; return;
-            case cVar:   std::cout << "Var" << tree.Var; return;
-            case cAdd: sep2 = " +"; break;
-            case cMul: sep2 = " *"; break;
-            case cAnd: sep2 = " &"; break;
-            case cOr: sep2 = " |"; break;
-            default:
-                std::cout << FP_GetOpcodeName(tree.Opcode);
-                if(tree.Opcode == cFCall || tree.Opcode == cPCall)
-                    std::cout << ':' << tree.Funcno;
-        }
-        std::cout << '(';
-        if(tree.Params.size() <= 1 && *sep2) std::cout << (sep2+1) << ' ';
-        for(size_t a=0; a<tree.Params.size(); ++a)
-        {
-            if(a > 0) std::cout << ' ';
-            if(tree.Params[a].sign) std::cout << '~';
-
-            DumpTree(*tree.Params[a].param);
-
-            if(tree.Params[a].param->Parent != &tree)
-            {
-                std::cout << "(?""?""?))";
-            }
-
-            if(a+1 < tree.Params.size()) std::cout << sep2;
-        }
-        std::cout << ')';
-    }
     void DumpMatch(const Function& input,
                    const FPoptimizer_CodeTree::CodeTree& tree,
                    const MatchedParams& replacement,
@@ -1489,6 +1453,42 @@ namespace FPoptimizer_Grammar
                 std::cout << "         <" << i->first << "> = <empty>\n";
         }
         std::cout << std::flush;
+    }
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
+    {
+        //std::cout << "/*" << tree.Depth << "*/";
+        const char* sep2 = "";
+        //std::cout << '[' << std::hex << tree.Hash << ']' << std::dec;
+        switch(tree.Opcode)
+        {
+            case cImmed: std::cout << tree.Value; return;
+            case cVar:   std::cout << "Var" << tree.Var; return;
+            case cAdd: sep2 = " +"; break;
+            case cMul: sep2 = " *"; break;
+            case cAnd: sep2 = " &"; break;
+            case cOr: sep2 = " |"; break;
+            default:
+                std::cout << FP_GetOpcodeName(tree.Opcode);
+                if(tree.Opcode == cFCall || tree.Opcode == cPCall)
+                    std::cout << ':' << tree.Funcno;
+        }
+        std::cout << '(';
+        if(tree.Params.size() <= 1 && *sep2) std::cout << (sep2+1) << ' ';
+        for(size_t a=0; a<tree.Params.size(); ++a)
+        {
+            if(a > 0) std::cout << ' ';
+            if(tree.Params[a].sign) std::cout << '~';
+
+            DumpTree(*tree.Params[a].param);
+
+            if(tree.Params[a].param->Parent != &tree)
+            {
+                std::cout << "(?""?""?))";
+            }
+
+            if(a+1 < tree.Params.size()) std::cout << sep2;
+        }
+        std::cout << ')';
     }
 #endif
 }

@@ -150,20 +150,13 @@ namespace FPoptimizer_CodeTree
          * of the tree's result. If an estimate cannot be made,
          * has_min/has_max are indicated as false.
          */
+        MinMaxTree CalculateResultBoundaries_do() const;
         MinMaxTree CalculateResultBoundaries() const;
 
         enum TriTruthValue { IsAlways, IsNever, Unknown };
         TriTruthValue GetEvennessInfo() const;
 
-        bool IsAlwaysSigned(bool positive) const
-            { MinMaxTree tmp = CalculateResultBoundaries();
-              if(positive)
-                  return tmp.has_min && tmp.min >= 0.0
-                    && (!tmp.has_max || tmp.max >= 0.0);
-              else
-                  return tmp.has_max && tmp.max < 0.0
-                    && (!tmp.has_min || tmp.min < 0.0);
-            }
+        bool IsAlwaysSigned(bool positive) const;
         bool IsAlwaysParity(bool odd) const
             { return GetEvennessInfo() == (odd?IsNever:IsAlways); }
         bool IsAlwaysInteger() const;
