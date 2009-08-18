@@ -286,7 +286,6 @@ namespace FPoptimizer_CodeTree
             case cMul:
             {
                 // If one sub-expression evalutes to exact zero, yield zero.
-              {
                 double mul_immed_sum = 1.0, div_immed_sum = 1.0;
                 size_t n_mul_immeds = 0, n_div_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<Params.size(); ++a)
@@ -304,6 +303,16 @@ namespace FPoptimizer_CodeTree
                 if(n_div_immeds + n_mul_immeds > 1) needs_resynth = true;
                 if(mul_immed_sum != 1.0 && div_immed_sum != 1.0)
                     { mul_immed_sum /= div_immed_sum; div_immed_sum = 1.0; }
+                /* Invert div-immeds when they can be safely
+                 * inverted without loss of precision */
+                if(div_immed_sum != 1.0)
+                {
+                    /* FIXME: Is this safe? Won't the compiler "optimize" the check? */
+                    double d = mul_immed_sum / div_immed_sum;
+                    double e = mul_immed_sum / d;
+                    if(e == div_immed_sum)
+                        { mul_immed_sum /= div_immed_sum; div_immed_sum = 1.0; }
+                }
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
@@ -321,7 +330,6 @@ namespace FPoptimizer_CodeTree
                     if(div_immed_sum != 1.0)
                         AddParam( Param(new CodeTree(div_immed_sum), true) );
                 }
-              }
                 if(Params.size() == 1 && !Params[0].sign)
                 {
                     // Replace self with the single operand
@@ -554,6 +562,10 @@ namespace FPoptimizer_CodeTree
                  * If x is +-0 and y < 0, -pi/2 is returned
                  * If x is +-0 and y > 0, +pi/2 is returned
                  * Otherwise, perform constant folding when available
+                 * If we know x <> 0, convert into atan(y / x)
+                 *   TODO: Figure out whether the above step is wise
+                 *         It allows e.g. atan2(6*x, 3*y) -> atan(2*x/y)
+                 *         when we know y != 0
                  */
                 MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
@@ -575,6 +587,21 @@ namespace FPoptimizer_CodeTree
                     { const_value = atan2(Params[0].param->GetImmed(),
                                           Params[1].param->GetImmed());
                       goto ReplaceTreeWithConstValue; }
+              #if 0
+                if((p1.has_min && p1.min > 0.0)
+                || (p1.has_max && p1.max < NEGATIVE_MAXIMUM))
+                {
+                    // Convert into a division
+                    CodeTreeP subtree = new CodeTree;
+                    Params[1].sign = true;
+                    for(size_t a=0; a<Params.size(); ++a)
+                        Params[a].param->Parent = &*subtree;
+                    subtree->Opcode = cMul;
+                    subtree->Params.swap(Params); // subtree = y/x
+                    Opcode = cAtan;
+                    AddParam(Param(subtree, false)); // we = atan(y/x)
+                }
+              #endif
                 break;
             }
 

@@ -788,3 +788,6 @@ cMul ~(cTan [x])      : (cCot [x])
 
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology
 # Those are done in the bytecode generation automatically.
+
+cAtan [(cMul y ~x <1> ~<2>)] -> cAtan2 [(cMul y <1>) (cMul x <2>)]
+# ^Nice, but not doable without ConstantFolding() reverting it
