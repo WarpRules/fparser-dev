@@ -599,6 +599,41 @@ cTan [(cAdd [~x])] -> cAdd ~(cTan [x])
 # cos(-x) = cos(x)
 cCos [(cAdd [~x])] : x
 
+# sinh(-x) = -sinh(x)
+cSinh [(cAdd [~x])] -> cAdd [~(cSinh [x])]
+# cosh(-x) = cosh(x)
+cCosh [(cAdd [~x])] : x
+
+# sinh(x)*2 = (exp(x)-  exp(-x))
+# sinh(x)*2 = (exp(x)-1/exp(x))
+# cosh(x)*2 = (exp(x)+  exp(-x))
+# cosh(x)*2 = (exp(x)+1/exp(x))
+cAdd (cPow [CONSTANT_E x]) ~(cMul [~(cPow [CONSTANT_E x])]) : (cMul (cSinh [x]) 2)
+cAdd (cPow [CONSTANT_E x])  (cMul [~(cPow [CONSTANT_E x])]) : (cMul (cCosh [x]) 2)
+
+# Because sinh(-x) = -sinh(x),
+# sinh(x)*-2 = (exp(-x)-exp(x))
+cAdd ~(cPow [CONSTANT_E x]) (cMul [~(cPow [CONSTANT_E x])]) : (cMul (cSinh [x]) -2)
+
+# exp(x)  = cosh(x)+sinh(x)
+# exp(-x) = cosh(x)-sinh(x)
+cAdd  (cCosh [x])  (cSinh [x]) : (cPow [CONSTANT_E x])
+cAdd  (cCosh [x]) ~(cSinh [x]) : (cMul [~(cPow [CONSTANT_E x])])
+cAdd ~(cCosh [x]) ~(cSinh [x]) : ~(cPow [CONSTANT_E x])
+cAdd ~(cCosh [x])  (cSinh [x]) : ~(cMul [~(cPow [CONSTANT_E x])])
+cAdd  (cCosh [x]) ~(cPow [CONSTANT_E x]) : (cSinh [x])
+cAdd  (cSinh [x]) ~(cPow [CONSTANT_E x]) : (cCosh [x])
+cAdd ~(cCosh [x])  (cPow [CONSTANT_E x]) : ~(cSinh [x])
+cAdd ~(cSinh [x])  (cPow [CONSTANT_E x]) : ~(cCosh [x])
+
+# sinh(acosh(x)) = sqrt(x^2 - 1)  (not a typo)
+# cosh(asinh(x)) = sqrt(x^2 + 1)  (not a typo)
+#  Not sure whether these are faster. They are more opcodes, but
+#  simpler. The rationale is in allowing for further optimizations.
+cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
+cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
+
+
 # cos(pi/2 - x) = sin(x)
 cCos [(cAdd *(CONSTANT_PI 0.5) x)] -> cSin[x]
 # sin(pi/2 - x) = cos(x)
