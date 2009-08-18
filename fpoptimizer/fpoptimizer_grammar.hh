@@ -184,6 +184,6 @@ namespace FPoptimizer_Grammar
         const MatchedParams*  mlist;
         const Function*       flist;
         const Rule*           rlist;
-        Grammar               glist[3];
+        Grammar               glist[4];
     } pack;
 }

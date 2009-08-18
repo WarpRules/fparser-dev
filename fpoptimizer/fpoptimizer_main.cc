@@ -25,13 +25,16 @@ void FunctionParser::Optimize()
     FPoptimizer_CodeTree::CodeTreeP tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(*tree))
+    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(*tree)) // entry
         {}
 
-    while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(*tree))
+    while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(*tree)) // intermediate
         {}
 
-    while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(*tree))
+    while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(*tree)) // final1
+        {}
+
+    while(FPoptimizer_Grammar::pack.glist[3].ApplyTo(*tree)) // final2
         {}
 
     tree->Sort_Recursive();

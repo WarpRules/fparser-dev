@@ -199,6 +199,7 @@ namespace FPoptimizer_CodeTree
                     Opcode = Params[0].sign ? cNot : cNotNot;
                     Params[0].sign = false;
                 }
+                if(Params.empty()) goto ReplaceTreeWithZero;
                 break;
             }
             case cOr:
@@ -232,6 +233,7 @@ namespace FPoptimizer_CodeTree
                     Opcode = Params[0].sign ? cNot : cNotNot;
                     Params[0].sign = false;
                 }
+                if(Params.empty()) goto ReplaceTreeWithOne;
                 break;
             }
             case cNot:
@@ -335,6 +337,7 @@ namespace FPoptimizer_CodeTree
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
                 }
+                if(Params.empty()) goto ReplaceTreeWithOne;
                 break;
             }
             case cAdd:
@@ -375,6 +378,7 @@ namespace FPoptimizer_CodeTree
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
                 }
+                if(Params.empty()) goto ReplaceTreeWithZero;
                 break;
             }
             case cMin:
@@ -1784,6 +1788,8 @@ namespace FPoptimizer_Grammar
                                  result = std::floor(result); break;
                     case cLog: if(!pack.plist[index].GetConst(match, result))return false;
                                result = std::log(result); break;
+                    case cExp: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::exp(result); break;
                     case cLog2: if(!pack.plist[index].GetConst(match, result))return false;
                                 result = std::log(result) * CONSTANT_L2I;
                                 //result = std::log2(result);
@@ -1807,6 +1813,8 @@ namespace FPoptimizer_Grammar
                         break;
                     }
                     default:
+                        fprintf(stderr, "Unknown macro opcode: %s\n",
+                            FP_GetOpcodeName(opcode).c_str());
                         return false;
                 }
             }

@@ -536,6 +536,25 @@ namespace FPoptimizer_CodeTree
                         }
                 }
 
+                if(Opcode == cMul)
+                {
+                    // If there are inverted sin/cos/tan operations, change to csc/sec/cot
+                    for(size_t a=0; a<Params.size(); ++a)
+                        if(Params[a].sign)
+                            switch(Params[a].param->Opcode)
+                            {
+                                case cSin:
+                                    Params[a].param->Opcode = cCsc; Params[a].sign=false;
+                                    break;
+                                case cCos:
+                                    Params[a].param->Opcode = cSec; Params[a].sign=false;
+                                    break;
+                                case cTan:
+                                    Params[a].param->Opcode = cCot; Params[a].sign=false;
+                                    break;
+                            }
+                }
+
                 // Try to ensure that Immeds don't have a sign
                 for(size_t a=0; a<Params.size(); ++a)
                 {
@@ -677,7 +696,22 @@ namespace FPoptimizer_CodeTree
                 const Param& p0 = Params[0];
                 const Param& p1 = Params[1];
 
-                if(!p1.param->IsLongIntegerImmed()
+                if(p1.param->IsImmed() && p1.param->GetImmed() == 0.5)
+                {
+                    p0.param->SynthesizeByteCode(synth);
+                    synth.AddOperation(cSqrt, 1);
+                }
+                else if(p1.param->IsImmed() && p1.param->GetImmed() == -0.5)
+                {
+                    p0.param->SynthesizeByteCode(synth);
+                    synth.AddOperation(cRSqrt, 1);
+                }
+                else if(p0.param->IsImmed() && p0.param->GetImmed() == CONSTANT_E)
+                {
+                    p1.param->SynthesizeByteCode(synth);
+                    synth.AddOperation(cExp, 1);
+                }
+                else if(!p1.param->IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         *p0.param, p1.param->GetLongIntegerImmed(),
                         MulSequence,
