@@ -400,6 +400,52 @@ double f43(double* p)
     return log(xx);
 }
 
+double f44(double* p)
+{
+#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + 1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + 1.7*(x^9)^(1/2)" , "x", f44, 1, 0, 100, .025, false
+    const double x = p[0];
+    const double x2 = x*x, x3 = x*x*x;
+    const double x4 = x2*x2, x5 = x3*x2, x6 = x3*x3;
+    const double x7 = x6*x, x8 = x6*x2, x9 = x6*x3;
+    return pow(x2, 1.0/8.0) +
+        1.1 * pow(x3, 1.0/7.0) +
+        1.2 * pow(x4, 1.0/6.0) +
+        1.3 * pow(x5, 1.0/5.0) +
+        1.4 * pow(x6, 1.0/6.0) +
+        1.5 * pow(x7, 1.0/4.0) +
+        1.6 * pow(x8, 1.0/3.0) +
+        1.7 * pow(x9, 1.0/2.0);
+}
+
+double f45(double* p)
+{
+#define P45 "(x^2)^(1/7) + 1.1*(x^4)^(1/5) + 1.2*(x^6)^(1/3)" , "x", f45, 1, -10, 10, .025, false
+    const double x = p[0];
+    const double x2 = x*x;
+    const double x4 = x2*x2;
+    const double x6 = x4*x2;
+    return pow(x2, 1.0/7.0) +
+        1.1*pow(x4, 1.0/5.0) +
+        1.2*pow(x6, 1.0/3.0);
+}
+
+double f46(double* p)
+{
+#define P46 "abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) + (acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9)" , "x,y", f46, 2, -.9, .9, .015, false
+    const double x = p[0], y = p[1];
+    return abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) +
+        (acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9);
+}
+
+double f47(double* p)
+{
+#define P47 "1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) + 1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) + 1.5*(cosh(y)+sinh(y))" , "x,y", f47, 2, -10, 10, .1, false
+    const double x = p[0], y = p[1];
+    return 1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) +
+        1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) +
+        1.5*(cosh(y)+sinh(y));
+}
+
 namespace
 {
     Test tests[] =
@@ -416,7 +462,8 @@ namespace
 #ifndef FP_NO_ASINH
         { P38 },
 #endif
-        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }
+        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 },
+        { P46 }, { P47 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
