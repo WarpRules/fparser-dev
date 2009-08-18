@@ -479,6 +479,13 @@ cMin % &     : MIN(% &)
 # with a single immed that is the maximum of the original immeds
 cMax % &     : MAX(% &)
 
+# If a min-list contains a positive and a negative expression, delete the positive one
+cMin n p     : n
+# Similar for max-list
+cMax n p     : p
+# NOTE: These rules can be deleted once Range Based Constant Folding is implemented.
+
+
 # Function call optimization with constant params
 # such as sin(immed)->newimmed, log(immed)->newimmed etc.
 cSin[%]      -> SIN(%)
@@ -711,7 +718,8 @@ cAbs [m]           -> (cAdd ~m)
 cAbs [p]           -> p
 
 # nested abs is redundant
-cAbs [(cAbs [x])] : x
+# but it is already caught by cAbs[p], so the rule itself is redundant
+#cAbs [(cAbs [x])] : x
 
 # abs(x)^e -> x^e when e=even integer
 cPow [(cAbs[x]) e] : x e
@@ -722,8 +730,6 @@ cAbs [(cMul  p <1> ~<2>)] -> cMul  p (cAbs [(cMul <1> ~<2>)])
 cAbs [(cMul ~p <1> ~<2>)] -> cMul ~p (cAbs [(cMul <1> ~<2>)])
 cAbs [(cMul  n <1> ~<2>)] -> cMul  (cAdd ~n) (cAbs [(cMul <1> ~<2>)])
 cAbs [(cMul ~n <1> ~<2>)] -> cMul ~(cAdd ~n) (cAbs [(cMul <1> ~<2>)])
-
-# TODO: abs sqr -> sqr, sqr abs -> sqr, sqrt abs -> sqrt, sqrt abs sqr -> ""
 
 
 [FINAL]

@@ -311,12 +311,13 @@ namespace FPoptimizer_CodeTree
             case cAcos: /* defined for -1.0 <= x < 1, results within CONSTANT_PI..0 */
             {
                 /* Somewhat complicated to narrow down from this */
+                /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree( 0.0, CONSTANT_PI );
             }
             case cAsin: /* defined for -1.0 <= x < 1, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
                 /* Somewhat complicated to narrow down from this */
-                /* A resourceful programmer may add it later. */
+                /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree( -CONSTANT_PIHALF, CONSTANT_PIHALF );
             }
             case cAtan: /* defined for all values -inf <= x <= inf */
@@ -329,7 +330,7 @@ namespace FPoptimizer_CodeTree
             case cAtan2: /* too complicated to estimate */
             {
                 /* Somewhat complicated to narrow down from this */
-                /* A resourceful programmer may add it later. */
+                /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree(-CONSTANT_PI, CONSTANT_PI);
             }
 
@@ -339,7 +340,7 @@ namespace FPoptimizer_CodeTree
                 /* Could be narrowed down from here,
                  * but it's too complicated due to
                  * the cyclic nature of the function. */
-                /* A resourceful programmer may add it later. */
+                /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree(-1.0, 1.0);
             }
             case cTan:
@@ -347,7 +348,7 @@ namespace FPoptimizer_CodeTree
                 /* Could be narrowed down from here,
                  * but it's too complicated due to
                  * the cyclic nature of the function */
-                /* A resourceful programmer may add it later. */
+                /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree(); // (CONSTANT_NEG_INF, CONSTANT_POS_INF);
             }
 
@@ -532,6 +533,7 @@ namespace FPoptimizer_CodeTree
                     if(p.sign) // division
                     {
                         /* FIXME: is this right? */
+                        /* FIXME: Be careful about dividing by zero */
                         if(item.has_min) result.max /= item.min;
                         else             result.has_max = false;
                         if(item.has_max) result.min /= item.max;
