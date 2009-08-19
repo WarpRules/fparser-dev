@@ -23,6 +23,8 @@
 
 namespace
 {
+    const bool verbose = false;
+
     // Auxiliary functions
     // -------------------
 #ifndef _MSC_VER /* workaround for compiler bug? MSC 15.0 */
@@ -38,6 +40,8 @@ namespace
     inline double csc(double x) { return 1.0 / std::sin(x); }
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
+
+    inline bool toBool(double x) { return int(floor(x+.5)) != 0; }
 
     double Sqr(const double* p)
     {
@@ -121,19 +125,19 @@ double f7(double* p)
 }
 double f8(double* p)
 {
-#define P8 "atan2(x,y)+max(x,y)", "x,y", f8, 2, -10, 10,.025, false
+#define P8 "atan2(x,y)+max(x,y)", "x,y", f8, 2, -10, 10,.05, false
     double x = p[0], y = p[1];
     return atan2(x,y) + (x>y ? x : y);
 }
 double f9(double* p)
 {
-#define P9 "1.5+x*y-2+4/8+z+z+z+z+x/(y*z)", "x,y,z", f9, 3, 1, 21, .25, false
+#define P9 "1.5+x*y-2+4/8+z+z+z+z+x/(y*z)", "x,y,z", f9, 3, 1, 21, .3, false
     double x = p[0], y = p[1], z = p[2];
     return 1.5+x*y-2.0+4.0/8.0+z+z+z+z+x/(y*z);
 }
 double f10(double* p)
 {
-#define P10 "1+sin(cos(max(1+2+3+4+5, x+y+z)))+2", "x,y,z", f10, 3, 1, 21, .25, false
+#define P10 "1+sin(cos(max(1+2+3+4+5, x+y+z)))+2", "x,y,z", f10, 3, 1, 21, .3, false
     double x = p[0], y = p[1], z = p[2];
     return 1.0+sin(cos(max(1.0+2.0+3.0+4.0+5.0, x+y+z)))+2.0;
 }
@@ -163,7 +167,7 @@ double f14(double* p)
 }
 double f15(double* p)
 {
-#define P15 "x^y/log(y) + log(x)/log(y) + log(x^y)", "x,y", f15, 2, 1.1, 8, .01, false
+#define P15 "x^y/log(y) + log(x)/log(y) + log(x^y)", "x,y", f15, 2, 1.1, 8, .02, false
     double x = p[0], y = p[1];
     return pow(x,y)/log(y) + log(x)/log(y) + log(pow(x,y));
 }
@@ -361,7 +365,7 @@ double f38(double* p)
 double f39(double* p)
 {
 #define P39Code sin(x+cos(y*1.5))-cos(x+sin(y*1.5))+z*z*z*sin(z*z*z-x*x-y*y)-cos(y*1.5)*sin(x+cos(y*1.5))+x*y*z+x*y*2.5+x*y*z*cos(x)+x*y*cos(x)+x*z*cos(x)+y*z*2.5+(x*y*z*cos(x)-x*y*z-y*cos(x)-x*z*y+x*y+x*z-cos(x)*x)
-#define P39 Stringify(P39Code), "x,y,z", f39, 3, -2, 2, .075, false
+#define P39 Stringify(P39Code), "x,y,z", f39, 3, -2, 2, .08, false
     double x = p[0], y = p[1], z = p[2];
     return P39Code;
 }
@@ -402,7 +406,7 @@ double f43(double* p)
 
 double f44(double* p)
 {
-#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + 1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + 1.7*(x^9)^(1/2)" , "x", f44, 1, 0, 100, .025, false
+#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + 1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + 1.7*(x^9)^(1/2) + 1.8*(sqrt(abs(-sqrt(x))^3))" , "x", f44, 1, 0, 100, .025, false
     const double x = p[0];
     const double x2 = x*x, x3 = x*x*x;
     const double x4 = x2*x2, x5 = x3*x2, x6 = x3*x3;
@@ -414,7 +418,8 @@ double f44(double* p)
         1.4 * pow(x6, 1.0/6.0) +
         1.5 * pow(x7, 1.0/4.0) +
         1.6 * pow(x8, 1.0/3.0) +
-        1.7 * pow(x9, 1.0/2.0);
+        1.7 * pow(x9, 1.0/2.0) +
+        1.8 * sqrt(pow(abs(-sqrt(x)), 3));
 }
 
 double f45(double* p)
@@ -446,6 +451,14 @@ double f47(double* p)
         1.5*(cosh(y)+sinh(y));
 }
 
+double f48(double* p)
+{
+#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + !(x | !(x/4))" , "x", f48, 1, 1, 100, .01, false
+    const double x = p[0];
+    return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) +
+        (!(toBool(x) || !toBool(x/4)));
+}
+
 namespace
 {
     Test tests[] =
@@ -463,7 +476,7 @@ namespace
         { P38 },
 #endif
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 },
-        { P46 }, { P47 }
+        { P46 }, { P47 }, { P48 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
@@ -509,7 +522,7 @@ bool TestCopyingDeepCopy(FunctionParser p)
 
 bool TestCopying()
 {
-    std::cout << "*** Testing copy constructor and assignment..." << std::endl;
+    std::cout << "- Testing copy constructor and assignment..." << std::endl;
 
     bool retval = true;
     double vars[2] = { 2, 5 };
@@ -593,7 +606,7 @@ bool TestCopying()
 //=========================================================================
 bool TestErrorSituations()
 {
-    std::cout << "*** Testing error situations..." << std::endl;
+    std::cout << "- Testing error situations..." << std::endl;
 
     bool retval = true;
     FunctionParser fp, tmpfp;
@@ -725,7 +738,7 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
 
 bool WhiteSpaceTest()
 {
-    std::cout << "*** Testing whitespaces..." << std::endl;
+    std::cout << "- Testing whitespaces..." << std::endl;
 
     FunctionParser fp;
     fp.AddConstant("const", 1.5);
@@ -789,7 +802,7 @@ bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
 
 bool TestIntPow()
 {
-    std::cout << "*** Testing integral powers..." << std::endl;
+    std::cout << "- Testing integral powers..." << std::endl;
 
     FunctionParser fp;
 
@@ -993,7 +1006,7 @@ namespace
 
 bool UTF8Test()
 {
-    std::cout << "*** Testing UTF8..." << std::flush;
+    std::cout << "- Testing UTF8..." << std::flush;
 
     CharIter iters[4] =
         { CharIter(true, false), CharIter(false, true), CharIter(false, false),
@@ -1085,7 +1098,7 @@ bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
 
 bool TestIdentifiers()
 {
-    std::cout << "*** Testing identifiers..." << std::endl;
+    std::cout << "- Testing identifiers..." << std::endl;
 
     FunctionParser fParser;
     std::vector<std::string> identifierNames(26*26, std::string("AA"));
@@ -1168,7 +1181,7 @@ bool TestIdentifiers()
 //=========================================================================
 // Main test function
 //=========================================================================
-bool runTest(unsigned testIndex, FunctionParser& fp)
+bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
 {
     double vars[10];
 
@@ -1197,6 +1210,12 @@ bool runTest(unsigned testIndex, FunctionParser& fp)
 
         if(fabs(diff) > Epsilon)
         {
+            if(!verbose)
+                std::cout << "\nFunction:\n\"" << tests[testIndex].funcString
+                          << "\"\n("
+                          << (wasOptimized ? "After optimization)" :
+                              "Not optimized)");
+
             std::cout << std::endl << "Error: For (";
             for(unsigned ind = 0; ind < tests[testIndex].paramAmount; ++ind)
                 std::cout << (ind>0 ? ", " : "") << vars[ind];
@@ -1223,8 +1242,6 @@ bool runTest(unsigned testIndex, FunctionParser& fp)
 //=========================================================================
 int main()
 {
-    std::cout << "Performing tests..." << std::endl;
-
     FunctionParser fp0;
     fp0.setDelimiterChar('}');
     int res = fp0.Parse("x+y } ", "x,y");
@@ -1271,12 +1288,12 @@ int main()
     }
 
     FunctionParser SqrFun, SubFun, ValueFun;
-    std::cout << "Parsing SqrFun... "; SqrFun.Parse("x*x", "x");
-    std::cout << std::endl;
-    std::cout << "Parsing SubFun... "; SubFun.Parse("x-y", "x,y");
-    std::cout << std::endl;
-    std::cout << "Parsing ValueFun... "; ValueFun.Parse("5", "");
-    std::cout << std::endl;
+    if(verbose) std::cout << "Parsing SqrFun... "; SqrFun.Parse("x*x", "x");
+    if(verbose) std::cout << std::endl;
+    if(verbose) std::cout << "Parsing SubFun... "; SubFun.Parse("x-y", "x,y");
+    if(verbose) std::cout << std::endl;
+    if(verbose) std::cout << "Parsing ValueFun... "; ValueFun.Parse("5", "");
+    if(verbose) std::cout << std::endl;
 
     ret = fp.AddFunction("psqr", SqrFun);
     ret &= fp.AddFunction("psub", SubFun);
@@ -1310,6 +1327,8 @@ int main()
 #if(1)
     // Main testing loop
     // -----------------
+    std::cout << "- Performing regression tests..." << std::endl;
+
     for(unsigned i = FIRST_TEST; i < testsAmount; ++i)
     {
         int retval = fp.Parse(tests[i].funcString, tests[i].paramString,
@@ -1323,27 +1342,36 @@ int main()
         }
 
         //fp.PrintByteCode(std::cout);
-        std::cout << /*std::right <<*/ std::setw(2) << i+1 << ": \""
-                  << tests[i].funcString << "\" (" <<
-            pow((tests[i].paramMax-tests[i].paramMin)/tests[i].paramStep,
-                static_cast<double>(tests[i].paramAmount))
-                  << " param. combinations): " << std::flush;
+        if(verbose)
+            std::cout << /*std::right <<*/ std::setw(2) << i+1 << ": \""
+                      << tests[i].funcString << "\" (" <<
+                pow((tests[i].paramMax-tests[i].paramMin)/tests[i].paramStep,
+                    static_cast<double>(tests[i].paramAmount))
+                      << " param. combinations): " << std::flush;
+        else
+            std::cout << i+1 << std::flush << " ";
 
-        if(!runTest(i, fp)) return 1;
-        std::cout << "Ok." << std::endl;
+        if(!runTest(i, fp, false)) return 1;
+
+        if(verbose) std::cout << "Ok." << std::endl;
 
         fp.Optimize();
         //fp.PrintByteCode(std::cout);
-        std::cout << "    Optimized: " << std::flush;
-        if(!runTest(i, fp)) return 1;
 
-        std::cout << "(Calling Optimize() several times) " << std::flush;
+        if(verbose) std::cout << "    Optimized: " << std::flush;
+        if(!runTest(i, fp, true)) return 1;
+
+        if(verbose)
+            std::cout << "(Calling Optimize() several times) " << std::flush;
+
         for(int j = 0; j < 20; ++j)
             fp.Optimize();
-        if(!runTest(i, fp)) return 1;
+        if(!runTest(i, fp, true)) return 1;
 
-        std::cout << "Ok." << std::endl;
+        if(verbose) std::cout << "Ok." << std::endl;
     }
+
+    if(!verbose) std::cout << "Ok." << std::endl;
 #endif
 
 
