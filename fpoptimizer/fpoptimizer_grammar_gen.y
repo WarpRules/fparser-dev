@@ -1124,6 +1124,7 @@ void FPoptimizerGrammarParser::yyerror(char* msg)
         if(c == EOF) break;
         std::fputc(c, stderr);
     }
+    exit(1);
 }
 
 int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
