@@ -521,6 +521,36 @@ namespace FPoptimizer_CodeTree
             case cAnd:
             case cOr:
             {
+                switch(Opcode) // Recreate inversions and negations
+                {
+                    case cMul:
+                        for(size_t a=0; a<Params.size(); ++a)
+                            if(Params[a].param->Opcode == cPow
+                            && Params[a].param->Params[1].param->IsImmed()
+                            && Params[a].param->Params[1].param->GetImmed() == -1)
+                            {
+                                Params[a] = Params[a].param->Params[0];
+                                Params[a].param->Parent = this;
+                                Params[a].sign = true;
+                            }
+                        break;
+                    case cAdd:
+                        for(size_t a=0; a<Params.size(); ++a)
+                            if(Params[a].param->Opcode == cMul)
+                            {
+                                // if the mul group has a -1 constant...
+                                CodeTree& mulgroup = *Params[a].param;
+                                for(size_t b=mulgroup.Params.size(); b-- > 0; )
+                                    if(mulgroup.Params[b].param->IsImmed()
+                                    && mulgroup.Params[b].param->GetImmed() == -1)
+                                    {
+                                        mulgroup.Params.erase(mulgroup.Params.begin()+b);
+                                        Params[a].sign = !Params[a].sign;
+                                    }
+                            }
+                        break;
+                }
+
                 // Operand re-sorting:
                 // If the first param has a sign, try to find a param
                 // that does _not_ have a sign and put it first.
@@ -534,25 +564,6 @@ namespace FPoptimizer_CodeTree
                             std::swap(Params[0], Params[a]);
                             break;
                         }
-                }
-
-                if(Opcode == cMul)
-                {
-                    // If there are inverted sin/cos/tan operations, change to csc/sec/cot
-                    for(size_t a=0; a<Params.size(); ++a)
-                        if(Params[a].sign)
-                            switch(Params[a].param->Opcode)
-                            {
-                                case cSin:
-                                    Params[a].param->Opcode = cCsc; Params[a].sign=false;
-                                    break;
-                                case cCos:
-                                    Params[a].param->Opcode = cSec; Params[a].sign=false;
-                                    break;
-                                case cTan:
-                                    Params[a].param->Opcode = cCot; Params[a].sign=false;
-                                    break;
-                            }
                 }
 
                 // Try to ensure that Immeds don't have a sign

@@ -28,8 +28,9 @@ namespace FPoptimizer_Grammar
 
     enum SpecialOpcode
     {
-        NumConstant = 0xFFFB, // Holds a particular value (syntax-time constant)
+        NumConstant = 0xFFFA, // Holds a particular value (syntax-time constant)
         ImmedHolder,          // Holds a particular immed
+        NegativeImmedHolder,  // Holds a particular negative immed
         NamedHolder,          // Holds a particular named param (of any kind)
         SubFunction,          // Holds an opcode and the params
         RestHolder            // Holds anything else
@@ -121,6 +122,7 @@ namespace FPoptimizer_Grammar
 
         // For NumConstant:   index to clist[]
         // For ImmedHolder:   index is the slot
+        // For NegativeImmedHolder: index is the slot
         // For RestHolder:    index is the slot
         // For NamedHolder:   index is the slot
         // For SubFunction:   index to flist[]

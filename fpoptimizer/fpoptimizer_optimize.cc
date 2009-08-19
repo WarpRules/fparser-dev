@@ -287,52 +287,36 @@ namespace FPoptimizer_CodeTree
             }
             case cMul:
             {
+            NowWeAreMulGroup: ;
                 // If one sub-expression evalutes to exact zero, yield zero.
-                double mul_immed_sum = 1.0, div_immed_sum = 1.0;
-                size_t n_mul_immeds = 0, n_div_immeds = 0; bool needs_resynth=false;
+                double mul_immed_sum = 1.0;
+                size_t n_mul_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
-                    if(!Params[a].sign && Params[a].param->GetImmed() == 0.0)
+                    if(Params[a].param->GetImmed() == 0.0)
                         goto ReplaceTreeWithZero;
                     if(Params[a].param->GetImmed() == 1.0) needs_resynth = true;
-                    if(Params[a].sign)
-                         { div_immed_sum *= Params[a].param->GetImmed(); ++n_div_immeds; }
-                    else { mul_immed_sum *= Params[a].param->GetImmed(); ++n_mul_immeds; }
+                    mul_immed_sum *= Params[a].param->GetImmed(); ++n_mul_immeds;
                 }
                 // Merge immeds.
-                if(n_div_immeds + n_mul_immeds > 1) needs_resynth = true;
-                if(mul_immed_sum != 1.0 && div_immed_sum != 1.0)
-                    { mul_immed_sum /= div_immed_sum; div_immed_sum = 1.0; }
-                /* Invert div-immeds when they can be safely
-                 * inverted without loss of precision */
-                if(div_immed_sum != 1.0)
-                {
-                    /* FIXME: Is this safe? Won't the compiler "optimize" the check? */
-                    double d = mul_immed_sum / div_immed_sum;
-                    double e = mul_immed_sum / d;
-                    if(e == div_immed_sum)
-                        { mul_immed_sum /= div_immed_sum; div_immed_sum = 1.0; }
-                }
+                if(n_mul_immeds > 1) needs_resynth = true;
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
-                    //std::cout << "cMul: Will add new immed " << mul_immed_sum << " / " << div_immed_sum << "\n";
+                    //std::cout << "cMul: Will add new immed " << mul_immed_sum << "\n";
                     for(size_t a=Params.size(); a-->0; )
                         if(Params[a].param->IsImmed())
                         {
                             //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
-                            //if(Params[a].sign) std::cout << " (inverted)";
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
                     if(mul_immed_sum != 1.0)
                         AddParam( Param(new CodeTree(mul_immed_sum), false) );
-                    if(div_immed_sum != 1.0)
-                        AddParam( Param(new CodeTree(div_immed_sum), true) );
                 }
-                if(Params.size() == 1 && !Params[0].sign)
+                if(Params.size() == 1)
                 {
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
@@ -349,9 +333,7 @@ namespace FPoptimizer_CodeTree
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
                     if(Params[a].param->GetImmed() == 0.0) needs_resynth = true;
-                    if(Params[a].sign)
-                         { immed_sum -= Params[a].param->GetImmed(); ++n_immeds; needs_resynth = true; }
-                    else { immed_sum += Params[a].param->GetImmed(); ++n_immeds; }
+                    immed_sum += Params[a].param->GetImmed(); ++n_immeds;
                 }
                 // Merge immeds.
                 if(n_immeds > 1) needs_resynth = true;
@@ -366,14 +348,13 @@ namespace FPoptimizer_CodeTree
                         if(Params[a].param->IsImmed())
                         {
                             //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
-                            //if(Params[a].sign) std::cout << " (negated)";
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
                     if(immed_sum != 0.0)
                         AddParam( Param(new CodeTree(immed_sum), false) );
                 }
-                if(Params.size() == 1 && !Params[0].sign)
+                if(Params.size() == 1)
                 {
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
@@ -522,9 +503,13 @@ namespace FPoptimizer_CodeTree
                     goto ReplaceTreeWithParam0;
                 if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
                 {
-                    Opcode = cAdd;
-                    Params[0].sign = true;
-                    break;
+                    /* abs(negative) = negative*-1 */
+                    Opcode = cMul;
+                    AddParam( Param(new CodeTree(-1.0), false) );
+                    /* The caller of ConstantFolding() will do Sort() and Rehash() next.
+                     * Thus, no need to do it here. */
+                    /* We were changed into a cMul group. Do cMul folding. */
+                    goto NowWeAreMulGroup;
                 }
                 /* If the operand is a cMul group, find elements
                  * that are always positive and always negative,
@@ -543,51 +528,70 @@ namespace FPoptimizer_CodeTree
                         if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
                             { neg_set.push_back(p.Params[a]); }
                     }
-                    fprintf(stderr, "Abs: mul group has %u pos, %u neg\n",
-                        (unsigned)pos_set.size(),
-                        (unsigned)neg_set.size());
-
+                #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "Abs: mul group has " << pos_set.size()
+                              << " pos, " << neg_set.size() << "neg\n";
+                #endif
                     if(!pos_set.empty() || !neg_set.empty())
                     {
+                #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "AbsReplace-Before: ";
+                        FPoptimizer_Grammar::DumpTree(*this);
+                        std::cout << "\n" << std::flush;
+                        FPoptimizer_Grammar::DumpHashes(*this);
+                #endif
                         for(size_t a=p.Params.size(); a-- > 0; )
                         {
                             p0 = p.Params[a].param->CalculateResultBoundaries();
                             if((p0.has_min && p0.min >= 0.0)
                             || (p0.has_max && p0.max <= NEGATIVE_MAXIMUM))
                                 p.Params.erase(p.Params.begin() + a);
+
+                            /* Here, p*n*x*y -> x*y.
+                             * p is saved in pos_set[]
+                             * n is saved in neg_set[]
+                             */
                         }
                         p.ConstantFolding();
+                        p.Sort();
 
                         CodeTreeP subtree = new CodeTree;
                         p.Parent = &*subtree;
                         subtree->Opcode = cAbs;
-                        subtree->Params.swap(Params); // subtree = abs(x*y)
+                        subtree->Params.swap(Params);
                         subtree->ConstantFolding();
                         subtree->Sort();
-                        subtree->Recalculate_Hash_NoRecursion();
+                        subtree->Rehash(false); // hash it and its children.
+
+                        /* Now:
+                         * subtree = Abs(x*y)
+                         * this    = Abs()
+                         */
+
                         Opcode = cMul;
                         for(size_t a=0; a<pos_set.size(); ++a)
                             AddParam(pos_set[a]);
-                        AddParam(Param(subtree, false)); // we = p*abs(x*y)
-
+                        AddParam(Param(subtree, false));
+                        /* Now:
+                         * this    = p * Abs(x*y)
+                         */
                         if(!neg_set.empty())
                         {
-                            CodeTreeP subtree3 = new CodeTree;
-                            subtree3->Opcode = cMul;
                             for(size_t a=0; a<neg_set.size(); ++a)
-                                subtree3->AddParam(neg_set[a]);
-                            subtree3->ConstantFolding(); // subtree3 = n
-                            subtree3->Sort();
-                            subtree3->Recalculate_Hash_NoRecursion();
-
-                            CodeTreeP subtree2 = new CodeTree;
-                            subtree2->Opcode = cAdd;
-                            subtree2->AddParam( Param(subtree3, true) ); // subtree2 = -n
-                            subtree2->ConstantFolding();
-                            subtree2->Sort();
-                            subtree2->Recalculate_Hash_NoRecursion();
-                            AddParam( Param(subtree2, false) ); // we = p*(-n)*abs(x*y)
+                                AddParam(neg_set[a]);
+                            AddParam( Param(new CodeTree(-1.0), false) );
+                            /* Now:
+                             * this = p * n * -1 * Abs(x*y)
+                             */
                         }
+                #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "AbsReplace-After: ";
+                        FPoptimizer_Grammar::DumpTree(*this);
+                        std::cout << "\n" << std::flush;
+                        FPoptimizer_Grammar::DumpHashes(*this);
+                #endif
+                        /* We were changed into a cMul group. Do cMul folding. */
+                        goto NowWeAreMulGroup;
                     }
                 }
                 break;
@@ -662,7 +666,7 @@ namespace FPoptimizer_CodeTree
                 {
                     // Convert into a division
                     CodeTreeP subtree = new CodeTree;
-                    Params[1].sign = true;
+                    Params[1].sign = true; /* FIXME: Not appropriate anymore */
                     for(size_t a=0; a<Params.size(); ++a)
                         Params[a].param->Parent = &*subtree;
                     subtree->Opcode = cMul;
@@ -684,6 +688,12 @@ namespace FPoptimizer_CodeTree
                     { const_value = pow(Params[0].param->GetImmed(),
                                         Params[1].param->GetImmed());
                       goto ReplaceTreeWithConstValue; }
+                if(Params[1].param->IsImmed()
+                && Params[1].param->GetImmed() == 1.0)
+                {
+                    // x^1 = x
+                    goto ReplaceTreeWithParam0;
+                }
                 break;
             }
 
@@ -807,8 +817,8 @@ namespace FPoptimizer_Grammar
 
 #ifdef DEBUG_SUBSTITUTIONS
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
-    static const char ImmedHolderNames[2][2] = {"%","&"};
-    static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
+    static const char ImmedHolderNames[3][2]  = {"%","&","$"};
+    static const char NamedHolderNames[10][2] = {"x","y","z","a","b","c","d","e","f","g"};
 #endif
 
     /* Apply the grammar to a given CodeTree */
@@ -1050,6 +1060,7 @@ namespace FPoptimizer_Grammar
                     break;
                 case NumConstant:
                 case ImmedHolder:
+                case NegativeImmedHolder:
                 default: // GroupFunction:
                     NeedList.Immeds += 1;
                     ++minimum_need;
@@ -1621,9 +1632,11 @@ namespace FPoptimizer_Grammar
                 return FoundLastMatch; // Previously unknown NumConstant, good
             }
             case ImmedHolder:
+            case NegativeImmedHolder:
             {
                 if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
+                if(OpcodeType(opcode) == NegativeImmedHolder && res >= 0.0) return NoMatch;
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
                 std::map<unsigned, double>::iterator
@@ -1634,7 +1647,11 @@ namespace FPoptimizer_Grammar
                     if(transf == Negate) res2 = -res2;
                     if(transf == Invert) res2 = 1/res2;
                     if(transf == NotThe) res2 = res2 != 0;
+                  #ifdef FP_EPSILON
+                    return fabs(res-res2) <= FP_EPSILON ? FoundLastMatch : NoMatch;
+                  #else
                     return res == res2 ? FoundLastMatch : NoMatch;
+                  #endif
                 }
                 if(sign != (transf != None)) return NoMatch;
 
@@ -1693,6 +1710,7 @@ namespace FPoptimizer_Grammar
                 result = GetPackConst(index);
                 break;
             case ImmedHolder:
+            case NegativeImmedHolder:
             {
                 std::map<unsigned, double>::const_iterator
                     i = match.ImmedMap.find(index);
@@ -1970,9 +1988,11 @@ namespace FPoptimizer_Grammar
                 // passthru; x+ is synthesized as the number, not as the tree
             case NumConstant:
             case ImmedHolder:
+            case NegativeImmedHolder:
             default:
                 tree.Opcode = cImmed;
                 GetConst(match, tree.Value); // note: return value is ignored
+                // FIXME: Should we check negativeness here?
                 break;
         }
     }
@@ -1989,6 +2009,7 @@ namespace FPoptimizer_Grammar
         switch(SpecialOpcode(p.opcode))
         {
             case NumConstant: std::cout << GetPackConst(p.index); break;
+            case NegativeImmedHolder:
             case ImmedHolder: std::cout << ImmedHolderNames[p.index]; break;
             case NamedHolder: std::cout << NamedHolderNames[p.index]; break;
             case RestHolder: std::cout << '<' << p.index << '>'; break;

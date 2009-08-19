@@ -114,6 +114,7 @@ namespace GrammarData
     public:
         struct NamedHolderTag{};
         struct ImmedHolderTag{};
+        struct NegativeImmedHolderTag{};
         struct RestHolderTag{};
 
         ParamSpec(FunctionType* f)
@@ -137,6 +138,10 @@ namespace GrammarData
         ParamSpec(unsigned i, ImmedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
               Opcode(ImmedHolder), Index(i),         Constraint(AnyValue), Params() { }
+
+        ParamSpec(unsigned i, NegativeImmedHolderTag)
+            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+              Opcode(NegativeImmedHolder), Index(i),         Constraint(AnyValue), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
@@ -750,7 +755,7 @@ private:
     {
         //std::cout << "/""*p" << (&p-plist) << "*""/";
 
-        static const char ImmedHolderNames[2][2] = {"%","&"};
+        static const char ImmedHolderNames[3][2] = {"%","&","$"};
         static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
 
         if(p.sign) std::cout << '~';
@@ -836,6 +841,7 @@ static GrammarDumper dumper;
 %token <name>      ODD_PARAM_TOKEN
 %token <index>     PLACEHOLDER_TOKEN
 %token <index>     IMMED_TOKEN
+%token <index>     NEGATIVE_IMMED_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
 %token <opcode>    OPCODE
 %token <transform> UNARY_TRANSFORMATION
@@ -891,7 +897,7 @@ static GrammarDumper dumper;
       {
         $3->RecursivelySetParamMatchingType(PositionalParams);
 
-        if($1->Opcode != cAdd && $1->Opcode != cMul && $1->Opcode != cAnd && $1->Opcode != cOr)
+        if($1->Opcode != cAnd && $1->Opcode != cOr)
         {
             /* If function opcode is "notinv", verify that $23 has no inversions */
             if(!$3->EnsureNoInversions())
@@ -923,7 +929,7 @@ static GrammarDumper dumper;
         * and the exact parameter list as specified
         */
        {
-         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         if($1 != cAnd && $1 != cOr)
          {
              /* If function opcode is "notinv", verify that $3 has no inversions */
              if(!$3->EnsureNoInversions())
@@ -945,7 +951,7 @@ static GrammarDumper dumper;
         * and the exact parameter list in any order
         */
        {
-         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         if($1 != cAnd && $1 != cOr)
          {
              /* If function opcode is "notinv", verify that $3 has no inversions */
              if(!$3->EnsureNoInversions())
@@ -966,7 +972,7 @@ static GrammarDumper dumper;
        /* Match a function with opcode=opcode and the given way of matching params */
        /* There may be more parameters, don't care about them */
        {
-         if($1 != cAdd && $1 != cMul && $1 != cAnd && $1 != cOr)
+         if($1 != cAnd && $1 != cOr)
          {
              /* If function opcode is "notinv", verify that $2 has no inversions */
              if(!$2->EnsureNoInversions())
@@ -1015,6 +1021,10 @@ static GrammarDumper dumper;
     |  IMMED_TOKEN              /* a placeholder for some immed */
        {
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
+       }
+    |  NEGATIVE_IMMED_TOKEN     /* a placeholder for some immed */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::NegativeImmedHolderTag());
        }
     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
@@ -1198,6 +1208,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return SUBST_OP_COLON;
         case '%': { lval->index = 0; return IMMED_TOKEN; }
         case '&': { lval->index = 1; return IMMED_TOKEN; }
+        case '$': { lval->index = 2; return NEGATIVE_IMMED_TOKEN; }
         case '<':
         {
             lval->index  = 0;
@@ -1260,6 +1271,9 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
 
             /* Detect named constants */
             if(IdBuf == "CONSTANT_E") { lval->num = CONSTANT_E; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_EI") { lval->num = CONSTANT_EI; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2E") { lval->num = CONSTANT_2E; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2EI") { lval->num = CONSTANT_2EI; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_RD") { lval->num = CONSTANT_RD; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_DR") { lval->num = CONSTANT_DR; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PI") { lval->num = CONSTANT_PI; return NUMERIC_CONSTANT; }

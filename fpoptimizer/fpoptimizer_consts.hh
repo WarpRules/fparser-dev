@@ -3,6 +3,9 @@
 #endif
 
 #define CONSTANT_E     2.71828182845904509080  // exp(1)
+#define CONSTANT_EI    0.3678794411714423215955 // exp(-1)
+#define CONSTANT_2E    5.43656365691809047072  // 2*exp(1)
+#define CONSTANT_2EI   0.135335283236612691894 // exp(-2)
 #define CONSTANT_PI    M_PI                    // atan2(0,-1)
 #define CONSTANT_L10   2.30258509299404590109  // log(10)
 #define CONSTANT_L2    0.69314718055994530943  // log(2)

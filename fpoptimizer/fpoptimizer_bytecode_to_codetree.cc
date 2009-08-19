@@ -59,11 +59,6 @@ namespace FPoptimizer_CodeTree
             stack.push_back(newnode);
         }
 
-        void SetLastOpParamSign(unsigned paramno)
-        {
-            stack.back()->Params[paramno].sign = true;
-        }
-
         void SwapLastTwoInStack()
         {
             std::swap(stack[stack.size()-1],
@@ -165,12 +160,12 @@ namespace FPoptimizer_CodeTree
                     }
                     // Unary operators requiring special attention
                     case cInv: // from fpoptimizer
-                        data.Eat(1, cMul); // Unary division is inverse multiplying
-                        data.SetLastOpParamSign(0);
+                        data.AddConst(-1);
+                        data.Eat(2, cPow); // 1/x is x^-1
                         break;
                     case cNeg:
-                        data.Eat(1, cAdd); // Unary minus is negative adding.
-                        data.SetLastOpParamSign(0);
+                        data.AddConst(-1);
+                        data.Eat(2, cMul); // -x is x*-1
                         break;
                     case cSqr: // from fpoptimizer
                         data.Dup();
@@ -196,18 +191,18 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cCot:
                         data.Eat(1, cTan);
-                        data.Eat(1, cMul);
-                        data.SetLastOpParamSign(0);
+                        data.AddConst(-1);
+                        data.Eat(2, cPow);
                         break;
                     case cCsc:
                         data.Eat(1, cSin);
-                        data.Eat(1, cMul);
-                        data.SetLastOpParamSign(0);
+                        data.AddConst(-1);
+                        data.Eat(2, cPow);
                         break;
                     case cSec:
                         data.Eat(1, cCos);
-                        data.Eat(1, cMul);
-                        data.SetLastOpParamSign(0);
+                        data.AddConst(-1);
+                        data.Eat(2, cPow);
                         break;
                     case cLog10:
                         data.Eat(1, cLog);
@@ -221,20 +216,26 @@ namespace FPoptimizer_CodeTree
                         break;
                     // Binary operators requiring special attention
                     case cSub:
+                        data.AddConst(-1);
+                        data.Eat(2, cMul); // -x is x*-1
                         data.Eat(2, cAdd); // Minus is negative adding
-                        data.SetLastOpParamSign(1);
                         break;
                     case cRSub: // from fpoptimizer
+                        data.SwapLastTwoInStack();
+                        data.AddConst(-1);
+                        data.Eat(2, cMul); // -x is x*-1
                         data.Eat(2, cAdd);
-                        data.SetLastOpParamSign(0); // negate param0 instead of param1
                         break;
                     case cDiv:
+                        data.AddConst(-1);
+                        data.Eat(2, cPow); // 1/x is x^-1
                         data.Eat(2, cMul); // Divide is inverse multiply
-                        data.SetLastOpParamSign(1);
                         break;
                     case cRDiv: // from fpoptimizer
-                        data.Eat(2, cMul);
-                        data.SetLastOpParamSign(0); // invert param0 instead of param1
+                        data.SwapLastTwoInStack();
+                        data.AddConst(-1);
+                        data.Eat(2, cPow); // 1/x is x^-1
+                        data.Eat(2, cMul); // Divide is inverse multiply
                         break;
                     case cRSqrt: // from fpoptimizer
                         data.AddConst(-0.5);
