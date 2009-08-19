@@ -688,7 +688,25 @@ cMul (cAdd {(cPow [CONSTANT_E (cMul { 2 x})])  1}) ~(cAdd {(cPow [CONSTANT_E (cM
 #                 produces (exp(2*x)-1) / (exp(2*x)+1)
 #       It just says so in Wikipedia.
 #       Maybe this could be utilized for more generic optimizations?
-
+#
+# Maxima gives that exp(x) + n*exp(-x)
+#                 = exp(-x) * (exp(2*x) + n)
+# but I still have no idea why is that.
+#
+# In more generic form:
+#   exp(d*y) * ((a * exp(b*x - d*y)) + c)   = a*exp(    b*x) + c*exp(d*y)
+#   exp( -y) * ((a * exp(b*x +   y)) + c)   = a*exp(    b*x) + c*exp( -y)
+#
+#   exp(d*x) * ((a * exp((b-d) * x)) + c)   = a*exp(    b*x) + c*exp(d*x)
+#   exp( -x) * ((a * exp((b+1) * x)) + c)   = a*exp(    b*x) + c*exp( -x)
+#   exp( -x) * ((a * exp(    b * x)) + c)   = a*exp((b-1)*x) + c*exp( -x)
+#   exp(d*x) * ((a * exp((1-d) * x)) + c)   = a*exp(      x) + c*exp(d*x)
+#
+#   exp(d*y) * ((   -exp(b*x - d*y)) + c)   =  -exp(    b*x) + c*exp(d*y)
+#   exp( -y) * ((   -exp(b*x +   y)) + c)   =  -exp(    b*x) + c*exp( -y)
+#
+# This is quite hairy.
+#
 
 # Because sinh(-x) = -sinh(x),
 # sinh(x)*-2 = (exp(-x)-exp(x))
