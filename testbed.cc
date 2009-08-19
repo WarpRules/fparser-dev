@@ -41,7 +41,10 @@ namespace
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
-    inline bool toBool(double x) { return int(floor(x+.5)) != 0; }
+    inline int doubleToInt(double d)
+    {
+        return d<0 ? -int((-d)+.5) : int(d+.5);
+    }
 
     double Sqr(const double* p)
     {
@@ -453,10 +456,10 @@ double f47(double* p)
 
 double f48(double* p)
 {
-#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + !(x | !(x/4))" , "x", f48, 1, 1, 100, .01, false
+#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + !(x | !(x/4))" , "x", f48, 2, 2, 1e9, 1.2e7, false
     const double x = p[0];
     return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) +
-        (!(toBool(x) || !toBool(x/4)));
+        (!(doubleToInt(x) || !doubleToInt(x/4)));
 }
 
 namespace
