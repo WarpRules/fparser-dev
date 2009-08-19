@@ -506,12 +506,62 @@ namespace FPoptimizer_CodeTree
             }
             case cMul:
             {
-                break;
                 /* It's complicated. Follow the logic below. */
                 /* Note: This also deals with the following opcodes:
                  *       cInv, cDiv, cRDiv, cRad, cDeg, cSqr
                  *       cCot, Sec, cCsc, cLog2, cLog10
                  */
+
+                struct Value
+                {
+                    enum ValueType { Finite, MinusInf, PlusInf };
+                    ValueType valueType;
+                    double value;
+
+                    Value(ValueType t): valueType(t), value(0) {}
+                    Value(double v): valueType(Finite), value(v) {}
+
+                    bool isNegative() const
+                    {
+                        return valueType == MinusInf ||
+                            (valueType == Finite && value < 0.0);
+                    }
+
+                    void operator*=(const Value& rhs)
+                    {
+                        if(valueType == Finite && rhs.valueType == Finite)
+                            value *= rhs.value;
+                        else
+                            valueType = (isNegative() != rhs.isNegative() ?
+                                         MinusInf : PlusInf);
+                    }
+
+                    bool operator<(const Value& rhs) const
+                    {
+                        return
+                            (valueType == MinusInf && rhs.valueType != MinusInf) ||
+                            (valueType == Finite &&
+                             (rhs.valueType == PlusInf ||
+                              (rhs.valueType == Finite && value < rhs.value)));
+                    }
+                };
+
+                struct MultiplicationRange
+                {
+                    Value minValue, maxValue;
+
+                    MultiplicationRange():
+                        minValue(Value::PlusInf),
+                        maxValue(Value::MinusInf) {}
+
+                    void multiply(Value value1, const Value& value2)
+                    {
+                        value1 *= value2;
+                        if(value1 < minValue) minValue = value1;
+                        if(maxValue < value1) maxValue = value1;
+                    }
+                };
+
                 MinMaxTree result(1.0, 1.0);
                 for(size_t a=0; a<Params.size(); ++a)
                 {
@@ -519,49 +569,24 @@ namespace FPoptimizer_CodeTree
                     MinMaxTree item = p.param->CalculateResultBoundaries();
                     if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
 
-                    // item has either a minimum, a maximum, or both
+                    Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
+                    Value maxValue0 = result.has_max ? Value(result.max) : Value(Value::PlusInf);
+                    Value minValue1 = item.has_min ? Value(item.min) : Value(Value::MinusInf);
+                    Value maxValue1 = item.has_max ? Value(item.max) : Value(Value::PlusInf);
 
-                    if(item.has_max && item.max > 0)
-                    {
-                        if(result.has_min && result.min < 0) result.min *= item.max;
-                        if(result.has_max && result.max > 0) result.max *= item.max;
-                    }
-                    if(!item.has_max)
-                    {
-                        if(result.has_max && result.max > 0) result.has_max = false;
-                        if(result.has_min && result.min < 0) result.has_min = false;
-                    }
+                    MultiplicationRange range;
+                    range.multiply(minValue0, minValue1);
+                    range.multiply(minValue0, maxValue1);
+                    range.multiply(maxValue0, minValue1);
+                    range.multiply(maxValue0, maxValue1);
 
-                    if(item.has_min && item.min < 0)
-                    {
-                    }
+                    if(range.minValue.valueType == Value::Finite)
+                        result.min = range.minValue.value;
+                    else result.has_min = false;
 
-                    if(!item.has_max)
-                    {
-                        // If result can be negative, negative values can be infinite now
-                        // If result can be positive, positive values can be infinite now
-                        if(result.has_min && result.min < 0)  result.has_min = false;
-                        if(result.has_max && result.max > 0)  result.has_max = false;
-                    }
-                    if(!item.has_min)
-                    {
-                        /* FIXME: Is THIS right? */
-                        // If result can be negative, positive values can be infinite now
-                        // If result can be positive, negative values can be infinite now
-                        if(result.has_min && result.min < 0)  result.has_max = false;
-                        if(result.has_max && result.max > 0)  result.has_min = false;
-                    }
-                    if(item.has_min && item.has_max)
-                    {
-
-                    }
-
-                    /* FIXME: is this right? */
-                    /* No it's not. -1 * -1 gives us 1 */
-                    if(item.has_min) result.min *= item.min;
-                    else             result.has_min = false;
-                    if(item.has_max) result.max *= item.max;
-                    else             result.has_max = false;
+                    if(range.maxValue.valueType == Value::Finite)
+                        result.max = range.maxValue.value;
+                    else result.has_max = false;
 
                     if(!result.has_min && !result.has_max) break; // hopeless
                 }
