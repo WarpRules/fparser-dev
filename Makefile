@@ -43,7 +43,7 @@ CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 
 CPPFLAGS += -I"`pwd`"
 
-all: testbed speedtest example
+all: testbed speedtest example functioninfo
 
 FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_main.o \
@@ -81,6 +81,9 @@ powi_speedtest: powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
 koe: koe.o $(FP_MODULES)
+	$(LD) -o $@ $^
+
+functioninfo: functioninfo.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
 fpoptimizer/fpoptimizer_grammar_gen: \

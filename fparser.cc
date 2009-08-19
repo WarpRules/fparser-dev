@@ -1447,21 +1447,21 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
         switch(opcode)
         {
           case cIf:
-              dest << "jz\t";
+              dest << "jz ";
               printHex(dest, ByteCode[IP+1]+1);
               dest << endl;
               IP += 2;
               break;
 
           case cJump:
-              dest << "jump\t";
+              dest << "jump ";
               printHex(dest, ByteCode[IP+1]+1);
               dest << endl;
               IP += 2;
               break;
           case cImmed:
               dest.precision(10);
-              dest << "push\t" << Immed[DP++] << endl;
+              dest << "push " << Immed[DP++] << endl;
               break;
 
           case cFCall:
@@ -1472,7 +1472,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                   while(iter->type != NameData::FUNC_PTR ||
                         iter->index != index)
                       ++iter;
-                  dest << "fcall\t" << iter->name
+                  dest << "fcall " << iter->name
                        << " (" << data->FuncPtrs[index].params << ")" << endl;
                   break;
               }
@@ -1485,7 +1485,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                   while(iter->type != NameData::PARSER_PTR ||
                         iter->index != index)
                       ++iter;
-                  dest << "pcall\t" << iter->name
+                  dest << "pcall " << iter->name
                        << " (" << data->FuncParsers[index].params
                        << ")" << endl;
                   break;
@@ -1518,7 +1518,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                     case cRad: n = "rad"; break;
 
 #ifndef FP_DISABLE_EVAL
-                    case cEval: n = "call\t0"; break;
+                    case cEval: n = "call 0"; break;
 #endif
 
 #ifdef FP_SUPPORT_OPTIMIZER
@@ -1554,7 +1554,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
               }
               else
               {
-                  dest << "push\tVar" << opcode-VarBegin << endl;
+                  dest << "push Var" << opcode-VarBegin << endl;
               }
         }
     }
