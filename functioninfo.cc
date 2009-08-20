@@ -316,6 +316,8 @@ namespace
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
             "  -v <var string> : Specify a var string. Default is \"x\".\n"
+            "  -xy             : Equivalent to -v \"x,y\""
+            "  -xyz            : Equivalent to -v \"x,y,z\""
             "  -nt             : No timing measurements.\n";
         return 1;
     }
@@ -335,6 +337,10 @@ int main(int argc, char* argv[])
             if(++i == argc) return printHelp(argv[0]);
             gVarString = argv[i];
         }
+        else if(std::strcmp(argv[i], "-xy") == 0)
+            gVarString = "x,y";
+        else if(std::strcmp(argv[i], "-xyz") == 0)
+            gVarString = "x,y,z";
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
         else
