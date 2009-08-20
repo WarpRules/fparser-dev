@@ -453,6 +453,19 @@ cMul (cAdd (cMul % <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
 #     Alternatingly.
 #     To fix, should only be done when % != 1.
 #     Unfortunately there's no syntax for that kind of constraints...
+
+# (x * 0.5 - 0.5) * z =
+# 0.5 * (x - 1) * z
+# Thus,
+# x * (y + (y * z)) -> x * y * (z + 1)
+# x * (y + (-y * z)) -> x * y * (z - 1)
+# x * (y + (y * -1 * z)) -> x * y * (z - 1)
+
+cMul (cAdd {y (cMul {y z})}) : y (cAdd [z 1])
+cMul (cAdd {% (cMul {-% z})}) : % (cAdd [z -1])
+cMul (cAdd {(cMul {% z}) -%}) : % (cAdd [z -1])
+cMul (cAdd {y (cMul {y -1 z})}) : y (cAdd [z -1])
+
 #
 
 #### Constant folding is now performed exclusively by ConstantFolding()
@@ -563,7 +576,14 @@ cTanh [(cMul $ <1>)] -> cMul [-1 (cTanh [(cMul -$ <1>)])]
 # cosh(x)*2 = (exp(x)+   exp(-x))
 # cosh(x)*2 = (exp(x)+ 1/exp(x))
 cAdd (cPow [&  x]) (cMul { -1 (cPow [/& x]) }) : (cMul (cSinh [(cMul x LOG(&))]) 2)
+#cAdd (cMul { -1 (cPow [& x]) }) (cPow [/&  x]) : (cMul (cSinh [(cMul x LOG(/&))]) 2)
 cAdd (cPow [&  x])            (cPow [/& x])    : (cMul (cCosh [(cMul x LOG(&))]) 2)
+
+# sinh(x) = ((( exp(2) ^ x ) * (1/2)) - 1/2) * (1 / exp(x))
+# sinh(x) = (-1/2) * (( exp(2) ^ x ) -1 ) * (1 / exp(x))
+
+cMul (cAdd {(cPow [% x]) -1}) (cPow [POW(% -0.5) x]) : 2 (cSinh [(cMul x LOG(%))])
+cMul (cPow [% x]) (cAdd {(cPow [POW(% -2) x]) -1})   : 2 (cSinh [(cMul x LOG(%))])
 
 # Because sinh(-x) = -sinh(x),
 # sinh(x)*-2 = (exp(-x)-exp(x))
@@ -627,12 +647,14 @@ cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
 cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 
 #        asinh: log(x + sqrt(x*x + 1))
+#        exp(asinh): x + sqrt(x*x + 1)
 #cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cAsinh [x]
-cLog2 [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cMul (cAsinh [x]) CONSTANT_L2I
+cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])} -> cPow [CONSTANT_E (cAsinh [x])]
 
 #        acosh: log(x + sqrt(x*x - 1))
+#        exp(acosh): x + sqrt(x*x - 1)
 #cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cAcosh [x]
-cLog2 [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cMul (cAcosh [x]) CONSTANT_L2I
+cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])} -> cPow [CONSTANT_E (cAcosh [x])]
 
 #        atanh(x):   log( (1+x) / (1-x)) / 2
 #        2*atanh(x): log( (1+x) / (1-x))

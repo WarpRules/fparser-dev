@@ -1709,6 +1709,9 @@ namespace FPoptimizer_Grammar
                     if(transf == Negate) res2 = -res2;
                     if(transf == Invert) res2 = 1/res2;
                     if(transf == NotThe) res2 = res2 != 0;
+                    /*std::cout << std::flush;
+                    fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
+                    fflush(stderr);*/
                   #ifdef FP_EPSILON
                     return fabs(res-res2) <= FP_EPSILON ? FoundLastMatch : NoMatch;
                   #else
@@ -1756,7 +1759,14 @@ namespace FPoptimizer_Grammar
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
+                /*std::cout << std::flush;
+                fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
+                fflush(stderr);*/
+              #ifdef FP_EPSILON
+                return fabs(res-res2) <= FP_EPSILON ? FoundLastMatch : NoMatch;
+              #else
                 return res == res2 ? FoundLastMatch : NoMatch;
+              #endif
             }
         }
         return NoMatch;
@@ -1778,6 +1788,7 @@ namespace FPoptimizer_Grammar
                     i = match.ImmedMap.find(index);
                 if(i == match.ImmedMap.end()) return false; // impossible
                 result = i->second;
+                //fprintf(stderr, "immedholder: %.20f\n", result);
                 break;
             }
             case NamedHolder:
@@ -1786,6 +1797,7 @@ namespace FPoptimizer_Grammar
                     i = match.NamedMap.find(index);
                 if(i == match.NamedMap.end()) return false; // impossible
                 result = (double) i->second.second;
+                //fprintf(stderr, "namedholder: %.20f\n", result);
                 break;
             }
             case RestHolder:
@@ -1884,6 +1896,7 @@ namespace FPoptimizer_Grammar
                         double tmp;
                         if(!pack.plist[index+1].GetConst(match, tmp))return false;
                         result = std::pow(result, tmp);
+                        //fprintf(stderr, "pow result: %.20f\n", result);
                         break;
                     }
                     case cMod:
