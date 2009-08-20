@@ -13,12 +13,13 @@
 
 namespace
 {
-    const unsigned kTestTime = 200; // In milliseconds
-    const unsigned kParseLoopsPerUnit = 20000;
-    const unsigned kEvalLoopsPerUnit = 50000;
-    const unsigned kOptimizeLoopsPerUnit = 10000;
-    const unsigned kVarValueSetsAmount = 50;
+    const unsigned kTestTime = 250; // In milliseconds
+    const unsigned kParseLoopsPerUnit = 100000;
+    const unsigned kEvalLoopsPerUnit = 300000;
+    const unsigned kOptimizeLoopsPerUnit = 1000;
+    const unsigned kMaxVarValueSetsAmount = 100;
     const double kEpsilon = 1e-9;
+    const bool kPrintTimingProgress = false;
 
     struct TimingInfo
     {
@@ -59,6 +60,7 @@ namespace
                 (std::clock() - iClock) * 1000 / CLOCKS_PER_SEC;
         }
         while(totalMilliseconds < kTestTime);
+        //std::cout << loopUnitsPerformed << "\n";
 
         const double totalSeconds = totalMilliseconds / 1000.0;
         const double totalLoops =
@@ -75,8 +77,9 @@ namespace
 
     void printTimingInfo()
     {
-        std::cout << "\rTiming " << gTimingCounter * 100 / gTimingTotalCount
-                  << "%" << std::flush;
+        if(!kPrintTimingProgress) return;
+        std::cout << "Timing " << gTimingCounter * 100 / gTimingTotalCount
+                  << "%\r" << std::flush;
         ++gTimingCounter;
     }
 
@@ -89,7 +92,8 @@ namespace
         printTimingInfo();
         info.mEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
         printTimingInfo();
-        info.mOptimizeTiming = getTimingInfo<doEval, kOptimizeLoopsPerUnit>();
+        info.mOptimizeTiming =
+            getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
         gParser.Optimize();
         printTimingInfo();
         info.mOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
@@ -107,20 +111,20 @@ namespace
 
         while(true)
         {
-            bool ok = true;
+            bool wasOk = true;
             for(size_t i = 0; i < functions.size(); ++i)
             {
                 double value = functions[i].mParser.Eval(&varValues[0]);
-                if(value < -1e12 || value > 1e12)
+                if(value < -1e14 || value > 1e14)
                 {
-                    ok = false;
+                    wasOk = false;
                     break;
                 }
             }
-            if(ok)
+            if(wasOk)
             {
                 gVarValues.push_back(varValues);
-                if(gVarValues.size() >= kVarValueSetsAmount)
+                if(gVarValues.size() >= kMaxVarValueSetsAmount)
                     return true;
             }
 
@@ -133,6 +137,7 @@ namespace
 
                 varValues[varIndex] += deltas[varIndex];
                 deltas[varIndex] *= 3.0;
+                if(deltas[varIndex] > 10.0) deltas[varIndex] *= 10.0;
 
                 if(varValues[varIndex] <= 1000000.0)
                     break;
@@ -246,8 +251,8 @@ namespace
         for(size_t i = 0; i < functions.size(); ++i)
         {
             std::cout << "Function " << i+1
-                      << " original           Optimized\n"
-                      << "-------------------           ---------\n";
+                      << " original             Optimized\n"
+                      << "-------------------             ---------\n";
 
             std::stringstream stream1, stream2;
             parser.Parse(functions[i].mFunctionString, gVarString);
@@ -264,7 +269,7 @@ namespace
                 else line2.clear();
                 if(line1.empty() && line2.empty()) break;
 
-                line1.resize(30, ' ');
+                line1.resize(32, ' ');
                 std::cout << line1 << line2 << "\n";
             }
             std::cout << SEPARATOR;
@@ -272,20 +277,23 @@ namespace
 #endif
     }
 
-    void printFunctionTimings(const std::vector<FunctionInfo>& functions)
+    void printFunctionTimings(std::vector<FunctionInfo>& functions)
     {
         std::printf
-            ("     ,------------------------------------------------,\n"
-             "     |      Parse |      Eval |  Eval (O) |  Optimize |\n"
-             ",----+------------+-----------+-----------+-----------+\n");
+        ("     ,--------------------------------------------------------,\n"
+         "     |        Parse |        Eval |    Eval (O) |    Optimize |\n"
+         ",----+--------------+-------------+-------------+-------------+\n");
         for(size_t i = 0; i < functions.size(); ++i)
-            std::printf("| %2u | %10.3f |%10.3f |%10.3f |%10.3f |\n", i+1,
+        {
+            getTimingInfo(functions[i]);
+            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |\n", i+1,
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
                         functions[i].mOptimizedEvalTiming.mMicroSeconds,
                         functions[i].mOptimizeTiming.mMicroSeconds);
+        }
         std::printf
-            ("'-----------------------------------------------------'\n");
+        ("'-------------------------------------------------------------'\n");
     }
 
     bool checkFunctionValidity(FunctionInfo& info)
@@ -344,23 +352,17 @@ int main(int argc, char* argv[])
 
     const bool validVarValuesFound = findValidVarValues(functions);
 
-    if(measureTimings)
-    {
-        gTimingTotalCount = functions.size() * 4;
-        for(size_t i = 0; i < functions.size(); ++i)
-            getTimingInfo(functions[i]);
-        printTimingInfo();
-        std::cout << std::endl;
-    }
-
     std::cout << SEPARATOR;
     for(size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
     const unsigned varsAmount = gVarValues[0].size();
+    const unsigned varValueSetsAmount = gVarValues.size();
     std::cout << "- Var string: \"" << gVarString << "\" ("
               << gVarValues[0].size()
-              << (varsAmount == 1 ? " variable)\n" : " variables)\n");
+              << (varsAmount == 1 ? " var" : " vars")
+              << ") (using " << varValueSetsAmount << " set"
+              << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
     std::cout << SEPARATOR;
 
 #if(0)
@@ -391,6 +393,7 @@ int main(int argc, char* argv[])
 
     if(measureTimings)
     {
+        gTimingTotalCount = functions.size() * 4;
         printFunctionTimings(functions);
     }
 
