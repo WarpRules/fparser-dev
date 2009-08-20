@@ -316,8 +316,8 @@ namespace
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
             "  -v <var string> : Specify a var string. Default is \"x\".\n"
-            "  -xy             : Equivalent to -v \"x,y\""
-            "  -xyz            : Equivalent to -v \"x,y,z\""
+            "  -xy             : Equivalent to -v \"x,y\"\n"
+            "  -xyz            : Equivalent to -v \"x,y,z\"\n"
             "  -nt             : No timing measurements.\n";
         return 1;
     }
