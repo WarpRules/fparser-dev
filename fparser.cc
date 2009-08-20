@@ -1045,6 +1045,21 @@ const char* FunctionParser::CompileExpression(const char* function)
     return function;
 }
 
+#ifdef FP_NO_ASINH
+static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
+static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
+static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
+#endif
+/*
+Note: FP_NO_ASINH functions could be implemented as such:
+        asinh: log(x + sqrt(x*x + 1))
+        acosh: log(x + sqrt(x*x - 1))
+        atanh: log( (1+x) / (1-x)) / 2
+     The hyperbolic functions themselves are:
+        sinh: (exp(x)-exp(-x)) / 2
+        cosh: (exp(x)+exp(-x)) / 2
+        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
+*/
 
 //===========================================================================
 // Function evaluation
@@ -1081,19 +1096,7 @@ double FunctionParser::Eval(const double* Vars)
 #                    endif
                        Stack[SP] = acos(Stack[SP]); break;
 
-#       ifndef FP_NO_ASINH
           case cAcosh: Stack[SP] = acosh(Stack[SP]); break;
-#       endif
-/*
-Note: FP_NO_ASINH functions could be implemented as such:
-        asinh: log(x + sqrt(x*x + 1))
-        acosh: log(x + sqrt(x*x - 1))
-        atanh: log( (1+x) / (1-x)) / 2
-     The hyperbolic functions themselves are:
-        sinh: (exp(x)-exp(-x)) / 2
-        cosh: (exp(x)+exp(-x)) / 2
-        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
-*/
 
           case  cAsin:
 #                    ifndef FP_NO_EVALUATION_CHECKS
@@ -1102,18 +1105,14 @@ Note: FP_NO_ASINH functions could be implemented as such:
 #                    endif
                        Stack[SP] = asin(Stack[SP]); break;
 
-#       ifndef FP_NO_ASINH
           case cAsinh: Stack[SP] = asinh(Stack[SP]); break;
-#       endif
 
           case  cAtan: Stack[SP] = atan(Stack[SP]); break;
 
           case cAtan2: Stack[SP-1] = atan2(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-#       ifndef FP_NO_ASINH
           case cAtanh: Stack[SP] = atanh(Stack[SP]); break;
-#       endif
 
           case  cCeil: Stack[SP] = ceil(Stack[SP]); break;
 
@@ -1171,6 +1170,14 @@ Note: FP_NO_ASINH functions could be implemented as such:
 
           case   cExp: Stack[SP] = exp(Stack[SP]); break;
 
+          case   cExp2:
+            #ifndef FP_NO_EXP2
+              Stack[SP] = exp2(Stack[SP]);
+            #else
+              Stack[SP] = pow(2.0, Stack[SP]);
+            #endif
+              break;
+
           case cFloor: Stack[SP] = floor(Stack[SP]); break;
 
           case    cIf:
@@ -1203,8 +1210,11 @@ Note: FP_NO_ASINH functions could be implemented as such:
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
 #                    endif
+                     #ifndef FP_NO_LOG2
+                       Stack[SP] = log2(Stack[SP]);
+                     #else
                        Stack[SP] = log(Stack[SP]) * 1.4426950408889634074;
-                       //Stack[SP] = log2(Stack[SP]);
+                     #endif
                        break;
 
           case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);

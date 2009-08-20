@@ -185,6 +185,11 @@ namespace FPoptimizer_CodeTree
                         data.SwapLastTwoInStack();
                         data.Eat(2, cPow);
                         break;
+                    case cExp2: // from fpoptimizer
+                        data.AddConst(2.0);
+                        data.SwapLastTwoInStack();
+                        data.Eat(2, cPow);
+                        break;
                     case cSqrt:
                         data.AddConst(0.5);
                         data.Eat(2, cPow);

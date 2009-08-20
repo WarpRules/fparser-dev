@@ -27,6 +27,12 @@ namespace FPoptimizer_Grammar
 }
 #endif
 
+#ifdef FP_NO_ASINH
+static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
+static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
+static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
+#endif
+
 namespace
 {
     /* I have heard that std::equal_range() is practically worthless
@@ -134,6 +140,33 @@ namespace FPoptimizer_CodeTree
         double const_value = 1.0;
         size_t which_param = 0;
 
+        /* Sub-list assimilation prepass */
+        switch( (OPCODE) Opcode)
+        {
+            case cAdd:
+            case cMul:
+            case cMin:
+            case cMax:
+            case cAnd:
+            case cOr:
+            {
+                /* If the list contains another list of the same kind, assimilate it */
+                for(size_t a=Params.size(); a-- > 0; )
+                    if(Params[a].param->Opcode == Opcode
+                    && Params[a].sign == false)
+                    {
+                        // Assimilate its children and remove it
+                        CodeTreeP tree = Params[a].param;
+                        Params.erase(Params.begin()+a);
+                        for(size_t b=0; b<tree->Params.size(); ++b)
+                            AddParam(tree->Params[b]);
+                    }
+                break;
+            }
+            default: break;
+        }
+
+        /* Constant folding */
         switch( (OPCODE) Opcode)
         {
             case cImmed:
@@ -603,11 +636,9 @@ namespace FPoptimizer_CodeTree
                       goto ReplaceTreeWithConstValue; }
 
             case cLog:   HANDLE_UNARY_CONST_FUNC(log); break;
-#         ifndef FP_NO_ASINH
             case cAcosh: HANDLE_UNARY_CONST_FUNC(acosh); break;
             case cAsinh: HANDLE_UNARY_CONST_FUNC(asinh); break;
             case cAtanh: HANDLE_UNARY_CONST_FUNC(atanh); break;
-#         endif
             case cAcos: HANDLE_UNARY_CONST_FUNC(acos); break;
             case cAsin: HANDLE_UNARY_CONST_FUNC(asin); break;
             case cAtan: HANDLE_UNARY_CONST_FUNC(atan); break;
@@ -622,6 +653,11 @@ namespace FPoptimizer_CodeTree
             case cInt:
                 if(Params[0].param->IsImmed())
                     { const_value = floor(Params[0].param->GetImmed() + 0.5);
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            case cLog2:
+                if(Params[0].param->IsImmed())
+                    { const_value = log(Params[0].param->GetImmed()) * CONSTANT_L2I;
                       goto ReplaceTreeWithConstValue; }
                 break;
 
@@ -722,12 +758,12 @@ namespace FPoptimizer_CodeTree
             case cDeg: // converted into cMul x CONSTANT_DR
             case cSqr: // converted into cMul x x
             case cExp: // converted into cPow CONSTANT_E x
+            case cExp2: // converted into cPow 2.0 x
             case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
             case cCot: // converted into cMul ~(cTan x)
             case cSec: // converted into cMul ~(cCos x)
             case cCsc: // converted into cMul ~(cSin x)
-            case cLog2: // converted into cMul CONSTANT_L2I (cLog x)
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
                 break; /* Should never occur */
 
@@ -1628,7 +1664,14 @@ namespace FPoptimizer_Grammar
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
                 if(transf == NotThe) res2 = res2 != 0;
-                if(res != res2) return NoMatch;
+                /*std::cout << std::flush;
+                fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
+                fflush(stderr);*/
+              #ifdef FP_EPSILON
+                if(!(fabs(res-res2) <= FP_EPSILON)) return NoMatch;
+              #else
+                if(!(res == res2)) return NoMatch;
+              #endif
                 return FoundLastMatch; // Previously unknown NumConstant, good
             }
             case ImmedHolder:
@@ -1808,6 +1851,8 @@ namespace FPoptimizer_Grammar
                                result = std::log(result); break;
                     case cExp: if(!pack.plist[index].GetConst(match, result))return false;
                                result = std::exp(result); break;
+                    case cExp2: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::pow(2.0, result); break;
                     case cLog2: if(!pack.plist[index].GetConst(match, result))return false;
                                 result = std::log(result) * CONSTANT_L2I;
                                 //result = std::log2(result);

@@ -143,23 +143,11 @@ cIf [y (cOr  x <1>) (cOr  x <3>)] -> cOr [x (cIf [y (cOr  <1>) (cOr  <3>)])]
 
 #### Flattening the topology of add/mul/min/max/and/or groups:
 
-# If a add-list contains another add-list, assimilate the child
-cAdd (cAdd <1>) : <1>
-
-# If a mul-list contains another mul-list, assimilate the child (but xor the signs)
-cMul (cMul <1>) : <1>
-
 ## If an add-list contains a mul-list with a negated entry, assimilate the negation.
 ## I.e.  a + b + (c * (-d-e+f))  ->  a + b - (c * (+d+e-f))
 ## Or    a + b - (c * (-d-e+f))  ->  a + b + (c * (+d+e-f))
 #cAdd  (cMul (cAdd <3> ~<4> =-) <1> ~<2>) : ~(cMul (cAdd ~<3> <4>) <1> ~<2>)
 #cAdd ~(cMul (cAdd <3> ~<4> =-) <1> ~<2>) :  (cMul (cAdd ~<3> <4>) <1> ~<2>)
-
-# If a min-list contains another min-list, assimilate the child
-cMin (cMin <1>)   : <1>
-
-# If a max-list contains another max-list, assimilate the child
-cMax (cMax <1>)   : <1>
 
 # If an and-list contains not-tokens, assimilate those not-tokens
 cAnd  (cNot[x])   : ~x
@@ -177,13 +165,11 @@ cOr ~(cNot[x])   : x
 cOr   (cNotNot[x]) :  x
 cOr  ~(cNotNot[x]) : ~x
 
-# If an and-list contains another and-list, assimilate the child
-cAnd  (cAnd <1> ~<2>)  : <1> ~<2>
-cAnd ~(cAnd <1> ~<2>)  : ~<1> <2>
+# If an and-list contains sign-flipped and-list, assimilate as inverted or list
+cAnd ~(cAnd <1> ~<2>)  : (cOr ~<1> <2>)
 
-# If an or-list contains another or-list, assimilate the child
-cOr  (cOr <1> ~<2>)  : <1> ~<2>
-cOr ~(cOr <1> ~<2>)  : ~<1> <2>
+# If an or-list contains sign-flipped or-list, assimilate as inverted and list
+cOr ~(cOr <1> ~<2>)   : (cAnd ~<1> <2>)
 
 # Two notnots make one
 cNotNot [(cNotNot[x])] : x
@@ -340,6 +326,7 @@ cTan [x] -> (cMul (cSin [x]) (cPow [(cCos [x]) -1]))
 #                        note: cos(x-pi/2) = cos(pi/2-x) = sin(x)
 #                        note: sin(x-pi/2) = -sin(pi/2-x) = -cos(x)
 
+cLog [x] -> (cMul [CONSTANT_L2 (cLog2 [x]) ])
 
 [INTERMEDIATE]
 
@@ -411,15 +398,19 @@ cMul (cAdd (cMul % <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
 #### Logarithm optimizations
 # log(x^y) = y*log(x)
 cLog [(cPow [p y])] -> cMul [y (cLog[p])]
+cLog2 [(cPow [p y])] -> cMul [y (cLog2[p])]
 
 # log(x^e) = e * log(abs(x))   (e is an even integer)
 cLog [(cPow [x e])] -> cMul [e (cLog [(cAbs [x])])]
+cLog2 [(cPow [x e])] -> cMul [e (cLog2 [(cAbs [x])])]
 
 # CONSTANT_E^log(x) = x
 #cPow [CONSTANT_E (cLog[x])]   -> x
+#cPow [2          (cLog2[x])]   -> x
 
 # Generalized as:  y^log(x) = x^log(y)
-cPow [% (cLog[x])] : x LOG(%)
+cPow [% (cLog[x])]  : x LOG(%)
+cPow [% (cLog2[x])] : x LOG2(%)
 
 # Because log(exp(6)*x) = log(x)+6, we can also do this:
 #                  y^(log(x)+z)
@@ -429,9 +420,11 @@ cPow [% (cLog[x])] : x LOG(%)
 # Probably beneficial to do it only when y is const,
 # though. Otherwise we only trade + for *, which is bad.
 cPow [& (cAdd {(cLog[x]) %})] : (cMul x EXP(%)) LOG(&)
+cPow [& (cAdd {(cLog2[x]) %})] : (cMul x POW(2 %)) LOG2(&)
 
 # CONSTANT_E^(log(x)*y) = x^y
 cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   :     x  (cMul <1>)
+cPow [2          (cMul (cLog2[x]) <1>)]  :     x  (cMul <1>)
 
 # Generalization of the above.
 #  Note: if you have exp(log(x)*5), you may get two results (ambiguous rules):
@@ -442,23 +435,27 @@ cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   :     x  (cMul <1>)
 cPow [%          (cMul & <1>)]   : POW(% &) (cMul <1>)
 
 # z^(log(x)/log(z)*y) = x^y
-cPow [z (cMul (cPow [(cLog[z]) -1]) (cLog[x]) <1>)] : x (cMul <1>)
-cPow [% (cMul /LOG(%)               (cLog[x]) <1>)] : x (cMul <1>)
+cPow [z (cMul (cPow [(cLog[z])  -1]) (cLog[x])  <1>)] : x (cMul <1>)
+cPow [z (cMul (cPow [(cLog2[z]) -1]) (cLog2[x]) <1>)] : x (cMul <1>)
+cPow [% (cMul /LOG(%)               (cLog[x])  <1>)] : x (cMul <1>)
+cPow [% (cMul /LOG2(%)              (cLog2[x]) <1>)] : x (cMul <1>)
 
 # log(x) + log(y) = log(x*y)
-cAdd (cLog[x]) (cLog[y]) : (cLog (cMul [x y]))
+cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
+cAdd (cLog2[x]) (cLog2[y]) : (cLog2 (cMul [x y]))
 # When x is const, the reverse is more beneficial
 #  i.e.  log(2*x) = log(x) + log(2)
-cLog [(cMul % <1>)] -> cAdd (cLog [(cMul <1>)]) LOG(%)
+cLog  [(cMul % <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
+cLog2 [(cMul % <1>)] -> cAdd (cLog2 [(cMul <1>)]) LOG2(%)
 
 # log(x * z^y) = (log(x) / log(z) + y) * log(z)
 # Only worthwhile when z is an immed
 # Note that when z = CONSTANT_E, this reduces rather nicely into log(x) + y
-cLog [(cMul (cPow [% y]) <1>)] -> cMul [LOG(%) (cAdd [y (cMul (cLog [(cMul <1>)]) /LOG(%))])]
+cLog  [(cMul (cPow [% y]) <1>)] -> cMul [LOG(%) (cAdd [y (cMul (cLog [(cMul <1>)]) /LOG(%))])]
+cLog2 [(cMul (cPow [% y]) <1>)] -> cMul [LOG2(%) (cAdd [y (cMul (cLog2 [(cMul <1>)]) /LOG2(%))])]
 # When y=1, the reverse is more useful:
-cMul {% (cAdd {1 (cMul {(cLog [x]) /%})})} -> cAdd (cLog [x]) %
-#cMul {% (cAdd {1 (cMul {(cLog [x]) /%})})} -> cLog [(cMul LOG(%) x)]
-
+cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
+cMul {% (cAdd {1 (cMul {(cLog2 [x]) /%})})} -> cAdd (cLog2 [x]) %
 
 #### Trigonometric:
 # sin(-x) = -sin(x)
@@ -630,14 +627,17 @@ cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
 cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 
 #        asinh: log(x + sqrt(x*x + 1))
-cLog [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cAsinh [x]
+cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cAsinh [x]
+cLog2 [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cMul (cAsinh [x]) CONSTANT_L2I
 
 #        acosh: log(x + sqrt(x*x - 1))
-cLog [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cAcosh [x]
+cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cAcosh [x]
+cLog2 [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cMul (cAcosh [x]) CONSTANT_L2I
 
 #        atanh:   log( (1+x) / (1-x)) / 2
 #        2*atanh: log( (1+x) / (1-x))
-cLog [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) 2]
+cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) 2]
+cLog2 [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) 2 CONSTANT_L2I]
 
 
 # cot(pi/2 - x) = 1/tan(pi/2 - x) = tan(x)
@@ -670,6 +670,14 @@ cMul (cPow [(cLog [x]) -1]) CONSTANT_L10   : (cPow [(cLog10 [x]) -1])
 # log(x) / CONSTANT_L2 = log2(x)
 cMul        (cLog [x])      CONSTANT_L2I  :        (cLog2 [x])
 cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
+
+# log2(x) * CONSTANT_L2 = log(x)
+cMul        (cLog2 [x])      CONSTANT_L2   :        (cLog [x])
+cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L2I  : (cPow [(cLog [x]) -1])
+
+# log2(x) * CONSTANT_L10B = log10(x)
+cMul        (cLog2 [x])      CONSTANT_L10B   :        (cLog10 [x])
+cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L10BI  : (cPow [(cLog10 [x]) -1])
 
 #cAtan [(cMul y ~x <1> ~<2>)] -> cAtan2 [(cMul y <1>) (cMul x <2>)]
 

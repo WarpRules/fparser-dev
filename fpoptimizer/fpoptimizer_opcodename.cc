@@ -34,6 +34,7 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
         case cCsc: p = "cCsc"; break;
         case cEval: p = "cEval"; break;
         case cExp: p = "cExp"; break;
+        case cExp2: p = "cExp2"; break;
         case cFloor: p = "cFloor"; break;
         case cIf: p = "cIf"; break;
         case cInt: p = "cInt"; break;

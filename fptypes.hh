@@ -26,7 +26,7 @@ namespace FUNCTIONPARSERTYPES
         cCeil,
         cCos, cCosh, cCot, cCsc,
         cEval,
-        cExp, cFloor, cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
+        cExp, cExp2, cFloor, cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
 
 // These do not need any ordering:
@@ -80,12 +80,6 @@ namespace FUNCTIONPARSERTYPES
         }
     };
 
-#ifndef FP_NO_ASINH
-#define FP_ASINH_FUNCTIONS_ENABLED true
-#else
-#define FP_ASINH_FUNCTIONS_ENABLED false
-#endif
-
 #ifndef FP_DISABLE_EVAL
 #define FP_EVAL_FUNCTION_ENABLED true
 #else
@@ -97,12 +91,12 @@ namespace FUNCTIONPARSERTYPES
     {
         { "abs", 3, cAbs, 1, true },
         { "acos", 4, cAcos, 1, true },
-        { "acosh", 5, cAcosh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "acosh", 5, cAcosh, 1, true },
         { "asin", 4, cAsin, 1, true },
-        { "asinh", 5, cAsinh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "asinh", 5, cAsinh, 1, true },
         { "atan", 4, cAtan, 1, true },
         { "atan2", 5, cAtan2, 2, true },
-        { "atanh", 5, cAtanh, 1, FP_ASINH_FUNCTIONS_ENABLED },
+        { "atanh", 5, cAtanh, 1, true },
         { "ceil", 4, cCeil, 1, true },
         { "cos", 3, cCos, 1, true },
         { "cosh", 4, cCosh, 1, true },
@@ -110,6 +104,7 @@ namespace FUNCTIONPARSERTYPES
         { "csc", 3, cCsc, 1, true },
         { "eval", 4, cEval, 0, FP_EVAL_FUNCTION_ENABLED },
         { "exp", 3, cExp, 1, true },
+        { "exp2", 4, cExp2, 1, true },
         { "floor", 5, cFloor, 1, true },
         { "if", 2, cIf, 0, true },
         { "int", 3, cInt, 1, true },

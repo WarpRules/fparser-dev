@@ -23,6 +23,12 @@ namespace FPoptimizer_Grammar
 }
 #endif
 
+#ifdef FP_NO_ASINH
+static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
+static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
+static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
+#endif
+
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
@@ -286,7 +292,14 @@ namespace FPoptimizer_CodeTree
                 return m;
             }
 
-#         ifndef FP_NO_ASINH
+            case cLog2: /* Defined for 0.0 < x <= inf */
+            {
+                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L2I; } // No boundaries
+                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L2I; }
+                return m;
+            }
+
             case cAcosh: /* defined for             1.0 <  x <= inf */
             {
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
@@ -308,7 +321,6 @@ namespace FPoptimizer_CodeTree
                 if(m.has_max) m.max = atanh(m.max);
                 return m;
             }
-#         endif
             case cAcos: /* defined for -1.0 <= x < 1, results within CONSTANT_PI..0 */
             {
                 /* Somewhat complicated to narrow down from this */
@@ -766,12 +778,12 @@ namespace FPoptimizer_CodeTree
             case cDeg: // converted into cMul x CONSTANT_DR
             case cSqr: // converted into cMul x x
             case cExp: // converted into cPow CONSTANT_E x
+            case cExp2: // converted into cPow 2 x
             case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
             case cCot: // converted into cMul ~(cTan x)
             case cSec: // converted into cMul ~(cCos x)
             case cCsc: // converted into cMul ~(cSin x)
-            case cLog2: // converted into cMul CONSTANT_L2I (cLog x)
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
                 break; /* Should never occur */
 

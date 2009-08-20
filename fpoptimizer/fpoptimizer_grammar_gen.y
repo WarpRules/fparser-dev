@@ -1282,6 +1282,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "CONSTANT_L10I") { lval->num = CONSTANT_L10I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2") { lval->num = CONSTANT_L2; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10") { lval->num = CONSTANT_L10; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10B") { lval->num = CONSTANT_L10B; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10BI") { lval->num = CONSTANT_L10BI; return NUMERIC_CONSTANT; }
             if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
 
             /* Detect opcodes */

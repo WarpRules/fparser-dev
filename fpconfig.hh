@@ -67,6 +67,16 @@
 #define FP_EPSILON 1e-14
 
 
+/* Comment out this line if your C library has the exp2() function */
+#ifndef FP_SUPPORT_EXP2
+#define FP_NO_EXP2
+#endif
+
+/* Comment out this line if your C library has the log2() function */
+#ifndef FP_SUPPORT_LOG2
+#define FP_NO_LOG2
+#endif
+
 /*
  No member function of FunctionParser is thread-safe. Most prominently,
  Eval() is not thread-safe. By uncommenting one of these lines the Eval()

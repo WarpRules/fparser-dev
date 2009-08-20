@@ -75,13 +75,22 @@ FP_SUPPORT_OPTIMIZER in fpconfig.hh), you can leave the latter file out.
   which can be used for setting certain features on or off:
 
   FP_NO_ASINH : (Default on)
-       By default the library does not support the asinh(), acosh()
-       and atanh() functions because they are not part of the ISO C++
-       standard. If your compiler supports them and you want the
-       parser to support them as well, comment out this line.
+       By default the library does manual, slow implementations of the
+       asinh(), acosh() and atanh() functions because they are not part
+       of the ISO C++ standard. If your compiler supports them and you
+       want the parser to use the libc-provided versions, which are possibly
+       faster than those implemented by fparser, comment out this line.
        Alternatively you can define the FP_SUPPORT_ASINH precompiler
        constant in your compiler settings to turn on the support
        (eg. with -DFP_SUPPORT_ASINH in gcc).
+
+  FP_NO_EXP2 : (Default on)
+       What FP_NO_ASINH is for asinh(), acosh() and atanh(),
+       FP_NO_EXP2 is for exp2().
+
+  FP_NO_LOG2 : (Default on)
+       What FP_NO_ASINH is for asinh(), acosh() and atanh(),
+       FP_NO_LOG2 is for log2().
 
   FP_DISABLE_EVAL : (Default on)
        Even though the maximum recursion level of the eval() function
