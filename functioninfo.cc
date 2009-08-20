@@ -351,6 +351,8 @@ int main(int argc, char* argv[])
             return 1;
 
     const bool validVarValuesFound = findValidVarValues(functions);
+    
+    std::cout << std::flush;
 
     std::cout << SEPARATOR;
     for(size_t i = 0; i < functions.size(); ++i)
@@ -364,6 +366,8 @@ int main(int argc, char* argv[])
               << ") (using " << varValueSetsAmount << " set"
               << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
     std::cout << SEPARATOR;
+
+    std::cout << std::flush;
 
 #if(0)
     std::cout << "Testing with variable values:\n";
@@ -388,8 +392,15 @@ int main(int argc, char* argv[])
                   << SEPARATOR;
 #endif
 
+    std::cout << std::flush;
+
     checkEquality(functions);
+
+    std::cout << std::flush;
+
     printByteCodes(functions);
+
+    std::cout << std::flush;
 
     if(measureTimings)
     {
