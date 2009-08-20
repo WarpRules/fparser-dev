@@ -26,16 +26,20 @@ void FunctionParser::Optimize()
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
     while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(*tree)) // entry
-        {}
+        { //std::cout << "Rerunning 0\n";
+        }
 
     while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(*tree)) // intermediate
-        {}
+        { //std::cout << "Rerunning 1\n";
+        }
 
     while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(*tree)) // final1
-        {}
+        { //std::cout << "Rerunning 2\n";
+        }
 
     while(FPoptimizer_Grammar::pack.glist[3].ApplyTo(*tree)) // final2
-        {}
+        { //std::cout << "Rerunning 3\n";
+        }
 
     tree->Sort_Recursive();
 

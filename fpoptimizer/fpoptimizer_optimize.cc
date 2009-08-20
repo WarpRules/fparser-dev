@@ -864,16 +864,8 @@ namespace FPoptimizer_Grammar
     {
         bool changed = false;
 
-#ifdef DEBUG_SUBSTITUTIONS
-        if(!recursion)
-        {
-            std::cout << "Input:  ";
-            DumpTree(tree);
-            std::cout << "\n" << std::flush;
-        }
-#else
         recursion=recursion;
-#endif
+
         if(tree.OptimizedUsing != this)
         {
             /* First optimize all children */
@@ -891,10 +883,24 @@ namespace FPoptimizer_Grammar
             typedef const Rule* ruleit;
 
             std::pair<ruleit, ruleit> range
-                = MyEqualRange(pack.rlist + index,
-                               pack.rlist + index + count,
+                = MyEqualRange(pack.rlist + this->index,
+                               pack.rlist + this->index + this->count,
                                tree,
                                OpcodeRuleCompare());
+
+#ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Input (Grammar #"
+                      << (this - pack.glist)
+                      << ", " << FP_GetOpcodeName(tree.Opcode)
+                      << "[" << tree.Params.size()
+                      << "], rules "
+                      << (range.first - pack.rlist)
+                      << ".."
+                      << (range.second - pack.rlist)
+                      << ": ";
+            DumpTree(tree);
+            std::cout << "\n" << std::flush;
+#endif
 
             while(range.first < range.second)
             {
@@ -907,10 +913,23 @@ namespace FPoptimizer_Grammar
                 ++range.first;
             }
 
+#ifdef DEBUG_SUBSTITUTIONS
+            std::cout << (changed ? "Changed." : "No changes.");
+            std::cout << "\n" << std::flush;
+#endif
+
             if(!changed)
             {
                 tree.OptimizedUsing = this;
             }
+        }
+        else
+        {
+#ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Already optimized:  ";
+            DumpTree(tree);
+            std::cout << "\n" << std::flush;
+#endif
         }
 
 #ifdef DEBUG_SUBSTITUTIONS

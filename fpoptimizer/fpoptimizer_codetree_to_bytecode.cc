@@ -743,12 +743,18 @@ namespace FPoptimizer_CodeTree
                         // Convert into cExp or Exp2.
                         //    x^y = exp(log(x) ^ y)
                         //    Can only be done when x is positive, though.
-                        double mulvalue = p0.param->GetImmed();
+                        double mulvalue = std::log( p0.param->GetImmed() );
 
-                        //fprintf(stderr, "base=%g\n", mulvalue);
+                        if(p1.param->Opcode == cMul)
+                        {
+                            // Neat, we can delegate the multiplication to the child
+                            p1.param->AddParam( Param(new CodeTree(mulvalue), false) );
+                            p1.param->ConstantFolding();
+                            p1.param->Sort();
+                            p1.param->Recalculate_Hash_NoRecursion();
+                            mulvalue = 1.0;
+                        }
 
-                        mulvalue = std::log( mulvalue );
-                        //fprintf(stderr, "log=%g\n", mulvalue);
                         // If the exponent needs multiplication, multiply it
                         if(
                       #ifdef FP_EPSILON
@@ -763,11 +769,20 @@ namespace FPoptimizer_CodeTree
                             // Done with a dup/add sequence, cExp
                             synth.AddOperation(cExp, 1);
                         }
-                        else
+                        else if(
+                          #ifdef FP_NO_EXP2
+                           #ifdef FP_EPSILON
+                            fabs(mulvalue - CONSTANT_L2) <= FP_EPSILON
+                           #else
+                            mulvalue == CONSTANT_L2
+                           #endif
+                          #else
+                            true
+                          #endif
+                            )
                         {
                             // Do with cExp2; in all likelihood it's never slower than cExp.
                             mulvalue *= CONSTANT_L2I;
-                            //fprintf(stderr, "log2=%g\n", mulvalue);
                             if(
                           #ifdef FP_EPSILON
                               fabs(mulvalue - (double)(long)mulvalue) <= FP_EPSILON
@@ -789,6 +804,14 @@ namespace FPoptimizer_CodeTree
                                 synth.AddOperation(cMul, 2);
                                 synth.AddOperation(cExp2, 1);
                             }
+                        }
+                        else
+                        {
+                            // Do with cMul and cExp
+                            p1.param->SynthesizeByteCode(synth);
+                            synth.PushImmed(mulvalue);
+                            synth.AddOperation(cMul, 2);
+                            synth.AddOperation(cExp, 1);
                         }
                     }
                     else
