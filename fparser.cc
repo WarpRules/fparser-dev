@@ -27,6 +27,11 @@ using namespace std;
 #endif
 
 
+#define FP_VERBOSE_BYTECODE_DISPLAY
+#ifdef FP_VERBOSE_BYTECODE_DISPLAY
+# include <sstream>
+#endif
+
 //=========================================================================
 // Name handling functions
 //=========================================================================
@@ -1437,126 +1442,232 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
     const std::vector<unsigned>& ByteCode = data->ByteCode;
     const std::vector<double>& Immed = data->Immed;
 
-    for(unsigned IP = 0, DP = 0; IP < ByteCode.size(); ++IP)
+    #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+    std::vector<std::string> stack;
+    std::vector<unsigned> if_stack;
+    #endif
+
+    for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
     {
-        printHex(dest, IP);
-        dest << ": ";
+        std::string n;
+        bool out_params = false;
+        unsigned params = 2, produces = 1, opcode = 0;
 
-        unsigned opcode = ByteCode[IP];
-
-        switch(opcode)
+#ifdef FP_VERBOSE_BYTECODE_DISPLAY
+        if(!if_stack.empty() && if_stack.back() == IP)
         {
-          case cIf:
-              dest << "jz ";
-              printHex(dest, ByteCode[IP+1]+1);
-              dest << endl;
-              IP += 2;
-              break;
-
-          case cJump:
-              dest << "jump ";
-              printHex(dest, ByteCode[IP+1]+1);
-              dest << endl;
-              IP += 2;
-              break;
-          case cImmed:
-              dest.precision(10);
-              dest << "push " << Immed[DP++] << endl;
-              break;
-
-          case cFCall:
-              {
-                  const unsigned index = ByteCode[++IP];
-                  std::set<NameData>::const_iterator iter =
-                      data->nameData.begin();
-                  while(iter->type != NameData::FUNC_PTR ||
-                        iter->index != index)
-                      ++iter;
-                  dest << "fcall " << iter->name
-                       << " (" << data->FuncPtrs[index].params << ")" << endl;
-                  break;
-              }
-
-          case cPCall:
-              {
-                  const unsigned index = ByteCode[++IP];
-                  std::set<NameData>::const_iterator iter =
-                      data->nameData.begin();
-                  while(iter->type != NameData::PARSER_PTR ||
-                        iter->index != index)
-                      ++iter;
-                  dest << "pcall " << iter->name
-                       << " (" << data->FuncParsers[index].params
-                       << ")" << endl;
-                  break;
-              }
-
-          default:
-              if(OPCODE(opcode) < VarBegin)
-              {
-                  string n;
-                  unsigned params = 1;
-                  switch(opcode)
-                  {
-                    case cNeg: n = "neg"; break;
-                    case cAdd: n = "add"; break;
-                    case cSub: n = "sub"; break;
-                    case cMul: n = "mul"; break;
-                    case cDiv: n = "div"; break;
-                    case cMod: n = "mod"; break;
-                    case cPow: n = "pow"; break;
-                    case cEqual: n = "eq"; break;
-                    case cNEqual: n = "neq"; break;
-                    case cLess: n = "lt"; break;
-                    case cLessOrEq: n = "le"; break;
-                    case cGreater: n = "gt"; break;
-                    case cGreaterOrEq: n = "ge"; break;
-                    case cAnd: n = "and"; break;
-                    case cOr: n = "or"; break;
-                    case cNot: n = "not"; break;
-                    case cDeg: n = "deg"; break;
-                    case cRad: n = "rad"; break;
-
-#ifndef FP_DISABLE_EVAL
-                    case cEval: n = "call 0"; break;
-#endif
-
-#ifdef FP_SUPPORT_OPTIMIZER
-                    case cVar:    n = "(var)"; break;
-                    case cNotNot: n = "(notnot)"; break;
-                    case cDup: n = "dup"; break;
-                    case cInv: n = "inv"; break;
-                    case cSqr: n = "sqr"; break;
-                    case cFetch:
-                        dest << "cFetch(" << ByteCode[++IP] << ")";
-                        break;
-                    case cPopNMov:
-                    {
-                        size_t a = ByteCode[++IP];
-                        size_t b = ByteCode[++IP];
-                        dest << "cPopNMov(" << a << ", " << b << ")";
-                        break;
-                    }
-                    case cRDiv: n = "rdiv"; break;
-                    case cRSub: n = "rsub"; break;
-                    case cRSqrt: n = "rsqrt"; break;
-#endif
-
-                    case cNop: n = "nop"; break;
-
-                    default:
-                        n = Functions[opcode-cAbs].name;
-                        params = Functions[opcode-cAbs].params;
-                  }
-                  dest << n;
-                  if(params != 1) dest << " (" << params << ")";
-                  dest << endl;
-              }
-              else
-              {
-                  dest << "push Var" << opcode-VarBegin << endl;
-              }
+            printHex(dest, IP);
+            dest << ": (end)";
+            opcode = cIf;
+            params = 3;
+            --IP;
+            if_stack.resize(if_stack.size()-1); // pop_back
         }
+        else
+#endif
+        {
+            if(IP >= ByteCode.size()) break;
+            opcode = ByteCode[IP];
+
+            printHex(dest, IP);
+            dest << ": ";
+
+            switch(opcode)
+            {
+              case cIf:
+              {
+                  unsigned label = ByteCode[IP+1]+1;
+                  dest << "jz ";
+                  printHex(dest, label);
+                  params = 1;
+                  produces = 0;
+                  IP += 2;
+                  break;
+              }
+
+              case cJump:
+              {
+                  unsigned label = ByteCode[IP+1]+1;
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                  if_stack.push_back(label);
+              #endif
+                  dest << "jump ";
+                  printHex(dest, label);
+                  params = 0;
+                  produces = 0;
+                  IP += 2;
+                  break;
+              }
+              case cImmed:
+              {
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                  std::stringstream buf;
+                  buf.precision(10);
+                  buf << Immed[DP];
+                  stack.push_back(buf.str());
+              #endif
+                  dest.precision(10);
+                  dest << "push " << Immed[DP];
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                  //dest << "\t--" << stack.back();
+              #endif
+                  ++DP;
+                  produces = 0;
+                  break;
+              }
+
+              case cFCall:
+                  {
+                      const unsigned index = ByteCode[++IP];
+                      params = data->FuncPtrs[index].params;
+                      std::set<NameData>::const_iterator iter =
+                          data->nameData.begin();
+                      while(iter->type != NameData::FUNC_PTR ||
+                            iter->index != index)
+                          ++iter;
+                      dest << "fcall " << iter->name;
+                      out_params = true;
+                      break;
+                  }
+
+              case cPCall:
+                  {
+                      const unsigned index = ByteCode[++IP];
+                      params = data->FuncParsers[index].params;
+                      std::set<NameData>::const_iterator iter =
+                          data->nameData.begin();
+                      while(iter->type != NameData::PARSER_PTR ||
+                            iter->index != index)
+                          ++iter;
+                      dest << "pcall " << iter->name;
+                      out_params = true;
+                      break;
+                  }
+
+              default:
+                  if(OPCODE(opcode) < VarBegin)
+                  {
+                      switch(opcode)
+                      {
+                        case cNeg: n = "neg"; params = 1; break;
+                        case cAdd: n = "add"; break;
+                        case cSub: n = "sub"; break;
+                        case cMul: n = "mul"; break;
+                        case cDiv: n = "div"; break;
+                        case cMod: n = "mod"; break;
+                        case cPow: n = "pow"; break;
+                        case cEqual: n = "eq"; break;
+                        case cNEqual: n = "neq"; break;
+                        case cLess: n = "lt"; break;
+                        case cLessOrEq: n = "le"; break;
+                        case cGreater: n = "gt"; break;
+                        case cGreaterOrEq: n = "ge"; break;
+                        case cAnd: n = "and"; break;
+                        case cOr: n = "or"; break;
+                        case cNot: n = "not"; break;
+                        case cDeg: n = "deg"; break;
+                        case cRad: n = "rad"; break;
+
+    #ifndef FP_DISABLE_EVAL
+                        case cEval: n = "call 0"; break;
+    #endif
+
+    #ifdef FP_SUPPORT_OPTIMIZER
+                        case cVar:    n = "(var)"; break;
+                        case cNotNot: n = "(notnot)"; break;
+                        case cDup: n = "dup"; params = 0; break;
+                        case cInv: n = "inv"; params = 1; break;
+                        case cSqr: n = "sqr"; params = 1; break;
+                        case cFetch:
+                        {
+                            unsigned index = ByteCode[++IP];
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                            stack.push_back(stack[index]);
+              #endif
+                            dest << "cFetch(" << index << ")";
+                            produces = 0;
+                            break;
+                        }
+                        case cPopNMov:
+                        {
+                            size_t a = ByteCode[++IP];
+                            size_t b = ByteCode[++IP];
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                            std::string stacktop = stack[b];
+                            stack.resize(a);
+                            stack.push_back(stack[b]);
+              #endif
+                            dest << "cPopNMov(" << a << ", " << b << ")";
+                            produces = 0;
+                            break;
+                        }
+                        case cRDiv: n = "rdiv"; break;
+                        case cRSub: n = "rsub"; break;
+                        case cRSqrt: n = "rsqrt"; params = 1; break;
+    #endif
+
+                        case cNop: dest << "nop"; params = 0; produces = 0; break;
+
+                        default:
+                            n = Functions[opcode-cAbs].name;
+                            params = Functions[opcode-cAbs].params;
+                            out_params = params != 1;
+                      }
+                  }
+                  else
+                  {
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                      std::stringstream buf;
+                      //buf << "Var" << opcode-VarBegin;
+                      buf << char('x' + opcode-VarBegin);
+                      stack.push_back(buf.str());
+              #endif
+                      dest << "push Var" << opcode-VarBegin;
+              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
+                      //dest << "\t--" << stack.back();
+              #endif
+                      produces = 0;
+                  }
+            }
+        }
+        if(produces) dest << n;
+        if(out_params) dest << " (" << params << ")";
+#ifdef FP_VERBOSE_BYTECODE_DISPLAY
+        if(produces > 0)
+        {
+            std::stringstream buf;
+            if(params > 0)
+            {
+                const char *paramsep = ", ", *suff = ")";
+                switch(opcode)
+                {
+                    case cIf: buf << "if(!"; break;
+                    case cNeg: buf << "(-"; break;
+                    case cAdd: buf << "("; paramsep = " + "; break;
+                    case cSub: buf << "("; paramsep = " - "; break;
+                    case cMul: buf << "("; paramsep = " * "; break;
+                    case cDiv: buf << "("; paramsep = " / "; break;
+                    case cPow: buf << "("; paramsep = " ^ "; break;
+                    case cSqr: suff = "^2"; break;
+                    default: buf << n << '(';
+                }
+                const char* sep = "";
+                for(unsigned a=0; a<params; ++a)
+                {
+                    buf << sep << stack[stack.size() - params + a];
+                    sep = paramsep;
+                }
+                stack.resize(stack.size() - params);
+                buf << suff;
+                stack.push_back(buf.str());
+            }
+            else
+                stack.push_back(stack.back()); // dup
+            if(n.size() <= 4 && !out_params) dest << '\t';
+        }
+        dest << "\t= " << stack.back();
+#endif
+        dest << endl;
     }
 }
 #endif
