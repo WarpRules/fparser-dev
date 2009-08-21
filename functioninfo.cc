@@ -2,6 +2,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <set>
 #include <string>
 #include <cstring>
 #include <ctime>
@@ -21,6 +22,16 @@ namespace
     const double kEpsilon = 1e-9;
     const bool kPrintTimingProgress = false;
 
+    class ParserWithConsts: public FunctionParser
+    {
+     public:
+        ParserWithConsts()
+        {
+            AddConstant("pi", 3.14159265358979323846);
+            AddConstant("e", 2.71828182845904523536);
+        }
+    };
+
     struct TimingInfo
     {
         double mMicroSeconds;
@@ -30,15 +41,15 @@ namespace
     struct FunctionInfo
     {
         std::string mFunctionString;
-        FunctionParser mParser;
+        ParserWithConsts mParser;
         TimingInfo mParseTiming;
         TimingInfo mEvalTiming;
         TimingInfo mOptimizeTiming;
         TimingInfo mOptimizedEvalTiming;
     };
 
-    FunctionParser gParser, gAuxParser;
-    std::string gFunctionString, gVarString("x");
+    ParserWithConsts gParser, gAuxParser;
+    std::string gFunctionString, gVarString;
     std::vector<std::vector<double> > gVarValues;
 
     inline void doParse() { gParser.Parse(gFunctionString, gVarString); }
@@ -161,8 +172,8 @@ namespace
     }
 
     bool compareFunctions(size_t function1Index, size_t function2Index,
-                          FunctionParser& parser1, bool parser1Optimized,
-                          FunctionParser& parser2, bool parser2Optimized)
+                          ParserWithConsts& parser1, bool parser1Optimized,
+                          ParserWithConsts& parser2, bool parser2Optimized)
     {
         const size_t varsAmount = gVarValues[0].size();
         for(size_t varSetInd = 0; varSetInd < gVarValues.size(); ++varSetInd)
@@ -204,7 +215,7 @@ namespace
 
     void checkEquality(const std::vector<FunctionInfo>& functions)
     {
-        FunctionParser parser1, parser2;
+        ParserWithConsts parser1, parser2;
 
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
@@ -247,7 +258,7 @@ namespace
     void printByteCodes(const std::vector<FunctionInfo>& functions)
     {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        FunctionParser parser;
+        ParserWithConsts parser;
         for(size_t i = 0; i < functions.size(); ++i)
         {
             std::cout << "Function " << i+1
@@ -309,13 +320,73 @@ namespace
         return true;
     }
 
+    bool functionsParseOk(const std::vector<FunctionInfo>& functions)
+    {
+        ParserWithConsts parser;
+        for(size_t i = 0; i < functions.size(); ++i)
+            if(parser.Parse(functions[i].mFunctionString, gVarString) >= 0)
+                return false;
+        return true;
+    }
+
+    void deduceVariables(const std::vector<FunctionInfo>& functions)
+    {
+        gVarString = "x";
+        if(functionsParseOk(functions)) return;
+        gVarString = "x,y";
+        if(functionsParseOk(functions)) return;
+        gVarString = "x,y,z";
+        if(functionsParseOk(functions)) return;
+
+        typedef std::set<std::string> StrSet;
+        StrSet varNames;
+        ParserWithConsts parser;
+
+        for(size_t funcInd = 0; funcInd < functions.size(); ++funcInd)
+        {
+            const std::string funcStr = functions[funcInd].mFunctionString;
+
+            while(true)
+            {
+                gVarString.clear();
+                for(StrSet::iterator iter = varNames.begin();
+                    iter != varNames.end();
+                    ++iter)
+                {
+                    if(iter != varNames.begin()) gVarString += ",";
+                    gVarString += *iter;
+                }
+
+                int index = parser.Parse(funcStr, gVarString);
+                if(index < 0) break;
+
+                int index2 = index;
+                if(index2 < int(funcStr.length()) &&
+                   (std::isalpha(funcStr[index2]) || funcStr[index2] == '_'))
+                {
+                    while(index2 < int(funcStr.length()) &&
+                          (std::isalnum(funcStr[index2]) ||
+                           funcStr[index2] == '_'))
+                        ++index2;
+                }
+
+                if(index2 == index)
+                {
+                    gVarString.clear();
+                    return;
+                }
+                varNames.insert(funcStr.substr(index, index2-index));
+            }
+        }
+    }
+
     int printHelp(const char* programName)
     {
         std::cerr <<
             "Usage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
-            "  -v <var string> : Specify a var string. Default is \"x\".\n"
+            "  -v <var string> : Specify a var string.\n"
             "  -nt             : No timing measurements.\n";
         return 1;
     }
@@ -345,6 +416,9 @@ int main(int argc, char* argv[])
     }
 
     if(functions.empty()) return printHelp(argv[0]);
+
+    if(gVarString.empty())
+        deduceVariables(functions);
 
     for(size_t i = 0; i < functions.size(); ++i)
         if(!checkFunctionValidity(functions[i]))
