@@ -401,8 +401,9 @@ namespace
             "Usage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
-            "  -v <var string> : Specify a var string.\n"
-            "  -nt             : No timing measurements.\n";
+            "  -vars <var string> : Specify a var string.\n"
+            "  -nt                : No timing measurements.\n"
+            "  -ntd               : No timing if functions differ.\n";
         return 1;
     }
 }
@@ -412,17 +413,19 @@ int main(int argc, char* argv[])
     if(argc < 2) return printHelp(argv[0]);
 
     std::vector<FunctionInfo> functions;
-    bool measureTimings = true;
+    bool measureTimings = true, noTimingIfEqualityErrors = false;
 
     for(int i = 1; i < argc; ++i)
     {
-        if(std::strcmp(argv[i], "-v") == 0)
+        if(std::strcmp(argv[i], "-vars") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
             gVarString = argv[i];
         }
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
+        else if(std::strcmp(argv[i], "-ntd") == 0)
+            noTimingIfEqualityErrors = true;
         else
         {
             functions.push_back(FunctionInfo());
@@ -483,7 +486,7 @@ int main(int argc, char* argv[])
 
     std::cout << std::flush;
 
-    bool equality_errors = checkEquality(functions) == false;
+    const bool equalityErrors = checkEquality(functions) == false;
 
     std::cout << std::flush;
 
@@ -491,7 +494,8 @@ int main(int argc, char* argv[])
 
     std::cout << std::flush;
 
-    if(equality_errors) measureTimings = false;
+    if(noTimingIfEqualityErrors && equalityErrors)
+        measureTimings = false;
 
     if(measureTimings)
     {
