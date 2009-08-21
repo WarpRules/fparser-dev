@@ -429,7 +429,7 @@ cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1>) : (cPow [(cAdd [a b]) 2]) (cMul [a b
 
 
 
-cAdd (cMul <1> <3>)  (cMul <1> <5>) : (cMul <1> (cAdd (cMul <3>)  (cMul <5>)))
+cAdd (cMul x <3>)  (cMul x <5>) : (cMul x (cAdd (cMul <3>)  (cMul <5>)))
 # Note: The above line can require extremely time-consuming
 
 # These are the same as above, but work also if pow() is expanded
@@ -458,13 +458,16 @@ cMul (cAdd (cMul % <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
 # 0.5 * (x - 1) * z
 # Thus,
 # x * (y + (y * z)) -> x * y * (z + 1)
-# x * (y + (-y * z)) -> x * y * (z - 1)
-# x * (y + (y * -1 * z)) -> x * y * (z - 1)
+# x * (y + (-y * z)) -> x * y * (1 - z)
+# x * (y + (y * -1 * z)) -> x * y * (1 - z)
 
 cMul (cAdd {y (cMul {y z})}) : y (cAdd [z 1])
-cMul (cAdd {% (cMul {-% z})}) : % (cAdd [z -1])
-cMul (cAdd {(cMul {% z}) -%}) : % (cAdd [z -1])
-cMul (cAdd {y (cMul {y -1 z})}) : y (cAdd [z -1])
+
+#cMul (cAdd {$ (cMul {-$ x})}) : $ (cAdd [1 (cMul -1 x)])
+#cMul (cAdd {(cMul {$ x}) -$}) : $ (cAdd [1 (cMul -1 x)])
+# ^ Disabled, causes infinite loop when $ = 1. Now limited to negative numbers.
+
+cMul (cAdd {y (cMul {y -1 x})}) : y (cAdd [1 (cMul -1 x)])
 
 #
 

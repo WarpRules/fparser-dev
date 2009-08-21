@@ -21,9 +21,11 @@ using namespace FUNCTIONPARSERTYPES;
 //#define DEBUG_SUBSTITUTIONS
 
 #ifdef DEBUG_SUBSTITUTIONS
+#include <sstream>
 namespace FPoptimizer_Grammar
 {
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
+    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree);
 }
 #endif
 
@@ -709,7 +711,7 @@ namespace FPoptimizer_CodeTree
                     subtree->Params.swap(Params); // subtree = y/x
                     subtree->ConstantFolding();
                     subtree->Sort();
-                    subtree->Recalculate_Hash_NoRecursion();
+                    subtree->Rehash(false);
                     Opcode = cAtan;
                     AddParam(Param(subtree, false)); // we = atan(y/x)
                 }
@@ -852,7 +854,6 @@ namespace FPoptimizer_Grammar
     };
 
 #ifdef DEBUG_SUBSTITUTIONS
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
     static const char ImmedHolderNames[3][2]  = {"%","&","$"};
     static const char NamedHolderNames[10][2] = {"x","y","z","a","b","c","d","e","f","g"};
 #endif
@@ -1006,6 +1007,7 @@ namespace FPoptimizer_Grammar
                         std::cout << "  ParmReplace: ";
                         DumpTree(tree);
                         std::cout << "\n" << std::flush;
+                        DumpHashes(tree);
     #endif
                         return true;
                     case ProduceNewTree:
@@ -1014,6 +1016,7 @@ namespace FPoptimizer_Grammar
                         std::cout << "  TreeReplace: ";
                         DumpTree(tree);
                         std::cout << "\n" << std::flush;
+                        DumpHashes(tree);
     #endif
                         return true;
                 }
@@ -2168,6 +2171,7 @@ namespace FPoptimizer_Grammar
             "  Tree       : ";
         DumpTree(tree);
         std::cout << "\n";
+        if(DidMatch) DumpHashes(tree);
 
         for(std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
             i = matchrec.NamedMap.begin(); i != matchrec.NamedMap.end(); ++i)
@@ -2199,41 +2203,74 @@ namespace FPoptimizer_Grammar
         }
         std::cout << std::flush;
     }
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree)
+    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree,
+                    std::map<fphash_t, std::set<std::string> >& done)
     {
-        //std::cout << "/*" << tree.Depth << "*/";
+        for(size_t a=0; a<tree.Params.size(); ++a)
+            DumpHashes(*tree.Params[a].param, done);
+
+        std::stringstream buf;
+        DumpTree(tree, buf);
+        done[tree.Hash].insert(buf.str());
+    }
+    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree)
+    {
+        std::map<fphash_t, std::set<std::string> > done;
+        DumpHashes(tree, done);
+
+        for(std::map<fphash_t, std::set<std::string> >::const_iterator
+            i = done.begin();
+            i != done.end();
+            ++i)
+        {
+            const std::set<std::string>& flist = i->second;
+            if(flist.size() != 1) std::cout << "ERROR - HASH COLLISION?\n";
+            for(std::set<std::string>::const_iterator
+                j = flist.begin();
+                j != flist.end();
+                ++j)
+            {
+                std::cout << '[' << std::hex << i->first << ']' << std::dec;
+                std::cout << ": " << *j << "\n";
+            }
+        }
+    }
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o)
+    {
+        //o << "/*" << tree.Depth << "*/";
         const char* sep2 = "";
-        //std::cout << '[' << std::hex << tree.Hash << ']' << std::dec;
+        //o << '[' << std::hex << tree.Hash << ']' << std::dec;
         switch(tree.Opcode)
         {
-            case cImmed: std::cout << tree.Value; return;
-            case cVar:   std::cout << "Var" << tree.Var; return;
+            case cImmed: o << tree.Value; return;
+            case cVar:   o << "Var" << tree.Var; return;
             case cAdd: sep2 = " +"; break;
             case cMul: sep2 = " *"; break;
             case cAnd: sep2 = " &"; break;
             case cOr: sep2 = " |"; break;
+            case cPow: sep2 = " ^"; break;
             default:
-                std::cout << FP_GetOpcodeName(tree.Opcode);
+                o << FP_GetOpcodeName(tree.Opcode);
                 if(tree.Opcode == cFCall || tree.Opcode == cPCall)
-                    std::cout << ':' << tree.Funcno;
+                    o << ':' << tree.Funcno;
         }
-        std::cout << '(';
-        if(tree.Params.size() <= 1 && *sep2) std::cout << (sep2+1) << ' ';
+        o << '(';
+        if(tree.Params.size() <= 1 && *sep2) o << (sep2+1) << ' ';
         for(size_t a=0; a<tree.Params.size(); ++a)
         {
-            if(a > 0) std::cout << ' ';
-            if(tree.Params[a].sign) std::cout << '~';
+            if(a > 0) o << ' ';
+            if(tree.Params[a].sign) o << '~';
 
-            DumpTree(*tree.Params[a].param);
+            DumpTree(*tree.Params[a].param, o);
 
             if(tree.Params[a].param->Parent != &tree)
             {
-                std::cout << "(?parent?)";
+                o << "(?parent?)";
             }
 
-            if(a+1 < tree.Params.size()) std::cout << sep2;
+            if(a+1 < tree.Params.size()) o << sep2;
         }
-        std::cout << ')';
+        o << ')';
     }
 #endif
 }

@@ -524,6 +524,7 @@ namespace FPoptimizer_CodeTree
                 switch(Opcode) // Recreate inversions and negations
                 {
                     case cMul:
+                    {
                         for(size_t a=0; a<Params.size(); ++a)
                             if(Params[a].param->Opcode == cPow
                             && Params[a].param->Params[1].param->IsImmed()
@@ -534,11 +535,14 @@ namespace FPoptimizer_CodeTree
                                 Params[a].sign = true;
                             }
                         break;
+                    }
                     case cAdd:
+                    {
                         for(size_t a=0; a<Params.size(); ++a)
                             if(Params[a].param->Opcode == cMul)
                             {
                                 // if the mul group has a -1 constant...
+                                bool changed = false;
                                 CodeTree& mulgroup = *Params[a].param;
                                 for(size_t b=mulgroup.Params.size(); b-- > 0; )
                                     if(mulgroup.Params[b].param->IsImmed()
@@ -546,9 +550,17 @@ namespace FPoptimizer_CodeTree
                                     {
                                         mulgroup.Params.erase(mulgroup.Params.begin()+b);
                                         Params[a].sign = !Params[a].sign;
+                                        changed = true;
                                     }
+                                if(changed)
+                                {
+                                    mulgroup.ConstantFolding();
+                                    mulgroup.Sort();
+                                    mulgroup.Recalculate_Hash_NoRecursion();
+                                }
                             }
                         break;
+                   }
                 }
 
                 // Operand re-sorting:

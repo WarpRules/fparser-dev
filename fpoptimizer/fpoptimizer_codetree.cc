@@ -6,7 +6,7 @@
 
 #include "fpoptimizer_codetree.hh"
 #include "fptypes.hh"
-
+#include "crc32.hh"
 #include "fpoptimizer_consts.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
@@ -19,7 +19,7 @@ using namespace FUNCTIONPARSERTYPES;
 #ifdef DEBUG_SUBSTITUTIONS
 namespace FPoptimizer_Grammar
 {
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree);
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
 }
 #endif
 
@@ -130,16 +130,24 @@ namespace FPoptimizer_CodeTree
         switch(Opcode)
         {
             case cImmed:
-                // FIXME: not portable - we're casting double* into uint_least64_t*
+            {
                 if(Value != 0.0)
-                    NewHash ^= *(fphash_t*)&Value;
+                {
+                    crc32_t crc = crc32::calc( (const unsigned char*) &Value,
+                                                sizeof(Value) );
+                    NewHash ^= crc | (fphash_t(crc) << FPHASH_CONST(32));
+                }
                 break; // no params
+            }
             case cVar:
                 NewHash ^= (Var<<24) | (Var>>24);
                 break; // no params
             case cFCall: case cPCall:
-                NewHash ^= (Funcno<<24) | (Funcno>>24);
+            {
+                crc32_t crc = crc32::calc( (const unsigned char*) &Funcno, sizeof(Funcno) );
+                NewHash ^= (crc<<24) | (crc>>24);
                 /* passthru */
+            }
             default:
             {
                 size_t MaxChildDepth = 0;
