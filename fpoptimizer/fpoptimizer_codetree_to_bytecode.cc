@@ -16,7 +16,7 @@ static const unsigned MAX_POWI_BYTECODE_LENGTH = 15;
 #else
 static const unsigned MAX_POWI_BYTECODE_LENGTH = 999;
 #endif
-static const unsigned MAX_MULI_BYTECODE_LENGTH = 5;
+static const unsigned MAX_MULI_BYTECODE_LENGTH = 3;
 
 #define POWI_TABLE_SIZE 256
 #define POWI_WINDOW_SIZE 3
