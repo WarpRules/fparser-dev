@@ -27,11 +27,6 @@ using namespace std;
 #endif
 
 
-#define FP_VERBOSE_BYTECODE_DISPLAY
-#ifdef FP_VERBOSE_BYTECODE_DISPLAY
-# include <sstream>
-#endif
-
 //=========================================================================
 // Name handling functions
 //=========================================================================
@@ -1424,6 +1419,7 @@ Note: FP_NO_ASINH functions could be implemented as such:
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 #include <iomanip>
+#include <sstream>
 namespace
 {
     inline void printHex(std::ostream& dest, unsigned n)
@@ -1435,17 +1431,15 @@ namespace
     }
 }
 
-void FunctionParser::PrintByteCode(std::ostream& dest) const
+void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) const
 {
     dest << "Size of stack: " << data->StackSize << "\n";
 
     const std::vector<unsigned>& ByteCode = data->ByteCode;
     const std::vector<double>& Immed = data->Immed;
 
-    #ifdef FP_VERBOSE_BYTECODE_DISPLAY
     std::vector<std::string> stack;
     std::vector<unsigned> if_stack;
-    #endif
 
     for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
     {
@@ -1453,8 +1447,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
 
-#ifdef FP_VERBOSE_BYTECODE_DISPLAY
-        if(!if_stack.empty() && if_stack.back() == IP)
+        if(show_expression && !if_stack.empty() && if_stack.back() == IP)
         {
             printHex(dest, IP);
             dest << ": (end)";
@@ -1464,7 +1457,6 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
             if_stack.resize(if_stack.size()-1); // pop_back
         }
         else
-#endif
         {
             if(IP >= ByteCode.size()) break;
             opcode = ByteCode[IP];
@@ -1488,9 +1480,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
               case cJump:
               {
                   unsigned label = ByteCode[IP+1]+1;
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                  if_stack.push_back(label);
-              #endif
+                  
+                  if(show_expression)
+                      if_stack.push_back(label);
+
                   dest << "jump ";
                   printHex(dest, label);
                   params = 0;
@@ -1500,17 +1493,15 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
               }
               case cImmed:
               {
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                  std::stringstream buf;
-                  buf.precision(10);
-                  buf << Immed[DP];
-                  stack.push_back(buf.str());
-              #endif
+                  if(show_expression)
+                  {
+                      std::stringstream buf;
+                      buf.precision(10);
+                      buf << Immed[DP];
+                      stack.push_back(buf.str());
+                  }
                   dest.precision(10);
                   dest << "push " << Immed[DP];
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                  //dest << "\t--" << stack.back();
-              #endif
                   ++DP;
                   produces = 0;
                   break;
@@ -1581,9 +1572,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                            stack.push_back(stack[index]);
-              #endif
+                            if(show_expression)
+                                stack.push_back(stack[index]);
                             dest << "cFetch(" << index << ")";
                             produces = 0;
                             break;
@@ -1592,11 +1582,12 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                         {
                             size_t a = ByteCode[++IP];
                             size_t b = ByteCode[++IP];
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                            std::string stacktop = stack[b];
-                            stack.resize(a);
-                            stack.push_back(stack[b]);
-              #endif
+                            if(show_expression)
+                            {
+                                std::string stacktop = stack[b];
+                                stack.resize(a);
+                                stack.push_back(stack[b]);
+                            }
                             dest << "cPopNMov(" << a << ", " << b << ")";
                             produces = 0;
                             break;
@@ -1616,57 +1607,56 @@ void FunctionParser::PrintByteCode(std::ostream& dest) const
                   }
                   else
                   {
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                      std::stringstream buf;
-                      //buf << "Var" << opcode-VarBegin;
-                      buf << char('x' + opcode-VarBegin);
-                      stack.push_back(buf.str());
-              #endif
+                      if(show_expression)
+                      {
+                          std::stringstream buf;
+                          //buf << "Var" << opcode-VarBegin;
+                          buf << char('x' + opcode-VarBegin);
+                          stack.push_back(buf.str());
+                      }
                       dest << "push Var" << opcode-VarBegin;
-              #ifdef FP_VERBOSE_BYTECODE_DISPLAY
-                      //dest << "\t--" << stack.back();
-              #endif
                       produces = 0;
                   }
             }
         }
         if(produces) dest << n;
         if(out_params) dest << " (" << params << ")";
-#ifdef FP_VERBOSE_BYTECODE_DISPLAY
-        if(produces > 0)
+        if(show_expression)
         {
-            std::stringstream buf;
-            if(params > 0)
+            if(produces > 0)
             {
-                const char *paramsep = ", ", *suff = ")";
-                switch(opcode)
+                std::stringstream buf;
+                if(params > 0)
                 {
-                    case cIf: buf << "if(!"; break;
-                    case cNeg: buf << "(-"; break;
-                    case cAdd: buf << "("; paramsep = " + "; break;
-                    case cSub: buf << "("; paramsep = " - "; break;
-                    case cMul: buf << "("; paramsep = " * "; break;
-                    case cDiv: buf << "("; paramsep = " / "; break;
-                    case cPow: buf << "("; paramsep = " ^ "; break;
-                    case cSqr: suff = "^2"; break;
-                    default: buf << n << '(';
+                    const char *paramsep = ", ", *suff = ")";
+                    switch(opcode)
+                    {
+                        case cIf: buf << "if(!"; break;
+                        case cNeg: buf << "(-"; break;
+                        case cAdd: buf << "("; paramsep = " + "; break;
+                        case cSub: buf << "("; paramsep = " - "; break;
+                        case cMul: buf << "("; paramsep = " * "; break;
+                        case cDiv: buf << "("; paramsep = " / "; break;
+                        case cPow: buf << "("; paramsep = " ^ "; break;
+                        case cSqr: suff = "^2"; break;
+                        default: buf << n << '(';
+                    }
+                    const char* sep = "";
+                    for(unsigned a=0; a<params; ++a)
+                    {
+                        buf << sep << stack[stack.size() - params + a];
+                        sep = paramsep;
+                    }
+                    stack.resize(stack.size() - params);
+                    buf << suff;
+                    stack.push_back(buf.str());
                 }
-                const char* sep = "";
-                for(unsigned a=0; a<params; ++a)
-                {
-                    buf << sep << stack[stack.size() - params + a];
-                    sep = paramsep;
-                }
-                stack.resize(stack.size() - params);
-                buf << suff;
-                stack.push_back(buf.str());
+                else
+                    stack.push_back(stack.back()); // dup
+                if(n.size() <= 4 && !out_params) dest << '\t';
             }
-            else
-                stack.push_back(stack.back()); // dup
-            if(n.size() <= 4 && !out_params) dest << '\t';
+            dest << "\t= " << stack.back();
         }
-        dest << "\t= " << stack.back();
-#endif
         dest << endl;
     }
 }
