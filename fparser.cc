@@ -1425,15 +1425,43 @@ namespace
     inline void printHex(std::ostream& dest, unsigned n)
     {
         std::ios::fmtflags flags = dest.flags();
-        dest.width(8); dest.fill('0'); std::hex(dest); //uppercase(dest);
+        dest.width(4); dest.fill('0'); std::hex(dest); //uppercase(dest);
         dest << n;
         dest.flags(flags);
     }
+
+    void padLine(std::ostringstream& dest, unsigned destLength)
+    {
+        for(unsigned currentLength = dest.str().length();
+            currentLength < destLength;
+            ++currentLength)
+        {
+            dest << ' ';
+        }
+    }
+
+    typedef std::map<FUNCTIONPARSERTYPES::NamePtr, unsigned> VariablesMap;
+    std::string findVariableName(const VariablesMap& varMap, unsigned index)
+    {
+        for(VariablesMap::const_iterator iter = varMap.begin();
+            iter != varMap.end();
+            ++iter)
+        {
+            if(iter->second == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
+    }
 }
 
-void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) const
+void FunctionParser::PrintByteCode(std::ostream& dest,
+                                   bool showExpression) const
 {
     dest << "Size of stack: " << data->StackSize << "\n";
+
+    std::ostringstream outputBuffer;
+    std::ostream& output = (showExpression ? outputBuffer : dest);
 
     const std::vector<unsigned>& ByteCode = data->ByteCode;
     const std::vector<double>& Immed = data->Immed;
@@ -1447,10 +1475,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
 
-        if(show_expression && !if_stack.empty() && if_stack.back() == IP)
+        if(showExpression && !if_stack.empty() && if_stack.back() == IP)
         {
-            printHex(dest, IP);
-            dest << ": (end)";
+            printHex(output, IP);
+            output << ": (end)";
             opcode = cIf;
             params = 3;
             --IP;
@@ -1461,16 +1489,16 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
             if(IP >= ByteCode.size()) break;
             opcode = ByteCode[IP];
 
-            printHex(dest, IP);
-            dest << ": ";
+            printHex(output, IP);
+            output << ": ";
 
             switch(opcode)
             {
               case cIf:
               {
                   unsigned label = ByteCode[IP+1]+1;
-                  dest << "jz ";
-                  printHex(dest, label);
+                  output << "jz ";
+                  printHex(output, label);
                   params = 1;
                   produces = 0;
                   IP += 2;
@@ -1480,12 +1508,12 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
               case cJump:
               {
                   unsigned label = ByteCode[IP+1]+1;
-                  
-                  if(show_expression)
+
+                  if(showExpression)
                       if_stack.push_back(label);
 
-                  dest << "jump ";
-                  printHex(dest, label);
+                  output << "jump ";
+                  printHex(output, label);
                   params = 0;
                   produces = 0;
                   IP += 2;
@@ -1493,15 +1521,15 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
               }
               case cImmed:
               {
-                  if(show_expression)
+                  if(showExpression)
                   {
                       std::stringstream buf;
-                      buf.precision(10);
+                      buf.precision(8);
                       buf << Immed[DP];
                       stack.push_back(buf.str());
                   }
-                  dest.precision(10);
-                  dest << "push " << Immed[DP];
+                  output.precision(8);
+                  output << "push " << Immed[DP];
                   ++DP;
                   produces = 0;
                   break;
@@ -1516,7 +1544,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                       while(iter->type != NameData::FUNC_PTR ||
                             iter->index != index)
                           ++iter;
-                      dest << "fcall " << iter->name;
+                      output << "fcall " << iter->name;
                       out_params = true;
                       break;
                   }
@@ -1530,7 +1558,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                       while(iter->type != NameData::PARSER_PTR ||
                             iter->index != index)
                           ++iter;
-                      dest << "pcall " << iter->name;
+                      output << "pcall " << iter->name;
                       out_params = true;
                       break;
                   }
@@ -1572,9 +1600,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];
-                            if(show_expression)
+                            if(showExpression)
                                 stack.push_back(stack[index]);
-                            dest << "cFetch(" << index << ")";
+                            output << "cFetch(" << index << ")";
                             produces = 0;
                             break;
                         }
@@ -1582,13 +1610,13 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                         {
                             size_t a = ByteCode[++IP];
                             size_t b = ByteCode[++IP];
-                            if(show_expression)
+                            if(showExpression)
                             {
                                 std::string stacktop = stack[b];
                                 stack.resize(a);
                                 stack.push_back(stack[b]);
                             }
-                            dest << "cPopNMov(" << a << ", " << b << ")";
+                            output << "cPopNMov(" << a << ", " << b << ")";
                             produces = 0;
                             break;
                         }
@@ -1597,7 +1625,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                         case cRSqrt: n = "rsqrt"; params = 1; break;
     #endif
 
-                        case cNop: dest << "nop"; params = 0; produces = 0; break;
+                        case cNop:
+                            output << "nop"; params = 0; produces = 0;
+                            break;
 
                         default:
                             n = Functions[opcode-cAbs].name;
@@ -1607,22 +1637,22 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                   }
                   else
                   {
-                      if(show_expression)
+                      if(showExpression)
                       {
-                          std::stringstream buf;
-                          //buf << "Var" << opcode-VarBegin;
-                          buf << char('x' + opcode-VarBegin);
-                          stack.push_back(buf.str());
+                          stack.push_back
+                              (findVariableName(data->variableRefs, opcode));
                       }
-                      dest << "push Var" << opcode-VarBegin;
+                      output << "push Var" << opcode-VarBegin;
                       produces = 0;
                   }
             }
         }
-        if(produces) dest << n;
-        if(out_params) dest << " (" << params << ")";
-        if(show_expression)
+        if(produces) output << n;
+        if(out_params) output << " (" << params << ")";
+        if(showExpression)
         {
+            padLine(outputBuffer, 20);
+
             if(produces > 0)
             {
                 std::stringstream buf;
@@ -1653,11 +1683,19 @@ void FunctionParser::PrintByteCode(std::ostream& dest, bool show_expression) con
                 }
                 else
                     stack.push_back(stack.back()); // dup
-                if(n.size() <= 4 && !out_params) dest << '\t';
+                //if(n.size() <= 4 && !out_params) padLine(outputBuffer, 20);
             }
-            dest << "\t= " << stack.back();
+            //padLine(outputBuffer, 20);
+            output << "= " << stack.back();
         }
-        dest << endl;
+
+        if(showExpression)
+        {
+            dest << outputBuffer.str() << std::endl;
+            outputBuffer.str("");
+        }
+        else
+            output << std::endl;
     }
 }
 #endif

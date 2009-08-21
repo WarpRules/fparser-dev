@@ -122,13 +122,13 @@ namespace
 
         while(true)
         {
-            bool wasOk = true;
+            bool wasOk = false;
             for(size_t i = 0; i < functions.size(); ++i)
             {
                 double value = functions[i].mParser.Eval(&varValues[0]);
-                if(value < -1e14 || value > 1e14)
+                if(!(value < -1e14 || value > 1e14))
                 {
-                    wasOk = false;
+                    wasOk = true;
                     break;
                 }
             }
@@ -252,7 +252,7 @@ namespace
                     compareFunctions(ind1, ind2,
                                      parser1, false, parser2, true);
                 }
-                
+
                 if(!ok) errors = true;
             }
         }
@@ -265,9 +265,10 @@ namespace
         ParserWithConsts parser;
         for(size_t i = 0; i < functions.size(); ++i)
         {
-            std::cout << "Function " << i+1
-                      << " original             Optimized\n"
-                      << "-------------------             ---------\n";
+            std::cout
+                << "Function " << i+1
+                << " original                   | Optimized\n"
+                << "-------------------                   | ---------\n";
 
             std::stringstream stream1, stream2;
             parser.Parse(functions[i].mFunctionString, gVarString);
@@ -284,8 +285,18 @@ namespace
                 else line2.clear();
                 if(line1.empty() && line2.empty()) break;
 
-                line1.resize(32, ' ');
-                std::cout << line1 << line2 << "\n";
+                if(line1.length() > 38)
+                {
+                    line1.resize(38, ' ');
+                    line1[37] = '~';
+                }
+                else line1.resize(38, ' ');
+                if(line2.length() > 38)
+                {
+                    line2.resize(38, ' ');
+                    line2[37] = '~';
+                }
+                std::cout << line1 << "| " << line2 << "\n";
             }
             std::cout << SEPARATOR;
         }
@@ -429,7 +440,7 @@ int main(int argc, char* argv[])
             return 1;
 
     const bool validVarValuesFound = findValidVarValues(functions);
-    
+
     std::cout << std::flush;
 
     std::cout << SEPARATOR;

@@ -69,7 +69,7 @@ public:
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
     // For debugging purposes only:
-    void PrintByteCode(std::ostream& dest, bool show_expression = true) const;
+    void PrintByteCode(std::ostream& dest, bool showExpression = true) const;
 #endif
 
 

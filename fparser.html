@@ -30,8 +30,9 @@
  <li><a href="#evaluationchecks">About evaluation-time checks</a>
  <li><a href="#threadsafety">About thread safety</a>
  <li><a href="#functionsyntax">The function string syntax</a>
+ <li><a href="#tipsandtricks">Tips and tricks</a>
  <li><a href="#contact">Contacting the author</a>
- <li><a href="#algorithm">The algorithm used in the library</a>
+<!-- <li><a href="#algorithm">The algorithm used in the library</a> -->
  <li><a href="#license">Usage license</a>
 </ul>
 
@@ -1055,6 +1056,41 @@ in the <code>fpconfig.hh</code> file.
 
 
 <!-- -------------------------------------------------------------------- -->
+<a name="tipsandtricks"></a>
+<h2>Tips and tricks</h2>
+
+<h3>Add constants automatically to all parser objects</h3>
+
+<p>Often the same constants (such as <em>pi</em> and <em>e</em>) and other
+user-defined identifiers (such as units) are always used in all the
+<code>FunctionParser</code> objects throughout the program. It would be
+troublesome to always have to manually add these constants every time a
+new parser object is created.
+
+<p>There is, however, a simple way to always add these user-defined identifiers
+to all instances. Write a class like this:
+
+<pre>
+    class ParserWithConsts: public FunctionParser
+    {
+     public:
+        ParserWithConsts()
+        {
+            AddConstant("pi", 3.14159265358979323846);
+            AddConstant("e", 2.71828182845904523536);
+        }
+    };
+</pre>
+
+<p>Now instead of using <code>FunctionParser</code>, always use
+<code>ParserWithConsts</code>. It will behave identically except that the
+constants (and possibly other user-defined identifiers) will always be
+automatically defined. (Objects of this type even survive
+<a href="http://en.wikipedia.org/wiki/Object_slicing">slicing</a>, so
+they are completely safe to use anywhere.)
+
+
+<!-- -------------------------------------------------------------------- -->
 <a name="contact"></a>
 <h2>Contacting the author</h2>
 
@@ -1062,6 +1098,7 @@ in the <code>fpconfig.hh</code> file.
 
 
 <!-- -------------------------------------------------------------------- -->
+<!--
 <a name="algorithm"></a>
 <h2>The algorithm used in the library</h2>
 
@@ -1137,7 +1174,7 @@ it byte by byte, from the beginning to the end. You never have to go back,
 make loops or anything.
 
 <p>This is what makes byte-coded stack arithmetic so fast.
-
+-->
 
 
 <!-- -------------------------------------------------------------------- -->
