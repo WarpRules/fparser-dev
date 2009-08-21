@@ -213,16 +213,17 @@ namespace
         return true;
     }
 
-    void checkEquality(const std::vector<FunctionInfo>& functions)
+    bool checkEquality(const std::vector<FunctionInfo>& functions)
     {
         ParserWithConsts parser1, parser2;
 
+        bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
             parser1.Parse(functions[ind1].mFunctionString, gVarString);
             parser2.Parse(functions[ind1].mFunctionString, gVarString);
             parser2.Optimize();
-            compareFunctions(ind1, ind1, parser1, false, parser2, true);
+            errors = errors || !compareFunctions(ind1, ind1, parser1, false, parser2, true);
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
@@ -251,8 +252,11 @@ namespace
                     compareFunctions(ind1, ind2,
                                      parser1, false, parser2, true);
                 }
+                
+                if(!ok) errors = true;
             }
         }
+        return !errors;
     }
 
     void printByteCodes(const std::vector<FunctionInfo>& functions)
@@ -468,13 +472,15 @@ int main(int argc, char* argv[])
 
     std::cout << std::flush;
 
-    checkEquality(functions);
+    bool equality_errors = checkEquality(functions) == false;
 
     std::cout << std::flush;
 
     printByteCodes(functions);
 
     std::cout << std::flush;
+
+    if(equality_errors) measureTimings = false;
 
     if(measureTimings)
     {
