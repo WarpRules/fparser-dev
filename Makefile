@@ -127,6 +127,7 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
 	    fpoptimizer/fpoptimizer_opcodename.hh \
+	    fpoptimizer/crc32.hh \
 	    fpoptimizer/fpoptimizer_opcodename.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
 	    fpoptimizer/fpoptimizer_grammar.cc \
