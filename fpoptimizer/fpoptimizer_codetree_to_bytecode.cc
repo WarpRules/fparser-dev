@@ -782,7 +782,7 @@ namespace FPoptimizer_CodeTree
                             synth.AddOperation(cExp, 1);
                         }
                         else if(
-                          #ifdef FP_NO_EXP2
+                          #ifndef FP_SUPPORT_EXP2
                            #ifdef FP_EPSILON
                             fabs(mulvalue - CONSTANT_L2) <= FP_EPSILON
                            #else

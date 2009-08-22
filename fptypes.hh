@@ -13,6 +13,7 @@
 #define ONCE_FPARSER_TYPES_H_
 
 #include "fpconfig.hh"
+#include <cmath>
 
 namespace FUNCTIONPARSERTYPES
 {
@@ -193,7 +194,26 @@ namespace FUNCTIONPARSERTYPES
         }
         return 0;
     }
-#endif
+
+#ifndef FP_SUPPORT_ASINH
+    inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
+    inline double fp_acosh(double x) { return log(x + sqrt(x*x - 1)); }
+    inline double fp_atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
+#else
+    inline double fp_asinh(double x) { return asinh(x); }
+    inline double fp_acosh(double x) { return acosh(x); }
+    inline double fp_atanh(double x) { return atanh(x); }
+#endif // FP_SUPPORT_ASINH
+
+#ifdef FP_EPSILON
+    inline bool FloatEqual(double a, double b)
+    { return fabs(a - b) <= FP_EPSILON; }
+#else
+    inline bool FloatEqual(double a, double b)
+    { return a == b; }
+#endif // FP_EPSILON
+
+#endif // ONCE_FPARSER_H_
 }
 
 #ifdef ONCE_FPARSER_H_

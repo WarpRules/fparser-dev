@@ -356,14 +356,14 @@ double f37(double* p)
     return 5 + 7.5*8 / 3 - pow(2.0,4)*2 + 7%2+4 + x;
 }
 
-#ifndef FP_NO_ASINH
+//#ifndef FP_NO_ASINH
 double f38(double* p)
 {
 #define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", f38, 3, -.9, .9, .05, false
     double x = p[0], y = p[1], z = p[2];
     return asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z);
 }
-#endif
+//#endif
 
 double f39(double* p)
 {
@@ -475,9 +475,9 @@ namespace
         { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
         { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
         { P34 }, { P35 }, { P36 }, { P37 },
-#ifndef FP_NO_ASINH
+//#ifndef FP_NO_ASINH
         { P38 },
-#endif
+//#endif
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 },
         { P46 }, { P47 }, { P48 }
     };
@@ -625,9 +625,9 @@ bool TestErrorSituations()
       "(((((((x))))))", "(((((((x))))))))", "2x", "(2)x", "(x)2", "2(x)",
       "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)", "if(x,2)",
       "if(x, 2, 3, 4)"
-#ifdef FP_NO_ASINH
-      , "asinh(x)", "acosh(x)", "atanh(x)"
-#endif
+//#ifdef FP_NO_ASINH
+//      , "asinh(x)", "acosh(x)", "atanh(x)"
+//#endif
 #ifdef FP_DISABLE_EVAL
       , "eval(x)"
 #endif

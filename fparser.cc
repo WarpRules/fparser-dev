@@ -565,11 +565,9 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         switch(opcode)
         {
           case cAcos:
-#ifndef FP_NO_ASINH
           case cAcosh:
           case cAsinh:
           case cAtanh:
-#endif
           case cAsin:
           case cAtan:
           case cAtan2:
@@ -1045,22 +1043,6 @@ const char* FunctionParser::CompileExpression(const char* function)
     return function;
 }
 
-#ifdef FP_NO_ASINH
-static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
-static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
-static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
-#endif
-/*
-Note: FP_NO_ASINH functions could be implemented as such:
-        asinh: log(x + sqrt(x*x + 1))
-        acosh: log(x + sqrt(x*x - 1))
-        atanh: log( (1+x) / (1-x)) / 2
-     The hyperbolic functions themselves are:
-        sinh: (exp(x)-exp(-x)) / 2
-        cosh: (exp(x)+exp(-x)) / 2
-        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
-*/
-
 //===========================================================================
 // Function evaluation
 //===========================================================================
@@ -1096,7 +1078,7 @@ double FunctionParser::Eval(const double* Vars)
 #                    endif
                        Stack[SP] = acos(Stack[SP]); break;
 
-          case cAcosh: Stack[SP] = acosh(Stack[SP]); break;
+          case cAcosh: Stack[SP] = fp_acosh(Stack[SP]); break;
 
           case  cAsin:
 #                    ifndef FP_NO_EVALUATION_CHECKS
@@ -1105,14 +1087,14 @@ double FunctionParser::Eval(const double* Vars)
 #                    endif
                        Stack[SP] = asin(Stack[SP]); break;
 
-          case cAsinh: Stack[SP] = asinh(Stack[SP]); break;
+          case cAsinh: Stack[SP] = fp_asinh(Stack[SP]); break;
 
           case  cAtan: Stack[SP] = atan(Stack[SP]); break;
 
           case cAtan2: Stack[SP-1] = atan2(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-          case cAtanh: Stack[SP] = atanh(Stack[SP]); break;
+          case cAtanh: Stack[SP] = fp_atanh(Stack[SP]); break;
 
           case  cCeil: Stack[SP] = ceil(Stack[SP]); break;
 
@@ -1171,7 +1153,7 @@ double FunctionParser::Eval(const double* Vars)
           case   cExp: Stack[SP] = exp(Stack[SP]); break;
 
           case   cExp2:
-            #ifndef FP_NO_EXP2
+            #ifdef FP_SUPPORT_EXP2
               Stack[SP] = exp2(Stack[SP]);
             #else
               Stack[SP] = pow(2.0, Stack[SP]);
@@ -1210,7 +1192,7 @@ double FunctionParser::Eval(const double* Vars)
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
 #                    endif
-                     #ifndef FP_NO_LOG2
+                     #ifdef FP_SUPPORT_LOG2
                        Stack[SP] = log2(Stack[SP]);
                      #else
                        Stack[SP] = log(Stack[SP]) * 1.4426950408889634074;
@@ -1683,7 +1665,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                     case cMul: prio = 3; paramsep = "*"; break;
                     case cDiv: prio = 3; paramsep = "/"; break;
                     case cPow: prio = 2; paramsep = "^"; break;
+#ifdef FP_SUPPORT_OPTIMIZER
                     case cSqr: prio = 2; suff = "^2"; break;
+#endif
                     case cNeg: buf << "(-"; suff = ")"; break;
                     default: buf << n << '('; suff = ")";
                 }

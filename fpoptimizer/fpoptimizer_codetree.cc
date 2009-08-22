@@ -23,21 +23,6 @@ namespace FPoptimizer_Grammar
 }
 #endif
 
-#ifdef FP_NO_ASINH
-static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
-static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
-static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
-#endif
-
-static bool FloatEqual(double a, double b)
-{
-#ifdef FP_EPSILON
-    return std::fabs(a - b) <= FP_EPSILON;
-#else
-    return a == b;
-#endif
-}
-
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
@@ -320,22 +305,22 @@ namespace FPoptimizer_CodeTree
             case cAcosh: /* defined for             1.0 <  x <= inf */
             {
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
-                if(m.has_min) { if(m.min <= 1.0) m.has_min = false; else m.min = acosh(m.min); } // No boundaries
-                if(m.has_max) { if(m.max <= 1.0) m.has_max = false; else m.max = acosh(m.max); }
+                if(m.has_min) { if(m.min <= 1.0) m.has_min = false; else m.min = fp_acosh(m.min); } // No boundaries
+                if(m.has_max) { if(m.max <= 1.0) m.has_max = false; else m.max = fp_acosh(m.max); }
                 return m;
             }
             case cAsinh: /* defined for all values -inf <= x <= inf */
             {
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
-                if(m.has_min) m.min = asinh(m.min); // No boundaries
-                if(m.has_max) m.max = asinh(m.max);
+                if(m.has_min) m.min = fp_asinh(m.min); // No boundaries
+                if(m.has_max) m.max = fp_asinh(m.max);
                 return m;
             }
             case cAtanh: /* defined for all values -inf <= x <= inf */
             {
                 MinMaxTree m = Params[0].param->CalculateResultBoundaries();
-                if(m.has_min) m.min = atanh(m.min); // No boundaries
-                if(m.has_max) m.max = atanh(m.max);
+                if(m.has_min) m.min = fp_atanh(m.min); // No boundaries
+                if(m.has_max) m.max = fp_atanh(m.max);
                 return m;
             }
             case cAcos: /* defined for -1.0 <= x < 1, results within CONSTANT_PI..0 */

@@ -29,21 +29,6 @@ namespace FPoptimizer_Grammar
 }
 #endif
 
-#ifdef FP_NO_ASINH
-static double asinh(double x) { return log(x + sqrt(x*x + 1)); }
-static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
-static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
-#endif
-
-static bool FloatEqual(double a, double b)
-{
-#ifdef FP_EPSILON
-    return std::fabs(a - b) <= FP_EPSILON;
-#else
-    return a == b;
-#endif
-}
-
 namespace
 {
     /* I have heard that std::equal_range() is practically worthless
@@ -647,9 +632,9 @@ namespace FPoptimizer_CodeTree
                       goto ReplaceTreeWithConstValue; }
 
             case cLog:   HANDLE_UNARY_CONST_FUNC(log); break;
-            case cAcosh: HANDLE_UNARY_CONST_FUNC(acosh); break;
-            case cAsinh: HANDLE_UNARY_CONST_FUNC(asinh); break;
-            case cAtanh: HANDLE_UNARY_CONST_FUNC(atanh); break;
+            case cAcosh: HANDLE_UNARY_CONST_FUNC(fp_acosh); break;
+            case cAsinh: HANDLE_UNARY_CONST_FUNC(fp_asinh); break;
+            case cAtanh: HANDLE_UNARY_CONST_FUNC(fp_atanh); break;
             case cAcos: HANDLE_UNARY_CONST_FUNC(acos); break;
             case cAsin: HANDLE_UNARY_CONST_FUNC(asin); break;
             case cAtan: HANDLE_UNARY_CONST_FUNC(atan); break;
@@ -1975,14 +1960,14 @@ namespace FPoptimizer_Grammar
                                 result = std::cosh(result); break;
                     case cTanh: if(!pack.plist[index].GetConst(match, result))return false;
                                  result = std::tanh(result); break;
-#ifndef FP_NO_ASINH
+
                     case cAsinh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = asinh(result); break;
+                                 result = fp_asinh(result); break;
                     case cAcosh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = acosh(result); break;
+                                 result = fp_acosh(result); break;
                     case cAtanh: if(!pack.plist[index].GetConst(match, result))return false;
-                                 result = atanh(result); break;
-#endif
+                                 result = fp_atanh(result); break;
+
                     case cCeil: if(!pack.plist[index].GetConst(match, result))return false;
                                 result = std::ceil(result); break;
                     case cFloor: if(!pack.plist[index].GetConst(match, result))return false;
