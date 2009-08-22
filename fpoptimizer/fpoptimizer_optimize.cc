@@ -497,19 +497,39 @@ namespace FPoptimizer_CodeTree
             }
 
             case cLess:
-            case cLessOrEq:
             {
-                // Note: Eq case not handled
                 MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max < p1.min)
                     goto ReplaceTreeWithOne; // We know p0 < p1
+                if(p1.has_max && p0.has_min && p1.max <= p0.min)
+                    goto ReplaceTreeWithZero; // We know p1 >= p0
+                break;
+            }
+
+            case cLessOrEq:
+            {
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if(p0.has_max && p1.has_min && p0.max <= p1.min)
+                    goto ReplaceTreeWithOne; // We know p0 <= p1
                 if(p1.has_max && p0.has_min && p1.max < p0.min)
                     goto ReplaceTreeWithZero; // We know p1 > p0
                 break;
             }
 
             case cGreater:
+            {
+                // Note: Eq case not handled
+                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                if(p0.has_max && p1.has_min && p0.max <= p1.min)
+                    goto ReplaceTreeWithZero; // We know p0 <= p1
+                if(p1.has_max && p0.has_min && p1.max < p0.min)
+                    goto ReplaceTreeWithOne; // We know p1 > p0
+                break;
+            }
+
             case cGreaterOrEq:
             {
                 // Note: Eq case not handled
@@ -517,8 +537,8 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max < p1.min)
                     goto ReplaceTreeWithZero; // We know p0 < p1
-                if(p1.has_max && p0.has_min && p1.max < p0.min)
-                    goto ReplaceTreeWithOne; // We know p1 > p0
+                if(p1.has_max && p0.has_min && p1.max <= p0.min)
+                    goto ReplaceTreeWithOne; // We know p1 >= p0
                 break;
             }
 

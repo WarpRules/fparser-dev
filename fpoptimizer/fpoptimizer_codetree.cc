@@ -280,7 +280,7 @@ namespace FPoptimizer_CodeTree
                 }
                 else // ex. -inf..+inf, -inf..+10, -10..+inf
                 {
-                    // all of these span across zero, and have one end in infinity
+                    // all of these cover -inf..0, 0..+inf, or both
                     m.min = 0.0; m.has_min = true; m.has_max = false;
                 }
                 return m;
