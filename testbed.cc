@@ -462,6 +462,13 @@ double f48(double* p)
         (!(doubleToInt(x) || !doubleToInt(x/4)));
 }
 
+double f49(double* p)
+{
+#define P49 "atan2(0, x)" , "x", f49, 1, -100, 100, .03, false
+    double x = p[0];
+    return atan2(0, x);
+}
+
 namespace
 {
     Test tests[] =
@@ -479,7 +486,7 @@ namespace
         { P38 },
 //#endif
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 },
-        { P46 }, { P47 }, { P48 }
+        { P46 }, { P47 }, { P48 }, { P49 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
