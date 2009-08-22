@@ -698,7 +698,8 @@ namespace FPoptimizer_CodeTree
                 {
                     if(p1.has_max && p1.max < 0)
                         { const_value = CONSTANT_PI; goto ReplaceTreeWithConstValue; }
-                    const_value = p0.min; goto ReplaceTreeWithConstValue;
+                    if(p1.has_max && p1.max >= 0.0)
+                        { const_value = p0.min; goto ReplaceTreeWithConstValue; }
                 }
                 if(p1.has_min && p1.has_max && p1.min == 0.0)
                 {
