@@ -1593,7 +1593,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cGreaterOrEq: n = "ge"; break;
                         case cAnd: n = "and"; break;
                         case cOr: n = "or"; break;
-                        case cNot: n = "not"; break;
+                        case cNot: n = "not"; params = 1; break;
                         case cDeg: n = "deg"; break;
                         case cRad: n = "rad"; break;
 
