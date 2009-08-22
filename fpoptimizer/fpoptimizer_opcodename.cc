@@ -90,7 +90,6 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
     {
         case NumConstant:   p = "NumConstant"; break;
         case ImmedHolder:   p = "ImmedHolder"; break;
-        case NegativeImmedHolder:   p = "NegativeImmedHolder"; break;
         case NamedHolder:   p = "NamedHolder"; break;
         case RestHolder:    p = "RestHolder"; break;
         case SubFunction:   p = "SubFunction"; break;

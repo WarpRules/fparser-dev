@@ -29,6 +29,15 @@ static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
 static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
 #endif
 
+static bool FloatEqual(double a, double b)
+{
+#ifdef FP_EPSILON
+    return std::fabs(a - b) <= FP_EPSILON;
+#else
+    return a == b;
+#endif
+}
+
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
@@ -643,6 +652,21 @@ namespace FPoptimizer_CodeTree
             }
             case cPow:
             {
+                if(Params[1].param->IsImmed() && FloatEqual(Params[1].param->GetImmed(), 0.0))
+                {
+                    // Note: This makes 0^0 evaluate into 1.
+                    return MinMaxTree(1.0, 1.0); // x^0 = 1
+                }
+                if(Params[0].param->IsImmed() && FloatEqual(Params[0].param->GetImmed(), 0.0))
+                {
+                    // Note: This makes 0^0 evaluate into 0.
+                    return MinMaxTree(0.0, 0.0); // 0^x = 0
+                }
+                if(Params[0].param->IsImmed() && FloatEqual(Params[0].param->GetImmed(), 1.0))
+                {
+                    return MinMaxTree(1.0, 1.0); // 1^x = 1
+                }
+
                 MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
                 TriTruthValue p0_positivity =
@@ -726,21 +750,6 @@ namespace FPoptimizer_CodeTree
                         /* The result is always positive.
                          * Figure out whether we know the minimum value. */
                         double min = 0.0;
-                        if(Params[1].param->IsImmed() && Params[1].param->GetImmed() == 0.0)
-                        {
-                            // Note: This makes 0^0 evaluate into 1.
-                            return MinMaxTree(1.0, 1.0); // x^0 = 1
-                        }
-                        if(Params[0].param->IsImmed() && Params[0].param->GetImmed() == 0.0)
-                        {
-                            // Note: This makes 0^0 evaluate into 0.
-                            return MinMaxTree(0.0, 0.0); // 0^x = 0
-                        }
-                        if(Params[0].param->IsImmed() && Params[0].param->GetImmed() == 1.0)
-                        {
-                            return MinMaxTree(1.0, 1.0); // 1^x = 1
-                        }
-
                         if(p0.has_min && p1.has_min)
                         {
                             min = pow(p0.min, p1.min);

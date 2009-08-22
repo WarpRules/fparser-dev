@@ -108,51 +108,46 @@ namespace GrammarData
             unsigned Index;                 // for ImmedHolder, RestHolder, NamedHolder
             FunctionType* Func;             // for SubFunction
         };
-        ConstraintType     Constraint;
+        unsigned ImmedConstraint;
         std::vector<ParamSpec*> Params;
 
     public:
         struct NamedHolderTag{};
         struct ImmedHolderTag{};
-        struct NegativeImmedHolderTag{};
         struct RestHolderTag{};
 
         ParamSpec(FunctionType* f)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(SubFunction), Func(f),          Constraint(AnyValue), Params()
+              Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
               {
               }
 
         ParamSpec(double d)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NumConstant), ConstantValue(d), Constraint(AnyValue), Params() { }
+              Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(o),                             Constraint(AnyValue), Params(p) { }
+              Opcode(o),                             ImmedConstraint(0), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NamedHolder), Index(i),         Constraint(AnyValue), Params() { }
+              Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(ImmedHolder), Index(i),         Constraint(AnyValue), Params() { }
-
-        ParamSpec(unsigned i, NegativeImmedHolderTag)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(NegativeImmedHolder), Index(i),         Constraint(AnyValue), Params() { }
+              Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
             : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
-              Opcode(RestHolder),  Index(i),         Constraint(AnyValue), Params() { }
+              Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec* SetNegated()                      { Negated=true; return this; }
         ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
         ParamSpec* SetTransformation(TransformationType t)
             { Transformation = t; return this; }
-        ParamSpec* SetConstraint(ConstraintType c)
-            { Constraint = c; return this; }
+        ParamSpec* SetConstraint(unsigned mask)
+            { ImmedConstraint |= mask; return this; }
 
         void RecursivelySetParamMatchingType(ParamMatchingType t)
         {
@@ -300,7 +295,7 @@ namespace GrammarData
         if(Transformation != b.Transformation) return false;
         if(MinimumRepeat != b.MinimumRepeat) return false;
         if(AnyRepetition != b.AnyRepetition) return false;
-        if(Constraint != b.Constraint) return false;
+        if(ImmedConstraint != b.ImmedConstraint) return false;
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
         {
@@ -328,7 +323,7 @@ namespace GrammarData
         if(Transformation != b.Transformation) return Transformation < b.Transformation;
         if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
         if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
-        if(Constraint != b.Constraint) return Constraint < b.Constraint;
+        if(ImmedConstraint != b.ImmedConstraint) return ImmedConstraint < b.ImmedConstraint;
         if(Opcode != b.Opcode) return Opcode < b.Opcode;
         switch(Opcode)
         {
@@ -521,9 +516,10 @@ public:
     ParamSpec Dump(const GrammarData::ParamSpec& p)
     {
         ParamSpec  pitem;
+        memset(&pitem, 0, sizeof(pitem));
         pitem.sign           = p.Negated;
         pitem.transformation = p.Transformation;
-        pitem.constraint     = p.Constraint;
+        pitem.count          = p.ImmedConstraint; // note: stored in "count"
         pitem.minrepeat      = p.MinimumRepeat;
         pitem.anyrepeat      = p.AnyRepetition;
         pitem.opcode         = p.Opcode;
@@ -532,7 +528,6 @@ public:
             case NumConstant:
             {
                 pitem.index = Dump(p.ConstantValue);
-                pitem.count = 0;
                 break;
             }
             case NamedHolder:
@@ -540,13 +535,11 @@ public:
             case RestHolder:
             {
                 pitem.index = p.Index;
-                pitem.count = 0;
                 break;
             }
             case SubFunction:
             {
                 pitem.index = Dump(*p.Func);
-                pitem.count = 0;
                 break;
             }
             default:
@@ -563,6 +556,7 @@ public:
     size_t Dump(const GrammarData::MatchedParams& m)
     {
         MatchedParams mitem;
+        memset(&mitem, 0, sizeof(mitem));
         mitem.type    = m.Type;
         mitem.balance = m.Balance;
         size_t i, c;
@@ -582,6 +576,7 @@ public:
     size_t Dump(const GrammarData::FunctionType& f)
     {
         Function fitem;
+        memset(&fitem, 0, sizeof(fitem));
         fitem.opcode = f.Opcode;
         fitem.index  = Dump(f.Params);
       #if 1
@@ -659,16 +654,45 @@ public:
                         << plist[a].minrepeat
                         << ", "
                         << (plist[a].anyrepeat ? "true " : "false")
-                        << ", " << plist[a].count
-                        << ",\t" << plist[a].index
-                        << ",\t"
-                        << (plist[a].constraint == AnyValue ? "AnyValue"
-                         :  plist[a].constraint == Positive ? "Positive"
-                         :  plist[a].constraint == Negative ? "Negative"
-                         :  plist[a].constraint == Even     ? "Even    "
-                         :  plist[a].constraint == NonEven  ? "NonEven "
-                         :/*plist[a].constraint == Odd    ?*/ "Odd     "
-                           )
+                        << ", ";
+            switch(plist[a].opcode)
+            {
+                case NumConstant:
+                case RestHolder:
+                case SubFunction:
+                default:
+                    std::cout << plist[a].count;
+                    break;
+                case ImmedHolder:
+                case NamedHolder:
+                {
+                    const char* sep = "";
+                    static const char s[] = " | ";
+                    switch( ImmedConstraint_Value( plist[a].count & ValueMask ) )
+                    {
+                        case ValueMask: case Value_AnyNum: break;
+                        case Value_EvenInt: std::cout << sep << "Value_EvenInt"; sep=s; break;
+                        case Value_OddInt: std::cout << sep << "Value_OddInt"; sep=s; break;
+                        case Value_IsInteger: std::cout << sep << "Value_IsInteger"; sep=s; break;
+                        case Value_NonInteger: std::cout << sep << "Value_NonInteger"; sep=s; break;
+                    }
+                    switch( ImmedConstraint_Sign( plist[a].count & SignMask ) )
+                    {
+                        case SignMask: case Sign_AnySign: break;
+                        case Sign_Positive: std::cout << sep << "Sign_Positive"; sep=s; break;
+                        case Sign_Negative: std::cout << sep << "Sign_Negative"; sep=s; break;
+                    }
+                    switch( ImmedConstraint_Oneness( plist[a].count & OnenessMask ) )
+                    {
+                        case OnenessMask: case Oneness_Any: break;
+                        case Oneness_One: std::cout << sep << "Oneness_One"; sep=s; break;
+                        case Oneness_NotOne: std::cout << sep << "Oneness_NotOne"; sep=s; break;
+                    }
+                    if(!*sep) std::cout << "0";
+                    break;
+                }
+            }
+            std::cout   << ",\t" << plist[a].index
                         << " }, /* " << a;
             if(plist[a].opcode == NamedHolder)
                 std::cout << " \"" << nlist[plist[a].index] << "\"";
@@ -755,7 +779,7 @@ private:
     {
         //std::cout << "/""*p" << (&p-plist) << "*""/";
 
-        static const char ImmedHolderNames[3][2] = {"%","&","$"};
+        static const char ImmedHolderNames[2][2] = {"%","&"};
         static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
 
         if(p.sign) std::cout << '~';
@@ -834,17 +858,12 @@ static GrammarDumper dumper;
 
 %token <num>       NUMERIC_CONSTANT
 %token <name>      PARAMETER_TOKEN
-%token <name>      POSITIVE_PARAM_TOKEN
-%token <name>      NEGATIVE_PARAM_TOKEN
-%token <name>      EVEN_PARAM_TOKEN
-%token <name>      NONEVEN_PARAM_TOKEN
-%token <name>      ODD_PARAM_TOKEN
 %token <index>     PLACEHOLDER_TOKEN
 %token <index>     IMMED_TOKEN
-%token <index>     NEGATIVE_IMMED_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
 %token <opcode>    OPCODE
 %token <transform> UNARY_TRANSFORMATION
+%token <index>     PARAM_CONSTRAINT
 %token NEWLINE
 
 %token SUBST_OP_COLON
@@ -857,7 +876,8 @@ static GrammarDumper dumper;
 %type <f> function function_match
 %type <p> paramlist paramlist_loop
 %type <a> param
-%type <a> expression_param
+%type <a> expression_param immed_param
+%type <index> param_constraints
 
 %%
     grammar:
@@ -1018,14 +1038,7 @@ static GrammarDumper dumper;
        {
          $$ = new GrammarData::ParamSpec($1);
        }
-    |  IMMED_TOKEN              /* a placeholder for some immed */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
-       }
-    |  NEGATIVE_IMMED_TOKEN     /* a placeholder for some immed */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::NegativeImmedHolderTag());
-       }
+    |  immed_param
     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
          /* Verify that $3 contains no inversions */
@@ -1077,46 +1090,32 @@ static GrammarDumper dumper;
     ;
 
     expression_param:
-       PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
+       PARAMETER_TOKEN param_constraints /* any expression, indicated by "x", "a" etc. */
        {
          unsigned nameindex = dumper.Dump(*$1);
          $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
          delete $1;
+         $$->SetConstraint($2);
        }
-     | POSITIVE_PARAM_TOKEN
+    ;
+    
+    immed_param:
+       IMMED_TOKEN param_constraints  /* a placeholder for some immed */
        {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-                ->SetConstraint(Positive);
-         delete $1;
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
+         $$->SetConstraint($2);
        }
-     | NEGATIVE_PARAM_TOKEN
+    ;
+    
+    param_constraints:
+       param_constraints PARAM_CONSTRAINT
        {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-                ->SetConstraint(Negative);
-         delete $1;
+         $$ = $1 | $2;
        }
-     | EVEN_PARAM_TOKEN
+    |
+       /* empty */
        {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-                ->SetConstraint(Even);
-         delete $1;
-       }
-     | NONEVEN_PARAM_TOKEN
-       {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-                ->SetConstraint(NonEven);
-         delete $1;
-       }
-     | ODD_PARAM_TOKEN
-       {
-         unsigned nameindex = dumper.Dump(*$1);
-         $$ = (new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag()))
-                ->SetConstraint(Odd);
-         delete $1;
+         $$ = 0;
        }
     ;
 %%
@@ -1208,7 +1207,24 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return SUBST_OP_COLON;
         case '%': { lval->index = 0; return IMMED_TOKEN; }
         case '&': { lval->index = 1; return IMMED_TOKEN; }
-        case '$': { lval->index = 2; return NEGATIVE_IMMED_TOKEN; }
+        
+        case '@':
+        {
+            int c2 = std::fgetc(stdin);
+            switch(c2)
+            {
+                case 'E': { lval->index = Value_EvenInt; return PARAM_CONSTRAINT; }
+                case 'O': { lval->index = Value_OddInt; return PARAM_CONSTRAINT; }
+                case 'I': { lval->index = Value_IsInteger; return PARAM_CONSTRAINT; }
+                case 'F': { lval->index = Value_NonInteger; return PARAM_CONSTRAINT; }
+                case 'P': { lval->index = Sign_Positive; return PARAM_CONSTRAINT; }
+                case 'N': { lval->index = Sign_Negative; return PARAM_CONSTRAINT; }
+                case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
+                case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
+            }
+            std::ungetc(c2, stdin);
+            return '@';
+        }
         case '<':
         {
             lval->index  = 0;
@@ -1368,16 +1384,6 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             lval->name = new std::string(IdBuf);
             // fprintf(stderr, "'%s' interpreted as PARAM\n", IdBuf.c_str());
 
-            if(IdBuf == "p" || IdBuf == "q")
-                return POSITIVE_PARAM_TOKEN;
-            if(IdBuf == "m" || IdBuf == "n")
-                return NEGATIVE_PARAM_TOKEN;
-            if(IdBuf == "e" || IdBuf == "f")
-                return EVEN_PARAM_TOKEN;
-            if(IdBuf == "g" || IdBuf == "h")
-                return NONEVEN_PARAM_TOKEN;
-            if(IdBuf == "o" || IdBuf == "r")
-                return ODD_PARAM_TOKEN;
             return PARAMETER_TOKEN;
         }
         default:

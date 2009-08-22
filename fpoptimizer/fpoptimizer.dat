@@ -14,17 +14,21 @@
 #
 # %token NUMERIC_CONSTANT     # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
 # %token PARAMETER_TOKEN      # placeholders such as x, y, a, b
-# %token POSITIVE_PARAM_TOKEN # placeholders p and q, which match POSITIVE params only
-# %token NEGATIVE_PARAM_TOKEN # placeholders m and n, which match NEGATIVE params only
-# %token EVEN_PARAM_TOKEN     # placeholders e and f, which match EVEN params only
-# %token NONEVEN_PARAM_TOKEN  # placeholders g and h, which match anything but EVEN params
-# %token ODD_PARAM_TOKEN      # placeholders o and r, which match ODD params only
 # %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
 # %token IMMED_TOKEN          # placeholders % and &
-# %token NEGATIVE_IMMED_TOKEN # placeholder $
 # %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
 # %token OPCODE               # opcodes
-# %token UNARY_TRANSFORMATION  # /, -, !  # inverts/negates/inverts the param
+# %token UNARY_TRANSFORMATION # /, -, !  # inverts/negates/inverts the param
+# %token PARAM_CONSTRAINT     # parameter constraint specifier:
+#                                 @E  = Even integer only
+#                                 @O  = Odd integer only
+#                                 @I  = Integer only
+#                                 @F  = (Float) non-integer only
+#                                 @P  = Positive only (also zero)
+#                                 @N  = Negative only
+#                                 @1  = value evaluating to +1 or -1 only
+#                                 @M  = (Multiple) value NOT evaluating to +1 or -1
+#                             # they can be applied to IMMED_TOKENs and PARAMETER_TOKENs
 # %token NEWLINE              # newline
 #
 # %token SUBST_OP_COLON       # :
@@ -78,7 +82,7 @@
 #
 #     param:
 #        NUMERIC_CONSTANT         /* particular immed */
-#     |  IMMED_TOKEN              /* a placeholder for some immed */
+#     |  immed_param              /* a placeholder for some immed */
 #     |  NEGATIVE_IMMED_TOKEN     /* a placeholder for a negative immed */
 #     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
@@ -90,14 +94,17 @@
 #     ;
 #
 #     expression_param:
-#        PARAMETER_TOKEN          /* any expression, indicated by "x", "a" etc. */
-#      | POSITIVE_PARAM_TOKEN
-#      | NEGATIVE_PARAM_TOKEN
-#      | EVEN_PARAM_TOKEN
-#      | NONEVEN_PARAM_TOKEN
-#      | ODD_PARAM_TOKEN
+#        PARAMETER_TOKEN param_constraints    /* any expression, indicated by "x", "a" etc. */
 #     ;
-
+#
+#     immed_param:
+#        IMMED_TOKEN param_constraints
+#     ;
+#
+#     param_constraints:
+#        param_constraints PARAM_CONSTRAINT
+#     |  /* empty */
+#     ;
 
 [BASIC]
 
@@ -178,12 +185,12 @@ cNotNot [(cNot[x])] -> cNot [(cNotNot [x])]
 
 #### Logarithm optimizations
 # log(x^y) = y*log(x)
-#cLog [(cPow [p y])] -> cMul [y (cLog[p])]
-cLog2 [(cPow [p y])] -> cMul [y (cLog2[p])]
+#cLog [(cPow [x@P y])] -> cMul [y (cLog[x])]
+cLog2 [(cPow [x@P y])] -> cMul [y (cLog2[x])]
 
 # log(x^e) = e * log(abs(x))   (e is an even integer)
-#cLog [(cPow [x e])] -> cMul [e (cLog [(cAbs [x])])]
-cLog2 [(cPow [x e])] -> cMul [e (cLog2 [(cAbs [x])])]
+#cLog [(cPow [x y@E])] -> cMul [y (cLog [(cAbs [x])])]
+cLog2 [(cPow [x y@E])] -> cMul [y (cLog2 [(cAbs [x])])]
 
 # CONSTANT_E^log(x) = x
 #cPow [CONSTANT_E (cLog[x])]   -> x
@@ -221,6 +228,15 @@ cPow [z (cMul (cPow [(cLog2[z]) -1]) (cLog2[x]) <1>)] : x (cMul <1>)
 #cPow [% (cMul /LOG(%)               (cLog[x])  <1>)] : x (cMul <1>)
 cPow [% (cMul /LOG2(%)              (cLog2[x]) <1>)] : x (cMul <1>)
 
+# (x*5) ^ 2 = x^2 * (5^2)
+# Note: This also applies to (x*5)^-1 --> 0.2/x , shrug
+cPow [(cMul % <1>) &] -> (cMul POW(% &) (cPow [(cMul <1>) &]))
+
+
+
+# x*y / (x*z) = y/z
+cMul x <1> (cPow [(cMul x <2>) -1]) : <1> (cPow [(cMul <2>) -1])
+
 # log(x) + log(y) = log(x*y)
 #cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
 cAdd (cLog2[x]) (cLog2[y]) : (cLog2 (cMul [x y]))
@@ -252,20 +268,21 @@ cMul  x*           (cPow[x y])  : (cPow [x (cAdd x* y)])
 cAdd  x*           (cMul x <1>) : (cMul [x (cAdd x* (cMul <1>) )])
 # x^y * x^z = x^(y+z)
 cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
+# x^z * y^z = (x*y)^z
+cMul  (cPow[x z])  (cPow[y z]) : (cPow [(cMul [x y]) z])
 
 #### Remote double negations/inversions
 
 # If a pow has an exponent of 1, replace the pow with the base value
 cPow [x 1]  -> x
 
-# (x^g)^z        -> x^(g*z)  (g is not an even integer)
-# FIXME: Should this be only done for odd integers?
-# Because "not even" _can_ be even, we just don't know for sure
-cPow [ (cPow[x g]) z ]       : x (cMul [g z])
+# (x^g)^z        -> x^(g*z)  (g is odd or float)
+cPow [ (cPow[x y@O]) z ]       : x (cMul [y z])
+cPow [ (cPow[x y@F]) z ]       : x (cMul [y z])
 # (x^e)^z        -> abs(x)^(e*z)  (e is an even integer)
-cPow [ (cPow[x e]) z ]       : (cAbs [x]) (cMul [e z])
+cPow [ (cPow[x y@E]) z ]       : (cAbs [x]) (cMul [y z])
 
-cPow [(cPow [p y]) z]        : p (cMul [y z])
+cPow [(cPow [x@P y]) z]        : x (cMul [y z])
 
 #### Logical optimizations
 
@@ -370,12 +387,12 @@ cAcosh [x] -> cMul (cLog2 (cAdd x (cPow (cAdd (cPow x 2) -1) 0.5))) CONSTANT_L2
 cAtanh [x] -> cMul (cLog2 (cMul (cAdd 1 x) (cPow (cAdd 1 (cMul -1 x)) -1))) *(0.5 CONSTANT_L2)
 
 #     The hyperbolic functions themselves are:
-#        sinh: (exp(x)-exp(-x)) / 2
-cSinh [x] -> cMul 0.5 (cAdd (cPow [CONSTANT_E x]) (cMul [-1 (cPow [CONSTANT_EI x])]))
+#        sinh: (exp(x)-exp(-x)) / 2  = exp(-x) * (exp(2*x)-1) / 2
+cSinh [x] -> cMul 0.5 (cPow [CONSTANT_EI x]) (cAdd [-1 (cPow [CONSTANT_2E x])])
 
-#        cosh: (exp(x)+exp(-x)) / 2
+#        cosh: (exp(x)+exp(-x)) / 2  = exp(-x) * (exp(2*x)+1) / 2
 #        cosh(-x) = cosh(x)
-cCosh [x] -> cMul 0.5 (cAdd (cPow [CONSTANT_E x]) (cMul [   (cPow [CONSTANT_EI x])]))
+cCosh [x] -> cMul 0.5 (cPow [CONSTANT_EI x]) (cAdd [ 1 (cPow [CONSTANT_2E x])])
 
 #        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
 cTanh [x] -> (cMul (cAdd {(cPow [CONSTANT_2E x]) -1}) (cPow [(cAdd {(cPow [CONSTANT_2E x]) 1}) -1]))
@@ -441,49 +458,44 @@ cAdd (cMul (cPow[x %]) <3>)  (cMul x           <5>) : (cMul (cPow[x MIN(% 1)]) (
 #    (5.1*x +      4.1*y      + z+w)*2
 # -> (5.1*2*x + 2*(4.1*y      + z+w))
 # -> (5.1*2*x +   (4.1*2*y + 2*(z+w)))
-cMul (cAdd (cMul % <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
+cMul (cAdd (cMul %@M <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
 
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
-#cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
-#
-# ^ Good idea, but conflicts with cAdd x* (cMul x <1>)
+cMul (cAdd %@M <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
+# ^ Only wise idea when % != 1. Otherwise, conflicts with cAdd x* (cMul x <1>)
 #   When given 2*x+2
 #     You get 2*(1+x)
 #     And     2+ 2*x
 #     Alternatingly.
-#     To fix, should only be done when % != 1.
-#     Unfortunately there's no syntax for that kind of constraints...
 
 # (x * 0.5 - 0.5) * z =
 # 0.5 * (x - 1) * z
 # Thus,
-# x * (y + (y * z)) -> x * y * (z + 1)
+# x * (y + (y * z)) -> x * y * (z + 1)      -- already accomplished by cAdd x* (cMul x <1>)
 # x * (y + (-y * z)) -> x * y * (1 - z)
-# x * (y + (y * -1 * z)) -> x * y * (1 - z)
-
-cMul (cAdd {y (cMul {y z})}) : y (cAdd [z 1])
-
-#cMul (cAdd {$ (cMul {-$ x})}) : $ (cAdd [1 (cMul -1 x)])
-#cMul (cAdd {(cMul {$ x}) -$}) : $ (cAdd [1 (cMul -1 x)])
-# ^ Disabled, causes infinite loop when $ = 1. Now limited to negative numbers.
-
-cMul (cAdd {y (cMul {y -1 x})}) : y (cAdd [1 (cMul -1 x)])
-
-#
+# x * (y + (y * -1 * z)) -> x * y * (1 - z) -- already accomplished by cAdd x* (cMul x <1>)
+# Becomes:
+cAdd %@M (cMul {-% x})   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul *(% /ABS(%)) x)]))
+cAdd (cMul {%@M x}) -%   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul *(% /ABS(%)) x)]))
+# ^ Using @M (non-1 constraint) to prevent falling into an infinite loop
+#     Example:   5 + (-5*x) ->  5 * (1 + -1*x)  =  5 * (1 - x)
+#     Example:  -5 + ( 5*x) -> -5 * (1 + -1*x)  = -5 * (1 - x) = 5 * (x - 1)
+#    *(5 /ABS(-5)) = -1
+#    *(5 /ABS( 5)) = 1
 
 #### Constant folding is now performed exclusively by ConstantFolding()
 
 #### Trigonometric:
 # sin(-x) = -sin(x)
-cSin [(cMul $ <1>)] -> cMul -1 (cSin [(cMul -$ <1>)])
+cSin [(cMul %@N <1>)] -> cMul -1 (cSin [(cMul -% <1>)])
 # cos(-x) = cos(x)
-cCos [(cMul $ <1>)] : (cMul -$ <1>)
+cCos [(cMul %@N <1>)] : (cMul -% <1>)
 
 
 # cos(pi/2 - x) = sin(x)
-cCos [(cAdd {CONSTANT_PIHALF (cMul $ <1>)})] -> cSin[(cMul -$ <1>)]
+cCos [(cAdd {CONSTANT_PIHALF (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]
 # sin(pi/2 - x) = cos(x)
-cSin [(cAdd {CONSTANT_PIHALF (cMul $ <1>)})] -> cCos[(cMul -$ <1>)]
+cSin [(cAdd {CONSTANT_PIHALF (cMul %@N <1>)})] -> cCos[(cMul -% <1>)]
 # cos(x - pi/2) = cos(pi/2 - x) = sin(x)
 cCos [(cAdd -CONSTANT_PIHALF <1>)]            -> cSin[(cAdd <1>)]
 # sin(x - pi/2) = -sin(pi/2 - x) = -cos(x)
@@ -524,10 +536,10 @@ cCos [(cAcos [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
-cAbs [(cMul n <1>)] -> cMul (cAbs [n]) <1>
+cAbs [(cMul x@N <1>)] -> cMul (cAbs [x]) <1>
 
 # abs(x)^e -> x^e when e=even integer
-cPow [(cAbs[x]) e] : x e
+cPow [(cAbs[x]) y@E] : x y
 
 
 
@@ -561,17 +573,32 @@ cMul        (cTan[x])            (cCos[x])      :        (cSin[x])
 cMul        (cTan[x])     (cPow [(cSin[x]) -1]) : (cPow [(cCos[x]) -1])
 cMul (cPow [(cTan[x]) -1])       (cSin[x])      :        (cCos[x])
 
+# cos(x)^(-2) * sin(x) = tan(x)/cos(x)
+# sin(x)^2    / cos(x) = tan(x)*sin(x)
+
+
+# sinh(-5*x) / cosh(5*x) = tanh(-5*x)
+cMul (cSinh [(cMul % <1>)]) (cPow [(cCosh [(cMul -% <1>)]) -1]) : (cTanh [(cMul % <1>)])
+cMul (cSin  [(cMul % <1>)]) (cPow [(cCos  [(cMul -% <1>)]) -1]) : (cTan  [(cMul % <1>)])
+
+
 # sinh(-x) = -sinh(x)
-cSinh [(cMul $ <1>)] -> cMul [-1 (cSinh [(cMul -$ <1>)])]
+cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
 
 # cosh(-x) = cosh(x)
-cCosh [(cMul $ <1>)] : (cMul -$ <1>)
+cCosh [(cMul -1 <1>)] : (cMul <1>)
 
 # tan(-x) = -tan(x)
-cTan [(cMul $ <1>)] -> cMul [-1 (cTan [(cMul -$ <1>)])]
+cTan [(cMul -1 <1>)] -> cMul [-1 (cTan [(cMul <1>)])]
 
 # tanh(-x) = -tanh(x)
-cTanh [(cMul $ <1>)] -> cMul [-1 (cTanh [(cMul -$ <1>)])]
+cTanh [(cMul -1 <1>)] -> cMul [-1 (cTanh [(cMul <1>)])]
+
+# However,  -sinh(5*x) better expressed as sinh(-5*x), same for tanh
+cMul -1 (cSinh [(cMul % <1>)]) : (cSinh [(cMul -% <1>)])
+cMul -1 (cTanh [(cMul % <1>)]) : (cTanh [(cMul -% <1>)])
+cMul -1 (cSin [(cMul % <1>)]) : (cSin [(cMul -% <1>)])
+cMul -1 (cTan [(cMul % <1>)]) : (cTan [(cMul -% <1>)])
 
 
 # sinh(x)*2 = (exp(x)-   exp(-x))
@@ -582,11 +609,18 @@ cAdd (cPow [&  x]) (cMul { -1 (cPow [/& x]) }) : (cMul (cSinh [(cMul x LOG(&))])
 #cAdd (cMul { -1 (cPow [& x]) }) (cPow [/&  x]) : (cMul (cSinh [(cMul x LOG(/&))]) 2)
 cAdd (cPow [&  x])            (cPow [/& x])    : (cMul (cCosh [(cMul x LOG(&))]) 2)
 
-# sinh(x) = ((( exp(2) ^ x ) * (1/2)) - 1/2) * (1 / exp(x))
-# sinh(x) = (-1/2) * (( exp(2) ^ x ) -1 ) * (1 / exp(x))
+# sinh(x)   = ((((E^2) ^ x) + -1) * ((E^-1) ^ x) * 0.5)
+# sinh(3*x) = ((((E^6) ^ x) + -1) * ((E^-3) ^ x) * 0.5)
 
-cMul (cAdd {(cPow [% x]) -1}) (cPow [POW(% -0.5) x]) : 2 (cSinh [(cMul x LOG(%))])
-cMul (cPow [% x]) (cAdd {(cPow [POW(% -2) x]) -1})   : 2 (cSinh [(cMul x LOG(%))])
+# sinh(3*x)*2              = (((E^6) ^ x) + -1) * ((E^-3) ^ x)
+# sinh(3*x)*2 / (E^-3) ^x = (((E^6) ^ x) + -1)
+# sinh(3*x)*2 * (E^ 3) ^x = (((E^6) ^ x) + -1)
+
+cAdd {(cPow [% x]) -1}  : (cMul (cSinh [(cMul x *(LOG(%) 0.5))]) 2 (cPow [POW(% 0.5) x]))
+cAdd {(cPow [% x])  1}  : (cMul (cCosh [(cMul x *(LOG(%) 0.5))]) 2 (cPow [POW(% 0.5) x]))
+
+#cMul (cAdd {(cPow [% x]) -1}) (cPow [POW(% -0.5) x]) : (cSinh [(cMul x *(LOG(%) 0.5))]) 2
+#cMul (cPow [% x]) (cAdd {(cPow [POW(% -2) x]) -1})   : (cSinh [(cMul x *(LOG(%) 0.5))]) 2
 
 # Because sinh(-x) = -sinh(x),
 # sinh(x)*-2 = (exp(-x)-exp(x))
@@ -662,7 +696,8 @@ cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])} -> cPow [CONSTANT_E (cAcosh [x])]
 #        atanh(x):   log( (1+x) / (1-x)) / 2
 #        2*atanh(x): log( (1+x) / (1-x))
 #cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) 2]
-cLog2 [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) *(2 CONSTANT_L2I)]
+cLog2 [(cMul {(cAdd {% x}) (cPow [(cAdd {+(2 -%) (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [(cAdd +(% -1) x)]) *(2 CONSTANT_L2I)]
+
 
 #        atanh(y*x):   log( (1+y*x) / (1+(-1*y*x))) / 2
 #        2*atanh(y*x): log( (1+y*x) / (1+(-1*y*x)))
@@ -681,6 +716,14 @@ cLog2 [(cMul {(cAdd {(cMul {% x}) 1}) (cPow [(cAdd {(cMul {-% x}) 1}) -1])})] ->
 
 #cMul (cAdd {(cMul {x %}) 1}) (cPow [(cAdd {(cMul {x -%}) -1}) -1]) : (cPow [% (cMul (cAtanh[x]) *(2 /LOG(%)))])
 cMul (cPow [(cAdd {(cMul {x %}) &}) -1]) (cAdd {(cMul {x -%}) +(2 -&)}) : (cPow [-% (cMul (cAtanh[(cAdd (cMul -% x) & -1)]) *(2 /LOG(-%)))])
+
+
+#   tanh(x) / cosh(x)
+# = sinh(x) / cosh(x)^2
+# = ((sinh(x) / ((exp(x) * cosh(x))^2 * exp((-x)))) * exp(x))
+#
+# ((y / ((exp(x) * z)^2 * exp((-x)))) * exp(x))  = y / z^2
+# FIXME: Not detected yet
 
 
 
@@ -731,9 +774,9 @@ cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L10BI  : (cPow [(cLog10 [x]) -1])
 # FIXME: only if y is not integer constant
 #cMul ~(cPow [x y]) : (cPow [x (cAdd [~y])])
 
-cPow [ (cSin[x]) $ ] : (cCsc[x]) -$
-cPow [ (cCos[x]) $ ] : (cSec[x]) -$
-cPow [ (cTan[x]) $ ] : (cCot[x]) -$
-#cPow [ (cCsc[x]) $ ] : (cSin[x]) -$
-#cPow [ (cSec[x]) $ ] : (cCos[x]) -$
-#cPow [ (cCot[x]) $ ] : (cTan[x]) -$
+cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
+cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
+cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
+#cPow [ (cCsc[x]) %@N ] : (cSin[x]) -%
+#cPow [ (cSec[x]) %@N ] : (cCos[x]) -%
+#cPow [ (cCot[x]) %@N ] : (cTan[x]) -%

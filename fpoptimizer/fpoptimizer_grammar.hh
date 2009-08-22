@@ -16,21 +16,35 @@ namespace FPoptimizer_Grammar
         Invert,  // 1/x
         NotThe   // !x
     };
-    enum ConstraintType
+
+    enum ImmedConstraint_Value
     {
-        AnyValue, // default
-        Positive,
-        Negative,
-        Even,
-        NonEven,
-        Odd
+        ValueMask = 0x07,
+        Value_AnyNum     = 0x0, // any value
+        Value_EvenInt    = 0x1, // any even integer (0,2,4, etc)
+        Value_OddInt     = 0x2, // any odd integer (1,3, etc)
+        Value_IsInteger  = 0x3, // any integer-value (excludes e.g. 0.2)
+        Value_NonInteger = 0x4  // any non-integer (excludes e.g. 1 or 5)
+    };
+    enum ImmedConstraint_Sign
+    {
+        SignMask  = 0x18,
+        Sign_AnySign     = 0x00, // - or +
+        Sign_Positive    = 0x08, // positive only
+        Sign_Negative    = 0x10  // negative only
+    };
+    enum ImmedConstraint_Oneness
+    {
+        OnenessMask   = 0x60,
+        Oneness_Any      = 0x00,
+        Oneness_One      = 0x20, // +1 or -1
+        Oneness_NotOne   = 0x40  // anything but +1 or -1
     };
 
     enum SpecialOpcode
     {
-        NumConstant = 0xFFFA, // Holds a particular value (syntax-time constant)
+        NumConstant = 0xFFFB, // Holds a particular value (syntax-time constant)
         ImmedHolder,          // Holds a particular immed
-        NegativeImmedHolder,  // Holds a particular negative immed
         NamedHolder,          // Holds a particular named param (of any kind)
         SubFunction,          // Holds an opcode and the params
         RestHolder            // Holds anything else
@@ -83,6 +97,12 @@ namespace FPoptimizer_Grammar
 
     /***/
 
+#ifdef __GNUC__
+# define PACKED_GRAMMAR_ATTRIBUTE __attribute__((packed))
+#else
+# define PACKED_GRAMMAR_ATTRIBUTE
+#endif
+
     struct MatchedParams
     {
         ParamMatchingType type    : 6;
@@ -109,7 +129,7 @@ namespace FPoptimizer_Grammar
             FPoptimizer_CodeTree::CodeTree& tree,
             const MatchedParams& matcher,
             MatchedParams::CodeTreeMatch& match) const;
-    };
+    } PACKED_GRAMMAR_ATTRIBUTE;
 
     struct ParamSpec
     {
@@ -121,16 +141,14 @@ namespace FPoptimizer_Grammar
         bool     anyrepeat : 1;
 
         // For NumConstant:   index to clist[]
-        // For ImmedHolder:   index is the slot
-        // For NegativeImmedHolder: index is the slot
+        // For ImmedHolder:   index is the slot, count is an ImmedConstraint
         // For RestHolder:    index is the slot
-        // For NamedHolder:   index is the slot
+        // For NamedHolder:   index is the slot, count is an ImmedConstraint
         // For SubFunction:   index to flist[]
         // For anything else
         //  =  GroupFunction: index,count to plist[]
         unsigned count : 8;
-        unsigned index : 13;
-        ConstraintType constraint : 3;
+        unsigned index : 16;
 
         MatchResultType Match(
             FPoptimizer_CodeTree::CodeTree& tree,
@@ -146,7 +164,7 @@ namespace FPoptimizer_Grammar
             FPoptimizer_CodeTree::CodeTree& tree,
             const MatchedParams& matcher,
             MatchedParams::CodeTreeMatch& match) const;
-    };
+    } PACKED_GRAMMAR_ATTRIBUTE;
     struct Function
     {
         OpcodeType opcode : 16;
@@ -157,7 +175,7 @@ namespace FPoptimizer_Grammar
             Match(FPoptimizer_CodeTree::CodeTree& tree,
                   MatchedParams::CodeTreeMatch& match,
                   unsigned long match_index) const;
-    };
+    } PACKED_GRAMMAR_ATTRIBUTE;
     struct Rule
     {
         unsigned  n_minimum_params : 8;
@@ -168,7 +186,7 @@ namespace FPoptimizer_Grammar
         Function  func;
 
         bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const;
-    };
+    } PACKED_GRAMMAR_ATTRIBUTE;
     struct Grammar
     {
         // count,index to rlist[]
@@ -177,7 +195,7 @@ namespace FPoptimizer_Grammar
 
         bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree,
                      bool recursion=false) const;
-    };
+    } PACKED_GRAMMAR_ATTRIBUTE;
 
     extern const struct GrammarPack
     {

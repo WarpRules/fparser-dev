@@ -35,6 +35,15 @@ static double acosh(double x) { return log(x + sqrt(x*x - 1)); }
 static double atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
 #endif
 
+static bool FloatEqual(double a, double b)
+{
+#ifdef FP_EPSILON
+    return std::fabs(a - b) <= FP_EPSILON;
+#else
+    return a == b;
+#endif
+}
+
 namespace
 {
     /* I have heard that std::equal_range() is practically worthless
@@ -330,9 +339,9 @@ namespace FPoptimizer_CodeTree
                 {
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
-                    if(Params[a].param->GetImmed() == 0.0)
+                    if(FloatEqual(Params[a].param->GetImmed(), 0.0))
                         goto ReplaceTreeWithZero;
-                    if(Params[a].param->GetImmed() == 1.0) needs_resynth = true;
+                    if(FloatEqual(Params[a].param->GetImmed(), 1.0)) needs_resynth = true;
                     mul_immed_sum *= Params[a].param->GetImmed(); ++n_mul_immeds;
                 }
                 // Merge immeds.
@@ -348,7 +357,7 @@ namespace FPoptimizer_CodeTree
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
-                    if(mul_immed_sum != 1.0)
+                    if(!FloatEqual(mul_immed_sum, 1.0))
                         AddParam( Param(new CodeTree(mul_immed_sum), false) );
                 }
                 if(Params.size() == 1)
@@ -367,7 +376,7 @@ namespace FPoptimizer_CodeTree
                 {
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
-                    if(Params[a].param->GetImmed() == 0.0) needs_resynth = true;
+                    if(FloatEqual(Params[a].param->GetImmed(), 0.0)) needs_resynth = true;
                     immed_sum += Params[a].param->GetImmed(); ++n_immeds;
                 }
                 // Merge immeds.
@@ -386,7 +395,7 @@ namespace FPoptimizer_CodeTree
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
-                    if(immed_sum != 0.0)
+                    if(!FloatEqual(immed_sum, 0.0))
                         AddParam( Param(new CodeTree(immed_sum), false) );
                 }
                 if(Params.size() == 1)
@@ -732,6 +741,12 @@ namespace FPoptimizer_CodeTree
                     // x^1 = x
                     goto ReplaceTreeWithParam0;
                 }
+                if(Params[0].param->IsImmed()
+                && Params[0].param->GetImmed() == 1.0)
+                {
+                    // 1^x = 1
+                    goto ReplaceTreeWithOne;
+                }
                 break;
             }
 
@@ -854,7 +869,7 @@ namespace FPoptimizer_Grammar
     };
 
 #ifdef DEBUG_SUBSTITUTIONS
-    static const char ImmedHolderNames[3][2]  = {"%","&","$"};
+    static const char ImmedHolderNames[4][2]  = {"%","&"};
     static const char NamedHolderNames[10][2] = {"x","y","z","a","b","c","d","e","f","g"};
 #endif
 
@@ -1118,7 +1133,6 @@ namespace FPoptimizer_Grammar
                     break;
                 case NumConstant:
                 case ImmedHolder:
-                case NegativeImmedHolder:
                 default: // GroupFunction:
                     NeedList.Immeds += 1;
                     ++minimum_need;
@@ -1654,26 +1668,6 @@ namespace FPoptimizer_Grammar
     {
         assert(opcode != RestHolder); // RestHolders are supposed to be handled by the caller
 
-        switch(constraint)
-        {
-            case Positive:
-                if(!tree.IsAlwaysSigned(true)) return NoMatch;
-                break;
-            case Negative:
-                if(!tree.IsAlwaysSigned(false)) return NoMatch;
-                break;
-            case Even:
-                if(!tree.IsAlwaysParity(false)) return NoMatch;
-                break;
-            case NonEven:
-                if(tree.IsAlwaysParity(false)) return NoMatch;
-                break;
-            case Odd:
-                if(!tree.IsAlwaysParity(true)) return NoMatch;
-                break;
-            case AnyValue: break;
-        }
-
         switch(OpcodeType(opcode))
         {
             case NumConstant:
@@ -1689,19 +1683,56 @@ namespace FPoptimizer_Grammar
                 /*std::cout << std::flush;
                 fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
                 fflush(stderr);*/
-              #ifdef FP_EPSILON
-                if(!(fabs(res-res2) <= FP_EPSILON)) return NoMatch;
-              #else
-                if(!(res == res2)) return NoMatch;
-              #endif
+                if(!FloatEqual(res, res2)) return NoMatch;
                 return FoundLastMatch; // Previously unknown NumConstant, good
             }
             case ImmedHolder:
-            case NegativeImmedHolder:
             {
                 if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
-                if(OpcodeType(opcode) == NegativeImmedHolder && res >= 0.0) return NoMatch;
+
+                switch( ImmedConstraint_Value(count & ValueMask) )
+                {
+                    case ValueMask: break;
+                    case Value_AnyNum: break;
+                    case Value_EvenInt:
+                        if(!FloatEqual(res, (double)(long)(res))) return NoMatch;
+                        if( (long)(res) % 2 != 0) return NoMatch;
+                        break;
+                    case Value_OddInt:
+                        if(!FloatEqual(res, (double)(long)(res))) return NoMatch;
+                        if( (long)(res) % 2 == 0) return NoMatch;
+                        break;
+                    case Value_IsInteger:
+                        if(!FloatEqual(res, (double)(long)(res))) return NoMatch;
+                        break;
+                    case Value_NonInteger:
+                        if(FloatEqual(res, (double)(long)(res))) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Sign(count & SignMask) )
+                {
+                    case SignMask: break;
+                    case Sign_AnySign: break;
+                    case Sign_Positive:
+                        if(res < 0.0)  return NoMatch;
+                        break;
+                    case Sign_Negative:
+                        if(res >= 0.0) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Oneness(count & OnenessMask) )
+                {
+                    case OnenessMask: break;
+                    case Oneness_Any: break;
+                    case Oneness_One:
+                        if(!FloatEqual(fabs(res), 1.0)) return NoMatch;
+                        break;
+                    case Oneness_NotOne:
+                        if(FloatEqual(fabs(res), 1.0)) return NoMatch;
+                        break;
+                }
+
                 if(transformation == Negate) res = -res;
                 if(transformation == Invert) res = 1/res;
                 std::map<unsigned, double>::iterator
@@ -1715,11 +1746,7 @@ namespace FPoptimizer_Grammar
                     /*std::cout << std::flush;
                     fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
                     fflush(stderr);*/
-                  #ifdef FP_EPSILON
-                    return fabs(res-res2) <= FP_EPSILON ? FoundLastMatch : NoMatch;
-                  #else
-                    return res == res2 ? FoundLastMatch : NoMatch;
-                  #endif
+                    return FloatEqual(res, res2) ? FoundLastMatch : NoMatch;
                 }
                 if(sign != (transf != None)) return NoMatch;
 
@@ -1738,6 +1765,43 @@ namespace FPoptimizer_Grammar
                            ? FoundLastMatch
                            : NoMatch;
                 }
+
+                switch( ImmedConstraint_Value(count & ValueMask) )
+                {
+                    case ValueMask: break;
+                    case Value_AnyNum: break;
+                    case Value_EvenInt:
+                        if(!tree.IsAlwaysParity(false)) return NoMatch;
+                        break;
+                    case Value_OddInt:
+                        if(!tree.IsAlwaysParity(true)) return NoMatch;
+                        break;
+                    case Value_IsInteger:
+                        if(!tree.IsAlwaysInteger()) return NoMatch;
+                        break;
+                    case Value_NonInteger:
+                        if(tree.IsAlwaysInteger()) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Sign(count & SignMask) )
+                {
+                    case SignMask: break;
+                    case Sign_AnySign: break;
+                    case Sign_Positive:
+                        if(!tree.IsAlwaysSigned(true)) return NoMatch;
+                        break;
+                    case Sign_Negative:
+                        if(!tree.IsAlwaysSigned(false)) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Oneness(count & OnenessMask) )
+                {
+                    case OnenessMask: break;
+                    case Oneness_Any: break;
+                    case Oneness_One:    return NoMatch;
+                    case Oneness_NotOne: return NoMatch;
+                }
+
                 match.NamedMap.insert(i, std::make_pair(index, std::make_pair(tree.Hash, 1)));
                 match.trees.insert(std::make_pair(tree.Hash, &tree));
                 return FoundLastMatch; // Previously unknown NamedHolder, good
@@ -1751,7 +1815,7 @@ namespace FPoptimizer_Grammar
                 if(sign != (transf != None)) return NoMatch;
                 return pack.flist[index].Match(tree, match, match_index);
             }
-            default:
+            default: // means groupfunction. No ImmedConstraint
             {
                 if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
@@ -1765,11 +1829,7 @@ namespace FPoptimizer_Grammar
                 /*std::cout << std::flush;
                 fprintf(stderr, "Comparing %.20f and %.20f\n", res, res2);
                 fflush(stderr);*/
-              #ifdef FP_EPSILON
-                return fabs(res-res2) <= FP_EPSILON ? FoundLastMatch : NoMatch;
-              #else
-                return res == res2 ? FoundLastMatch : NoMatch;
-              #endif
+                return FloatEqual(res, res2) ? FoundLastMatch : NoMatch;
             }
         }
         return NoMatch;
@@ -1785,7 +1845,6 @@ namespace FPoptimizer_Grammar
                 result = GetPackConst(index);
                 break;
             case ImmedHolder:
-            case NegativeImmedHolder:
             {
                 std::map<unsigned, double>::const_iterator
                     i = match.ImmedMap.find(index);
@@ -1893,6 +1952,8 @@ namespace FPoptimizer_Grammar
                                 break;
                     case cLog10: if(!pack.plist[index].GetConst(match, result))return false;
                                  result = std::log10(result); break;
+                    case cAbs: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = std::fabs(result); break;
                     case cPow:
                     {
                         if(!pack.plist[index+0].GetConst(match, result))return false;
@@ -2068,11 +2129,10 @@ namespace FPoptimizer_Grammar
                 // passthru; x+ is synthesized as the number, not as the tree
             case NumConstant:
             case ImmedHolder:
-            case NegativeImmedHolder:
             default:
                 tree.Opcode = cImmed;
                 GetConst(match, tree.Value); // note: return value is ignored
-                // FIXME: Should we check negativeness here?
+                // FIXME: Should we check ImmedConstraints here?
                 break;
         }
     }
@@ -2086,12 +2146,12 @@ namespace FPoptimizer_Grammar
         if(p.transformation == Negate) std::cout << '-';
         if(p.transformation == Invert) std::cout << '/';
 
+        bool has_constraint = false;
         switch(SpecialOpcode(p.opcode))
         {
             case NumConstant: std::cout << GetPackConst(p.index); break;
-            case NegativeImmedHolder:
-            case ImmedHolder: std::cout << ImmedHolderNames[p.index]; break;
-            case NamedHolder: std::cout << NamedHolderNames[p.index]; break;
+            case ImmedHolder: has_constraint = true; std::cout << ImmedHolderNames[p.index]; break;
+            case NamedHolder: has_constraint = true; std::cout << NamedHolderNames[p.index]; break;
             case RestHolder: std::cout << '<' << p.index << '>'; break;
             case SubFunction: DumpFunction(pack.flist[p.index]); break;
             default:
@@ -2109,13 +2169,31 @@ namespace FPoptimizer_Grammar
         }
         if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
         if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
-        switch(p.constraint)
+        if(has_constraint)
         {
-            case Positive: std::cout << "(pos)"; break;
-            case Negative: std::cout << "(neg)"; break;
-            case Even: std::cout << "(even)"; break;
-            case NonEven: std::cout << "(!even)"; break;
-            case Odd: std::cout << "(odd)"; break;
+            switch( ImmedConstraint_Value(p.count & ValueMask) )
+            {
+                case ValueMask: break;
+                case Value_AnyNum: break;
+                case Value_EvenInt:   std::cout << "@E"; break;
+                case Value_OddInt:    std::cout << "@O"; break;
+                case Value_IsInteger: std::cout << "@I"; break;
+                case Value_NonInteger:std::cout << "@F"; break;
+            }
+            switch( ImmedConstraint_Sign(p.count & SignMask) )
+            {
+                case SignMask: break;
+                case Sign_AnySign: break;
+                case Sign_Positive:   std::cout << "@P"; break;
+                case Sign_Negative:   std::cout << "@N"; break;
+            }
+            switch( ImmedConstraint_Oneness(p.count & OnenessMask) )
+            {
+                case OnenessMask: break;
+                case Oneness_Any: break;
+                case Oneness_One:     std::cout << "@1"; break;
+                case Oneness_NotOne:  std::cout << "@M"; break;
+            }
         }
     }
 
