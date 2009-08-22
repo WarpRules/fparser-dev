@@ -10,7 +10,7 @@
 #include <sstream>
 
 #define SEPARATOR \
-"--------------------------------------------------------------------\n"
+"----------------------------------------------------------------------------"
 
 namespace
 {
@@ -18,9 +18,16 @@ namespace
     const unsigned kParseLoopsPerUnit = 100000;
     const unsigned kEvalLoopsPerUnit = 300000;
     const unsigned kOptimizeLoopsPerUnit = 1000;
-    const unsigned kMaxVarValueSetsAmount = 100;
     const double kEpsilon = 1e-9;
     const bool kPrintTimingProgress = false;
+
+    const unsigned kMaxVarValueSetsAmount = 10000;
+    const double kVarValuesUpperLimit = 100000.0;
+    const double kVarValuesInitialDelta = 0.1;
+    const double kVarValuesDeltaFactor1 = 1.25;
+    const double kVarValuesDeltaFactor2 = 10.0;
+    const double kVarValuesDeltaFactor2Threshold = 10.0;
+
 
     class ParserWithConsts: public FunctionParser
     {
@@ -118,7 +125,7 @@ namespace
                 ++varsAmount;
 
         std::vector<double> varValues(varsAmount, 0);
-        std::vector<double> deltas(varsAmount, .25);
+        std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
 
         while(true)
         {
@@ -147,15 +154,17 @@ namespace
                     break;
 
                 varValues[varIndex] += deltas[varIndex];
-                deltas[varIndex] *= 3.0;
-                if(deltas[varIndex] > 10.0) deltas[varIndex] *= 10.0;
+                if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
+                    deltas[varIndex] *= kVarValuesDeltaFactor1;
+                else
+                    deltas[varIndex] *= kVarValuesDeltaFactor2;
 
-                if(varValues[varIndex] <= 1000000.0)
+                if(varValues[varIndex] <= kVarValuesUpperLimit)
                     break;
                 else
                 {
                     varValues[varIndex] = 0.0;
-                    deltas[varIndex] = 0.25;
+                    deltas[varIndex] = kVarValuesInitialDelta;
                     if(++varIndex == varValues.size())
                     {
                         if(gVarValues.empty())
@@ -206,7 +215,7 @@ namespace
                           << "\n(Difference: " << (v2-v1)
                           << ", scaled diff: "
                           << std::setprecision(18) << diff << ")\n"
-                          << SEPARATOR;
+                          << SEPARATOR << std::endl;
                 return false;
             }
         }
@@ -268,7 +277,8 @@ namespace
             std::cout
                 << "Function " << i+1
                 << " original                   | Optimized\n"
-                << "-------------------                   | ---------\n";
+                << "-------------------                   | ---------"
+                << std::endl;
 
             std::stringstream stream1, stream2;
             parser.Parse(functions[i].mFunctionString, gVarString);
@@ -298,7 +308,7 @@ namespace
                 }
                 std::cout << line1 << "| " << line2 << "\n";
             }
-            std::cout << SEPARATOR;
+            std::cout << SEPARATOR << std::endl;
         }
 #endif
     }
@@ -329,7 +339,7 @@ namespace
         {
             std::cerr << "\"" << info.mFunctionString << "\"\n"
                       << std::string(result+1, ' ')
-                      << "^ " << info.mParser.ErrorMsg() << "\n";
+                      << "^ " << info.mParser.ErrorMsg() << std::endl;
             return false;
         }
         return true;
@@ -444,9 +454,7 @@ int main(int argc, char* argv[])
 
     const bool validVarValuesFound = findValidVarValues(functions);
 
-    std::cout << std::flush;
-
-    std::cout << SEPARATOR;
+    std::cout << SEPARATOR << std::endl;
     for(size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
@@ -457,9 +465,7 @@ int main(int argc, char* argv[])
               << (varsAmount == 1 ? " var" : " vars")
               << ") (using " << varValueSetsAmount << " set"
               << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
-    std::cout << SEPARATOR;
-
-    std::cout << std::flush;
+    std::cout << SEPARATOR << std::endl;
 
 #if(0)
     std::cout << "Testing with variable values:\n";
@@ -476,23 +482,17 @@ int main(int argc, char* argv[])
     }
     if(!validVarValuesFound)
         std::cout << " [no valid variable values were found...]";
-    std::cout << "\n" << SEPARATOR;
+    std::cout << "\n" << SEPARATOR << std::endl;
 #else
     if(!validVarValuesFound)
         std::cout << "Warning: No valid variable values were found."
                   << " Using (0,0).\n"
-                  << SEPARATOR;
+                  << SEPARATOR << std::endl;
 #endif
-
-    std::cout << std::flush;
 
     const bool equalityErrors = checkEquality(functions) == false;
 
-    std::cout << std::flush;
-
     printByteCodes(functions);
-
-    std::cout << std::flush;
 
     if(noTimingIfEqualityErrors && equalityErrors)
         measureTimings = false;
