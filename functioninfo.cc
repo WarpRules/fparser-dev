@@ -58,9 +58,10 @@ namespace
     ParserWithConsts gParser, gAuxParser;
     std::string gFunctionString, gVarString;
     std::vector<std::vector<double> > gVarValues;
+    const double* gEvalParameters = 0;
 
     inline void doParse() { gParser.Parse(gFunctionString, gVarString); }
-    inline void doEval() { gParser.Eval(&gVarValues[0][0]); }
+    inline void doEval() { gParser.Eval(gEvalParameters); }
     inline void doOptimize() { gAuxParser = gParser; gAuxParser.Optimize(); }
 
     template<void(*Function)(), unsigned loopsPerUnit>
@@ -104,6 +105,7 @@ namespace
     void getTimingInfo(FunctionInfo& info)
     {
         gFunctionString = info.mFunctionString;
+        gEvalParameters = &gVarValues.back()[0];
 
         printTimingInfo();
         info.mParseTiming = getTimingInfo<doParse, kParseLoopsPerUnit>();
@@ -345,24 +347,8 @@ namespace
         return true;
     }
 
-    bool functionsParseOk(const std::vector<FunctionInfo>& functions)
-    {
-        ParserWithConsts parser;
-        for(size_t i = 0; i < functions.size(); ++i)
-            if(parser.Parse(functions[i].mFunctionString, gVarString) >= 0)
-                return false;
-        return true;
-    }
-
     void deduceVariables(const std::vector<FunctionInfo>& functions)
     {
-        gVarString = "x";
-        if(functionsParseOk(functions)) return;
-        gVarString = "x,y";
-        if(functionsParseOk(functions)) return;
-        gVarString = "x,y,z";
-        if(functionsParseOk(functions)) return;
-
         typedef std::set<std::string> StrSet;
         StrSet varNames;
         ParserWithConsts parser;
