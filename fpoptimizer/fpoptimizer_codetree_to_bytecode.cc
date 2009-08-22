@@ -431,6 +431,61 @@ namespace
             ConvertPowi(*tree.Params[a].param);
     }
 #endif
+    void RecreateInversionsAndNegations(CodeTree& tree)
+    {
+        for(size_t a=0; a<tree.Params.size(); ++a)
+            RecreateInversionsAndNegations(*tree.Params[a].param);
+
+        bool changed = false;
+        switch(tree.Opcode) // Recreate inversions and negations
+        {
+            case cMul:
+            {
+                for(size_t a=0; a<tree.Params.size(); ++a)
+                    if(tree.Params[a].param->Opcode == cPow
+                    && tree.Params[a].param->Params[1].param->IsImmed()
+                    && tree.Params[a].param->Params[1].param->GetImmed() == -1)
+                    {
+                        tree.Params[a] = tree.Params[a].param->Params[0];
+                        tree.Params[a].param->Parent = &tree;
+                        tree.Params[a].sign = true;
+                        changed = true;
+                    }
+                break;
+            }
+            case cAdd:
+            {
+                for(size_t a=0; a<tree.Params.size(); ++a)
+                    if(tree.Params[a].param->Opcode == cMul)
+                    {
+                        // if the mul group has a -1 constant...
+                        bool subchanged = false;
+                        CodeTree& mulgroup = *tree.Params[a].param;
+                        for(size_t b=mulgroup.Params.size(); b-- > 0; )
+                            if(mulgroup.Params[b].param->IsImmed()
+                            && mulgroup.Params[b].param->GetImmed() == -1)
+                            {
+                                mulgroup.Params.erase(mulgroup.Params.begin()+b);
+                                tree.Params[a].sign = !tree.Params[a].sign;
+                                subchanged = true;
+                            }
+                        if(subchanged)
+                        {
+                            mulgroup.ConstantFolding();
+                            mulgroup.Sort();
+                            mulgroup.Recalculate_Hash_NoRecursion();
+                            changed = true;
+                        }
+                    }
+            }
+        }
+        if(changed)
+        {
+            // Don't run ConstantFolding here: It cannot handle negations in cMul/cAdd
+            tree.Sort();
+            tree.Rehash(true);
+        }
+    }
 }
 
 namespace FPoptimizer_CodeTree
@@ -440,6 +495,8 @@ namespace FPoptimizer_CodeTree
         std::vector<double>&   Immed,
         size_t& stacktop_max)
     {
+        RecreateInversionsAndNegations(*this);
+
         ByteCodeSynth synth;
     #if 0
         /* Convert integer powi sequences into trees
@@ -521,48 +578,6 @@ namespace FPoptimizer_CodeTree
             case cAnd:
             case cOr:
             {
-                switch(Opcode) // Recreate inversions and negations
-                {
-                    case cMul:
-                    {
-                        for(size_t a=0; a<Params.size(); ++a)
-                            if(Params[a].param->Opcode == cPow
-                            && Params[a].param->Params[1].param->IsImmed()
-                            && Params[a].param->Params[1].param->GetImmed() == -1)
-                            {
-                                Params[a] = Params[a].param->Params[0];
-                                Params[a].param->Parent = this;
-                                Params[a].sign = true;
-                            }
-                        break;
-                    }
-                    case cAdd:
-                    {
-                        for(size_t a=0; a<Params.size(); ++a)
-                            if(Params[a].param->Opcode == cMul)
-                            {
-                                // if the mul group has a -1 constant...
-                                bool changed = false;
-                                CodeTree& mulgroup = *Params[a].param;
-                                for(size_t b=mulgroup.Params.size(); b-- > 0; )
-                                    if(mulgroup.Params[b].param->IsImmed()
-                                    && mulgroup.Params[b].param->GetImmed() == -1)
-                                    {
-                                        mulgroup.Params.erase(mulgroup.Params.begin()+b);
-                                        Params[a].sign = !Params[a].sign;
-                                        changed = true;
-                                    }
-                                if(changed)
-                                {
-                                    mulgroup.ConstantFolding();
-                                    mulgroup.Sort();
-                                    mulgroup.Recalculate_Hash_NoRecursion();
-                                }
-                            }
-                        break;
-                   }
-                }
-
                 // Operand re-sorting:
                 // If the first param has a sign, try to find a param
                 // that does _not_ have a sign and put it first.
