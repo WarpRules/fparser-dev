@@ -392,7 +392,7 @@ private:
 private:
     std::map<std::string, size_t>    n_index;
     std::map<double,      size_t>    c_index;
-    std::map<crc32_t,     size_t>    p_index;
+    std::multimap<crc32_t,size_t>    p_index;
     std::map<crc32_t,     size_t>    m_index;
     std::map<crc32_t,     size_t>    f_index;
 
@@ -410,34 +410,66 @@ public:
     {
     }
 
-    std::string Dump(unsigned o)
+    ParamSpec CreateParamSpec(const GrammarData::ParamSpec& p)
     {
-        return FP_GetOpcodeName(o, true);
-    }
-    std::string PDumpFix(const GrammarData::ParamSpec& p, const std::string& s)
-    {
-        std::string res = s;
-        if(p.Negated)
-            res = "(" + res + ")->SetNegated()";
-        if(p.MinimumRepeat != 1 || p.AnyRepetition)
+        ParamSpec  pitem;
+        memset(&pitem, 0, sizeof(pitem));
+        pitem.sign           = p.Negated;
+        pitem.transformation = p.Transformation;
+        pitem.minrepeat      = p.MinimumRepeat;
+        pitem.anyrepeat      = p.AnyRepetition;
+        pitem.opcode         = p.Opcode;
+        size_t count = p.ImmedConstraint; // note: stored in "count"
+        size_t index = 0;
+        switch(p.Opcode)
         {
-            std::ostringstream tmp;
-            tmp << "->SetRepeat(" << p.MinimumRepeat
-                << ", " << (p.AnyRepetition ? "true" : "false")
-                << ")";
-            res = "(" + res + ")" + tmp.str();
+            case NumConstant:
+            {
+                index = DumpConstant(p.ConstantValue);
+                break;
+            }
+            case NamedHolder:
+            case ImmedHolder:
+            case RestHolder:
+            {
+                index = p.Index;
+                break;
+            }
+            case SubFunction:
+            {
+                index = DumpFunction(*p.Func);
+                break;
+            }
+            default:
+            {
+                std::pair<size_t,size_t> r = DumpParamList(p.Params);
+                index = r.first;
+                count = r.second;
+                break;
+            }
         }
-        return res;
+        pitem.index = index;
+        pitem.count = count;
+
+        /* These assertions catch mis-sized bitfields */
+        assert(pitem.sign == p.Negated);
+        assert(pitem.transformation == p.Transformation);
+        assert(pitem.minrepeat == p.MinimumRepeat);
+        assert(pitem.anyrepeat == p.AnyRepetition);
+        assert(pitem.opcode == p.Opcode);
+        assert(pitem.index == index);
+        assert(pitem.count == count);
+        return pitem;
     }
 
-    size_t Dump(const std::string& n)
+    size_t DumpName(const std::string& n)
     {
         std::map<std::string, size_t>::const_iterator i = n_index.find(n);
         if(i != n_index.end()) return i->second;
         nlist.push_back(n);
         return n_index[n] = nlist.size()-1;
     }
-    size_t Dump(double v)
+    size_t DumpConstant(double v)
     {
         std::map<double, size_t>::const_iterator i = c_index.find(v);
         if(i != c_index.end()) return i->second;
@@ -445,124 +477,83 @@ public:
         return c_index[v] = clist.size()-1;
     }
 
-    void Dump(const std::vector<GrammarData::ParamSpec*>& params,
-              size_t& index,
-              size_t& count)
+    std::pair<size_t/*index*/, size_t/*count*/>
+        DumpParamList(const std::vector<GrammarData::ParamSpec*>& params)
     {
-        std::vector<crc32_t> crc32list;
+        if(params.empty())
+        {
+            return std::pair<size_t, size_t> (0,0); // "nothing" can be found anywhere!
+        }
+
+        const size_t count = params.size();
+
         std::vector<ParamSpec> pitems;
-        pitems.reserve(params.size());
-        for(size_t a=0; a<params.size(); ++a)
-        {
-            pitems.push_back(Dump(*params[a]));
-        }
-        count = params.size();
-        index = plist.size();
-        plist.reserve(plist.size() + pitems.size());
-        for(size_t a=0; a<pitems.size(); ++a)
-        {
-            size_t pos = plist.size();
-            plist.push_back(pitems[a]);
-            crc32list.push_back(crc32::calc(
-                (const unsigned char*)&plist[pos],
-                                sizeof(plist[pos])));
-        }
-      #if 1
-        size_t candidate_begin = 0;
-        bool fail = false;
+        pitems.reserve(count);
         for(size_t a=0; a<count; ++a)
+            pitems.push_back( CreateParamSpec(*params[a]) );
+
+        const crc32_t first_crc = crc32::calc( (const unsigned char*) &pitems[0], sizeof(pitems[0]) );
+
+        /* Find a position within plist[] where to insert pitems[] */
+
+        const size_t old_plist_size = plist.size();
+
+        size_t decided_position = old_plist_size;
+        size_t n_missing        = count;
+
+        std::multimap<crc32_t, size_t>::const_iterator ppos = p_index.lower_bound( first_crc );
+        for(; ppos != p_index.end() && ppos->first == first_crc; ++ppos)
         {
-            std::map<crc32_t, size_t>::const_iterator ppos = p_index.find(crc32list[a]);
-            if(ppos == p_index.end())
+            size_t candidate_position = ppos->second;
+            size_t n_candidate_items  = count;
+            if(candidate_position + count > old_plist_size)
+                n_candidate_items = old_plist_size - candidate_position;
+            size_t n_missing_here = count - n_candidate_items;
+
+            /* Using std::equal() ensures that we don't get crc collisions. */
+            /* However, we cast to (const unsigned char*) because
+             * our ParamSpec does not have operator== implemented.
+             */
+            if(std::equal(
+                (const unsigned char*) &pitems[0],
+                (const unsigned char*) &pitems[count],
+                (const unsigned char*) &plist[candidate_position]))
             {
-                /*if(a > 0 && (candidate_begin + (a-1)) == index-a)
-                {
-                    // REMOVED: This never seems to happen, so we can't
-                    //          test it. Remove it rather than leave in
-                    //          potentially buggy code.
-                    //
-                    // If we were inserting "abc" and the sequence
-                    // just happened to be ending as "ab", undo
-                    // our inserted "abc" (it would be "ababc"),
-                    // and instead, insert the remainder only,
-                    // so it becomes "abc".
-                    fprintf(stderr, "len=%u, appending at %u\n", (unsigned)count, (unsigned)a);
-                    plist.resize(index);
-                    index = candidate_begin;
-                    for(; a < count; ++a)
-                    {
-                        size_t pos = Dump(*params[a]);
-                        p_index[crc32list[a]] = index + a;
-                    }
-                    return;
-                }*/
-                p_index[crc32list[a]] = index + a;
-                fail = true;
+                /* Found a match */
+                n_missing        = n_missing_here;
+                decided_position = candidate_position;
+                break;
             }
-            else if(a == 0)
-                candidate_begin = ppos->second;
-            else if(ppos->second != candidate_begin + a)
-                fail = true;
         }
-        if(!fail)
+
+        /* Insert those items that are missing */
+        size_t source_offset = count - n_missing;
+        plist.reserve(decided_position + count);
+        for(size_t a=0; a<n_missing; ++a)
         {
-            plist.resize(index);
-            index = candidate_begin;
+            const ParamSpec& pitem = pitems[a + source_offset];
+            const crc32_t crc = crc32::calc( (const unsigned char*) &pitem, sizeof(pitem) );
+            p_index.insert( std::make_pair(crc, plist.size()) );
+            plist.push_back(pitem);
         }
-      #endif
-        return;
+        return std::pair<size_t, size_t> (decided_position, count);
     }
 
-    ParamSpec Dump(const GrammarData::ParamSpec& p)
-    {
-        ParamSpec  pitem;
-        memset(&pitem, 0, sizeof(pitem));
-        pitem.sign           = p.Negated;
-        pitem.transformation = p.Transformation;
-        pitem.count          = p.ImmedConstraint; // note: stored in "count"
-        pitem.minrepeat      = p.MinimumRepeat;
-        pitem.anyrepeat      = p.AnyRepetition;
-        pitem.opcode         = p.Opcode;
-        switch(p.Opcode)
-        {
-            case NumConstant:
-            {
-                pitem.index = Dump(p.ConstantValue);
-                break;
-            }
-            case NamedHolder:
-            case ImmedHolder:
-            case RestHolder:
-            {
-                pitem.index = p.Index;
-                break;
-            }
-            case SubFunction:
-            {
-                pitem.index = Dump(*p.Func);
-                break;
-            }
-            default:
-            {
-                size_t i, c;
-                Dump(p.Params, i, c);
-                pitem.index = i;
-                pitem.count = c;
-                break;
-            }
-        }
-        return pitem;
-    }
-    size_t Dump(const GrammarData::MatchedParams& m)
+    size_t DumpMatchedParams(const GrammarData::MatchedParams& m)
     {
         MatchedParams mitem;
         memset(&mitem, 0, sizeof(mitem));
         mitem.type    = m.Type;
         mitem.balance = m.Balance;
-        size_t i, c;
-        Dump(m.Params, i, c);
-        mitem.index = i;
-        mitem.count = c;
+        std::pair<size_t,size_t> r = DumpParamList(m.Params);
+        mitem.index = r.first;
+        mitem.count = r.second;
+
+        /* These assertions catch mis-sized bitfields */
+        assert(mitem.type == m.Type);
+        assert(mitem.balance == m.Balance);
+        assert(mitem.index == r.first);
+        assert(mitem.count == r.second);
       #if 1
         crc32_t crc = crc32::calc((const unsigned char*)&mitem, sizeof(mitem));
         std::map<crc32_t, size_t>::const_iterator mi = m_index.find(crc);
@@ -573,12 +564,21 @@ public:
         mlist.push_back(mitem);
         return mlist.size()-1;
     }
-    size_t Dump(const GrammarData::FunctionType& f)
+    Function CreateFunction(const GrammarData::FunctionType& f)
     {
         Function fitem;
         memset(&fitem, 0, sizeof(fitem));
+        size_t index = DumpMatchedParams(f.Params);
         fitem.opcode = f.Opcode;
-        fitem.index  = Dump(f.Params);
+        fitem.index  = index;
+        /* These assertions catch mis-sized bitfields */
+        assert(fitem.opcode == f.Opcode);
+        assert(fitem.index  == index);
+        return fitem;
+    }
+    size_t DumpFunction(const GrammarData::FunctionType& f)
+    {
+        Function fitem = CreateFunction(f);
       #if 1
         crc32_t crc = crc32::calc((const unsigned char*)&fitem, sizeof(fitem));
         std::map<crc32_t, size_t>::const_iterator fi = f_index.find(crc);
@@ -589,18 +589,23 @@ public:
         flist.push_back(fitem);
         return flist.size()-1;
     }
-    size_t Dump(const GrammarData::Rule& r)
+    size_t DumpRule(const GrammarData::Rule& r)
     {
         Rule ritem;
-        ritem.type        = r.Type;
-        ritem.func.opcode = r.Input.Opcode;
-        ritem.func.index  = Dump(r.Input.Params);
-        ritem.repl_index  = Dump(r.Replacement);
-        ritem.n_minimum_params = r.Input.Params.CalcRequiredParamsCount();
+        ritem.type             = r.Type;
+        ritem.func             = CreateFunction(r.Input);
+        size_t repl_index = DumpMatchedParams(r.Replacement);
+        size_t min_params = r.Input.Params.CalcRequiredParamsCount();
+        ritem.repl_index       = repl_index;
+        ritem.n_minimum_params = min_params;
+        /* These assertions catch mis-sized bitfields */
+        assert(ritem.type == r.Type);
+        assert(ritem.repl_index == repl_index);
+        assert(ritem.n_minimum_params == min_params);
         rlist.push_back(ritem);
         return rlist.size()-1;
     }
-    size_t Dump(const GrammarData::Grammar& g)
+    size_t DumpGrammar(const GrammarData::Grammar& g)
     {
         Grammar gitem;
         gitem.index = rlist.size();
@@ -608,7 +613,7 @@ public:
         for(size_t a=0; a<g.rules.size(); ++a)
         {
             if(g.rules[a].Input.Opcode == cNop) continue;
-            Dump(g.rules[a]);
+            DumpRule(g.rules[a]);
             ++gitem.count;
         }
         glist.push_back(gitem);
@@ -642,7 +647,7 @@ public:
         {
             std::cout <<
             "        {"
-                        << Dump(OpcodeType(plist[a].opcode))
+                        << FP_GetOpcodeName(plist[a].opcode, true)
                         << ", "
                         << (plist[a].sign ? "true " : "false")
                         << ", "
@@ -730,7 +735,7 @@ public:
         for(size_t a=0; a<flist.size(); ++a)
         {
             std::cout <<
-            "        {" << Dump(OpcodeType(flist[a].opcode))
+            "        {" << FP_GetOpcodeName(flist[a].opcode, true)
                         << ", " << flist[a].index
                         << " }, /* " << a << " */\n";
         }
@@ -748,7 +753,7 @@ public:
                          :/*rlist[a].type == ReplaceParams ?*/ "ReplaceParams "
                            )
                         << ",    " << rlist[a].repl_index
-                        << ",\t{ " << Dump(OpcodeType(rlist[a].func.opcode))
+                        << ",\t{ " << FP_GetOpcodeName(rlist[a].func.opcode, true)
                         <<   ", " << rlist[a].func.index
                         <<  " } }, /* " << a << " */\n";
         }
@@ -1092,13 +1097,13 @@ static GrammarDumper dumper;
     expression_param:
        PARAMETER_TOKEN param_constraints /* any expression, indicated by "x", "a" etc. */
        {
-         unsigned nameindex = dumper.Dump(*$1);
+         unsigned nameindex = dumper.DumpName(*$1);
          $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
          delete $1;
          $$->SetConstraint($2);
        }
     ;
-    
+
     immed_param:
        IMMED_TOKEN param_constraints  /* a placeholder for some immed */
        {
@@ -1106,7 +1111,7 @@ static GrammarDumper dumper;
          $$->SetConstraint($2);
        }
     ;
-    
+
     param_constraints:
        param_constraints PARAM_CONSTRAINT
        {
@@ -1207,7 +1212,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return SUBST_OP_COLON;
         case '%': { lval->index = 0; return IMMED_TOKEN; }
         case '&': { lval->index = 1; return IMMED_TOKEN; }
-        
+
         case '@':
         {
             int c2 = std::fgetc(stdin);
@@ -1466,10 +1471,10 @@ int main()
         "using namespace FUNCTIONPARSERTYPES;\n"
         "\n";
 
-    /*size_t e = */dumper.Dump(Grammar_Entry);
-    /*size_t i = */dumper.Dump(Grammar_Intermediate);
-    /*size_t f = */dumper.Dump(Grammar_Final1);
-    /*size_t f = */dumper.Dump(Grammar_Final2);
+    /*size_t e = */dumper.DumpGrammar(Grammar_Entry);
+    /*size_t i = */dumper.DumpGrammar(Grammar_Intermediate);
+    /*size_t f = */dumper.DumpGrammar(Grammar_Final1);
+    /*size_t f = */dumper.DumpGrammar(Grammar_Final2);
 
     dumper.Flush();
 
