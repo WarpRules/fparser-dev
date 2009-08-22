@@ -106,11 +106,11 @@ namespace FPoptimizer_Grammar
 
     struct MatchedParams
     {
-        ParamMatchingType type    : 2; // needs 2
-        SignBalanceType   balance : 2; // needs 2
+        ParamMatchingType type    : 4; // needs 2
+        SignBalanceType   balance : 4; // needs 2
         // count,index to plist[]
-        unsigned         count : 2;   // needs 2
-        unsigned         index : 10;  // needs 10
+        unsigned         count : 8;   // needs 2
+        unsigned         index : 16;  // needs 10
 
         struct CodeTreeMatch;
 
@@ -168,9 +168,9 @@ namespace FPoptimizer_Grammar
     } PACKED_GRAMMAR_ATTRIBUTE;
     struct Function
     {
-        OpcodeType opcode : 6;
+        OpcodeType opcode : 16;
         // index to mlist[]
-        unsigned   index  : 10;
+        unsigned   index  : 16;
 
         MatchResultType
             Match(FPoptimizer_CodeTree::CodeTree& tree,
@@ -179,10 +179,10 @@ namespace FPoptimizer_Grammar
     } PACKED_GRAMMAR_ATTRIBUTE;
     struct Rule
     {
-        unsigned  n_minimum_params : 4;
-        RuleType  type             : 2;
+        unsigned  n_minimum_params : 8;
+        RuleType  type             : 8;
         // index to mlist[]
-        unsigned  repl_index       : 10;
+        unsigned  repl_index       : 16;
         Function  func;
 
         bool ApplyTo(FPoptimizer_CodeTree::CodeTree& tree) const;
