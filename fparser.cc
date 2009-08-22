@@ -1153,11 +1153,11 @@ double FunctionParser::Eval(const double* Vars)
           case   cExp: Stack[SP] = exp(Stack[SP]); break;
 
           case   cExp2:
-            #ifdef FP_SUPPORT_EXP2
-              Stack[SP] = exp2(Stack[SP]);
-            #else
+            //#ifdef FP_SUPPORT_EXP2
+            //  Stack[SP] = exp2(Stack[SP]);
+            //#else
               Stack[SP] = pow(2.0, Stack[SP]);
-            #endif
+            //#endif
               break;
 
           case cFloor: Stack[SP] = floor(Stack[SP]); break;

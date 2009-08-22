@@ -796,6 +796,11 @@ namespace FPoptimizer_CodeTree
                             // Done with a dup/add sequence, cExp
                             synth.AddOperation(cExp, 1);
                         }
+                        /* - disabled cExp2 optimizations for now, because it
+                         *   turns out that glibc for at least x86_64 has a
+                         *   particularly stupid exp2() implementation that
+                         *   is _slower_ than exp() or even pow(2,x)
+                         *
                         else if(
                           #ifndef FP_SUPPORT_EXP2
                            #ifdef FP_EPSILON
@@ -831,7 +836,7 @@ namespace FPoptimizer_CodeTree
                                 synth.AddOperation(cMul, 2);
                                 synth.AddOperation(cExp2, 1);
                             }
-                        }
+                        }*/
                         else
                         {
                             // Do with cMul and cExp
