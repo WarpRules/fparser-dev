@@ -1466,7 +1466,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
     const std::vector<unsigned>& ByteCode = data->ByteCode;
     const std::vector<double>& Immed = data->Immed;
 
-    std::vector<std::string> stack;
+    std::vector<std::pair<int,std::string> > stack;
     std::vector<unsigned> if_stack;
 
     for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
@@ -1523,10 +1523,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
               {
                   if(showExpression)
                   {
-                      std::stringstream buf;
+                      std::ostringstream buf;
                       buf.precision(8);
                       buf << Immed[DP];
-                      stack.push_back(buf.str());
+                      stack.push_back( std::make_pair(0, buf.str()) );
                   }
                   output.precision(8);
                   output << "push " << Immed[DP];
@@ -1594,7 +1594,6 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
     #ifdef FP_SUPPORT_OPTIMIZER
                         case cVar:    n = "(var)"; break;
                         case cNotNot: n = "(notnot)"; break;
-                        case cDup: n = "dup"; params = 0; break;
                         case cInv: n = "inv"; params = 1; break;
                         case cSqr: n = "sqr"; params = 1; break;
                         case cFetch:
@@ -1606,15 +1605,23 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                             produces = 0;
                             break;
                         }
+                        case cDup:
+                        {
+                            if(showExpression)
+                                stack.push_back(stack.back());
+                            output << "dup";
+                            produces = 0;
+                            break;
+                        }
                         case cPopNMov:
                         {
                             size_t a = ByteCode[++IP];
                             size_t b = ByteCode[++IP];
                             if(showExpression)
                             {
-                                std::string stacktop = stack[b];
+                                std::pair<int, std::string> stacktop = stack[b];
                                 stack.resize(a);
-                                stack.push_back(stack[b]);
+                                stack.push_back(stacktop);
                             }
                             output << "cPopNMov(" << a << ", " << b << ")";
                             produces = 0;
@@ -1639,8 +1646,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                   {
                       if(showExpression)
                       {
-                          stack.push_back
-                              (findVariableName(data->variableRefs, opcode));
+                          stack.push_back(std::make_pair(0,
+                              (findVariableName(data->variableRefs, opcode))));
                       }
                       output << "push Var" << opcode-VarBegin;
                       produces = 0;
@@ -1655,38 +1662,37 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
             if(produces > 0)
             {
-                std::stringstream buf;
-                if(params > 0)
+                std::ostringstream buf;
+                const char *paramsep = ",", *suff = "";
+                int prio = 0;
+                switch(opcode)
                 {
-                    const char *paramsep = ", ", *suff = ")";
-                    switch(opcode)
-                    {
-                        case cIf: buf << "if(!"; break;
-                        case cNeg: buf << "(-"; break;
-                        case cAdd: buf << "("; paramsep = " + "; break;
-                        case cSub: buf << "("; paramsep = " - "; break;
-                        case cMul: buf << "("; paramsep = " * "; break;
-                        case cDiv: buf << "("; paramsep = " / "; break;
-                        case cPow: buf << "("; paramsep = " ^ "; break;
-                        case cSqr: suff = "^2"; break;
-                        default: buf << n << '(';
-                    }
-                    const char* sep = "";
-                    for(unsigned a=0; a<params; ++a)
-                    {
-                        buf << sep << stack[stack.size() - params + a];
-                        sep = paramsep;
-                    }
-                    stack.resize(stack.size() - params);
-                    buf << suff;
-                    stack.push_back(buf.str());
+                    case cIf: buf << "if(!"; suff = ")"; break;
+                    case cAdd: prio = 4; paramsep = "+"; break;
+                    case cSub: prio = 4; paramsep = "-"; break;
+                    case cMul: prio = 3; paramsep = "*"; break;
+                    case cDiv: prio = 3; paramsep = "/"; break;
+                    case cPow: prio = 2; paramsep = "^"; break;
+                    case cSqr: prio = 2; suff = "^2"; break;
+                    case cNeg: buf << "(-"; suff = ")"; break;
+                    default: buf << n << '('; suff = ")";
                 }
-                else
-                    stack.push_back(stack.back()); // dup
+                const char* sep = "";
+                for(unsigned a=0; a<params; ++a)
+                {
+                    buf << sep;
+                    if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << '(';
+                    buf << stack[stack.size() - params + a].second;
+                    if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << ')';
+                    sep = paramsep;
+                }
+                stack.resize(stack.size() - params);
+                buf << suff;
+                stack.push_back(std::make_pair(prio, buf.str()));
                 //if(n.size() <= 4 && !out_params) padLine(outputBuffer, 20);
             }
             //padLine(outputBuffer, 20);
-            output << "= " << stack.back();
+            output << "= " << stack.back().second;
         }
 
         if(showExpression)
