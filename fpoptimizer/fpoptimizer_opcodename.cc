@@ -94,7 +94,7 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
         case SubFunction:   p = "SubFunction"; break;
       //case GroupFunction: p = "GroupFunction"; break;
     }
-    std::stringstream tmp;
+    std::ostringstream tmp;
     //if(!p) std::cerr << "o=" << opcode << "\n";
     assert(p);
     tmp << p;
@@ -102,7 +102,7 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
     return tmp.str();
 #else
     /* Just numeric meanings */
-    std::stringstream tmp;
+    std::ostringstream tmp;
     tmp << opcode;
     if(pad) while(tmp.str().size() < 5) tmp << ' ';
     return tmp.str();

@@ -416,7 +416,7 @@ public:
             res = "(" + res + ")->SetNegated()";
         if(p.MinimumRepeat != 1 || p.AnyRepetition)
         {
-            std::stringstream tmp;
+            std::ostringstream tmp;
             tmp << "->SetRepeat(" << p.MinimumRepeat
                 << ", " << (p.AnyRepetition ? "true" : "false")
                 << ")";
