@@ -26,6 +26,7 @@
 #                                 @F  = (Float) non-integer only
 #                                 @P  = Positive only (also zero)
 #                                 @N  = Negative only
+#                                 @Q  = Only those where positive/negative not known
 #                                 @1  = value evaluating to +1 or -1 only
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
 #                             # they can be applied to IMMED_TOKENs and PARAMETER_TOKENs
@@ -89,7 +90,7 @@
 #     |  expression_param         /* expression param */
 #     |  expression_param '+'      /* expression param, repeated 2..N times. */
 #     |  expression_param '*'      /* expression param, repeated 1..N times. */
-#     |  '(' function ')'         /* a subtree */
+#     |  '(' function ')' param_constraints /* a subtree */
 #     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
 #     ;
 #
@@ -279,9 +280,9 @@ cPow [x 1]  -> x
 # (x^g)^z        -> x^(g*z)  (g is odd or float)
 cPow [ (cPow[x y@O]) z ]       : x (cMul [y z])
 cPow [ (cPow[x y@F]) z ]       : x (cMul [y z])
-# (x^e)^z        -> abs(x)^(e*z)  (e is an even integer)
-cPow [ (cPow[x y@E]) z ]       : (cAbs [x]) (cMul [y z])
 
+# If pow() makes a signless value into a positive value, guard that fact with abs()
+cPow [ (cPow[x@Q y])@P z ]     : (cAbs [x]) (cMul [y z])
 cPow [(cPow [x@P y]) z]        : x (cMul [y z])
 
 #### Logical optimizations

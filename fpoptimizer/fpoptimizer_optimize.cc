@@ -1712,7 +1712,7 @@ namespace FPoptimizer_Grammar
                 }
                 switch( ImmedConstraint_Sign(count & SignMask) )
                 {
-                    case SignMask: break;
+                    /*case SignMask: break;*/
                     case Sign_AnySign: break;
                     case Sign_Positive:
                         if(res < 0.0)  return NoMatch;
@@ -1720,6 +1720,8 @@ namespace FPoptimizer_Grammar
                     case Sign_Negative:
                         if(res >= 0.0) return NoMatch;
                         break;
+                    case Sign_NoIdea:
+                        return NoMatch;
                 }
                 switch( ImmedConstraint_Oneness(count & OnenessMask) )
                 {
@@ -1785,13 +1787,17 @@ namespace FPoptimizer_Grammar
                 }
                 switch( ImmedConstraint_Sign(count & SignMask) )
                 {
-                    case SignMask: break;
+                    /*case SignMask: break;*/
                     case Sign_AnySign: break;
                     case Sign_Positive:
                         if(!tree.IsAlwaysSigned(true)) return NoMatch;
                         break;
                     case Sign_Negative:
                         if(!tree.IsAlwaysSigned(false)) return NoMatch;
+                        break;
+                    case Sign_NoIdea:
+                        if(tree.IsAlwaysSigned(false)) return NoMatch;
+                        if(tree.IsAlwaysSigned(true)) return NoMatch;
                         break;
                 }
                 switch( ImmedConstraint_Oneness(count & OnenessMask) )
@@ -1813,6 +1819,47 @@ namespace FPoptimizer_Grammar
             case SubFunction:
             {
                 if(sign != (transf != None)) return NoMatch;
+
+                switch( ImmedConstraint_Value(count & ValueMask) )
+                {
+                    case ValueMask: break;
+                    case Value_AnyNum: break;
+                    case Value_EvenInt:
+                        if(!tree.IsAlwaysParity(false)) return NoMatch;
+                        break;
+                    case Value_OddInt:
+                        if(!tree.IsAlwaysParity(true)) return NoMatch;
+                        break;
+                    case Value_IsInteger:
+                        if(!tree.IsAlwaysInteger()) return NoMatch;
+                        break;
+                    case Value_NonInteger:
+                        if(tree.IsAlwaysInteger()) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Sign(count & SignMask) )
+                {
+                    /*case SignMask: break;*/
+                    case Sign_AnySign: break;
+                    case Sign_Positive:
+                        if(!tree.IsAlwaysSigned(true)) return NoMatch;
+                        break;
+                    case Sign_Negative:
+                        if(!tree.IsAlwaysSigned(false)) return NoMatch;
+                        break;
+                    case Sign_NoIdea:
+                        if(tree.IsAlwaysSigned(false)) return NoMatch;
+                        if(tree.IsAlwaysSigned(true)) return NoMatch;
+                        break;
+                }
+                switch( ImmedConstraint_Oneness(count & OnenessMask) )
+                {
+                    case OnenessMask: break;
+                    case Oneness_Any: break;
+                    case Oneness_One:    return NoMatch;
+                    case Oneness_NotOne: return NoMatch;
+                }
+
                 return pack.flist[index].Match(tree, match, match_index);
             }
             default: // means groupfunction. No ImmedConstraint

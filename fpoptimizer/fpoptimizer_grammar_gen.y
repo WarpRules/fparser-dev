@@ -516,7 +516,7 @@ public:
              */
             if(std::equal(
                 (const unsigned char*) &pitems[0],
-                (const unsigned char*) &pitems[count],
+                (const unsigned char*) (&pitems[0]+count),
                 (const unsigned char*) &plist[candidate_position]))
             {
                 /* Found a match */
@@ -683,9 +683,10 @@ public:
                     }
                     switch( ImmedConstraint_Sign( plist[a].count & SignMask ) )
                     {
-                        case SignMask: case Sign_AnySign: break;
+                        /*case SignMask:*/ case Sign_AnySign: break;
                         case Sign_Positive: std::cout << sep << "Sign_Positive"; sep=s; break;
                         case Sign_Negative: std::cout << sep << "Sign_Negative"; sep=s; break;
+                        case Sign_NoIdea:   std::cout << sep << "Sign_NoIdea"; sep=s; break;
                     }
                     switch( ImmedConstraint_Oneness( plist[a].count & OnenessMask ) )
                     {
@@ -1084,9 +1085,10 @@ static GrammarDumper dumper;
          /* In substitution, yields an immed containing the number of repetitions */
          $$ = $1->SetRepeat(1, true);
        }
-    |  '(' function ')'         /* a subtree */
+    |  '(' function ')' param_constraints    /* a subtree */
        {
          $$ = new GrammarData::ParamSpec($2);
+         $$->SetConstraint($4);
        }
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
@@ -1224,6 +1226,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 case 'F': { lval->index = Value_NonInteger; return PARAM_CONSTRAINT; }
                 case 'P': { lval->index = Sign_Positive; return PARAM_CONSTRAINT; }
                 case 'N': { lval->index = Sign_Negative; return PARAM_CONSTRAINT; }
+                case 'Q': { lval->index = Sign_NoIdea; return PARAM_CONSTRAINT; }
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
             }

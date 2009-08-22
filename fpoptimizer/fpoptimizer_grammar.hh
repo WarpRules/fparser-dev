@@ -31,7 +31,8 @@ namespace FPoptimizer_Grammar
         SignMask  = 0x18,
         Sign_AnySign     = 0x00, // - or +
         Sign_Positive    = 0x08, // positive only
-        Sign_Negative    = 0x10  // negative only
+        Sign_Negative    = 0x10, // negative only
+        Sign_NoIdea      = 0x18  // where sign cannot be guessed
     };
     enum ImmedConstraint_Oneness
     {
@@ -144,7 +145,7 @@ namespace FPoptimizer_Grammar
         // For ImmedHolder:   index is the slot, count is an ImmedConstraint
         // For RestHolder:    index is the slot
         // For NamedHolder:   index is the slot, count is an ImmedConstraint
-        // For SubFunction:   index to flist[]
+        // For SubFunction:   index to flist[],  count is an ImmedConstraint
         // For anything else
         //  =  GroupFunction: index,count to plist[]
         unsigned count : 8;
