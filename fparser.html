@@ -3,11 +3,11 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
- <title>Function Parser for C++ v3.1.5  : Documentation</title>
+ <title>Function Parser for C++ v3.2    : Documentation</title>
 </head>
 
 <body>
-<h1>Function Parser for C++ v3.1.5  </h1>
+<h1>Function Parser for C++ v3.2    </h1>
 
 <p>Optimization code contributed by Bisqwit
 (<a href="http://iki.fi/bisqwit/">http://iki.fi/bisqwit/</a>).
@@ -43,7 +43,7 @@
 <ul>
  <li>The <code>FP_SUPPORT_ASINH</code> and <code>FP_NO_ASINH</code>
    precompiler constants have been replaced with a more generic
-   <code>FP_SUPPORT_TR1_MATH_FUNCS</code> precompiled constant, which
+   <code>FP_SUPPORT_TR1_MATH_FUNCS</code> precompiler constant, which
    enables other similar functions as well. Consult the documentation
    on this subject for details.
  <li>The "<code>asinh</code>", "<code>acosh</code>" and "<code>atanh</code>"
@@ -116,11 +116,11 @@ file.
 
 <dl>
  <dt><p><code>FP_SUPPORT_TR1_MATH_FUNCS</code> : (Default off)
-     Define this precompiler constant to make the library use additional
-     math functions defined in the C99 standard and the TR1 C++ standard
+ <dd><p>Define this precompiler constant to make the library use additional
+     math functions defined in the C99 standard and the C++ TR1 standard
      proposal (but not yet in the official C++ standard). This can make
-     evaluation faster when the functions are needed.
-   <p>The TR1 math functions in question are: <code>asinh()</code>,
+     evaluation faster when these functions are involved.
+   <p>The C++ TR1 math functions in question are: <code>asinh()</code>,
      <code>acosh()</code>, <code>atanh()</code>, <code>exp2()</code> and
      <code>log2()</code>.
 

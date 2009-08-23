@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison++
 #===========================================================================
 
-RELEASE_VERSION=3.1.5
+RELEASE_VERSION=3.2
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -157,7 +157,8 @@ devel_pack: set_version_string
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
 	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y \
-	fpoptimizer_3.0.3.cc run_full_release_testing.sh VersionChanger.cc
+	fpoptimizer_3.0.3.cc run_full_release_testing.sh VersionChanger.cc \
+	functioninfo.cc
 
 clean:
 	rm -f	testbed testbed_release speedtest speedtest_release \

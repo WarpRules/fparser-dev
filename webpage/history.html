@@ -9,6 +9,27 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v3.2
+<ul>
+ <li>The <code>FP_SUPPORT_ASINH</code> and <code>FP_NO_ASINH</code>
+   precompiler constants have been replaced with a more generic
+   <code>FP_SUPPORT_TR1_MATH_FUNCS</code> precompiler constant, which
+   enables other similar functions as well. Consult the documentation
+   on this subject for details.
+ <li>The "<code>asinh</code>", "<code>acosh</code>" and "<code>atanh</code>"
+   functions are now <em>always</em> available in the function syntax
+   regardless of whether <code>FP_SUPPORT_TR1_MATH_FUNCS</code> has been
+   defined or not. (If it's not, then they will be calculated using
+   equivalent formulas.)
+ <li>Significant refactoring of the optimizer code, and addition of numerous
+   new optimization rules (related to the <code>abs()</code> function in
+   diverse situations, some exponentiation, logarithm and hyperbolic
+   trigonometry optimizations, and others).
+ <li>Fixed bug in the optimizer which caused functions like
+   <code>"sqrt(x*x)"</code> and <code>"(x*x)^0.25"</code> to be optimized
+   incorrectly (for negative values of <code>x</code>).
+</ul>
+
 <p>What's new in v3.1.5
 <ul>
  <li>Added a new <code>RemoveIdentifier()</code> function to the class which
