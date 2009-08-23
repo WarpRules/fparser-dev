@@ -70,6 +70,11 @@ namespace FPoptimizer_CodeTree
             Param()                           : param(),  sign()  {}
             Param(CodeTree*        p, bool s) : param(p), sign(s) {}
             Param(const CodeTreeP& p, bool s) : param(p), sign(s) {}
+
+            bool IsIdenticalTo(const Param& b) const
+            {
+                return sign == b.sign && param->IsIdenticalTo(*b.param);
+            }
         };
 
         // Parameters for the function
@@ -168,6 +173,8 @@ namespace FPoptimizer_CodeTree
         bool IsAlwaysInteger() const;
 
         void ConstantFolding();
+
+        bool IsIdenticalTo(const CodeTree& b) const;
 
     private:
         CodeTree(const CodeTree&);
