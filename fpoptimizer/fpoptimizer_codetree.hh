@@ -92,7 +92,7 @@ namespace FPoptimizer_CodeTree
         std::vector<Param> Params;
 
         /* Internal operation */
-        fphash_t      Hash;
+        FUNCTIONPARSERTYPES::fphash_t      Hash;
         size_t        Depth;
         CodeTree*     Parent;
         const FPoptimizer_Grammar::Grammar* OptimizedUsing;

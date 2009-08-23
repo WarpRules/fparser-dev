@@ -41,10 +41,20 @@
 
 <p>What's new in v3.2
 <ul>
+ <li>The <code>FP_SUPPORT_ASINH</code> and <code>FP_NO_ASINH</code>
+   precompiler constants have been replaced with a more generic
+   <code>FP_SUPPORT_TR1_MATH_FUNCS</code> precompiled constant, which
+   enables other similar functions as well. Consult the documentation
+   on this subject for details.
+ <li>The "<code>asinh</code>", "<code>acosh</code>" and "<code>atanh</code>"
+   functions are now <em>always</em> available in the function syntax
+   regardless of whether <code>FP_SUPPORT_TR1_MATH_FUNCS</code> has been
+   defined or not. (If it's not, then they will be calculated using
+   equivalent formulas.)
  <li>Significant refactoring of the optimizer code, and addition of numerous
    new optimization rules (related to the <code>abs()</code> function in
    diverse situations, some exponentiation, logarithm and hyperbolic
-   trigonometry optimizations, among others).
+   trigonometry optimizations, and others).
  <li>Fixed bug in the optimizer which caused functions like
    <code>"sqrt(x*x)"</code> and <code>"(x*x)^0.25"</code> to be optimized
    incorrectly (for negative values of <code>x</code>).
@@ -100,17 +110,19 @@ leave the latter file out.
 
 <p>There is a set of precompiler options in the <code>fpconfig.hh</code> file
 which can be used for setting certain features on or off. All of these options
-can also be specified from the outside, using precompiler settings.
+can also be specified from the outside, using precompiler settings (eg. the
+<code>-D</code> option in gcc), and thus it's not necessary to modify this
+file.
 
 <dl>
  <dt><p><code>FP_SUPPORT_TR1_MATH_FUNCS</code> : (Default off)
      Define this precompiler constant to make the library use additional
      math functions defined in the C99 standard and the TR1 C++ standard
-     proposal (but not yet in the official C++ standard). This will make
-     evaluation faster when the functions are used in the function string.
-     <p>The TR1 math functions in question are: <code>asinh()</code>,
-       <code>acosh()</code>, <code>atanh()</code>, <code>exp2()</code> and
-       <code>log2()</code>.
+     proposal (but not yet in the official C++ standard). This can make
+     evaluation faster when the functions are needed.
+   <p>The TR1 math functions in question are: <code>asinh()</code>,
+     <code>acosh()</code>, <code>atanh()</code>, <code>exp2()</code> and
+     <code>log2()</code>.
 
  <dt><p><code>FP_ENABLE_EVAL</code> : (Default off)
  <dd><p>Even though the maximum recursion level of the <code>eval()</code>
@@ -132,7 +144,7 @@ can also be specified from the outside, using precompiler settings.
 
        <p>You can also disable the optimizer by specifying the
        <code>FP_NO_SUPPORT_OPTIMIZER</code> precompiler constant in your
-       compiler.
+       compiler settings.
 
  <dt><p><code>FP_EPSILON</code> : (Default <code>1e-14</code>)
  <dd><p>Epsilon value used in comparison operators.
@@ -145,7 +157,7 @@ can also be specified from the outside, using precompiler settings.
        Note that defining this may make <code>Eval()</code> slightly slower.
 
  <dt><p><code>FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA</code> : (Default off)
- <dd><p>This like the previous, but makes <code>Eval()</code> use the
+ <dd><p>This is like the previous, but makes <code>Eval()</code> use the
        <code>alloca()</code> function (instead of <code>std::vector</code>).
        This will make it faster, but the <code>alloca()</code>
        function is not standard and thus not supported by all compilers.
