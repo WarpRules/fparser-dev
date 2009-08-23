@@ -364,9 +364,14 @@ cOr  (cEqual[a b]) (cNEqual[a b]) -> 1
 cAnd (cLess[a b]) (cGreater[a b]) -> 0
 cAnd (cLessOrEq[a b]) (cGreater[a b]) -> 0
 cAnd (cLess[a b]) (cGreaterOrEq[a b]) -> 0
-cOr (cLess[a b]) (cGreater[a b]) -> 1
+cAnd (cLessOrEq[a b]) (cGreaterOrEq[a b]) -> cEqual[a b]
+cOr (cLess[a b]) (cGreater[a b]) -> cNEqual[a b]
 cOr (cLessOrEq[a b]) (cGreater[a b]) -> 1
 cOr (cLess[a b]) (cGreaterOrEq[a b]) -> 1
+cOr (cLess[a b]) (cEqual[a b]) -> cLessOrEq[a b]
+cOr (cLessOrEq[a b]) (cEqual[a b]) -> cLessOrEq[a b]
+cOr (cGreater[a b]) (cEqual[a b]) -> cGreaterOrEq[a b]
+cOr (cGreaterOrEq[a b]) (cEqual[a b]) -> cGreaterOrEq[a b]
 
 
 
