@@ -199,22 +199,22 @@ namespace
             const double diff = sv2-sv1;
             if(std::fabs(diff) > kEpsilon)
             {
-                std::cout << "For variable values (";
+                std::cout << "******* For variable values (";
                 for(size_t i = 0; i < varsAmount; ++i)
                 {
                     if(i > 0) std::cout << ",";
                     std::cout << values[i];
                 }
                 std::cout << ")\n";
-                std::cout << "function " << function1Index+1 << " (";
+                std::cout << "******* function " << function1Index+1 << " (";
                 if(!parser1Optimized) std::cout << "not ";
                 std::cout << "optimized) returned "
                           << std::setprecision(18) << v1 << "\n";
-                std::cout << "function " << function2Index+1 << " (";
+                std::cout << "******* function " << function2Index+1 << " (";
                 if(!parser2Optimized) std::cout << "not ";
                 std::cout << "optimized) returned "
                           << std::setprecision(18) << v2
-                          << "\n(Difference: " << (v2-v1)
+                          << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
                           << std::setprecision(18) << diff << ")\n"
                           << SEPARATOR << std::endl;

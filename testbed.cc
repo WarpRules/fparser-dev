@@ -70,16 +70,17 @@ struct Test
 {
     const char* funcString;
     const char* paramString;
-    double (*funcPtr)(double*);
+    double (*funcPtr)(const double*);
     unsigned paramAmount;
     double paramMin, paramMax, paramStep;
     bool useDegrees;
 };
 
-double f1(double* p)
+double f1(const double* p)
 {
-#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", f1, 1, -1000, 1000, .1, false
-    double x = p[0];
+#define P1 "1+(2+3) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", \
+        f1, 1, -1000, 1000, .1, false
+    const double x = p[0];
     return 1+(2+3) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
 /*
     const double x = p[0], y = p[1], z = p[2];
@@ -87,203 +88,232 @@ double f1(double* p)
     return x - (y*(y*(y*-1))*1);
 */
 }
-double f2(double* p)
+double f2(const double* p)
 {
-#define P2 " 2 * x+ sin ( x ) / .5 + 2-sin(x)*sin(x)", "x", f2, 1, -1000, 1000, .1, false
-    double x = p[0];
+#define P2 " 2 * x+ sin ( x ) / .5 + 2-sin(x)*sin(x)", "x", \
+        f2, 1, -1000, 1000, .1, false
+    const double x = p[0];
     return 2*x+sin(x)/.5 + 2-sin(x)*sin(x);
 }
-double f3(double* p)
+double f3(const double* p)
 {
-#define P3 "(x=y & y=x)+  1+2-3.1*4e2/.5 + x*x+y*y+z*z", "x,y,z", f3, 3, -10, 10, .5, false
-    double x = p[0], y = p[1], z = p[2];
+#define P3 "(x=y & y=x)+  1+2-3.1*4e2/.5 + x*x+y*y+z*z", "x,y,z", \
+        f3, 3, -10, 10, .5, false
+    const double x = p[0], y = p[1], z = p[2];
     return (x==y && y==x)+ 1.0+2.0-3.1*4e2/.5 + x*x+y*y+z*z;
 }
-double f4(double* p)
+double f4(const double* p)
 {
-#define P4 " ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y) ", "x,y", f4, 2, -100, 100, .5, false
-    double x = p[0], y = p[1];
+#define P4 \
+    " ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y) ", \
+        "x,y", f4, 2, -100, 100, .5, false
+    const double x = p[0], y = p[1];
     return ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y);
 }
-double f5(double* p)
+double f5(const double* p)
 {
-#define P5 "__A5_x08^o__5_0AB_", "__A5_x08,o__5_0AB_", f5, 2, .1, 10, .05, false
-    double x = p[0], y = p[1];
+#define P5 "__A5_x08^o__5_0AB_", "__A5_x08,o__5_0AB_", \
+        f5, 2, .1, 10, .05, false
+    const double x = p[0], y = p[1];
     return pow(x,y);
 }
 #ifndef FP_DISABLE_EVAL
-double f6(double* p)
+double f6(const double* p)
 {
-#define P6 "if(x>0&y>0,x*y+eval(x-1,y-1),0)+1", "x,y", f6, 2, .1, 10, .1, false
-    double x = p[0], y = p[1];
-    double v[2] = { x-1, y-1 };
+#define P6 "if(x>0&y>0,x*y+eval(x-1,y-1),0)+1", "x,y", \
+        f6, 2, .1, 10, .1, false
+    const double x = p[0], y = p[1];
+    const double v[2] = { x-1, y-1 };
     return (x>1e-14 && y>1e-14 ? x*y+f6(v) : 0)+1;
 }
 #endif
-double f7(double* p)
+double f7(const double* p)
 {
-#define P7 "cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5))", "x", f7, 1, -10, 10, .001, false
-    double x = p[0];
+#define P7 "cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5))", "x", \
+        f7, 1, -10, 10, .001, false
+    const double x = p[0];
     return cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5));
 }
-double f8(double* p)
+double f8(const double* p)
 {
 #define P8 "atan2(x,y)+max(x,y)", "x,y", f8, 2, -10, 10,.05, false
-    double x = p[0], y = p[1];
+    const double x = p[0], y = p[1];
     return atan2(x,y) + (x>y ? x : y);
 }
-double f9(double* p)
+double f9(const double* p)
 {
 #define P9 "1.5+x*y-2+4/8+z+z+z+z+x/(y*z)", "x,y,z", f9, 3, 1, 21, .3, false
-    double x = p[0], y = p[1], z = p[2];
+    const double x = p[0], y = p[1], z = p[2];
     return 1.5+x*y-2.0+4.0/8.0+z+z+z+z+x/(y*z);
 }
-double f10(double* p)
+double f10(const double* p)
 {
-#define P10 "1+sin(cos(max(1+2+3+4+5, x+y+z)))+2", "x,y,z", f10, 3, 1, 21, .3, false
-    double x = p[0], y = p[1], z = p[2];
+#define P10 "1+sin(cos(max(1+2+3+4+5, x+y+z)))+2", "x,y,z", \
+        f10, 3, 1, 21, .3, false
+    const double x = p[0], y = p[1], z = p[2];
     return 1.0+sin(cos(max(1.0+2.0+3.0+4.0+5.0, x+y+z)))+2.0;
 }
-double f11(double* p)
+double f11(const double* p)
 {
-#define P11 "-(-(-(-(-x))-x))+y*1+log(1.1^z)", "x,y,z", f11, 3, 1, 21, .25, false
-    double x = p[0], y = p[1], z = p[2];
+#define P11 "-(-(-(-(-x))-x))+y*1+log(1.1^z)", "x,y,z", \
+        f11, 3, 1, 21, .25, false
+    const double x = p[0], y = p[1], z = p[2];
     return -(-(-(-(-x))-x))+y*1+log(pow(1.1,z));
 }
-double f12(double* p)
+double f12(const double* p)
 {
 #define P12 "1/log(10^((3-2)/log(x)))", "x", f12, 1, 1, 2000, .05, false
-    double x = p[0];
+    const double x = p[0];
     return 1.0/log(pow(10.0, 1.0/log(x)));
 }
-double f13(double* p)
+double f13(const double* p)
 {
 #define P13 "x^3 * x^4 + y^3 * y^5", "x,y", f13, 2, -50, 50, .5, false
-    double x = p[0], y = p[1];
+    const double x = p[0], y = p[1];
     return pow(x,3) * pow(x,4) + pow(y,3) * pow(y,5);
 }
-double f14(double* p)
+double f14(const double* p)
 {
 #define P14 "x*pi + sin(2*pi) + CONST", "x", f14, 1, -50, 50, .01, false
-    double x = p[0];
+    const double x = p[0];
     return x*M_PI + sin(2*M_PI) + CONST;
 }
-double f15(double* p)
+double f15(const double* p)
 {
-#define P15 "x^y/log(y) + log(x)/log(y) + log(x^y)", "x,y", f15, 2, 1.1, 8, .02, false
-    double x = p[0], y = p[1];
+#define P15 "x^y/log(y) + log(x)/log(y) + log(x^y)", "x,y", \
+        f15, 2, 1.1, 8, .02, false
+    const double x = p[0], y = p[1];
     return pow(x,y)/log(y) + log(x)/log(y) + log(pow(x,y));
 }
-double f16(double* p)
+double f16(const double* p)
 {
-#define P16 "if(x<0, if(y<0, x+y, x-y), if(y>0, x*y, x+2*y))", "x,y", f16, 2, -20, 20, .1, false
-    double x = p[0], y = p[1];
+#define P16 "if(x<0, if(y<0, x+y, x-y), if(y>0, x*y, x+2*y))", "x,y", \
+        f16, 2, -20, 20, .1, false
+    const double x = p[0], y = p[1];
     return x<0 ? (y<0 ? x+y : x-y) : (y>0 ? x*y : x+2*y);
 }
-double f17(double* p)
+double f17(const double* p)
 {
-#define P17 "sqr(x)+sub(x,y)+psqr(y)+psub(y+1,x-2)-1", "x,y", f17, 2, -20, 20, .1, false
-    double x = p[0], y = p[1];
+#define P17 "sqr(x)+sub(x,y)+psqr(y)+psub(y+1,x-2)-1", "x,y", \
+        f17, 2, -20, 20, .1, false
+    const double x = p[0], y = p[1];
     double p2[] = { y+1, x-2 };
     return Sqr(p)+Sub(p)+Sqr(p+1)+Sub(p2)-1;
 }
-double f18(double* p)
+double f18(const double* p)
 {
-#define P18 " - ( - ( - ( - 5 ) ) ) * -x^ -y^-2", "x,y", f18, 2, 1, 20, .1, false
-    double x = p[0], y = p[1];
+#define P18 " - ( - ( - ( - 5 ) ) ) * -x^ -y^-2", "x,y", \
+        f18, 2, 1, 20, .1, false
+    const double x = p[0], y = p[1];
     return - ( - ( - ( - 5 ) ) ) * -pow(x, -pow(y, -2));
 }
 
-double f19(double* p)
+double f19(const double* p)
 {
-#define P19 "(x<y)+(x>y)+10*((x <= y)+(x>=y))+100*((x=y)+(x!=y))", "x,y", f19, 2, -100, 100, .5, false
+#define P19 "(x<y)+(x>y)+10*((x <= y)+(x>=y))+100*((x=y)+(x!=y))", "x,y", \
+        f19, 2, -100, 100, .5, false
     const double x = p[0], y = p[1];
     return (x<y)+(x>y)+10*((x <= y)+(x>=y))+100*((x==y)+(x!=y));
 }
 
-double f20(double* p)
+double f20(const double* p)
 {
-#define P20 "(!(x != y) & !x) + !(!(!(!y)))", "x,y", f20, 2, -100, 100, 1, false
+#define P20 "(!(x != y) & !x) + !(!(!(!y)))", "x,y", \
+        f20, 2, -100, 100, 1, false
     const double x = p[0], y = p[1];
     return  (!(x != y) && !x) + !(!(!(!y)));
 }
 
-double f21(double* p)
+double f21(const double* p)
 {
 #define P21 "sqr(x)+value()-pvalue ( ) ", "x", f21, 1, -10, 10, 1, false
     return Sqr(p)+Value(0)-5;
 }
 
-double f22(double* p)
+double f22(const double* p)
 {
-#define P22 "3.5doubled + 10*x tripled - sin(y)doubled + 100*(x doubled-y tripled)doubled + 5/2doubled + 1.1^x doubled + 1.1doubled^x doubled", "x,y", f22, 2, -10, 10, .05, false
-    double x = p[0], y = p[1];
+#define P22 "3.5doubled + 10*x tripled - sin(y)doubled + \
+100*(x doubled-y tripled)doubled + 5/2doubled + 1.1^x doubled + \
+1.1doubled^x doubled", "x,y", \
+        f22, 2, -10, 10, .05, false
+    const double x = p[0], y = p[1];
     return (3.5*2) + 10*(x*3) - (sin(y)*2) + 100*((x*2)-(y*3))*2 + 5.0/(2*2) +
         pow(1.1, x*2) + pow(1.1*2, x*2);
 }
 
-double f23(double* p)
+double f23(const double* p)
 {
 #define P23 "(x/(2*acos(0)))*180", "x", f23, 1, -1000, 1000, .1, false
     return (p[0]/(2*acos(0.0)))*180;
 }
 
-double f24(double* p)
+double f24(const double* p)
 {
-#define P24 "(min(x, min(1,x)) + min(x, 1))/2 + min(x, 1)*3 + max(0, min(-2,0))", "x", f24, 1, -1000, 1000, .1, false
+#define P24 \
+    "(min(x, min(1,x)) + min(x, 1))/2 + min(x, 1)*3 + max(0, min(-2,0))", \
+        "x", f24, 1, -1000, 1000, .1, false
     return (std::min(*p, std::min(1.0, *p)) + std::min(*p, 1.0))/2 +
         std::min(*p, 1.0)*3 + std::max(0.0, std::min(-2.0, 0.0));
 }
 
-double f25(double* p)
+double f25(const double* p)
 {
 #define P25 "a^b^c + a^-2 * (-b^2) + (-b^-c)", "a,b,c", f25, 3, 1, 3, .1, false
     const double a = p[0], b = p[1], c = p[2];
     return pow(a, pow(b, c)) + pow(a, -2) * (-pow(b, 2)) + (-pow(b, -c));
 }
 
-double f26(double* p)
+double f26(const double* p)
 {
-#define P26 "sin(x) + cos(x*1.5) + asin(x/110) + acos(x/120)", "x", f26, 1, -100, 100, .1, true
+#define P26 "sin(x) + cos(x*1.5) + asin(x/110) + acos(x/120)", "x", \
+        f26, 1, -100, 100, .1, true
     const double x = p[0];
     return sin(d2r(x)) + cos(d2r(x*1.5)) +
         r2d(asin(x/110.0)) + r2d(acos(x/120.0));
 }
 
-double f27(double* p)
+double f27(const double* p)
 {
-#define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", f27, 2, .1, .9, .025, false
+#define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+\
+cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", \
+        f27, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
     return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+
         1.0/tan(x)+1.0/sin(x) + pow(x,y);
 }
 
-double f28(double* p)
+double f28(const double* p)
 {
-#define P28 "exp(x)+floor(x)+int(x)+log(x)+log10(x)+max(x,y)+min(x,y)+sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)", "x,y", f28, 2, .1, .9, .025, false
+#define P28 "exp(x)+floor(x)+int(x)+log(x)+log10(x)+max(x,y)+min(x,y)+\
+sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)", "x,y", \
+        f28, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
     return exp(x)+floor(x)+floor(x+.5)+log(x)+log10(x)+std::max(x,y)+
         std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x);
 }
 
-double f29(double* p)
+double f29(const double* p)
 {
 #define P29 "x-y*1", "x,y", f29, 1, -100, 100, .1, false
     return p[0] - p[1]*1;
 }
 
-double f30(double* p)
+double f30(const double* p)
 {
-#define P30 "x - y*1 + (x%y) + x / (y^1.1) + 2^3 + 5%3 + x^(y^0) + x^0.5", "x,y", f30, 2, 3, 10, 1, false
+#define P30 "x - y*1 + (x%y) + x / (y^1.1) + 2^3 + 5%3 + x^(y^0) + x^0.5", \
+        "x,y", f30, 2, 3, 10, 1, false
     const double x = p[0], y = p[1];
     return x - y*1 + fmod(x,y) + x / pow(y,1.1) + pow(2.0,3) + fmod(5.0,3.0) +
         pow(x,pow(y,0)) + pow(x,0.5);
 }
 
-double f31(double* p)
+double f31(const double* p)
 {
     const double x = p[0], y = p[1], z = p[2];
-#define P31 "x - (y*(y*(y*-1))*1) + log(x*exp(1.0)^y) - log(x^y) + exp(1.0)^log(x+6) + 10^(log(x+6)/log(y+6)*log(z+6)/log(10)) - exp(1.0)^(log(x+6)*y) - 5^(log(x+7)/log(5)) + (x*z+17)^3 * (x*z+17)^2 / (x*z+17)^4", "x,y,z", f31, 3, .1, 4, .1, false
+#define P31 "x - (y*(y*(y*-1))*1) + log(x*exp(1.0)^y) - log(x^y) + \
+exp(1.0)^log(x+6) + 10^(log(x+6)/log(y+6)*log(z+6)/log(10)) - \
+exp(1.0)^(log(x+6)*y) - 5^(log(x+7)/log(5)) + (x*z+17)^3 * (x*z+17)^2 / \
+(x*z+17)^4", "x,y,z", f31, 3, .1, 4, .1, false
 
     return x - (y*(y*(y*-1))*1) + log(x*pow(exp(1.0),y)) - log(pow(x,y)) +
         pow(exp(1.0),log(x+6)) +
@@ -292,7 +322,7 @@ double f31(double* p)
         pow(x*z+17,3) * pow(x*z+17,2) / pow(x*z+17,4);
 }
 
-double f32(double* p)
+double f32(const double* p)
 {
 #define P32code \
     x\
@@ -321,95 +351,110 @@ double f32(double* p)
     return P32code;
 }
 
-double f33(double* p)
+double f33(const double* p)
 {
-#define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y)", "x,y", f33, 1, -2, 2, .001, false
+#define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y)", \
+        "x,y", f33, 1, -2, 2, .001, false
     const double x = p[0], y = p[1];
     return sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y);
 }
 
-double f34(double* p)
+double f34(const double* p)
 {
-#define P34 "\360\220\200\200+\340\240\200*\302\200-t", "\360\220\200\200,\340\240\200,\302\200,t", f34, 4, -5, 5, 1, false
-    double x = p[0], y = p[1], z = p[2], t = p[3];
+#define P34 "\360\220\200\200+\340\240\200*\302\200-t", \
+        "\360\220\200\200,\340\240\200,\302\200,t", \
+        f34, 4, -5, 5, 1, false
+    const double x = p[0], y = p[1], z = p[2], t = p[3];
     return x+y*z-t;
 }
 
-double f35(double* p)
+double f35(const double* p)
 {
-#define P35 "a_very_long_variable_name_1-a_very_long_variable_name_2+Yet_a_third_very_long_variable_name*a_very_long_variable_name_1", "a_very_long_variable_name_1,a_very_long_variable_name_2,Yet_a_third_very_long_variable_name", f35, 3, -10, 10, 1, false
-    double x = p[0], y = p[1], z = p[2];
+#define P35 "a_very_long_variable_name_1-a_very_long_variable_name_2+\
+Yet_a_third_very_long_variable_name*a_very_long_variable_name_1", \
+        "a_very_long_variable_name_1,a_very_long_variable_name_2,\
+Yet_a_third_very_long_variable_name", f35, 3, -10, 10, 1, false
+    const double x = p[0], y = p[1], z = p[2];
     return x-y+z*x;
 }
 
-double f36(double* p)
+double f36(const double* p)
 {
 #define P36 "-if(x<0, x, -x) + -if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
-    double x = p[0];
+    const double x = p[0];
     return -(x<0 ? x : -x) + -(x<5 ? 2 : 3);
 }
 
-double f37(double* p)
+double f37(const double* p)
 {
-#define P37 "5 + 7.5*8 / 3 - 2^4*2 + 7%2+4 + x", "x", f37, 1, -10, 10, .1, false
-    double x = p[0];
+#define P37 "5 + 7.5*8 / 3 - 2^4*2 + 7%2+4 + x", "x", \
+        f37, 1, -10, 10, .1, false
+    const double x = p[0];
     return 5 + 7.5*8 / 3 - pow(2.0,4)*2 + 7%2+4 + x;
 }
 
 //#ifndef FP_NO_ASINH
-double f38(double* p)
+double f38(const double* p)
 {
-#define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", f38, 3, -.9, .9, .05, false
-    double x = p[0], y = p[1], z = p[2];
+#define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", \
+        f38, 3, -.9, .9, .05, false
+    const double x = p[0], y = p[1], z = p[2];
     return asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z);
 }
 //#endif
 
-double f39(double* p)
+double f39(const double* p)
 {
-#define P39Code sin(x+cos(y*1.5))-cos(x+sin(y*1.5))+z*z*z*sin(z*z*z-x*x-y*y)-cos(y*1.5)*sin(x+cos(y*1.5))+x*y*z+x*y*2.5+x*y*z*cos(x)+x*y*cos(x)+x*z*cos(x)+y*z*2.5+(x*y*z*cos(x)-x*y*z-y*cos(x)-x*z*y+x*y+x*z-cos(x)*x)
+#define P39Code sin(x+cos(y*1.5))-cos(x+sin(y*1.5))+z*z*z*sin(z*z*z-x*x-y*y)-\
+cos(y*1.5)*sin(x+cos(y*1.5))+x*y*z+x*y*2.5+x*y*z*cos(x)+x*y*cos(x)+x*z*cos(x)+\
+y*z*2.5+(x*y*z*cos(x)-x*y*z-y*cos(x)-x*z*y+x*y+x*z-cos(x)*x)
 #define P39 Stringify(P39Code), "x,y,z", f39, 3, -2, 2, .08, false
-    double x = p[0], y = p[1], z = p[2];
+    const double x = p[0], y = p[1], z = p[2];
     return P39Code;
 }
 
-double f40(double* p)
+double f40(const double* p)
 {
 #define P40CodePart x+x+x+x+x+x+x+x+x+x+x+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z
-#define P40Code (P40CodePart)*(P40CodePart)+2*(P40CodePart)-x*y*(P40CodePart)+x*(P40CodePart)
+#define P40Code (P40CodePart)*(P40CodePart)+2*(P40CodePart)-x*y*(P40CodePart)+\
+x*(P40CodePart)
 #define P40 Stringify(P40Code), "x,y,z", f40, 3, -2, 2, .075, false
-    double x = p[0], y = p[1], z = p[2];
+    const double x = p[0], y = p[1], z = p[2];
     return P40Code;
 }
 
-double f41(double* p)
+double f41(const double* p)
 {
 #define P41CodePart (sin(x)+cos(y))
-#define P41Code x*3+x*y+x*z+x*sin(y*z) - P41CodePart*4+P41CodePart*x+P41CodePart*y+P41CodePart*z
+#define P41Code x*3+x*y+x*z+x*sin(y*z) - \
+P41CodePart*4+P41CodePart*x+P41CodePart*y+P41CodePart*z
 #define P41 Stringify(P41Code), "x,y,z", f41, 3, -2, 2, .075, false
-    double x = p[0], y = p[1], z = p[2];
+    const double x = p[0], y = p[1], z = p[2];
     return P41Code;
 }
 
-double f42(double* p)
+double f42(const double* p)
 {
 #define P42 "sqrt(x*x) + 1.5*((y*y)^.25)" , "x,y", f42, 2, -10, 10, .025, false
-    double x = p[0], y = p[1];
-    double xx = x*x, yy = y*y; // to avoid gcc bug with -ffast-math
+    const double x = p[0], y = p[1];
+    const double xx = x*x, yy = y*y; // to avoid gcc bug with -ffast-math
     return sqrt(xx) + 1.5*(pow(yy, .25));
 }
 
-double f43(double* p)
+double f43(const double* p)
 {
 #define P43 "log(x*x)+abs(exp(abs(x)+1))" , "x", f43, 1, -100, 100, .03, false
-    double x = p[0];
-    double xx = x*x;
+    const double x = p[0];
+    const double xx = x*x;
     return log(xx)+abs(exp(abs(x)+1));
 }
 
-double f44(double* p)
+double f44(const double* p)
 {
-#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + 1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + 1.7*(x^9)^(1/2) + 1.8*(sqrt(abs(-sqrt(x))^3))" , "x", f44, 1, 0, 100, .025, false
+#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + \
+1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + \
+1.7*(x^9)^(1/2) + 1.8*(sqrt(abs(-sqrt(x))^3))" , "x", \
+        f44, 1, 0, 100, .025, false
     const double x = p[0];
     const double x2 = x*x, x3 = x*x*x;
     const double x4 = x2*x2, x5 = x3*x2, x6 = x3*x3;
@@ -425,9 +470,10 @@ double f44(double* p)
         1.8 * sqrt(pow(abs(-sqrt(x)), 3));
 }
 
-double f45(double* p)
+double f45(const double* p)
 {
-#define P45 "(x^2)^(1/7) + 1.1*(x^4)^(1/5) + 1.2*(x^6)^(1/3)" , "x", f45, 1, -10, 10, .025, false
+#define P45 "(x^2)^(1/7) + 1.1*(x^4)^(1/5) + 1.2*(x^6)^(1/3)" , "x", \
+        f45, 1, -10, 10, .025, false
     const double x = p[0];
     const double x2 = x*x;
     const double x4 = x2*x2;
@@ -437,36 +483,54 @@ double f45(double* p)
         1.2*pow(x6, 1.0/3.0);
 }
 
-double f46(double* p)
+double f46(const double* p)
 {
-#define P46 "abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) + (acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9)" , "x,y", f46, 2, -.9, .9, .015, false
+#define P46 "abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) + \
+(acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9)" , \
+        "x,y", f46, 2, -.9, .9, .015, false
     const double x = p[0], y = p[1];
     return abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) +
         (acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9);
 }
 
-double f47(double* p)
+double f47(const double* p)
 {
-#define P47 "1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) + 1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) + 1.5*(cosh(y)+sinh(y))" , "x,y", f47, 2, -10, 10, .1, false
+#define P47 "1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) + \
+1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) + 1.5*(cosh(y)+sinh(y))",\
+        "x,y", f47, 2, -10, 10, .1, false
     const double x = p[0], y = p[1];
     return 1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) +
         1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) +
         1.5*(cosh(y)+sinh(y));
 }
 
-double f48(double* p)
+double f48(const double* p)
 {
-#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + !(x | !(x/4))" , "x", f48, 2, 2, 1e9, 1.2e7, false
+#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + \
+!(x | !(x/4))" , "x", f48, 2, 2, 1e9, 1.2e7, false
     const double x = p[0];
     return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) +
         (!(doubleToInt(x) || !doubleToInt(x/4)));
 }
 
-double f49(double* p)
+double f49(const double* p)
 {
 #define P49 "atan2(0, x)" , "x", f49, 1, -100, 100, .03, false
-    double x = p[0];
+    const double x = p[0];
     return atan2(0, x);
+}
+
+double f50(const double* p)
+{
+#define P50 "(x<y | y<x) + 2*(x<y & y<x) + 4*(x<=y & y<=x) + \
+8*(x<y & x!=y) + 16*(x<y | x!=y) + 32*(x<=y & x>=y) + 64*(x<=y | x>=y) + \
+128*(x!=y & x=y) + 256*(x!=y & x!=y) + 512*(x<=y & x=y)" , "x,y", \
+        f50, 2, -10, 10, 1, false
+    const double x = p[0], y = p[1];
+    return
+        (x<y || y<x) + 2*(x<y && y<x) + 4*(x<=y && y<=x) + 8*(x<y && x!=y) +
+        16*(x<y || x!=y) + 32*(x<=y && x>=y) + 64*(x<=y || x>=y) +
+        128*(x!=y && x==y) + 256*(x!=y && x!=y) + 512*(x<=y && x==y);
 }
 
 namespace
@@ -477,16 +541,12 @@ namespace
 #ifndef FP_DISABLE_EVAL
         { P6 },
 #endif
-        { P7 }, { P8 }, { P9 },
-        { P10 }, { P11 }, { P12 }, { P13 }, { P14 }, { P15 }, { P16 }, { P17 },
-        { P18 }, { P19 }, { P20 }, { P21 }, { P22 }, { P23 }, { P24 }, { P25 },
-        { P26 }, { P27 }, { P28 }, { P29 }, { P30 }, { P31 }, { P32 }, { P33 },
-        { P34 }, { P35 }, { P36 }, { P37 },
-//#ifndef FP_NO_ASINH
-        { P38 },
-//#endif
-        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 },
-        { P46 }, { P47 }, { P48 }, { P49 }
+        { P7 }, { P8 }, { P9 }, { P10 }, { P11 }, { P12 }, { P13 }, { P14 },
+        { P15 }, { P16 }, { P17 }, { P18 }, { P19 }, { P20 }, { P21 }, { P22 },
+        { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
+        { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
+        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
+        { P47 }, { P48 }, { P49 }, { P50 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
@@ -632,9 +692,6 @@ bool TestErrorSituations()
       "(((((((x))))))", "(((((((x))))))))", "2x", "(2)x", "(x)2", "2(x)",
       "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)", "if(x,2)",
       "if(x, 2, 3, 4)"
-//#ifdef FP_NO_ASINH
-//      , "asinh(x)", "acosh(x)", "atanh(x)"
-//#endif
 #ifdef FP_DISABLE_EVAL
       , "eval(x)"
 #endif
