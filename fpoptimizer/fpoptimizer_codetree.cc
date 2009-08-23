@@ -857,6 +857,27 @@ namespace FPoptimizer_CodeTree
             return tmp.has_max && tmp.max < 0.0
               && (!tmp.has_min || tmp.min < 0.0);
     }
+
+    bool CodeTree::IsIdenticalTo(const CodeTree& b) const
+    {
+        if(Hash   != b.Hash) return false; // a quick catch-all
+        if(Opcode != b.Opcode) return false;
+        switch(Opcode)
+        {
+            case cImmed: if(Value != b.Value) return false; return true;
+            case cVar:   if(Var   != b.Var)   return false; return true;
+            case cFCall:
+            case cPCall: if(Funcno != b.Funcno) return false; break;
+        }
+        if(Params.size() != b.Params.size()) return false;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a].sign != b.Params[a].sign) return false;
+            if(!Params[a].param->IsIdenticalTo(
+               *b.Params[a].param)) return false;
+        }
+        return true;
+    }
 }
 
 #endif

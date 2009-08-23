@@ -331,23 +331,28 @@ namespace
     typedef
         std::map<fphash_t,  std::pair<size_t, CodeTreeP> >
         TreeCountType;
+    typedef
+        std::multimap<fphash_t, CodeTreeP>
+        DoneTreesType;
 
     void FindTreeCounts(TreeCountType& TreeCounts, CodeTreeP tree)
     {
         TreeCountType::iterator i = TreeCounts.lower_bound(tree->Hash);
-        if(i == TreeCounts.end() || i->first != tree->Hash)
-            TreeCounts.insert(i, std::make_pair(tree->Hash, std::make_pair(size_t(1), tree)));
-        else
+        if(i != TreeCounts.end()
+        && tree->Hash == i->first
+        && tree->IsIdenticalTo( * i->second.second ) )
             i->second.first += 1;
+        else
+            TreeCounts.insert(i, std::make_pair(tree->Hash, std::make_pair(size_t(1), tree)));
 
         for(size_t a=0; a<tree->Params.size(); ++a)
             FindTreeCounts(TreeCounts, tree->Params[a].param);
     }
 
-    void RememberRecursivelyHashList(std::set<fphash_t>& hashlist,
-                                     CodeTreeP tree)
+    void RememberRecursivelyHashList(DoneTreesType& hashlist,
+                                     const CodeTreeP& tree)
     {
-        hashlist.insert(tree->Hash);
+        hashlist.insert( std::make_pair(tree->Hash, tree) );
         for(size_t a=0; a<tree->Params.size(); ++a)
             RememberRecursivelyHashList(hashlist, tree->Params[a].param);
     }
@@ -511,7 +516,7 @@ namespace FPoptimizer_CodeTree
         FindTreeCounts(TreeCounts, this);
 
         /* Synthesize some of the most common ones */
-        std::set<fphash_t> AlreadyDoneTrees;
+        DoneTreesType AlreadyDoneTrees;
     FindMore: ;
         size_t best_score = 0;
         TreeCountType::const_iterator synth_it;
@@ -521,10 +526,18 @@ namespace FPoptimizer_CodeTree
             ++i)
         {
             size_t score = i->second.first;
-            if(score < 2) continue; // It must always occur at least twice
-            if(i->second.second->Depth < 2) continue; // And it must not be a simple expression
-            if(AlreadyDoneTrees.find(i->first)
-            != AlreadyDoneTrees.end()) continue; // And it must not yet have been synthesized
+            // It must always occur at least twice
+            if(score < 2) continue;
+            // And it must not be a simple expression
+            if(i->second.second->Depth < 2) CandSkip: continue;
+            // And it must not yet have been synthesized
+            DoneTreesType::const_iterator j = AlreadyDoneTrees.lower_bound(i->first);
+            for(; j != AlreadyDoneTrees.end() && j->first == i->first; ++j)
+            {
+                if(j->second->IsIdenticalTo(*i->second.second))
+                    goto CandSkip;
+            }
+            // Is a candidate.
             score *= i->second.second->Depth;
             if(score > best_score)
                 { best_score = score; synth_it = i; }
@@ -558,6 +571,7 @@ namespace FPoptimizer_CodeTree
     {
         // If the synth can already locate our operand in the stack,
         // never mind synthesizing it again, just dup it.
+        /* FIXME: Possible hash collisions. */
         if(synth.FindAndDup(Hash))
         {
             return;

@@ -1416,10 +1416,8 @@ namespace FPoptimizer_Grammar
                                     repeat_pos, tree.Params[repeat_pos].sign,
                                                 tree.Params[repeat_pos].param->Hash);*/
 
-                                if(tree.Params[repeat_pos].param->Hash
-                                == tree.Params[whichparam].param->Hash
-                                && tree.Params[repeat_pos].sign
-                                == tree.Params[whichparam].sign
+                                if(tree.Params[repeat_pos].IsIdenticalTo(
+                                   tree.Params[whichparam])
                                 && !used[repeat_pos])
                                 {
                                     ++HadRepeat;
@@ -1441,10 +1439,8 @@ namespace FPoptimizer_Grammar
                                 repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
                                 ++repeat_pos)
                             {
-                                if(tree.Params[repeat_pos].param->Hash
-                                == tree.Params[whichparam].param->Hash
-                                && tree.Params[repeat_pos].sign
-                                == tree.Params[whichparam].sign
+                                if(tree.Params[repeat_pos].IsIdenticalTo(
+                                   tree.Params[whichparam])
                                 && !used[repeat_pos])
                                 {
                                     ++HadRepeat;
@@ -1569,7 +1565,10 @@ namespace FPoptimizer_Grammar
                                 for(size_t b=0; b<n_tree_params; ++b)
                                     if(tree.Params[b].sign == param.sign
                                     && !used[b]
-                                    && tree.Params[b].param->Hash == RefRestList[r])
+                                    && tree.Params[b].param->Hash == RefRestList[r]
+                                    && tree.Params[b].param->IsIdenticalTo(
+                                        * match.trees.find(RefRestList[r])->second )
+                                      )
                                     {
                                         used[b] = true;
                                         goto SatisfiedRestHolder;
@@ -1769,9 +1768,12 @@ namespace FPoptimizer_Grammar
                 if(i != match.NamedMap.end() && i->first == index)
                 {
                     /*fprintf(stderr, "NamedHolder found: %16lX -- tested against %16lX\n", i->second.first, tree.Hash);*/
-                    return tree.Hash == i->second.first
-                           ? FoundLastMatch
-                           : NoMatch;
+                    if(tree.Hash == i->second.first
+                    && tree.IsIdenticalTo(* match.trees.find(i->second.first)->second)
+                      )
+                        return FoundLastMatch;
+                    else
+                        return NoMatch;
                 }
 
                 switch( ImmedConstraint_Value(count & ValueMask) )
