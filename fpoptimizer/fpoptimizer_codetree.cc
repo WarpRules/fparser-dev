@@ -119,7 +119,8 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::Recalculate_Hash_NoRecursion()
     {
-        fphash_t NewHash = Opcode * FPHASH_CONST(0x3A83A83A83A83A0);
+        fphash_t NewHash = { Opcode * FPHASH_CONST(0x3A83A83A83A83A0),
+                             Opcode * FPHASH_CONST(0x1131462E270012B)};
         Depth = 1;
         switch(Opcode)
         {
@@ -129,17 +130,20 @@ namespace FPoptimizer_CodeTree
                 {
                     crc32_t crc = crc32::calc( (const unsigned char*) &Value,
                                                 sizeof(Value) );
-                    NewHash ^= crc | (fphash_t(crc) << FPHASH_CONST(32));
+                    NewHash.hash1 ^= crc | (fphash_value_t(crc) << FPHASH_CONST(32));
+                    NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
                 }
                 break; // no params
             }
             case cVar:
-                NewHash ^= (Var<<24) | (Var>>24);
+                NewHash.hash1 ^= (Var<<24) | (Var>>24);
+                NewHash.hash2 += (fphash_value_t(Var)*5) ^ 2345678;
                 break; // no params
             case cFCall: case cPCall:
             {
                 crc32_t crc = crc32::calc( (const unsigned char*) &Funcno, sizeof(Funcno) );
-                NewHash ^= (crc<<24) | (crc>>24);
+                NewHash.hash1 ^= (crc<<24) | (crc>>24);
+                NewHash.hash2 += ((~fphash_value_t(crc)) * 7) ^ 3456789;
                 /* passthru */
             }
             default:
@@ -150,10 +154,14 @@ namespace FPoptimizer_CodeTree
                     if(Params[a].param->Depth > MaxChildDepth)
                         MaxChildDepth = Params[a].param->Depth;
 
-                    NewHash += (1+Params[a].sign)*FPHASH_CONST(0x2492492492492492);
-                    NewHash *= FPHASH_CONST(1099511628211);
+                    NewHash.hash1 += (1+Params[a].sign)*FPHASH_CONST(0x2492492492492492);
+                    NewHash.hash1 *= FPHASH_CONST(1099511628211);
                     //assert(&*Params[a].param != this);
-                    NewHash += Params[a].param->Hash;
+                    NewHash.hash1 += Params[a].param->Hash.hash1;
+
+                    NewHash.hash2 += (3+Params[a].sign)*FPHASH_CONST(0x9ABCD801357);
+                    NewHash.hash2 *= FPHASH_CONST(0xECADB912345);
+                    NewHash.hash2 += (~Params[a].param->Hash.hash1) ^ 4567890;
                 }
                 Depth += MaxChildDepth;
             }
