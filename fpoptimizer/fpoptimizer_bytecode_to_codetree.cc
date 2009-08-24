@@ -210,20 +210,20 @@ namespace FPoptimizer_CodeTree
                         data.Eat(2, cPow);
                         break;
                     case cLog10:
-                        data.Eat(1, cLog2);
-                        data.AddConst(CONSTANT_LB10I);
+                        data.Eat(1, cLog);
+                        data.AddConst(CONSTANT_L10I);
                         data.Eat(2, cMul);
                         break;
-                    //case cLog2:
-                    //    data.Eat(1, cLog);
-                    //    data.AddConst(CONSTANT_L2I);
+                    case cLog2:
+                        data.Eat(1, cLog);
+                        data.AddConst(CONSTANT_L2I);
+                        data.Eat(2, cMul);
+                        break;
+                    //case cLog:
+                    //    data.Eat(1, cLog2);
+                    //    data.AddConst(CONSTANT_L2);
                     //    data.Eat(2, cMul);
                     //    break;
-                    case cLog:
-                        data.Eat(1, cLog2);
-                        data.AddConst(CONSTANT_L2);
-                        data.Eat(2, cMul);
-                        break;
                     // Binary operators requiring special attention
                     case cSub:
                         data.AddConst(-1);

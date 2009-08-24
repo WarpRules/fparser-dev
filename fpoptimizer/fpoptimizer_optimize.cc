@@ -693,6 +693,11 @@ namespace FPoptimizer_CodeTree
                     { const_value = log(Params[0].param->GetImmed()) * CONSTANT_L2I;
                       goto ReplaceTreeWithConstValue; }
                 break;
+            case cLog10:
+                if(Params[0].param->IsImmed())
+                    { const_value = log(Params[0].param->GetImmed()) * CONSTANT_L10I;
+                      goto ReplaceTreeWithConstValue; }
+                break;
 
             case cAtan2:
             {
@@ -804,7 +809,6 @@ namespace FPoptimizer_CodeTree
             case cCot: // converted into cMul ~(cTan x)
             case cSec: // converted into cMul ~(cCos x)
             case cCsc: // converted into cMul ~(cSin x)
-            case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */
