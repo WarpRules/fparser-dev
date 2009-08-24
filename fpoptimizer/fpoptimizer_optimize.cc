@@ -143,6 +143,20 @@ namespace FPoptimizer_CodeTree
             case cMul:
             case cMin:
             case cMax:
+            {
+                /* If the list contains another list of the same kind, assimilate it */
+                for(size_t a=Params.size(); a-- > 0; )
+                    if(Params[a].param->Opcode == Opcode)
+                    {
+                        // Assimilate its children and remove it
+                        CodeTreeP tree = Params[a].param;
+                        Params.erase(Params.begin()+a);
+                        for(size_t b=0; b<tree->Params.size(); ++b)
+                            AddParam( Param(tree->Params[b].param,
+                                            Params[a].sign ^ tree->Params[b].sign) );
+                    }
+                break;
+            }
             case cAnd:
             case cOr:
             {
@@ -324,10 +338,11 @@ namespace FPoptimizer_CodeTree
                 {
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
-                    if(FloatEqual(Params[a].param->GetImmed(), 0.0))
-                        goto ReplaceTreeWithZero;
-                    if(FloatEqual(Params[a].param->GetImmed(), 1.0)) needs_resynth = true;
-                    mul_immed_sum *= Params[a].param->GetImmed(); ++n_mul_immeds;
+                    double immed = Params[a].param->GetImmed();
+                    if(FloatEqual(immed, 0.0)) goto ReplaceTreeWithZero;
+                    if(FloatEqual(immed, 1.0)) needs_resynth = true;
+                    if(Params[a].sign) immed = 1.0 / immed;
+                    mul_immed_sum *= immed; ++n_mul_immeds;
                 }
                 // Merge immeds.
                 if(n_mul_immeds > 1) needs_resynth = true;
@@ -361,8 +376,10 @@ namespace FPoptimizer_CodeTree
                 {
                     if(!Params[a].param->IsImmed()) continue;
                     // ^ Only check constant values
-                    if(FloatEqual(Params[a].param->GetImmed(), 0.0)) needs_resynth = true;
-                    immed_sum += Params[a].param->GetImmed(); ++n_immeds;
+                    double immed = Params[a].param->GetImmed();
+                    if(FloatEqual(immed, 0.0)) needs_resynth = true;
+                    if(Params[a].sign) immed = -immed;
+                    immed_sum += immed; ++n_immeds;
                 }
                 // Merge immeds.
                 if(n_immeds > 1) needs_resynth = true;
@@ -2335,12 +2352,12 @@ namespace FPoptimizer_Grammar
         std::cout << "\n";
         if(DidMatch) DumpHashes(tree);
 
-        for(std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
+        for(std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>::const_iterator
             i = matchrec.NamedMap.begin(); i != matchrec.NamedMap.end(); ++i)
         {
             std::cout << "           " << NamedHolderNames[i->first] << " = ";
-            DumpTree(*matchrec.trees.find(i->second.first)->second);
-            std::cout << " (" << i->second.second << " matches)\n";
+            DumpTree(*matchrec.trees.find(i->second.hash)->second);
+            std::cout << " (" << i->second.howmany << " matches)\n";
         }
 
         for(std::map<unsigned, double>::const_iterator
@@ -2392,7 +2409,7 @@ namespace FPoptimizer_Grammar
                 j != flist.end();
                 ++j)
             {
-                std::cout << '[' << std::hex << i->first << ']' << std::dec;
+                //std::cout << '[' << std::hex << i->first << ']' << std::dec;
                 std::cout << ": " << *j << "\n";
             }
         }

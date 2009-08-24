@@ -515,6 +515,8 @@ namespace FPoptimizer_CodeTree
                     const Param& p = Params[a];
                     MinMaxTree item = p.param->CalculateResultBoundaries();
 
+                    if(Params[a].sign) return MinMaxTree(); // minus = unpredictable
+
                     if(item.has_min) result.min += item.min;
                     else             result.has_min = false;
                     if(item.has_max) result.max += item.max;
@@ -590,6 +592,8 @@ namespace FPoptimizer_CodeTree
                     const Param& p = Params[a];
                     MinMaxTree item = p.param->CalculateResultBoundaries();
                     if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
+
+                    if(Params[a].sign) return MinMaxTree(); // inversion = unpredictable
 
                     Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
                     Value maxValue0 = result.has_max ? Value(result.max) : Value(Value::PlusInf);
