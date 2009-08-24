@@ -17,6 +17,11 @@ namespace FPoptimizer_Grammar
     class Grammar;
 }
 
+namespace FPoptimizer_ByteCode
+{
+    class ByteCodeSynth;
+}
+
 namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData;
@@ -113,12 +118,11 @@ namespace FPoptimizer_CodeTree
             const std::vector<double>& immed,
             const FunctionParser::Data& data);
 
-        class ByteCodeSynth;
         void SynthesizeByteCode(
             std::vector<unsigned>& byteCode,
             std::vector<double>&   immed,
             size_t& stacktop_max);
-        void SynthesizeByteCode(ByteCodeSynth& synth);
+        void SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth);
 
         /* Regenerates the hash.
          * child_triggered=false: Recurse to children

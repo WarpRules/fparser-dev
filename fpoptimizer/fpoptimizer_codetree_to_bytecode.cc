@@ -5,6 +5,7 @@
 #include "fpoptimizer_codetree.hh"
 #include "fptypes.hh"
 #include "fpoptimizer_consts.hh"
+#include "fpoptimizer_bytecodesynth.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
@@ -18,312 +19,15 @@ static const unsigned MAX_POWI_BYTECODE_LENGTH = 999;
 #endif
 static const unsigned MAX_MULI_BYTECODE_LENGTH = 3;
 
-#define POWI_TABLE_SIZE 256
-#define POWI_WINDOW_SIZE 3
-#ifndef FP_GENERATING_POWI_TABLE
-static const
-#endif
-signed char powi_table[POWI_TABLE_SIZE] =
-{
-      0,   1,   1,   1,   2,   1,   3,   1, /*   0 -   7 */
-      4,   1,   5,   1,   6,   1,  -2,   5, /*   8 -  15 */
-      8,   1,   9,   1,  10,  -3,  11,   1, /*  16 -  23 */
-     12,   5,  13,   9,  14,   1,  15,   1, /*  24 -  31 */
-     16,   1,  17,  -5,  18,   1,  19,  13, /*  32 -  39 */
-     20,   1,  21,   1,  22,   9,  -2,   1, /*  40 -  47 */
-     24,   1,  25,  17,  26,   1,  27,  11, /*  48 -  55 */
-     28,   1,  29,   8,  30,   1,  -2,   1, /*  56 -  63 */
-     32,   1,  33,   1,  34,   1,  35,   1, /*  64 -  71 */
-     36,   1,  37,  25,  38, -11,  39,   1, /*  72 -  79 */
-     40,   9,  41,   1,  42,  17,   1,  29, /*  80 -  87 */
-     44,   1,  45,   1,  46,  -3,  32,  19, /*  88 -  95 */
-     48,   1,  49,  33,  50,   1,  51,   1, /*  96 - 103 */
-     52,  35,  53,   8,  54,   1,  55,  37, /* 104 - 111 */
-     56,   1,  57,  -5,  58,  13,  59, -17, /* 112 - 119 */
-     60,   1,  61,  41,  62,  25,  -2,   1, /* 120 - 127 */
-     64,   1,  65,   1,  66,   1,  67,  45, /* 128 - 135 */
-     68,   1,  69,   1,  70,  48,  16,   8, /* 136 - 143 */
-     72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */
-     76,  17,   1,  -5,  78,   1,  32,  53, /* 152 - 159 */
-     80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */
-     84,   1,  85,  57,  86,   8,  87,  35, /* 168 - 175 */
-     88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */
-     92,  37,  93,  17,  94,  -3,  64,   2, /* 184 - 191 */
-     96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */
-    100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */
-    104,   1, 105,  16, 106,  24, 107,   1, /* 208 - 215 */
-    108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */
-    112,  45, 113,  32, 114,   1, 115, -33, /* 224 - 231 */
-    116,   1, 117,  -5, 118,  48, 119,   1, /* 232 - 239 */
-    120,   1, 121,  81, 122,  49, 123,  13, /* 240 - 247 */
-    124,   1, 125,   1, 126,   1,  -2,  85  /* 248 - 255 */
-}; /* as in gcc, but custom-optimized for stack calculation */
-static const int POWI_CACHE_SIZE = 256;
-
-#define FPO(x) /**/
-//#define FPO(x) x
-
-static const struct SequenceOpCode
-{
-    double basevalue;
-    unsigned op_flip;
-    unsigned op_normal, op_normal_flip;
-    unsigned op_inverse, op_inverse_flip;
-} AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub },
-  MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
-
-class FPoptimizer_CodeTree::CodeTree::ByteCodeSynth
-{
-public:
-    ByteCodeSynth()
-        : ByteCode(), Immed(), StackTop(0), StackMax(0)
-    {
-        /* estimate the initial requirements as such */
-        ByteCode.reserve(64);
-        Immed.reserve(8);
-    }
-
-    void Pull(std::vector<unsigned>& bc,
-              std::vector<double>&   imm,
-              size_t& StackTop_max)
-    {
-        ByteCode.swap(bc);
-        Immed.swap(imm);
-        StackTop_max = StackMax;
-    }
-
-    size_t GetByteCodeSize() const { return ByteCode.size(); }
-    size_t GetStackTop()     const { return StackTop; }
-
-    void PushVar(unsigned varno)
-    {
-        ByteCode.push_back(varno);
-        SetStackTop(StackTop+1);
-    }
-
-    void PushImmed(double immed)
-    {
-        ByteCode.push_back(cImmed);
-        Immed.push_back(immed);
-        SetStackTop(StackTop+1);
-    }
-
-    void StackTopIs(fphash_t hash)
-    {
-        if(StackTop > 0)
-        {
-            StackHash[StackTop-1].first = true;
-            StackHash[StackTop-1].second = hash;
-        }
-    }
-
-    void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
-    {
-        SetStackTop(StackTop - eat_count);
-
-        if(opcode == cMul && ByteCode.back() == cDup)
-            ByteCode.back() = cSqr;
-        else
-            ByteCode.push_back(opcode);
-        SetStackTop(StackTop + produce_count);
-    }
-
-    void DoPopNMov(size_t targetpos, size_t srcpos)
-    {
-        ByteCode.push_back(cPopNMov);
-        ByteCode.push_back( (unsigned) targetpos);
-        ByteCode.push_back( (unsigned) srcpos);
-
-        SetStackTop(srcpos+1);
-        StackHash[targetpos] = StackHash[srcpos];
-        SetStackTop(targetpos+1);
-    }
-
-    void DoDup(size_t src_pos)
-    {
-        if(src_pos == StackTop-1)
-        {
-            ByteCode.push_back(cDup);
-        }
-        else
-        {
-            ByteCode.push_back(cFetch);
-            ByteCode.push_back( (unsigned) src_pos);
-        }
-        SetStackTop(StackTop + 1);
-        StackHash[StackTop-1] = StackHash[src_pos];
-    }
-
-    bool FindAndDup(fphash_t hash)
-    {
-        for(size_t a=StackHash.size(); a-->0; )
-        {
-            if(StackHash[a].first && StackHash[a].second == hash)
-            {
-                DoDup(a);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void SynthIfStep1(size_t& ofs)
-    {
-        SetStackTop(StackTop-1); // the If condition was popped.
-
-        ofs = ByteCode.size();
-        ByteCode.push_back(cIf);
-        ByteCode.push_back(0); // code index
-        ByteCode.push_back(0); // Immed index
-    }
-    void SynthIfStep2(size_t& ofs)
-    {
-        SetStackTop(StackTop-1); // ignore the pushed then-branch result.
-
-        ByteCode[ofs+1] = unsigned( ByteCode.size()+2 );
-        ByteCode[ofs+2] = unsigned( Immed.size()      );
-
-        ofs = ByteCode.size();
-        ByteCode.push_back(cJump);
-        ByteCode.push_back(0); // code index
-        ByteCode.push_back(0); // Immed index
-    }
-    void SynthIfStep3(size_t& ofs)
-    {
-        SetStackTop(StackTop-1); // ignore the pushed else-branch result.
-
-        ByteCode[ofs+1] = unsigned( ByteCode.size()-1 );
-        ByteCode[ofs+2] = unsigned( Immed.size()      );
-
-        SetStackTop(StackTop+1); // one or the other was pushed.
-    }
-
-private:
-    void SetStackTop(size_t value)
-    {
-        StackTop = value;
-        if(StackTop > StackMax) StackMax = StackTop;
-        StackHash.resize(value);
-    }
-
-private:
-    std::vector<unsigned> ByteCode;
-    std::vector<double>   Immed;
-
-    std::vector<std::pair<bool/*known*/, fphash_t/*hash*/> > StackHash;
-    size_t StackTop;
-    size_t StackMax;
-};
-
 namespace
 {
     using namespace FPoptimizer_CodeTree;
 
     bool AssembleSequence(
                   CodeTree& tree, long count,
-                  const SequenceOpCode& sequencing,
-                  CodeTree::ByteCodeSynth& synth,
+                  const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
+                  FPoptimizer_ByteCode::ByteCodeSynth& synth,
                   size_t max_bytecode_grow_length);
-
-    class PowiCache
-    {
-    private:
-        int cache[POWI_CACHE_SIZE];
-        int cache_needed[POWI_CACHE_SIZE];
-
-    public:
-        PowiCache()
-            : cache(), cache_needed() /* Assume we have no factors in the cache */
-        {
-            /* Decide which factors we would need multiple times.
-             * Output:
-             *   cache[]        = these factors were generated
-             *   cache_needed[] = number of times these factors were desired
-             */
-            cache[1] = 1; // We have this value already.
-        }
-
-        bool Plan_Add(long value, int count)
-        {
-            if(value >= POWI_CACHE_SIZE) return false;
-            //FPO(fprintf(stderr, "%ld will be needed %d times more\n", count, need_count));
-            cache_needed[value] += count;
-            return cache[value] != 0;
-        }
-
-        void Plan_Has(long value)
-        {
-            if(value < POWI_CACHE_SIZE)
-                cache[value] = 1; // This value has been generated
-        }
-
-        void Start(size_t value1_pos)
-        {
-            for(int n=2; n<POWI_CACHE_SIZE; ++n)
-                cache[n] = -1; /* Stack location for each component */
-
-            Remember(1, value1_pos);
-
-            DumpContents();
-        }
-
-        int Find(long value) const
-        {
-            if(value < POWI_CACHE_SIZE)
-            {
-                if(cache[value] >= 0)
-                {
-                    // found from the cache
-                    FPO(fprintf(stderr, "* I found %ld from cache (%u,%d)\n",
-                        value, (unsigned)cache[value], cache_needed[value]));
-                    return cache[value];
-                }
-            }
-            return -1;
-        }
-
-        void Remember(long value, size_t stackpos)
-        {
-            if(value >= POWI_CACHE_SIZE) return;
-
-            FPO(fprintf(stderr, "* Remembering that %ld can be found at %u (%d uses remain)\n",
-                value, (unsigned)stackpos, cache_needed[value]));
-            cache[value] = (int) stackpos;
-        }
-
-        void DumpContents() const
-        {
-            FPO(for(int a=1; a<POWI_CACHE_SIZE; ++a)
-                if(cache[a] >= 0 || cache_needed[a] > 0)
-                {
-                    fprintf(stderr, "== cache: sp=%d, val=%d, needs=%d\n",
-                        cache[a], a, cache_needed[a]);
-                })
-        }
-
-        int UseGetNeeded(long value)
-        {
-            if(value >= 0 && value < POWI_CACHE_SIZE)
-                return --cache_needed[value];
-            return 0;
-        }
-    };
-
-    size_t AssembleSequence_Subdivide(
-        long count,
-        PowiCache& cache,
-        const SequenceOpCode& sequencing,
-        CodeTree::ByteCodeSynth& synth);
-
-    void Subdivide_Combine(
-        size_t apos, long aval,
-        size_t bpos, long bval,
-        PowiCache& cache,
-
-        unsigned cumulation_opcode,
-        unsigned cimulation_opcode_flip,
-
-        CodeTree::ByteCodeSynth& synth);
 }
 
 namespace
@@ -356,86 +60,6 @@ namespace
         for(size_t a=0; a<tree->Params.size(); ++a)
             RememberRecursivelyHashList(hashlist, tree->Params[a].param);
     }
-#if 0
-    void PowiTreeSequence(CodeTree& tree, const CodeTreeP param, long value)
-    {
-        tree.Params.clear();
-        if(value < 0)
-        {
-            tree.Opcode = cInv;
-            CodeTree* subtree = new CodeTree;
-            PowiTreeSequence(*subtree, param, -value);
-            tree.AddParam( CodeTree::Param(subtree, false) );
-            tree.Recalculate_Hash_NoRecursion();
-        }
-        else
-        {
-            assert(value != 0 && value != 1);
-            long half = 1;
-            if(value < POWI_TABLE_SIZE)
-                half = powi_table[value];
-            else if(value & 1)
-                half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
-            else
-                half = value / 2;
-            long otherhalf = value-half;
-            if(half > otherhalf || half<0) std::swap(half,otherhalf);
-
-            if(half == 1)
-                tree.AddParam( CodeTree::Param(param->Clone(), false) );
-            else
-            {
-                CodeTree* subtree = new CodeTree;
-                PowiTreeSequence(*subtree, param, half);
-                tree.AddParam( CodeTree::Param(subtree, false) );
-            }
-
-            bool otherhalf_sign = otherhalf < 0;
-            if(otherhalf < 0) otherhalf = -otherhalf;
-
-            if(otherhalf == 1)
-                tree.AddParam( CodeTree::Param(param->Clone(), otherhalf_sign) );
-            else
-            {
-                CodeTree* subtree = new CodeTree;
-                PowiTreeSequence(*subtree, param, otherhalf);
-                tree.AddParam( CodeTree::Param(subtree, otherhalf_sign) );
-            }
-
-            tree.Opcode = cMul;
-
-            tree.Sort();
-            tree.Recalculate_Hash_NoRecursion();
-        }
-    }
-    void ConvertPowi(CodeTree& tree)
-    {
-        if(tree.Opcode == cPow)
-        {
-            const CodeTree::Param& p0 = tree.Params[0];
-            const CodeTree::Param& p1 = tree.Params[1];
-
-            if(p1.param->IsLongIntegerImmed())
-            {
-                FPoptimizer_CodeTree::CodeTree::ByteCodeSynth temp_synth;
-
-                if(AssembleSequence(*p0.param, p1.param->GetLongIntegerImmed(),
-                    MulSequence,
-                    temp_synth,
-                    MAX_POWI_BYTECODE_LENGTH)
-                  )
-                {
-                    // Seems like a good candidate!
-                    // Redo the tree as a powi sequence.
-                    CodeTreeP param = p0.param;
-                    PowiTreeSequence(tree, param, p1.param->GetLongIntegerImmed());
-                }
-            }
-        }
-        for(size_t a=0; a<tree.Params.size(); ++a)
-            ConvertPowi(*tree.Params[a].param);
-    }
-#endif
     void RecreateInversionsAndNegations(CodeTree& tree)
     {
         for(size_t a=0; a<tree.Params.size(); ++a)
@@ -502,14 +126,7 @@ namespace FPoptimizer_CodeTree
     {
         RecreateInversionsAndNegations(*this);
 
-        ByteCodeSynth synth;
-    #if 0
-        /* Convert integer powi sequences into trees
-         * to put them into the scope of the CSE
-         */
-        /* Disabled: Seems to actually slow down */
-        ConvertPowi(*this);
-    #endif
+        FPoptimizer_ByteCode::ByteCodeSynth synth;
 
         /* Find common subtrees */
         TreeCountType TreeCounts;
@@ -567,7 +184,7 @@ namespace FPoptimizer_CodeTree
         synth.Pull(ByteCode, Immed, stacktop_max);
     }
 
-    void CodeTree::SynthesizeByteCode(ByteCodeSynth& synth)
+    void CodeTree::SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth)
     {
         // If the synth can already locate our operand in the stack,
         // never mind synthesizing it again, just dup it.
@@ -637,7 +254,7 @@ namespace FPoptimizer_CodeTree
                             Params.erase(Params.begin()+a);
 
                             bool success = AssembleSequence(
-                                *this, value, AddSequence,
+                                *this, value, FPoptimizer_ByteCode::AddSequence,
                                 synth,
                                 MAX_MULI_BYTECODE_LENGTH);
 
@@ -774,7 +391,7 @@ namespace FPoptimizer_CodeTree
                 else if(!p1.param->IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         *p0.param, p1.param->GetLongIntegerImmed(),
-                        MulSequence,
+                        FPoptimizer_ByteCode::MulSequence,
                         synth,
                         MAX_POWI_BYTECODE_LENGTH)
                   )
@@ -804,7 +421,7 @@ namespace FPoptimizer_CodeTree
                           mulvalue == (double)(long)mulvalue
                       #endif
                         && AssembleSequence(*p1.param, (long)mulvalue,
-                                            AddSequence, synth,
+                                            FPoptimizer_ByteCode::AddSequence, synth,
                                             MAX_MULI_BYTECODE_LENGTH))
                         {
                             // Done with a dup/add sequence, cExp
@@ -836,7 +453,7 @@ namespace FPoptimizer_CodeTree
                               mulvalue == (double)(long)mulvalue
                           #endif
                             && AssembleSequence(*p1.param, (long)mulvalue,
-                                                AddSequence, synth,
+                                                FPoptimizer_ByteCode::AddSequence, synth,
                                                 MAX_MULI_BYTECODE_LENGTH))
                             {
                                 // Done with a dup/add sequence, cExp2
@@ -914,298 +531,36 @@ namespace FPoptimizer_CodeTree
 
 namespace
 {
-    void PlanNtimesCache
-        (long value,
-         PowiCache& cache,
-         int need_count,
-         int recursioncount=0)
-    {
-        if(value < 1) return;
-
-    #ifdef FP_GENERATING_POWI_TABLE
-        if(recursioncount > 32) throw false;
-    #endif
-
-        if(cache.Plan_Add(value, need_count)) return;
-
-        long half = 1;
-        if(value < POWI_TABLE_SIZE)
-            half = powi_table[value];
-        else if(value & 1)
-            half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
-        else
-            half = value / 2;
-
-        long otherhalf = value-half;
-        if(half > otherhalf || half<0) std::swap(half,otherhalf);
-
-        FPO(fprintf(stderr, "value=%ld, half=%ld, otherhalf=%ld\n", value,half,otherhalf));
-
-        if(half == otherhalf)
-        {
-            PlanNtimesCache(half,      cache, 2, recursioncount+1);
-        }
-        else
-        {
-            PlanNtimesCache(half,      cache, 1, recursioncount+1);
-            PlanNtimesCache(otherhalf>0?otherhalf:-otherhalf,
-                                       cache, 1, recursioncount+1);
-        }
-
-        cache.Plan_Has(value);
-    }
-
     bool AssembleSequence(
         CodeTree& tree, long count,
-        const SequenceOpCode& sequencing,
-        CodeTree::ByteCodeSynth& synth,
+        const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
+        FPoptimizer_ByteCode::ByteCodeSynth& synth,
         size_t max_bytecode_grow_length)
     {
-        CodeTree::ByteCodeSynth backup = synth;
-        size_t bytecodesize_backup = synth.GetByteCodeSize();
+        if(count != 0)
+        {
+            FPoptimizer_ByteCode::ByteCodeSynth backup = synth;
 
-        if(count == 0)
-        {
-            synth.PushImmed(sequencing.basevalue);
-        }
-        else
-        {
             tree.SynthesizeByteCode(synth);
-            bytecodesize_backup = synth.GetByteCodeSize(); // Ignore the size generated by subtree
 
-            if(count < 0)
+            // Ignore the size generated by subtree
+            size_t bytecodesize_backup = synth.GetByteCodeSize();
+
+            FPoptimizer_ByteCode::AssembleSequence(count, sequencing, synth);
+
+            size_t bytecode_grow_amount = synth.GetByteCodeSize() - bytecodesize_backup;
+            if(bytecode_grow_amount > max_bytecode_grow_length)
             {
-                synth.AddOperation(sequencing.op_flip, 1);
-                count = -count;
+                synth = backup;
+                return false;
             }
-
-            if(count > 1)
-            {
-                /* To prevent calculating the same factors over and over again,
-                 * we use a cache. */
-                PowiCache cache;
-                PlanNtimesCache(count, cache, 1);
-
-                size_t stacktop_desired = synth.GetStackTop();
-
-                cache.Start( synth.GetStackTop()-1 );
-
-                FPO(fprintf(stderr, "Calculating result for %ld...\n", count));
-                size_t res_stackpos = AssembleSequence_Subdivide(
-                    count, cache, sequencing,
-                    synth);
-
-                size_t n_excess = synth.GetStackTop() - stacktop_desired;
-                if(n_excess > 0 || res_stackpos != stacktop_desired-1)
-                {
-                    // Remove the cache values
-                    synth.DoPopNMov(stacktop_desired-1, res_stackpos);
-                }
-            }
-        }
-
-        size_t bytecode_grow_amount = synth.GetByteCodeSize() - bytecodesize_backup;
-        if(bytecode_grow_amount > max_bytecode_grow_length)
-        {
-            synth = backup;
-            return false;
-        }
-        return true;
-    }
-
-    size_t AssembleSequence_Subdivide(
-        long value,
-        PowiCache& cache,
-        const SequenceOpCode& sequencing,
-        CodeTree::ByteCodeSynth& synth)
-    {
-        int cachepos = cache.Find(value);
-        if(cachepos >= 0)
-        {
-            // found from the cache
-            return cachepos;
-        }
-
-        long half = 1;
-        if(value < POWI_TABLE_SIZE)
-            half = powi_table[value];
-        else if(value & 1)
-            half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
-        else
-            half = value / 2;
-        long otherhalf = value-half;
-        if(half > otherhalf || half<0) std::swap(half,otherhalf);
-
-        FPO(fprintf(stderr, "* I want %ld, my plan is %ld + %ld\n", value, half, value-half));
-
-        if(half == otherhalf)
-        {
-            size_t half_pos = AssembleSequence_Subdivide(half, cache, sequencing, synth);
-
-            // self-cumulate the subdivide result
-            Subdivide_Combine(half_pos,half, half_pos,half, cache,
-                sequencing.op_normal, sequencing.op_normal_flip,
-                synth);
+            return true;
         }
         else
         {
-            long part1 = half;
-            long part2 = otherhalf>0?otherhalf:-otherhalf;
-
-            size_t part1_pos = AssembleSequence_Subdivide(part1, cache, sequencing, synth);
-            size_t part2_pos = AssembleSequence_Subdivide(part2, cache, sequencing, synth);
-
-            FPO(fprintf(stderr, "Subdivide(%ld: %ld, %ld)\n", value, half, otherhalf));
-
-            Subdivide_Combine(part1_pos,part1, part2_pos,part2, cache,
-                otherhalf>0 ? sequencing.op_normal      : sequencing.op_inverse,
-                otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
-                synth);
+            FPoptimizer_ByteCode::AssembleSequence(count, sequencing, synth);
+            return true;
         }
-        size_t stackpos = synth.GetStackTop()-1;
-        cache.Remember(value, stackpos);
-        cache.DumpContents();
-        return stackpos;
-    }
-
-    void Subdivide_Combine(
-        size_t apos, long aval,
-        size_t bpos, long bval,
-        PowiCache& cache,
-        unsigned cumulation_opcode,
-        unsigned cumulation_opcode_flip,
-        CodeTree::ByteCodeSynth& synth)
-    {
-        /*FPO(fprintf(stderr, "== making result for (sp=%u, val=%d, needs=%d) and (sp=%u, val=%d, needs=%d), stacktop=%u\n",
-            (unsigned)apos, aval, aval>=0 ? cache_needed[aval] : -1,
-            (unsigned)bpos, bval, bval>=0 ? cache_needed[bval] : -1,
-            (unsigned)synth.GetStackTop()));*/
-
-        // Figure out whether we can trample a and b
-        int a_needed = cache.UseGetNeeded(aval);
-        int b_needed = cache.UseGetNeeded(bval);
-
-        bool flipped = false;
-
-        #define DUP_BOTH() do { \
-            if(apos < bpos) { size_t tmp=apos; apos=bpos; bpos=tmp; flipped=!flipped; } \
-            FPO(fprintf(stderr, "-> dup(%u) dup(%u) op\n", (unsigned)apos, (unsigned)bpos)); \
-            synth.DoDup(apos); \
-            synth.DoDup(apos==bpos ? synth.GetStackTop()-1 : bpos); } while(0)
-        #define DUP_ONE(p) do { \
-            FPO(fprintf(stderr, "-> dup(%u) op\n", (unsigned)p)); \
-            synth.DoDup(p); \
-        } while(0)
-
-        if(a_needed > 0)
-        {
-            if(b_needed > 0)
-            {
-                // If they must both be preserved, make duplicates
-                // First push the one that is at the larger stack
-                // address. This increases the odds of possibly using cDup.
-                DUP_BOTH();
-
-                //SCENARIO 1:
-                // Input:  x B A x x
-                // Temp:   x B A x x A B
-                // Output: x B A x x R
-                //SCENARIO 2:
-                // Input:  x A B x x
-                // Temp:   x A B x x B A
-                // Output: x A B x x R
-            }
-            else
-            {
-                // A must be preserved, but B can be trampled over
-
-                // SCENARIO 1:
-                //  Input:  x B x x A
-                //   Temp:  x B x x A A B   (dup both, later first)
-                //  Output: x B x x A R
-                // SCENARIO 2:
-                //  Input:  x A x x B
-                //   Temp:  x A x x B A
-                //  Output: x A x x R       -- only commutative cases
-                // SCENARIO 3:
-                //  Input:  x x x B A
-                //   Temp:  x x x B A A B   (dup both, later first)
-                //  Output: x x x B A R
-                // SCENARIO 4:
-                //  Input:  x x x A B
-                //   Temp:  x x x A B A     -- only commutative cases
-                //  Output: x x x A R
-                // SCENARIO 5:
-                //  Input:  x A B x x
-                //   Temp:  x A B x x A B   (dup both, later first)
-                //  Output: x A B x x R
-
-                // if B is not at the top, dup both.
-                if(bpos != synth.GetStackTop()-1)
-                    DUP_BOTH();    // dup both
-                else
-                {
-                    DUP_ONE(apos); // just dup A
-                    flipped=!flipped;
-                }
-            }
-        }
-        else if(b_needed > 0)
-        {
-            // B must be preserved, but A can be trampled over
-            // This is a mirror image of the a_needed>0 case, so I'll cut the chase
-            if(apos != synth.GetStackTop()-1)
-                DUP_BOTH();
-            else
-                DUP_ONE(bpos);
-        }
-        else
-        {
-            // Both can be trampled over.
-            // SCENARIO 1:
-            //  Input:  x B x x A
-            //   Temp:  x B x x A B
-            //  Output: x B x x R
-            // SCENARIO 2:
-            //  Input:  x A x x B
-            //   Temp:  x A x x B A
-            //  Output: x A x x R       -- only commutative cases
-            // SCENARIO 3:
-            //  Input:  x x x B A
-            //  Output: x x x R         -- only commutative cases
-            // SCENARIO 4:
-            //  Input:  x x x A B
-            //  Output: x x x R
-            // SCENARIO 5:
-            //  Input:  x A B x x
-            //   Temp:  x A B x x A B   (dup both, later first)
-            //  Output: x A B x x R
-            // SCENARIO 6:
-            //  Input:  x x x C
-            //   Temp:  x x x C C   (c is both A and B)
-            //  Output: x x x R
-
-            if(apos == bpos && apos == synth.GetStackTop()-1)
-                DUP_ONE(apos); // scenario 6
-            else if(apos == synth.GetStackTop()-1 && bpos == synth.GetStackTop()-2)
-            {
-                FPO(fprintf(stderr, "-> op\n")); // scenario 3
-                flipped=!flipped;
-            }
-            else if(apos == synth.GetStackTop()-2 && bpos == synth.GetStackTop()-1)
-                FPO(fprintf(stderr, "-> op\n")); // scenario 4
-            else if(apos == synth.GetStackTop()-1)
-                DUP_ONE(bpos); // scenario 1
-            else if(bpos == synth.GetStackTop()-1)
-            {
-                DUP_ONE(apos); // scenario 2
-                flipped=!flipped;
-            }
-            else
-                DUP_BOTH(); // scenario 5
-        }
-        // Add them together.
-        synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
     }
 }
 

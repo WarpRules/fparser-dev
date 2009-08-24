@@ -52,7 +52,8 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_codetree.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_optimize.o \
-		fpoptimizer/fpoptimizer_opcodename.o
+		fpoptimizer/fpoptimizer_opcodename.o \
+		fpoptimizer/fpoptimizer_bytecodesynth.o
 
 RELEASE_PACK_FILES = example.cc fparser.cc fparser.hh fpoptimizer.cc \
 	fpconfig.hh fptypes.hh fparser.html style.css
@@ -114,6 +115,8 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_optimize.cc \
 		fpoptimizer/fpoptimizer_opcodename.cc \
 		fpoptimizer/fpoptimizer_opcodename.hh \
+		fpoptimizer/fpoptimizer_bytecodesynth.cc \
+		fpoptimizer/fpoptimizer_bytecodesynth.hh \
 		fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
 		fpoptimizer/fpoptimizer_header.txt \
@@ -124,9 +127,11 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_codetree.hh \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
-	    fpoptimizer/fpoptimizer_opcodename.hh \
 	    fpoptimizer/crc32.hh \
+	    fpoptimizer/fpoptimizer_opcodename.hh \
 	    fpoptimizer/fpoptimizer_opcodename.cc \
+	    fpoptimizer/fpoptimizer_bytecodesynth.hh \
+	    fpoptimizer/fpoptimizer_bytecodesynth.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
 	    fpoptimizer/fpoptimizer_grammar.cc \
 	    fpoptimizer/fpoptimizer_optimize.cc \
