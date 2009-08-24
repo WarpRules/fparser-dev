@@ -533,6 +533,14 @@ double f50(const double* p)
         128*(x!=y && x==y) + 256*(x!=y && x!=y) + 512*(x<=y && x==y);
 }
 
+double f51(const double* p)
+{
+#define P51 "log(-x)" , "x", f51, 1, -100, -1, .5, false
+    const double x = p[0];
+    return log(-x);
+}
+
+
 namespace
 {
     Test tests[] =
@@ -546,7 +554,7 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
