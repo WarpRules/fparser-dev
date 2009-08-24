@@ -356,6 +356,7 @@ cNotNot [(cOr  <1> ~<2>)]     -> cOr  <1> ~<2>
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
 cAnd (cEqual[a b]) (cEqual[b c]) (cEqual[a c])  : (cEqual[a b]) (cEqual[b c])
+# Note: ^ Replacement function refers to b twice
 #   (a==b) & (a!=b)          -- this statement is always false
 cAnd (cEqual[a b]) (cNEqual[a b]) -> 0
 #   (a==b) | (a!=b)          -- this statement is always true
@@ -395,6 +396,7 @@ cNot[(cNot [x])] -> cNotNot [x]
 
 #        asinh: log(x + sqrt(x*x + 1))
 cAsinh [x] -> cMul (cLog2 (cAdd x (cPow (cAdd (cPow x 2) 1) 0.5))) CONSTANT_L2
+# Note: ^ Replacement function refers to x twice
 
 #        acosh: log(x + sqrt(x*x - 1))
 cAcosh [x] -> cMul (cLog2 (cAdd x (cPow (cAdd (cPow x 2) -1) 0.5))) CONSTANT_L2

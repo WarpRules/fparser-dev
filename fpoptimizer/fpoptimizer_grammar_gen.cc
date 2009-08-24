@@ -155,6 +155,8 @@ namespace GrammarData
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
 
         void RecursivelySetParamMatchingType(ParamMatchingType t);
+        bool EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const;
+        bool EnsureNoRepeatedNamedHolders() const;
         bool EnsureNoInversions();
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
 /*
@@ -191,6 +193,9 @@ namespace GrammarData
             Params.Type = t;
             Params.RecursivelySetParamMatchingType(t);
         }
+
+        bool EnsureNoRepeatedNamedHolders() const
+            { return Params.EnsureNoRepeatedNamedHolders(); }
     };
 
     class ParamSpec
@@ -274,6 +279,13 @@ namespace GrammarData
             return true;
         }
 
+        bool EnsureNoRepeatedNamedHolders() const
+        {
+            MatchedParams tmp;
+            tmp.Params = Params;
+            return tmp.EnsureNoRepeatedNamedHolders();
+        }
+
         bool operator== (const ParamSpec& b) const;
         bool operator< (const ParamSpec& b) const;
 
@@ -326,6 +338,32 @@ namespace GrammarData
             if(Params[a]->Negated)
                 return false;
         return true;
+    }
+    
+    bool MatchedParams::EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const
+    {
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == NamedHolder
+            && (Params[a]->MinimumRepeat == 1 && !Params[a]->AnyRepetition))
+            {
+                unsigned index = Params[a]->Index;
+                std::set<unsigned>::iterator i = used.lower_bound(index);
+                if(i != used.end() && *i == index)
+                    return false;
+                used.insert(i, index);
+            }
+            if(Params[a]->Opcode == SubFunction)
+                if(!Params[a]->Func->Params.EnsureNoRepeatedNamedHolders(used))
+                    return false;
+        }
+        return true;
+    }
+
+    bool MatchedParams::EnsureNoRepeatedNamedHolders() const
+    {
+        std::set<unsigned> used;
+        return EnsureNoRepeatedNamedHolders(used);
     }
 
     bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
@@ -947,7 +985,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 852 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 890 "fpoptimizer/fpoptimizer_grammar_gen.y"
 typedef union {
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
@@ -1385,9 +1423,9 @@ static const short yyrhs[] = {    26,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   889,   895,   896,   899,   909,   921,   941,   952,   975,   997,
-  1020,  1022,  1023,  1024,  1027,  1032,  1036,  1042,  1047,  1048,
-  1063,  1072,  1076,  1082,  1088,  1093,  1099,  1109,  1117,  1122
+   927,   933,   934,   937,   947,   963,   987,   998,  1021,  1043,
+  1066,  1068,  1069,  1070,  1073,  1078,  1082,  1088,  1093,  1094,
+  1109,  1118,  1122,  1128,  1134,  1139,  1145,  1155,  1163,  1168
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1956,14 +1994,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 891 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 929 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 902 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 940 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
 
@@ -1972,9 +2010,13 @@ case 4:
       ;
     break;}
 case 5:
-#line 912 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 950 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
+        /*if(!$3->Params.EnsureNoRepeatedNamedHolders())
+        {
+            yyerror("The replacement function may not specify the same variable twise"); YYERROR;
+        }*/
 
         yyval.r = new GrammarData::Rule(ProduceNewTree, *yyvsp[-3].f, new GrammarData::ParamSpec(yyvsp[-1].f));
 
@@ -1983,9 +2025,13 @@ case 5:
       ;
     break;}
 case 6:
-#line 923 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 965 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
+        /*if(!$3->EnsureNoRepeatedNamedHolders())
+        {
+            yyerror("The replacement function may not specify the same variable twise"); YYERROR;
+        }*/
 
         if(yyvsp[-3].f->Opcode != cAnd && yyvsp[-3].f->Opcode != cOr)
         {
@@ -2002,7 +2048,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 943 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 989 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2012,7 +2058,7 @@ case 7:
        ;
     break;}
 case 8:
-#line 957 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1003 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -2033,7 +2079,7 @@ case 8:
        ;
     break;}
 case 9:
-#line 979 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1025 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-3].opcode != cAnd && yyvsp[-3].opcode != cOr)
          {
@@ -2054,7 +2100,7 @@ case 9:
        ;
     break;}
 case 10:
-#line 1000 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1046 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          if(yyvsp[-1].opcode != cAnd && yyvsp[-1].opcode != cOr)
          {
@@ -2075,43 +2121,43 @@ case 10:
        ;
     break;}
 case 12:
-#line 1022 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1068 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceMorePos); ;
     break;}
 case 13:
-#line 1023 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1069 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceMoreNeg); ;
     break;}
 case 14:
-#line 1024 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1070 "fpoptimizer/fpoptimizer_grammar_gen.y"
 { yyval.p = yyvsp[-1].p->SetBalance(BalanceEqual); ;
     break;}
 case 15:
-#line 1029 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1075 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-2].p->AddParam(yyvsp[0].a->SetNegated());
         ;
     break;}
 case 16:
-#line 1033 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1079 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 17:
-#line 1037 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1083 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 18:
-#line 1044 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1090 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 20:
-#line 1049 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1095 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 contains no inversions */
          if(!yyvsp[-1].p->EnsureNoInversions())
@@ -2128,7 +2174,7 @@ case 20:
        ;
     break;}
 case 21:
-#line 1064 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1110 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2139,13 +2185,13 @@ case 21:
        ;
     break;}
 case 22:
-#line 1073 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1119 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = yyvsp[0].a;
        ;
     break;}
 case 23:
-#line 1077 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1123 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2153,7 +2199,7 @@ case 23:
        ;
     break;}
 case 24:
-#line 1083 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1129 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
@@ -2161,20 +2207,20 @@ case 24:
        ;
     break;}
 case 25:
-#line 1089 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1135 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-2].f);
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 26:
-#line 1094 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1140 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
        ;
     break;}
 case 27:
-#line 1101 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1147 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          unsigned nameindex = dumper.DumpName(*yyvsp[-1].name);
          yyval.a = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
@@ -2183,20 +2229,20 @@ case 27:
        ;
     break;}
 case 28:
-#line 1111 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1157 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::ImmedHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 29:
-#line 1119 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1165 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.index = yyvsp[-1].index | yyvsp[0].index;
        ;
     break;}
 case 30:
-#line 1124 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1170 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.index = 0;
        ;
@@ -2405,7 +2451,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1128 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1174 "fpoptimizer/fpoptimizer_grammar_gen.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER

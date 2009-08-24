@@ -130,7 +130,7 @@ namespace FPoptimizer_CodeTree
         void Sort();
         void Sort_Recursive();
 
-        void SetParams(const std::vector<Param>& RefParams);
+        void SetParams(const std::vector<Param>& RefParams, bool do_clone = true);
         void AddParam(const Param& param);
         void DelParam(size_t index);
 

@@ -901,6 +901,12 @@ namespace FPoptimizer_Grammar
                 }
             }
 
+            if(changed)
+            {
+                // Give the parent node a rerun at optimization
+                return true;
+            }
+
             /* Figure out which rules _may_ match this tree */
             typedef const Rule* ruleit;
 
@@ -924,7 +930,7 @@ namespace FPoptimizer_Grammar
             std::cout << "\n" << std::flush;
 #endif
 
-            while(range.first < range.second)
+            while(range.first != range.second)
             {
                 /* Check if this rule matches */
                 if(range.first->ApplyTo(tree))
@@ -976,7 +982,16 @@ namespace FPoptimizer_Grammar
         // Which values were saved for ImmedHolders?
         std::map<unsigned, double> ImmedMap;
         // Which codetrees were saved for each NameHolder? And how many?
-        std::map<unsigned, std::pair<fphash_t, size_t> > NamedMap;
+            struct NamedItem
+            {
+                fphash_t hash;
+                size_t   howmany;
+                size_t   n_synthesized;
+
+                NamedItem(): hash(),howmany(0),n_synthesized(0) { }
+                NamedItem(fphash_t h,size_t m): hash(h),howmany(m),n_synthesized(0) { }
+            };
+        std::map<unsigned, NamedItem> NamedMap;
         // Which codetrees were saved for each RestHolder?
         std::map<unsigned,
           std::vector<fphash_t> > RestMap;
@@ -1110,15 +1125,16 @@ namespace FPoptimizer_Grammar
         {
             struct Needs_Pol
             {
-                int SubTrees;
-                int Others;
-                unsigned SubTreesDetail[VarBegin];
+                int SubTrees; // This many subtrees
+                int Others;   // This many others (namedholder)
+                unsigned SubTreesDetail[VarBegin]; // This many subtrees of each opcode type
 
                 Needs_Pol(): SubTrees(0), Others(0), SubTreesDetail()
                 {
                 }
             } polarity[2]; // 0=positive, 1=negative
-            int Immeds;
+
+            int Immeds;      // This many immeds
 
             Needs(): polarity(), Immeds() { }
         } NeedList;
@@ -1449,7 +1465,7 @@ namespace FPoptimizer_Grammar
                                 }
                             }
                             if(AnyRepeat)
-                                match.NamedMap[pack.plist[index+p].index].second = HadRepeat;
+                                match.NamedMap[pack.plist[index+p].index].howmany = HadRepeat;
                         }
                         else
                         {
@@ -1763,13 +1779,13 @@ namespace FPoptimizer_Grammar
             case NamedHolder:
             {
                 if(sign != (transf != None)) return NoMatch;
-                std::map<unsigned, std::pair<fphash_t, size_t> >::iterator
+                std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>::iterator
                     i = match.NamedMap.lower_bound(index);
                 if(i != match.NamedMap.end() && i->first == index)
                 {
                     /*fprintf(stderr, "NamedHolder found: %16lX -- tested against %16lX\n", i->second.first, tree.Hash);*/
-                    if(tree.Hash == i->second.first
-                    && tree.IsIdenticalTo(* match.trees.find(i->second.first)->second)
+                    if(tree.Hash == i->second.hash
+                    && tree.IsIdenticalTo(* match.trees.find(i->second.hash)->second)
                       )
                         return FoundLastMatch;
                     else
@@ -1816,7 +1832,9 @@ namespace FPoptimizer_Grammar
                     case Oneness_NotOne: return NoMatch;
                 }
 
-                match.NamedMap.insert(i, std::make_pair(index, std::make_pair(tree.Hash, 1)));
+                match.NamedMap.insert(i,
+                    std::make_pair(index,
+                        MatchedParams::CodeTreeMatch::NamedItem(tree.Hash,1) ));
                 match.trees.insert(std::make_pair(tree.Hash, &tree));
                 return FoundLastMatch; // Previously unknown NamedHolder, good
             }
@@ -1910,10 +1928,10 @@ namespace FPoptimizer_Grammar
             }
             case NamedHolder:
             {
-                std::map<unsigned, std::pair<fphash_t, size_t> >::const_iterator
+                std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>::const_iterator
                     i = match.NamedMap.find(index);
                 if(i == match.NamedMap.end()) return false; // impossible
-                result = (double) i->second.second;
+                result = (double) i->second.howmany;
                 //fprintf(stderr, "namedholder: %.20f\n", result);
                 break;
             }
@@ -2157,12 +2175,12 @@ namespace FPoptimizer_Grammar
                 if(!anyrepeat && minrepeat == 1)
                 {
                     /* Literal parameter */
-                    std::map<unsigned, std::pair<fphash_t, size_t> >
-                        ::const_iterator i = match.NamedMap.find(index);
+                    std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>
+                        ::iterator i = match.NamedMap.find(index);
 
                     assert(i != match.NamedMap.end());
 
-                    fphash_t hash = i->second.first;
+                    fphash_t hash = i->second.hash;
 
                     std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP>
                         ::const_iterator j = match.trees.find(hash);
@@ -2178,7 +2196,18 @@ namespace FPoptimizer_Grammar
                         case cPCall: tree.Funcno = j->second->Funcno; break;
                     }
 
-                    tree.SetParams(j->second->Params);
+                    /* Note: SetParams() will Clone() all the given params.
+                     *       This is considered appropriate, because the
+                     *       same NamedHolder may be synthesized in multiple
+                     *       trees.
+                     *       Example of such rule:
+                     *         asinh(x) -> log2(x + (x^2 + 1)^0.5) * CONSTANT_L2
+                     *       We use n_synthesized here to limit the cloning only
+                     *       to successive invokations of the same tree. The first
+                     *       instance is simply assigned. This is safe, because the
+                     *       tree from which it was brought, will not be used anymore.
+                     */
+                    tree.SetParams(j->second->Params, i->second.n_synthesized++ > 0);
                     break;
                 }
                 // passthru; x+ is synthesized as the number, not as the tree

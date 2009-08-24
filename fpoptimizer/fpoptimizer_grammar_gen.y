@@ -53,6 +53,8 @@ namespace GrammarData
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
 
         void RecursivelySetParamMatchingType(ParamMatchingType t);
+        bool EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const;
+        bool EnsureNoRepeatedNamedHolders() const;
         bool EnsureNoInversions();
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
 /*
@@ -89,6 +91,9 @@ namespace GrammarData
             Params.Type = t;
             Params.RecursivelySetParamMatchingType(t);
         }
+
+        bool EnsureNoRepeatedNamedHolders() const
+            { return Params.EnsureNoRepeatedNamedHolders(); }
     };
 
     class ParamSpec
@@ -172,6 +177,13 @@ namespace GrammarData
             return true;
         }
 
+        bool EnsureNoRepeatedNamedHolders() const
+        {
+            MatchedParams tmp;
+            tmp.Params = Params;
+            return tmp.EnsureNoRepeatedNamedHolders();
+        }
+
         bool operator== (const ParamSpec& b) const;
         bool operator< (const ParamSpec& b) const;
 
@@ -224,6 +236,32 @@ namespace GrammarData
             if(Params[a]->Negated)
                 return false;
         return true;
+    }
+    
+    bool MatchedParams::EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const
+    {
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == NamedHolder
+            && (Params[a]->MinimumRepeat == 1 && !Params[a]->AnyRepetition))
+            {
+                unsigned index = Params[a]->Index;
+                std::set<unsigned>::iterator i = used.lower_bound(index);
+                if(i != used.end() && *i == index)
+                    return false;
+                used.insert(i, index);
+            }
+            if(Params[a]->Opcode == SubFunction)
+                if(!Params[a]->Func->Params.EnsureNoRepeatedNamedHolders(used))
+                    return false;
+        }
+        return true;
+    }
+
+    bool MatchedParams::EnsureNoRepeatedNamedHolders() const
+    {
+        std::set<unsigned> used;
+        return EnsureNoRepeatedNamedHolders(used);
     }
 
     bool MatchedParams::EnsureNoVariableCoverageParams_InPositionalParamLists()
@@ -911,6 +949,10 @@ static GrammarDumper dumper;
       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
       {
         $3->RecursivelySetParamMatchingType(PositionalParams);
+        /*if(!$3->Params.EnsureNoRepeatedNamedHolders())
+        {
+            yyerror("The replacement function may not specify the same variable twise"); YYERROR;
+        }*/
 
         $$ = new GrammarData::Rule(ProduceNewTree, *$1, new GrammarData::ParamSpec($3));
 
@@ -922,6 +964,10 @@ static GrammarDumper dumper;
       /* The params provided are replaced with the new param_maybeinv_list */
       {
         $3->RecursivelySetParamMatchingType(PositionalParams);
+        /*if(!$3->EnsureNoRepeatedNamedHolders())
+        {
+            yyerror("The replacement function may not specify the same variable twise"); YYERROR;
+        }*/
 
         if($1->Opcode != cAnd && $1->Opcode != cOr)
         {

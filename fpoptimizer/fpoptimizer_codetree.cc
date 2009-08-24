@@ -203,7 +203,7 @@ namespace FPoptimizer_CodeTree
         Params.back().param->Parent = this;
     }
 
-    void CodeTree::SetParams(const std::vector<Param>& RefParams)
+    void CodeTree::SetParams(const std::vector<Param>& RefParams, bool do_clone)
     {
         Params = RefParams;
         /**
@@ -215,7 +215,7 @@ namespace FPoptimizer_CodeTree
 
         for(size_t a=0; a<Params.size(); ++a)
         {
-            Params[a].param = Params[a].param->Clone();
+            if(do_clone) Params[a].param = Params[a].param->Clone();
             Params[a].param->Parent = this;
         }
     }
