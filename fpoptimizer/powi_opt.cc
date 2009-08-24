@@ -3,7 +3,7 @@
 #define FP_GENERATING_POWI_TABLE
 extern signed char powi_table[256];
 
-#include "fpoptimizer_main.cc"
+#include "fpoptimizer_synth.hh"
 
 #include <iomanip>
 namespace
@@ -120,7 +120,8 @@ int main()
         double bestres = 0;
         long bestp = -1;
 
-        for(long p=-128; p<=exponent/2; ++p)
+        /* x^40 / x^5 (rdiv) cannot be used when x=0 */
+        for(long p=1/*-128*/; p<=exponent/2; ++p)
         {
             if(!p) continue;
 
