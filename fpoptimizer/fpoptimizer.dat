@@ -775,15 +775,16 @@ cMul        (cLog [x])      CONSTANT_L2I  :        (cLog2 [x])
 cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
 
 # log2(x) * CONSTANT_L2 = log(x)
-cMul        (cLog2 [x])      CONSTANT_L2   :        (cLog [x])
-cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L2I  : (cPow [(cLog [x]) -1])
+#cMul        (cLog2 [x])      CONSTANT_L2   :        (cLog [x])
+#cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L2I  : (cPow [(cLog [x]) -1])
 
 # log2(x) * CONSTANT_L10B = log10(x)
-cMul        (cLog2 [x])      CONSTANT_L10B   :        (cLog10 [x])
-cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L10BI  : (cPow [(cLog10 [x]) -1])
+#cMul        (cLog2 [x])      CONSTANT_L10B   :        (cLog10 [x])
+#cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L10BI  : (cPow [(cLog10 [x]) -1])
 
+# log2(x) * constant factor is a waste of time apparently
+cMul (cLog2 [x]) % : (cLog[x]) *(% CONSTANT_L2I)
 
-#cMul CONSTANT_L2I (cAdd { (cLog2[x]) % } )
 cMul CONSTANT_L2 (cAdd { (cLog2[x]) % } )   : (cAdd (cLog [x]) LOG(POW(2 %)))
 
 #cAtan [(cMul y ~x <1> ~<2>)] -> cAtan2 [(cMul y <1>) (cMul x <2>)]
