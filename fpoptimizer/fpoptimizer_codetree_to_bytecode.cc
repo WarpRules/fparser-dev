@@ -399,7 +399,7 @@ namespace FPoptimizer_CodeTree
                     if(p0.param->IsImmed() && p0.param->GetImmed() > 0.0)
                     {
                         // Convert into cExp or Exp2.
-                        //    x^y = exp(log(x) ^ y)
+                        //    x^y = exp(log(x) * y) =
                         //    Can only be done when x is positive, though.
                         double mulvalue = std::log( p0.param->GetImmed() );
 
