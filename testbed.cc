@@ -540,14 +540,6 @@ double f51(const double* p)
     return log(-x);
 }
 
-double f52(const double* p)
-{
-#define P52 "x^14 + 1.1*x^21 + 1.2*x^28 + 1.3*x^113" , "x", \
-        f52, 1, -10, 10, 1, false
-    const double x = p[0];
-    return pow(x,14) + 1.1*pow(x,21) + 1.2*pow(x,28) + 1.3*pow(x,113);
-}
-
 
 namespace
 {
@@ -562,7 +554,7 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
@@ -854,9 +846,11 @@ bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
 {
     const int absExponent = exponent < 0 ? -exponent : exponent;
 
-    for(int valueOffset = 1; valueOffset <= 5; ++valueOffset)
+    for(int valueOffset = 0; valueOffset <= 5; ++valueOffset)
     {
-        const double value = 1.0 + valueOffset/100.0;
+        const double value =
+            (exponent >= 0 && valueOffset == 0) ? 0.0 :
+            1.0+(valueOffset-1)/100.0;
         double v1 = exponent == 0 ? 1 : value;
         for(int i = 2; i <= absExponent; ++i)
             v1 *= value;
