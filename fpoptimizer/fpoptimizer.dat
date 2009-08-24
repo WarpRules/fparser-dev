@@ -243,14 +243,14 @@ cMul x <1> (cPow [(cMul x <2>) -1]) : <1> (cPow [(cMul <2>) -1])
 cAdd (cLog2[x]) (cLog2[y]) : (cLog2 (cMul [x y]))
 # When x is const, the reverse is more beneficial
 #  i.e.  log(2*x) = log(x) + log(2)
-#cLog  [(cMul % <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
-cLog2 [(cMul % <1>)] -> cAdd (cLog2 [(cMul <1>)]) LOG2(%)
+#cLog  [(cMul %@P <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
+cLog2 [(cMul %@P <1>)] -> cAdd (cLog2 [(cMul <1>)]) LOG2(%)
 
 # log(x * z^y) = (log(x) / log(z) + y) * log(z)
 # Only worthwhile when z is an immed
 # Note that when z = CONSTANT_E, this reduces rather nicely into log(x) + y
 #cLog  [(cMul (cPow [% y]) <1>)] -> cMul [LOG(%) (cAdd [y (cMul (cLog [(cMul <1>)]) /LOG(%))])]
-cLog2 [(cMul (cPow [% y]) <1>)] -> cMul [LOG2(%) (cAdd [y (cMul (cLog2 [(cMul <1>)]) /LOG2(%))])]
+cLog2 [(cMul (cPow [% y])@P <1>)] -> cMul [LOG2(%) (cAdd [y (cMul (cLog2 [(cMul <1>)]) /LOG2(%))])]
 # When y=1, the reverse is more useful:
 #cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
 cMul {% (cAdd {1 (cMul {(cLog2 [x]) /%})})} -> cAdd (cLog2 [x]) %
