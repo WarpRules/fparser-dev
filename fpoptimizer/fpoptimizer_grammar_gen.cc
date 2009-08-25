@@ -339,7 +339,7 @@ namespace GrammarData
                 return false;
         return true;
     }
-    
+
     bool MatchedParams::EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const
     {
         for(size_t a=0; a<Params.size(); ++a)

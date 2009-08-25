@@ -19,6 +19,15 @@ static const unsigned MAX_POWI_BYTECODE_LENGTH = 999;
 #endif
 static const unsigned MAX_MULI_BYTECODE_LENGTH = 3;
 
+//#define DEBUG_SUBSTITUTIONS
+
+#ifdef DEBUG_SUBSTITUTIONS
+namespace FPoptimizer_Grammar
+{
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
+}
+#endif
+
 namespace
 {
     using namespace FPoptimizer_CodeTree;
@@ -75,9 +84,9 @@ namespace
                     && tree.Params[a].param->Params[1].param->IsImmed()
                     && tree.Params[a].param->Params[1].param->GetImmed() == -1)
                     {
-                        tree.Params[a] = tree.Params[a].param->Params[0];
+                        tree.Params[a].param = tree.Params[a].param->Params[0].param;
                         tree.Params[a].param->Parent = &tree;
-                        tree.Params[a].sign = true;
+                        tree.Params[a].sign = !tree.Params[a].sign;
                         changed = true;
                     }
                 break;
@@ -110,7 +119,17 @@ namespace
         }
         if(changed)
         {
-            // Don't run ConstantFolding here: It cannot handle negations in cMul/cAdd
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "BEGIN CONSTANTFOLDING: ";
+            FPoptimizer_Grammar::DumpTree(tree);
+            std::cout << "\n";
+        #endif
+            tree.ConstantFolding();
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "END CONSTANTFOLDING:   ";
+            FPoptimizer_Grammar::DumpTree(tree);
+            std::cout << "\n";
+        #endif
             tree.Sort();
             tree.Rehash(true);
         }

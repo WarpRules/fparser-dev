@@ -126,7 +126,7 @@ namespace FPoptimizer_CodeTree
             }
             else
             {
-                switch(opcode)
+                switch( OPCODE(opcode) )
                 {
                     // Specials
                     case cIf:

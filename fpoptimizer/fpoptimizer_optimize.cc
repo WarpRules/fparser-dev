@@ -120,21 +120,20 @@ namespace FPoptimizer_CodeTree
         // that you want to be done whenever a new subtree is generated.
         /* Not recursive. */
 
+        double const_value = 1.0;
+        size_t which_param = 0;
+
         if(Opcode != cImmed)
         {
             MinMaxTree p = CalculateResultBoundaries();
             if(p.has_min && p.has_max && p.min == p.max)
             {
                 // Replace us with this immed
-                Params.clear();
-                Opcode = cImmed;
-                Value  = p.min;
-                return;
+                const_value = p.min;
+                goto ReplaceTreeWithConstValue;
             }
         }
 
-        double const_value = 1.0;
-        size_t which_param = 0;
 
         /* Sub-list assimilation prepass */
         switch( (OPCODE) Opcode)
@@ -150,10 +149,31 @@ namespace FPoptimizer_CodeTree
                     {
                         // Assimilate its children and remove it
                         CodeTreeP tree = Params[a].param;
+                        bool had_sign = Params[a].sign;
+
+                        if(Opcode == cMul && had_sign)
+                        {
+                            int n_divisions_old = 1;
+                            int n_divisions_new = 0;
+
+                            for(size_t b=0; b<tree->Params.size(); ++b)
+                                if(tree->Params[b].sign)
+                                    ++n_divisions_old;
+                                else
+                                    ++n_divisions_new;
+
+                            if(n_divisions_new > n_divisions_old)
+                            {
+                                // Don't assimilate if the number of divisions increases
+                                // in the process.  x/(y*z) is better than x/y/z
+                                continue;
+                            }
+                        }
+
                         Params.erase(Params.begin()+a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
                             AddParam( Param(tree->Params[b].param,
-                                            Params[a].sign ^ tree->Params[b].sign) );
+                                            had_sign ^ tree->Params[b].sign) );
                     }
                 break;
             }
@@ -190,8 +210,10 @@ namespace FPoptimizer_CodeTree
             ReplaceTreeWithZero:
                 const_value = 0.0;
             ReplaceTreeWithConstValue:
-                /*std::cout << "Replacing "; FPoptimizer_Grammar::DumpTree(*this);
-                std::cout << " with " << const_value << "\n";*/
+              #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "Replacing "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << " with const value " << const_value << "\n";
+              #endif
                 Params.clear();
                 Opcode = cImmed;
                 Value  = const_value;
@@ -199,16 +221,20 @@ namespace FPoptimizer_CodeTree
             ReplaceTreeWithParam0:
                 which_param = 0;
             ReplaceTreeWithParam:
-                /*std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
-                std::cout << "\n";*/
+              #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << "\n";
+              #endif
                 Opcode = Params[which_param].param->Opcode;
                 Var    = Params[which_param].param->Var;
                 Value  = Params[which_param].param->Value;
                 Params.swap(Params[which_param].param->Params);
                 for(size_t a=0; a<Params.size(); ++a)
                     Params[a].param->Parent = this;
-                /*std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
-                std::cout << "\n";*/
+              #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << "\n";
+              #endif
                 break;
 
             case cAnd:
@@ -236,7 +262,7 @@ namespace FPoptimizer_CodeTree
                         all_values_are_nonzero = false;
                 }
                 if(all_values_are_nonzero) goto ReplaceTreeWithOne;
-                if(Params.size() == 1)
+                if(Params.size() == 1 && !Params[0].sign)
                 {
                     // Replace self with the single operand
                     Opcode = Params[0].sign ? cNot : cNotNot;
@@ -360,7 +386,7 @@ namespace FPoptimizer_CodeTree
                     if(!FloatEqual(mul_immed_sum, 1.0))
                         AddParam( Param(new CodeTree(mul_immed_sum), false) );
                 }
-                if(Params.size() == 1)
+                if(Params.size() == 1 && !Params[0].sign)
                 {
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
