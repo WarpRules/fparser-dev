@@ -689,6 +689,9 @@ bool TestErrorSituations()
     bool retval = true;
     FunctionParser fp, tmpfp;
     fp.AddUnit("unit", 2);
+    fp.AddFunction("Value", Value, 0);
+    fp.AddFunction("Sqr", Sqr, 1);
+    fp.AddFunction("Sub", Sub, 2);
     tmpfp.Parse("0", "x");
 
     const char* const invalidFuncs[] =
@@ -699,7 +702,8 @@ bool TestErrorSituations()
       "sin(unit)", "sin unit", "1..2", "(", ")", "(x", "x)", ")x(",
       "(((((((x))))))", "(((((((x))))))))", "2x", "(2)x", "(x)2", "2(x)",
       "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)", "if(x,2)",
-      "if(x, 2, 3, 4)"
+      "if(x, 2, 3, 4)", "Value(x)", "Value(1+x)", "Value(1,x)", "Sqr()",
+      "Sqr(x,1)", "Sqr(1,2,x)", "Sub()", "Sub(x)", "Sub(x,1,2)"
 #ifdef FP_DISABLE_EVAL
       , "eval(x)"
 #endif
@@ -1256,6 +1260,201 @@ bool TestIdentifiers()
 
 
 //=========================================================================
+// Test user-defined functions
+//=========================================================================
+namespace
+{
+    template<int VarsAmount>
+    double userFunction(const double* p)
+    {
+        double result = 1.0;
+        for(int i = 0; i < VarsAmount; ++i)
+            result += (VarsAmount+i/10.0) * p[i];
+        return result;
+    }
+
+    double(*userFunctions[])(const double*) =
+    {
+        userFunction<0>, userFunction<1>, userFunction<2>, userFunction<3>,
+        userFunction<4>, userFunction<5>, userFunction<6>, userFunction<7>,
+        userFunction<8>, userFunction<9>, userFunction<10>, userFunction<11>
+    };
+    const unsigned userFunctionsAmount =
+        sizeof(userFunctions) / sizeof(userFunctions[0]);
+}
+
+bool testUserDefinedFunctions()
+{
+    std::cout << "- Testing user-defined functions..." << std::endl;
+
+    std::string funcNames[userFunctionsAmount];
+    std::string userFunctionParserFunctions[userFunctionsAmount];
+    std::string userFunctionParserParameters[userFunctionsAmount];
+    FunctionParser userFunctionParsers[userFunctionsAmount];
+    double funcParams[userFunctionsAmount];
+    FunctionParser parser1, parser2;
+
+    for(unsigned funcInd = 0; funcInd < userFunctionsAmount; ++funcInd)
+    {
+        std::ostringstream functionString, paramString;
+
+        functionString << '1';
+        for(unsigned paramInd = 0; paramInd < funcInd; ++paramInd)
+        {
+            functionString << "+" << funcInd+paramInd/10.0
+                           << "*p" << paramInd;
+
+            if(paramInd > 0) paramString << ',';
+            paramString << "p" << paramInd;
+        }
+
+        userFunctionParserFunctions[funcInd] = functionString.str();
+        userFunctionParserParameters[funcInd] = paramString.str();
+
+        if(userFunctionParsers[funcInd].Parse
+           (userFunctionParserFunctions[funcInd],
+            userFunctionParserParameters[funcInd]) >= 0)
+        {
+            std::cout << "Failed to parse function\n\""
+                      << functionString.str() << "\"\nwith parameters: \""
+                      << paramString.str() << "\":\n"
+                      << userFunctionParsers[funcInd].ErrorMsg() << "\n";
+            return false;
+        }
+
+        for(unsigned testInd = 0; testInd < 10; ++testInd)
+        {
+            for(unsigned paramInd = 0; paramInd < testInd; ++paramInd)
+                funcParams[paramInd] = testInd+paramInd;
+            const double result = userFunctions[funcInd](funcParams);
+            const double parserResult =
+                userFunctionParsers[funcInd].Eval(funcParams);
+            if(fabs(result - parserResult) > 1e-8)
+            {
+                std::cout << "Function\n\"" << functionString.str()
+                          << "\"\nwith parameters (";
+                for(unsigned paramInd = 0; paramInd < testInd; ++paramInd)
+                {
+                    if(paramInd > 0) std::cout << ',';
+                    std::cout << funcParams[paramInd];
+                }
+                std::cout << ")\nreturned " << parserResult
+                          << " instead of " << result << "\n";
+                return false;
+            }
+        }
+    }
+
+    for(unsigned funcInd = 0; funcInd < userFunctionsAmount; ++funcInd)
+    {
+        funcNames[funcInd] = "func00";
+        funcNames[funcInd][4] = char('0' + funcInd/10);
+        funcNames[funcInd][5] = char('0' + funcInd%10);
+
+        if(!parser1.AddFunction(funcNames[funcInd], userFunctions[funcInd],
+                                funcInd))
+        {
+            std::cout << "Failed to add user-defined function \""
+                      << funcNames[funcInd] << "\".\n";
+            return false;
+        }
+        if(!parser2.AddFunction(funcNames[funcInd],
+                                userFunctionParsers[funcInd]))
+        {
+            std::cout << "Failed to add user-defined function parser \""
+                      << funcNames[funcInd] << "\".\n";
+            return false;
+        }
+
+        std::ostringstream functionString;
+        for(unsigned factorInd = 0; factorInd <= funcInd; ++factorInd)
+        {
+            if(factorInd > 0) functionString << '+';
+            functionString << factorInd+1 << "*"
+                           << funcNames[factorInd] << '(';
+            for(unsigned paramInd = 0; paramInd < factorInd; ++paramInd)
+            {
+                if(paramInd > 0) functionString << ',';
+                const unsigned value = factorInd*funcInd + paramInd;
+                functionString << value << "+x";
+            }
+            functionString << ')';
+        }
+
+        if(parser1.Parse(functionString.str(), "x") >= 0)
+        {
+            std::cout << "parser1 failed to parse function\n\""
+                      << functionString.str() << "\":\n"
+                      << parser1.ErrorMsg() << "\n";
+            return false;
+        }
+        if(parser2.Parse(functionString.str(), "x") >= 0)
+        {
+            std::cout << "parser2 failed to parse function\n\""
+                      << functionString.str() << "\":\n"
+                      << parser2.ErrorMsg() << "\n";
+            return false;
+        }
+
+        for(unsigned optimizeInd = 0; optimizeInd < 4; ++optimizeInd)
+        {
+            for(unsigned testInd = 0; testInd < 100; ++testInd)
+            {
+                const double x = testInd/10.0;
+                double result = 0.0;
+                for(unsigned factorInd = 0; factorInd <= funcInd; ++factorInd)
+                {
+                    for(unsigned paramInd = 0; paramInd < factorInd; ++paramInd)
+                    {
+                        const unsigned value = factorInd*funcInd + paramInd;
+                        funcParams[paramInd] = value+x;
+                    }
+                    result +=
+                        (factorInd+1) * userFunctions[factorInd](funcParams);
+                }
+
+                const double parser1Result = parser1.Eval(&x);
+                const double parser2Result = parser2.Eval(&x);
+                const bool parser1Failed = fabs(result - parser1Result) > 1e-8;
+                const bool parser2Failed = fabs(result - parser2Result) > 1e-8;
+
+                if(parser1Failed || parser2Failed)
+                {
+                    std::cout << "For function:\n\"" << functionString.str()
+                              << "\"";
+                    if(optimizeInd > 0)
+                        std::cout << "\n(Optimized " << optimizeInd
+                                  << (optimizeInd > 1 ? " times)" : " time)");
+                    std::cout << "\nwith x=" << x
+                              << " parser";
+                    if(parser1Failed)
+                        std::cout << "1 returned " << parser1Result;
+                    else
+                        std::cout << "2 returned " << parser2Result;
+                    std::cout << " instead of " << result << ".\n";
+
+                    if(parser2Failed)
+                    {
+                        std::cout << "The user-defined functions are:\n";
+                        for(unsigned i = 0; i <= funcInd; ++i)
+                            std::cout << funcNames[i] << "=\""
+                                      << userFunctionParserFunctions[i]
+                                      << "\"\n";
+                    }
+
+                    return false;
+                }
+            }
+
+            parser1.Optimize();
+        }
+    }
+
+    return true;
+}
+
+
+//=========================================================================
 // Main test function
 //=========================================================================
 bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
@@ -1320,6 +1519,10 @@ bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
 int main()
 {
     FunctionParser fp0;
+
+    // Test that the parser doesn't crash if Eval() is called before Parse():
+    fp0.Eval(0);
+
     fp0.setDelimiterChar('}');
     int res = fp0.Parse("x+y } ", "x,y");
     if(fp0.GetParseErrorType() != fp0.FP_NO_ERROR || res != 4)
@@ -1455,7 +1658,8 @@ int main()
     // Misc. tests
     // -----------
     if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
-       !TestIntPow() || !UTF8Test() || !TestIdentifiers())
+       !TestIntPow() || !UTF8Test() || !TestIdentifiers() ||
+       !testUserDefinedFunctions())
         return 1;
 
     std::cout << "==================================================\n"
