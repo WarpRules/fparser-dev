@@ -8,12 +8,6 @@
 using namespace FUNCTIONPARSERTYPES;
 
 #ifdef FP_SUPPORT_OPTIMIZER
-namespace FPoptimizer_CodeTree
-{
-    bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
-    bool    CodeTree::IsVar()   const { return Opcode == cVar; }
-}
-
 using namespace FPoptimizer_CodeTree;
 
 void FunctionParser::Optimize()

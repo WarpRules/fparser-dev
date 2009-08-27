@@ -890,6 +890,9 @@ namespace FPoptimizer_CodeTree
         }
         return true;
     }
+
+    bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
+    bool    CodeTree::IsVar()   const { return Opcode == cVar; }
 }
 
 #endif

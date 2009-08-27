@@ -3,7 +3,13 @@
 #define FP_GENERATING_POWI_TABLE
 extern signed char powi_table[256];
 
-#include "fpoptimizer_synth.hh"
+#include "fpoptimizer_bytecodesynth.cc"
+#include "fpoptimizer_codetree.hh"
+#include "fptypes.hh"
+
+using namespace FUNCTIONPARSERTYPES;
+using namespace FPoptimizer_CodeTree;
+using namespace FPoptimizer_ByteCode;
 
 #include <iomanip>
 namespace
@@ -32,25 +38,25 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
           case cIf:
               dest << "jz\t";
               printHex(dest, ByteCode[IP+1]+1);
-              dest << endl;
+              dest << std::endl;
               IP += 2;
               break;
 
           case cJump:
               dest << "jump\t";
               printHex(dest, ByteCode[IP+1]+1);
-              dest << endl;
+              dest << std::endl;
               IP += 2;
               break;
           case cImmed:
               dest.precision(10);
-              dest << "push\t" << Immed[DP++] << endl;
+              dest << "push\t" << Immed[DP++] << std::endl;
               break;
 
           default:
               if(OPCODE(opcode) < VarBegin)
               {
-                  string n;
+                  std::string n;
                   unsigned params = 1;
                   switch(opcode)
                   {
@@ -100,11 +106,11 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
                   }
                   dest << n;
                   if(params != 1) dest << " (" << params << ")";
-                  dest << endl;
+                  dest << std::endl;
               }
               else
               {
-                  dest << "push\tVar" << opcode-VarBegin << endl;
+                  dest << "push\tVar" << opcode-VarBegin << std::endl;
               }
         }
     }
@@ -115,7 +121,6 @@ int main()
     for(long exponent = 2; exponent < 256; ++exponent)
     {
         CodeTree ct;
-        SubTree  st;
 
         double bestres = 0;
         long bestp = -1;
@@ -125,26 +130,18 @@ int main()
         {
             if(!p) continue;
 
-            std::vector<unsigned> byteCode;
-            std::vector<double>   immed;
-            size_t stacktop_cur=1;
-            size_t stacktop_max=1;
-
             powi_table[exponent] = p;
 
             fprintf(stderr, "For %ld, trying %ld... ", exponent, p);
 
-            try {
-                ct.AssembleSequence(st,
-                    exponent,
-                    MulSequence,
-                    byteCode,immed,stacktop_cur,stacktop_max);
-            }
-            catch(bool)
-            {
-                fprintf(stderr, "Didn't work\n");
-                continue;
-            }
+            ByteCodeSynth synth;
+            synth.PushVar(0);
+            AssembleSequence(exponent, MulSequence, synth);
+
+            std::vector<unsigned> byteCode;
+            std::vector<double>   immed;
+            size_t stacktop_max=1;
+            synth.Pull(byteCode, immed, stacktop_max);
 
             double res = 0;
             for(size_t a=0; a<byteCode.size(); ++a)
@@ -173,7 +170,7 @@ int main()
             fprintf(stderr, "\n");
             fflush(stderr);
 
-            PrintByteCode(byteCode, immed, std::cout);
+            //PrintByteCode(byteCode, immed, std::cout);
         }
         powi_table[exponent] = bestp;
     }
