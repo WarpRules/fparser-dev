@@ -7,12 +7,12 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v3.2    </h1>
+<h1>Function Parser for C++ v3.2.1  </h1>
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser3.2.zip">fparser3.2.zip</a> v3.2
-(released 23 Aug 2009)
+<p>Download <a href="fparser3.2.1.zip">fparser3.2.1.zip</a> v3.2.1
+(released 27 Aug 2009)
 
 <p>(Older versions:
 <a href="fparser3.1.4.zip">v3.1.5</a>,
@@ -47,9 +47,30 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser3.2_devel.tar.bz2">fparser3.2_devel.tar.bz2</a>
+<a href="fparser3.2.1_devel.tar.bz2">fparser3.2.1_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v3.2.1
+<ul>
+ <li>Fixed bugs in optimizer: Functions in the form <code>"log(-x)"</code>
+   and certain integral powers (eg. <code>"x^14"</code>) were optimized
+   incorrectly. (In the case of the integral powers, the error manifested
+   itself when <code>x==0</code>.)
+ <li>Fixed some incompatibilities which made the library not compile with
+   MSVC.
+ <li>Fixed major crash in <code>FunctionParser::Eval()</code> which happened
+   if it was called without <code>FunctionParser::Parse()</code> having been
+   called successfully (or at all). (Now it always returns 0.0 in such
+   situations.)
+ <li>Changed <code>FunctionParser::ErrorMsg()</code> to return an empty
+   string rather than a null pointer if the previous parsing was successful.
+   (Its return value was never intended to be used as a check for success
+   anyways. <code>FunctionParser::GetParseErrorType()</code> can be used for
+   this purpose, if necessary.) This is to avoid potential crashes in the
+   calling program if it assumes that this function always returns a valid
+   string.
+</ul>
 
 <p>What's new in v3.2
 <ul>

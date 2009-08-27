@@ -41,6 +41,16 @@ namespace
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
+#ifndef FP_SUPPORT_ASINH
+    inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
+    inline double fp_acosh(double x) { return log(x + sqrt(x*x - 1)); }
+    inline double fp_atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
+#else
+    inline double fp_asinh(double x) { return asinh(x); }
+    inline double fp_acosh(double x) { return acosh(x); }
+    inline double fp_atanh(double x) { return atanh(x); }
+#endif // FP_SUPPORT_ASINH
+
     inline int doubleToInt(double d)
     {
         return d<0 ? -int((-d)+.5) : int(d+.5);
@@ -393,15 +403,13 @@ double f37(const double* p)
     return 5 + 7.5*8 / 3 - pow(2.0,4)*2 + 7%2+4 + x;
 }
 
-//#ifndef FP_NO_ASINH
 double f38(const double* p)
 {
 #define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", \
         f38, 3, -.9, .9, .05, false
     const double x = p[0], y = p[1], z = p[2];
-    return asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z);
+    return fp_asinh(x) + 1.5*fp_acosh(y+3) + 2.2*fp_atanh(z);
 }
-//#endif
 
 double f39(const double* p)
 {
@@ -509,7 +517,7 @@ double f48(const double* p)
 #define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + \
 !(x | !(x/4))" , "x", f48, 2, 2, 1e9, 1.2e7, false
     const double x = p[0];
-    return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) +
+    return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2.0)+1)*log(2.0)) +
         (!(doubleToInt(x) || !doubleToInt(x/4)));
 }
 
@@ -1615,7 +1623,7 @@ int main()
                               tests[i].useDegrees);
         if(retval >= 0)
         {
-            std::cout << "In \"" << tests[i].funcString << "\" (\""
+            std::cout << "\nIn \"" << tests[i].funcString << "\" (\""
                       << tests[i].paramString << "\"), col " << retval
                       << ":\n" << fp.ErrorMsg() << std::endl;
             return 1;

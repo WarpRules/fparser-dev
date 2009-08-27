@@ -9,6 +9,27 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v3.2.1
+<ul>
+ <li>Fixed bugs in optimizer: Functions in the form <code>"log(-x)"</code>
+   and certain integral powers (eg. <code>"x^14"</code>) were optimized
+   incorrectly. (In the case of the integral powers, the error manifested
+   itself when <code>x==0</code>.)
+ <li>Fixed some incompatibilities which made the library not compile with
+   MSVC.
+ <li>Fixed major crash in <code>FunctionParser::Eval()</code> which happened
+   if it was called without <code>FunctionParser::Parse()</code> having been
+   called successfully (or at all). (Now it always returns 0.0 in such
+   situations.)
+ <li>Changed <code>FunctionParser::ErrorMsg()</code> to return an empty
+   string rather than a null pointer if the previous parsing was successful.
+   (Its return value was never intended to be used as a check for success
+   anyways. <code>FunctionParser::GetParseErrorType()</code> can be used for
+   this purpose, if necessary.) This is to avoid potential crashes in the
+   calling program if it assumes that this function always returns a valid
+   string.
+</ul>
+
 <p>What's new in v3.2
 <ul>
  <li>The <code>FP_SUPPORT_ASINH</code> and <code>FP_NO_ASINH</code>
