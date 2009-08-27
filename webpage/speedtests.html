@@ -9,16 +9,13 @@
 <body>
 <h1>Function parser for C++: Speed tests</h1>
 
-<p>In order to get an idea about the speed of the library, I made a small
-program which measures its parsing and evaluating speed. It does this by
-parsing the given function in a loop many times (for several seconds),
-measuring the total time spent, and then dividing this total time by the
-number of loops. The same is done for evaluating speed (both with default
-and optimized bytecodes). The speed of the <code>Optimize()</code> function
-was also measured.
+<p>These tests were performed by running each specific test many times in
+a loop and then averaging the total time with the number of loops performed.
+The parsing, evaluation, evaluation after optimization, and optimization
+speeds were measured.
 
-<p>The test was run on a 3.4GHz Pentium4 using gcc 4.3.1 with the compiler
-options <code>-O3 -ffast-math -march=native</code>
+<p>The test was run on a 2.4GHz Intel Core2 Quad using gcc 4.3.4 with the
+compiler options <code>-O3 -ffast-math -march=native</code>
 
 <p>(Note that the actual speeds may vary more than the amount of used
 significant digits in the list below from execution to execution. The
@@ -28,50 +25,50 @@ most significant digit is nevertheless quite accurate.)
 <p>Function:
 <code>"pow(x,14)+pow(y,8)"</code>
 <ul>
- <li>Parse time: 1.0 microseconds (990&nbsp;099 parses/s)
- <li>Eval time: 0.21 microseconds (4&nbsp;640&nbsp;371 evals/s)
- <li>Optimized: 0.1 microseconds (10&nbsp;256&nbsp;410 evals/s)
- <li>Optimization time: 37 microseconds (27&nbsp;027 optimizes/s)
+ <li>Parse time: 0.69 us. (1&nbsp;494&nbsp;466 parses/s)
+ <li>Eval time: 0.21 us. (4&nbsp;828&nbsp;993 evals/s)
+ <li>Optimized: 0.049 us. (20&nbsp;549&nbsp;493 evals/s)
+ <li>Optimization time: 40.1 us. (24&nbsp;954 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10"</code>
 <ul>
- <li>Parse time: 4.96 microseconds (201&nbsp;410 parses/s)
- <li>Eval time: 0.68 microseconds (1&nbsp;477&nbsp;105 evals/s)
- <li>Optimized: 0.47 microseconds (2&nbsp;132&nbsp;196 evals/s)
- <li>Optimization time: 1662 microseconds (602 optimizes/s)
+ <li>Parse time: 3.3 us. (304&nbsp;468 parses/s)
+ <li>Eval time: 0.45 us. (2&nbsp;205&nbsp;397 evals/s)
+ <li>Optimized: 0.18 us. (5&nbsp;539&nbsp;291 evals/s)
+ <li>Optimization time: 1121 us. (892 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7 + (8*x+5*y+(7-x))*4)-10*3+4"</code>
 <ul>
- <li>Parse time: 5.3 microseconds (187&nbsp;266 parses/s)
- <li>Eval time: 0.53 microseconds (1&nbsp;881&nbsp;468 evals/s)
- <li>Optimized: 0.35 microseconds (2&nbsp;840&nbsp;909 evals/s)
- <li>Optimization time: 1332 microseconds (750 optimizes/s)
+ <li>Parse time: 3.3 us. (300&nbsp;112 parses/s)
+ <li>Eval time: 0.14 us. (6&nbsp;971&nbsp;701 evals/s)
+ <li>Optimized: 0.083 us. (12&nbsp;076&nbsp;638 evals/s)
+ <li>Optimization time: 801 us. (1&nbsp;248 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"sin(sqrt(10-x*x+y*y)) + cos(sqrt(5-x*x-y*y)) + sin(x*x+y*y)"</code>
 <ul>
- <li>Parse time: 3.3 microseconds (304&nbsp;414 parses/s)
- <li>Eval time: 0.42 microseconds (2&nbsp;392&nbsp;344 evals/s)
- <li>Optimized: 0.39 microseconds (2&nbsp;583&nbsp;979 evals/s)
- <li>Optimization time: 464 microseconds (2&nbsp;153 optimizes/s)
+ <li>Parse time: 2.2 us. (449&nbsp;755 parses/s)
+ <li>Eval time: 0.28 us. (3&nbsp;511&nbsp;908 evals/s)
+ <li>Optimized: 0.22 us. (4&nbsp;560&nbsp;868 evals/s)
+ <li>Optimization time: 337 us. (2&nbsp;968 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(x^4-4*x^3+3*x^2-2*x+2*5-3) - cos(-2*y^4+5*y^3-14*x^2+8*x-120/2+4)"</code>
 <ul>
- <li>Parse time: 8.8 microseconds (112&nbsp;867 parses/s)
- <li>Eval time: 1.4 microseconds (697&nbsp;107 evals/s)
- <li>Optimized: 1.2 microseconds (815&nbsp;328 evals/s)
- <li>Optimization time: 1502 microseconds (668 optimizes/s)
+ <li>Parse time: 6.0 us. (166&nbsp;328 parses/s)
+ <li>Eval time: 1.0 us. (976&nbsp;164 evals/s)
+ <li>Optimized: 0.48 us. (2&nbsp;076&nbsp;209 evals/s)
+ <li>Optimization time: 1102 us. (907 optimizes/s)
 </ul>
 
 </body></html>
