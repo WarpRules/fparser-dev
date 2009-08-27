@@ -3,7 +3,7 @@
 #include "fpoptimizer_consts.hh"
 #include "fpoptimizer_opcodename.hh"
 
-//#include <stdio.h>
+#include <stdio.h>
 
 #include <algorithm>
 #include <cmath>
