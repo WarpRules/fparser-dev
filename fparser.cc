@@ -377,6 +377,8 @@ bool FunctionParser::AddFunction(const std::string& name, FunctionParser& fp)
 
 bool FunctionParser::RemoveIdentifier(const std::string& name)
 {
+    CopyOnWrite();
+
     const NameData dataToRemove(NameData::CONSTANT, name);
     std::set<NameData>::iterator dataIter = data->nameData.find(dataToRemove);
 
