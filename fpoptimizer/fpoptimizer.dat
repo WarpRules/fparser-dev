@@ -17,7 +17,7 @@
 # %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
 # %token IMMED_TOKEN          # placeholders % and &
 # %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
-# %token OPCODE               # opcodes
+# %token OPCODE               # opcodes such as cCos, cMul
 # %token UNARY_TRANSFORMATION # /, -, !  # inverts/negates/inverts the param
 # %token PARAM_CONSTRAINT     # parameter constraint specifier:
 #                                 @E  = Even integer only
@@ -32,9 +32,6 @@
 #                             # they can be applied to IMMED_TOKENs and PARAMETER_TOKENs
 # %token NEWLINE              # newline
 #
-# %token SUBST_OP_COLON       # :
-# %token SUBST_OP_ARROW       # ->
-#
 # %%
 #     grammar:
 #       grammar substitution
@@ -43,41 +40,41 @@
 #     ;
 #
 #     substitution:
-#       function SUBST_OP_ARROW param NEWLINE
+#       function '->' param NEWLINE
 #       /* Entire function is changed into the particular param */
 #
-#     | function SUBST_OP_ARROW function NEWLINE
+#     | function '->' function NEWLINE
 #       /* Entire function changes, the param_notinv_list is rewritten */
 #       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
 #
-#     | function SUBST_OP_COLON  paramlist NEWLINE
+#     | function ':'  paramlist NEWLINE
 #       /* The params provided are replaced with the new param_maybeinv_list */
 #     ;
 #
 #     function:
-#        OPCODE '[' paramlist sign_spec ']'
+#        OPCODE '[' paramlist ']'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list as specified
 #         */
-#        OPCODE '{' paramlist sign_spec '}'
+#        OPCODE '{' paramlist '}'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list in any order
 #         */
-#     |  OPCODE paramlist sign_spec
+#     |  OPCODE paramlist
 #        /* Match a function with opcode=opcode and the given way of matching params */
 #        /* There may be more parameters, don't care about them */
 #     ;
 #
-#     paramlist: /* left-recursive list of 0-n params with no delimiter */
-#         paramlist '~' param /* negated/inverted param */
-#       | paramlist param
-#       | /* empty */
+#     paramlist: /* Can specify a proportion of negativeness to positiveness */
+#         paramlist_loop       /* the given list of parameters */
+#       | paramlist_loop '=+'  /* ~<number> matched fewer elements than <number> did */
+#       | paramlist_loop '=-'  /* ~<number> matched more elements than <number> did */
+#       | paramlist_loop '=='  /* ~<number> matched as many elements than <number> did */
 #     ;
 #
-#     sign_spec: /* Can be used to specify a proportion of negativeness to positiveness */
-#         '=-' /* ~<number> matched more elements than <number> did */
-#       | '=+' /* ~<number> matched fewer elements than <number> did */
-#       | '==' /* ~<number> matched as many elements than <number> did */
+#     paramlist_loop: /* left-recursive list of 0-n params with no delimiter */
+#         paramlist_loop '~' param /* negated/inverted param */
+#       | paramlist_loop param     /* normal param */
 #       | /* empty */
 #     ;
 #
@@ -85,12 +82,12 @@
 #        NUMERIC_CONSTANT         /* particular immed */
 #     |  immed_param              /* a placeholder for some immed */
 #     |  NEGATIVE_IMMED_TOKEN     /* a placeholder for a negative immed */
-#     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
+#     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
 #     |  expression_param         /* expression param */
-#     |  expression_param '+'      /* expression param, repeated 2..N times. */
-#     |  expression_param '*'      /* expression param, repeated 1..N times. */
-#     |  '(' function ')' param_constraints /* a subtree */
+#     |  expression_param '+'     /* expression param, repeated 2..N times. */
+#     |  expression_param '*'     /* expression param, repeated 1..N times. */
+#     |  subtree_param            /* a subtree */
 #     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
 #     ;
 #
@@ -99,10 +96,14 @@
 #     ;
 #
 #     immed_param:
-#        IMMED_TOKEN param_constraints
+#        IMMED_TOKEN param_constraints        /* a placeholder for some immed */
 #     ;
 #
-#     param_constraints:
+#     subtree_param:
+#        (' function ')' param_constraints    /* a subtree */
+#     ;
+#
+#     param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */
 #        param_constraints PARAM_CONSTRAINT
 #     |  /* empty */
 #     ;

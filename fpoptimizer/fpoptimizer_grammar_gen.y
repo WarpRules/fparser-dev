@@ -888,6 +888,10 @@ static GrammarDumper dumper;
 %pure_parser
 
 %union {
+    /* Note: Because bison's token type is an union or a simple type,
+     *       anything that has constructors and destructors must be
+     *       carried behind pointers here.
+     */
     GrammarData::Rule*          r;
     GrammarData::FunctionType*  f;
     GrammarData::MatchedParams* p;
@@ -900,6 +904,7 @@ static GrammarDumper dumper;
     TransformationType transform;
 }
 
+/* See documentation about syntax and token meanings in fpoptimizer.dat */
 %token <num>       NUMERIC_CONSTANT
 %token <name>      PARAMETER_TOKEN
 %token <index>     PLACEHOLDER_TOKEN
@@ -910,17 +915,16 @@ static GrammarDumper dumper;
 %token <index>     PARAM_CONSTRAINT
 %token NEWLINE
 
-%token SUBST_OP_COLON
-%token SUBST_OP_ARROW
-%token BALANCE_POS
-%token BALANCE_EQUAL
-%token BALANCE_NEG
+%token SUBST_OP_COLON /* '->' */
+%token SUBST_OP_ARROW /* ':'  */
+%token BALANCE_POS    /* '=+' */
+%token BALANCE_EQUAL  /* '==' */
+%token BALANCE_NEG    /* '=-' */
 
 %type <r> substitution
 %type <f> function function_match
 %type <p> paramlist paramlist_loop
-%type <a> param
-%type <a> expression_param immed_param
+%type <a> param expression_param immed_param subtree_param
 %type <index> param_constraints
 
 %%
@@ -1071,11 +1075,11 @@ static GrammarDumper dumper;
     ;
 
     paramlist_loop: /* left-recursive list of 0-n params with no delimiter */
-        paramlist_loop '~' param
+        paramlist_loop '~' param /* negated/inverted param */
         {
           $$ = $1->AddParam($3->SetNegated());
         }
-      | paramlist_loop param
+      | paramlist_loop param    /* normal param */
         {
           $$ = $1->AddParam($2);
         }
@@ -1119,23 +1123,19 @@ static GrammarDumper dumper;
        {
          $$ = $1;
        }
-    |  expression_param '+'       /* any expression, indicated by "x", "a" etc. */
+    |  expression_param '+'     /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
          $$ = $1->SetRepeat(2, true);
        }
-    |  expression_param '*'       /* any expression, indicated by "x", "a" etc. */
+    |  expression_param '*'     /* any expression, indicated by "x", "a" etc. */
        {
          /* In matching, matches TWO or more identical repetitions of namedparam */
          /* In substitution, yields an immed containing the number of repetitions */
          $$ = $1->SetRepeat(1, true);
        }
-    |  '(' function ')' param_constraints    /* a subtree */
-       {
-         $$ = new GrammarData::ParamSpec($2);
-         $$->SetConstraint($4);
-       }
+    |  subtree_param            /* a subtree */
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
@@ -1160,13 +1160,20 @@ static GrammarDumper dumper;
        }
     ;
 
-    param_constraints:
+    subtree_param:
+       '(' function ')' param_constraints    /* a subtree */
+       {
+         $$ = new GrammarData::ParamSpec($2);
+         $$->SetConstraint($4);
+       }
+   ;
+
+    param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */
        param_constraints PARAM_CONSTRAINT
        {
          $$ = $1 | $2;
        }
-    |
-       /* empty */
+    |  /* empty */
        {
          $$ = 0;
        }
