@@ -267,6 +267,9 @@ cAdd  x+                        : (cMul  x   x+)
 # x^3 * x = x^4
 cMul  x*           (cPow[x y])  : (cPow [x (cAdd x* y)])
 cAdd  x*           (cMul x <1>) : (cMul [x (cAdd x* (cMul <1>) )])
+# x*2 + x*5 = x*(2+5)
+#cAdd  (cMul {% x}) (cMul {& x}) : (cMul [x +(% &)])
+cAdd  (cMul % <1>) (cMul & <1>) : (cMul <1> +(% &))
 # x^y * x^z = x^(y+z)
 cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 # x^z * y^z = (x*y)^z
@@ -783,7 +786,7 @@ cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
 
 # log2(x) and log10(x) have turned out to be horrible at their performance
 #   - except, log10 is faster on IA32, slower on X86_64
-#   
+#
 #cMul (cLog2  [x]) % : (cLog[x]) *(% CONSTANT_L2I)
 #cMul (cLog10 [x]) % : (cLog[x]) *(% CONSTANT_L10I)
 #cLog2  [x]         -> (cMul (cLog[x]) CONSTANT_L2I)
