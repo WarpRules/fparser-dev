@@ -24,7 +24,7 @@ else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
-OPTIMIZATION=-O3 -ffast-math -march=native
+OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations
 #OPTIMIZATION=-g
 #OPTIMIZATION=-g -pg
 
