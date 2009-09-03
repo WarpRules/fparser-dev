@@ -269,8 +269,9 @@ cAdd  x+                        : (cMul  x   x+)
 cMul  x*           (cPow[x y])  : (cPow [x (cAdd x* y)])
 cAdd  x*           (cMul x <1>) : (cMul [x (cAdd x* (cMul <1>) )])
 # x*2 + x*5 = x*(2+5)
-#cAdd  (cMul {% x}) (cMul {& x}) : (cMul [x +(% &)])
-cAdd  (cMul % <1>) (cMul & <1>) : (cMul <1> +(% &))
+cAdd  (cMul {% x}) (cMul {& x}) : (cMul [x +(% &)])
+#cAdd  (cMul % <1>) (cMul & <1>) : (cMul <1> +(% &))
+#^ DISABLED: MULTIPLE/REPEATED RESTHOLDERS
 # x^y * x^z = x^(y+z)
 cMul  (cPow[x y])  (cPow[x z]) : (cPow [x (cAdd [y z])])
 # x^z * y^z = (x*y)^z
@@ -466,7 +467,7 @@ cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1>) : (cPow [(cAdd [a b]) 2]) (cMul [a b
 
 
 
-cAdd (cMul x <3>)  (cMul x <5>) : (cMul x (cAdd (cMul <3>)  (cMul <5>)))
+cAdd (cMul x <1>) (cMul x <2>) : (cMul x (cAdd (cMul <1>) (cMul <2>)))
 # Note: The above line can require extremely time-consuming
 
 # These are the same as above, but work also if pow() is expanded
@@ -596,8 +597,9 @@ cMul (cPow [(cTan[x]) -1])       (cSin[x])      :        (cCos[x])
 
 
 # sinh(-5*x) / cosh(5*x) = tanh(-5*x)
-cMul (cSinh [(cMul % <1>)]) (cPow [(cCosh [(cMul -% <1>)]) -1]) : (cTanh [(cMul % <1>)])
-cMul (cSin  [(cMul % <1>)]) (cPow [(cCos  [(cMul -% <1>)]) -1]) : (cTan  [(cMul % <1>)])
+#cMul (cSinh [(cMul % <1>)]) (cPow [(cCosh [(cMul -% <1>)]) -1]) : (cTanh [(cMul % <1>)])
+#cMul (cSin  [(cMul % <1>)]) (cPow [(cCos  [(cMul -% <1>)]) -1]) : (cTan  [(cMul % <1>)])
+#^ DISABLED: MULTIPLE/REPEATED RESTHOLDERS
 
 
 # sinh(-x) = -sinh(x)
@@ -752,7 +754,8 @@ cMul (cPow [(cAdd {(cMul {x %}) &}) -1]) (cAdd {(cMul {x -%}) +(2 -&)}) : (cPow 
 #                      but cot() isn't exactly bad, so keep it
 #cPow [(cTan[x]) -1] -> cTan [(cAdd [CONSTANT_PIHALF (cMul [-1 x])])]
 
-cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
+#cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
+#^ DISABLED: MULTIPLE/REPEATED RESTHOLDERS
 
 
 # tan(atan(x)) = x

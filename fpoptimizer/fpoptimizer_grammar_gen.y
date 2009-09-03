@@ -57,10 +57,8 @@ namespace GrammarData
         bool EnsureNoRepeatedNamedHolders() const;
         bool EnsureNoInversions();
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
-/*
         bool EnsureNoRepeatedRestHolders();
         bool EnsureNoRepeatedRestHolders(std::set<unsigned>& used);
-*/
 
         bool operator== (const MatchedParams& b) const;
         bool operator< (const MatchedParams& b) const;
@@ -283,7 +281,6 @@ namespace GrammarData
         }
         return true;
     }
-/*
     bool MatchedParams::EnsureNoRepeatedRestHolders()
     {
         std::set<unsigned> Used_RestHolders;
@@ -314,7 +311,6 @@ namespace GrammarData
         }
         return true;
     }
-*/
     size_t MatchedParams::CalcRequiredParamsCount() const
     {
         size_t res = 0;
@@ -1013,12 +1009,12 @@ static GrammarDumper dumper;
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-/*
+/**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
-*/
+/**/
          $$ = new GrammarData::FunctionType($1, *$3);
          delete $3;
        }
@@ -1035,12 +1031,12 @@ static GrammarDumper dumper;
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-/*
+/**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
-*/
+/**/
          $$ = new GrammarData::FunctionType($1, *$3->SetType(SelectedParams));
          delete $3;
        }
@@ -1056,12 +1052,12 @@ static GrammarDumper dumper;
                  yyerror("Can have no inversions"); YYERROR;
              }
          }
-/*
+/**/
          if(!$2->EnsureNoRepeatedRestHolders())
          {
              yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
-*/
+/**/
          $$ = new GrammarData::FunctionType($1, *$2->SetType(AnyParams));
          delete $2;
        }
