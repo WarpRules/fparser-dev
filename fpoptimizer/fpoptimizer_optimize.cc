@@ -1273,6 +1273,7 @@ namespace FPoptimizer_Grammar
             }
         }
 
+        /* Which transformation to do on the operand if a sign is present */
         TransformationType transf = None;
         switch(tree.Opcode)
         {
@@ -1742,8 +1743,6 @@ namespace FPoptimizer_Grammar
             {
                 if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
-                if(transformation == Negate) res = -res;
-                if(transformation == Invert) res = 1/res;
                 double res2 = GetPackConst(index);
                 if(transf == Negate) res2 = -res2;
                 if(transf == Invert) res2 = 1/res2;
@@ -1803,8 +1802,6 @@ namespace FPoptimizer_Grammar
                         break;
                 }
 
-                if(transformation == Negate) res = -res;
-                if(transformation == Invert) res = 1/res;
                 std::map<unsigned, double>::iterator
                     i = match.ImmedMap.lower_bound(index);
                 if(i != match.ImmedMap.end() && i->first == index)
@@ -1939,8 +1936,6 @@ namespace FPoptimizer_Grammar
             {
                 if(!tree.IsImmed()) return NoMatch;
                 double res = tree.GetImmed();
-                if(transformation == Negate) res = -res;
-                if(transformation == Invert) res = 1/res;
                 double res2;
                 if(!GetConst(match, res2)) return NoMatch;
                 if(transf == Negate) res2 = -res2;
@@ -2074,6 +2069,12 @@ namespace FPoptimizer_Grammar
                                  result = std::log10(result); break;
                     case cAbs: if(!pack.plist[index].GetConst(match, result))return false;
                                result = std::fabs(result); break;
+                    case cNeg: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = -result; break;
+                    case cInv: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = 1.0 / result; break;
+                    case cNot: if(!pack.plist[index].GetConst(match, result))return false;
+                               result = FloatEqual(result, 0.0); break;
                     case cPow:
                     {
                         if(!pack.plist[index+0].GetConst(match, result))return false;
@@ -2098,8 +2099,6 @@ namespace FPoptimizer_Grammar
                 }
             }
         }
-        if(transformation == Negate) result = -result;
-        if(transformation == Invert) result = 1.0 / result;
         return true;
     }
 
@@ -2274,8 +2273,6 @@ namespace FPoptimizer_Grammar
         //std::cout << "/*p" << (&p-pack.plist) << "*/";
 
         if(p.sign) std::cout << '~';
-        if(p.transformation == Negate) std::cout << '-';
-        if(p.transformation == Invert) std::cout << '/';
 
         bool has_constraint = false;
         switch(SpecialOpcode(p.opcode))

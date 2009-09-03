@@ -99,8 +99,6 @@ namespace GrammarData
     public:
         bool Negated;    // true means for: cAdd:-x; cMul:1/x; cAnd/cOr: !x; other: invalid
 
-        TransformationType Transformation;
-
         unsigned MinimumRepeat; // default 1
         bool AnyRepetition;     // false: max=minimum; true: max=infinite
 
@@ -120,35 +118,33 @@ namespace GrammarData
         struct RestHolderTag{};
 
         ParamSpec(FunctionType* f)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
               {
               }
 
         ParamSpec(double d)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(o),                             ImmedConstraint(0), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
-            : Negated(), Transformation(None),  MinimumRepeat(1), AnyRepetition(false),
+            : Negated(), MinimumRepeat(1), AnyRepetition(false),
               Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec* SetNegated()                      { Negated=true; return this; }
         ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
-        ParamSpec* SetTransformation(TransformationType t)
-            { Transformation = t; return this; }
         ParamSpec* SetConstraint(unsigned mask)
             { ImmedConstraint |= mask; return this; }
 
@@ -326,7 +322,6 @@ namespace GrammarData
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return false;
-        if(Transformation != b.Transformation) return false;
         if(MinimumRepeat != b.MinimumRepeat) return false;
         if(AnyRepetition != b.AnyRepetition) return false;
         if(ImmedConstraint != b.ImmedConstraint) return false;
@@ -354,7 +349,6 @@ namespace GrammarData
     bool ParamSpec::operator< (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return Negated < b.Negated;
-        if(Transformation != b.Transformation) return Transformation < b.Transformation;
         if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
         if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
         if(ImmedConstraint != b.ImmedConstraint) return ImmedConstraint < b.ImmedConstraint;
@@ -449,7 +443,6 @@ public:
         ParamSpec  pitem;
         memset(&pitem, 0, sizeof(pitem));
         pitem.sign           = p.Negated;
-        pitem.transformation = p.Transformation;
         pitem.minrepeat      = p.MinimumRepeat;
         pitem.anyrepeat      = p.AnyRepetition;
         pitem.opcode         = p.Opcode;
@@ -487,7 +480,6 @@ public:
 
         /* These assertions catch mis-sized bitfields */
         assert(pitem.sign == p.Negated);
-        assert(pitem.transformation == p.Transformation);
         assert(pitem.minrepeat == p.MinimumRepeat);
         assert(pitem.anyrepeat == p.AnyRepetition);
         assert(pitem.opcode == p.Opcode);
@@ -685,11 +677,6 @@ public:
                         << ", "
                         << (plist[a].sign ? "true " : "false")
                         << ", "
-                        << (plist[a].transformation == None    ? "None  "
-                         :  plist[a].transformation == Negate  ? "Negate"
-                         :/*plist[a].transformation == Invert?*/ "Invert"
-                           )
-                        << ", "
                         << plist[a].minrepeat
                         << ", "
                         << (plist[a].anyrepeat ? "true " : "false")
@@ -823,8 +810,6 @@ private:
         static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
 
         if(p.sign) std::cout << '~';
-        if(p.transformation == Negate) std::cout << '-';
-        if(p.transformation == Invert) std::cout << '/';
 
         switch(SpecialOpcode(p.opcode))
         {
@@ -897,7 +882,6 @@ static GrammarDumper dumper;
     std::string*       name;
     unsigned           index;
     OpcodeType         opcode;
-    TransformationType transform;
 }
 
 /* See documentation about syntax and token meanings in fpoptimizer.dat */
@@ -907,7 +891,7 @@ static GrammarDumper dumper;
 %token <index>     IMMED_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
 %token <opcode>    OPCODE
-%token <transform> UNARY_TRANSFORMATION
+%token <opcode>    UNARY_TRANSFORMATION
 %token <index>     PARAM_CONSTRAINT
 %token NEWLINE
 
@@ -1113,7 +1097,9 @@ static GrammarDumper dumper;
          {
              yyerror("Not constant"); YYERROR;
          }
-         $$ = $2->SetTransformation($1);
+         std::vector<GrammarData::ParamSpec*> tmp;
+         tmp.push_back($2);
+         $$ = new GrammarData::ParamSpec($1, tmp);
        }
     |  expression_param         /* any expression, indicated by "x", "a" etc. */
        {
@@ -1232,11 +1218,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             {
                 goto GotNumeric;
             }
-            lval->transform = Negate;
+            lval->opcode = cNeg;
             return UNARY_TRANSFORMATION;
         }
         case '/':
-            lval->transform = Invert;
+            lval->opcode = cInv;
             return UNARY_TRANSFORMATION;
 
         case '=':

@@ -139,9 +139,7 @@ namespace FPoptimizer_Grammar
     {
         OpcodeType opcode : 16;
         bool     sign     : 1;
-        TransformationType
-           transformation  : 3;
-        unsigned minrepeat : 3;
+        unsigned minrepeat : 6; // 2 bits is enough, for the maximum value is 2
         bool     anyrepeat : 1;
 
         // For NumConstant:   index to clist[]
