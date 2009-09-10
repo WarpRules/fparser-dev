@@ -1028,15 +1028,14 @@ namespace FPoptimizer_Grammar
 
         // Which values were saved for ImmedHolders?
         std::map<unsigned, double> ImmedMap;
-        // Which codetrees were saved for each NameHolder? And how many?
+        // Which codetrees were saved for each NameHolder?
             struct NamedItem
             {
                 fphash_t hash;
-                size_t   howmany;
                 size_t   n_synthesized;
 
-                NamedItem(): hash(),howmany(0),n_synthesized(0) { }
-                NamedItem(fphash_t h,size_t m): hash(h),howmany(m),n_synthesized(0) { }
+                NamedItem(): hash(),n_synthesized(0) { }
+                explicit NamedItem(fphash_t h): hash(h),n_synthesized(0) { }
             };
         std::map<unsigned, NamedItem> NamedMap;
         // Which codetrees were saved for each RestHolder?
@@ -1207,7 +1206,7 @@ namespace FPoptimizer_Grammar
                     ++minimum_need;
                     break;
                 case NamedHolder:
-                    needs.Others += param.minrepeat;
+                    needs.Others += 1;
                     ++minimum_need;
                     break;
                 case RestHolder:
@@ -1453,7 +1452,6 @@ namespace FPoptimizer_Grammar
 
                         if(!mr.found)
                         {
-                        NextParamTest:
                             if(!mr.has_more) goto NextParamNumber;
                             goto NextMatchNumber;
                         }
@@ -1466,54 +1464,9 @@ namespace FPoptimizer_Grammar
                         if(pack.plist[index+p].opcode == NamedHolder)
                         {
                             // Verify the MinRepeat & AnyRepeat case
-                            unsigned MinRepeat = pack.plist[index+p].minrepeat;
-                            bool AnyRepeat     = pack.plist[index+p].anyrepeat;
-                            unsigned HadRepeat = 1;
-
-                            for(size_t repeat_pos = whichparam+1;
-                                repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
-                                ++repeat_pos)
-                            {
-                                /*fprintf(stderr, "Req @ %lu = %d:%16lX, got @ %lu = %d:%16lX\n",
-                                    whichparam, tree.Params[whichparam].sign,
-                                                tree.Params[whichparam].param->Hash,
-                                    repeat_pos, tree.Params[repeat_pos].sign,
-                                                tree.Params[repeat_pos].param->Hash);*/
-
-                                if(tree.Params[repeat_pos].IsIdenticalTo(
-                                   tree.Params[whichparam])
-                                && !used[repeat_pos])
-                                {
-                                    ++HadRepeat;
-                                }
-                            }
                             /*fprintf(stderr, "Got repeat %u, needs %u\n", HadRepeat,MinRepeat);*/
-                            if(HadRepeat < MinRepeat)
-                            {
-                                match = position[p].snapshot;
-                                used  = position[p].used;
-                                goto NextParamTest; // No sufficient repeat count here
-                            }
-
                             used[whichparam] = true;
                             if(!recursion) match.param_numbers.push_back(whichparam);
-
-                            HadRepeat = 1;
-                            for(size_t repeat_pos = whichparam+1;
-                                repeat_pos < n_tree_params && (HadRepeat < MinRepeat || AnyRepeat);
-                                ++repeat_pos)
-                            {
-                                if(tree.Params[repeat_pos].IsIdenticalTo(
-                                   tree.Params[whichparam])
-                                && !used[repeat_pos])
-                                {
-                                    ++HadRepeat;
-                                    used[repeat_pos] = true;
-                                    if(!recursion) match.param_numbers.push_back(repeat_pos);
-                                }
-                            }
-                            if(AnyRepeat)
-                                match.NamedMap[pack.plist[index+p].index].howmany = HadRepeat;
                         }
                         else
                         {
@@ -1878,7 +1831,7 @@ namespace FPoptimizer_Grammar
 
                 match.NamedMap.insert(i,
                     std::make_pair(index,
-                        MatchedParams::CodeTreeMatch::NamedItem(tree.Hash,1) ));
+                        MatchedParams::CodeTreeMatch::NamedItem(tree.Hash) ));
                 match.trees.insert(std::make_pair(tree.Hash, &tree));
                 return FoundLastMatch; // Previously unknown NamedHolder, good
             }
@@ -1970,12 +1923,8 @@ namespace FPoptimizer_Grammar
             }
             case NamedHolder:
             {
-                std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>::const_iterator
-                    i = match.NamedMap.find(index);
-                if(i == match.NamedMap.end()) return false; // impossible
-                result = (double) i->second.howmany;
-                //fprintf(stderr, "namedholder: %.20f\n", result);
-                break;
+                // Not enumerable
+                return false;
             }
             case RestHolder:
             {
@@ -2218,45 +2167,43 @@ namespace FPoptimizer_Grammar
                 break;
             }
             case NamedHolder:
-                if(!anyrepeat && minrepeat == 1)
+            {
+                /* Literal parameter */
+                std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>
+                    ::iterator i = match.NamedMap.find(index);
+
+                assert(i != match.NamedMap.end());
+
+                fphash_t hash = i->second.hash;
+
+                std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP>
+                    ::const_iterator j = match.trees.find(hash);
+
+                assert(j != match.trees.end());
+
+                tree.Opcode = j->second->Opcode;
+                switch(tree.Opcode)
                 {
-                    /* Literal parameter */
-                    std::map<unsigned, MatchedParams::CodeTreeMatch::NamedItem>
-                        ::iterator i = match.NamedMap.find(index);
-
-                    assert(i != match.NamedMap.end());
-
-                    fphash_t hash = i->second.hash;
-
-                    std::map<fphash_t, FPoptimizer_CodeTree::CodeTreeP>
-                        ::const_iterator j = match.trees.find(hash);
-
-                    assert(j != match.trees.end());
-
-                    tree.Opcode = j->second->Opcode;
-                    switch(tree.Opcode)
-                    {
-                        case cImmed: tree.Value = j->second->Value; break;
-                        case cVar:   tree.Var   = j->second->Var;  break;
-                        case cFCall:
-                        case cPCall: tree.Funcno = j->second->Funcno; break;
-                    }
-
-                    /* Note: SetParams() will Clone() all the given params.
-                     *       This is considered appropriate, because the
-                     *       same NamedHolder may be synthesized in multiple
-                     *       trees.
-                     *       Example of such rule:
-                     *         asinh(x) -> log2(x + (x^2 + 1)^0.5) * CONSTANT_L2
-                     *       We use n_synthesized here to limit the cloning only
-                     *       to successive invokations of the same tree. The first
-                     *       instance is simply assigned. This is safe, because the
-                     *       tree from which it was brought, will not be used anymore.
-                     */
-                    tree.SetParams(j->second->Params, i->second.n_synthesized++ > 0);
-                    break;
+                    case cImmed: tree.Value = j->second->Value; break;
+                    case cVar:   tree.Var   = j->second->Var;  break;
+                    case cFCall:
+                    case cPCall: tree.Funcno = j->second->Funcno; break;
                 }
-                // passthru; x+ is synthesized as the number, not as the tree
+
+                /* Note: SetParams() will Clone() all the given params.
+                 *       This is considered appropriate, because the
+                 *       same NamedHolder may be synthesized in multiple
+                 *       trees.
+                 *       Example of such rule:
+                 *         asinh(x) -> log2(x + (x^2 + 1)^0.5) * CONSTANT_L2
+                 *       We use n_synthesized here to limit the cloning only
+                 *       to successive invokations of the same tree. The first
+                 *       instance is simply assigned. This is safe, because the
+                 *       tree from which it was brought, will not be used anymore.
+                 */
+                tree.SetParams(j->second->Params, i->second.n_synthesized++ > 0);
+                break;
+            }
             case NumConstant:
             case ImmedHolder:
             default:
@@ -2295,8 +2242,6 @@ namespace FPoptimizer_Grammar
                 std::cout << " )";
             }
         }
-        if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
-        if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
         if(has_constraint)
         {
             switch( ImmedConstraint_Value(p.count & ValueMask) )
@@ -2384,7 +2329,7 @@ namespace FPoptimizer_Grammar
         {
             std::cout << "           " << NamedHolderNames[i->first] << " = ";
             DumpTree(*matchrec.trees.find(i->second.hash)->second);
-            std::cout << " (" << i->second.howmany << " matches)\n";
+            std::cout << "\n";
         }
 
         for(std::map<unsigned, double>::const_iterator

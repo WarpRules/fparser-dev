@@ -84,8 +84,6 @@
 #     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
 #     |  expression_param         /* expression param */
-#     |  expression_param '+'     /* expression param, repeated 2..N times. */
-#     |  expression_param '*'     /* expression param, repeated 1..N times. */
 #     |  subtree_param            /* a subtree */
 #     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
 #     ;
@@ -119,10 +117,6 @@
 
 #### Remove redundant components:
 
-# In a add-list, having x and -x gets both deleted
-#cAdd x (cMul {x -1})  :
-# In a mul-list,  having x and 1/x gets both deleted
-#cMul x (cPow [x -1])  :
 # In a min-list, two identical components are reduced into one
 cMin x x    : x
 # In a max-list, two identical components are reduced into one
@@ -262,11 +256,11 @@ cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
 # replace the element with a pow with an integer exponent
 # (note: inversions are treated as a negative exponent)
 # e.g. ...*x*x*x*x = ...*x^4
-cMul  x+                        : (cPow  x  x+)
-cAdd  x+                        : (cMul  x   x+)
+cMul  x x                       : (cPow  x  2)
+cAdd  x x                       : (cMul  x  2)
 # x^3 * x = x^4
-cMul  x*           (cPow[x y])  : (cPow [x (cAdd x* y)])
-cAdd  x*           (cMul x <1>) : (cMul [x (cAdd x* (cMul <1>) )])
+cMul  (cPow[x y])  x            : (cPow [x (cAdd 1 y)])
+cAdd  (cMul x <1>) x            : (cMul [x (cAdd 1 (cMul <1>) )])
 # x*2 + x*5 = x*(2+5)
 cAdd  (cMul {% x}) (cMul {& x}) : (cMul [x +(% &)])
 #cAdd  (cMul % <1>) (cMul & <1>) : (cMul <1> +(% &))

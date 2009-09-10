@@ -44,12 +44,23 @@ namespace FPoptimizer_Grammar
 
     enum SpecialOpcode
     {
-        NumConstant = 0xFFFB, // Holds a particular value (syntax-time constant)
-        ImmedHolder,          // Holds a particular immed
-        NamedHolder,          // Holds a particular named param (of any kind)
-        SubFunction,          // Holds an opcode and the params
-        RestHolder            // Holds anything else
-      //GroupFunction         // For parse-time functions
+        /* On the value of NumConstant:
+         * The value must be different from any of
+         * the values in FUNCTIONPARSERTYPES::OPCODE,
+         * and it must be small enough that the last
+         * value within SpecialOpcode fits within the
+         * bits allocated for opcode in ParamSpec.
+         * That is, as of this writing,
+         * 64 < NumConstant <= (0x100-5).
+         * This rule is verified by fpoptimizer_grammar_gen.y
+         * using a few assert()s in the beginning of its main().
+         */
+        NumConstant = 0xFB, // Holds a particular value (syntax-time constant)
+        ImmedHolder,        // Holds a particular immed
+        NamedHolder,        // Holds a particular named param (of any kind)
+        SubFunction,        // Holds an opcode and the params
+        RestHolder          // Holds anything else
+      //GroupFunction       // For parse-time functions
     };
 
     enum ParamMatchingType
@@ -230,30 +241,21 @@ namespace FPoptimizer_Grammar
          *      All the parameters must be of a type that
          *      evaluates into a constant value.
          */
-        OpcodeType opcode : 16;
+        OpcodeType opcode : 8; // max bits required: 7 (note SpecialOpcode's limits)
 
         /* sign indicates the sign field of the matched node.
          * I.e. It must match CodeTree::Params[].sign .
+         *
+         * When sign=true and opcode=NamedHolder, anything having a sign is matched.
+         * When sign=true and opcode=RestHolder, everything having a sign that was
+         *                                       not matched by other rules, is matched.
          */
-        bool     sign     : 1;
-
-        /* When matching, minrepeat and anyrepeat describe how the parameter
-         * is to be matched: once          = anyrepeat=false, minrepeat=1
-         *                   once or more  = anyrepeat=true,  minrepeat=1
-         *                   twice or more = anyrepeat=true,  minrepeat=2
-         *                   other combinations are not used.
-         * When synthesizing, if anyrepeat==false and minrepeat==1,
-         *                    the matched node is synthesized verbatim.
-         *                    Otherwise, the _number of times the node matched_
-         *                    is synthesized as an integer literal.
-         */
-        unsigned minrepeat : 6; // 2 bits is enough, for the maximum value is 2
-        bool     anyrepeat : 1;
+        bool     sign  :  1;  // always 1 bit
 
         /* index and count have different meanings depending on the opcode.
          * See above for the possible interpretations. */
-        unsigned count : 8;
-        unsigned index : 16;
+        unsigned count :  7; // max bits required: 7 (because of ImmedConstraint)
+        unsigned index : 16; // max bits required: 9
 
         MatchResultType Match(
             FPoptimizer_CodeTree::CodeTree& tree,
@@ -321,6 +323,8 @@ namespace FPoptimizer_Grammar
         RuleType  type             : 8;
 
         /* The replacement tree is described in pack.mlist[repl_index]. */
+        /* If type == ProduceNewTree, only the param index is used from matched_params */
+        /* If type == ReplaceParams,  index and count are used */
         unsigned  repl_index       : 16;
 
         /* func describes the exact method how the tree should be matched.
@@ -342,7 +346,7 @@ namespace FPoptimizer_Grammar
          */
         unsigned index : 16;
         unsigned count : 16;
-        
+
         /* ApplyTo tries to apply any/all rules within this
          * grammar to the given tree. Return value true indicates
          * that something was replaced, and that the grammar should

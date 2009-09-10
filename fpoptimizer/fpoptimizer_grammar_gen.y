@@ -99,9 +99,6 @@ namespace GrammarData
     public:
         bool Negated;    // true means for: cAdd:-x; cMul:1/x; cAnd/cOr: !x; other: invalid
 
-        unsigned MinimumRepeat; // default 1
-        bool AnyRepetition;     // false: max=minimum; true: max=infinite
-
         OpcodeType Opcode;      // specifies the type of the function
         union
         {
@@ -118,33 +115,32 @@ namespace GrammarData
         struct RestHolderTag{};
 
         ParamSpec(FunctionType* f)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
               {
               }
 
         ParamSpec(double d)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(o),                             ImmedConstraint(0), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
-            : Negated(), MinimumRepeat(1), AnyRepetition(false),
+            : Negated(),
               Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec* SetNegated()                      { Negated=true; return this; }
-        ParamSpec* SetRepeat(unsigned min, bool any) { MinimumRepeat=min; AnyRepetition=any; return this; }
         ParamSpec* SetConstraint(unsigned mask)
             { ImmedConstraint |= mask; return this; }
 
@@ -161,7 +157,7 @@ namespace GrammarData
             {
                 case NumConstant: return true;
                 case ImmedHolder: return true;
-                case NamedHolder: return AnyRepetition; // x+ is constant, x is not
+                case NamedHolder: return false;
                 case RestHolder: return false; // <1> is not constant
                 case SubFunction: return false; // subfunctions are not constant
             }
@@ -236,8 +232,7 @@ namespace GrammarData
     {
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(Params[a]->Opcode == NamedHolder
-            && (Params[a]->MinimumRepeat == 1 && !Params[a]->AnyRepetition))
+            if(Params[a]->Opcode == NamedHolder)
             {
                 unsigned index = Params[a]->Index;
                 std::set<unsigned>::iterator i = used.lower_bound(index);
@@ -266,9 +261,6 @@ namespace GrammarData
         for(size_t a=0; a<Params.size(); ++a)
         {
             if(Params[a]->Opcode == RestHolder)
-                return false;
-            if(Params[a]->MinimumRepeat != 1
-            || Params[a]->AnyRepetition)
                 return false;
 
             if(Params[a]->Opcode == SubFunction)
@@ -314,7 +306,7 @@ namespace GrammarData
         {
             if(Params[a]->Opcode == RestHolder)
                 continue; // Completely optional
-            res += Params[a]->MinimumRepeat;
+            res += 1;
         }
         return res;
     }
@@ -322,8 +314,6 @@ namespace GrammarData
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return false;
-        if(MinimumRepeat != b.MinimumRepeat) return false;
-        if(AnyRepetition != b.AnyRepetition) return false;
         if(ImmedConstraint != b.ImmedConstraint) return false;
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
@@ -349,8 +339,6 @@ namespace GrammarData
     bool ParamSpec::operator< (const ParamSpec& b) const
     {
         if(Negated != b.Negated) return Negated < b.Negated;
-        if(MinimumRepeat != b.MinimumRepeat) return MinimumRepeat < b.MinimumRepeat;
-        if(AnyRepetition != b.AnyRepetition) return AnyRepetition < b.AnyRepetition;
         if(ImmedConstraint != b.ImmedConstraint) return ImmedConstraint < b.ImmedConstraint;
         if(Opcode != b.Opcode) return Opcode < b.Opcode;
         switch(Opcode)
@@ -443,8 +431,6 @@ public:
         ParamSpec  pitem;
         memset(&pitem, 0, sizeof(pitem));
         pitem.sign           = p.Negated;
-        pitem.minrepeat      = p.MinimumRepeat;
-        pitem.anyrepeat      = p.AnyRepetition;
         pitem.opcode         = p.Opcode;
         size_t count = p.ImmedConstraint; // note: stored in "count"
         size_t index = 0;
@@ -480,8 +466,6 @@ public:
 
         /* These assertions catch mis-sized bitfields */
         assert(pitem.sign == p.Negated);
-        assert(pitem.minrepeat == p.MinimumRepeat);
-        assert(pitem.anyrepeat == p.AnyRepetition);
         assert(pitem.opcode == p.Opcode);
         assert(pitem.index == index);
         assert(pitem.count == count);
@@ -676,10 +660,6 @@ public:
                         << FP_GetOpcodeName(plist[a].opcode, true)
                         << ", "
                         << (plist[a].sign ? "true " : "false")
-                        << ", "
-                        << plist[a].minrepeat
-                        << ", "
-                        << (plist[a].anyrepeat ? "true " : "false")
                         << ", ";
             switch(plist[a].opcode)
             {
@@ -831,8 +811,6 @@ private:
                 std::cout << " )";
             }
         }
-        if(p.anyrepeat && p.minrepeat==1) std::cout << '*';
-        if(p.anyrepeat && p.minrepeat==2) std::cout << '+';
     }
 
     void DumpParams(const MatchedParams& mitem)
@@ -973,7 +951,7 @@ static GrammarDumper dumper;
        {
            if(!$1->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
-               yyerror("Variable coverage parameters, such as x* or <1>, must not occur in bracketed param lists on the matching side"); YYERROR;
+               yyerror("Restholders such as <1> or ~<2>, must not occur in bracketed param lists on the matching side"); YYERROR;
            }
            $$ = $1;
        }
@@ -996,7 +974,7 @@ static GrammarDumper dumper;
 /**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
-             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
 /**/
          $$ = new GrammarData::FunctionType($1, *$3);
@@ -1018,7 +996,7 @@ static GrammarDumper dumper;
 /**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
-             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
 /**/
          $$ = new GrammarData::FunctionType($1, *$3->SetType(SelectedParams));
@@ -1039,7 +1017,7 @@ static GrammarDumper dumper;
 /**/
          if(!$2->EnsureNoRepeatedRestHolders())
          {
-             yyerror("RestHolders such as <1> must not be repeated in a rule; make matching too difficult"); YYERROR;
+             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
          }
 /**/
          $$ = new GrammarData::FunctionType($1, *$2->SetType(AnyParams));
@@ -1102,21 +1080,6 @@ static GrammarDumper dumper;
          $$ = new GrammarData::ParamSpec($1, tmp);
        }
     |  expression_param         /* any expression, indicated by "x", "a" etc. */
-       {
-         $$ = $1;
-       }
-    |  expression_param '+'     /* any expression, indicated by "x", "a" etc. */
-       {
-         /* In matching, matches TWO or more identical repetitions of namedparam */
-         /* In substitution, yields an immed containing the number of repetitions */
-         $$ = $1->SetRepeat(2, true);
-       }
-    |  expression_param '*'     /* any expression, indicated by "x", "a" etc. */
-       {
-         /* In matching, matches TWO or more identical repetitions of namedparam */
-         /* In substitution, yields an immed containing the number of repetitions */
-         $$ = $1->SetRepeat(1, true);
-       }
     |  subtree_param            /* a subtree */
     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
        {
