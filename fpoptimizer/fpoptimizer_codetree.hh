@@ -43,7 +43,7 @@ namespace FPoptimizer_CodeTree
 
     public:
         /* Describing the codetree node */
-        unsigned Opcode;
+        FUNCTIONPARSERTYPES::OPCODE Opcode;
         union
         {
             double   Value;   // In case of cImmed: value of the immed

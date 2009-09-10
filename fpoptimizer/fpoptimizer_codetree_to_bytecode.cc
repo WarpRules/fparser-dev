@@ -6,6 +6,7 @@
 #include "fptypes.hh"
 #include "fpoptimizer_consts.hh"
 #include "fpoptimizer_bytecodesynth.hh"
+#include "fpoptimizer_optimize.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
@@ -18,15 +19,6 @@ static const unsigned MAX_POWI_BYTECODE_LENGTH = 15;
 static const unsigned MAX_POWI_BYTECODE_LENGTH = 999;
 #endif
 static const unsigned MAX_MULI_BYTECODE_LENGTH = 3;
-
-//#define DEBUG_SUBSTITUTIONS
-
-#ifdef DEBUG_SUBSTITUTIONS
-namespace FPoptimizer_Grammar
-{
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-}
-#endif
 
 namespace
 {

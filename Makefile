@@ -48,12 +48,16 @@ CPPFLAGS += -I"`pwd`"
 all: testbed speedtest example functioninfo
 
 FP_MODULES = 	fparser.o \
+		fpoptimizer/fpoptimizer_grammar_data.o \
 		fpoptimizer/fpoptimizer_main.o \
 		fpoptimizer/fpoptimizer_bytecode_to_codetree.o \
 		fpoptimizer/fpoptimizer_codetree_to_bytecode.o \
 		fpoptimizer/fpoptimizer_codetree.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_optimize.o \
+		fpoptimizer/fpoptimizer_optimize_match.o \
+		fpoptimizer/fpoptimizer_optimize_synth.o \
+		fpoptimizer/fpoptimizer_optimize_debug.o \
 		fpoptimizer/fpoptimizer_constantfolding.o \
 		fpoptimizer/fpoptimizer_opcodename.o \
 		fpoptimizer/fpoptimizer_bytecodesynth.o
@@ -92,6 +96,7 @@ functioninfo: functioninfo.o $(FP_MODULES)
 
 fpoptimizer/fpoptimizer_grammar_gen: \
 		fpoptimizer/fpoptimizer_grammar_gen.o \
+		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_opcodename.o
 	$(LD) -o $@ $^
 
@@ -99,7 +104,7 @@ fpoptimizer/fpoptimizer_grammar_gen.cc: \
 		fpoptimizer/fpoptimizer_grammar_gen.y
 	bison++ --output=$@ $<
 
-fpoptimizer/fpoptimizer_grammar.cc: \
+fpoptimizer/fpoptimizer_grammar_data.cc: \
 		fpoptimizer/fpoptimizer_grammar_gen \
 		fpoptimizer/fpoptimizer_grammar_gen.y \
 		fpoptimizer/fpoptimizer.dat
@@ -112,11 +117,16 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_codetree.hh \
 		fpoptimizer/fpoptimizer_grammar.hh \
 		fpoptimizer/fpoptimizer_consts.hh \
+		fpoptimizer/fpoptimizer_optimize.hh \
 		fpoptimizer/fpoptimizer_hash.hh \
 		fpoptimizer/fpoptimizer_main.cc \
 		fpoptimizer/fpoptimizer_codetree.cc \
 		fpoptimizer/fpoptimizer_grammar.cc \
+		fpoptimizer/fpoptimizer_grammar_data.cc \
 		fpoptimizer/fpoptimizer_optimize.cc \
+		fpoptimizer/fpoptimizer_optimize_match.cc \
+		fpoptimizer/fpoptimizer_optimize_synth.cc \
+		fpoptimizer/fpoptimizer_optimize_debug.cc \
 		fpoptimizer/fpoptimizer_opcodename.cc \
 		fpoptimizer/fpoptimizer_opcodename.hh \
 		fpoptimizer/fpoptimizer_bytecodesynth.cc \
@@ -134,6 +144,7 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_codetree.hh \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
+	    fpoptimizer/fpoptimizer_optimize.hh \
 	    fpoptimizer/crc32.hh \
 	    fpoptimizer/fpoptimizer_opcodename.hh \
 	    fpoptimizer/fpoptimizer_opcodename.cc \
@@ -141,7 +152,11 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_bytecodesynth.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
 	    fpoptimizer/fpoptimizer_grammar.cc \
+	    fpoptimizer/fpoptimizer_grammar_data.cc \
 	    fpoptimizer/fpoptimizer_optimize.cc \
+	    fpoptimizer/fpoptimizer_optimize_match.cc \
+	    fpoptimizer/fpoptimizer_optimize_synth.cc \
+	    fpoptimizer/fpoptimizer_optimize_debug.cc \
 	    fpoptimizer/fpoptimizer_main.cc \
 	    fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
 	    fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \

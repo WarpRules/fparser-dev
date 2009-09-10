@@ -8,16 +8,46 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_grammar.hh"
+#include "fpoptimizer_opcodename.hh"
 
 using namespace FPoptimizer_Grammar;
 using namespace FUNCTIONPARSERTYPES;
 
-const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
+const std::string FP_GetOpcodeName(FPoptimizer_Grammar::SpecialOpcode opcode, bool pad)
 {
 #if 1
     /* Symbolic meanings for the opcodes? */
     const char* p = 0;
-    switch(OPCODE(opcode))
+    switch( opcode )
+    {
+        case NumConstant:   p = "NumConstant"; break;
+        case ImmedHolder:   p = "ImmedHolder"; break;
+        case NamedHolder:   p = "NamedHolder"; break;
+        case RestHolder:    p = "RestHolder"; break;
+        case SubFunction:   p = "SubFunction"; break;
+        case GroupFunction: p = "GroupFunction"; break;
+    }
+    std::ostringstream tmp;
+    //if(!p) std::cerr << "o=" << opcode << "\n";
+    assert(p);
+    tmp << p;
+    if(pad) while(tmp.str().size() < 12) tmp << ' ';
+    return tmp.str();
+#else
+    /* Just numeric meanings */
+    std::ostringstream tmp;
+    tmp << opcode;
+    if(pad) while(tmp.str().size() < 5) tmp << ' ';
+    return tmp.str();
+#endif
+}
+
+const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bool pad)
+{
+#if 1
+    /* Symbolic meanings for the opcodes? */
+    const char* p = 0;
+    switch(opcode)
     {
         case cAbs: p = "cAbs"; break;
         case cAcos: p = "cAcos"; break;
@@ -86,15 +116,6 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
 #endif
         case cNop: p = "cNop"; break;
         case VarBegin: p = "VarBegin"; break;
-    }
-    switch( SpecialOpcode(opcode) )
-    {
-        case NumConstant:   p = "NumConstant"; break;
-        case ImmedHolder:   p = "ImmedHolder"; break;
-        case NamedHolder:   p = "NamedHolder"; break;
-        case RestHolder:    p = "RestHolder"; break;
-        case SubFunction:   p = "SubFunction"; break;
-      //case GroupFunction: p = "GroupFunction"; break;
     }
     std::ostringstream tmp;
     //if(!p) std::cerr << "o=" << opcode << "\n";

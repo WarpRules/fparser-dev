@@ -9,29 +9,31 @@ using namespace FUNCTIONPARSERTYPES;
 
 #ifdef FP_SUPPORT_OPTIMIZER
 using namespace FPoptimizer_CodeTree;
+using namespace FPoptimizer_Grammar;
 
 void FunctionParser::Optimize()
 {
+
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
 
-    FPoptimizer_CodeTree::CodeTreeP tree
+    CodeTreeP tree
         = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(FPoptimizer_Grammar::pack.glist[0].ApplyTo(*tree)) // entry
+    while(ApplyGrammar(pack.glist[0], *tree)) // entry
         { //std::cout << "Rerunning 0\n";
         }
 
-    while(FPoptimizer_Grammar::pack.glist[1].ApplyTo(*tree)) // intermediate
+    while(ApplyGrammar(pack.glist[1], *tree)) // intermediate
         { //std::cout << "Rerunning 1\n";
         }
 
-    while(FPoptimizer_Grammar::pack.glist[2].ApplyTo(*tree)) // final1
+    while(ApplyGrammar(pack.glist[2], *tree)) // final1
         { //std::cout << "Rerunning 2\n";
         }
 
-    while(FPoptimizer_Grammar::pack.glist[3].ApplyTo(*tree)) // final2
+    while(ApplyGrammar(pack.glist[3], *tree)) // final2
         { //std::cout << "Rerunning 3\n";
         }
 
