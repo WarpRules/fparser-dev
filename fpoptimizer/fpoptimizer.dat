@@ -81,7 +81,6 @@
 #     param:
 #        NUMERIC_CONSTANT         /* particular immed */
 #     |  immed_param              /* a placeholder for some immed */
-#     |  NEGATIVE_IMMED_TOKEN     /* a placeholder for a negative immed */
 #     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
 #     |  expression_param         /* expression param */
