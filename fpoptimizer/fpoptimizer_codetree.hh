@@ -129,6 +129,7 @@ namespace FPoptimizer_CodeTree
          * child_triggered=true:  Recurse to parents
          */
         void Rehash(bool child_triggered);
+        void Rehash_Parents();
         void Recalculate_Hash_NoRecursion();
 
         void Sort();
@@ -140,6 +141,7 @@ namespace FPoptimizer_CodeTree
 
         /* Clones the tree. (For parameter duplication) */
         CodeTree* Clone();
+        void Become(CodeTree& b, bool thrash_original, bool do_clone = true);
 
         bool    IsImmed() const;
         double GetImmed() const { return Value; }

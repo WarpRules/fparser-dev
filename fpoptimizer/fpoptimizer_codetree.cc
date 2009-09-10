@@ -54,7 +54,13 @@ namespace FPoptimizer_CodeTree
         Recalculate_Hash_NoRecursion();
 
         /* If we were triggered by a child, recurse to the parent */
-        if(child_triggered && Parent)
+        if(child_triggered)
+            Rehash_Parents();
+    }
+
+    void CodeTree::Rehash_Parents()
+    {
+        if(Parent)
         {
             //assert(Parent->RefCount > 0);
             Parent->Rehash(true);
@@ -893,6 +899,30 @@ namespace FPoptimizer_CodeTree
 
     bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
     bool    CodeTree::IsVar()   const { return Opcode == cVar; }
+
+    void CodeTree::Become(CodeTree& b, bool thrash_original, bool do_clone)
+    {
+        Opcode = b.Opcode;
+        switch(Opcode)
+        {
+            case cVar:   Var   = b.Var; break;
+            case cImmed: Value = b.Value; break;
+            case cPCall:
+            case cFCall: Funcno = b.Funcno; break;
+            default: break;
+        }
+        if(!thrash_original)
+            SetParams(b.Params, do_clone);
+        else
+        {
+            Params.swap(b.Params);
+            for(size_t a=0; a<Params.size(); ++a)
+            {
+                if(do_clone) Params[a].param = Params[a].param->Clone();
+                Params[a].param->Parent = this;
+            }
+        }
+    }
 }
 
 #endif

@@ -13,9 +13,9 @@
 # Substitution rule syntax:
 #
 # %token NUMERIC_CONSTANT     # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
-# %token PARAMETER_TOKEN      # placeholders such as x, y, a, b
-# %token PLACEHOLDER_TOKEN    # placeholders such as <1>, <2>, <7>
-# %token IMMED_TOKEN          # placeholders % and &
+# %token NAMEDHOLDER_TOKEN    # placeholders such as x, y, a, b
+# %token RESTHOLDER_TOKEN     # placeholders such as <1>, <2>, <7>
+# %token IMMEDHOLDER_TOKEN    # placeholders % and &
 # %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
 # %token OPCODE               # opcodes such as cCos, cMul
 # %token UNARY_TRANSFORMATION # /, -, !  # inverts/negates/inverts the param
@@ -29,7 +29,7 @@
 #                                 @Q  = Only those where positive/negative not known
 #                                 @1  = value evaluating to +1 or -1 only
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
-#                             # they can be applied to IMMED_TOKENs and PARAMETER_TOKENs
+#                             # they can be applied to IMMEDHOLDER_TOKENs and NAMEDHOLDER_TOKENs
 # %token NEWLINE              # newline
 #
 # %%
@@ -79,25 +79,13 @@
 #     ;
 #
 #     param:
-#        NUMERIC_CONSTANT         /* particular immed */
-#     |  immed_param              /* a placeholder for some immed */
+#        NUMERIC_CONSTANT                     /* particular immed */
+#     |  IMMEDHOLDER_TOKEN param_constraints  /* a placeholder for some immed */
 #     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
-#     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
-#     |  expression_param         /* expression param */
-#     |  subtree_param            /* a subtree */
-#     |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-#     ;
-#
-#     expression_param:
-#        PARAMETER_TOKEN param_constraints    /* any expression, indicated by "x", "a" etc. */
-#     ;
-#
-#     immed_param:
-#        IMMED_TOKEN param_constraints        /* a placeholder for some immed */
-#     ;
-#
-#     subtree_param:
-#        (' function ')' param_constraints    /* a subtree */
+#     |  NAMEDHOLDER_TOKEN param_constraints  /* any expression, indicated by "x", "a" etc. */
+#     |  (' function ')' param_constraints    /* a subtree */
+#     |  RESTHOLDER_TOKEN                     /* a placeholder for all remaining params of given polarity */
+#     |  UNARY_TRANSFORMATION param           /* the negated/inverted literal value of the param */
 #     ;
 #
 #     param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */

@@ -225,12 +225,7 @@ namespace FPoptimizer_CodeTree
                 std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
               #endif
-                Opcode = Params[which_param].param->Opcode;
-                Var    = Params[which_param].param->Var;
-                Value  = Params[which_param].param->Value;
-                Params.swap(Params[which_param].param->Params);
-                for(size_t a=0; a<Params.size(); ++a)
-                    Params[a].param->Parent = this;
+                Become(*Params[which_param].param, true, false);
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
@@ -920,11 +915,6 @@ namespace FPoptimizer_Grammar
             return false;
         }
     };
-
-#ifdef DEBUG_SUBSTITUTIONS
-    static const char ImmedHolderNames[4][2]  = {"%","&"};
-    static const char NamedHolderNames[10][2] = {"x","y","z","a","b","c","d","e","f","g"};
-#endif
 
     /* Apply the grammar to a given CodeTree */
     bool Grammar::ApplyTo(
@@ -2181,15 +2171,6 @@ namespace FPoptimizer_Grammar
 
                 assert(j != match.trees.end());
 
-                tree.Opcode = j->second->Opcode;
-                switch(tree.Opcode)
-                {
-                    case cImmed: tree.Value = j->second->Value; break;
-                    case cVar:   tree.Var   = j->second->Var;  break;
-                    case cFCall:
-                    case cPCall: tree.Funcno = j->second->Funcno; break;
-                }
-
                 /* Note: SetParams() will Clone() all the given params.
                  *       This is considered appropriate, because the
                  *       same NamedHolder may be synthesized in multiple
@@ -2201,7 +2182,7 @@ namespace FPoptimizer_Grammar
                  *       instance is simply assigned. This is safe, because the
                  *       tree from which it was brought, will not be used anymore.
                  */
-                tree.SetParams(j->second->Params, i->second.n_synthesized++ > 0);
+                tree.Become(*j->second, false, i->second.n_synthesized++ > 0);
                 break;
             }
             case NumConstant:
@@ -2215,6 +2196,9 @@ namespace FPoptimizer_Grammar
     }
 
 #ifdef DEBUG_SUBSTITUTIONS
+    static const char ImmedHolderNames[][2]  = {"%","&"};
+    static const char NamedHolderNames[][2] = {"x","y","z","a","b","c","d","e","f","g"};
+
     void DumpParam(const ParamSpec& p)
     {
         //std::cout << "/*p" << (&p-pack.plist) << "*/";
@@ -2382,6 +2366,9 @@ namespace FPoptimizer_Grammar
                 ++j)
             {
                 //std::cout << '[' << std::hex << i->first << ']' << std::dec;
+                std::cout << '[' << std::hex << i->first.hash1
+                                 << ',' << i->first.hash2
+                                 << ']' << std::dec;
                 std::cout << ": " << *j << "\n";
             }
         }
@@ -2390,11 +2377,15 @@ namespace FPoptimizer_Grammar
     {
         //o << "/*" << tree.Depth << "*/";
         const char* sep2 = "";
-        //o << '[' << std::hex << tree.Hash << ']' << std::dec;
+        /*
+        o << '[' << std::hex << tree.Hash.hash1
+                      << ',' << tree.Hash.hash2
+                      << ']' << std::dec;
+        */
         switch(tree.Opcode)
         {
             case cImmed: o << tree.Value; return;
-            case cVar:   o << "Var" << tree.Var; return;
+            case cVar:   o << "Var" << (tree.Var - VarBegin); return;
             case cAdd: sep2 = " +"; break;
             case cMul: sep2 = " *"; break;
             case cAnd: sep2 = " &"; break;

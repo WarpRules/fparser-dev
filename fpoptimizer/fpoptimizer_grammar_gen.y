@@ -857,16 +857,15 @@ static GrammarDumper dumper;
     GrammarData::ParamSpec*     a;
 
     double             num;
-    std::string*       name;
     unsigned           index;
     OpcodeType         opcode;
 }
 
 /* See documentation about syntax and token meanings in fpoptimizer.dat */
 %token <num>       NUMERIC_CONSTANT
-%token <name>      PARAMETER_TOKEN
-%token <index>     PLACEHOLDER_TOKEN
-%token <index>     IMMED_TOKEN
+%token <index>     NAMEDHOLDER_TOKEN
+%token <index>     RESTHOLDER_TOKEN
+%token <index>     IMMEDHOLDER_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
 %token <opcode>    OPCODE
 %token <opcode>    UNARY_TRANSFORMATION
@@ -882,7 +881,7 @@ static GrammarDumper dumper;
 %type <r> substitution
 %type <f> function function_match
 %type <p> paramlist paramlist_loop
-%type <a> param expression_param immed_param subtree_param
+%type <a> param
 %type <index> param_constraints
 
 %%
@@ -1052,7 +1051,11 @@ static GrammarDumper dumper;
        {
          $$ = new GrammarData::ParamSpec($1);
        }
-    |  immed_param
+    |  IMMEDHOLDER_TOKEN param_constraints  /* a placeholder for some immed */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
+         $$->SetConstraint($2);
+       }
     |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
          /* Verify that $3 contains no inversions */
@@ -1068,6 +1071,20 @@ static GrammarDumper dumper;
          }
          delete $3;
        }
+    |  NAMEDHOLDER_TOKEN param_constraints /* any expression, indicated by "x", "a" etc. */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::NamedHolderTag());
+         $$->SetConstraint($2);
+       }
+    |  '(' function ')' param_constraints    /* a subtree */
+       {
+         $$ = new GrammarData::ParamSpec($2);
+         $$->SetConstraint($4);
+       }
+    |  RESTHOLDER_TOKEN        /* a placeholder for all remaining params of given polarity */
+       {
+         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
+       }
     |  UNARY_TRANSFORMATION param   /* the negated/inverted literal value of the param */
        {
          /* Verify that $2 is constant */
@@ -1079,39 +1096,7 @@ static GrammarDumper dumper;
          tmp.push_back($2);
          $$ = new GrammarData::ParamSpec($1, tmp);
        }
-    |  expression_param         /* any expression, indicated by "x", "a" etc. */
-    |  subtree_param            /* a subtree */
-    |  PLACEHOLDER_TOKEN        /* a placeholder for all params */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::RestHolderTag());
-       }
     ;
-
-    expression_param:
-       PARAMETER_TOKEN param_constraints /* any expression, indicated by "x", "a" etc. */
-       {
-         unsigned nameindex = dumper.DumpName(*$1);
-         $$ = new GrammarData::ParamSpec(nameindex, GrammarData::ParamSpec::NamedHolderTag());
-         delete $1;
-         $$->SetConstraint($2);
-       }
-    ;
-
-    immed_param:
-       IMMED_TOKEN param_constraints  /* a placeholder for some immed */
-       {
-         $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
-         $$->SetConstraint($2);
-       }
-    ;
-
-    subtree_param:
-       '(' function ')' param_constraints    /* a subtree */
-       {
-         $$ = new GrammarData::ParamSpec($2);
-         $$->SetConstraint($4);
-       }
-   ;
 
     param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */
        param_constraints PARAM_CONSTRAINT
@@ -1210,8 +1195,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             return yylex(lval); // Counts as tail recursion, I hope
         case ':':
             return SUBST_OP_COLON;
-        case '%': { lval->index = 0; return IMMED_TOKEN; }
-        case '&': { lval->index = 1; return IMMED_TOKEN; }
+        case '%': { lval->index = 0; return IMMEDHOLDER_TOKEN; }
+        case '&': { lval->index = 1; return IMMEDHOLDER_TOKEN; }
 
         case '@':
         {
@@ -1242,7 +1227,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             }
             c = std::fgetc(stdin);
             if(c != '>') std::ungetc(c, stdin);
-            return PLACEHOLDER_TOKEN;
+            return RESTHOLDER_TOKEN;
         }
         case '0': case '1': case '2': case '3': case '4':
         case '5': case '6': case '7': case '8': case '9':
@@ -1387,10 +1372,10 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             NotAGroupToken:;
             }
             // Anything else is an identifier
-            lval->name = new std::string(IdBuf);
+            lval->index = dumper.DumpName(IdBuf);
             // fprintf(stderr, "'%s' interpreted as PARAM\n", IdBuf.c_str());
 
-            return PARAMETER_TOKEN;
+            return NAMEDHOLDER_TOKEN;
         }
         default:
         {
@@ -1410,6 +1395,15 @@ int main()
     GrammarData::Grammar Grammar_Final2;
 
     std::string sectionname;
+
+    /* Ensure that the possible values
+     * of SpecialOpcode are within proper limits
+     */
+    { FPoptimizer_Grammar::ParamSpec tmp;
+      tmp.opcode = ~size_t(0); // note: this overflows intentionally
+      assert((unsigned)VarBegin   < (unsigned)NumConstant);
+      assert((unsigned)RestHolder <= tmp.opcode);
+    }
 
     for(;;)
     {
