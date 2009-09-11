@@ -477,13 +477,14 @@ cMul (cAdd %@M <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 # x * (y + (-y * z)) -> x * y * (1 - z)
 # x * (y + (y * -1 * z)) -> x * y * (1 - z) -- already accomplished by cAdd x* (cMul x <1>)
 # Becomes:
-cAdd %@M (cMul {-% x})   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul *(% /ABS(%)) x)]))
-cAdd (cMul {%@M x}) -%   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul *(% /ABS(%)) x)]))
+#      y + (-y * z)  -> y * (1 - z)
+cAdd %@M (cMul {-% x})   : (cMul ABS(%) (cAdd [ *(% /ABS(%)) (cMul -*(% /ABS(%)) x)]))
+cAdd (cMul {%@M x}) -%   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul  *(% /ABS(%)) x)]))
 # ^ Using @M (non-1 constraint) to prevent falling into an infinite loop
 #     Example:   5 + (-5*x) ->  5 * (1 + -1*x)  =  5 * (1 - x)
 #     Example:  -5 + ( 5*x) -> -5 * (1 + -1*x)  = -5 * (1 - x) = 5 * (x - 1)
-#    *(5 /ABS(-5)) = -1
-#    *(5 /ABS( 5)) = 1
+#    *(-5 /ABS(-5)) = -1
+#    *( 5 /ABS( 5)) = 1
 
 #### Constant folding is now performed exclusively by ConstantFolding()
 
