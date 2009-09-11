@@ -753,9 +753,7 @@ namespace FPoptimizer_CodeTree
             /* Opcodes that we can't do anything about */
             case cPCall:
             case cFCall:
-#         ifndef FP_DISABLE_EVAL
             case cEval:
-#endif
                 break;
         }
         /*
@@ -1354,9 +1352,7 @@ namespace FPoptimizer_CodeTree
             case cVar:
             case cPCall:
             case cFCall:
-#         ifndef FP_DISABLE_EVAL
             case cEval:
-#endif
                 break; // Cannot deduce
 
 
