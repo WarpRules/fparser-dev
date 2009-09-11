@@ -23,7 +23,7 @@ namespace FPoptimizer_CodeTree
     public:
         CodeTreeParserData() : stack() { }
 
-        void Eat(size_t nparams, OPCODE opcode)
+        void Eat(size_t nparams, OPCODE opcode, bool check_const = true)
         {
             CodeTreeP newnode = new CodeTree;
             newnode->Opcode = opcode;
@@ -37,12 +37,15 @@ namespace FPoptimizer_CodeTree
             }
             stack.resize(stackhead);
             stack.push_back(newnode);
+            if(check_const)
+                CheckConst();
         }
 
         void EatFunc(size_t params, OPCODE opcode, unsigned funcno)
         {
-            Eat(params, opcode);
+            Eat(params, opcode, false);
             stack.back()->Funcno = funcno;
+            CheckConst();
         }
 
         void AddConst(double value)
@@ -293,7 +296,6 @@ namespace FPoptimizer_CodeTree
                         break;
                 }
             }
-            data.CheckConst();
         }
         return data.PullResult();
     }
