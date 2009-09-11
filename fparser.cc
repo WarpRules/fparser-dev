@@ -1428,7 +1428,7 @@ namespace
 
     void padLine(std::ostringstream& dest, unsigned destLength)
     {
-        for(unsigned currentLength = dest.str().length();
+        for(size_t currentLength = dest.str().length();
             currentLength < destLength;
             ++currentLength)
         {
