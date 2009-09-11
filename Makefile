@@ -52,6 +52,7 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_codetree.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_optimize.o \
+		fpoptimizer/fpoptimizer_constantfolding.o \
 		fpoptimizer/fpoptimizer_opcodename.o \
 		fpoptimizer/fpoptimizer_bytecodesynth.o
 
@@ -119,6 +120,7 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_bytecodesynth.hh \
 		fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
 		fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+		fpoptimizer/fpoptimizer_constantfolding.cc \
 		fpoptimizer/fpoptimizer_header.txt \
 		fpoptimizer/fpoptimizer_footer.txt
 	rm -f fpoptimizer.cc
@@ -138,6 +140,7 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_main.cc \
 	    fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
 	    fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+	    fpoptimizer/fpoptimizer_constantfolding.cc \
 	    fpoptimizer/fpoptimizer_footer.txt \
 		| grep -v '#include "fpoptimizer' \
 		| grep -v '#include "crc32' \
