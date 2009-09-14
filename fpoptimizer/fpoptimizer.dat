@@ -90,11 +90,6 @@
 ###### Note: Before adding new rules (especially those which handle constant values),
 ######       verify that it is not already done in ConstantFolding().
 
-##### TODO:
-#####    Figure out whether it would be easier to produce optimization rules
-#####    if our Add lists never had polarity (instead, a cMul with -1 would be used)
-#####    and    Mul lists never had polarity (instead, a cPow with -1 would be used)
-
 #### Remove redundant components:
 
 # In a min-list, two identical components are reduced into one
@@ -291,29 +286,43 @@ cNotNot [(cOr  <1>)]     -> cOr  <1>
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
 cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # Note: ^ Replacement function refers to b twice
-#   (a==b) & (a!=b)          -- this statement is always false
-cAnd (cEqual[x y]) (cNEqual[x y]) -> 0
-#   (a==b) | (a!=b)          -- this statement is always true
-cOr  (cEqual[x y]) (cNEqual[x y]) -> 1
 
-cAnd (cLess[x y]) (cGreater[x y]) -> 0
-cAnd (cLessOrEq[x y]) (cGreater[x y]) -> 0
-cAnd (cLess[x y]) (cGreaterOrEq[x y]) -> 0
-cAnd (cLessOrEq[x y]) (cGreaterOrEq[x y]) -> cEqual[x y]
-cAnd (cLessOrEq[x y]) (cLess[x y]) -> cLess[x y]
-cAnd (cGreaterOrEq[x y]) (cGreater[x y]) -> cGreater[x y]
-cOr (cLess[x y]) (cGreater[x y]) -> cNEqual[x y]
-cOr (cLessOrEq[x y]) (cGreater[x y]) -> 1
-cOr (cLess[x y]) (cGreaterOrEq[x y]) -> 1
-cOr (cLess[x y]) (cEqual[x y]) -> cLessOrEq[x y]
-cOr (cLessOrEq[x y]) (cEqual[x y]) -> cLessOrEq[x y]
-cOr (cGreater[x y]) (cEqual[x y]) -> cGreaterOrEq[x y]
-cOr (cGreaterOrEq[x y]) (cEqual[x y]) -> cGreaterOrEq[x y]
+# Truth table for AND:       Truth table for OR:
+#      != ==  <  > <= >=     != ==  <   >   <= >=
+# !=
+# ==   0                     1
+# <    <  0                  != <=
+# >    >  0   0              != >=  !=
+# <=   <  ==  <  0           1  <=  <=  1
+# >=   >  ==  0  > ==        1  >=  1   >=  1
 
+cAnd (cNEqual[x y]) (cEqual[x y])         -> 0
+cAnd (cNEqual[x y]) (cLess[x y])          : (cLess[x y])
+cAnd (cNEqual[x y]) (cGreater[x y])       : (cGreater[x y])
+cAnd (cNEqual[x y]) (cLessOrEq[x y])      : (cLess[x y])
+cAnd (cNEqual[x y]) (cGreaterOrEq[x y])   : (cGreater[x y])
+cAnd (cEqual[x y]) (cLess[x y])           -> 0
+cAnd (cEqual[x y]) (cLessOrEq[x y])       : (cEqual[x y])
+cAnd (cEqual[x y]) (cGreater[x y])        -> 0
+cAnd (cEqual[x y]) (cGreaterOrEq[x y])    : (cEqual[x y])
+cAnd (cLess[x y]) (cGreater[x y])         -> 0
+cAnd (cLess[x y]) (cGreaterOrEq[x y])     -> 0
+cAnd (cLess[x y]) (cLessOrEq[x y])        : (cLess[x y])
+cAnd (cLessOrEq[x y]) (cGreaterOrEq[x y]) : (cEqual[x y])
 
-
-
-
+cOr (cNEqual[x y]) (cEqual[x y])         -> 1
+cOr (cNEqual[x y]) (cLess[x y])          : (cNEqual[x y])
+cOr (cNEqual[x y]) (cLessOrEq[x y])      -> 1
+cOr (cNEqual[x y]) (cGreater[x y])       : (cNEqual[x y])
+cOr (cNEqual[x y]) (cGreaterOrEq[x y])   -> 1
+cOr (cEqual[x y]) (cLess[x y])           : (cLessOrEq[x y])
+cOr (cEqual[x y]) (cGreater[x y])        : (cGreaterOrEq[x y])
+cOr (cEqual[x y]) (cLessOrEq[x y])       : (cLessOrEq[x y])
+cOr (cEqual[x y]) (cGreaterOrEq[x y])    : (cGreaterOrEq[x y])
+cOr (cLess[x y]) (cGreater[x y])         : (cNEqual[x y])
+cOr (cLess[x y]) (cLessOrEq[x y])        : (cLessOrEq[x y])
+cOr (cLess[x y]) (cGreaterOrEq[x y])     -> 1
+cOr (cLessOrEq[x y]) (cGreaterOrEq[x y]) -> 1
 
 [ENTRY]
 # These optimizations are done only once, before the intermediate conversions.
