@@ -61,7 +61,6 @@ namespace FPoptimizer_CodeTree
         {
             if(a.param->Depth != b.param->Depth)
                 return a.param->Depth > b.param->Depth;
-            if(a.sign != b.sign) return a.sign < b.sign;
             return a.param->Hash < b.param->Hash;
         }
     };
@@ -148,12 +147,12 @@ namespace FPoptimizer_CodeTree
                     if(Params[a].param->Depth > MaxChildDepth)
                         MaxChildDepth = Params[a].param->Depth;
 
-                    NewHash.hash1 += (1+Params[a].sign)*FPHASH_CONST(0x2492492492492492);
+                    NewHash.hash1 += (1)*FPHASH_CONST(0x2492492492492492);
                     NewHash.hash1 *= FPHASH_CONST(1099511628211);
                     //assert(&*Params[a].param != this);
                     NewHash.hash1 += Params[a].param->Hash.hash1;
 
-                    NewHash.hash2 += (3+Params[a].sign)*FPHASH_CONST(0x9ABCD801357);
+                    NewHash.hash2 += (3)*FPHASH_CONST(0x9ABCD801357);
                     NewHash.hash2 *= FPHASH_CONST(0xECADB912345);
                     NewHash.hash2 += (~Params[a].param->Hash.hash1) ^ 4567890;
                 }
@@ -277,9 +276,7 @@ namespace FPoptimizer_CodeTree
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(Params[a].sign != b.Params[a].sign) return false;
-            if(!Params[a].param->IsIdenticalTo(
-               *b.Params[a].param)) return false;
+            if(!Params[a].IsIdenticalTo(b.Params[a])) return false;
         }
         return true;
     }

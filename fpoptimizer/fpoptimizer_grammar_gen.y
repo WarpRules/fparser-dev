@@ -38,16 +38,14 @@ namespace GrammarData
     {
     public:
         ParamMatchingType Type;
-        SignBalanceType   Balance;
         std::vector<ParamSpec*> Params;
 
     public:
-        MatchedParams()                    : Type(PositionalParams), Balance(BalanceDontCare), Params() { }
-        MatchedParams(ParamMatchingType t) : Type(t),                Balance(BalanceDontCare), Params() { }
-        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Balance(BalanceDontCare), Params() { Params.push_back(p); }
+        MatchedParams()                    : Type(PositionalParams), Params() { }
+        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
 
         MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
-        MatchedParams* SetBalance(SignBalanceType b) { Balance=b; return this; }
         MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
 
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
@@ -55,7 +53,6 @@ namespace GrammarData
         void RecursivelySetParamMatchingType(ParamMatchingType t);
         bool EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const;
         bool EnsureNoRepeatedNamedHolders() const;
-        bool EnsureNoInversions();
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
         bool EnsureNoRepeatedRestHolders();
         bool EnsureNoRepeatedRestHolders(std::set<unsigned>& used);
@@ -97,8 +94,6 @@ namespace GrammarData
     class ParamSpec
     {
     public:
-        bool Negated;    // true means for: cAdd:-x; cMul:1/x; cAnd/cOr: !x; other: invalid
-
         OpcodeType Opcode;      // specifies the type of the function
         union
         {
@@ -115,32 +110,25 @@ namespace GrammarData
         struct RestHolderTag{};
 
         ParamSpec(FunctionType* f)
-            : Negated(),
-              Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
+            : Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
               {
               }
 
         ParamSpec(double d)
-            : Negated(),
-              Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
+            : Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
 
         ParamSpec(OpcodeType o, const std::vector<ParamSpec*>& p)
-            : Negated(),
-              Opcode(o),                             ImmedConstraint(0), Params(p) { }
+            : Opcode(o),                             ImmedConstraint(0), Params(p) { }
 
         ParamSpec(unsigned i, NamedHolderTag)
-            : Negated(),
-              Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
+            : Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, ImmedHolderTag)
-            : Negated(),
-              Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
+            : Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
 
         ParamSpec(unsigned i, RestHolderTag)
-            : Negated(),
-              Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
+            : Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
 
-        ParamSpec* SetNegated()                      { Negated=true; return this; }
         ParamSpec* SetConstraint(unsigned mask)
             { ImmedConstraint |= mask; return this; }
 
@@ -218,14 +206,6 @@ namespace GrammarData
     {
         for(size_t a=0; a<Params.size(); ++a)
             Params[a]->RecursivelySetParamMatchingType(t);
-    }
-
-    bool MatchedParams::EnsureNoInversions()
-    {
-        for(size_t a=0; a<Params.size(); ++a)
-            if(Params[a]->Negated)
-                return false;
-        return true;
     }
 
     bool MatchedParams::EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const
@@ -313,9 +293,8 @@ namespace GrammarData
 
     bool ParamSpec::operator== (const ParamSpec& b) const
     {
-        if(Negated != b.Negated) return false;
-        if(ImmedConstraint != b.ImmedConstraint) return false;
         if(Opcode != b.Opcode) return false;
+        if(ImmedConstraint != b.ImmedConstraint) return false;
         switch(Opcode)
         {
             case NumConstant:
@@ -338,9 +317,8 @@ namespace GrammarData
 
     bool ParamSpec::operator< (const ParamSpec& b) const
     {
-        if(Negated != b.Negated) return Negated < b.Negated;
-        if(ImmedConstraint != b.ImmedConstraint) return ImmedConstraint < b.ImmedConstraint;
         if(Opcode != b.Opcode) return Opcode < b.Opcode;
+        if(ImmedConstraint != b.ImmedConstraint) return ImmedConstraint < b.ImmedConstraint;
         switch(Opcode)
         {
             case NumConstant:
@@ -430,7 +408,6 @@ public:
     {
         ParamSpec  pitem;
         memset(&pitem, 0, sizeof(pitem));
-        pitem.sign           = p.Negated;
         pitem.opcode         = p.Opcode;
         size_t count = p.ImmedConstraint; // note: stored in "count"
         size_t index = 0;
@@ -465,7 +442,6 @@ public:
         pitem.count = count;
 
         /* These assertions catch mis-sized bitfields */
-        assert(pitem.sign == p.Negated);
         assert(pitem.opcode == p.Opcode);
         assert(pitem.index == index);
         assert(pitem.count == count);
@@ -554,14 +530,12 @@ public:
         MatchedParams mitem;
         memset(&mitem, 0, sizeof(mitem));
         mitem.type    = m.Type;
-        mitem.balance = m.Balance;
         std::pair<size_t,size_t> r = DumpParamList(m.Params);
         mitem.index = r.first;
         mitem.count = r.second;
 
         /* These assertions catch mis-sized bitfields */
         assert(mitem.type == m.Type);
-        assert(mitem.balance == m.Balance);
         assert(mitem.index == r.first);
         assert(mitem.count == r.second);
       #if 1
@@ -658,8 +632,6 @@ public:
             std::cout <<
             "        {"
                         << FP_GetOpcodeName(plist[a].opcode, true)
-                        << ", "
-                        << (plist[a].sign ? "true " : "false")
                         << ", ";
             switch(plist[a].opcode)
             {
@@ -718,12 +690,6 @@ public:
             "        {" << (mlist[a].type == PositionalParams ? "PositionalParams"
                          :  mlist[a].type == SelectedParams   ? "SelectedParams  "
                          :/*mlist[a].type == AnyParams      ?*/ "AnyParams       "
-                           )
-                        << ", "
-                        << (mlist[a].balance == BalanceMoreNeg    ? "BalanceMoreNeg "
-                         :  mlist[a].balance == BalanceMorePos    ? "BalanceMorePos "
-                         :  mlist[a].balance == BalanceEqual      ? "BalanceEqual   "
-                         :/*mlist[a].balance == BalanceDontCare ?*/ "BalanceDontCare"
                            )
                         << ", " << mlist[a].count
                         << ", " << mlist[a].index
@@ -788,8 +754,6 @@ private:
 
         static const char ImmedHolderNames[2][2] = {"%","&"};
         static const char NamedHolderNames[6][2] = {"x","y","z","a","b","c"};
-
-        if(p.sign) std::cout << '~';
 
         switch(SpecialOpcode(p.opcode))
         {
@@ -874,13 +838,10 @@ static GrammarDumper dumper;
 
 %token SUBST_OP_COLON /* '->' */
 %token SUBST_OP_ARROW /* ':'  */
-%token BALANCE_POS    /* '=+' */
-%token BALANCE_EQUAL  /* '==' */
-%token BALANCE_NEG    /* '=-' */
 
 %type <r> substitution
 %type <f> function function_match
-%type <p> paramlist paramlist_loop
+%type <p> paramlist
 %type <a> param
 %type <index> param_constraints
 
@@ -930,15 +891,6 @@ static GrammarDumper dumper;
             yyerror("The replacement function may not specify the same variable twise"); YYERROR;
         }*/
 
-        if($1->Opcode != cAnd && $1->Opcode != cOr)
-        {
-            /* If function opcode is "notinv", verify that $23 has no inversions */
-            if(!$3->EnsureNoInversions())
-            {
-                yyerror("Can have no inversions"); YYERROR;
-            }
-        }
-
         $$ = new GrammarData::Rule(ReplaceParams, *$1, *$3);
         delete $1;
         delete $3;
@@ -962,14 +914,6 @@ static GrammarDumper dumper;
         * and the exact parameter list as specified
         */
        {
-         if($1 != cAnd && $1 != cOr)
-         {
-             /* If function opcode is "notinv", verify that $3 has no inversions */
-             if(!$3->EnsureNoInversions())
-             {
-                 yyerror("Can have no inversions"); YYERROR;
-             }
-         }
 /**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
@@ -984,14 +928,6 @@ static GrammarDumper dumper;
         * and the exact parameter list in any order
         */
        {
-         if($1 != cAnd && $1 != cOr)
-         {
-             /* If function opcode is "notinv", verify that $3 has no inversions */
-             if(!$3->EnsureNoInversions())
-             {
-                 yyerror("Can have no inversions"); YYERROR;
-             }
-         }
 /**/
          if(!$3->EnsureNoRepeatedRestHolders())
          {
@@ -1005,14 +941,6 @@ static GrammarDumper dumper;
        /* Match a function with opcode=opcode and the given way of matching params */
        /* There may be more parameters, don't care about them */
        {
-         if($1 != cAnd && $1 != cOr)
-         {
-             /* If function opcode is "notinv", verify that $2 has no inversions */
-             if(!$2->EnsureNoInversions())
-             {
-                 yyerror("Can have no inversions"); YYERROR;
-             }
-         }
 /**/
          if(!$2->EnsureNoRepeatedRestHolders())
          {
@@ -1024,19 +952,8 @@ static GrammarDumper dumper;
        }
     ;
 
-    paramlist:
-        paramlist_loop
-      | paramlist_loop BALANCE_POS   { $$ = $1->SetBalance(BalanceMorePos); }
-      | paramlist_loop BALANCE_NEG   { $$ = $1->SetBalance(BalanceMoreNeg); }
-      | paramlist_loop BALANCE_EQUAL { $$ = $1->SetBalance(BalanceEqual); }
-    ;
-
-    paramlist_loop: /* left-recursive list of 0-n params with no delimiter */
-        paramlist_loop '~' param /* negated/inverted param */
-        {
-          $$ = $1->AddParam($3->SetNegated());
-        }
-      | paramlist_loop param    /* normal param */
+    paramlist: /* left-recursive list of 0-n params with no delimiter */
+        paramlist param    /* param */
         {
           $$ = $1->AddParam($2);
         }
@@ -1056,13 +973,8 @@ static GrammarDumper dumper;
          $$ = new GrammarData::ParamSpec($1, GrammarData::ParamSpec::ImmedHolderTag());
          $$->SetConstraint($2);
        }
-    |  BUILTIN_FUNC_NAME '(' paramlist_loop ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
+    |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
-         /* Verify that $3 contains no inversions */
-         if(!$3->EnsureNoInversions())
-         {
-             yyerror("Can have no inversions"); YYERROR;
-         }
          /* Verify that $3 consists of constants */
          $$ = new GrammarData::ParamSpec($1, $3->GetParams());
          if(!$$->VerifyIsConstant())
@@ -1176,13 +1088,9 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
         case '=':
         {
             int c2 = std::fgetc(stdin);
-            if(c2 == '-') return BALANCE_NEG;
-            if(c2 == '+') return BALANCE_POS;
-            if(c2 == '=') return BALANCE_EQUAL;
             std::ungetc(c2, stdin);
             return '=';
         }
-        case '~':
         case '[': case '{':
         case ']': case '}':
         case '(':

@@ -9,14 +9,6 @@ namespace FPoptimizer_Grammar
 {
     typedef unsigned OpcodeType;
 
-    enum TransformationType
-    {
-        None,    // default
-        Negate,  // 0-x
-        Invert,  // 1/x
-        NotThe   // !x
-    };
-
     enum ImmedConstraint_Value
     {
         ValueMask = 0x07,
@@ -76,14 +68,6 @@ namespace FPoptimizer_Grammar
         ReplaceParams   // replace indicate params with replaced_params
     };
 
-    enum SignBalanceType
-    {
-        BalanceDontCare,
-        BalanceMoreNeg,
-        BalanceMorePos,
-        BalanceEqual
-    };
-
     struct MatchResultType
     {
         //bool found:16;
@@ -139,21 +123,7 @@ namespace FPoptimizer_Grammar
          *      are to be matched, in any order.
          * When synthesizing, the type is ignored.
          */
-        ParamMatchingType type    : 4; // needs 2
-
-        /* The balance field can be used to restrict matches based
-         * on the polarity balance of the matched nodes:
-         *   BalanceDontCare:
-         *      No constraint
-         *   BalanceMoreNeg:
-         *      More signed nodes than unsigned nodes, e.g. +x-y-z, but not +x+y-z
-         *   BalanceMoreNeg:
-         *      More signed nodes than unsigned nodes, e.g. +x+y-z, but not +x-y-z
-         *   BalanceEqual:
-         *      Equally signed and unsigned, e.g. +x+y-z-w, but not +x-y-z nor +x+y
-         * When synthesizing, the balance is ignored.
-         */
-        SignBalanceType   balance : 4; // needs 2
+        ParamMatchingType type : 2; // needs 2
 
         /* ParamSpec objects from pack.plist[index] .. pack.plist[index+count]
          * are matched / synthesized.
@@ -243,15 +213,6 @@ namespace FPoptimizer_Grammar
          */
         OpcodeType opcode : 8; // max bits required: 7 (note SpecialOpcode's limits)
 
-        /* sign indicates the sign field of the matched node.
-         * I.e. It must match CodeTree::Params[].sign .
-         *
-         * When sign=true and opcode=NamedHolder, anything having a sign is matched.
-         * When sign=true and opcode=RestHolder, everything having a sign that was
-         *                                       not matched by other rules, is matched.
-         */
-        bool     sign  :  1;  // always 1 bit
-
         /* index and count have different meanings depending on the opcode.
          * See above for the possible interpretations. */
         unsigned count :  7; // max bits required: 7 (because of ImmedConstraint)
@@ -260,7 +221,6 @@ namespace FPoptimizer_Grammar
         MatchResultType Match(
             FPoptimizer_CodeTree::CodeTree& tree,
             MatchedParams::CodeTreeMatch& match,
-            TransformationType transf,
             unsigned long match_index) const;
 
         bool GetConst(

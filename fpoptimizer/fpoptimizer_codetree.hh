@@ -70,15 +70,14 @@ namespace FPoptimizer_CodeTree
         struct Param
         {
             CodeTreeP param; // param node
-            bool      sign;  // true = negated or inverted
 
-            Param()                           : param(),  sign()  {}
-            Param(CodeTree*        p, bool s) : param(p), sign(s) {}
-            Param(const CodeTreeP& p, bool s) : param(p), sign(s) {}
+            Param()                            : param()  {}
+            explicit Param(CodeTree*        p) : param(p) {}
+            explicit Param(const CodeTreeP& p) : param(p) {}
 
             bool IsIdenticalTo(const Param& b) const
             {
-                return sign == b.sign && param->IsIdenticalTo(*b.param);
+                return param->IsIdenticalTo(*b.param);
             }
         };
 

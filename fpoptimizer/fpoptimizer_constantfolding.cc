@@ -59,31 +59,10 @@ namespace FPoptimizer_CodeTree
                     {
                         // Assimilate its children and remove it
                         CodeTreeP tree = Params[a].param;
-                        bool had_sign = Params[a].sign;
-
-                        if(Opcode == cMul && had_sign)
-                        {
-                            int n_divisions_old = 1;
-                            int n_divisions_new = 0;
-
-                            for(size_t b=0; b<tree->Params.size(); ++b)
-                                if(tree->Params[b].sign)
-                                    ++n_divisions_old;
-                                else
-                                    ++n_divisions_new;
-
-                            if(n_divisions_new > n_divisions_old)
-                            {
-                                // Don't assimilate if the number of divisions increases
-                                // in the process.  x/(y*z) is better than x/y/z
-                                continue;
-                            }
-                        }
 
                         Params.erase(Params.begin()+a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
-                            AddParam( Param(tree->Params[b].param,
-                                            had_sign ^ tree->Params[b].sign) );
+                            AddParam( Param(tree->Params[b].param) );
                     }
                 break;
             }
@@ -92,8 +71,7 @@ namespace FPoptimizer_CodeTree
             {
                 /* If the list contains another list of the same kind, assimilate it */
                 for(size_t a=Params.size(); a-- > 0; )
-                    if(Params[a].param->Opcode == Opcode
-                    && Params[a].sign == false)
+                    if(Params[a].param->Opcode == Opcode)
                     {
                         // Assimilate its children and remove it
                         CodeTreeP tree = Params[a].param;
@@ -155,23 +133,20 @@ namespace FPoptimizer_CodeTree
                     if(p.has_min && p.has_max
                     && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                     {
-                        if(!Params[a].sign) goto ReplaceTreeWithZero;
-                        all_values_are_nonzero = false;
+                        goto ReplaceTreeWithZero;
                     }
                     else if( (p.has_max && p.max <= -0.5)
                           || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
                     {
-                        if(Params[a].sign) goto ReplaceTreeWithZero;
                     }
                     else
                         all_values_are_nonzero = false;
                 }
                 if(all_values_are_nonzero) goto ReplaceTreeWithOne;
-                if(Params.size() == 1 && !Params[0].sign)
+                if(Params.size() == 1)
                 {
                     // Replace self with the single operand
-                    Opcode = Params[0].sign ? cNot : cNotNot;
-                    Params[0].sign = false;
+                    Opcode = cNotNot;
                 }
                 if(Params.empty()) goto ReplaceTreeWithZero;
                 break;
@@ -189,13 +164,11 @@ namespace FPoptimizer_CodeTree
                     if(p.has_min && p.has_max
                     && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                     {
-                        if(Params[a].sign) goto ReplaceTreeWithOne;
                     }
                     else if( (p.has_max && p.max <= -0.5)
                           || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
                     {
-                        if(!Params[a].sign) goto ReplaceTreeWithOne;
-                        all_values_are_zero = false;
+                        goto ReplaceTreeWithOne;
                     }
                     else
                         all_values_are_zero = false;
@@ -204,8 +177,7 @@ namespace FPoptimizer_CodeTree
                 if(Params.size() == 1)
                 {
                     // Replace self with the single operand
-                    Opcode = Params[0].sign ? cNot : cNotNot;
-                    Params[0].sign = false;
+                    Opcode = cNotNot;
                 }
                 if(Params.empty()) goto ReplaceTreeWithOne;
                 break;
@@ -272,7 +244,6 @@ namespace FPoptimizer_CodeTree
                     double immed = Params[a].param->GetImmed();
                     if(FloatEqual(immed, 0.0)) goto ReplaceTreeWithZero;
                     if(FloatEqual(immed, 1.0)) needs_resynth = true;
-                    if(Params[a].sign) immed = 1.0 / immed;
                     mul_immed_sum *= immed; ++n_mul_immeds;
                 }
                 // Merge immeds.
@@ -289,9 +260,9 @@ namespace FPoptimizer_CodeTree
                             Params.erase(Params.begin()+a);
                         }
                     if(!FloatEqual(mul_immed_sum, 1.0))
-                        AddParam( Param(new CodeTree(mul_immed_sum), false) );
+                        AddParam( Param(new CodeTree(mul_immed_sum) ) );
                 }
-                if(Params.size() == 1 && !Params[0].sign)
+                if(Params.size() == 1)
                 {
                     // Replace self with the single operand
                     goto ReplaceTreeWithParam0;
@@ -309,7 +280,6 @@ namespace FPoptimizer_CodeTree
                     // ^ Only check constant values
                     double immed = Params[a].param->GetImmed();
                     if(FloatEqual(immed, 0.0)) needs_resynth = true;
-                    if(Params[a].sign) immed = -immed;
                     immed_sum += immed; ++n_immeds;
                 }
                 // Merge immeds.
@@ -329,7 +299,7 @@ namespace FPoptimizer_CodeTree
                             Params.erase(Params.begin()+a);
                         }
                     if(!FloatEqual(immed_sum, 0.0))
-                        AddParam( Param(new CodeTree(immed_sum), false) );
+                        AddParam( Param(new CodeTree(immed_sum)) );
                 }
                 if(Params.size() == 1)
                 {
@@ -502,7 +472,7 @@ namespace FPoptimizer_CodeTree
                 {
                     /* abs(negative) = negative*-1 */
                     Opcode = cMul;
-                    AddParam( Param(new CodeTree(-1.0), false) );
+                    AddParam( Param(new CodeTree(-1.0)) );
                     /* The caller of ConstantFolding() will do Sort() and Rehash() next.
                      * Thus, no need to do it here. */
                     /* We were changed into a cMul group. Do cMul folding. */
@@ -568,7 +538,7 @@ namespace FPoptimizer_CodeTree
                         Opcode = cMul;
                         for(size_t a=0; a<pos_set.size(); ++a)
                             AddParam(pos_set[a]);
-                        AddParam(Param(subtree, false));
+                        AddParam(Param(subtree));
                         /* Now:
                          * this    = p * Abs(x*y)
                          */
@@ -576,7 +546,7 @@ namespace FPoptimizer_CodeTree
                         {
                             for(size_t a=0; a<neg_set.size(); ++a)
                                 AddParam(neg_set[a]);
-                            AddParam( Param(new CodeTree(-1.0), false) );
+                            AddParam( Param(new CodeTree(-1.0)) );
                             /* Now:
                              * this = p * n * -1 * Abs(x*y)
                              */
@@ -681,7 +651,7 @@ namespace FPoptimizer_CodeTree
                     subtree->Sort();
                     subtree->Rehash(false);
                     Opcode = cAtan;
-                    AddParam(Param(subtree, false)); // we = atan(y/x)
+                    AddParam(Param(subtree)); // we = atan(y/x)
                 }
               #endif
                 break;
@@ -737,9 +707,9 @@ namespace FPoptimizer_CodeTree
             case cExp2: // converted into cPow 2.0 x
             case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
-            case cCot: // converted into cMul ~(cTan x)
-            case cSec: // converted into cMul ~(cCos x)
-            case cCsc: // converted into cMul ~(cSin x)
+            case cCot: // converted into cMul (cPow (cTan x) -1)
+            case cSec: // converted into cMul (cPow (cCos x) -1)
+            case cCsc: // converted into cMul (cPow (cSin x) -1)
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */
@@ -1053,8 +1023,6 @@ namespace FPoptimizer_CodeTree
                     const Param& p = Params[a];
                     MinMaxTree item = p.param->CalculateResultBoundaries();
 
-                    if(Params[a].sign) return MinMaxTree(); // minus = unpredictable
-
                     if(item.has_min) result.min += item.min;
                     else             result.has_min = false;
                     if(item.has_max) result.max += item.max;
@@ -1130,8 +1098,6 @@ namespace FPoptimizer_CodeTree
                     const Param& p = Params[a];
                     MinMaxTree item = p.param->CalculateResultBoundaries();
                     if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
-
-                    if(Params[a].sign) return MinMaxTree(); // inversion = unpredictable
 
                     Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
                     Value maxValue0 = result.has_max ? Value(result.max) : Value(Value::PlusInf);
@@ -1320,11 +1286,11 @@ namespace FPoptimizer_CodeTree
              * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context:
              */
-            case cNeg: // converted into cAdd ~x
-            case cInv: // converted into cMul ~x
-            case cDiv: // converted into cMul ~x
+            case cNeg: // converted into cMul x -1
+            case cInv: // converted into cPow x -1
+            case cDiv: // converted into cPow y -1
             case cRDiv: // similar to above
-            case cSub: // converted into cAdd ~x
+            case cSub: // converted into cMul y -1
             case cRSub: // similar to above
             case cRad: // converted into cMul x CONSTANT_RD
             case cDeg: // converted into cMul x CONSTANT_DR
@@ -1333,9 +1299,9 @@ namespace FPoptimizer_CodeTree
             case cExp2: // converted into cPow 2 x
             case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
-            case cCot: // converted into cMul ~(cTan x)
-            case cSec: // converted into cMul ~(cCos x)
-            case cCsc: // converted into cMul ~(cSin x)
+            case cCot: // converted into cMul (cPow (cTan x) -1)
+            case cSec: // converted into cMul (cPow (cCos x) -1)
+            case cCsc: // converted into cMul (cPow (cSin x) -1)
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
                 break; /* Should never occur */
 

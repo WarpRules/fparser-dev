@@ -79,32 +79,72 @@ namespace
         {
             case cMul:
             {
-                for(size_t a=0; a<tree.Params.size(); ++a)
+                std::vector<CodeTree::Param> div_params;
+
+                for(size_t a = tree.Params.size(); a-- > 0; )
                     if(tree.Params[a].param->Opcode == cPow
                     && tree.Params[a].param->Params[1].param->IsImmed()
-                    && tree.Params[a].param->Params[1].param->GetImmed() == -1)
+                    && FloatEqual(tree.Params[a].param->Params[1].param->GetImmed(), -1.0))
                     {
-                        tree.Params[a].param = tree.Params[a].param->Params[0].param;
-                        tree.Params[a].param->Parent = &tree;
-                        tree.Params[a].sign = !tree.Params[a].sign;
+                        div_params.push_back(tree.Params[a].param->Params[0]);
+                        tree.Params.erase(tree.Params.begin()+a);
                         changed = true;
                     }
+                if(tree.Params.empty() && div_params.size() == 1)
+                {
+                    tree.Opcode = cInv;
+                    tree.AddParam(div_params[0]);
+                }
+                else if(div_params.size() ==  1)
+                {
+                    CodeTree::Param divgroup(new CodeTree);
+                    divgroup.param->Opcode = cInv;
+                    divgroup.param->SetParams(div_params);
+                    tree.AddParam(divgroup);
+                }
+                else if(!div_params.empty())
+                {
+                    CodeTree::Param divgroup(new CodeTree);
+                    divgroup.param->Opcode = cMul;
+                    divgroup.param->SetParams(div_params);
+                    divgroup.param->ConstantFolding();
+                    divgroup.param->Sort();
+                    divgroup.param->Recalculate_Hash_NoRecursion();
+                    CodeTree::Param mulgroup(new CodeTree);
+                    mulgroup.param->Opcode = cMul;
+                    mulgroup.param->SetParams(tree.Params);
+                    mulgroup.param->ConstantFolding();
+                    mulgroup.param->Sort();
+                    mulgroup.param->Recalculate_Hash_NoRecursion();
+                    tree.Params.clear();
+                    if(mulgroup.param->IsImmed() && FloatEqual(mulgroup.param->GetImmed(), 1.0))
+                        tree.Opcode = cInv;
+                    else
+                    {
+                        tree.Opcode = cDiv;
+                        tree.AddParam(mulgroup);
+                    }
+                    tree.AddParam(divgroup);
+                }
                 break;
             }
             case cAdd:
             {
-                for(size_t a=0; a<tree.Params.size(); ++a)
+                std::vector<CodeTree::Param> sub_params;
+
+                for(size_t a = tree.Params.size(); a-- > 0; )
                     if(tree.Params[a].param->Opcode == cMul)
                     {
+                        bool is_signed = false;
                         // if the mul group has a -1 constant...
                         bool subchanged = false;
                         CodeTree& mulgroup = *tree.Params[a].param;
                         for(size_t b=mulgroup.Params.size(); b-- > 0; )
                             if(mulgroup.Params[b].param->IsImmed()
-                            && mulgroup.Params[b].param->GetImmed() == -1)
+                            && FloatEqual(mulgroup.Params[b].param->GetImmed(), -1.0))
                             {
                                 mulgroup.Params.erase(mulgroup.Params.begin()+b);
-                                tree.Params[a].sign = !tree.Params[a].sign;
+                                is_signed = !is_signed;
                                 subchanged = true;
                             }
                         if(subchanged)
@@ -114,7 +154,49 @@ namespace
                             mulgroup.Recalculate_Hash_NoRecursion();
                             changed = true;
                         }
+                        if(is_signed)
+                        {
+                            sub_params.push_back(tree.Params[a]);
+                            tree.Params.erase(tree.Params.begin()+a);
+                            changed = true;
+                        }
                     }
+                if(tree.Params.empty() && sub_params.size() == 1)
+                {
+                    tree.Opcode = cNeg;
+                    tree.AddParam(sub_params[0]);
+                }
+                else if(sub_params.size() ==  1)
+                {
+                    CodeTree::Param subgroup(new CodeTree);
+                    subgroup.param->Opcode = cNeg;
+                    subgroup.param->SetParams(sub_params);
+                    tree.AddParam(subgroup);
+                }
+                else if(!sub_params.empty())
+                {
+                    CodeTree::Param subgroup(new CodeTree);
+                    subgroup.param->Opcode = cAdd;
+                    subgroup.param->SetParams(sub_params);
+                    subgroup.param->ConstantFolding();
+                    subgroup.param->Sort();
+                    subgroup.param->Recalculate_Hash_NoRecursion();
+                    CodeTree::Param addgroup(new CodeTree);
+                    addgroup.param->Opcode = cAdd;
+                    addgroup.param->SetParams(tree.Params);
+                    addgroup.param->ConstantFolding();
+                    addgroup.param->Sort();
+                    addgroup.param->Recalculate_Hash_NoRecursion();
+                    tree.Params.clear();
+                    if(addgroup.param->IsImmed() && FloatEqual(addgroup.param->GetImmed(), 0.0))
+                        tree.Opcode = cNeg;
+                    else
+                    {
+                        tree.Opcode = cSub;
+                        tree.AddParam(addgroup);
+                    }
+                    tree.AddParam(subgroup);
+                }
             }
         }
         if(changed)
@@ -228,21 +310,7 @@ namespace FPoptimizer_CodeTree
             case cAnd:
             case cOr:
             {
-                // Operand re-sorting:
-                // If the first param has a sign, try to find a param
-                // that does _not_ have a sign and put it first.
-                // This can be done because params are commutative
-                // when they are grouped with their signs.
-                if(!Params.empty() && Params[0].sign)
-                {
-                    for(size_t a=1; a<Params.size(); ++a)
-                        if(!Params[a].sign)
-                        {
-                            std::swap(Params[0], Params[a]);
-                            break;
-                        }
-                }
-
+                /*
                 // Try to ensure that Immeds don't have a sign
                 for(size_t a=0; a<Params.size(); ++a)
                 {
@@ -257,7 +325,7 @@ namespace FPoptimizer_CodeTree
                             case cOr:  param->NotTheImmed(); Params[a].sign=false; break;
                         }
                 }
-
+                */
                 if(Opcode == cMul) // Special treatment for cMul sequences
                 {
                     // If the paramlist contains an Immed, and that Immed
@@ -267,7 +335,7 @@ namespace FPoptimizer_CodeTree
                     {
                         Param p = Params[a];
                         CodeTreeP& param = p.param;
-                        if(!p.sign && param->IsLongIntegerImmed())
+                        if(param->IsLongIntegerImmed())
                         {
                             long value = param->GetLongIntegerImmed();
                             Params.erase(Params.begin()+a);
@@ -295,58 +363,11 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<Params.size(); ++a)
                 {
                     CodeTreeP const & param = Params[a].param;
-                    bool               sign = Params[a].sign;
 
                     param->SynthesizeByteCode(synth);
                     ++n_stacked;
 
-                    if(sign) // Is the operand negated/inverted?
-                    {
-                        if(n_stacked == 1)
-                        {
-                            // Needs unary negation/invertion. Decide how to accomplish it.
-                            switch(Opcode)
-                            {
-                                case cAdd:
-                                    synth.AddOperation(cNeg, 1); // stack state: -1+1 = +0
-                                    break;
-                                case cMul:
-                                    synth.AddOperation(cInv, 1); // stack state: -1+1 = +0
-                                    break;
-                                case cAnd:
-                                case cOr:
-                                    synth.AddOperation(cNot, 1); // stack state: -1+1 = +0
-                                    break;
-                            }
-                            // Note: We could use RDiv or RSub when the first
-                            // token is negated/inverted and the second is not, to
-                            // avoid cNeg/cInv/cNot, but thanks to the operand
-                            // re-sorting in the beginning of this code, this
-                            // situation never arises.
-                            // cNeg/cInv/cNot is only synthesized when the group
-                            // consists entirely of negated/inverted items.
-                        }
-                        else
-                        {
-                            // Needs binary negation/invertion. Decide how to accomplish it.
-                            switch(Opcode)
-                            {
-                                case cAdd:
-                                    synth.AddOperation(cSub, 2); // stack state: -2+1 = -1
-                                    break;
-                                case cMul:
-                                    synth.AddOperation(cDiv, 2); // stack state: -2+1 = -1
-                                    break;
-                                case cAnd:
-                                case cOr:
-                                    synth.AddOperation(cNot,   1);   // stack state: -1+1 = +0
-                                    synth.AddOperation(Opcode, 2); // stack state: -2+1 = -1
-                                    break;
-                            }
-                            n_stacked = n_stacked - 2 + 1;
-                        }
-                    }
-                    else if(n_stacked > 1)
+                    if(n_stacked > 1)
                     {
                         // Cumulate at the earliest opportunity.
                         synth.AddOperation(Opcode, 2); // stack state: -2+1 = -1
@@ -425,7 +446,7 @@ namespace FPoptimizer_CodeTree
                         if(p1.param->Opcode == cMul)
                         {
                             // Neat, we can delegate the multiplication to the child
-                            p1.param->AddParam( Param(new CodeTree(mulvalue), false) );
+                            p1.param->AddParam( Param( new CodeTree(mulvalue) ) );
                             p1.param->ConstantFolding();
                             p1.param->Sort();
                             p1.param->Recalculate_Hash_NoRecursion();

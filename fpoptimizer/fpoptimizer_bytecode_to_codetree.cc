@@ -32,7 +32,6 @@ namespace FPoptimizer_CodeTree
             {
                 CodeTree::Param param;
                 param.param = stack[stackhead + a];
-                param.sign  = false;
                 newnode->AddParam(param);
             }
             stack.resize(stackhead);
