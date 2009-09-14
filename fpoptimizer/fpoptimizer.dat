@@ -310,57 +310,57 @@ cAnd <1> ~<2> =- : ~(cOr <2> ~<1>)
 #   !a | !b = !(a & b)
 cOr <1> ~<2> =- : ~(cAnd <2> ~<1>)
 
-cAnd ~(cNEqual[a b])      : (cEqual[a b])
-cAnd ~(cEqual[a b])       : (cNEqual[a b])
-cAnd ~(cLess[a b])        : (cGreaterOrEq[a b])
-cAnd ~(cGreater[a b])     : (cLessOrEq[a b])
-cAnd ~(cLessOrEq[a b])    : (cGreater[a b])
-cAnd ~(cGreaterOrEq[a b]) : (cLess[a b])
-cOr ~(cNEqual[a b])       : (cEqual[a b])
-cOr ~(cEqual[a b])        : (cNEqual[a b])
-cOr ~(cLess[a b])         : (cGreaterOrEq[a b])
-cOr ~(cGreater[a b])      : (cLessOrEq[a b])
-cOr ~(cLessOrEq[a b])     : (cGreater[a b])
-cOr ~(cGreaterOrEq[a b])  : (cLess[a b])
-cNot [(cNEqual[a b])]      -> cEqual[a b]
-cNot [(cEqual[a b])]       -> cNEqual[a b]
-cNot [(cLess[a b])]        -> cGreaterOrEq[a b]
-cNot [(cGreater[a b])]     -> cLessOrEq[a b]
-cNot [(cLessOrEq[a b])]    -> cGreater[a b]
-cNot [(cGreaterOrEq[a b])] -> cLess[a b]
+cAnd ~(cNEqual[x y])      : (cEqual[x y])
+cAnd ~(cEqual[x y])       : (cNEqual[x y])
+cAnd ~(cLess[x y])        : (cGreaterOrEq[x y])
+cAnd ~(cGreater[x y])     : (cLessOrEq[x y])
+cAnd ~(cLessOrEq[x y])    : (cGreater[x y])
+cAnd ~(cGreaterOrEq[x y]) : (cLess[x y])
+cOr ~(cNEqual[x y])       : (cEqual[x y])
+cOr ~(cEqual[x y])        : (cNEqual[x y])
+cOr ~(cLess[x y])         : (cGreaterOrEq[x y])
+cOr ~(cGreater[x y])      : (cLessOrEq[x y])
+cOr ~(cLessOrEq[x y])     : (cGreater[x y])
+cOr ~(cGreaterOrEq[x y])  : (cLess[x y])
+cNot [(cNEqual[x y])]      -> cEqual[x y]
+cNot [(cEqual[x y])]       -> cNEqual[x y]
+cNot [(cLess[x y])]        -> cGreaterOrEq[x y]
+cNot [(cGreater[x y])]     -> cLessOrEq[x y]
+cNot [(cLessOrEq[x y])]    -> cGreater[x y]
+cNot [(cGreaterOrEq[x y])] -> cLess[x y]
 cNot [(cAnd <1> ~<2> =-)]     -> cOr  ~<1> <2>
 cNot [(cOr  <1> ~<2> =-)]     -> cAnd ~<1> <2>
-cNotNot [(cNEqual[a b])]      -> cNEqual[a b]
-cNotNot [(cEqual[a b])]       -> cEqual[a b]
-cNotNot [(cLess[a b])]        -> cLess[a b]
-cNotNot [(cGreater[a b])]     -> cGreater[a b]
-cNotNot [(cLessOrEq[a b])]    -> cLessOrEq[a b]
-cNotNot [(cGreaterOrEq[a b])] -> cGreaterOrEq[a b]
+cNotNot [(cNEqual[x y])]      -> cNEqual[x y]
+cNotNot [(cEqual[x y])]       -> cEqual[x y]
+cNotNot [(cLess[x y])]        -> cLess[x y]
+cNotNot [(cGreater[x y])]     -> cGreater[x y]
+cNotNot [(cLessOrEq[x y])]    -> cLessOrEq[x y]
+cNotNot [(cGreaterOrEq[x y])] -> cGreaterOrEq[x y]
 cNotNot [(cAnd <1> ~<2>)]     -> cAnd <1> ~<2>
 cNotNot [(cOr  <1> ~<2>)]     -> cOr  <1> ~<2>
 
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
-cAnd (cEqual[a b]) (cEqual[b c]) (cEqual[a c])  : (cEqual[a b]) (cEqual[b c])
+cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # Note: ^ Replacement function refers to b twice
 #   (a==b) & (a!=b)          -- this statement is always false
-cAnd (cEqual[a b]) (cNEqual[a b]) -> 0
+cAnd (cEqual[x y]) (cNEqual[x y]) -> 0
 #   (a==b) | (a!=b)          -- this statement is always true
-cOr  (cEqual[a b]) (cNEqual[a b]) -> 1
+cOr  (cEqual[x y]) (cNEqual[x y]) -> 1
 
-cAnd (cLess[a b]) (cGreater[a b]) -> 0
-cAnd (cLessOrEq[a b]) (cGreater[a b]) -> 0
-cAnd (cLess[a b]) (cGreaterOrEq[a b]) -> 0
-cAnd (cLessOrEq[a b]) (cGreaterOrEq[a b]) -> cEqual[a b]
-cAnd (cLessOrEq[a b]) (cLess[a b]) -> cLess[a b]
-cAnd (cGreaterOrEq[a b]) (cGreater[a b]) -> cGreater[a b]
-cOr (cLess[a b]) (cGreater[a b]) -> cNEqual[a b]
-cOr (cLessOrEq[a b]) (cGreater[a b]) -> 1
-cOr (cLess[a b]) (cGreaterOrEq[a b]) -> 1
-cOr (cLess[a b]) (cEqual[a b]) -> cLessOrEq[a b]
-cOr (cLessOrEq[a b]) (cEqual[a b]) -> cLessOrEq[a b]
-cOr (cGreater[a b]) (cEqual[a b]) -> cGreaterOrEq[a b]
-cOr (cGreaterOrEq[a b]) (cEqual[a b]) -> cGreaterOrEq[a b]
+cAnd (cLess[x y]) (cGreater[x y]) -> 0
+cAnd (cLessOrEq[x y]) (cGreater[x y]) -> 0
+cAnd (cLess[x y]) (cGreaterOrEq[x y]) -> 0
+cAnd (cLessOrEq[x y]) (cGreaterOrEq[x y]) -> cEqual[x y]
+cAnd (cLessOrEq[x y]) (cLess[x y]) -> cLess[x y]
+cAnd (cGreaterOrEq[x y]) (cGreater[x y]) -> cGreater[x y]
+cOr (cLess[x y]) (cGreater[x y]) -> cNEqual[x y]
+cOr (cLessOrEq[x y]) (cGreater[x y]) -> 1
+cOr (cLess[x y]) (cGreaterOrEq[x y]) -> 1
+cOr (cLess[x y]) (cEqual[x y]) -> cLessOrEq[x y]
+cOr (cLessOrEq[x y]) (cEqual[x y]) -> cLessOrEq[x y]
+cOr (cGreater[x y]) (cEqual[x y]) -> cGreaterOrEq[x y]
+cOr (cGreaterOrEq[x y]) (cEqual[x y]) -> cGreaterOrEq[x y]
 
 
 
@@ -428,7 +428,7 @@ cTan [x] -> (cMul (cSin [x]) (cPow [(cCos [x]) -1]))
 #### CONTINUED: Flattening the topology of add/mul/min/max/and/or groups
 
 # a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
-cAdd (cPow[a 2]) (cPow[b 2]) (cMul a b <1>) : (cPow [(cAdd [a b]) 2]) (cMul [a b (cAdd [(cMul <1>) -2])])
+cAdd (cPow[x 2]) (cPow[y 2]) (cMul x y <1>) : (cPow [(cAdd [x y]) 2]) (cMul [x y (cAdd [(cMul <1>) -2])])
 # For optimizing x^2+2*x*y+y^2:
 #  With this rule,    eval=0.287154 us, optimized = 0.0758879 us
 #  Without this rule, eval=0.314538 us, optimized = 0.0831386 us
