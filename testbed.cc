@@ -304,7 +304,7 @@ sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)", "x,y", \
 
 double f29(const double* p)
 {
-#define P29 "x-y*1", "x,y", f29, 1, -100, 100, .1, false
+#define P29 "x-y*1", "x,y", f29, 2, -100, 100, .1, false
     return p[0] - p[1]*1;
 }
 
@@ -364,7 +364,7 @@ double f32(const double* p)
 double f33(const double* p)
 {
 #define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y)", \
-        "x,y", f33, 1, -2, 2, .001, false
+        "x,y", f33, 2, -2, 2, .1, false
     const double x = p[0], y = p[1];
     return sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y);
 }
