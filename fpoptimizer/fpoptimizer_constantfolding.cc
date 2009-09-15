@@ -55,14 +55,14 @@ namespace FPoptimizer_CodeTree
             {
                 /* If the list contains another list of the same kind, assimilate it */
                 for(size_t a=Params.size(); a-- > 0; )
-                    if(Params[a].param->Opcode == Opcode)
+                    if(Params[a]->Opcode == Opcode)
                     {
                         // Assimilate its children and remove it
-                        CodeTreeP tree = Params[a].param;
+                        CodeTreeP tree = Params[a];
 
                         Params.erase(Params.begin()+a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
-                            AddParam( Param(tree->Params[b].param) );
+                            AddParam( tree->Params[b] );
                     }
                 break;
             }
@@ -71,10 +71,10 @@ namespace FPoptimizer_CodeTree
             {
                 /* If the list contains another list of the same kind, assimilate it */
                 for(size_t a=Params.size(); a-- > 0; )
-                    if(Params[a].param->Opcode == Opcode)
+                    if(Params[a]->Opcode == Opcode)
                     {
                         // Assimilate its children and remove it
-                        CodeTreeP tree = Params[a].param;
+                        CodeTreeP tree = Params[a];
                         Params.erase(Params.begin()+a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
                             AddParam(tree->Params[b]);
@@ -113,7 +113,7 @@ namespace FPoptimizer_CodeTree
                 std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
               #endif
-                Become(*Params[which_param].param, true, false);
+                Become(*Params[which_param], true, false);
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
@@ -129,7 +129,7 @@ namespace FPoptimizer_CodeTree
                 bool all_values_are_nonzero = true;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree p = Params[a]->CalculateResultBoundaries();
                     if(p.has_min && p.has_max
                     && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                     {
@@ -160,7 +160,7 @@ namespace FPoptimizer_CodeTree
                 bool all_values_are_zero = true;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree p = Params[a]->CalculateResultBoundaries();
                     if(p.has_min && p.has_max
                     && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                     {
@@ -186,7 +186,7 @@ namespace FPoptimizer_CodeTree
             {
                 // If the sub-expression evaluates to approx. zero, yield one.
                 // If the sub-expression evaluates to approx. nonzero, yield zero.
-                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p = Params[0]->CalculateResultBoundaries();
                 if(p.has_min && p.has_max
                 && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                 {
@@ -201,7 +201,7 @@ namespace FPoptimizer_CodeTree
             {
                 // If the sub-expression evaluates to approx. zero, yield zero.
                 // If the sub-expression evaluates to approx. nonzero, yield one.
-                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p = Params[0]->CalculateResultBoundaries();
                 if(p.has_min && p.has_max
                 && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                 {
@@ -216,7 +216,7 @@ namespace FPoptimizer_CodeTree
             {
                 // If the sub-expression evaluates to approx. zero, yield param3.
                 // If the sub-expression evaluates to approx. nonzero, yield param2.
-                MinMaxTree p = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p = Params[0]->CalculateResultBoundaries();
                 if(p.has_min && p.has_max
                 && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
                 {
@@ -239,9 +239,9 @@ namespace FPoptimizer_CodeTree
                 size_t n_mul_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    if(!Params[a].param->IsImmed()) continue;
+                    if(!Params[a]->IsImmed()) continue;
                     // ^ Only check constant values
-                    double immed = Params[a].param->GetImmed();
+                    double immed = Params[a]->GetImmed();
                     if(FloatEqual(immed, 0.0)) goto ReplaceTreeWithZero;
                     if(FloatEqual(immed, 1.0)) needs_resynth = true;
                     mul_immed_sum *= immed; ++n_mul_immeds;
@@ -253,14 +253,14 @@ namespace FPoptimizer_CodeTree
                     // delete immeds and add new ones
                     //std::cout << "cMul: Will add new immed " << mul_immed_sum << "\n";
                     for(size_t a=Params.size(); a-->0; )
-                        if(Params[a].param->IsImmed())
+                        if(Params[a]->IsImmed())
                         {
-                            //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
+                            //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
                     if(!FloatEqual(mul_immed_sum, 1.0))
-                        AddParam( Param(new CodeTree(mul_immed_sum) ) );
+                        AddParam( new CodeTree(mul_immed_sum) );
                 }
                 if(Params.size() == 1)
                 {
@@ -276,9 +276,9 @@ namespace FPoptimizer_CodeTree
                 size_t n_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    if(!Params[a].param->IsImmed()) continue;
+                    if(!Params[a]->IsImmed()) continue;
                     // ^ Only check constant values
-                    double immed = Params[a].param->GetImmed();
+                    double immed = Params[a]->GetImmed();
                     if(FloatEqual(immed, 0.0)) needs_resynth = true;
                     immed_sum += immed; ++n_immeds;
                 }
@@ -292,14 +292,14 @@ namespace FPoptimizer_CodeTree
                     //std::cout << "\n";
 
                     for(size_t a=Params.size(); a-->0; )
-                        if(Params[a].param->IsImmed())
+                        if(Params[a]->IsImmed())
                         {
-                            //std::cout << " - For that, deleting immed " << Params[a].param->GetImmed();
+                            //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
                             //std::cout << "\n";
                             Params.erase(Params.begin()+a);
                         }
                     if(!FloatEqual(immed_sum, 0.0))
-                        AddParam( Param(new CodeTree(immed_sum)) );
+                        AddParam( new CodeTree(immed_sum) );
                 }
                 if(Params.size() == 1)
                 {
@@ -324,7 +324,7 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree smallest_maximum;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree p = Params[a]->CalculateResultBoundaries();
                     if(p.has_max && (!smallest_maximum.has_max || p.max < smallest_maximum.max))
                     {
                         smallest_maximum.max = p.max;
@@ -333,7 +333,7 @@ namespace FPoptimizer_CodeTree
                 if(smallest_maximum.has_max)
                     for(size_t a=Params.size(); a-- > 0; )
                     {
-                        MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                        MinMaxTree p = Params[a]->CalculateResultBoundaries();
                         if(p.has_min && p.min > smallest_maximum.max)
                             Params.erase(Params.begin() + a);
                     }
@@ -360,7 +360,7 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree biggest_minimum;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree p = Params[a]->CalculateResultBoundaries();
                     if(p.has_min && (!biggest_minimum.has_min || p.min > biggest_minimum.min))
                     {
                         biggest_minimum.min = p.min;
@@ -371,7 +371,7 @@ namespace FPoptimizer_CodeTree
                     //fprintf(stderr, "Removing all where max < %g\n", biggest_minimum.min);
                     for(size_t a=Params.size(); a-- > 0; )
                     {
-                        MinMaxTree p = Params[a].param->CalculateResultBoundaries();
+                        MinMaxTree p = Params[a]->CalculateResultBoundaries();
                         if(p.has_max && p.max < biggest_minimum.min)
                         {
                             //fprintf(stderr, "Removing %g\n", p.max);
@@ -393,8 +393,8 @@ namespace FPoptimizer_CodeTree
                 /* If we know the two operands' ranges don't overlap, we get zero.
                  * The opposite is more complex and is done in .dat code.
                  */
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if((p0.has_max && p1.has_min && p1.min > p0.max)
                 || (p1.has_max && p0.has_min && p0.min > p1.max))
                     goto ReplaceTreeWithZero;
@@ -406,8 +406,8 @@ namespace FPoptimizer_CodeTree
                 /* If we know the two operands' ranges don't overlap, we get one.
                  * The opposite is more complex and is done in .dat code.
                  */
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if((p0.has_max && p1.has_min && p1.min > p0.max)
                 || (p1.has_max && p0.has_min && p0.min > p1.max))
                     goto ReplaceTreeWithOne;
@@ -416,8 +416,8 @@ namespace FPoptimizer_CodeTree
 
             case cLess:
             {
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max < p1.min)
                     goto ReplaceTreeWithOne; // We know p0 < p1
                 if(p1.has_max && p0.has_min && p1.max <= p0.min)
@@ -427,8 +427,8 @@ namespace FPoptimizer_CodeTree
 
             case cLessOrEq:
             {
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max <= p1.min)
                     goto ReplaceTreeWithOne; // We know p0 <= p1
                 if(p1.has_max && p0.has_min && p1.max < p0.min)
@@ -439,8 +439,8 @@ namespace FPoptimizer_CodeTree
             case cGreater:
             {
                 // Note: Eq case not handled
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max <= p1.min)
                     goto ReplaceTreeWithZero; // We know p0 <= p1
                 if(p1.has_max && p0.has_min && p1.max < p0.min)
@@ -451,8 +451,8 @@ namespace FPoptimizer_CodeTree
             case cGreaterOrEq:
             {
                 // Note: Eq case not handled
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max < p1.min)
                     goto ReplaceTreeWithZero; // We know p0 < p1
                 if(p1.has_max && p0.has_min && p1.max <= p0.min)
@@ -465,14 +465,14 @@ namespace FPoptimizer_CodeTree
                 /* If we know the operand is always positive, cAbs is redundant.
                  * If we know the operand is always negative, use actual negation.
                  */
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
                 if(p0.has_min && p0.min >= 0.0)
                     goto ReplaceTreeWithParam0;
                 if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
                 {
                     /* abs(negative) = negative*-1 */
                     Opcode = cMul;
-                    AddParam( Param(new CodeTree(-1.0)) );
+                    AddParam( new CodeTree(-1.0) );
                     /* The caller of ConstantFolding() will do Sort() and Rehash() next.
                      * Thus, no need to do it here. */
                     /* We were changed into a cMul group. Do cMul folding. */
@@ -482,14 +482,14 @@ namespace FPoptimizer_CodeTree
                  * that are always positive and always negative,
                  * and move them out, e.g. abs(p*n*x*y) = p*(-n)*abs(x*y)
                  */
-                if(Params[0].param->Opcode == cMul)
+                if(Params[0]->Opcode == cMul)
                 {
-                    CodeTree& p = *Params[0].param;
-                    std::vector<Param> pos_set;
-                    std::vector<Param> neg_set;
+                    CodeTree& p = *Params[0];
+                    std::vector<CodeTreeP> pos_set;
+                    std::vector<CodeTreeP> neg_set;
                     for(size_t a=0; a<p.Params.size(); ++a)
                     {
-                        p0 = p.Params[a].param->CalculateResultBoundaries();
+                        p0 = p.Params[a]->CalculateResultBoundaries();
                         if(p0.has_min && p0.min >= 0.0)
                             { pos_set.push_back(p.Params[a]); }
                         if(p0.has_max && p0.max <= NEGATIVE_MAXIMUM)
@@ -509,7 +509,7 @@ namespace FPoptimizer_CodeTree
                 #endif
                         for(size_t a=p.Params.size(); a-- > 0; )
                         {
-                            p0 = p.Params[a].param->CalculateResultBoundaries();
+                            p0 = p.Params[a]->CalculateResultBoundaries();
                             if((p0.has_min && p0.min >= 0.0)
                             || (p0.has_max && p0.max <= NEGATIVE_MAXIMUM))
                                 p.Params.erase(p.Params.begin() + a);
@@ -538,7 +538,7 @@ namespace FPoptimizer_CodeTree
                         Opcode = cMul;
                         for(size_t a=0; a<pos_set.size(); ++a)
                             AddParam(pos_set[a]);
-                        AddParam(Param(subtree));
+                        AddParam(subtree);
                         /* Now:
                          * this    = p * Abs(x*y)
                          */
@@ -546,7 +546,7 @@ namespace FPoptimizer_CodeTree
                         {
                             for(size_t a=0; a<neg_set.size(); ++a)
                                 AddParam(neg_set[a]);
-                            AddParam( Param(new CodeTree(-1.0)) );
+                            AddParam( new CodeTree(-1.0) );
                             /* Now:
                              * this = p * n * -1 * Abs(x*y)
                              */
@@ -565,8 +565,8 @@ namespace FPoptimizer_CodeTree
             }
 
             #define HANDLE_UNARY_CONST_FUNC(funcname) \
-                if(Params[0].param->IsImmed()) \
-                    { const_value = funcname(Params[0].param->GetImmed()); \
+                if(Params[0]->IsImmed()) \
+                    { const_value = funcname(Params[0]->GetImmed()); \
                       goto ReplaceTreeWithConstValue; }
 
             case cLog:   HANDLE_UNARY_CONST_FUNC(log); break;
@@ -585,18 +585,18 @@ namespace FPoptimizer_CodeTree
             case cCeil: HANDLE_UNARY_CONST_FUNC(ceil); break;
             case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
             case cInt:
-                if(Params[0].param->IsImmed())
-                    { const_value = floor(Params[0].param->GetImmed() + 0.5);
+                if(Params[0]->IsImmed())
+                    { const_value = floor(Params[0]->GetImmed() + 0.5);
                       goto ReplaceTreeWithConstValue; }
                 break;
             case cLog2:
-                if(Params[0].param->IsImmed())
-                    { const_value = log(Params[0].param->GetImmed()) * CONSTANT_L2I;
+                if(Params[0]->IsImmed())
+                    { const_value = log(Params[0]->GetImmed()) * CONSTANT_L2I;
                       goto ReplaceTreeWithConstValue; }
                 break;
             case cLog10:
-                if(Params[0].param->IsImmed())
-                    { const_value = log(Params[0].param->GetImmed()) * CONSTANT_L10I;
+                if(Params[0]->IsImmed())
+                    { const_value = log(Params[0]->GetImmed()) * CONSTANT_L10I;
                       goto ReplaceTreeWithConstValue; }
                 break;
 
@@ -615,8 +615,8 @@ namespace FPoptimizer_CodeTree
                  *         It allows e.g. atan2(6*x, 3*y) -> atan(2*x/y)
                  *         when we know y != 0
                  */
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_min && p0.has_max && p0.min == 0.0)
                 {
                     if(p1.has_max && p1.max < 0)
@@ -631,10 +631,10 @@ namespace FPoptimizer_CodeTree
                     if(p0.has_min && p0.min > 0)
                         { const_value =  CONSTANT_PIHALF; goto ReplaceTreeWithConstValue; }
                 }
-                if(Params[0].param->IsImmed()
-                && Params[1].param->IsImmed())
-                    { const_value = atan2(Params[0].param->GetImmed(),
-                                          Params[1].param->GetImmed());
+                if(Params[0]->IsImmed()
+                && Params[1]->IsImmed())
+                    { const_value = atan2(Params[0]->GetImmed(),
+                                          Params[1]->GetImmed());
                       goto ReplaceTreeWithConstValue; }
               #if 0
                 if((p1.has_min && p1.min > 0.0)
@@ -644,14 +644,14 @@ namespace FPoptimizer_CodeTree
                     CodeTreeP subtree = new CodeTree;
                     Params[1].sign = true; /* FIXME: Not appropriate anymore */
                     for(size_t a=0; a<Params.size(); ++a)
-                        Params[a].param->Parent = &*subtree;
+                        Params[a]->Parent = &*subtree;
                     subtree->Opcode = cMul;
                     subtree->Params.swap(Params); // subtree = y/x
                     subtree->ConstantFolding();
                     subtree->Sort();
                     subtree->Rehash(false);
                     Opcode = cAtan;
-                    AddParam(Param(subtree)); // we = atan(y/x)
+                    AddParam(subtree); // we = atan(y/x)
                 }
               #endif
                 break;
@@ -659,19 +659,19 @@ namespace FPoptimizer_CodeTree
 
             case cPow:
             {
-                if(Params[0].param->IsImmed()
-                && Params[1].param->IsImmed())
-                    { const_value = pow(Params[0].param->GetImmed(),
-                                        Params[1].param->GetImmed());
+                if(Params[0]->IsImmed()
+                && Params[1]->IsImmed())
+                    { const_value = pow(Params[0]->GetImmed(),
+                                        Params[1]->GetImmed());
                       goto ReplaceTreeWithConstValue; }
-                if(Params[1].param->IsImmed()
-                && Params[1].param->GetImmed() == 1.0)
+                if(Params[1]->IsImmed()
+                && Params[1]->GetImmed() == 1.0)
                 {
                     // x^1 = x
                     goto ReplaceTreeWithParam0;
                 }
-                if(Params[0].param->IsImmed()
-                && Params[0].param->GetImmed() == 1.0)
+                if(Params[0]->IsImmed()
+                && Params[0]->GetImmed() == 1.0)
                 {
                     // 1^x = 1
                     goto ReplaceTreeWithOne;
@@ -682,10 +682,10 @@ namespace FPoptimizer_CodeTree
             case cMod:
             {
                 /* Can more be done than this? */
-                if(Params[0].param->IsImmed()
-                && Params[1].param->IsImmed())
-                    { const_value = fmod(Params[0].param->GetImmed(),
-                                         Params[1].param->GetImmed());
+                if(Params[0]->IsImmed()
+                && Params[1]->IsImmed())
+                    { const_value = fmod(Params[0]->GetImmed(),
+                                         Params[1]->GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 break;
             }
@@ -694,8 +694,6 @@ namespace FPoptimizer_CodeTree
              * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context:
              */
-            case cNeg: // converted into cAdd ~x
-            case cInv: // converted into cMul ~x
             case cDiv: // converted into cMul ~x
             case cRDiv: // similar to above
             case cSub: // converted into cAdd ~x
@@ -703,7 +701,6 @@ namespace FPoptimizer_CodeTree
             case cRad: // converted into cMul x CONSTANT_RD
             case cDeg: // converted into cMul x CONSTANT_DR
             case cSqr: // converted into cMul x x
-            case cExp: // converted into cPow CONSTANT_E x
             case cExp2: // converted into cPow 2.0 x
             case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
@@ -711,6 +708,40 @@ namespace FPoptimizer_CodeTree
             case cSec: // converted into cMul (cPow (cCos x) -1)
             case cCsc: // converted into cMul (cPow (cSin x) -1)
                 break; /* Should never occur */
+
+            /* The following opcodes are processed by GenerateFrom(),
+             * but they may still be synthesized in the grammar matching
+             * process:
+             * TODO: Figure out whether we should just convert
+             * these particular trees into their atomic counterparts
+             */
+            case cNeg: // converted into cMul x -1
+            {
+                if(Params[0]->IsImmed())
+                {
+                    const_value = -Params[0]->GetImmed();
+                    goto ReplaceTreeWithConstValue;
+                }
+                break;
+            }
+            case cInv: // converted into cPow x -1
+            {
+                if(Params[0]->IsImmed())
+                {
+                    const_value = 1.0 / Params[0]->GetImmed();
+                    goto ReplaceTreeWithConstValue;
+                }
+                break;
+            }
+            case cExp: // convered into cPow CONSTANT_E x
+            {
+                if(Params[0]->IsImmed())
+                {
+                    const_value = exp( Params[0]->GetImmed() );
+                    goto ReplaceTreeWithConstValue;
+                }
+                break;
+            }
 
             /* Opcodes that do not occur in the tree for other reasons */
             case cDup:
@@ -774,7 +805,7 @@ namespace FPoptimizer_CodeTree
             case cAbs:
             {
                 /* cAbs always produces a positive value */
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min && m.has_max)
                 {
                     if(m.min < 0.0 && m.max >= 0.0) // ex. -10..+6 or -6..+10
@@ -804,7 +835,7 @@ namespace FPoptimizer_CodeTree
 
             case cLog: /* Defined for 0.0 < x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min); } // No boundaries
                 if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max); }
                 return m;
@@ -812,7 +843,7 @@ namespace FPoptimizer_CodeTree
 
             case cLog2: /* Defined for 0.0 < x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L2I; } // No boundaries
                 if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L2I; }
                 return m;
@@ -820,21 +851,21 @@ namespace FPoptimizer_CodeTree
 
             case cAcosh: /* defined for             1.0 <  x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) { if(m.min <= 1.0) m.has_min = false; else m.min = fp_acosh(m.min); } // No boundaries
                 if(m.has_max) { if(m.max <= 1.0) m.has_max = false; else m.max = fp_acosh(m.max); }
                 return m;
             }
             case cAsinh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_asinh(m.min); // No boundaries
                 if(m.has_max) m.max = fp_asinh(m.max);
                 return m;
             }
             case cAtanh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_atanh(m.min); // No boundaries
                 if(m.has_max) m.max = fp_atanh(m.max);
                 return m;
@@ -853,7 +884,7 @@ namespace FPoptimizer_CodeTree
             }
             case cAtan: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) m.min = atan(m.min); else { m.min = -CONSTANT_PIHALF; m.has_min = true; }
                 if(m.has_max) m.max = atan(m.max); else { m.max =  CONSTANT_PIHALF; m.has_max = true; }
                 return m;
@@ -885,40 +916,40 @@ namespace FPoptimizer_CodeTree
 
             case cCeil:
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 m.max = std::ceil(m.max); // ceil() may increase the value, may not decrease
                 return m;
             }
             case cFloor:
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 m.min = std::floor(m.min); // floor() may decrease the value, may not increase
                 return m;
             }
             case cInt:
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 m.min = std::floor(m.min); // int() may either increase or decrease the value
                 m.max = std::ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cSinh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) m.min = sinh(m.min); // No boundaries
                 if(m.has_max) m.max = sinh(m.max);
                 return m;
             }
             case cTanh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min) m.min = tanh(m.min); // No boundaries
                 if(m.has_max) m.max = tanh(m.max);
                 return m;
             }
             case cCosh: /* defined for all values -inf <= x <= inf, results within 1..inf */
             {
-                MinMaxTree m = Params[0].param->CalculateResultBoundaries();
+                MinMaxTree m = Params[0]->CalculateResultBoundaries();
                 if(m.has_min)
                 {
                     if(m.has_max) // max, min
@@ -958,8 +989,8 @@ namespace FPoptimizer_CodeTree
             case cIf:
             {
                 // No guess which branch is chosen. Produce a spanning min & max.
-                MinMaxTree res1 = Params[1].param->CalculateResultBoundaries();
-                MinMaxTree res2 = Params[2].param->CalculateResultBoundaries();
+                MinMaxTree res1 = Params[1]->CalculateResultBoundaries();
+                MinMaxTree res2 = Params[2]->CalculateResultBoundaries();
                 if(!res2.has_min) res1.has_min = false; else if(res2.min < res1.min) res1.min = res2.min;
                 if(!res2.has_max) res1.has_max = false; else if(res2.max > res1.max) res1.max = res2.max;
                 return res1;
@@ -973,7 +1004,7 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree result;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree m = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree m = Params[a]->CalculateResultBoundaries();
                     if(!m.has_min)
                         has_unknown_min = true;
                     else if(!result.has_min || m.min < result.min)
@@ -996,7 +1027,7 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree result;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    MinMaxTree m = Params[a].param->CalculateResultBoundaries();
+                    MinMaxTree m = Params[a]->CalculateResultBoundaries();
                     if(!m.has_min)
                         has_unknown_min = true;
                     else if(!result.has_min || m.min > result.min)
@@ -1020,8 +1051,8 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree result(0.0, 0.0);
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    const Param& p = Params[a];
-                    MinMaxTree item = p.param->CalculateResultBoundaries();
+                    const CodeTreeP& p = Params[a];
+                    MinMaxTree item = p->CalculateResultBoundaries();
 
                     if(item.has_min) result.min += item.min;
                     else             result.has_min = false;
@@ -1095,8 +1126,8 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree result(1.0, 1.0);
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    const Param& p = Params[a];
-                    MinMaxTree item = p.param->CalculateResultBoundaries();
+                    const CodeTreeP& p = Params[a];
+                    MinMaxTree item = p->CalculateResultBoundaries();
                     if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
 
                     Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
@@ -1128,8 +1159,8 @@ namespace FPoptimizer_CodeTree
             {
                 /* TODO: The boundaries of modulo operator could be estimated better. */
 
-                MinMaxTree x = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree y = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree x = Params[0]->CalculateResultBoundaries();
+                MinMaxTree y = Params[1]->CalculateResultBoundaries();
 
                 if(y.has_max)
                 {
@@ -1153,30 +1184,30 @@ namespace FPoptimizer_CodeTree
             }
             case cPow:
             {
-                if(Params[1].param->IsImmed() && FloatEqual(Params[1].param->GetImmed(), 0.0))
+                if(Params[1]->IsImmed() && FloatEqual(Params[1]->GetImmed(), 0.0))
                 {
                     // Note: This makes 0^0 evaluate into 1.
                     return MinMaxTree(1.0, 1.0); // x^0 = 1
                 }
-                if(Params[0].param->IsImmed() && FloatEqual(Params[0].param->GetImmed(), 0.0))
+                if(Params[0]->IsImmed() && FloatEqual(Params[0]->GetImmed(), 0.0))
                 {
                     // Note: This makes 0^0 evaluate into 0.
                     return MinMaxTree(0.0, 0.0); // 0^x = 0
                 }
-                if(Params[0].param->IsImmed() && FloatEqual(Params[0].param->GetImmed(), 1.0))
+                if(Params[0]->IsImmed() && FloatEqual(Params[0]->GetImmed(), 1.0))
                 {
                     return MinMaxTree(1.0, 1.0); // 1^x = 1
                 }
 
-                MinMaxTree p0 = Params[0].param->CalculateResultBoundaries();
-                MinMaxTree p1 = Params[1].param->CalculateResultBoundaries();
+                MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
+                MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 TriTruthValue p0_positivity =
                     (p0.has_min && p0.has_max)
                         ? ( (p0.min >= 0.0 && p0.max >= 0.0) ? IsAlways
                           : (p0.min <  0.0 && p0.max <  0.0) ? IsNever
                           : Unknown)
                         : Unknown;
-                TriTruthValue p1_evenness = Params[1].param->GetEvennessInfo();
+                TriTruthValue p1_evenness = Params[1]->GetEvennessInfo();
 
                 /* If param0 IsAlways, the return value is also IsAlways */
                 /* If param1 is even, the return value is IsAlways */
@@ -1234,9 +1265,9 @@ namespace FPoptimizer_CodeTree
                                  * assume the result is positive
                                  * though it may be NaN instead.
                                  */
-                                if(Params[1].param->IsImmed()
-                                && !Params[1].param->IsAlwaysInteger()
-                                && Params[1].param->GetImmed() >= 0.0)
+                                if(Params[1]->IsImmed()
+                                && !Params[1]->IsAlwaysInteger()
+                                && Params[1]->GetImmed() >= 0.0)
                                 {
                                     result_positivity = IsAlways;
                                 }

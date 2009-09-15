@@ -36,7 +36,7 @@ namespace FPoptimizer_CodeTree
         if(!child_triggered)
         {
             for(size_t a=0; a<Params.size(); ++a)
-                Params[a].param->Rehash(false);
+                Params[a]->Rehash(false);
         }
 
         Recalculate_Hash_NoRecursion();
@@ -57,11 +57,11 @@ namespace FPoptimizer_CodeTree
 
     struct ParamComparer
     {
-        bool operator() (const CodeTree::Param& a, const CodeTree::Param& b) const
+        bool operator() (const CodeTreeP& a, const CodeTreeP& b) const
         {
-            if(a.param->Depth != b.param->Depth)
-                return a.param->Depth > b.param->Depth;
-            return a.param->Hash < b.param->Hash;
+            if(a->Depth != b->Depth)
+                return a->Depth > b->Depth;
+            return a->Hash < b->Hash;
         }
     };
 
@@ -106,7 +106,7 @@ namespace FPoptimizer_CodeTree
     {
         Sort();
         for(size_t a=0; a<Params.size(); ++a)
-            Params[a].param->Sort_Recursive();
+            Params[a]->Sort_Recursive();
         Recalculate_Hash_NoRecursion();
     }
 
@@ -144,17 +144,17 @@ namespace FPoptimizer_CodeTree
                 size_t MaxChildDepth = 0;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    if(Params[a].param->Depth > MaxChildDepth)
-                        MaxChildDepth = Params[a].param->Depth;
+                    if(Params[a]->Depth > MaxChildDepth)
+                        MaxChildDepth = Params[a]->Depth;
 
                     NewHash.hash1 += (1)*FPHASH_CONST(0x2492492492492492);
                     NewHash.hash1 *= FPHASH_CONST(1099511628211);
-                    //assert(&*Params[a].param != this);
-                    NewHash.hash1 += Params[a].param->Hash.hash1;
+                    //assert(&*Params[a] != this);
+                    NewHash.hash1 += Params[a]->Hash.hash1;
 
                     NewHash.hash2 += (3)*FPHASH_CONST(0x9ABCD801357);
                     NewHash.hash2 *= FPHASH_CONST(0xECADB912345);
-                    NewHash.hash2 += (~Params[a].param->Hash.hash1) ^ 4567890;
+                    NewHash.hash2 += (~Params[a]->Hash.hash1) ^ 4567890;
                 }
                 Depth += MaxChildDepth;
             }
@@ -190,13 +190,13 @@ namespace FPoptimizer_CodeTree
         return result;
     }
 
-    void CodeTree::AddParam(const Param& param)
+    void CodeTree::AddParam(const CodeTreeP& param)
     {
         Params.push_back(param);
-        Params.back().param->Parent = this;
+        Params.back()->Parent = this;
     }
 
-    void CodeTree::SetParams(const std::vector<Param>& RefParams, bool do_clone)
+    void CodeTree::SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone)
     {
         Params = RefParams;
         /**
@@ -208,8 +208,8 @@ namespace FPoptimizer_CodeTree
 
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(do_clone) Params[a].param = Params[a].param->Clone();
-            Params[a].param->Parent = this;
+            if(do_clone) Params[a] = Params[a]->Clone();
+            Params[a]->Parent = this;
         }
     }
 
@@ -276,7 +276,7 @@ namespace FPoptimizer_CodeTree
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(!Params[a].IsIdenticalTo(b.Params[a])) return false;
+            if(!Params[a]->IsIdenticalTo(*b.Params[a])) return false;
         }
         return true;
     }
@@ -302,8 +302,8 @@ namespace FPoptimizer_CodeTree
             Params.swap(b.Params);
             for(size_t a=0; a<Params.size(); ++a)
             {
-                if(do_clone) Params[a].param = Params[a].param->Clone();
-                Params[a].param->Parent = this;
+                if(do_clone) Params[a] = Params[a]->Clone();
+                Params[a]->Parent = this;
             }
         }
     }

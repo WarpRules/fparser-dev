@@ -67,19 +67,6 @@ namespace FPoptimizer_CodeTree
             unsigned Var;     // In case of cVar:   variable number
             unsigned Funcno;  // In case of cFCall or cPCall
         };
-        struct Param
-        {
-            CodeTreeP param; // param node
-
-            Param()                            : param()  {}
-            explicit Param(CodeTree*        p) : param(p) {}
-            explicit Param(const CodeTreeP& p) : param(p) {}
-
-            bool IsIdenticalTo(const Param& b) const
-            {
-                return param->IsIdenticalTo(*b.param);
-            }
-        };
 
         // Parameters for the function
         //  These use the sign:
@@ -98,7 +85,7 @@ namespace FPoptimizer_CodeTree
         //   For cVar,   not used
         //   For cIf:  operand 1 = condition, operand 2 = yes-branch, operand 3 = no-branch
         //   For anything else: the parameters required by the operation/function
-        std::vector<Param> Params;
+        std::vector<CodeTreeP> Params;
 
         /* Internal operation */
         FUNCTIONPARSERTYPES::fphash_t      Hash;
@@ -134,8 +121,8 @@ namespace FPoptimizer_CodeTree
         void Sort();
         void Sort_Recursive();
 
-        void SetParams(const std::vector<Param>& RefParams, bool do_clone = true);
-        void AddParam(const Param& param);
+        void SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone = true);
+        void AddParam(const CodeTreeP& param);
         void DelParam(size_t index);
 
         /* Clones the tree. (For parameter duplication) */
