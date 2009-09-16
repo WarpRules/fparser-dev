@@ -408,25 +408,16 @@ namespace FPoptimizer_Grammar
          *        captured into "x".
          */
 
-
         /* First, check if the tree has any chances of matching... */
         /* Figure out what we need. */
         struct Needs
         {
-            struct Needs_Pol
-            {
-                int SubTrees; // This many subtrees
-                int Others;   // This many others (namedholder)
-                unsigned SubTreesDetail[VarBegin]; // This many subtrees of each opcode type
-
-                Needs_Pol(): SubTrees(0), Others(0), SubTreesDetail()
-                {
-                }
-            } polarity[1];
-
+            int SubTrees; // This many subtrees
+            int Others;   // This many others (namedholder)
+            unsigned SubTreesDetail[VarBegin]; // This many subtrees of each opcode type
             int Immeds;      // This many immeds
 
-            Needs(): polarity(), Immeds() { }
+            Needs(): SubTrees(0), Others(0), SubTreesDetail(), Immeds() { }
         } NeedList;
 
         // Figure out what we need
@@ -434,13 +425,12 @@ namespace FPoptimizer_Grammar
         for(unsigned a=0; a<count; ++a)
         {
             const ParamSpec& param = pack.plist[index+a];
-            Needs::Needs_Pol& needs = NeedList.polarity[0];
             switch(param.opcode)
             {
                 case SubFunction:
-                    needs.SubTrees += 1;
+                    NeedList.SubTrees += 1;
                     assert( pack.flist[param.index].opcode < VarBegin );
-                    needs.SubTreesDetail[ pack.flist[param.index].opcode ] += 1;
+                    NeedList.SubTreesDetail[ pack.flist[param.index].opcode ] += 1;
                     ++minimum_need;
                     break;
                 case NumConstant:
@@ -450,7 +440,7 @@ namespace FPoptimizer_Grammar
                     ++minimum_need;
                     break;
                 case NamedHolder:
-                    needs.Others += 1;
+                    NeedList.Others += 1;
                     ++minimum_need;
                     break;
                 case RestHolder:
@@ -466,35 +456,34 @@ namespace FPoptimizer_Grammar
         // Figure out what we have (note: we already assume that the opcode of the tree matches!)
         for(size_t a=0; a<tree.Params.size(); ++a)
         {
-            Needs::Needs_Pol& needs = NeedList.polarity[0];
             unsigned opcode = tree.Params[a]->Opcode;
             switch(opcode)
             {
                 case cImmed:
                     if(NeedList.Immeds > 0) NeedList.Immeds -= 1;
-                    else needs.Others -= 1;
+                    else NeedList.Others -= 1;
                     break;
                 case cVar:
                 case cFCall:
                 case cPCall:
-                    needs.Others -= 1;
+                    NeedList.Others -= 1;
                     break;
                 default:
                     assert( opcode < VarBegin );
-                    if(needs.SubTrees > 0
-                    && needs.SubTreesDetail[opcode] > 0)
+                    if(NeedList.SubTrees > 0
+                    && NeedList.SubTreesDetail[opcode] > 0)
                     {
-                        needs.SubTrees -= 1;
-                        needs.SubTreesDetail[opcode] -= 1;
+                        NeedList.SubTrees -= 1;
+                        NeedList.SubTreesDetail[opcode] -= 1;
                     }
-                    else needs.Others -= 1;
+                    else NeedList.Others -= 1;
             }
         }
 
         // Check whether all needs were satisfied
         if(NeedList.Immeds > 0
-        || NeedList.polarity[0].SubTrees > 0
-        || NeedList.polarity[0].Others > 0)
+        || NeedList.SubTrees > 0
+        || NeedList.Others > 0)
         {
             // Something came short, impossible to satisfy.
             return NoMatch;
@@ -503,8 +492,8 @@ namespace FPoptimizer_Grammar
         if(type != AnyParams)
         {
             if(NeedList.Immeds < 0
-            || NeedList.polarity[0].SubTrees < 0
-            || NeedList.polarity[0].Others < 0
+            || NeedList.SubTrees < 0
+            || NeedList.Others < 0
             || count != tree.Params.size())
             {
                 // Something was too much.
@@ -576,27 +565,20 @@ namespace FPoptimizer_Grammar
             {
                 const size_t n_tree_params = tree.Params.size();
 
-                unsigned N_PositiveRestHolders = 0;
+                unsigned n_restholders = 0;
                 for(unsigned a=0; a<count; ++a)
-                {
-                    const ParamSpec& param = pack.plist[index+a];
-                    if(param.opcode == RestHolder)
-                    {
-                        ++N_PositiveRestHolders;
-                    }
-                }
-
-                bool HasRestHolders = N_PositiveRestHolders;
+                    if(pack.plist[index+a].opcode == RestHolder)
+                        ++n_restholders;
 
                 #ifdef DEBUG_SUBSTITUTIONS
-                if((type == AnyParams) && recursion && !HasRestHolders)
+                if((type == AnyParams) && recursion && !n_restholders)
                 {
                     std::cout << "Recursed AnyParams with no RestHolders?\n";
                     DumpParams(*this);
                 }
                 #endif
 
-                if(!HasRestHolders && recursion && count != n_tree_params)
+                if(!n_restholders && recursion && count != n_tree_params)
                 {
                     /*DumpTree(tree);
                     std::cout << "<->";
@@ -746,7 +728,7 @@ namespace FPoptimizer_Grammar
                 // If the rule cares about the balance of
                 // negative restholdings versus positive restholdings,
                 // verify them.
-                unsigned pos_rest_remain = N_PositiveRestHolders;
+                unsigned rest_remain = n_restholders;
 
                 // Verify if we have RestHolder constraints.
                 for(unsigned a=0; a<count; ++a)
@@ -760,7 +742,7 @@ namespace FPoptimizer_Grammar
                         if(i != match.RestMap.end() && i->first == param.index)
                         {
                             unsigned& n_remaining_restholders_of_this_kind =
-                                pos_rest_remain;
+                                rest_remain;
                             /*fprintf(stderr, "Does restholder %u match in", param.index);
                             fflush(stderr); DumpTree(tree); std::cout << "? " << std::flush;*/
 
@@ -802,9 +784,6 @@ namespace FPoptimizer_Grammar
 
                         std::vector<fphash_t>& RestList = match.RestMap[param.index]; // mark it up
 
-                        unsigned& n_remaining_restholders_of_this_kind =
-                            pos_rest_remain;
-
                         unsigned n_remaining_params = 0;
                         for(size_t b=0; b<n_tree_params; ++b)
                             if(!used[b])
@@ -813,7 +792,7 @@ namespace FPoptimizer_Grammar
                         /*fprintf(stderr, "[index %lu] For restholder %u, %u remains, %u remaining of kind\n",
                             match_index,
                             (unsigned)param.index, (unsigned)n_remaining_params,
-                            (unsigned)n_remaining_restholders_of_this_kind);
+                            (unsigned)rest_remain);
                             fflush(stderr);*/
 
                         if(n_remaining_params > 0)
@@ -821,7 +800,7 @@ namespace FPoptimizer_Grammar
                             if(n_remaining_params > 8) n_remaining_params = 8;
                             unsigned n_remaining_combinations = 1 << n_remaining_params;
 
-                            unsigned n_options = n_remaining_restholders_of_this_kind > 1
+                            unsigned n_options = rest_remain > 1
                                 ? n_remaining_combinations
                                 : 1;
                             size_t selection = n_remaining_combinations - 1;
@@ -854,7 +833,7 @@ namespace FPoptimizer_Grammar
                                     if(matchbit < 0x80U) matchbit <<= 1;
                                 }
                         }
-                        --n_remaining_restholders_of_this_kind;
+                        --rest_remain;
                     }
                 }
                 /*std::cout << "Returning match for ";
