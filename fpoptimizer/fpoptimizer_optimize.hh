@@ -91,6 +91,37 @@ namespace FPoptimizer_Optimize
             namedholder_matches.swap(b.namedholder_matches);
             matched_params.swap(b.matched_params);
         }
+        MatchInfo& operator=(const MatchInfo& b)
+        {
+            restholder_matches = b.restholder_matches;
+            immedholder_matches = b.immedholder_matches;
+            namedholder_matches = b.namedholder_matches;
+            matched_params = b.matched_params;
+            return *this;
+        }
+    };
+
+    class MatchPositionSpecBase;
+
+    // For iterating through match candidates
+    typedef FPOPT_autoptr<MatchPositionSpecBase> MatchPositionSpecBaseP;
+
+    class MatchPositionSpecBase
+    {
+    public:
+        int RefCount;
+    public:
+        MatchPositionSpecBase() : RefCount(0) { }
+        virtual ~MatchPositionSpecBase() { }
+    };
+    struct MatchResultType
+    {
+        bool found;
+        MatchPositionSpecBaseP specs;
+
+        MatchResultType(bool f) : found(f), specs() { }
+        MatchResultType(bool f,
+                        const MatchPositionSpecBaseP& s) : found(f), specs(s) { }
     };
 
     /* Synthesize the given grammatic parameter into the codetree */
@@ -105,15 +136,17 @@ namespace FPoptimizer_Optimize
         MatchInfo& info);
 
     /* Test the given parameter to a given CodeTree */
-    bool TestParam(
+    MatchResultType TestParam(
         const ParamSpec& parampair,
         CodeTreeP& tree,
+        const MatchPositionSpecBaseP& start_at,
         MatchInfo& info);
 
     /* Test the list of parameters to a given CodeTree */
-    bool TestParams(
+    MatchResultType TestParams(
         const ParamSpec_SubFunctionData& model_tree,
         CodeTree& tree,
+        const MatchPositionSpecBaseP& start_at,
         MatchInfo& info,
         bool TopLevel);
 }

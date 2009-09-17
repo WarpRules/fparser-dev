@@ -150,13 +150,20 @@ namespace
         CodeTree& tree)
     {
         MatchInfo info;
-        if(!TestParams(rule.match_tree, tree, info, true))
+
+        MatchResultType found(false, MatchPositionSpecBaseP());
+        for(;;)
         {
-            // Did not match
-    #ifdef DEBUG_SUBSTITUTIONS
-            DumpMatch(rule, tree, info, false);
-    #endif
-            return false;
+            found = TestParams(rule.match_tree, tree, found.specs, info, true);
+            if(found.found) break;
+            if(!&*found.specs)
+            {
+                // Did not match
+        #ifdef DEBUG_SUBSTITUTIONS
+                DumpMatch(rule, tree, info, false);
+        #endif
+                return false;
+            }
         }
         // Matched
     #ifdef DEBUG_SUBSTITUTIONS

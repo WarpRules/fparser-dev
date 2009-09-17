@@ -235,9 +235,10 @@ namespace
 namespace FPoptimizer_Optimize
 {
     /* Test the given parameter to a given CodeTree */
-    bool TestParam(
+    MatchResultType TestParam(
         const ParamSpec& parampair,
         CodeTreeP& tree,
+        const MatchPositionSpecBaseP& start_at,
         MatchInfo& info)
     {
         /* What kind of param are we expecting */
@@ -267,9 +268,12 @@ namespace FPoptimizer_Optimize
             case SubFunction: /* A subtree conforming these specs */
             {
                 const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
-                if(!TestImmedConstraints(param.constraints, tree)) return false;
-                return tree->Opcode == param.data.subfunc_opcode
-                    && TestParams(param.data, *tree, info, false);
+                if(!&*start_at)
+                {
+                    if(!TestImmedConstraints(param.constraints, tree)) return false;
+                    if(tree->Opcode != param.data.subfunc_opcode) return false;
+                }
+                return TestParams(param.data, *tree, start_at, info, false);
             }
             case GroupFunction: /* A constant value acquired from this formula */
             {
@@ -286,10 +290,119 @@ namespace FPoptimizer_Optimize
         return false;
     }
 
+    struct PositionalParams_Rec
+    {
+        MatchPositionSpecBaseP start_at; /* child's start_at */
+        MatchInfo              info;     /* backup of "info" at start */
+
+        PositionalParams_Rec(): start_at(), info() { }
+    };
+    class MatchPositionSpec_PositionalParams
+        : public MatchPositionSpecBase,
+          public std::vector<PositionalParams_Rec>
+    {
+    public:
+        explicit MatchPositionSpec_PositionalParams(size_t n)
+            : MatchPositionSpecBase(),
+              std::vector<PositionalParams_Rec> (n)
+              { }
+    };
+
+    struct AnyWhere_Rec
+    {
+        MatchPositionSpecBaseP start_at; /* child's start_at */
+        AnyWhere_Rec() : start_at() { }
+    };
+    class MatchPositionSpec_AnyWhere
+        : public MatchPositionSpecBase,
+          public std::vector<AnyWhere_Rec>
+    {
+    public:
+        unsigned trypos;   /* which param index to try next */
+
+        explicit MatchPositionSpec_AnyWhere(size_t n)
+            : MatchPositionSpecBase(),
+              std::vector<AnyWhere_Rec> (n),
+              trypos(0)
+              { }
+    };
+
+    MatchResultType TestParam_AnyWhere(
+        const ParamSpec& parampair,
+        CodeTree& tree,
+        const MatchPositionSpecBaseP& start_at,
+        MatchInfo&         info,
+        std::vector<bool>& used,
+        bool TopLevel)
+    {
+        FPOPT_autoptr<MatchPositionSpec_AnyWhere> position;
+        unsigned a;
+        if(&*start_at)
+        {
+            position = (MatchPositionSpec_AnyWhere*) &*start_at;
+            a = position->trypos;
+            goto retry_anywhere_2;
+        }
+        else
+        {
+            position = new MatchPositionSpec_AnyWhere(tree.Params.size());
+            a = 0;
+        }
+        for(; a < tree.Params.size(); ++a)
+        {
+            if(used[a]) continue;
+
+        retry_anywhere:
+          { MatchResultType r = TestParam(
+                parampair,
+                tree.Params[a],
+                (*position)[a].start_at,
+                info);
+
+            (*position)[a].start_at = r.specs;
+            if(r.found)
+            {
+                used[a]               = true; // matched
+                if(TopLevel) info.SaveMatchedParamIndex(a);
+
+                position->trypos = a; // in case of backtrack, try a again
+                return MatchResultType(true, &*position);
+            } }
+        retry_anywhere_2:
+            if(&*(*position)[a].start_at) // is there another try?
+            {
+                goto retry_anywhere;
+            }
+            // no, move on
+        }
+        return false;
+    }
+
+    struct AnyParams_Rec
+    {
+        MatchPositionSpecBaseP start_at; /* child's start_at */
+        MatchInfo              info;     /* backup of "info" at start */
+        std::vector<bool>      used;     /* which params are remaining */
+
+        explicit AnyParams_Rec(size_t nparams)
+            : start_at(), info(), used(nparams) { }
+    };
+    class MatchPositionSpec_AnyParams
+        : public MatchPositionSpecBase,
+          public std::vector<AnyParams_Rec>
+    {
+    public:
+        explicit MatchPositionSpec_AnyParams(size_t n, size_t m)
+            : MatchPositionSpecBase(),
+              std::vector<AnyParams_Rec> (n, AnyParams_Rec(m))
+              { }
+    };
+
     /* Test the list of parameters to a given CodeTree */
-    bool TestParams(
+    MatchResultType TestParams(
         const ParamSpec_SubFunctionData& model_tree,
         CodeTree& tree,
+        const MatchPositionSpecBaseP& start_at,
         MatchInfo& info,
         bool TopLevel)
     {
@@ -310,93 +423,137 @@ namespace FPoptimizer_Optimize
         }
 
         /* Verify each parameter that they are found in the tree as expected. */
-        bool info_needs_reverting = false;
-        std::auto_ptr<MatchInfo> backup_info ( new MatchInfo(info) );
-
         switch(model_tree.match_type)
         {
             case PositionalParams:
             {
                 /* Simple: Test all given parameters in succession. */
-                for(unsigned a = 0; a < model_tree.param_count; ++a)
+                FPOPT_autoptr<MatchPositionSpec_PositionalParams> position;
+                unsigned a;
+                if(&*start_at)
                 {
-                    switch(TestParam(
+                    position = (MatchPositionSpec_PositionalParams*) &*start_at;
+                    a = model_tree.param_count - 1;
+                    goto retry_positionalparams_2;
+                }
+                else
+                {
+                    position = new MatchPositionSpec_PositionalParams(model_tree.param_count);
+                    a = 0;
+                }
+
+                for(; a < model_tree.param_count; ++a)
+                {
+                    (*position)[a].info = info;
+                retry_positionalparams:
+                  { MatchResultType r = TestParam(
                         ParamSpec_Extract(model_tree.param_list, a),
                         tree.Params[a],
-                        info))
+                        (*position)[a].start_at,
+                        info);
+
+                    (*position)[a].start_at = r.specs;
+                    if(r.found)
                     {
-                        case false: // doesn't match
-                            goto Failed;
-                        case true:
-                            info_needs_reverting = true;
-                            break;
+                        continue;
+                  } }
+                retry_positionalparams_2:
+                    // doesn't match
+                    if(&*(*position)[a].start_at) // is there another try?
+                    {
+                        info = (*position)[a].info;
+                        goto retry_positionalparams;
                     }
+                    // no, backtrack
+                    if(a > 0)
+                    {
+                        --a;
+                        goto retry_positionalparams_2;
+                    }
+                    // cannot backtrack
+                    info = (*position)[0].info;
+                    return false;
                 }
                 if(TopLevel)
                     for(unsigned a = 0; a < model_tree.param_count; ++a)
                         info.SaveMatchedParamIndex(a);
-                return true;
+                return MatchResultType(true, &*position);
             }
             case SelectedParams:
                 // same as AnyParams, except that model_tree.count==tree.Params.size()
                 //                       and that there are no RestHolders
             case AnyParams:
             {
-                /* TODO: Change this such that
-                 *
-                 *  cAdd  (cMul x <1>) x
-                 *   x   = NamedHolder with index=0
-                 *   <1> = RestHolder with index=1
-                 *
-                 *  matches when given 3*var1*var0 + var1
-                 *  which is, as a tree: cAdd: (cVar: var1)
-                 *                             (cMul: (cImmed: 3)
-                 *                                    (cVar: var1)
-                 *                                    (cVar: var0)
-                 *                             )
-                 *   It should match, because the first subtree,
-                 *   cMul x <1>, could capture var1 into x
-                 *   and 3,var0 into <1>, and when returning
-                 *   to the parent, var1 matches x, thus the
-                 *   rule matches.
-                 *
-                 *   Currently, it does not match, because
-                 *   the first subtree, cMul x <1>, captures
-                 *   3 into x and var1,var0 into <1> (which is successful and not wrong),
-                 *   and when returning to the parent,
-                 *   var1 does not match to what was captured to x.
-                 *   Upon this, it should reiterate the cMul rule
-                 *   and try capturing something different into x.
-                 */
                 /* Ensure that all given parameters are found somewhere, in any order */
+
+                ParamSpec parampair;
+                FPOPT_autoptr<MatchPositionSpec_AnyParams> position;
                 std::vector<bool> used( tree.Params.size() );
-                // Match all but restholders
-                for(unsigned a = 0; a < model_tree.param_count; ++a)
+                unsigned a;
+                if(&*start_at)
                 {
-                    const ParamSpec parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    position = (MatchPositionSpec_AnyParams*) &*start_at;
+                    a = model_tree.param_count - 1;
+                    parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    goto retry_anyparams_2;
+                }
+                else
+                {
+                    position = new MatchPositionSpec_AnyParams(model_tree.param_count,
+                                                               tree.Params.size());
+                    a = 0;
+                    (*position)[0].info   = info;
+                    (*position)[0].used   = used;
+                }
+                // Match all but restholders
+                for(; a < model_tree.param_count; ++a)
+                {
+                    parampair = ParamSpec_Extract(model_tree.param_list, a);
                     if(parampair.first == RestHolder)
                         continue;
 
-                    bool found_match = false;
-                    for(unsigned b = 0; b < tree.Params.size(); ++b)
-                    {
-                        if(used[b]) continue;
-                        if(TestParam(
-                            parampair,
-                            tree.Params[b],
-                            info))
-                        {
-                            used[b] = true; // matched
-                            if(TopLevel) info.SaveMatchedParamIndex(b);
-                            info_needs_reverting = true;
-                            found_match = true;
-                            break;
-                        }
+                    if(a > 0) // this test is not necessary, but it saves from doing
+                    {         // duplicate work, because [0] was already saved above.
+                        (*position)[a].info   = info;
+                        (*position)[a].used   = used;
                     }
-                    if(!found_match) goto Failed; // could find no match
+                retry_anyparams:
+                  { MatchResultType r = TestParam_AnyWhere(
+                        parampair,
+                        tree,
+                        (*position)[a].start_at,
+                        info,
+                        used,
+                        TopLevel);
+                    (*position)[a].start_at = r.specs;
+                    if(r.found)
+                    {
+                        continue;
+                  } }
+                retry_anyparams_2:
+                    // doesn't match
+                    if(&*(*position)[a].start_at) // is there another try?
+                    {
+                        info = (*position)[a].info;
+                        used = (*position)[a].used;
+                        goto retry_anyparams;
+                    }
+                    // no, backtrack
+                retry_anyparams_3:
+                    if(a > 0)
+                    {
+                        --a;
+                        parampair = ParamSpec_Extract(model_tree.param_list, a);
+                        if(parampair.first == RestHolder)
+                            goto retry_anyparams_3;
+                        goto retry_anyparams_2;
+                    }
+                    // cannot backtrack
+                    info = (*position)[0].info;
+                    return false;
                 }
                 // Capture anything remaining in restholders
-                for(unsigned a = 0; a < model_tree.param_count; ++a)
+                for(a = 0; a < model_tree.param_count; ++a)
                 {
                     const ParamSpec parampair = ParamSpec_Extract(model_tree.param_list, a);
                     if(parampair.first == RestHolder)
@@ -412,14 +569,8 @@ namespace FPoptimizer_Optimize
                             if(TopLevel) info.SaveMatchedParamIndex(b);
                         }
                 }
-                return true;
+                return MatchResultType(true, &*position);
             }
-        }
-    Failed:
-        if(info_needs_reverting)
-        {
-            // revert info
-            info.swap(*backup_info);
         }
         return false; // doesn't match
     }
