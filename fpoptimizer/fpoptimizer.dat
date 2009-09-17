@@ -109,13 +109,13 @@ cIf [(cNotNot x) y z] -> cIf [x y z]
 # For example:
 #  Move branch invariants. if(y, x+a, x+b) -> x+if(y, a, b)
 #  TODO: Figure out why these rules never match.
-cIf [y       x      (cAdd x <1>)] -> cAdd[x (cIf [y 0          (cAdd <1>)])]
+cIf [y (cAdd x <1>)       x     ] -> cAdd[x (cIf [y 0          (cAdd <1>)])]
 cIf [y (cAdd x <1>) (cAdd x <3>)] -> cAdd[x (cIf [y (cAdd <1>) (cAdd <3>)])]
-cIf [y       x      (cMul x <1>)] -> cMul[x (cIf [y 1          (cMul <1>)])]
+cIf [y (cMul x <1>)       x     ] -> cMul[x (cIf [y 1          (cMul <1>)])]
 cIf [y (cMul x <1>) (cMul x <3>)] -> cMul[x (cIf [y (cMul <1>) (cMul <3>)])]
-cIf [y       x      (cAnd x <1>)] -> cAnd[x (cIf [y 0          (cAnd <1>)])]
+cIf [y (cAnd x <1>)       x     ] -> cAnd[x (cIf [y 0          (cAnd <1>)])]
 cIf [y (cAnd x <1>) (cAnd x <3>)] -> cAnd[x (cIf [y (cAnd <1>) (cAnd <3>)])]
-cIf [y       x      (cOr  x <1>)] -> cOr [x (cIf [y 1          (cOr  <1>)])]
+cIf [y (cOr  x <1>)       x     ] -> cOr [x (cIf [y 1          (cOr  <1>)])]
 cIf [y (cOr  x <1>) (cOr  x <3>)] -> cOr [x (cIf [y (cOr  <1>) (cOr  <3>)])]
 
 #### Flattening the topology of add/mul/min/max/and/or groups:
@@ -183,7 +183,7 @@ cPow [(cMul % <1>) &] -> (cMul POW(% &) (cPow [(cMul <1>) &]))
 
 
 # x*y / (x*z) = y/z
-cMul x <1> (cPow [(cMul x <2>) -1]) : <1> (cPow [(cMul <2>) -1])
+cMul (cPow [(cMul x <2>) -1]) x <1> : <1> (cPow [(cMul <2>) -1])
 
 # log(x) + log(y) = log(x*y)
 cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
@@ -435,7 +435,6 @@ cMul (cAdd %@M <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 # x * (y + (y * -1 * z)) -> x * y * (1 - z) -- already accomplished by cAdd x* (cMul x <1>)
 # Becomes:
 #      y + (-y * z)  -> y * (1 - z)
-cAdd %@M (cMul {-% x})   : (cMul ABS(%) (cAdd [ *(% /ABS(%)) (cMul -*(% /ABS(%)) x)]))
 cAdd (cMul {%@M x}) -%   : (cMul ABS(%) (cAdd [-*(% /ABS(%)) (cMul  *(% /ABS(%)) x)]))
 # ^ Using @M (non-1 constraint) to prevent falling into an infinite loop
 #     Example:   5 + (-5*x) ->  5 * (1 + -1*x)  =  5 * (1 - x)
@@ -645,12 +644,12 @@ cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)
 cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])})] -> cAsinh [x]
-cAdd {x (cPow [(cAdd {(cPow [x 2])  1}) 0.5])} -> cPow [CONSTANT_E (cAsinh [x])]
+cAdd {(cPow [(cAdd {(cPow [x 2])  1}) 0.5]) x} -> cPow [CONSTANT_E (cAsinh [x])]
 
 #        acosh: log(x + sqrt(x*x - 1))
 #        exp(acosh): x + sqrt(x*x - 1)
 cLog  [(cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])})] -> cAcosh [x]
-cAdd {x (cPow [(cAdd {(cPow [x 2]) -1}) 0.5])} -> cPow [CONSTANT_E (cAcosh [x])]
+cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x} -> cPow [CONSTANT_E (cAcosh [x])]
 
 #        atanh(x):   log( (1+x) / (1-x)) / 2
 #        2*atanh(x): log( (1+x) / (1-x))
