@@ -16,91 +16,13 @@ namespace FPoptimizer_Grammar
     static const char ImmedHolderNames[][2]  = {"%","&"};
     static const char NamedHolderNames[][2] = {"x","y","z","a","b","c","d","e","f","g"};
 
-    void DumpParam(const ParamSpec& parampair)
-    {
-        //std::cout << "/*p" << (&p-pack.plist) << "*/";
-        unsigned constraints = 0;
-        switch(parampair.first)
-        {
-            case NumConstant:
-              { const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                std::cout << param.constvalue; break; }
-            case ImmedHolder:
-              { const ParamSpec_ImmedHolder& param = *(const ParamSpec_ImmedHolder*) parampair.second;
-                std::cout << ImmedHolderNames[param.index];
-                constraints = param.constraints;
-                break; }
-            case NamedHolder:
-              { const ParamSpec_NamedHolder& param = *(const ParamSpec_NamedHolder*) parampair.second;
-                std::cout << NamedHolderNames[param.index];
-                constraints = param.constraints;
-                break; }
-            case RestHolder:
-              { const ParamSpec_RestHolder& param = *(const ParamSpec_RestHolder*) parampair.second;
-                std::cout << '<' << param.index << '>';
-                break; }
-            case SubFunction:
-              { const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
-                constraints = param.constraints;
-                std::cout << '(' << FP_GetOpcodeName(param.data.subfunc_opcode) << ' ';
-                if(param.data.match_type == PositionalParams) std::cout << '[';
-                if(param.data.match_type == SelectedParams) std::cout << '{';
-                DumpParams(param.data.param_list, param.data.param_count);
-                if(param.data.match_type == PositionalParams) std::cout << " ]";
-                if(param.data.match_type == SelectedParams) std::cout << " }";
-                std::cout << ')';
-                break; }
-            case GroupFunction:
-              { const ParamSpec_GroupFunction& param = *(const ParamSpec_GroupFunction*) parampair.second;
-                constraints = param.constraints;
-                std::string opcode = FP_GetOpcodeName(param.subfunc_opcode).substr(1);
-                for(size_t a=0; a<opcode.size(); ++a) opcode[a] = std::toupper(opcode[a]);
-                std::cout << opcode << '(';
-                DumpParams(param.param_list, param.param_count);
-                std::cout << " )"; }
-        }
-        switch( ImmedConstraint_Value(constraints & ValueMask) )
-        {
-            case ValueMask: break;
-            case Value_AnyNum: break;
-            case Value_EvenInt:   std::cout << "@E"; break;
-            case Value_OddInt:    std::cout << "@O"; break;
-            case Value_IsInteger: std::cout << "@I"; break;
-            case Value_NonInteger:std::cout << "@F"; break;
-        }
-        switch( ImmedConstraint_Sign(constraints & SignMask) )
-        {
-            case SignMask: break;
-            case Sign_AnySign: break;
-            case Sign_Positive:   std::cout << "@P"; break;
-            case Sign_Negative:   std::cout << "@N"; break;
-        }
-        switch( ImmedConstraint_Oneness(constraints & OnenessMask) )
-        {
-            case OnenessMask: break;
-            case Oneness_Any: break;
-            case Oneness_One:     std::cout << "@1"; break;
-            case Oneness_NotOne:  std::cout << "@M"; break;
-        }
-    }
-    void DumpParams(unsigned paramlist, unsigned count)
-    {
-        for(unsigned a=0; a<count; ++a)
-        {
-            if(a > 0) std::cout << ' ';
-            const ParamSpec& param = ParamSpec_Extract(paramlist,a);
-            DumpParam(param, o);
-            unsigned depcode = ParamSpec_GetDepCode(param);
-            if(depcode != 0)
-                o << "@D" << depcode;
-        }
-    }
     void DumpMatch(const Rule& rule,
                    const CodeTree& tree,
                    const MatchInfo& info,
-                   bool DidMatch)
+                   bool DidMatch,
+                   std::ostream& o)
     {
-        std::cout <<
+        o <<
             "Found " << (DidMatch ? "match" : "mismatch") << ":\n"
             "  Pattern    : ";
         { ParamSpec tmp;
@@ -108,36 +30,27 @@ namespace FPoptimizer_Grammar
           ParamSpec_SubFunction tmp2;
           tmp2.data = rule.match_tree;
           tmp.second = (const void*) &tmp2;
-          DumpParam(tmp);
+          DumpParam(tmp, o);
         }
-        std::cout << "\n"
+        o << "\n"
             "  Replacement: ";
-        DumpParams(rule.repl_param_list, rule.repl_param_count);
-        std::cout << "\n";
+        DumpParams(rule.repl_param_list, rule.repl_param_count, o);
+        o << "\n";
 
-        std::cout <<
+        o <<
             "  Tree       : ";
-        DumpTree(tree);
-        std::cout << "\n";
-        if(DidMatch) DumpHashes(tree);
+        DumpTree(tree, o);
+        o << "\n";
+        if(DidMatch) DumpHashes(tree, o);
 
         for(std::map<unsigned, CodeTreeP>::const_iterator
-            i = info.namedholder_matches.begin();
-            i != info.namedholder_matches.end();
+            i = info.paramholder_matches.begin();
+            i != info.paramholder_matches.end();
             ++i)
         {
-            std::cout << "           " << NamedHolderNames[i->first] << " = ";
-            DumpTree(*i->second);
-            std::cout << "\n";
-        }
-
-        for(std::map<unsigned, double>::const_iterator
-            i = info.immedholder_matches.begin();
-            i != info.immedholder_matches.end();
-            ++i)
-        {
-            std::cout << "           " << ImmedHolderNames[i->first] << " = ";
-            std::cout << i->second << std::endl;
+            o << "           " << NamedHolderNames[i->first] << " = ";
+            DumpTree(*i->second, o);
+            o << "\n";
         }
 
         for(std::multimap<unsigned, CodeTreeP>::const_iterator
@@ -145,18 +58,19 @@ namespace FPoptimizer_Grammar
             i != info.restholder_matches.end();
             ++i)
         {
-            std::cout << "         <" << i->first << "> = ";
-            DumpTree(*i->second);
-            std::cout << std::endl;
+            o << "         <" << i->first << "> = ";
+            DumpTree(*i->second, o);
+            o << std::endl;
         }
-        std::cout << std::flush;
+        o << std::flush;
     }
 
     void DumpHashes(const CodeTree& tree,
-                    std::map<fphash_t, std::set<std::string> >& done)
+                    std::map<fphash_t, std::set<std::string> >& done,
+                    std::ostream& o)
     {
         for(size_t a=0; a<tree.Params.size(); ++a)
-            DumpHashes(*tree.Params[a], done);
+            DumpHashes(*tree.Params[a], done, o);
 
         std::ostringstream buf;
         DumpTree(tree, buf);
@@ -165,7 +79,7 @@ namespace FPoptimizer_Grammar
     void DumpHashes(const CodeTree& tree, std::ostream& o)
     {
         std::map<fphash_t, std::set<std::string> > done;
-        DumpHashes(tree, done);
+        DumpHashes(tree, done, o);
 
         for(std::map<fphash_t, std::set<std::string> >::const_iterator
             i = done.begin();

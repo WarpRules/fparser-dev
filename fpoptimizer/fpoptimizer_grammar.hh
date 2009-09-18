@@ -1,5 +1,7 @@
 #ifndef FPOPT_NAN_CONST
 
+#include <iostream>
+
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
@@ -37,20 +39,19 @@ namespace FPoptimizer_Grammar
         Oneness_One      = 0x20, // +1 or -1
         Oneness_NotOne   = 0x40  // anything but +1 or -1
     };
+    enum ImmedConstraint_Constness
+    {
+        ConstnessMask = 0x80,
+        Constness_Any    = 0x00,
+        Constness_Const  = 0x80
+    };
 
     /* The param_opcode field of the ParamSpec has the following
      * possible values (from enum SpecialOpcode):
      *   NumConstant:
      *      this describes a specific constant value (constvalue)
      *      that must be matched / synthesized.
-     *   ImmedHolder:
-     *      this describes any constant value
-     *      that must be matched / synthesized.
-     *      In matching, all ImmedHolders having the same ID (index)
-     *      must evaluate to the same constant value.
-     *      In synthesizing, the constant value matched by
-     *      an ImmedHolder with this ID must be synthesized.
-     *   NamedHolder:
+     *   ParamHolder:
      *      this describes any node
      *      that must be matched / synthesized.
      *      "index" is the ID of the NamedHolder:
@@ -58,44 +59,26 @@ namespace FPoptimizer_Grammar
      *      must match the identical node.
      *      In synthesizing, the node matched by
      *      a NamedHolder with this ID must be synthesized.
-     *   RestHolder:
-     *      this describes a set of node
-     *      that must be matched / synthesized.
-     *      "index" is the ID of the RestHolder:
-     *      In matching, all RestHolders having the same ID
-     *      must match the same set of nodes.
-     *      In synthesizing, all nodes matched by
-     *      the RestHolder with this ID must be synthesized.
      *    SubFunction:
      *      this describes a subtree
      *      that must be matched / synthesized.
      *      The subtree is described in subfunc_opcode,param_begin..+param_count.
-     *    GroupFunction:
-     *      this describes a constant value
-     *      that must be matched / synthesized.
-     *      The subfunc_opcode field (from fparser's OPCODE enum)
-     *      describes the mathematical operation performed on the
-     *      nodes described in param_begin..+param_count.
-     *      For example, cAdd indicates that the constant values
-     *      of the given parameters are to be added up.
-     *      All the parameters must be of a type that
-     *      evaluates into a constant value.
+     *      If the type is GroupFunction, the tree is expected
+     *      to yield a constant value which is tested.
      */
     enum SpecialOpcode
     {
         NumConstant,        // Holds a particular value (syntax-time constant)
-        ImmedHolder,        // Holds a particular immed
-        NamedHolder,        // Holds a particular named param (of any kind)
-        SubFunction,        // Holds an opcode and the params
-        RestHolder,         // Holds anything else
-        GroupFunction       // For parse-time functions
+        ParamHolder,        // Holds a particular named param
+        SubFunction         // Holds an opcode and the params
     };
 
     enum ParamMatchingType
     {
         PositionalParams, // this set of params in this order
         SelectedParams,   // this set of params in any order
-        AnyParams         // these params are included
+        AnyParams,        // these params are included
+        GroupFunction     // this function represents a constant value
     };
 
     enum RuleType
@@ -121,11 +104,11 @@ namespace FPoptimizer_Grammar
     bool ParamSpec_Compare(const void* a, const void* b, SpecialOpcode type);
     unsigned ParamSpec_GetDepCode(const ParamSpec& b);
 
-    struct ParamSpec_ImmedHolder
+    struct ParamSpec_ParamHolder
     {
-        unsigned index       : 4; // holder ID
-        unsigned depcode     : 4;
+        unsigned index       : 8; // holder ID
         unsigned constraints : 8; // constraints
+        unsigned depcode     :16;
     } PACKED_GRAMMAR_ATTRIBUTE;
 
     struct ParamSpec_NumConstant
@@ -133,26 +116,13 @@ namespace FPoptimizer_Grammar
         double constvalue;        // the value
     } PACKED_GRAMMAR_ATTRIBUTE;
 
-    struct ParamSpec_NamedHolder
-    {
-        unsigned index       : 4; // holder ID
-        unsigned depcode     : 4;
-        unsigned constraints : 8; // constraints
-    } PACKED_GRAMMAR_ATTRIBUTE;
-
-    struct ParamSpec_RestHolder
-    {
-        unsigned index       : 8; // holder ID
-    } PACKED_GRAMMAR_ATTRIBUTE;
-
     struct ParamSpec_SubFunctionData
     {
         /* Expected parameters (leaves) of the tree: */
         unsigned param_count         : 2;
         unsigned param_list          : 30;
-
         /* The opcode that the tree must have when SubFunction */
-        FUNCTIONPARSERTYPES::OPCODE subfunc_opcode : 6;
+        FUNCTIONPARSERTYPES::OPCODE subfunc_opcode : 8;
 
         /* When matching, type describes the method of matching.
          *
@@ -170,33 +140,24 @@ namespace FPoptimizer_Grammar
          * When synthesizing, the type is ignored.
          */
         ParamMatchingType match_type : 2; /* When SubFunction */
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+30+6+2=40 bits=5 bytes
+        /* Optional restholder index for capturing the rest of parameters (0=not used)
+         * Only valid when match_type = AnyParams
+         */
+        unsigned restholder_index : 6;
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+30+6+2+8=48 bits=6 bytes
 
     struct ParamSpec_SubFunction
     {
         ParamSpec_SubFunctionData data;
         unsigned constraints : 8; // constraints
         unsigned depcode     : 8;
-    } PACKED_GRAMMAR_ATTRIBUTE; // 7 bytes
-
-    struct ParamSpec_GroupFunction
-    {
-        unsigned param_count         : 2;
-        unsigned param_list          : 30;
-        /* The opcode that is used for calculating the GroupFunction */
-        FUNCTIONPARSERTYPES::OPCODE subfunc_opcode : 8;
-        unsigned constraints                       : 8; // constraints
-        unsigned depcode                           : 8;
-    } PACKED_GRAMMAR_ATTRIBUTE;
+    } PACKED_GRAMMAR_ATTRIBUTE; // 8 bytes
 
     /* Theoretical minimal sizes in each param_opcode cases:
      * Assume param_opcode needs 3 bits.
      *    NumConstant:   3 + 64              (or 3+4 if just use index to clist[])
-     *    ImmedHolder:   3 + 7 + 2           (7 for constraints, 2 for immed index)
-     *    NamedHolder:   3 + 7 + 2           (same as above)
-     *    RestHolder:    3 + 2               (2 for restholder index)
+     *    ParamHolder:   3 + 7 + 2           (7 for constraints, 2 for immed index)
      *    SubFunction:   3 + 7 + 2 + 2 + 3*9 = 41
-     *    GroupFunction: 3 +         2 + 3*9 = 32
      */
 
     /* A rule describes a pattern for matching
@@ -205,6 +166,11 @@ namespace FPoptimizer_Grammar
      */
     struct Rule
     {
+        /* For optimization: Number of minimum parameters (leaves)
+         * that the source tree must contain for this rule to match.
+         */
+        unsigned  n_minimum_params : 2;
+
         /* If the rule matched, this field describes how to perform
          * the replacement.
          *   When type==ProduceNewTree,
@@ -216,7 +182,7 @@ namespace FPoptimizer_Grammar
          *       described at repl_param_begin[0..repl_param_count].
          *       Other leaves remain intact.
          */
-        RuleType  ruletype         : 3;
+        RuleType  ruletype         : 1;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
         unsigned  repl_param_count : 2; /* Assumed to be 1 when type == ProduceNewTree */
@@ -224,12 +190,7 @@ namespace FPoptimizer_Grammar
 
         /* The function that we must match. Always a SubFunction. */
         ParamSpec_SubFunctionData match_tree;
-
-        /* For optimization: Number of minimum parameters (leaves)
-         * that the source tree must contain for this rule to match.
-         */
-        unsigned  n_minimum_params : 8;
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 3+2+27 + 40 + 8 = 80 bits = 10 bytes
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+1+2+27 + 48 = 80 bits = 10 bytes
 
     /* Grammar is a set of rules for tree substitutions. */
     struct Grammar
@@ -249,6 +210,9 @@ namespace FPoptimizer_Grammar
     {
         Grammar               glist[4];
     } pack;
+
+    void DumpParam(const ParamSpec& p, std::ostream& o = std::cout);
+    void DumpParams(unsigned paramlist, unsigned count, std::ostream& o = std::cout);
 }
 
 #endif

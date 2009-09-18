@@ -66,7 +66,8 @@
 #     ;
 #
 #     paramlist: /* left-recursive list of 0-n params with no delimiter */
-#       | paramlist param     /* param */
+#       | paramlist param             /* param */
+#       | paramlist RESTHOLDER_TOKEN  /* a placeholder for all remaining params */
 #       | /* empty */
 #     ;
 #
@@ -76,7 +77,6 @@
 #     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  NAMEDHOLDER_TOKEN param_constraints  /* any expression, indicated by "x", "a" etc. */
 #     |  (' function ')' param_constraints    /* a subtree */
-#     |  RESTHOLDER_TOKEN                     /* a placeholder for all remaining params of given polarity */
 #     |  UNARY_TRANSFORMATION param           /* the negated/inverted literal value of the param */
 #     ;
 #

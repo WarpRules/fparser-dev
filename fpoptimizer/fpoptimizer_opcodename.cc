@@ -21,11 +21,8 @@ const std::string FP_GetOpcodeName(FPoptimizer_Grammar::SpecialOpcode opcode, bo
     switch( opcode )
     {
         case NumConstant:   p = "NumConstant"; break;
-        case ImmedHolder:   p = "ImmedHolder"; break;
-        case NamedHolder:   p = "NamedHolder"; break;
-        case RestHolder:    p = "RestHolder"; break;
+        case ParamHolder:   p = "ParamHolder"; break;
         case SubFunction:   p = "SubFunction"; break;
-        case GroupFunction: p = "GroupFunction"; break;
     }
     std::ostringstream tmp;
     //if(!p) std::cerr << "o=" << opcode << "\n";

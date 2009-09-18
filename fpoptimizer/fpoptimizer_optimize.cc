@@ -152,6 +152,10 @@ namespace
         MatchInfo info;
 
         MatchResultType found(false, MatchPositionSpecBaseP());
+
+        /*std::cout << "TESTING: ";
+        DumpMatch(rule, tree, info, false);*/
+
         for(;;)
         {
             found = TestParams(rule.match_tree, tree, found.specs, info, true);

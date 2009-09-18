@@ -67,6 +67,13 @@ namespace
                 if(FloatEqual(fabs(tree->GetImmed()), 1.0)) return false;
                 break;
         }
+        switch(bitmask & ConstnessMask)
+        {
+            case Constness_Any: /*case ConstnessMask:*/ break;
+            case Constness_Const:
+                if(!tree->IsImmed()) return false;
+                break;
+        }
         return true;
     }
 
@@ -102,23 +109,21 @@ namespace
                 case SubFunction:
                 {
                     const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
-                    NeedList.SubTrees += 1;
-                    assert( param.data.subfunc_opcode < VarBegin );
-                    NeedList.SubTreesDetail[ param.data.subfunc_opcode ] += 1;
+                    if(param.data.match_type == GroupFunction)
+                        NeedList.Immeds += 1;
+                    else
+                    {
+                        NeedList.SubTrees += 1;
+                        assert( param.data.subfunc_opcode < VarBegin );
+                        NeedList.SubTreesDetail[ param.data.subfunc_opcode ] += 1;
+                    }
                     ++minimum_need;
                     break;
                 }
                 case NumConstant:
-                case ImmedHolder:
-                case GroupFunction:
-                    NeedList.Immeds += 1;
-                    ++minimum_need;
-                    break;
-                case NamedHolder:
+                case ParamHolder:
                     NeedList.Others += 1;
                     ++minimum_need;
-                    break;
-                case RestHolder:
                     break;
             }
         }
@@ -188,39 +193,36 @@ namespace
         switch( parampair.first )
         {
             case NumConstant:
-              { const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                return new CodeTree( param.constvalue ); }
-            case ImmedHolder:
             {
-                const ParamSpec_ImmedHolder& param = *(const ParamSpec_ImmedHolder*) parampair.second;
-                double value = 0.0;
-                if(info.GetImmedHolderValueIfFound( param.index, value ))
-                    return new CodeTree(value);
+                const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
+                return new CodeTree( param.constvalue ); // Note: calculates hash too.
+            }
+            case ParamHolder:
+            {
+                const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
+                CodeTreeP result ( info.GetParamHolderValueIfFound( param.index ) );
+                if(&*result)
+                    return result;
                 break; // The immed is not defined
             }
-            case NamedHolder:// Note: Never occurs within GroupFunction
-            case RestHolder: // Note: Never occurs within GroupFunction
-            case SubFunction: // Note: Never occurs within GroupFunction
-                break;
-            case GroupFunction:
+            case SubFunction:
             {
-                const ParamSpec_GroupFunction& param = *(const ParamSpec_GroupFunction*) parampair.second;
+                const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
                 /* Synthesize a CodeTree which will take care of
                  * constant-folding our expression. It will also
                  * indicate whether the result is, in fact,
                  * a constant at all. */
                 CodeTreeP result = new CodeTree;
-                result->Opcode = param.subfunc_opcode;
-                for(unsigned a=0; a<param.param_count; ++a)
+                result->Opcode = param.data.subfunc_opcode;
+                for(unsigned a=0; a<param.data.param_count; ++a)
                     result->AddParam(
                             CalculateGroupFunction(
-                                ParamSpec_Extract(param.param_list, a), info)
+                                ParamSpec_Extract(param.data.param_list, a), info)
                                     );
                 result->ConstantFolding();
-                /* Don't run Sort() or Recalculate_Hash_NoRecursion()
-                 * here - these are not used in the execution paths
-                 * that involve CalculateGroupFunction().
-                 */
+                /* Must calculate hash because of the call to IsIdenticalTo that comes next. */
+                result->Sort();
+                result->Recalculate_Hash_NoRecursion();
                 return result;
             }
         }
@@ -228,6 +230,7 @@ namespace
         CodeTreeP result = new CodeTree;
         result->Opcode = cVar;
         result->Var    = 999;
+        result->Recalculate_Hash_NoRecursion();
         return result;
     }
 }
@@ -250,41 +253,33 @@ namespace FPoptimizer_Optimize
                 if(!tree->IsImmed()) return false;
                 return FloatEqual(tree->GetImmed(), param.constvalue);
             }
-            case ImmedHolder: /* A constant value */
+            case ParamHolder: /* Any arbitrary node */
             {
-                const ParamSpec_ImmedHolder& param = *(const ParamSpec_ImmedHolder*) parampair.second;
-                if(!tree->IsImmed()) return false;
+                const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
                 if(!TestImmedConstraints(param.constraints, tree)) return false;
-                return info.SaveOrTestImmedHolder( param.index, tree->GetImmed() );
+                return info.SaveOrTestParamHolder(param.index, tree);
             }
-            case NamedHolder: /* A subtree */
-            {
-                const ParamSpec_NamedHolder& param = *(const ParamSpec_NamedHolder*) parampair.second;
-                if(!TestImmedConstraints(param.constraints, tree)) return false;
-                return info.SaveOrTestNamedHolder(param.index, tree);
-            }
-            case RestHolder: // Note: Never occurs
-                return true;
-            case SubFunction: /* A subtree conforming these specs */
+            case SubFunction:
             {
                 const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
-                if(!&*start_at)
-                {
+                if(param.data.match_type == GroupFunction)
+                { /* A constant value acquired from this formula */
                     if(!TestImmedConstraints(param.constraints, tree)) return false;
-                    if(tree->Opcode != param.data.subfunc_opcode) return false;
+                    /* Construct the formula */
+                    CodeTreeP  grammar_func = CalculateGroupFunction(parampair, info);
+                    /* Evaluate it and compare */
+                    return tree->IsIdenticalTo(*grammar_func);
                 }
-                return TestParams(param.data, *tree, start_at, info, false);
-            }
-            case GroupFunction: /* A constant value acquired from this formula */
-            {
-                const ParamSpec_GroupFunction& param = *(const ParamSpec_GroupFunction*) parampair.second;
-                if(!tree->IsImmed()) return false;
-                /* Construct the formula */
-                CodeTreeP  grammar_func = CalculateGroupFunction(parampair, info);
-                /* Evaluate it and compare */
-                if(!grammar_func->IsImmed()) return false;
-                if(!TestImmedConstraints(param.constraints, tree)) return false;
-                return FloatEqual(tree->GetImmed(), grammar_func->GetImmed());
+                else /* A subtree conforming these specs */
+                {
+                    if(!&*start_at)
+                    {
+                        if(!TestImmedConstraints(param.constraints, tree)) return false;
+                        if(tree->Opcode != param.data.subfunc_opcode) return false;
+                    }
+                    return TestParams(param.data,
+                                      *tree, start_at, info, false);
+                }
             }
         }
         return false;
@@ -486,7 +481,6 @@ namespace FPoptimizer_Optimize
             {
                 /* Ensure that all given parameters are found somewhere, in any order */
 
-                ParamSpec parampair;
                 FPOPT_autoptr<MatchPositionSpec_AnyParams> position;
                 std::vector<bool> used( tree.Params.size() );
                 std::vector<unsigned> depcodes( model_tree.param_count );
@@ -504,13 +498,12 @@ namespace FPoptimizer_Optimize
                     if(depcodes[a] == 0)
                         test_order[b++] = a;
                 }
-            anyparams_restart:;
+
                 unsigned a;
                 if(&*start_at)
                 {
                     position = (MatchPositionSpec_AnyParams*) &*start_at;
                     a = model_tree.param_count - 1;
-                    parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
                     goto retry_anyparams_2;
                 }
                 else
@@ -524,10 +517,6 @@ namespace FPoptimizer_Optimize
                 // Match all but restholders
                 for(; a < model_tree.param_count; ++a)
                 {
-                    parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
-                    if(parampair.first == RestHolder)
-                        continue;
-
                     if(a > 0) // this test is not necessary, but it saves from doing
                     {         // duplicate work, because [0] was already saved above.
                         (*position)[a].info   = info;
@@ -535,7 +524,7 @@ namespace FPoptimizer_Optimize
                     }
                 retry_anyparams:
                   { MatchResultType r = TestParam_AnyWhere(
-                        parampair,
+                        ParamSpec_Extract(model_tree.param_list, test_order[a]),
                         tree,
                         (*position)[a].start_at,
                         info,
@@ -555,38 +544,33 @@ namespace FPoptimizer_Optimize
                         goto retry_anyparams;
                     }
                     // no, backtrack
-                retry_anyparams_3:
                     if(a > 0)
                     {
                         --a;
-                        parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
-                        if(parampair.first == RestHolder)
-                            goto retry_anyparams_3;
                         goto retry_anyparams_2;
                     }
                     // cannot backtrack
                     info = (*position)[0].info;
                     return false;
                 }
-                // Capture anything remaining in restholders
-                for(a = 0; a < model_tree.param_count; ++a)
+                // Capture anything remaining in the restholder
+                if(model_tree.restholder_index != 0)
                 {
-                    const ParamSpec parampair = ParamSpec_Extract(model_tree.param_list, a);
-                    if(parampair.first == RestHolder)
-                        for(unsigned b = 0; b < tree.Params.size(); ++b)
-                        {
-                            if(used[b]) continue; // Ignore subtrees that were already used
-                            // Save this tree to this restholder
+                    for(unsigned b = 0; b < tree.Params.size(); ++b)
+                    {
+                        if(used[b]) continue; // Ignore subtrees that were already used
+                        // Save this tree to this restholder
 
-                            const ParamSpec_RestHolder& param = *(const ParamSpec_RestHolder*) parampair.second;
-                            info.SaveRestHolderMatch(param.index,
-                                                     tree.Params[b]);
-                            used[b] = true;
-                            if(TopLevel) info.SaveMatchedParamIndex(b);
-                        }
+                        info.SaveRestHolderMatch(model_tree.restholder_index,
+                                                 tree.Params[b]);
+                        used[b] = true;
+                        if(TopLevel) info.SaveMatchedParamIndex(b);
+                    }
                 }
                 return MatchResultType(true, &*position);
             }
+            case GroupFunction: // never occurs
+                break;
         }
         return false; // doesn't match
     }

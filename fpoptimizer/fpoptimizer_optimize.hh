@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <iostream>
 
 //#define DEBUG_SUBSTITUTIONS
 
@@ -17,8 +18,7 @@ namespace FPoptimizer_Optimize
     {
     public:
         std::multimap<unsigned, CodeTreeP> restholder_matches;
-        std::map<unsigned, double>    immedholder_matches;
-        std::map<unsigned, CodeTreeP> namedholder_matches;
+        std::map<unsigned, CodeTreeP> paramholder_matches;
         std::vector<unsigned> matched_params;
     public:
         /* These functions save data from matching */
@@ -27,20 +27,11 @@ namespace FPoptimizer_Optimize
             restholder_matches.insert( std::make_pair(restholder_index, treeptr) );
         }
 
-        bool SaveOrTestImmedHolder(unsigned immedholder_index, double value)
+        bool SaveOrTestParamHolder(unsigned paramholder_index, const CodeTreeP& treeptr)
         {
-            std::map<unsigned, double>::iterator i = immedholder_matches.lower_bound(immedholder_index);
-            if(i == immedholder_matches.end() || i->first != immedholder_index)
-                { immedholder_matches.insert(i, std::make_pair(immedholder_index, value));
-                  return true; }
-            return FloatEqual(i->second, value);
-        }
-
-        bool SaveOrTestNamedHolder(unsigned namedholder_index, const CodeTreeP& treeptr)
-        {
-            std::map<unsigned, CodeTreeP>::iterator i = namedholder_matches.lower_bound(namedholder_index);
-            if(i == namedholder_matches.end() || i->first != namedholder_index)
-                { namedholder_matches.insert(i, std::make_pair(namedholder_index, treeptr));
+            std::map<unsigned, CodeTreeP>::iterator i = paramholder_matches.lower_bound(paramholder_index);
+            if(i == paramholder_matches.end() || i->first != paramholder_index)
+                { paramholder_matches.insert(i, std::make_pair(paramholder_index, treeptr));
                   return true; }
             return treeptr->IsIdenticalTo(*i->second);
         }
@@ -55,19 +46,16 @@ namespace FPoptimizer_Optimize
          * It is expected that when synthesizing codetrees,
          * it will use Clone() from the original tree.
          */
-        double    GetImmedHolderValue( unsigned immedholder_index ) const
-            { return immedholder_matches.find(immedholder_index)->second; }
-
-        bool GetImmedHolderValueIfFound( unsigned immedholder_index, double& value ) const
+        CodeTreeP GetParamHolderValueIfFound( unsigned paramholder_index ) const
         {
-            std::map<unsigned, double>::const_iterator i = immedholder_matches.find(immedholder_index);
-            if(i == immedholder_matches.end() || i->first != immedholder_index) return false;
-            value = i->second;
-            return true;
+            std::map<unsigned, CodeTreeP>::const_iterator i = paramholder_matches.find(paramholder_index);
+            if(i == paramholder_matches.end() || i->first != paramholder_index)
+                return 0;
+            return i->second;
         }
 
-        CodeTreeP GetNamedHolderValue( unsigned namedholder_index ) const
-            { return namedholder_matches.find(namedholder_index)->second->Clone(); }
+        CodeTreeP GetParamHolderValue( unsigned paramholder_index ) const
+            { return paramholder_matches.find(paramholder_index)->second->Clone(); }
 
         std::vector<CodeTreeP> GetRestHolderValues( unsigned restholder_index ) const
         {
@@ -87,15 +75,13 @@ namespace FPoptimizer_Optimize
         void swap(MatchInfo& b)
         {
             restholder_matches.swap(b.restholder_matches);
-            immedholder_matches.swap(b.immedholder_matches);
-            namedholder_matches.swap(b.namedholder_matches);
+            paramholder_matches.swap(b.paramholder_matches);
             matched_params.swap(b.matched_params);
         }
         MatchInfo& operator=(const MatchInfo& b)
         {
             restholder_matches = b.restholder_matches;
-            immedholder_matches = b.immedholder_matches;
-            namedholder_matches = b.namedholder_matches;
+            paramholder_matches = b.paramholder_matches;
             matched_params = b.matched_params;
             return *this;
         }
@@ -151,17 +137,13 @@ namespace FPoptimizer_Optimize
         bool TopLevel);
 }
 
-#ifdef DEBUG_SUBSTITUTIONS
 namespace FPoptimizer_Grammar
 {
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
     void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-
-    void DumpParam(const ParamSpec& p);
-    void DumpParams(unsigned paramlist, unsigned count);
     void DumpMatch(const Rule& rule,
                    const FPoptimizer_CodeTree::CodeTree& tree,
                    const FPoptimizer_Optimize::MatchInfo& info,
-                   bool DidMatch);
+                   bool DidMatch,
+                   std::ostream& o = std::cout);
 }
-#endif

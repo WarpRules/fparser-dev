@@ -23,21 +23,10 @@ namespace FPoptimizer_Optimize
                 double value ( param.constvalue );
                 tree.AddParam( new CodeTree(value) );
                 break; }
-            case ImmedHolder:
-              { const ParamSpec_ImmedHolder& param = *(const ParamSpec_ImmedHolder*) parampair.second;
-                double value ( info.GetImmedHolderValue( param.index ) );
-                tree.AddParam( new CodeTree(value) );
-                break; }
-            case NamedHolder:
-              { const ParamSpec_NamedHolder& param = *(const ParamSpec_NamedHolder*) parampair.second;
-                CodeTreeP paramtree ( info.GetNamedHolderValue( param.index ) );
+            case ParamHolder:
+              { const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
+                CodeTreeP paramtree ( info.GetParamHolderValue( param.index ) );
                 tree.AddParam( paramtree );
-                break; }
-            case RestHolder:
-              { const ParamSpec_RestHolder& param = *(const ParamSpec_RestHolder*) parampair.second;
-                std::vector<CodeTreeP> trees ( info.GetRestHolderValues( param.index ) );
-                for(size_t a=0; a<trees.size(); ++a)
-                    tree.AddParam( trees[a] );
                 break; }
             case SubFunction:
               { const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
@@ -45,20 +34,12 @@ namespace FPoptimizer_Optimize
                 subtree->Opcode = param.data.subfunc_opcode;
                 for(unsigned a=0; a < param.data.param_count; ++a)
                     SynthesizeParam( ParamSpec_Extract(param.data.param_list, a), *subtree, info );
-                subtree->ConstantFolding();
-                subtree->Sort();
-                subtree->Recalculate_Hash_NoRecursion();
-                tree.AddParam( subtree );
-                break; }
-            case GroupFunction:
-              { const ParamSpec_GroupFunction& param = *(const ParamSpec_GroupFunction*) parampair.second;
-                // This is expected to produce a cImmed. However, to simplify
-                // the code, we don't bother calculating the value here.
-                // Instead, we rely on ConstantFolding to do it for us.
-                CodeTreeP subtree ( new CodeTree );
-                subtree->Opcode = param.subfunc_opcode;
-                for(unsigned a=0; a < param.param_count; ++a)
-                    SynthesizeParam( ParamSpec_Extract(param.param_list, a), *subtree, info );
+                if(param.data.restholder_index != 0)
+                {
+                    std::vector<CodeTreeP> trees ( info.GetRestHolderValues( param.data.restholder_index ) );
+                    for(size_t a=0; a<trees.size(); ++a)
+                        subtree->AddParam( trees[a] );
+                }
                 subtree->ConstantFolding();
                 subtree->Sort();
                 subtree->Recalculate_Hash_NoRecursion();

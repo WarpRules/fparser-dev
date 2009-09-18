@@ -166,23 +166,22 @@ namespace GrammarData
     public:
         ParamMatchingType Type;
         std::vector<ParamSpec*> Params;
+        unsigned RestHolderIndex;
 
     public:
-        MatchedParams()                    : Type(PositionalParams), Params() { }
-        MatchedParams(ParamMatchingType t) : Type(t),                Params() { }
-        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params() { Params.push_back(p); }
+        MatchedParams()                    : Type(PositionalParams), Params(), RestHolderIndex(0) { }
+        MatchedParams(ParamMatchingType t) : Type(t),                Params(), RestHolderIndex(0) { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params(), RestHolderIndex(0) { Params.push_back(p); }
 
         MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
         MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
 
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
 
-        void RecursivelySetParamMatchingType(ParamMatchingType t);
+        void RecursivelySetDefaultParamMatchingType();
         bool EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const;
         bool EnsureNoRepeatedNamedHolders() const;
         bool EnsureNoVariableCoverageParams_InPositionalParamLists();
-        bool EnsureNoRepeatedRestHolders();
-        bool EnsureNoRepeatedRestHolders(std::set<unsigned>& used);
 
         size_t CalcRequiredParamsCount() const;
 
@@ -198,10 +197,12 @@ namespace GrammarData
     public:
         FunctionType(OPCODE o, const MatchedParams& p) : Opcode(o), Params(p) { }
 
-        void RecursivelySetParamMatchingType(ParamMatchingType t)
+        void RecursivelySetDefaultParamMatchingType()
         {
-            Params.Type = t;
-            Params.RecursivelySetParamMatchingType(t);
+            Params.RecursivelySetDefaultParamMatchingType();
+            if((Opcode == cAdd || Opcode == cMul || Opcode == cAnd || Opcode == cOr)
+            && Params.Type == PositionalParams)
+                Params.Type = SelectedParams;
         }
 
         bool EnsureNoRepeatedNamedHolders() const
@@ -217,80 +218,141 @@ namespace GrammarData
         union
         {
             double ConstantValue;           // for NumConstant
-            unsigned Index;                 // for ImmedHolder, RestHolder, NamedHolder
+            unsigned Index;                 // for ParamHolder
             FunctionType* Func;             // for SubFunction
-            OPCODE GroupFuncOpcode;         // for GroupFunction
         };
         unsigned ImmedConstraint;
-        std::vector<ParamSpec*> Params;
+        bool     IsConst;                   // when SubFunction
 
     public:
-        struct NamedHolderTag{};
-        struct ImmedHolderTag{};
-        struct RestHolderTag{};
+        struct ParamHolderTag{};
 
         ParamSpec(FunctionType* f)
             : DepMask(),
-              Opcode(SubFunction), Func(f),          ImmedConstraint(0), Params()
-              {
-              }
+              Opcode(SubFunction),
+              Func(f),
+              ImmedConstraint(0),
+              IsConst(false)
+        {
+        }
 
         ParamSpec(double d)
             : DepMask(),
-              Opcode(NumConstant), ConstantValue(d), ImmedConstraint(0), Params() { }
+              Opcode(NumConstant),
+              ConstantValue(d),
+              ImmedConstraint(0),
+              IsConst(true)
+        {
+        }
 
         ParamSpec(OPCODE o, const std::vector<ParamSpec*>& p)
             : DepMask(),
-              Opcode(GroupFunction),    ImmedConstraint(0), Params(p)
+              Opcode(SubFunction),
+              Func(new FunctionType(o, MatchedParams(PositionalParams))),
+              ImmedConstraint(0),
+              IsConst(true)
         {
-            GroupFuncOpcode = o;
+            if(o == cNeg && p[0]->Opcode == NumConstant)
+            {
+                delete Func;
+                Opcode        = NumConstant;
+                ConstantValue = -p[0]->ConstantValue;
+            }
+            else
+                Func->Params.Params = p;
         }
 
-        ParamSpec(unsigned i, NamedHolderTag)
+        ParamSpec(unsigned i, ParamHolderTag)
             : DepMask(),
-              Opcode(NamedHolder), Index(i),         ImmedConstraint(0), Params() { }
+              Opcode(ParamHolder), Index(i),
+              ImmedConstraint(0),
+              IsConst(true)
+        {
+        }
 
-        ParamSpec(unsigned i, ImmedHolderTag)
-            : DepMask(),
-              Opcode(ImmedHolder), Index(i),         ImmedConstraint(0), Params() { }
-
-        ParamSpec(unsigned i, RestHolderTag)
-            : DepMask(),
-              Opcode(RestHolder),  Index(i),         ImmedConstraint(0), Params() { }
-
+/*
+        // Order:
+        //  NumConstant { ConstantValue }
+        //  ParamHolder { Index }
+        //  SubFunction { Opcode, IsConst }
+        bool operator< (const ParamSpec& b) const
+        {
+            if(Opcode == NumConstant)
+                return (b.Opcode == NumConstant)
+                        ? ConstantValue < b.ConstantValue
+                        : true;
+            if(Opcode == ParamHolder)
+                return (b.Opcode == ParamHolder)
+                        ? Index < b.Index
+                        : (b.Opcode == SubFunction)
+                            ? true
+                            : false;
+            if(Opcode == SubFunction)
+                return (b.Opcode == SubFunction)
+                    ? (Func->Opcode != b.Func->Opcode
+                         ? Func->Opcode < b.Func->Opcode
+                         : IsConst < b.IsConst
+                      )
+                    : false;
+            return false;
+        }
+        bool operator!= (const ParamSpec& b) const { return !operator==(b); }
+        bool operator== (const ParamSpec& b) const
+        {
+            switch(Opcode)
+            {
+                case NumConstant:
+                    return b.Opcode == Opcode && FloatEqual(ConstantValue, b.ConstantValue);
+                case ParamHolder:
+                    return b.Opcode == Opcode && ImmedConstraint == b.ImmedConstraint
+                        && b.DepMask == DepMask && Index == b.Index;
+                case SubFunction:
+                    if(b.Opcode != SubFunction) return false;
+                    if(Func->Opcode != b.Func->Opcode) return false;
+                    if(ImmedConstraint != b.ImmedConstraint) return false;
+                    if(DepMask != b.DepMask) return false;
+                    if(IsConst != b.IsConst) return false;
+                    if(Func->Params.Type != b.Func->Params.Type
+                    || Func->Params.RestHolderIndex != b.Func->Params.RestHolderIndex
+                    || Func->Params.Params.size() != b.Func->Params.Params.size())
+                        return false;
+                    for(size_t a=0; a<Func->Params.Params.size(); ++a)
+                        if(*Func->Params.Params[a] != *b.Func->Params.Params[a])
+                            return false;
+            }
+            return true;
+        }
+*/
         ParamSpec* SetConstraint(unsigned mask)
             { ImmedConstraint |= mask; return this; }
 
         unsigned BuildDepMask();
 
-        void RecursivelySetParamMatchingType(ParamMatchingType t)
+        void RecursivelySetDefaultParamMatchingType()
         {
-            for(size_t a=0; a<Params.size(); ++a)
-                Params[a]->RecursivelySetParamMatchingType(t);
             if(Opcode == SubFunction)
-                Func->RecursivelySetParamMatchingType(t);
+                Func->RecursivelySetDefaultParamMatchingType();
         }
         bool VerifyIsConstant()
         {
-            switch(SpecialOpcode(Opcode))
+            switch(Opcode)
             {
                 case NumConstant: return true;
-                case ImmedHolder: return true;
-                case NamedHolder: return false;
-                case RestHolder: return false; // <1> is not constant
-                case SubFunction: return false; // subfunctions are not constant
-                case GroupFunction: break;
+                case ParamHolder: return ImmedConstraint & Constness_Const;
+                case SubFunction:
+                    if(!IsConst) return false; // subfunctions are not constant
             }
-            // For GroupFunctions, all params must be const.
-            for(size_t a=0; a<Params.size(); ++a)
-                if(!Params[a]->VerifyIsConstant()) return false;
+            // For const-subfunctions, all params must be const.
+            for(size_t a=0; a<Func->Params.Params.size(); ++a)
+                if(!Func->Params.Params[a]->VerifyIsConstant()) return false;
             return true;
         }
 
         bool EnsureNoRepeatedNamedHolders() const
         {
+            if(Opcode != SubFunction) return true;
             MatchedParams tmp;
-            tmp.Params = Params;
+            tmp.Params = Func->Params.Params;
             return tmp.EnsureNoRepeatedNamedHolders();
         }
 
@@ -337,17 +399,21 @@ namespace GrammarData
 
     ////////////////////
 
-    void MatchedParams::RecursivelySetParamMatchingType(ParamMatchingType t)
+    void MatchedParams::RecursivelySetDefaultParamMatchingType()
     {
+        Type = PositionalParams;
+        if(RestHolderIndex != 0)
+            Type = AnyParams;
+
         for(size_t a=0; a<Params.size(); ++a)
-            Params[a]->RecursivelySetParamMatchingType(t);
+            Params[a]->RecursivelySetDefaultParamMatchingType();
     }
 
     bool MatchedParams::EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const
     {
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(Params[a]->Opcode == NamedHolder)
+            if(Params[a]->Opcode == ParamHolder)
             {
                 unsigned index = Params[a]->Index;
                 std::set<unsigned>::iterator i = used.lower_bound(index);
@@ -373,57 +439,19 @@ namespace GrammarData
         if(Type != PositionalParams
         && Type != SelectedParams) return true;
 
+        if(RestHolderIndex != 0) return false;
+
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(Params[a]->Opcode == RestHolder)
-                return false;
-
             if(Params[a]->Opcode == SubFunction)
                 if(!Params[a]->Func->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
                     return false;
         }
         return true;
     }
-    bool MatchedParams::EnsureNoRepeatedRestHolders()
-    {
-        std::set<unsigned> Used_RestHolders;
-        return EnsureNoRepeatedRestHolders(Used_RestHolders);
-    }
-
-    bool MatchedParams::EnsureNoRepeatedRestHolders(std::set<unsigned>& used)
-    {
-        for(size_t a=0; a<Params.size(); ++a)
-        {
-            switch(SpecialOpcode(Params[a]->Opcode))
-            {
-                case RestHolder:
-                    if(used.find(Params[a]->Index) != used.end()) return false;
-                    used.insert(Params[a]->Index);
-                    break;
-                case NumConstant:
-                case ImmedHolder:
-                case NamedHolder:
-                    break;
-                case SubFunction:
-                    if(!Params[a]->Func->Params.EnsureNoRepeatedRestHolders(used))
-                        return false;
-                    break;
-                default: // GroupFunction:
-                    break;
-            }
-        }
-        return true;
-    }
     size_t MatchedParams::CalcRequiredParamsCount() const
     {
-        size_t res = 0;
-        for(size_t a=0; a<Params.size(); ++a)
-        {
-            if(Params[a]->Opcode == RestHolder)
-                continue; // Completely optional
-            res += 1;
-        }
-        return res;
+        return Params.size();
     }
 
     unsigned MatchedParams::BuildDepMask()
@@ -437,6 +465,7 @@ namespace GrammarData
     void MatchedParams::BuildFinalDepMask()
     {
         unsigned all_bits = BuildDepMask();
+
         // For each bit that is set in all_bits, unset
         // all of them that are only set in one of the parameters.
         for(unsigned bit=1; all_bits >= bit; bit <<= 1)
@@ -454,6 +483,7 @@ namespace GrammarData
                         Params[a]->DepMask &= ~bit;
                 }
             }
+
         // Recurse
         for(size_t a=0; a<Params.size(); ++a)
             if(Params[a]->Opcode == SubFunction)
@@ -508,12 +538,9 @@ public:
     {
         param_count = Params.size();
         param_list  = 0;
-        ParamSpec pp[3];
-        for(unsigned a=0; a<param_count; ++a)
-            pp[a] = CreateParam(*Params[a]);
         for(unsigned a=0; a<param_count; ++a)
         {
-            ParamSpec p = pp[a];
+            ParamSpec p = CreateParam(*Params[a]);
 
             unsigned paramno = plist.size();
 
@@ -547,6 +574,12 @@ public:
                 result->data.param_count = pcount;
                 result->data.param_list  = plist;
                 result->depcode        = p.DepMask;
+                result->data.restholder_index = p.Func->Params.RestHolderIndex;
+                if(p.IsConst)
+                {
+                    result->data.match_type = GroupFunction;
+                    result->constraints |= Constness_Const;
+                }
                 return std::make_pair(SubFunction, (void*)result);
             }
             case NumConstant:
@@ -555,43 +588,17 @@ public:
                 result->constvalue     = p.ConstantValue;
                 return std::make_pair(NumConstant, (void*)result);
             }
-            case NamedHolder:
+            case ParamHolder:
             {
-                ParamSpec_NamedHolder* result = new ParamSpec_NamedHolder;
+                ParamSpec_ParamHolder* result = new ParamSpec_ParamHolder;
                 result->constraints    = p.ImmedConstraint;
                 result->index          = p.Index;
                 result->depcode        = p.DepMask;
-                return std::make_pair(NamedHolder, (void*)result);
-            }
-            case ImmedHolder:
-            {
-                ParamSpec_ImmedHolder* result = new ParamSpec_ImmedHolder;
-                result->constraints    = p.ImmedConstraint;
-                result->index          = p.Index;
-                result->depcode        = p.DepMask;
-                return std::make_pair(ImmedHolder, (void*)result);
-            }
-            case RestHolder:
-            {
-                ParamSpec_RestHolder* result = new ParamSpec_RestHolder;
-                result->index          = p.Index;
-                return std::make_pair(RestHolder, (void*)result);
-            }
-            default:
-            {
-                ParamSpec_GroupFunction* result = new ParamSpec_GroupFunction;
-                result->constraints    = p.ImmedConstraint;
-                result->subfunc_opcode = p.GroupFuncOpcode;
-                DumpParamList(p.Params, pcount, plist);
-                result->param_count = pcount;
-                result->param_list  = plist;
-                result->param_count = pcount;
-                result->depcode        = p.DepMask;
-                return std::make_pair(GroupFunction, (void*)result);
+                return std::make_pair(ParamHolder, (void*)result);
             }
         }
         std::cout << "???\n";
-        return std::make_pair(GroupFunction, (void*) 0);
+        return std::make_pair(SubFunction, (void*) 0);
     }
 
     Rule CreateRule(const GrammarData::Rule& r)
@@ -604,6 +611,7 @@ public:
         ritem.ruletype                  = r.Type;
         ritem.match_tree.subfunc_opcode = r.Input.Opcode;
         ritem.match_tree.match_type     = r.Input.Params.Type;
+        ritem.match_tree.restholder_index = r.Input.Params.RestHolderIndex;
         unsigned         pcount;
         unsigned         plist;
         DumpParamList(r.Input.Params.Params, pcount, plist);
@@ -660,6 +668,11 @@ public:
             case Oneness_One: result << sep << "Oneness_One"; sep=s; break;
             case Oneness_NotOne: result << sep << "Oneness_NotOne"; sep=s; break;
         }
+        switch( ImmedConstraint_Constness( constraints & ConstnessMask ) )
+        {
+            /*case ConstnessMask:*/ case Oneness_Any: break;
+            case Constness_Const: result << sep << "Constness_Const"; sep=s; break;
+        }
         if(!*sep) result << "0";
         return result.str();
     }
@@ -669,7 +682,8 @@ public:
         std::ostringstream result;
         result.precision(50);
         #define if_const(n) \
-            if(FloatEqual(value, n)) result << #n;
+            if(FloatEqual(value, n)) result << #n; \
+            else if(FloatEqual(value, -n)) result << "-" #n;
         if_const(CONSTANT_E)
         else if_const(CONSTANT_EI)
         else if_const(CONSTANT_2E)
@@ -692,19 +706,10 @@ public:
 
     struct ParamCollection
     {
-        std::vector<ParamSpec_ImmedHolder>   plist_i;
+        std::vector<ParamSpec_ParamHolder>   plist_p;
         std::vector<ParamSpec_NumConstant>   plist_n;
-        std::vector<ParamSpec_NamedHolder>   plist_a;
-        std::vector<ParamSpec_RestHolder>    plist_r;
         std::vector<ParamSpec_SubFunction>   plist_s;
-        std::vector<ParamSpec_GroupFunction> plist_g;
 
-        const ParamSpec& DecodeParam(unsigned list, unsigned index) const
-        {
-            unsigned plist_index = (list >> (index*PARAM_INDEX_BITS))
-                                   % (1 << PARAM_INDEX_BITS);
-            return plist[plist_index];
-        }
         void Populate(const ParamSpec& param)
         {
             #define set(when, list, code) \
@@ -717,27 +722,81 @@ public:
                     break; }
             switch(param.first)
             {
-                set(ImmedHolder, plist_i, );
+                set(ParamHolder, plist_p, );
                 set(NumConstant, plist_n, );
-                set(NamedHolder, plist_a, );
-                set(RestHolder,  plist_r, );
                 set(SubFunction, plist_s,
                      ParamSpec_SubFunction* p = (ParamSpec_SubFunction*)param.second;
                      for(size_t a=0; a<p->data.param_count; ++a)
-                         Populate( DecodeParam( p->data.param_list, a) );
-                    );
-                set(GroupFunction, plist_g,
-                     ParamSpec_GroupFunction* p = (ParamSpec_GroupFunction*)param.second;
-                     for(size_t a=0; a<p->param_count; ++a)
-                         Populate( DecodeParam( p->param_list, a) );
+                         Populate( ParamSpec_Extract( p->data.param_list, a) );
                     );
             }
             #undef set
         }
+        
+        struct p_compare { bool operator() (
+            const ParamSpec_ParamHolder& a,
+            const ParamSpec_ParamHolder& b) const
+        {
+            if(a.index != b.index) return a.index < b.index;
+            return false;
+        } };
+        struct n_compare { bool operator() (
+            const ParamSpec_NumConstant& a,
+            const ParamSpec_NumConstant& b) const
+        {
+            return a.constvalue < b.constvalue;
+        } };
+        struct s_compare { bool operator() (
+            const ParamSpec_SubFunction& a,
+            const ParamSpec_SubFunction& b) const
+        {
+            if(a.data.subfunc_opcode != b.data.subfunc_opcode)
+                return a.data.subfunc_opcode < b.data.subfunc_opcode;
+            if(a.data.match_type != b.data.match_type)
+                return a.data.match_type < b.data.match_type;
+            size_t min_param_count = a.data.param_count;
+            if(b.data.param_count < min_param_count)
+                min_param_count = b.data.param_count;
+            for(size_t c=0; c< min_param_count; ++c)
+            {
+                ParamSpec aa = ParamSpec_Extract(a.data.param_list, c);
+                ParamSpec bb = ParamSpec_Extract(b.data.param_list, c);
+                if(aa.first != bb.first)
+                    return aa.first < bb.first;
+                switch(aa.first)
+                {
+                    case ParamHolder:
+                        if(p_compare() (*(const ParamSpec_ParamHolder*)aa.second,
+                                        *(const ParamSpec_ParamHolder*)bb.second))
+                            return true;
+                        break;
+                    case NumConstant:
+                        if(n_compare() (*(const ParamSpec_NumConstant*)aa.second,
+                                        *(const ParamSpec_NumConstant*)bb.second))
+                            return true;
+                        break;
+                    case SubFunction:
+                        if(s_compare() (*(const ParamSpec_SubFunction*)aa.second,
+                                        *(const ParamSpec_SubFunction*)bb.second))
+                            return true;
+                        break;
+                }
+            }
+            if(a.data.param_count != b.data.param_count)
+                return a.data.param_count < b.data.param_count;
+            return false;
+        } };
+        
+        void Sort()
+        {
+            std::stable_sort(plist_p.begin(), plist_p.end(), p_compare());
+            std::stable_sort(plist_n.begin(), plist_n.end(), n_compare());
+            std::stable_sort(plist_s.begin(), plist_s.end(), s_compare());
+        }
 
         std::string ParamPtrToString(unsigned paramlist, unsigned index) const
         {
-            const ParamSpec& p = DecodeParam(paramlist, index);
+            const ParamSpec& p = ParamSpec_Extract(paramlist, index);
             if(!p.second) return "0";
             #define set(when, list, c) \
                 case when: \
@@ -751,12 +810,9 @@ public:
                     break;
             switch(p.first)
             {
-                set(ImmedHolder, plist_i, I);
+                set(ParamHolder, plist_p, P);
                 set(NumConstant, plist_n, N);
-                set(NamedHolder, plist_a, A);
-                set(RestHolder,  plist_r, R);
                 set(SubFunction, plist_s, S);
-                set(GroupFunction, plist_g, G);
             }
             #undef set
             return "?"+FP_GetOpcodeName(p.first);
@@ -785,22 +841,12 @@ public:
             return res;
         }
 
-        std::string ImmedHolderToString(const ParamSpec_ImmedHolder& i) const
+        std::string ParamHolderToString(const ParamSpec_ParamHolder& i) const
         {
             std::ostringstream result;
             result << "{" << i.index
-                   << ", 0x" << i.depcode
                    << ", " << ConstraintsToString(i.constraints)
-                   << "}";
-            return result.str();
-        }
-
-        std::string NamedHolderToString(const ParamSpec_NamedHolder& i) const
-        {
-            std::ostringstream result;
-            result << "{" << i.index
                    << ", 0x" << i.depcode
-                   << ", " << ConstraintsToString(i.constraints)
                    << "}";
             return result.str();
         }
@@ -813,14 +859,6 @@ public:
             return result.str();
         }
 
-        std::string RestHolderToString(const ParamSpec_RestHolder& i) const
-        {
-            std::ostringstream result;
-            result << "{" << i.index
-                   << "}";
-            return result.str();
-        }
-
         std::string SubFunctionDataToString(const ParamSpec_SubFunctionData& i) const
         {
             std::ostringstream result;
@@ -829,8 +867,10 @@ public:
                    << ", " << FP_GetOpcodeName(i.subfunc_opcode, true)
                    << ","  << (i.match_type == PositionalParams ? "PositionalParams"
                             :  i.match_type == SelectedParams   ? "SelectedParams  "
-                            :/*i.match_type == AnyParams      ?*/ "AnyParams       "
+                            :  i.match_type == AnyParams        ? "AnyParams       "
+                            :/*i.match_type == GroupFunction  ?*/ "GroupFunction   "
                             )
+                   << "," << i.restholder_index
                    << "}";
             return result.str();
         }
@@ -844,18 +884,6 @@ public:
                    << "}";
             return result.str();
         }
-
-        std::string GroupFunctionToString(const ParamSpec_GroupFunction& i) const
-        {
-            std::ostringstream result;
-            result << "{" << i.param_count
-                   <<  "," << ParamListToString(i.param_list, i.param_count)
-                   << ", " << FP_GetOpcodeName(i.subfunc_opcode, true)
-                   << ", " << ConstraintsToString(i.constraints)
-                   << ", 0x" << i.depcode
-                   << "}";
-            return result.str();
-        }
     };
 
     void Flush()
@@ -864,10 +892,11 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             for(unsigned b=0; b < rlist[a].match_tree.param_count; ++b)
-                collection.Populate( collection.DecodeParam(rlist[a].match_tree.param_list, b) );
+                collection.Populate( ParamSpec_Extract(rlist[a].match_tree.param_list, b) );
             for(unsigned b=0; b < rlist[a].repl_param_count; ++b)
-                collection.Populate( collection.DecodeParam(rlist[a].repl_param_list, b) );
+                collection.Populate( ParamSpec_Extract(rlist[a].repl_param_list, b) );
         }
+        collection.Sort();
 
         std::cout <<
             "namespace\n"
@@ -892,18 +921,17 @@ public:
             { \
                 buf << "        /* " << a << "\t*/ " \
                     << collection.type##ToString(collection.list[a]) \
-                    << ",\n"; \
+                    << ", /* "; \
+                FPoptimizer_Grammar::DumpParam( ParamSpec(type, (const void*) &collection.list[a]), buf); \
+                buf << " */\n"; \
             } \
             buf << \
             "        },\n" \
             "\n";
 
-        set(ImmedHolder,   plist_i, I)
+        set(ParamHolder,   plist_p, P)
         set(NumConstant,   plist_n, N)
-        set(NamedHolder,   plist_a, A)
-        set(RestHolder,    plist_r, R)
         set(SubFunction,   plist_s, S)
-        set(GroupFunction, plist_g, G)
 
         std::cout <<
             "    } /*PACKED_GRAMMAR_ATTRIBUTE*/ plist =\n"
@@ -926,15 +954,37 @@ public:
                         "        /*********************/\n";
 
             std::cout <<
-            "        /* " << a << "\t*/ "
-                        << "{"
+            "        /* " << a << ":\t";
+            ParamSpec_SubFunction tmp = {rlist[a].match_tree,0,0};
+            FPoptimizer_Grammar::DumpParam( ParamSpec(SubFunction, (const void*) &tmp) );
+            switch(rlist[a].ruletype)
+            {
+                case ProduceNewTree:
+                    std::cout <<
+                    "\n"
+                    "         *\t->\t";
+                    FPoptimizer_Grammar::DumpParam(
+                        ParamSpec_Extract(rlist[a].repl_param_list, 0) );
+                    break;
+                case ReplaceParams:
+                    std::cout <<
+                    "\n"
+                    "         *\t:\t";
+                    FPoptimizer_Grammar::DumpParams( rlist[a].repl_param_list, rlist[a].repl_param_count);
+                    break;
+            }
+            std::cout <<
+            "\n"
+            "         */\t\t "
+                        "{"
+                        << rlist[a].n_minimum_params
+                        << ", "
                         << (rlist[a].ruletype == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].ruletype == ReplaceParams ?*/ "ReplaceParams "
                            )
                         << ", " << rlist[a].repl_param_count
                         <<  "," << collection.ParamListToString(rlist[a].repl_param_list, rlist[a].repl_param_count)
                         << ", " << collection.SubFunctionDataToString(rlist[a].match_tree)
-                        << ", " << rlist[a].n_minimum_params
                         << "},\n";
         }
         std::cout <<
@@ -966,7 +1016,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 871 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 921 "fpoptimizer/fpoptimizer_grammar_gen.y"
 typedef union {
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1372,27 +1422,27 @@ static const char yytranslate[] = {     0,
 #if YY_FPoptimizerGrammarParser_DEBUG != 0
 static const short yyprhs[] = {     0,
      0,     3,     6,     7,    12,    17,    22,    24,    29,    34,
-    37,    40,    41,    43,    46,    51,    54,    59,    61,    64,
-    67
+    37,    40,    43,    44,    46,    49,    54,    57,    62,    65,
+    68
 };
 
 static const short yyrhs[] = {    20,
     21,     0,    20,    11,     0,     0,    22,    13,    25,    11,
      0,    22,    13,    23,    11,     0,    22,    12,    24,    11,
      0,    23,     0,     8,    14,    24,    15,     0,     8,    16,
-    24,    17,     0,     8,    24,     0,    24,    25,     0,     0,
-     3,     0,     6,    26,     0,     7,    18,    24,    19,     0,
-     4,    26,     0,    18,    23,    19,    26,     0,     5,     0,
-     9,    25,     0,    26,    10,     0,     0
+    24,    17,     0,     8,    24,     0,    24,    25,     0,    24,
+     5,     0,     0,     3,     0,     6,    26,     0,     7,    18,
+    24,    19,     0,     4,    26,     0,    18,    23,    19,    26,
+     0,     9,    25,     0,    26,    10,     0,     0
 };
 
 #endif
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-   907,   913,   914,   917,   927,   943,   958,   969,   984,   998,
-  1013,  1018,  1024,  1029,  1034,  1044,  1049,  1054,  1058,  1071,
-  1076
+   957,   963,   964,   967,   977,   994,  1013,  1024,  1033,  1041,
+  1050,  1055,  1064,  1070,  1075,  1080,  1090,  1095,  1100,  1113,
+  1118
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -1405,21 +1455,21 @@ static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONST
 
 static const short yyr1[] = {     0,
     20,    20,    20,    21,    21,    21,    22,    23,    23,    23,
-    24,    24,    25,    25,    25,    25,    25,    25,    25,    26,
+    24,    24,    24,    25,    25,    25,    25,    25,    25,    26,
     26
 };
 
 static const short yyr2[] = {     0,
      2,     2,     0,     4,     4,     4,     1,     4,     4,     2,
-     2,     0,     1,     2,     4,     2,     4,     1,     2,     2,
+     2,     2,     0,     1,     2,     4,     2,     4,     2,     2,
      0
 };
 
 static const short yydefact[] = {     3,
-     0,    12,     2,     1,     0,     7,    12,    12,    10,    12,
-     0,     0,     0,    13,    21,    18,    21,     0,     0,     0,
-    11,     0,     0,     0,     8,     9,    16,    14,    12,    19,
-     0,     6,     5,     4,    20,     0,    21,    15,    17,     0,
+     0,    13,     2,     1,     0,     7,    13,    13,    10,    13,
+     0,     0,     0,    14,    21,    12,    21,     0,     0,     0,
+    11,     0,     0,     0,     8,     9,    17,    15,    13,    19,
+     0,     6,     5,     4,    20,     0,    21,    16,    18,     0,
      0
 };
 
@@ -1428,41 +1478,43 @@ static const short yydefgoto[] = {     1,
 };
 
 static const short yypact[] = {-32768,
-    60,    28,-32768,-32768,    33,-32768,-32768,-32768,    58,-32768,
-     9,    25,    32,-32768,-32768,-32768,-32768,   -16,    58,    15,
--32768,    48,    36,    37,-32768,-32768,    16,    16,-32768,-32768,
-    39,-32768,-32768,-32768,-32768,     2,-32768,-32768,    16,    56,
+    71,    20,-32768,-32768,    25,-32768,-32768,-32768,    52,-32768,
+    59,    10,    26,-32768,-32768,-32768,-32768,    -6,    69,    15,
+-32768,    42,    28,    29,-32768,-32768,    16,    16,-32768,-32768,
+    22,-32768,-32768,-32768,-32768,     2,-32768,-32768,    16,    50,
 -32768
 };
 
 static const short yypgoto[] = {-32768,
--32768,-32768,    -1,    -7,    14,   -13
+-32768,-32768,     7,    -7,    -9,   -13
 };
 
 
-#define	YYLAST		76
+#define	YYLAST		87
 
 
 static const short yytable[] = {    12,
-    13,    29,    22,    28,    14,    15,    16,    17,    18,    23,
-    19,    14,    15,    16,    17,    18,     2,    19,    31,    20,
-    38,    36,     2,    39,    24,    35,    20,    14,    15,    16,
-    17,    18,    30,    19,    14,    15,    16,    17,    18,    25,
-    19,     7,    20,     8,    10,    11,    33,    34,    26,    20,
-    14,    15,    16,    17,    18,    41,    19,    37,    32,    40,
-    14,    15,    16,    17,    18,    20,    19,     2,     0,     0,
-     3,     0,     0,     0,     0,    20
+    13,    24,    22,    28,    14,    15,    16,    17,    18,    30,
+    19,    29,    14,    15,    16,    17,    18,    23,    19,    20,
+    38,    36,     2,    39,    25,    35,    31,    20,    14,    15,
+    16,    17,    18,     7,    19,     8,    10,    11,    33,    34,
+    37,     0,    26,    20,    14,    15,    16,    17,    18,    41,
+    19,     0,    32,     0,    14,    15,    16,    17,    18,    20,
+    19,    14,    15,     0,    17,    18,     2,    19,     0,    20,
+    40,    14,    15,     0,    17,    18,    20,    19,     2,     0,
+     0,     3,     0,     0,     0,     0,    20
 };
 
 static const short yycheck[] = {     7,
-     8,    18,    10,    17,     3,     4,     5,     6,     7,    11,
-     9,     3,     4,     5,     6,     7,     8,     9,    20,    18,
-    19,    29,     8,    37,    11,    10,    18,     3,     4,     5,
-     6,     7,    19,     9,     3,     4,     5,     6,     7,    15,
-     9,    14,    18,    16,    12,    13,    11,    11,    17,    18,
-     3,     4,     5,     6,     7,     0,     9,    19,    11,     0,
-     3,     4,     5,     6,     7,    18,     9,     8,    -1,    -1,
-    11,    -1,    -1,    -1,    -1,    18
+     8,    11,    10,    17,     3,     4,     5,     6,     7,    19,
+     9,    18,     3,     4,     5,     6,     7,    11,     9,    18,
+    19,    29,     8,    37,    15,    10,    20,    18,     3,     4,
+     5,     6,     7,    14,     9,    16,    12,    13,    11,    11,
+    19,    -1,    17,    18,     3,     4,     5,     6,     7,     0,
+     9,    -1,    11,    -1,     3,     4,     5,     6,     7,    18,
+     9,     3,     4,    -1,     6,     7,     8,     9,    -1,    18,
+     0,     3,     4,    -1,     6,     7,    18,     9,     8,    -1,
+    -1,    11,    -1,    -1,    -1,    -1,    18
 };
 
 #line 352 "/usr/share/bison++/bison.cc"
@@ -1959,40 +2011,45 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 909 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 959 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 920 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 970 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-        yyvsp[-1].a->RecursivelySetParamMatchingType(PositionalParams);
+        yyvsp[-1].a->RecursivelySetDefaultParamMatchingType();
 
         yyval.r = new GrammarData::Rule(ProduceNewTree, *yyvsp[-3].f, yyvsp[-1].a);
         delete yyvsp[-3].f;
       ;
     break;}
 case 5:
-#line 930 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 980 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-        yyvsp[-1].f->RecursivelySetParamMatchingType(PositionalParams);
+        GrammarData::ParamSpec* p = new GrammarData::ParamSpec(yyvsp[-1].f);
+        p->RecursivelySetDefaultParamMatchingType();
         /*if(!$3->Params.EnsureNoRepeatedNamedHolders())
         {
             yyerror("The replacement function may not specify the same variable twise"); YYERROR;
         }*/
 
-        yyval.r = new GrammarData::Rule(ProduceNewTree, *yyvsp[-3].f, new GrammarData::ParamSpec(yyvsp[-1].f));
+        yyval.r = new GrammarData::Rule(ProduceNewTree, *yyvsp[-3].f, p);
 
         //std::cout << GrammarDumper().Dump(*new GrammarData::ParamSpec($3)) << "\n";
         delete yyvsp[-3].f;
       ;
     break;}
 case 6:
-#line 945 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 996 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-        yyvsp[-1].p->RecursivelySetParamMatchingType(PositionalParams);
+        if(yyvsp[-3].f->Params.RestHolderIndex != 0)
+        {
+            yyerror("Restholder is not valid in the outermost function when ReplaceParams is used"); YYERROR;
+        }
+        yyvsp[-1].p->RecursivelySetDefaultParamMatchingType();
         /*if(!$3->EnsureNoRepeatedNamedHolders())
         {
             yyerror("The replacement function may not specify the same variable twise"); YYERROR;
@@ -2004,81 +2061,74 @@ case 6:
       ;
     break;}
 case 7:
-#line 960 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1015 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
-               yyerror("Restholders such as <1> or ~<2>, must not occur in bracketed param lists on the matching side"); YYERROR;
+               yyerror("Restholders such as <1>, must not occur in bracketed param lists on the matching side"); YYERROR;
            }
            yyval.f = yyvsp[0].f;
        ;
     break;}
 case 8:
-#line 974 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1029 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-/**/
-         if(!yyvsp[-1].p->EnsureNoRepeatedRestHolders())
-         {
-             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
-         }
-/**/
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p);
          delete yyvsp[-1].p;
        ;
     break;}
 case 9:
-#line 988 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1037 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-/**/
-         if(!yyvsp[-1].p->EnsureNoRepeatedRestHolders())
-         {
-             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
-         }
-/**/
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p->SetType(SelectedParams));
          delete yyvsp[-1].p;
        ;
     break;}
 case 10:
-#line 1001 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1044 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-/**/
-         if(!yyvsp[0].p->EnsureNoRepeatedRestHolders())
-         {
-             yyerror("RestHolders such as <1> or ~<2> must not be repeated in a rule; make matching too difficult"); YYERROR;
-         }
-/**/
          yyval.f = new GrammarData::FunctionType(yyvsp[-1].opcode, *yyvsp[0].p->SetType(AnyParams));
          delete yyvsp[0].p;
        ;
     break;}
 case 11:
-#line 1015 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1052 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 12:
-#line 1019 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1056 "fpoptimizer/fpoptimizer_grammar_gen.y"
+{
+          if(yyvsp[-1].p->RestHolderIndex != 0)
+          {
+              yyerror("Illegal attempt to specify two restholders for the same param list"); YYERROR;
+          }
+          yyvsp[-1].p->RestHolderIndex = yyvsp[0].index;
+          yyval.p = yyvsp[-1].p;
+        ;
+    break;}
+case 13:
+#line 1065 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
-case 13:
-#line 1026 "fpoptimizer/fpoptimizer_grammar_gen.y"
+case 14:
+#line 1072 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
-case 14:
-#line 1030 "fpoptimizer/fpoptimizer_grammar_gen.y"
+case 15:
+#line 1076 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-         yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::ImmedHolderTag());
-         yyval.a->SetConstraint(yyvsp[0].index);
+         yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::ParamHolderTag());
+         yyval.a->SetConstraint(yyvsp[0].index | Constness_Const);
        ;
     break;}
-case 15:
-#line 1035 "fpoptimizer/fpoptimizer_grammar_gen.y"
+case 16:
+#line 1081 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $3 consists of constants */
          yyval.a = new GrammarData::ParamSpec(yyvsp[-3].opcode, yyvsp[-1].p->GetParams() );
@@ -2089,28 +2139,22 @@ case 15:
          delete yyvsp[-1].p;
        ;
     break;}
-case 16:
-#line 1045 "fpoptimizer/fpoptimizer_grammar_gen.y"
+case 17:
+#line 1091 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
-         yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::NamedHolderTag());
+         yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index + 2, GrammarData::ParamSpec::ParamHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
-case 17:
-#line 1050 "fpoptimizer/fpoptimizer_grammar_gen.y"
+case 18:
+#line 1096 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-2].f);
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
-case 18:
-#line 1055 "fpoptimizer/fpoptimizer_grammar_gen.y"
-{
-         yyval.a = new GrammarData::ParamSpec(yyvsp[0].index, GrammarData::ParamSpec::RestHolderTag());
-       ;
-    break;}
 case 19:
-#line 1059 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1101 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2123,13 +2167,13 @@ case 19:
        ;
     break;}
 case 20:
-#line 1073 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1115 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.index = yyvsp[-1].index | yyvsp[0].index;
        ;
     break;}
 case 21:
-#line 1077 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1119 "fpoptimizer/fpoptimizer_grammar_gen.y"
 {
          yyval.index = 0;
        ;
@@ -2338,7 +2382,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1081 "fpoptimizer/fpoptimizer_grammar_gen.y"
+#line 1123 "fpoptimizer/fpoptimizer_grammar_gen.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
@@ -2615,29 +2659,29 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
 
 unsigned GrammarData::ParamSpec::BuildDepMask()
 {
-    const unsigned NamedHolderShift = 0;
-    const unsigned ImmedHolderShift = dumper.GetNumNamedHolderNames();
     DepMask = 0;
     switch(Opcode)
     {
-        case NamedHolder:
-            DepMask |= 1 << (Index + NamedHolderShift);
-            break;
-        case ImmedHolder:
-            DepMask |= 1 << (Index + ImmedHolderShift);
+        case ParamHolder:
+            DepMask |= 1 << Index;
             break;
         case SubFunction:
             DepMask = Func->Params.BuildDepMask();
-            break;
-        case GroupFunction:
-            for(size_t a=0; a<Params.size(); ++a)
-                DepMask |= Params[a]->BuildDepMask();
             break;
         default: break;
     }
     return DepMask;
 }
 
+namespace FPoptimizer_Grammar
+{
+    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)
+    {
+        unsigned plist_index = (paramlist >> (index*PARAM_INDEX_BITS))
+                               % (1 << PARAM_INDEX_BITS);
+        return plist[plist_index];
+    }
+}
 
 int main()
 {
@@ -2733,28 +2777,19 @@ int main()
         "    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)\n"
         "    {\n"
         "        index = (paramlist >> (index * PARAM_INDEX_BITS)) % (1 << PARAM_INDEX_BITS);\n"
-        "        const unsigned i_begin = 0;\n"
-        "        const unsigned n_begin = i_begin + sizeof(plist.plist_i)/sizeof(*plist.plist_i);\n"
-        "        const unsigned a_begin = n_begin + sizeof(plist.plist_n)/sizeof(*plist.plist_n);\n"
-        "        const unsigned r_begin = a_begin + sizeof(plist.plist_a)/sizeof(*plist.plist_a);\n"
-        "        const unsigned s_begin = r_begin + sizeof(plist.plist_r)/sizeof(*plist.plist_r);\n"
-        "        const unsigned g_begin = s_begin + sizeof(plist.plist_s)/sizeof(*plist.plist_s);\n"
-        "      /*const unsigned     end = g_begin + sizeof(plist.plist_g)/sizeof(*plist.plist_g);*/\n"
-        "        if(index < r_begin)\n"
+        "        const unsigned p_begin = 0;\n"
+        "        const unsigned n_begin = p_begin + sizeof(plist.plist_p)/sizeof(*plist.plist_p);\n"
+        "        const unsigned s_begin = n_begin + sizeof(plist.plist_n)/sizeof(*plist.plist_n);\n"
+        "      /*const unsigned     end = s_begin + sizeof(plist.plist_s)/sizeof(*plist.plist_s);*/\n"
+        "        if(index < s_begin)\n"
         "        {\n"
         "            if(index < n_begin)\n"
-        "                return ParamSpec(ImmedHolder,(const void*)&plist.plist_i[index-i_begin]);\n"
-        "            else if(index < a_begin)\n"
-        "                return ParamSpec(NumConstant,(const void*)&plist.plist_n[index-n_begin]);\n"
+        "                return ParamSpec(ParamHolder,(const void*)&plist.plist_p[index-p_begin]);\n"
         "            else\n"
-        "                return ParamSpec(NamedHolder,(const void*)&plist.plist_a[index-a_begin]);\n"
+        "                return ParamSpec(NumConstant,(const void*)&plist.plist_n[index-n_begin]);\n"
         "        }\n"
-        "        else if(index < s_begin)\n"
-        "            return ParamSpec(RestHolder,(const void*)&plist.plist_r[index-r_begin]);\n"
-        "        else if(index < g_begin)\n"
-        "            return ParamSpec(SubFunction,(const void*)&plist.plist_s[index-s_begin]);\n"
         "        else\n"
-        "            return ParamSpec(GroupFunction,(const void*)&plist.plist_g[index-g_begin]);\n"
+        "            return ParamSpec(SubFunction,(const void*)&plist.plist_s[index-s_begin]);\n"
         "    }\n"
         "}\n";
 

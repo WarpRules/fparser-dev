@@ -329,8 +329,8 @@ namespace FPoptimizer_CodeTree
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
         {
-            case cImmed: if(Value != b.Value) return false; return true;
-            case cVar:   if(Var   != b.Var)   return false; return true;
+            case cImmed: return FloatEqual(Value, b.Value);
+            case cVar:   return Var == b.Var;
             case cFCall:
             case cPCall: if(Funcno != b.Funcno) return false; break;
             default: break;
