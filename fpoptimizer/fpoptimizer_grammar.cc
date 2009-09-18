@@ -826,15 +826,15 @@ namespace
         {SubFunction , 0,	310 }, /* 796    	*/
         {SubFunction , 0,	312 }, /* 797    	*/
         {SubFunction , 0,	23 }, /* 798    	*/
-        {ImmedHolder , Sign_Negative,	0 }, /* 799    	*/
+        {ImmedHolder , Value_NonInteger | Sign_Negative,	0 }, /* 799    	*/
         {SubFunction , 0,	313 }, /* 800    	*/
         {cNeg        , 1,	83 }, /* 801    	*/
         {SubFunction , 0,	22 }, /* 802    	*/
-        {ImmedHolder , Sign_Negative,	0 }, /* 803    	*/
+        {ImmedHolder , Value_NonInteger | Sign_Negative,	0 }, /* 803    	*/
         {SubFunction , 0,	314 }, /* 804    	*/
         {cNeg        , 1,	83 }, /* 805    	*/
         {SubFunction , 0,	286 }, /* 806    	*/
-        {ImmedHolder , Sign_Negative,	0 }, /* 807    	*/
+        {ImmedHolder , Value_NonInteger | Sign_Negative,	0 }, /* 807    	*/
         {SubFunction , 0,	315 }, /* 808    	*/
         {cNeg        , 1,	83 }, /* 809    	*/
         {NumConstant , 0,	11 }, /* 810    	*/
