@@ -1,3 +1,6 @@
+#ifndef FPOptimizer_CodeTreeHH
+#define FPOptimizer_CodeTreeHH
+
 #include <vector>
 #include <utility>
 
@@ -122,6 +125,7 @@ namespace FPoptimizer_CodeTree
         void Sort_Recursive();
 
         void SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone = true);
+        void SetParamsMove(std::vector<CodeTreeP>& RefParams);
         void AddParam(const CodeTreeP& param);
         void DelParam(size_t index);
 
@@ -195,3 +199,5 @@ namespace FPoptimizer_CodeTree
         p = p2;
     }
 }
+
+#endif

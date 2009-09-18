@@ -87,36 +87,23 @@ namespace
                     && FloatEqual(tree.Params[a]->Params[1]->GetImmed(), -1.0))
                     {
                         div_params.push_back(tree.Params[a]->Params[0]);
-                        tree.Params.erase(tree.Params.begin()+a);
+                        tree.DelParam(a);
                         changed = true;
                     }
-                if(tree.Params.empty() && div_params.size() == 1)
-                {
-                    tree.Opcode = cInv;
-                    tree.AddParam(div_params[0]);
-                }
-                else if(div_params.size() ==  1)
-                {
-                    CodeTreeP divgroup(new CodeTree);
-                    divgroup->Opcode = cInv;
-                    divgroup->SetParams(div_params);
-                    tree.AddParam(divgroup);
-                }
-                else if(!div_params.empty())
+                if(!div_params.empty())
                 {
                     CodeTreeP divgroup(new CodeTree);
                     divgroup->Opcode = cMul;
-                    divgroup->SetParams(div_params);
+                    divgroup->SetParamsMove(div_params);
                     divgroup->ConstantFolding();
                     divgroup->Sort();
                     divgroup->Recalculate_Hash_NoRecursion();
                     CodeTreeP mulgroup(new CodeTree);
                     mulgroup->Opcode = cMul;
-                    mulgroup->SetParams(tree.Params);
+                    mulgroup->SetParamsMove(tree.Params);
                     mulgroup->ConstantFolding();
                     mulgroup->Sort();
                     mulgroup->Recalculate_Hash_NoRecursion();
-                    tree.Params.clear();
                     if(mulgroup->IsImmed() && FloatEqual(mulgroup->GetImmed(), 1.0))
                         tree.Opcode = cInv;
                     else
@@ -138,56 +125,43 @@ namespace
                         bool is_signed = false;
                         // if the mul group has a -1 constant...
                         bool subchanged = false;
-                        CodeTree& mulgroup = *tree.Params[a];
-                        for(size_t b=mulgroup.Params.size(); b-- > 0; )
-                            if(mulgroup.Params[b]->IsImmed()
-                            && FloatEqual(mulgroup.Params[b]->GetImmed(), -1.0))
+                        CodeTreeP mulgroup = tree.Params[a];
+                        for(size_t b=mulgroup->Params.size(); b-- > 0; )
+                            if(mulgroup->Params[b]->IsImmed()
+                            && FloatEqual(mulgroup->Params[b]->GetImmed(), -1.0))
                             {
-                                mulgroup.Params.erase(mulgroup.Params.begin()+b);
+                                mulgroup->DelParam(b);
                                 is_signed = !is_signed;
                                 subchanged = true;
                             }
                         if(subchanged)
                         {
-                            mulgroup.ConstantFolding();
-                            mulgroup.Sort();
-                            mulgroup.Recalculate_Hash_NoRecursion();
+                            mulgroup->ConstantFolding();
+                            mulgroup->Sort();
+                            mulgroup->Recalculate_Hash_NoRecursion();
                             changed = true;
                         }
                         if(is_signed)
                         {
-                            sub_params.push_back(tree.Params[a]);
-                            tree.Params.erase(tree.Params.begin()+a);
+                            sub_params.push_back(mulgroup); // this mul group
+                            tree.DelParam(a);
                             changed = true;
                         }
                     }
-                if(tree.Params.empty() && sub_params.size() == 1)
-                {
-                    tree.Opcode = cNeg;
-                    tree.AddParam(sub_params[0]);
-                }
-                else if(sub_params.size() ==  1)
-                {
-                    CodeTreeP subgroup(new CodeTree);
-                    subgroup->Opcode = cNeg;
-                    subgroup->SetParams(sub_params);
-                    tree.AddParam(subgroup);
-                }
-                else if(!sub_params.empty())
+                if(!sub_params.empty())
                 {
                     CodeTreeP subgroup(new CodeTree);
                     subgroup->Opcode = cAdd;
-                    subgroup->SetParams(sub_params);
+                    subgroup->SetParamsMove(sub_params);
                     subgroup->ConstantFolding();
                     subgroup->Sort();
                     subgroup->Recalculate_Hash_NoRecursion();
                     CodeTreeP addgroup(new CodeTree);
                     addgroup->Opcode = cAdd;
-                    addgroup->SetParams(tree.Params);
+                    addgroup->SetParamsMove(tree.Params);
                     addgroup->ConstantFolding();
                     addgroup->Sort();
                     addgroup->Recalculate_Hash_NoRecursion();
-                    tree.Params.clear();
                     if(addgroup->IsImmed() && FloatEqual(addgroup->GetImmed(), 0.0))
                         tree.Opcode = cNeg;
                     else
@@ -338,7 +312,7 @@ namespace FPoptimizer_CodeTree
                             CodeTreeP param = Params[a];
 
                             long value = param->GetLongIntegerImmed();
-                            Params.erase(Params.begin()+a);
+                            DelParam(a);
 
                             bool success = AssembleSequence(
                                 *this, value, FPoptimizer_ByteCode::AddSequence,

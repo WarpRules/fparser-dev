@@ -213,6 +213,14 @@ namespace FPoptimizer_CodeTree
         }
     }
 
+    void CodeTree::SetParamsMove(std::vector<CodeTreeP>& RefParams)
+    {
+        Params.clear();
+        Params.swap(RefParams);
+        for(size_t a=0; a<Params.size(); ++a)
+            Params[a]->Parent = this;
+    }
+
     void CodeTree::DelParam(size_t index)
     {
         Params.erase(Params.begin() + index);
@@ -295,17 +303,10 @@ namespace FPoptimizer_CodeTree
             case cFCall: Funcno = b.Funcno; break;
             default: break;
         }
-        if(!thrash_original)
-            SetParams(b.Params, do_clone);
+        if(thrash_original)
+            SetParamsMove(b.Params);
         else
-        {
-            Params.swap(b.Params);
-            for(size_t a=0; a<Params.size(); ++a)
-            {
-                if(do_clone) Params[a] = Params[a]->Clone();
-                Params[a]->Parent = this;
-            }
-        }
+            SetParams(b.Params, do_clone);
     }
 }
 

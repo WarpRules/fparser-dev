@@ -60,7 +60,7 @@ namespace FPoptimizer_CodeTree
                         // Assimilate its children and remove it
                         CodeTreeP tree = Params[a];
 
-                        Params.erase(Params.begin()+a);
+                        DelParam(a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
                             AddParam( tree->Params[b] );
                     }
@@ -75,7 +75,7 @@ namespace FPoptimizer_CodeTree
                     {
                         // Assimilate its children and remove it
                         CodeTreeP tree = Params[a];
-                        Params.erase(Params.begin()+a);
+                        DelParam(a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
                             AddParam(tree->Params[b]);
                     }
@@ -113,7 +113,8 @@ namespace FPoptimizer_CodeTree
                 std::cout << "Before replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
               #endif
-                Become(*Params[which_param], true, false);
+                { CodeTreeP original_backup = Params[which_param];
+                Become(*original_backup, true); }
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
@@ -257,7 +258,7 @@ namespace FPoptimizer_CodeTree
                         {
                             //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
                             //std::cout << "\n";
-                            Params.erase(Params.begin()+a);
+                            DelParam(a);
                         }
                     if(!FloatEqual(mul_immed_sum, 1.0))
                         AddParam( new CodeTree(mul_immed_sum) );
@@ -296,7 +297,7 @@ namespace FPoptimizer_CodeTree
                         {
                             //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
                             //std::cout << "\n";
-                            Params.erase(Params.begin()+a);
+                            DelParam(a);
                         }
                     if(!FloatEqual(immed_sum, 0.0))
                         AddParam( new CodeTree(immed_sum) );
@@ -335,7 +336,7 @@ namespace FPoptimizer_CodeTree
                     {
                         MinMaxTree p = Params[a]->CalculateResultBoundaries();
                         if(p.has_min && p.min > smallest_maximum.max)
-                            Params.erase(Params.begin() + a);
+                            DelParam(a);
                     }
                 //fprintf(stderr, "Remains: %u\n", (unsigned)Params.size());
                 if(Params.size() == 1)
@@ -375,7 +376,7 @@ namespace FPoptimizer_CodeTree
                         if(p.has_max && p.max < biggest_minimum.min)
                         {
                             //fprintf(stderr, "Removing %g\n", p.max);
-                            Params.erase(Params.begin() + a);
+                            DelParam(a);
                         }
                     }
                 }
@@ -512,7 +513,7 @@ namespace FPoptimizer_CodeTree
                             p0 = p.Params[a]->CalculateResultBoundaries();
                             if((p0.has_min && p0.min >= 0.0)
                             || (p0.has_max && p0.max <= NEGATIVE_MAXIMUM))
-                                p.Params.erase(p.Params.begin() + a);
+                                p.DelParam(a);
 
                             /* Here, p*n*x*y -> x*y.
                              * p is saved in pos_set[]
