@@ -1580,8 +1580,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cAnd: n = "and"; break;
                         case cOr: n = "or"; break;
                         case cNot: n = "not"; params = 1; break;
-                        case cDeg: n = "deg"; break;
-                        case cRad: n = "rad"; break;
+                        case cDeg: n = "deg"; params = 1; break;
+                        case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
                         case cEval: n = "call 0"; break;
@@ -1680,11 +1680,17 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 {
                     buf << sep;
                     if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << '(';
-                    buf << stack[stack.size() - params + a].second;
+                    if(stack.size() + a < params)
+                        buf << "?";
+                    else
+                        buf << stack[stack.size() - params + a].second;
                     if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << ')';
                     sep = paramsep;
                 }
-                stack.resize(stack.size() - params);
+                if(stack.size() >= params)
+                    stack.resize(stack.size() - params);
+                else
+                    stack.clear();
                 buf << suff;
                 stack.push_back(std::make_pair(prio, buf.str()));
                 //if(n.size() <= 4 && !out_params) padLine(outputBuffer, 20);
