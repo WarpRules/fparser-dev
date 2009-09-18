@@ -489,12 +489,28 @@ namespace FPoptimizer_Optimize
                 ParamSpec parampair;
                 FPOPT_autoptr<MatchPositionSpec_AnyParams> position;
                 std::vector<bool> used( tree.Params.size() );
+                std::vector<unsigned> depcodes( model_tree.param_count );
+                std::vector<unsigned> test_order( model_tree.param_count );
+                for(unsigned a=0; a<model_tree.param_count; ++a)
+                {
+                    const ParamSpec parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    depcodes[a] = ParamSpec_GetDepCode(parampair);
+                }
+                { unsigned b=0;
+                for(unsigned a=0; a<model_tree.param_count; ++a)
+                    if(depcodes[a] != 0)
+                        test_order[b++] = a;
+                for(unsigned a=0; a<model_tree.param_count; ++a)
+                    if(depcodes[a] == 0)
+                        test_order[b++] = a;
+                }
+            anyparams_restart:;
                 unsigned a;
                 if(&*start_at)
                 {
                     position = (MatchPositionSpec_AnyParams*) &*start_at;
                     a = model_tree.param_count - 1;
-                    parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
                     goto retry_anyparams_2;
                 }
                 else
@@ -508,7 +524,7 @@ namespace FPoptimizer_Optimize
                 // Match all but restholders
                 for(; a < model_tree.param_count; ++a)
                 {
-                    parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
                     if(parampair.first == RestHolder)
                         continue;
 
@@ -543,7 +559,7 @@ namespace FPoptimizer_Optimize
                     if(a > 0)
                     {
                         --a;
-                        parampair = ParamSpec_Extract(model_tree.param_list, a);
+                        parampair = ParamSpec_Extract(model_tree.param_list, test_order[a]);
                         if(parampair.first == RestHolder)
                             goto retry_anyparams_3;
                         goto retry_anyparams_2;

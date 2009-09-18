@@ -58,4 +58,33 @@ namespace FPoptimizer_Grammar
         }
         return true;
     }
+
+    unsigned ParamSpec_GetDepCode(const ParamSpec& b)
+    {
+        switch(b.first)
+        {
+            case ImmedHolder:
+            {
+                const ParamSpec_ImmedHolder* s = (const ParamSpec_ImmedHolder*) b.second;
+                return s->depcode;
+            }
+            case NamedHolder:
+            {
+                const ParamSpec_NamedHolder* s = (const ParamSpec_NamedHolder*) b.second;
+                return s->depcode;
+            }
+            case SubFunction:
+            {
+                const ParamSpec_SubFunction* s = (const ParamSpec_SubFunction*) b.second;
+                return s->depcode;
+            }
+            case GroupFunction:
+            {
+                const ParamSpec_GroupFunction* s = (const ParamSpec_GroupFunction*) &b;
+                return s->depcode;
+            }
+            default: break;
+        }
+        return 0;
+    }
 }

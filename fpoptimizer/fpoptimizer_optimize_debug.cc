@@ -88,7 +88,11 @@ namespace FPoptimizer_Grammar
         for(unsigned a=0; a<count; ++a)
         {
             if(a > 0) std::cout << ' ';
-            DumpParam(ParamSpec_Extract(paramlist,a));
+            const ParamSpec& param = ParamSpec_Extract(paramlist,a);
+            DumpParam(param, o);
+            unsigned depcode = ParamSpec_GetDepCode(param);
+            if(depcode != 0)
+                o << "@D" << depcode;
         }
     }
     void DumpMatch(const Rule& rule,

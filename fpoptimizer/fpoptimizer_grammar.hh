@@ -119,10 +119,12 @@ namespace FPoptimizer_Grammar
     typedef std::pair<SpecialOpcode, const void*> ParamSpec;
     ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index);
     bool ParamSpec_Compare(const void* a, const void* b, SpecialOpcode type);
+    unsigned ParamSpec_GetDepCode(const ParamSpec& b);
 
     struct ParamSpec_ImmedHolder
     {
-        unsigned index       : 8; // holder ID
+        unsigned index       : 4; // holder ID
+        unsigned depcode     : 4;
         unsigned constraints : 8; // constraints
     } PACKED_GRAMMAR_ATTRIBUTE;
 
@@ -133,7 +135,8 @@ namespace FPoptimizer_Grammar
 
     struct ParamSpec_NamedHolder
     {
-        unsigned index       : 8; // holder ID
+        unsigned index       : 4; // holder ID
+        unsigned depcode     : 4;
         unsigned constraints : 8; // constraints
     } PACKED_GRAMMAR_ATTRIBUTE;
 
@@ -173,7 +176,8 @@ namespace FPoptimizer_Grammar
     {
         ParamSpec_SubFunctionData data;
         unsigned constraints : 8; // constraints
-    } PACKED_GRAMMAR_ATTRIBUTE;
+        unsigned depcode     : 8;
+    } PACKED_GRAMMAR_ATTRIBUTE; // 7 bytes
 
     struct ParamSpec_GroupFunction
     {
@@ -182,6 +186,7 @@ namespace FPoptimizer_Grammar
         /* The opcode that is used for calculating the GroupFunction */
         FUNCTIONPARSERTYPES::OPCODE subfunc_opcode : 8;
         unsigned constraints                       : 8; // constraints
+        unsigned depcode                           : 8;
     } PACKED_GRAMMAR_ATTRIBUTE;
 
     /* Theoretical minimal sizes in each param_opcode cases:

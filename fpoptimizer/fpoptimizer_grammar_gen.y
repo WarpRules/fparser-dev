@@ -444,6 +444,7 @@ public:
                 DumpParamList(p.Func->Params.Params, pcount, plist);
                 result->data.param_count = pcount;
                 result->data.param_list  = plist;
+                result->depcode        = p.DepMask;
                 return std::make_pair(SubFunction, (void*)result);
             }
             case NumConstant:
@@ -457,6 +458,7 @@ public:
                 ParamSpec_NamedHolder* result = new ParamSpec_NamedHolder;
                 result->constraints    = p.ImmedConstraint;
                 result->index          = p.Index;
+                result->depcode        = p.DepMask;
                 return std::make_pair(NamedHolder, (void*)result);
             }
             case ImmedHolder:
@@ -464,6 +466,7 @@ public:
                 ParamSpec_ImmedHolder* result = new ParamSpec_ImmedHolder;
                 result->constraints    = p.ImmedConstraint;
                 result->index          = p.Index;
+                result->depcode        = p.DepMask;
                 return std::make_pair(ImmedHolder, (void*)result);
             }
             case RestHolder:
@@ -481,6 +484,7 @@ public:
                 result->param_count = pcount;
                 result->param_list  = plist;
                 result->param_count = pcount;
+                result->depcode        = p.DepMask;
                 return std::make_pair(GroupFunction, (void*)result);
             }
         }
@@ -683,6 +687,7 @@ public:
         {
             std::ostringstream result;
             result << "{" << i.index
+                   << ", 0x" << i.depcode
                    << ", " << ConstraintsToString(i.constraints)
                    << "}";
             return result.str();
@@ -692,6 +697,7 @@ public:
         {
             std::ostringstream result;
             result << "{" << i.index
+                   << ", 0x" << i.depcode
                    << ", " << ConstraintsToString(i.constraints)
                    << "}";
             return result.str();
@@ -732,6 +738,7 @@ public:
             std::ostringstream result;
             result << "{" << SubFunctionDataToString(i.data)
                    << ", " << ConstraintsToString(i.constraints)
+                   << ", 0x" << i.depcode
                    << "}";
             return result.str();
         }
@@ -743,6 +750,7 @@ public:
                    <<  "," << ParamListToString(i.param_list, i.param_count)
                    << ", " << FP_GetOpcodeName(i.subfunc_opcode, true)
                    << ", " << ConstraintsToString(i.constraints)
+                   << ", 0x" << i.depcode
                    << "}";
             return result.str();
         }
