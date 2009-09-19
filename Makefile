@@ -124,7 +124,8 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_header.txt \
 		fpoptimizer/fpoptimizer_footer.txt
 	rm -f fpoptimizer.cc
-	cat fpoptimizer/fpoptimizer_header.txt \
+	for file in \
+	    fpoptimizer/fpoptimizer_header.txt \
 	    fpoptimizer/fpoptimizer_hash.hh \
 	    fpoptimizer/fpoptimizer_codetree.hh \
 	    fpoptimizer/fpoptimizer_grammar.hh \
@@ -142,9 +143,11 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
 	    fpoptimizer/fpoptimizer_constantfolding.cc \
 	    fpoptimizer/fpoptimizer_footer.txt \
-		| grep -v '#include "fpoptimizer' \
-		| grep -v '#include "crc32' \
-		> $@
+	; do \
+		echo "#line 1 \"$$file\""; \
+		sed -r "s@^#include (\"fpoptimizer|\"crc32).*@// line removed@" < "$$file"; \
+		echo; \
+	done > $@
 
 VersionChanger: VersionChanger.cc
 	g++ -O3 $^ -s -o $@
