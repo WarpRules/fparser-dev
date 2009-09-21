@@ -35,6 +35,7 @@ namespace FUNCTIONPARSERTYPES
         cNeg, cAdd, cSub, cMul, cDiv, cMod,
         cEqual, cNEqual, cLess, cLessOrEq, cGreater, cGreaterOrEq,
         cNot, cAnd, cOr,
+        cNotNot, /* Protects the double-not sequence from optimizations */
 
         cDeg, cRad,
 
@@ -50,7 +51,6 @@ namespace FUNCTIONPARSERTYPES
         cRDiv,  /* reverse division (not x/y, but y/x) */
         cRSub,  /* reverse subtraction (not x-y, but y-x) */
         cRSqrt, /* inverse square-root) */
-        cNotNot, /* Protects the double-not sequence from optimizations */
 #endif
 
         cNop,

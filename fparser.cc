@@ -871,6 +871,14 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
             if(data->ByteCode.back() == cImmed)
                 data->Immed.back() = !doubleToInt(data->Immed.back());
 
+            // !!x is a common paradigm: instead of x cNot cNot, we produce x cNotNot.
+            else if(data->ByteCode.back() == cNot)
+                data->ByteCode.back() = cNotNot;
+
+            // !!!x is simply x cNot. The cNotNot in the middle is redundant.
+            else if(data->ByteCode.back() == cNotNot)
+                data->ByteCode.back() = cNot;
+
             else
                 data->ByteCode.push_back(cNot);
         }
@@ -1315,6 +1323,8 @@ double FunctionParser::Eval(const double* Vars)
                             doubleToInt(Stack[SP]));
                        --SP; break;
 
+          case cNotNot: Stack[SP] = !!doubleToInt(Stack[SP]); break;
+
 // Degrees-radians conversion:
           case   cDeg: Stack[SP] = RadiansToDegrees(Stack[SP]); break;
           case   cRad: Stack[SP] = DegreesToRadians(Stack[SP]); break;
@@ -1397,7 +1407,6 @@ double FunctionParser::Eval(const double* Vars)
 #                      endif
                          Stack[SP] = 1.0 / sqrt(Stack[SP]); break;
 
-          case cNotNot: Stack[SP] = !!doubleToInt(Stack[SP]); break;
 #endif
 
           case cNop: break;
@@ -1580,6 +1589,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cAnd: n = "and"; break;
                         case cOr: n = "or"; break;
                         case cNot: n = "not"; params = 1; break;
+                        case cNotNot: n = "notnot"; params = 1; break;
                         case cDeg: n = "deg"; params = 1; break;
                         case cRad: n = "rad"; params = 1; break;
 
@@ -1589,7 +1599,6 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
     #ifdef FP_SUPPORT_OPTIMIZER
                         case cVar:    n = "(var)"; break;
-                        case cNotNot: n = "notnot"; params = 1; break;
                         case cInv: n = "inv"; params = 1; break;
                         case cSqr: n = "sqr"; params = 1; break;
                         case cFetch:
