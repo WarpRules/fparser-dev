@@ -108,15 +108,41 @@ cIf [(cNotNot x) y z] -> cIf [x y z]
 # but they are likely too specific.
 # For example:
 #  Move branch invariants. if(y, x+a, x+b) -> x+if(y, a, b)
-#  TODO: Figure out why these rules never match.
-cIf [y (cAdd x <1>)       x     ] -> cAdd[x (cIf [y 0          (cAdd <1>)])]
-cIf [y (cAdd x <1>) (cAdd x <3>)] -> cAdd[x (cIf [y (cAdd <1>) (cAdd <3>)])]
-cIf [y (cMul x <1>)       x     ] -> cMul[x (cIf [y 1          (cMul <1>)])]
-cIf [y (cMul x <1>) (cMul x <3>)] -> cMul[x (cIf [y (cMul <1>) (cMul <3>)])]
-cIf [y (cAnd x <1>)       x     ] -> cAnd[x (cIf [y 0          (cAnd <1>)])]
-cIf [y (cAnd x <1>) (cAnd x <3>)] -> cAnd[x (cIf [y (cAnd <1>) (cAnd <3>)])]
-cIf [y (cOr  x <1>)       x     ] -> cOr [x (cIf [y 1          (cOr  <1>)])]
-cIf [y (cOr  x <1>) (cOr  x <3>)] -> cOr [x (cIf [y (cOr  <1>) (cOr  <3>)])]
+cIf [y (cAdd x <1>)       x     ] -> cAdd [x (cIf [y (cAdd <1>) 0         ])]
+cIf [y       x      (cAdd x <1>)] -> cAdd [x (cIf [y 0          (cAdd <1>)])]
+cIf [y (cAdd x <1>) (cAdd x <2>)] -> cAdd [x (cIf [y (cAdd <1>) (cAdd <2>)])]
+cIf [y (cMul x <1>)       x     ] -> cMul [x (cIf [y (cMul <1>) 1         ])]
+cIf [y       x      (cMul x <1>)] -> cMul [x (cIf [y 1          (cMul <1>)])]
+cIf [y (cMul x <1>) (cMul x <2>)] -> cMul [x (cIf [y (cMul <1>) (cMul <2>)])]
+cIf [y (cAnd x <1>) (cNotNot[x])] -> cAnd [x (cIf [y (cAnd <1>) 1         ])]
+cIf [y (cNotNot[x]) (cAnd x <1>)] -> cAnd [x (cIf [y 1          (cAnd <1>)])]
+cIf [y (cAnd x <1>) (cAnd x <2>)] -> cAnd [x (cIf [y (cAnd <1>) (cAnd <2>)])]
+cIf [y (cOr  x <1>) (cNotNot[x])] -> cOr  [x (cIf [y (cOr  <1>) 0         ])]
+cIf [y (cNotNot[x]) (cOr  x <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
+cIf [y (cOr  x <1>) (cOr  x <2>)] -> cOr  [x (cIf [y (cOr  <1>) (cOr  <2>)])]
+
+cOr (cIf [y (cNotNot[x]) z]) : (cIf [y x z])
+cOr (cIf [y z (cNotNot[x])]) : (cIf [y z x])
+cAnd (cIf [y (cNotNot[x]) z]) : (cIf [y x z])
+cAnd (cIf [y z (cNotNot[x])]) : (cIf [y z x])
+cNot (cIf [y (cNotNot[x]) z]) : (cIf [y x z])
+cNot (cIf [y z (cNotNot[x])]) : (cIf [y z x])
+cIf [(cIf [y (cNotNot[x]) z]) a b] : (cIf [y x z]) a b
+cIf [(cIf [y z (cNotNot[x])]) a b] : (cIf [y z x]) a b
+
+cIf [x (cNotNot[y]) 0] -> cAnd x y
+cIf [x 0 (cNotNot[y])] -> cAnd (cNot[x]) y
+#cIf [x (cNot[y]) 0] -> cAnd x (cNot[y])
+#cIf [x 0 (cNot[y])] -> cNot (cOr x y)
+cIf [x y 0] -> cMul (cNotNot[x]) y
+cIf [x 0 y] -> cMul (cNot[x])    y
+
+cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
+cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
+cMul (cNotNot[x]) (cNotNot[y]) : (cAnd x y)
+
+#cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr x y)])
+# ^causes crash.
 
 #### Flattening the topology of add/mul/min/max/and/or groups:
 
@@ -411,13 +437,13 @@ cAdd (cMul x <1>) (cMul x <2>) : (cMul x (cAdd (cMul <1>) (cMul <2>)))
 # These are the same as above, but work also if pow() is expanded
 # Note: It would work even with y and z instead of % and &, but we
 # limit into numeric literals for simplicity.
-cAdd (cMul (cPow[x %]) <3>)  (cMul (cPow[x &]) <5>) : (cMul (cPow[x MIN(% &)]) (cAdd (cMul <3> (cPow[x (cAdd % -MIN(% &))]))  (cMul <5> (cPow[x (cAdd & -MIN(% &))]))))
-cAdd (cMul (cPow[x %]) <3>)  (cMul x           <5>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <3> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <5> (cPow[x (cAdd 1 -MIN(% 1))]))))
+cAdd (cMul (cPow[x %]) <1>)  (cMul (cPow[x &]) <2>) : (cMul (cPow[x MIN(% &)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% &))]))  (cMul <2> (cPow[x (cAdd & -MIN(% &))]))))
+cAdd (cMul (cPow[x %]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
 
 #    (5.1*x +      4.1*y      + z+w)*2
 # -> (5.1*2*x + 2*(4.1*y      + z+w))
 # -> (5.1*2*x +   (4.1*2*y + 2*(z+w)))
-cMul (cAdd (cMul %@M <1>) <3>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <3>)))
+cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul *(% &) <1>) (cMul & (cAdd <2>)))
 
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
 cMul (cAdd %@M <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
@@ -513,8 +539,8 @@ cAbs [(cMul x@N <1>)] -> cMul (cAbs [x]) <1>
 # Those are done in the bytecode generation automatically.
 #
 
-cAtan2 [(cMul  x <1>) (cMul  x <3>)]   : (cMul <1>) (cMul <3>)
-#cAtan2 [(cMul  % <1>) (cMul  % <3>)]   : (cMul <1>) (cMul <3>)
+cAtan2 [(cMul  x <1>) (cMul  x <2>)]   : (cMul <1>) (cMul <2>)
+#cAtan2 [(cMul  % <1>) (cMul  % <2>)]   : (cMul <1>) (cMul <2>)
 
 # sinh(x)/cosh(x) = tanh(x)
 cMul        (cSinh[x])     (cPow [(cCosh[x]) -1]) :        (cTanh[x])
