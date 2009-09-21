@@ -1673,6 +1673,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 switch(opcode)
                 {
                     case cIf: buf << "if("; suff = ")"; break;
+                    case cOr:  prio = 6; paramsep = "|"; break;
+                    case cAnd: prio = 5; paramsep = "&"; break;
                     case cAdd: prio = 4; paramsep = "+"; break;
                     case cSub: prio = 4; paramsep = "-"; break;
                     case cMul: prio = 3; paramsep = "*"; break;
