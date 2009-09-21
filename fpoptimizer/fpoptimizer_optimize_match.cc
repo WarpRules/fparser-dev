@@ -40,6 +40,9 @@ namespace
             case Value_NonInteger:
                 if(tree->IsAlwaysInteger()) return false;
                 break;
+            case Value_Logical:
+                if(!tree->IsLogicalValue()) return false;
+                break;
         }
         switch(bitmask & SignMask)
         {
@@ -511,8 +514,11 @@ namespace FPoptimizer_Optimize
                     position = new MatchPositionSpec_AnyParams(model_tree.param_count,
                                                                tree.Params.size());
                     a = 0;
-                    (*position)[0].info   = info;
-                    (*position)[0].used   = used;
+                    if(model_tree.param_count != 0)
+                    {
+                        (*position)[0].info   = info;
+                        (*position)[0].used   = used;
+                    }
                 }
                 // Match all but restholders
                 for(; a < model_tree.param_count; ++a)

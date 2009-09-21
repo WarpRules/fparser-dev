@@ -22,7 +22,8 @@ namespace FPoptimizer_Grammar
         Value_EvenInt    = 0x1, // any even integer (0,2,4, etc)
         Value_OddInt     = 0x2, // any odd integer (1,3, etc)
         Value_IsInteger  = 0x3, // any integer-value (excludes e.g. 0.2)
-        Value_NonInteger = 0x4  // any non-integer (excludes e.g. 1 or 5)
+        Value_NonInteger = 0x4, // any non-integer (excludes e.g. 1 or 5)
+        Value_Logical    = 0x5  // a result of cNot,cNotNot,cAnd,cOr or comparators
     };
     enum ImmedConstraint_Sign
     {

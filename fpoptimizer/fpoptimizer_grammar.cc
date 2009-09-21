@@ -119,6 +119,7 @@ namespace FPoptimizer_Grammar
             case Value_OddInt:    o << "@O"; break;
             case Value_IsInteger: o << "@I"; break;
             case Value_NonInteger:o << "@F"; break;
+            case Value_Logical:   o << "@L"; break;
         }
         switch( ImmedConstraint_Sign(constraints & SignMask) )
         {

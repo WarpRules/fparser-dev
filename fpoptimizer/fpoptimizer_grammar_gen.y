@@ -552,6 +552,7 @@ public:
             case Value_OddInt: result << sep << "Value_OddInt"; sep=s; break;
             case Value_IsInteger: result << sep << "Value_IsInteger"; sep=s; break;
             case Value_NonInteger: result << sep << "Value_NonInteger"; sep=s; break;
+            case Value_Logical: result << sep << "Value_Logical"; sep=s; break;
         }
         switch( ImmedConstraint_Sign( constraints & SignMask ) )
         {
@@ -630,7 +631,7 @@ public:
             }
             #undef set
         }
-        
+
         struct p_compare { bool operator() (
             const ParamSpec_ParamHolder& a,
             const ParamSpec_ParamHolder& b) const
@@ -684,7 +685,7 @@ public:
                 return a.data.param_count < b.data.param_count;
             return false;
         } };
-        
+
         void Sort()
         {
             std::stable_sort(plist_p.begin(), plist_p.end(), p_compare());
@@ -1215,6 +1216,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 case 'O': { lval->index = Value_OddInt; return PARAM_CONSTRAINT; }
                 case 'I': { lval->index = Value_IsInteger; return PARAM_CONSTRAINT; }
                 case 'F': { lval->index = Value_NonInteger; return PARAM_CONSTRAINT; }
+                case 'L': { lval->index = Value_Logical; return PARAM_CONSTRAINT; }
                 case 'P': { lval->index = Sign_Positive; return PARAM_CONSTRAINT; }
                 case 'N': { lval->index = Sign_Negative; return PARAM_CONSTRAINT; }
                 case 'Q': { lval->index = Sign_NoIdea; return PARAM_CONSTRAINT; }
