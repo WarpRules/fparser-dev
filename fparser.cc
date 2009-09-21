@@ -850,7 +850,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
     {
         ++function;
         while(isspace(*function)) ++function;
-        function = CompilePow(function);
+        function = CompileUnaryMinus(function);
         if(!function) return 0;
 
         if(op == '-')
@@ -1589,7 +1589,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
     #ifdef FP_SUPPORT_OPTIMIZER
                         case cVar:    n = "(var)"; break;
-                        case cNotNot: n = "(notnot)"; break;
+                        case cNotNot: n = "notnot"; params = 1; break;
                         case cInv: n = "inv"; params = 1; break;
                         case cSqr: n = "sqr"; params = 1; break;
                         case cFetch:
