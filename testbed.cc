@@ -548,6 +548,16 @@ double f51(const double* p)
     return log(-x);
 }
 
+double f52(const double* p)
+{
+#define P52Code x + (1.0+2.0+3.0+4.0-5.0-6.0-7.0-8.0)/3.0 + \
+  4.0*(1.0+sin(2.0)+cos(4.0*5.0+6.0)/2.0) + cos(0.5)*tan(0.6+0.2) - \
+  1.1/log(2.1)*sqrt(3.3)
+#define P52 Stringify(P52Code)" + 2^3" , "x", f52, 1, -10, 10, .5, false
+    const double x = p[0];
+    return P52Code + pow(2.0, 3.0);
+}
+
 
 namespace
 {
@@ -562,7 +572,7 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
