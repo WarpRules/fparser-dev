@@ -36,6 +36,10 @@ namespace
         {
             AddConstant("pi", 3.14159265358979323846);
             AddConstant("e", 2.71828182845904523536);
+            AddUnit("k", 1000);
+            AddUnit("M", 1000000);
+            AddUnit("dozen", 12);
+            AddUnit("dozens", 12);
         }
     };
 
