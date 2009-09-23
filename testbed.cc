@@ -131,7 +131,7 @@ double f5(const double* p)
 double f6(const double* p)
 {
 #define P6 "if(x>0&y>0,x*y+eval(x-1,y-1),0)+1", "x,y", \
-        f6, 2, .1, 10, .1, false
+        f6, 2, .1, 10, .2, false
     const double x = p[0], y = p[1];
     const double v[2] = { x-1, y-1 };
     return (x>1e-14 && y>1e-14 ? x*y+f6(v) : 0)+1;

@@ -356,6 +356,7 @@ namespace
         for(size_t funcInd = 0; funcInd < functions.size(); ++funcInd)
         {
             const std::string funcStr = functions[funcInd].mFunctionString;
+            int oldIndex = -1;
 
             while(true)
             {
@@ -370,6 +371,7 @@ namespace
 
                 int index = parser.Parse(funcStr, gVarString);
                 if(index < 0) break;
+                if(index == oldIndex) return;
 
                 int index2 = index;
                 if(index2 < int(funcStr.length()) &&
@@ -382,11 +384,10 @@ namespace
                 }
 
                 if(index2 == index)
-                {
-                    gVarString.clear();
                     return;
-                }
+
                 varNames.insert(funcStr.substr(index, index2-index));
+                oldIndex = index;
             }
         }
     }
@@ -435,8 +436,10 @@ int main(int argc, char* argv[])
         deduceVariables(functions);
 
     for(size_t i = 0; i < functions.size(); ++i)
+    {
         if(!checkFunctionValidity(functions[i]))
             return 1;
+    }
 
     const bool validVarValuesFound = findValidVarValues(functions);
 
