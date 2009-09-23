@@ -546,6 +546,156 @@ inline void FunctionParser::incStackPtr()
 
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 {
+    if(data->ByteCode.back() == cImmed)
+    {
+        switch(opcode)
+        {
+            case cAbs:
+                data->Immed.back() = fabs(data->Immed.back());
+                return;
+            case cAcosh:
+                data->Immed.back() = fp_acosh(data->Immed.back());
+                return;
+            case cAcos:
+                if(data->Immed.back() < -1 || data->Immed.back() > 1) break;
+                data->Immed.back() = acos(data->Immed.back());
+                return;
+            case cAsin:
+                if(data->Immed.back() < -1 || data->Immed.back() > 1) break;
+                data->Immed.back() = asin(data->Immed.back());
+                return;
+            case cAsinh:
+                data->Immed.back() = fp_asinh(data->Immed.back());
+                return;
+            case cAtan:
+                data->Immed.back() = atan(data->Immed.back());
+                return;
+            case cAtanh:
+                data->Immed.back() = fp_atanh(data->Immed.back());
+                return;
+            case cCeil:
+                data->Immed.back() = ceil(data->Immed.back());
+                return;
+            case cCos:
+                data->Immed.back() = cos(data->Immed.back());
+                return;
+            case cCosh:
+                data->Immed.back() = cosh(data->Immed.back());
+                return;
+            case cExp:
+                data->Immed.back() = exp(data->Immed.back());
+                return;
+            case cExp2:
+                data->Immed.back() = pow(2.0, data->Immed.back());
+                return;
+            case cFloor:
+                data->Immed.back() = floor(data->Immed.back());
+                return;
+            case cInt:
+                data->Immed.back() = floor(data->Immed.back() + 0.5);
+                return;
+            case cLog:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = log(data->Immed.back());
+                return;
+            case cLog10:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = log10(data->Immed.back());
+                return;
+            case cLog2:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = log(data->Immed.back()) * 1.4426950408889634074;
+                return;
+            case cSin:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = sin(data->Immed.back());
+                return;
+            case cSinh:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = sinh(data->Immed.back());
+                return;
+            case cSqrt:
+                if(data->Immed.back() < 0.0) break;
+                data->Immed.back() = sqrt(data->Immed.back());
+                return;
+            case cTan:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = tan(data->Immed.back());
+                return;
+            case cTanh:
+                if(data->Immed.back() <= 0.0) break;
+                data->Immed.back() = tanh(data->Immed.back());
+                return;
+            case cDeg:
+                data->Immed.back() = RadiansToDegrees( data->Immed.back() );
+                return;
+            case cRad:
+                data->Immed.back() = DegreesToRadians( data->Immed.back() );
+                return;
+            case cPow:
+                // if the exponent is a special constant value
+                if(data->Immed.back() == 0.5)
+                {
+                    data->Immed.pop_back(); data->ByteCode.pop_back();
+                    opcode = cSqrt;
+                }
+                #ifdef FP_SUPPORT_OPTIMIZER
+                else if(data->Immed.back() == -0.5)
+                {
+                    data->Immed.pop_back(); data->ByteCode.pop_back();
+                    opcode = (cRSqrt);
+                }
+                else if(data->Immed.back() == -1.0)
+                {
+                    data->Immed.pop_back(); data->ByteCode.pop_back();
+                    opcode = (cInv);
+                }
+                else
+                {
+                    double original_immed = data->Immed.back();
+                    if(original_immed >= 1.0
+                    && original_immed < 1024.0
+                    && original_immed == (double)(int)original_immed)
+                    {
+                        int int_exponent = (int)original_immed;
+                        data->Immed.pop_back(); data->ByteCode.pop_back();
+                        /*size_t bytecode_size = data->ByteCode.size();*/
+                        int num_muls=0;
+                        while(int_exponent > 1)
+                        {
+                            if(!(int_exponent & 1))
+                            {
+                                int_exponent /= 2;
+                                data->ByteCode.push_back(cSqr);
+                            }
+                            else
+                            {
+                                data->ByteCode.push_back(cDup);
+                                incStackPtr();
+                                int_exponent -= 1;
+                                ++num_muls;
+                            }
+                        }
+                        if(num_muls > 0)
+                        {
+                            data->ByteCode.resize(data->ByteCode.size()+num_muls, cMul);
+                            StackPtr -= num_muls;
+                        }
+                        return;
+                    /*powi_failed:;
+                        data->ByteCode.resize(bytecode_size);
+                        data->Immed.push_back(original_immed);
+                        data->ByteCode.push_back(cImmed);*/
+                    }
+                }
+                #endif
+        }
+    }
+    data->ByteCode.push_back(opcode);
+}
+
+inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion(unsigned opcode)
+{
     if(useDegreeConversion)
         switch(opcode)
         {
@@ -558,10 +708,10 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           case cSinh:
           case cTan:
           case cTanh:
-              data->ByteCode.push_back(cRad);
+              AddFunctionOpcode(cRad);
         }
 
-    data->ByteCode.push_back(opcode);
+    AddFunctionOpcode(opcode);
 
     if(useDegreeConversion)
         switch(opcode)
@@ -573,8 +723,106 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           case cAsin:
           case cAtan:
           case cAtan2:
-              data->ByteCode.push_back(cDeg);
+              AddFunctionOpcode(cDeg);
         }
+}
+
+inline void FunctionParser::AddMultiplicationByConst(double value)
+{
+    if(data->ByteCode.back() == cImmed
+    || (data->ByteCode.back() == cMul
+     && data->ByteCode[data->ByteCode.size()-2] == cImmed))
+    {
+        data->Immed.back() *= value;
+    }
+    else
+    {
+        data->Immed.push_back(value);
+        data->ByteCode.push_back(cImmed);
+        incStackPtr();
+        data->ByteCode.push_back(cMul);
+        --StackPtr;
+    }
+}
+
+namespace
+{
+    struct MulOp
+    {
+        enum { opcode = cMul, opposite = cDiv, combined = cMul };
+        static inline void action(double& target, double value) { target *= value; }
+        static inline void combine_action(double& target, double value) { target=value/target; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+    };
+    struct DivOp
+    {
+        enum { opcode = cDiv, opposite = cMul, combined = cMul };
+        static inline void action(double& target, double value) { target /= value; }
+        static inline void combine_action(double& target, double value) { target=target/value; }
+        static inline bool valid_rvalue(double v) { return v != 0.0; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+    };
+    struct AddOp
+    {
+        enum { opcode = cAdd, opposite = cSub, combined = cAdd };
+        static inline void action(double& target, double value) { target += value; }
+        static inline void combine_action(double& target, double value) { target=value-target; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+    };
+    struct SubOp
+    {
+        enum { opcode = cSub, opposite = cAdd, combined = cAdd };
+        static inline void action(double& target, double value) { target -= value; }
+        static inline void combine_action(double& target, double value) { target=target-value; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+    };
+    struct ModOp
+    {
+        enum { opcode = cMod, opposite = cMod, combined = cMod };
+        static inline void action(double& target, double value) { target = fmod(target, value); }
+        static inline void combine_action(double& target, double value) { target = fmod(target, value); }
+        static inline bool valid_rvalue(double v) { return v != 0.0; }
+        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+    };
+}
+template<typename Operation>
+inline void FunctionParser::AddBinaryOperationByConst()
+{
+    // data->ByteCode.back() is assumed to be cImmed here
+    // that is, data->ByteCode[data->ByteCode.size()-1]
+    if(!Operation::valid_rvalue(data->Immed.back()))
+    {
+        data->ByteCode.push_back( unsigned(Operation::opcode) );
+    }
+    else if(data->ByteCode[data->ByteCode.size()-2] == cImmed
+        || (data->ByteCode[data->ByteCode.size()-2] == Operation::opcode
+         && data->ByteCode[data->ByteCode.size()-3] == cImmed))
+    {
+        Operation::action(data->Immed[data->Immed.size()-2], data->Immed.back());
+        data->Immed.pop_back();
+        data->ByteCode.pop_back();
+    }
+    /* x*2/4 = x*(2/4)
+     * x/2*4 = x*(4/2)
+     * x+2-4 = x+(2-4)
+     * x-2+4 = x+(4-2)
+     */
+    else if(data->ByteCode[data->ByteCode.size()-2] == Operation::opposite
+         && data->ByteCode[data->ByteCode.size()-3] == cImmed
+         && Operation::valid_opposite_rvalue(data->Immed[data->Immed.size()-2]))
+    {
+        data->ByteCode[data->ByteCode.size()-2] = Operation::combined;
+        Operation::combine_action(data->Immed[data->Immed.size()-2], data->Immed.back());
+        data->Immed.pop_back();
+        data->ByteCode.pop_back();
+    }
+    else
+    {
+        data->ByteCode.push_back( unsigned(Operation::opcode) );
+    }
 }
 
 namespace
@@ -728,7 +976,7 @@ const char* FunctionParser::CompileElement(const char* function)
 #endif
 
             function = CompileFunctionParams(endPtr, requiredParams);
-            AddFunctionOpcode(funcDef->opcode);
+            AddFunctionOpcode_CheckDegreesConversion(funcDef->opcode);
             return function;
         }
 
@@ -795,16 +1043,7 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
             const NameData* nameData = nameIter->second;
             if(nameData->type == NameData::UNIT)
             {
-                if(data->ByteCode.back() == cImmed)
-                    data->Immed.back() *= nameData->value;
-                else
-                {
-                    data->Immed.push_back(nameData->value);
-                    data->ByteCode.push_back(cImmed);
-                    incStackPtr();
-                    data->ByteCode.push_back(cMul);
-                    --StackPtr;
-                }
+                AddMultiplicationByConst(nameData->value);
                 return endPtr;
             }
         }
@@ -823,20 +1062,48 @@ const char* FunctionParser::CompilePow(const char* function)
     {
         ++function;
         while(isspace(*function)) ++function;
-        function = CompileUnaryMinus(function);
-        if(!function) return 0;
 
-        // If operator is applied to two literals, calculate it now:
-        if(data->ByteCode.back() == cImmed &&
-           data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        bool base_is_immed = false;
+        double base_immed = 0;
+        if(data->ByteCode.back() == cImmed)
         {
-            data->Immed[data->Immed.size()-2] =
-                pow(data->Immed[data->Immed.size()-2], data->Immed.back());
+            base_is_immed = true;
+            base_immed = data->Immed.back();
             data->Immed.pop_back();
             data->ByteCode.pop_back();
         }
+
+        function = CompileUnaryMinus(function);
+        if(!function) return 0;
+
+        // Check if the exponent is a literal
+        if(data->ByteCode.back() == cImmed)
+        {
+            // If operator is applied to two literals, calculate it now:
+            if(base_is_immed)
+                data->Immed.back() = pow(base_immed, data->Immed.back());
+            else
+                AddFunctionOpcode(cPow);
+        }
+        else if(base_is_immed)
+        {
+            if(base_immed > 0.0)
+            {
+                double mulvalue = std::log(base_immed);
+                if(mulvalue != 1.0)
+                    AddMultiplicationByConst(mulvalue);
+                AddFunctionOpcode(cExp);
+            }
+            else // uh-oh, we've got e.g. (-5)^x, and we already deleted -5 from the stack
+            {
+                data->Immed.push_back(base_immed);
+                data->ByteCode.push_back(cImmed);
+                incStackPtr();
+                AddFunctionOpcode(cRPow);
+            }
+        }
         else // add opcode
-            data->ByteCode.push_back(cPow);
+            AddFunctionOpcode(cPow);
 
         --StackPtr;
     }
@@ -903,37 +1170,26 @@ inline const char* FunctionParser::CompileMult(const char* function)
         if(!function) return 0;
 
         // If operator is applied to two literals, calculate it now:
-        if(data->ByteCode.back() == cImmed &&
-           data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        if(data->ByteCode.back() == cImmed)
         {
             switch(op)
             {
-              case '*':
-                  data->Immed[data->Immed.size()-2] *= data->Immed.back();
-                  break;
-
-              case '/':
-                  if(data->Immed.back() == 0.0) goto generateDivOpcode;
-                  data->Immed[data->Immed.size()-2] /= data->Immed.back();
-                  break;
-
-              default:
-                  if(data->Immed.back() == 0.0) goto generateModOpcode;
-                  data->Immed[data->Immed.size()-2] =
-                      fmod(data->Immed[data->Immed.size()-2],
-                           data->Immed.back());
+                case '*':
+                    AddBinaryOperationByConst<MulOp>();
+                    break;
+                case '/':
+                    AddBinaryOperationByConst<DivOp>();
+                    break;
+                default:
+                    AddBinaryOperationByConst<ModOp>();
             }
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
         }
         else // add opcode
         {
             switch(op)
             {
               case '*': data->ByteCode.push_back(cMul); break;
-              generateDivOpcode:
               case '/': data->ByteCode.push_back(cDiv); break;
-              generateModOpcode:
               case '%': data->ByteCode.push_back(cMod); break;
             }
         }
@@ -957,18 +1213,25 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         if(!function) return 0;
 
         // If operator is applied to two literals, calculate it now:
-        if(data->ByteCode.back() == cImmed &&
-           data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        if(data->ByteCode.back() == cImmed)
         {
-            if(op == '+')
-                data->Immed[data->Immed.size()-2] += data->Immed.back();
-            else
-                data->Immed[data->Immed.size()-2] -= data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
+            switch(op)
+            {
+                case '+':
+                    AddBinaryOperationByConst<AddOp>();
+                    break;
+                default:
+                    AddBinaryOperationByConst<SubOp>();
+            }
         }
         else // add opcode
-            data->ByteCode.push_back(op=='+' ? cAdd : cSub);
+        {
+            switch(op)
+            {
+              case '+': data->ByteCode.push_back(cAdd); break;
+              case '-': data->ByteCode.push_back(cSub); break;
+            }
+        }
 
         --StackPtr;
     }
@@ -1219,6 +1482,8 @@ double FunctionParser::Eval(const double* Vars)
 
           case   cPow: Stack[SP-1] = pow(Stack[SP-1], Stack[SP]);
                        --SP; break;
+          case   cRPow: Stack[SP-1] = pow(Stack[SP], Stack[SP-1]);
+                        --SP; break;
 
           case   cSec:
               {
@@ -1580,6 +1845,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cDiv: n = "div"; break;
                         case cMod: n = "mod"; break;
                         case cPow: n = "pow"; break;
+                        case cRPow: n = "rpow"; break;
                         case cEqual: n = "eq"; break;
                         case cNEqual: n = "neq"; break;
                         case cLess: n = "lt"; break;
@@ -1728,3 +1994,4 @@ void FunctionParser::Optimize()
     // Do nothing if no optimizations are supported.
 }
 #endif
+

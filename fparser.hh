@@ -105,7 +105,11 @@ private:
     int ParseFunction(const char*, bool);
     const char* SetErrorType(ParseErrorType, const char*);
 
+    void AddFunctionOpcode_CheckDegreesConversion(unsigned);
     void AddFunctionOpcode(unsigned);
+    inline void AddMultiplicationByConst(double value);
+    template<typename Operation>
+    inline void AddBinaryOperationByConst();
     inline void incStackPtr();
 
     const char* CompileIf(const char*);

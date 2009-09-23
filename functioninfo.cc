@@ -303,11 +303,11 @@ namespace
                     line1[37] = '~';
                 }
                 else line1.resize(38, ' ');
-                if(line2.length() > 38)
+                /*if(line2.length() > 38)
                 {
                     line2.resize(38, ' ');
                     line2[37] = '~';
-                }
+                }*/
                 std::cout << line1 << "| " << line2 << "\n";
             }
             std::cout << SEPARATOR << std::endl;

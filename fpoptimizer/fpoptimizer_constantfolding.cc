@@ -708,6 +708,7 @@ namespace FPoptimizer_CodeTree
             case cCot: // converted into cMul (cPow (cTan x) -1)
             case cSec: // converted into cMul (cPow (cCos x) -1)
             case cCsc: // converted into cMul (cPow (cSin x) -1)
+            case cRPow: // converted into cPow y x
                 break; /* Should never occur */
 
             /* The following opcodes are processed by GenerateFrom(),
@@ -1335,6 +1336,7 @@ namespace FPoptimizer_CodeTree
             case cSec: // converted into cMul (cPow (cCos x) -1)
             case cCsc: // converted into cMul (cPow (cSin x) -1)
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
+            case cRPow: // converted into cPow y x
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */

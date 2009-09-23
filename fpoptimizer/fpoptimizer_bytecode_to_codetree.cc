@@ -13,6 +13,56 @@
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
 
+namespace
+{
+    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+    {
+        long result = 1.0;
+        while(IP < ByteCode.size() && ByteCode[IP] == cSqr)
+        {
+            result *= 2;
+            ++IP;
+        }
+        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
+        {
+            size_t dup_pos = IP;
+            ++IP;
+            long subexponent = ParsePowiSequence(ByteCode, IP);
+            if(IP >= ByteCode.size() || ByteCode[IP] != cMul)
+            {
+                // It wasn't a powi-dup after all
+                IP = dup_pos;
+            }
+            else
+            {
+                ++IP; // skip cMul
+                result *= 1 + subexponent;
+            }
+        }
+        return result;
+    }
+    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+    {
+        long result = 1.0;
+        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
+        {
+            size_t dup_pos = IP;
+            ++IP;
+            long subfactor = ParseMuliSequence(ByteCode, IP);
+            if(IP >= ByteCode.size() || ByteCode[IP] != cAdd)
+            {
+                // It wasn't a muli-dup after all
+                IP = dup_pos;
+            }
+            else
+            {
+                ++IP; // skip cAdd
+                result *= 1 + subfactor;
+            }
+        }
+        return result;
+    }
+}
 
 namespace FPoptimizer_CodeTree
 {
@@ -118,9 +168,34 @@ namespace FPoptimizer_CodeTree
                 data.Eat(3, cIf);
                 labels.erase(labels.end()-1);
             }
+        after_powi:
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
+            if(opcode == cSqr || opcode == cDup)
+            {
+                // Parse a powi sequence
+                //size_t was_ip = IP;
+                long exponent = ParsePowiSequence(ByteCode, IP);
+                if(exponent != 1)
+                {
+                    //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
+                    data.AddConst(exponent);
+                    data.Eat(2, cPow);
+                    goto after_powi;
+                }
+                if(opcode == cDup)
+                {
+                    long factor = ParseMuliSequence(ByteCode, IP);
+                    if(factor != 1)
+                    {
+                        //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
+                        data.AddConst(factor);
+                        data.Eat(2, cMul);
+                        goto after_powi;
+                    }
+                }
+            }
             if(OPCODE(opcode) >= VarBegin)
             {
                 data.AddVar(opcode);
@@ -169,8 +244,8 @@ namespace FPoptimizer_CodeTree
                         data.Eat(2, cMul); // -x is x*-1
                         break;
                     case cSqr: // from fpoptimizer
-                        data.Dup();
-                        data.Eat(2, cMul);
+                        data.AddConst(2.0);
+                        data.Eat(2, cPow);
                         break;
                     // Unary functions requiring special attention
                     case cDeg:
@@ -247,6 +322,10 @@ namespace FPoptimizer_CodeTree
                         data.AddConst(-1);
                         data.Eat(2, cPow); // 1/x is x^-1
                         data.Eat(2, cMul); // Divide is inverse multiply
+                        break;
+                    case cRPow:
+                        data.SwapLastTwoInStack();
+                        data.Eat(2, cPow);
                         break;
                     case cRSqrt: // from fpoptimizer
                         data.AddConst(-0.5);

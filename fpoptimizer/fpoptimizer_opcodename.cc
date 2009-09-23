@@ -71,6 +71,7 @@ const std::string FP_GetOpcodeName(unsigned opcode, bool pad)
         case cRad: p = "cRad"; break;
         case cFCall: p = "cFCall"; break;
         case cPCall: p = "cPCall"; break;
+        case cRPow: p = "cRPow"; break;
 #ifdef FP_SUPPORT_OPTIMIZER
         case cVar: p = "cVar"; break;
         case cDup: p = "cDup"; break;
