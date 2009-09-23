@@ -171,6 +171,17 @@ fpoptimizer.cc: \
 VersionChanger: VersionChanger.cc
 	g++ -O3 $^ -s -o $@
 
+create_testrules_for_optimization_rules: \
+		create_testrules_for_optimization_rules.cc \
+		fpoptimizer/fpoptimizer_grammar_data.o \
+		fpoptimizer/fpoptimizer_opcodename.o \
+		fpoptimizer/fpoptimizer_grammar.o
+	g++ -O3 $^ -s -o $@
+
+fpoptimizer_tests.sh: create_testrules_for_optimization_rules
+	./$< > $@
+	chmod +x $@
+
 set_version_string: VersionChanger
 	./VersionChanger $(RELEASE_VERSION) fparser.cc fparser.hh fpconfig.hh \
 	fpoptimizer.cc fptypes.hh fparser.html webpage/index.html
