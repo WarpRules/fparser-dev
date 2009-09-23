@@ -56,6 +56,7 @@ namespace FPoptimizer_CodeTree
             CodeTreeP newnode = new CodeTree;
             newnode->Opcode = cVar;
             newnode->Var    = varno;
+            newnode->Recalculate_Hash_NoRecursion();
             stack.push_back(newnode);
         }
 
@@ -85,8 +86,6 @@ namespace FPoptimizer_CodeTree
         {
             CodeTreeP result = stack.back();
             stack.resize(stack.size()-1);
-            result->Rehash(false);
-            result->Sort_Recursive();
             return result;
         }
 
@@ -95,6 +94,8 @@ namespace FPoptimizer_CodeTree
             // Check if the last token on stack can be optimized with constant math
             CodeTreeP result = stack.back();
             result->ConstantFolding();
+            result->Sort();
+            result->Recalculate_Hash_NoRecursion();
         }
     private:
         CodeTreeParserData(const CodeTreeParserData&);

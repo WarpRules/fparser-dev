@@ -240,6 +240,9 @@ namespace FPoptimizer_CodeTree
         {
             case cImmed:
                 return IsLongIntegerImmed();
+            case cFloor:
+            case cInt:
+                return true;
             case cAnd:
             case cOr:
             case cNot:

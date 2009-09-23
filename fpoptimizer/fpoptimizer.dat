@@ -197,6 +197,7 @@ cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   :     x  (cMul <1>)
 cPow [%          (cMul & <1>)]   : POW(% &) (cMul <1>)
 
 # z^(log(x)/log(z)*y) = x^y
+# Note: This rule fails when z=0, because log(0)=-inf and 0^x = 1
 cPow [z (cMul (cPow [(cLog[z])  -1]) (cLog[x])  <1>)] : x (cMul <1>)
 #cPow [z (cMul (cPow [(cLog2[z]) -1]) (cLog2[x]) <1>)] : x (cMul <1>)
 cPow [% (cMul /LOG(%)               (cLog[x])  <1>)] : x (cMul <1>)
@@ -209,7 +210,7 @@ cPow [(cMul % <1>) &] -> (cMul POW(% &) (cPow [(cMul <1>) &]))
 
 
 # x*y / (x*z) = y/z
-cMul (cPow [(cMul x <2>) -1]) x <1> : <1> (cPow [(cMul <2>) -1])
+cMul (cPow [(cMul x <2>) -1]) x : (cPow [(cMul <2>) -1])
 
 # log(x) + log(y) = log(x*y)
 cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
@@ -521,7 +522,7 @@ cCos [(cAcos [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
-cAbs [(cMul x@N <1>)] -> cMul (cAbs [x]) <1>
+cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
 
 
 
