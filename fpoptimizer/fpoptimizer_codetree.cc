@@ -180,8 +180,8 @@ namespace FPoptimizer_CodeTree
     void CodeTree::AddParam(const CodeTreeP& param)
     {
         //std::cout << "AddParam called\n";
+        param->Parent = this;
         Params.push_back(param);
-        Params.back()->Parent = this;
     }
     void CodeTree::AddParamMove(CodeTreeP& param)
     {

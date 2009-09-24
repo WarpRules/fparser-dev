@@ -307,6 +307,16 @@ cAdd (cPow[x 2]) (cPow[y 2]) (cMul x y <1>) : (cPow [(cAdd [x y]) 2]) (cMul [x y
 # limit into numeric literals for simplicity.
 cAdd (cMul (cPow[x %]) <1>)  (cMul (cPow[x &]) <2>) : (cMul (cPow[x MIN(% &)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% &))]))  (cMul <2> (cPow[x (cAdd & -MIN(% &))]))))
 cAdd (cMul (cPow[x %]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+# The replacement expanded below:
+#  (cMul (cPow[x MIN(% 1)])
+#        (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))
+#              (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+#
+# Example: x^2*y  + x*z -> x^1  * (y*x^1 + z*x^0)
+# Example: x^6*y  + x*z -> x^1  * (y*x^5 + z*x^0)
+# Example: x^-6*y + x*z -> x^-6 * (y*x^0 + z*x^7)
+#
+
 
 #    (5.1*x +      4.1*y      + z+w)*2
 # -> (5.1*2*x + 2*(4.1*y      + z+w))

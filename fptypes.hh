@@ -67,7 +67,7 @@ namespace FUNCTIONPARSERTYPES
     {
         const char* name;
         unsigned nameLength;
-        unsigned opcode;
+        OPCODE   opcode;
         unsigned params;
         bool enabled;
 

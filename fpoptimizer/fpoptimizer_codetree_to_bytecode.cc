@@ -201,7 +201,13 @@ namespace FPoptimizer_CodeTree
         std::vector<double>&   Immed,
         size_t& stacktop_max)
     {
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Making bytecode for:       "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
+    #endif
         RecreateInversionsAndNegations(*this);
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "After recreating inv/neg:  "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
+    #endif
 
         FPoptimizer_ByteCode::ByteCodeSynth synth;
 
@@ -238,6 +244,9 @@ namespace FPoptimizer_CodeTree
         }
         if(best_score > 0)
         {
+    #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Found Common Subexpression:"; FPoptimizer_Grammar::DumpTree(*synth_it->second.second); std::cout << "\n";
+    #endif
             /* Synthesize the selected tree */
             synth_it->second.second->SynthesizeByteCode(synth);
             /* Add the tree and all its children to the AlreadyDoneTrees list,
@@ -247,6 +256,9 @@ namespace FPoptimizer_CodeTree
             goto FindMore;
         }
 
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Actually synthesizing:     "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
+    #endif
         /* Then synthesize the actual expression */
         SynthesizeByteCode(synth);
       #ifndef FP_DISABLE_EVAL
