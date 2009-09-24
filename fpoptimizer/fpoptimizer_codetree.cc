@@ -179,6 +179,7 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::AddParam(const CodeTreeP& param)
     {
+        //std::cout << "AddParam called\n";
         Params.push_back(param);
         Params.back()->Parent = this;
     }
@@ -191,6 +192,7 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone)
     {
+        //std::cout << "SetParams called" << (do_clone ? ", clone" : ", no clone") << "\n";
         Params = RefParams;
         /**
         *** Note: The only reason we need to CLONE the children here
@@ -214,9 +216,28 @@ namespace FPoptimizer_CodeTree
             Params[a]->Parent = this;
     }
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    void CodeTree::SetParams(std::vector<CodeTreeP>&& RefParams)
+    {
+        //std::cout << "SetParams&& called\n";
+        SetParamsMove(RefParams);
+    }
+#endif
+
     void CodeTree::DelParam(size_t index)
     {
-        Params.erase(Params.begin() + index);
+        //std::cout << "DelParam(" << index << ") called\n";
+    #ifdef __GXX_EXPERIMENTAL_CXX0X__
+        /* rvalue reference semantics makes this optimal */
+        Params.erase( Params.begin() + index );
+    #else
+        /* This labor evades the need for refcount +1/-1 shuffling */
+        Params[index] = 0;
+        for(size_t p=index; p+1<Params.size(); ++p)
+            Params[p].UnsafeSetP( &*Params[p+1] );
+        Params[Params.size()-1].UnsafeSetP( 0 );
+        Params.resize(Params.size()-1);
+    #endif
     }
 
     /* Is the value of this tree definitely odd(true) or even(false)? */
@@ -327,6 +348,7 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::Become(CodeTree& b, bool thrash_original, bool do_clone)
     {
+        //std::cout << "Become called\n";
         Opcode = b.Opcode;
         switch(Opcode)
         {

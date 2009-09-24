@@ -9,6 +9,7 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_hash.hh"
+#include "fpoptimizer_autoptr.hh"
 
 #ifdef FP_EPSILON
  #define NEGATIVE_MAXIMUM (-FP_EPSILON)
@@ -31,36 +32,12 @@ namespace FPoptimizer_CodeTree
     class CodeTreeParserData;
     class CodeTree;
 
-    class CodeTreeP
-    {
-    public:
-        CodeTreeP()                   : p(0)   { }
-        CodeTreeP(CodeTree*        b) : p(b)   { Birth(); }
-        CodeTreeP(const CodeTreeP& b) : p(&*b) { Birth(); }
-
-        inline CodeTree& operator* () const { return *p; }
-        inline CodeTree* operator->() const { return p; }
-
-        CodeTreeP& operator= (CodeTree*        b) { Set(b); return *this; }
-        CodeTreeP& operator= (const CodeTreeP& b) { Set(&*b); return *this; }
-
-        ~CodeTreeP() { Forget(); }
-
-        void swap(CodeTreeP& b) { std::swap(p, b.p); }
-
-    private:
-        inline static void Have(CodeTree* p2);
-        inline void Forget();
-        inline void Birth();
-        inline void Set(CodeTree* p2);
-    private:
-        CodeTree* p;
-    };
+    typedef FPOPT_autoptr<CodeTree> CodeTreeP;
 
     class CodeTree
     {
         friend class CodeTreeParserData;
-        friend class CodeTreeP;
+        friend class FPOPT_autoptr<CodeTree>;
 
         int RefCount;
 
@@ -190,28 +167,6 @@ namespace FPoptimizer_CodeTree
         CodeTree(const CodeTree&);
         CodeTree& operator=(const CodeTree&);
     };
-
-    inline void CodeTreeP::Forget()
-    {
-        if(!p) return;
-        p->RefCount -= 1;
-        if(!p->RefCount) delete p;
-        //assert(p->RefCount >= 0);
-    }
-    inline void CodeTreeP::Have(CodeTree* p2)
-    {
-        if(p2) ++(p2->RefCount);
-    }
-    inline void CodeTreeP::Birth()
-    {
-        Have(p);
-    }
-    inline void CodeTreeP::Set(CodeTree* p2)
-    {
-        Have(p2);
-        Forget();
-        p = p2;
-    }
 }
 
 #endif

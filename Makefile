@@ -35,6 +35,8 @@ FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 
+#CXXFLAGS += -std=c++0x
+
 # For compilation with ICC:
 #OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3
 #CXX=icc
@@ -106,6 +108,7 @@ fpoptimizer/fpoptimizer_grammar.cc: \
 fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_grammar_gen.y \
 		fpoptimizer/fpoptimizer_grammar_gen.cc \
+		fpoptimizer/fpoptimizer_autoptr.hh \
 		fpoptimizer/fpoptimizer_codetree.hh \
 		fpoptimizer/fpoptimizer_grammar.hh \
 		fpoptimizer/fpoptimizer_consts.hh \
@@ -127,6 +130,7 @@ fpoptimizer.cc: \
 	for file in \
 	    fpoptimizer/fpoptimizer_header.txt \
 	    fpoptimizer/fpoptimizer_hash.hh \
+	    fpoptimizer/fpoptimizer_autoptr.hh \
 	    fpoptimizer/fpoptimizer_codetree.hh \
 	    fpoptimizer/fpoptimizer_grammar.hh \
 	    fpoptimizer/fpoptimizer_consts.hh \
