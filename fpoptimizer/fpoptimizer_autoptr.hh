@@ -23,7 +23,7 @@ public:
     ~FPOPT_autoptr() { Forget(); }
 
     void UnsafeSetP(Ref* newp) { p = newp; }
-    void swap(FPOPT_autoptr<Ref>& b) { std::swap(p, b.p); }
+    void swap(FPOPT_autoptr<Ref>& b) { Ref* tmp=p; p=b.p; b.p=tmp; }
 
 private:
     inline static void Have(Ref* p2);

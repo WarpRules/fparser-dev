@@ -569,10 +569,10 @@ inline bool FunctionParser::CompilePowi(int int_exponent)
             {
                 data->ByteCode.push_back(cDup);
                 incStackPtr();
-                if(!CompilePowi(half-1)) return false;
+                if(!CompilePowi(half)) return false;
                 data->ByteCode.push_back(cMul);
                 --StackPtr;
-                int_exponent -= half;
+                int_exponent -= half+1;
                 continue;
             }
         }
