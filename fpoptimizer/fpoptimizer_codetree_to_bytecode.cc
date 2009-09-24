@@ -171,7 +171,9 @@ namespace
                     }
                     tree.AddParam(subgroup);
                 }
+                break;
             }
+            default: break;
         }
         if(changed)
         {
@@ -367,6 +369,8 @@ namespace FPoptimizer_CodeTree
                         case cMax:
                             //synth.PushImmed(NaN);
                             synth.PushImmed(0);
+                            break;
+                        default:
                             break;
                     }
                     ++n_stacked;

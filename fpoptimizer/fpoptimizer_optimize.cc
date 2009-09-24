@@ -1300,8 +1300,7 @@ namespace FPoptimizer_Grammar
 
                     assert(j != match.trees.end());
 
-                    FPoptimizer_CodeTree::CodeTree* subtree = j->second->Clone();
-                    tree.AddParam(subtree);
+                    tree.AddParam(j->second->Clone());
                 }
                 /*fprintf(stderr, "- params size became %u\n", (unsigned)tree.Params.size());
                 fflush(stderr);*/

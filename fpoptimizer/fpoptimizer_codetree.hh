@@ -6,6 +6,7 @@
 
 #include "fpconfig.hh"
 #include "fparser.hh"
+#include "fptypes.hh"
 
 #include "fpoptimizer_hash.hh"
 
@@ -44,6 +45,8 @@ namespace FPoptimizer_CodeTree
         CodeTreeP& operator= (const CodeTreeP& b) { Set(&*b); return *this; }
 
         ~CodeTreeP() { Forget(); }
+
+        void swap(CodeTreeP& b) { std::swap(p, b.p); }
 
     private:
         inline static void Have(CodeTree* p2);
@@ -126,11 +129,15 @@ namespace FPoptimizer_CodeTree
 
         void SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone = true);
         void SetParamsMove(std::vector<CodeTreeP>& RefParams);
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+        void SetParams(std::vector<CodeTreeP>&& RefParams);
+#endif
         void AddParam(const CodeTreeP& param);
+        void AddParamMove(CodeTreeP& param);
         void DelParam(size_t index);
 
         /* Clones the tree. (For parameter duplication) */
-        CodeTree* Clone();
+        CodeTreeP Clone();
         void Become(CodeTree& b, bool thrash_original, bool do_clone = true);
 
         bool    IsImmed() const;
@@ -139,6 +146,7 @@ namespace FPoptimizer_CodeTree
         long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool      IsVar() const;
         unsigned GetVar() const { return Var; }
+        bool    IsLogicalValue() const;
 
         void NegateImmed() { if(IsImmed()) Value = -Value;       }
         void InvertImmed() { if(IsImmed()) Value = 1.0 / Value;  }
@@ -169,6 +177,12 @@ namespace FPoptimizer_CodeTree
         bool IsAlwaysInteger() const;
 
         void ConstantFolding();
+        void ConstantFolding_FromLogicalParent();
+        bool ConstantFolding_AndLogic();
+        bool ConstantFolding_OrLogic();
+        bool ConstantFolding_LogicCommon(bool is_or);
+        bool ConstantFolding_MulGrouping();
+        bool ConstantFolding_AddGrouping();
 
         bool IsIdenticalTo(const CodeTree& b) const;
 

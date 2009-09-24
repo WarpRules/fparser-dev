@@ -608,11 +608,9 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                   log(data->Immed.back()) * 1.4426950408889634074;
               return;
           case cSin:
-              if(data->Immed.back() <= 0.0) break;
               data->Immed.back() = sin(data->Immed.back());
               return;
           case cSinh:
-              if(data->Immed.back() <= 0.0) break;
               data->Immed.back() = sinh(data->Immed.back());
               return;
           case cSqrt:
@@ -620,11 +618,9 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               data->Immed.back() = sqrt(data->Immed.back());
               return;
           case cTan:
-              if(data->Immed.back() <= 0.0) break;
               data->Immed.back() = tan(data->Immed.back());
               return;
           case cTanh:
-              if(data->Immed.back() <= 0.0) break;
               data->Immed.back() = tanh(data->Immed.back());
               return;
           case cDeg:
@@ -694,6 +690,38 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               }
         }
     }
+    switch(opcode)
+    {
+        #define eliminate_redundant_sequence(first, then) \
+            case then: \
+                if(data->ByteCode.back() == first) \
+                { \
+                    data->ByteCode.pop_back(); \
+                    return; \
+                } \
+                break
+        eliminate_redundant_sequence(cLog, cExp);
+        eliminate_redundant_sequence(cLog2, cExp2);
+        eliminate_redundant_sequence(cAsin, cSin);
+        eliminate_redundant_sequence(cAcos, cCos);
+        #undef eliminate_redundant_sequence
+        case cAbs:
+            // cAbs is redundant after any opcode that never
+            // returns a negative value
+            switch(data->ByteCode.back())
+            {
+                case cSqrt: case cRSqrt:
+                case cAbs:
+                case cAnd: case cOr:
+                case cEqual: case cNEqual:
+                case cLess: case cLessOrEq:
+                case cGreater: case cGreaterOrEq:
+                case cNot: case cNotNot:
+                case cLog: case cLog2: case cLog10:
+                case cAcos: case cCosh:
+                    return;
+            }
+    }
     data->ByteCode.push_back(opcode);
 }
 
@@ -731,24 +759,6 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
         }
 }
 
-inline void FunctionParser::AddMultiplicationByConst(double value)
-{
-    if(data->ByteCode.back() == cImmed ||
-       (data->ByteCode.back() == cMul &&
-        data->ByteCode[data->ByteCode.size()-2] == cImmed))
-    {
-        data->Immed.back() *= value;
-    }
-    else
-    {
-        data->Immed.push_back(value);
-        data->ByteCode.push_back(cImmed);
-        incStackPtr();
-        data->ByteCode.push_back(cMul);
-        --StackPtr;
-    }
-}
-
 namespace
 {
     struct MulOp
@@ -760,6 +770,7 @@ namespace
         { target=value/target; }
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+        static inline bool is_redundant(double v) { return v==1.0; }
     };
     struct DivOp
     {
@@ -770,6 +781,7 @@ namespace
         { target=target/value; }
         static inline bool valid_rvalue(double v) { return v != 0.0; }
         static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==1.0; }
     };
     struct AddOp
     {
@@ -780,6 +792,7 @@ namespace
         { target=value-target; }
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==0.0; }
     };
     struct SubOp
     {
@@ -790,6 +803,7 @@ namespace
         { target=target-value; }
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==0.0; }
     };
     struct ModOp
     {
@@ -800,7 +814,31 @@ namespace
         { target = fmod(target, value); }
         static inline bool valid_rvalue(double v) { return v != 0.0; }
         static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+        static inline bool is_redundant(double) { return false; }
     };
+}
+
+inline void FunctionParser::AddMultiplicationByConst(double value)
+{
+    if(data->ByteCode.back() == cImmed)
+    {
+        data->Immed.back() *= value;
+    }
+    else if(data->ByteCode.back() == cMul &&
+            data->ByteCode[data->ByteCode.size()-2] == cImmed)
+    {
+        data->Immed.back() *= value;
+        if(data->Immed.back() == 1.0)
+            { data->Immed.pop_back();
+              data->ByteCode.pop_back();
+              data->ByteCode.pop_back(); }
+    }
+    else
+    {
+        data->Immed.push_back(value);
+        data->ByteCode.push_back(cImmed);
+        AddBinaryOperationByConst<MulOp> ();
+    }
 }
 
 template<typename Operation>
@@ -812,14 +850,30 @@ inline void FunctionParser::AddBinaryOperationByConst()
     {
         data->ByteCode.push_back( unsigned(Operation::opcode) );
     }
-    else if(data->ByteCode[data->ByteCode.size()-2] == cImmed
-        || (data->ByteCode[data->ByteCode.size()-2] == Operation::opcode
-         && data->ByteCode[data->ByteCode.size()-3] == cImmed))
+    else if(data->ByteCode[data->ByteCode.size()-2] == cImmed)
     {
+        // bytecode top:       ... immed immed <to be cMul>
         Operation::action(data->Immed[data->Immed.size()-2],
                           data->Immed.back());
         data->Immed.pop_back();
         data->ByteCode.pop_back();
+    }
+    else if(data->ByteCode[data->ByteCode.size()-2] == Operation::opcode
+         && data->ByteCode[data->ByteCode.size()-3] == cImmed)
+    {
+        // bytecode top:  ... immed cMul immed <to be cMul>
+        Operation::action(data->Immed[data->Immed.size()-2],
+                          data->Immed.back());
+        data->Immed.pop_back();
+        data->ByteCode.pop_back();
+        // bytecode top:  ... immed cMul
+        if(Operation::is_redundant(data->Immed.back()))
+        {
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+            // bytecode top:  ...
+        }
     }
     /* x*2/4 = x*(2/4)
      * x/2*4 = x*(4/2)
@@ -830,11 +884,20 @@ inline void FunctionParser::AddBinaryOperationByConst()
          && data->ByteCode[data->ByteCode.size()-3] == cImmed
          && Operation::valid_opposite_rvalue(data->Immed[data->Immed.size()-2]))
     {
+        // bytecode top:  ... immed cDiv immed <to be cMul>
         data->ByteCode[data->ByteCode.size()-2] = Operation::combined;
         Operation::combine_action(data->Immed[data->Immed.size()-2],
                                   data->Immed.back());
         data->Immed.pop_back();
         data->ByteCode.pop_back();
+        // bytecode top:  ... immed cMul
+        if(Operation::is_redundant(data->Immed.back()))
+        {
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+            // bytecode top:  ...
+        }
     }
     else
     {

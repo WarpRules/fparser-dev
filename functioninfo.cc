@@ -301,18 +301,23 @@ namespace
                 else line2.clear();
                 if(line1.empty() && line2.empty()) break;
 
-                if(line1.length() > 38)
+                if(!line2.empty())
                 {
-                    line1.resize(38, ' ');
-                    line1[37] = '~';
+                    if(line1.length() > 38)
+                    {
+                        line1.resize(38, ' ');
+                        line1[37] = '~';
+                    }
+                    else line1.resize(38, ' ');
+                    /*if(line2.length() > 38)
+                    {
+                        line2.resize(38, ' ');
+                        line2[37] = '~';
+                    }*/
+                    std::cout << line1 << "| " << line2 << "\n";
                 }
-                else line1.resize(38, ' ');
-                /*if(line2.length() > 38)
-                {
-                    line2.resize(38, ' ');
-                    line2[37] = '~';
-                }*/
-                std::cout << line1 << "| " << line2 << "\n";
+                else
+                    std::cout << line1 << "\n";
             }
             std::cout << SEPARATOR << std::endl;
         }

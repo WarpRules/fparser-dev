@@ -11,20 +11,698 @@
 
 using namespace FUNCTIONPARSERTYPES;
 
-//#define DEBUG_SUBSTITUTIONS
-
-#ifdef DEBUG_SUBSTITUTIONS
-namespace FPoptimizer_Grammar
-{
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-}
-#endif
-
 namespace FPoptimizer_CodeTree
 {
+    void CodeTree::ConstantFolding_FromLogicalParent()
+    {
+    redo:;
+        switch(Opcode)
+        {
+            case cNotNot:
+            //ReplaceTreeWithParam0:
+                { CodeTreeP original_backup = Params[0];
+                Become(*original_backup, true); }
+                goto redo;
+            case cIf:
+                while(Params[1]->Opcode == cNotNot)
+                {
+                    Params[1] = Params[1]->Params[0];
+                    Params[1]->Parent = this;
+                }
+                Params[1]->ConstantFolding_FromLogicalParent();
+                while(Params[2]->Opcode == cNotNot)
+                {
+                    Params[2] = Params[2]->Params[0];
+                    Params[2]->Parent = this;
+                }
+                Params[2]->ConstantFolding_FromLogicalParent();
+                break;
+            default: break;
+        }
+    }
+
+    struct ComparisonSet
+    {
+        static const int Lt_Mask = 0x1;
+        static const int Eq_Mask = 0x2;
+        static const int Gt_Mask = 0x4;
+        static const int Le_Mask = 0x3;
+        static const int Ne_Mask = 0x5;
+        static const int Ge_Mask = 0x6;
+        static int Swap_Mask(int m) { return (m&Eq_Mask)
+                                  | ((m&Lt_Mask) ? Gt_Mask : 0)
+                                  | ((m&Gt_Mask) ? Lt_Mask : 0); }
+        struct Comparison
+        {
+            CodeTreeP a;
+            CodeTreeP b;
+            int relationship;
+        };
+        std::vector<Comparison> relationships;
+        struct Pole
+        {
+            CodeTreeP value;
+            bool negated;
+        };
+        std::vector<Pole> plain_set;
+
+        enum RelationshipResult
+        {
+            Ok,
+            BecomeZero,
+            BecomeOne,
+            Suboptimal
+        };
+
+        RelationshipResult AddAndRelationship(CodeTreeP a, CodeTreeP b, int reltype)
+        {
+            if(reltype == 0) return BecomeZero;
+
+            if(!(a->Hash < b->Hash))
+            {
+                std::swap(a, b);
+                reltype = Swap_Mask(reltype);
+            }
+
+            for(size_t c=0; c<relationships.size(); ++c)
+            {
+                if(relationships[c].a->IsIdenticalTo(*a)
+                && relationships[c].b->IsIdenticalTo(*b))
+                {
+                    int newrel = relationships[c].relationship & reltype;
+                    if(newrel == 0) return BecomeZero;
+                    relationships[c].relationship = newrel;
+                    return Suboptimal;
+                }
+            }
+            Comparison comp;
+            comp.a = a;
+            comp.b = b;
+            comp.relationship = reltype;
+            relationships.push_back(comp);
+            return Ok;
+        }
+        RelationshipResult AddPole(const CodeTreeP& a, bool negated, bool is_or)
+        {
+            for(size_t c=0; c<plain_set.size(); ++c)
+                if(plain_set[c].value->IsIdenticalTo(*a))
+                {
+                    if(negated != plain_set[c].negated)
+                        return is_or ? BecomeOne : BecomeZero;
+                    return Suboptimal;
+                }
+            Pole pole;
+            pole.value   = a;
+            pole.negated = negated;
+            plain_set.push_back(pole);
+            return Ok;
+        }
+
+        RelationshipResult AddAndPole(const CodeTreeP& a, bool negated)
+        {
+            return AddPole(a, negated, false);
+        }
+        RelationshipResult AddOrPole(const CodeTreeP& a, bool negated)
+        {
+            return AddPole(a, negated, true);
+        }
+
+        RelationshipResult AddOrRelationship(CodeTreeP a, CodeTreeP b, int reltype)
+        {
+            if(reltype == 0x7) return BecomeOne;
+
+            if(!(a->Hash < b->Hash))
+            {
+                std::swap(a, b);
+                reltype = Swap_Mask(reltype);
+            }
+
+            for(size_t c=0; c<relationships.size(); ++c)
+            {
+                if(relationships[c].a->IsIdenticalTo(*a)
+                && relationships[c].b->IsIdenticalTo(*b))
+                {
+                    int newrel = relationships[c].relationship | reltype;
+                    if(newrel == 0x7) return BecomeOne;
+                    relationships[c].relationship = newrel;
+                    return Suboptimal;
+                }
+            }
+            Comparison comp;
+            comp.a = a;
+            comp.b = b;
+            comp.relationship = reltype;
+            relationships.push_back(comp);
+            return Ok;
+        }
+
+        RelationshipResult AddRelationship(const CodeTreeP& a, const CodeTreeP& b, int reltype, bool is_or)
+        {
+            return is_or ? AddOrRelationship(a, b, reltype)
+                         :AddAndRelationship(a, b, reltype);
+        }
+    };
+
+    bool CodeTree::ConstantFolding_LogicCommon(bool is_or)
+    {
+        bool should_regenerate = false;
+        ComparisonSet comp;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            ComparisonSet::RelationshipResult change = ComparisonSet::Ok;
+            switch(Params[a]->Opcode)
+            {
+                case cEqual:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Eq_Mask, is_or);
+                    break;
+                case cNEqual:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Ne_Mask, is_or);
+                    break;
+                case cLess:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Lt_Mask, is_or);
+                    break;
+                case cLessOrEq:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Le_Mask, is_or);
+                    break;
+                case cGreater:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Gt_Mask, is_or);
+                    break;
+                case cGreaterOrEq:
+                    change = comp.AddRelationship(Params[a]->Params[0], Params[a]->Params[1], ComparisonSet::Ge_Mask, is_or);
+                    break;
+                case cNot:
+                    change = comp.AddPole(Params[a]->Params[0], true, is_or);
+                    break;
+                default:
+                    change = comp.AddPole(Params[a], false, is_or);
+            }
+            switch(change)
+            {
+            ReplaceTreeWithZero:
+                    Params.clear();
+                    Opcode = cImmed;
+                    Value = 0.0;
+                    return true;
+            ReplaceTreeWithOne:
+                    Params.clear();
+                    Opcode = cImmed;
+                    Value = 1.0;
+                    return true;
+                case ComparisonSet::Ok: // ok
+                    break;
+                case ComparisonSet::BecomeZero: // whole set was invalidated
+                    goto ReplaceTreeWithZero;
+                case ComparisonSet::BecomeOne: // whole set was validated
+                    goto ReplaceTreeWithOne;
+                case ComparisonSet::Suboptimal: // something was changed
+                    should_regenerate = true;
+                    break;
+            }
+        }
+        if(should_regenerate)
+        {
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Before ConstantFolding_LogicCommon: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            Params.clear();
+            for(size_t a=0; a<comp.plain_set.size(); ++a)
+            {
+                if(comp.plain_set[a].negated)
+                {
+                    CodeTreeP r = new CodeTree;
+                    r->Opcode = cNot;
+                    r->AddParamMove(comp.plain_set[a].value);
+                    AddParamMove(r);
+                }
+                else
+                    AddParamMove(comp.plain_set[a].value);
+            }
+            for(size_t a=0; a<comp.relationships.size(); ++a)
+            {
+                CodeTreeP r = new CodeTree;
+                r->Opcode = cAtan2;
+                switch(comp.relationships[a].relationship)
+                {
+                    case ComparisonSet::Lt_Mask: r->Opcode = cLess; break;
+                    case ComparisonSet::Eq_Mask: r->Opcode = cEqual; break;
+                    case ComparisonSet::Gt_Mask: r->Opcode = cGreater; break;
+                    case ComparisonSet::Le_Mask: r->Opcode = cLessOrEq; break;
+                    case ComparisonSet::Ne_Mask: r->Opcode = cNEqual; break;
+                    case ComparisonSet::Ge_Mask: r->Opcode = cGreaterOrEq; break;
+                }
+                r->AddParamMove(comp.relationships[a].a);
+                r->AddParamMove(comp.relationships[a].b);
+                r->ConstantFolding();
+                r->Sort();
+                r->Recalculate_Hash_NoRecursion();
+                AddParamMove(r);
+            }
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "After ConstantFolding_LogicCommon: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            return true;
+        }
+        /*
+        Note: One thing this does not yet do, is to detect chains
+              such as x=y & y=z & x=z, which could be optimized
+              to x=y & x=z.
+        */
+        return false;
+    }
+
+    bool CodeTree::ConstantFolding_AndLogic()
+    {
+        return ConstantFolding_LogicCommon(false);
+    }
+    bool CodeTree::ConstantFolding_OrLogic()
+    {
+        return ConstantFolding_LogicCommon(true);
+    }
+
+    struct MultiplicationSet
+    {
+        struct Multiplication
+        {
+            CodeTreeP value;
+            CodeTreeP exponent;
+        };
+        std::vector<Multiplication> multiplications;
+        std::multimap<fphash_t, size_t> value_map;
+
+        enum MultiplicationResult
+        {
+            Ok,
+            Suboptimal
+        };
+
+        size_t FindIdenticalValueTo(const CodeTreeP& b) const
+        {
+            fphash_t hash = b->Hash;
+            for(std::multimap<fphash_t, size_t>::const_iterator i = value_map.lower_bound(hash);
+                i != value_map.end() && i->first == hash;
+                ++i)
+            {
+                if(multiplications[i->second].value->IsIdenticalTo(*b))
+                    return i->second;
+            }
+            return ~size_t(0);
+        }
+
+        MultiplicationResult AddMultiplication(const CodeTreeP& a, const CodeTreeP& exponent)
+        {
+            size_t c = FindIdenticalValueTo(a);
+            if(c != ~size_t(0))
+            {
+                CodeTreeP add = new CodeTree;
+                add->Opcode = cAdd;
+                add->AddParamMove(multiplications[c].exponent);
+                add->AddParam(exponent);
+                add->ConstantFolding();
+                add->Sort();
+                add->Recalculate_Hash_NoRecursion();
+                multiplications[c].exponent = add;
+                return Suboptimal;
+            }
+            Multiplication mul;
+            mul.value    = a;
+            mul.exponent = exponent;
+            multiplications.push_back(mul);
+            value_map.insert(std::make_pair( a->Hash, multiplications.size()-1 ));
+            return Ok;
+        }
+        MultiplicationResult AddMultiplication(const CodeTreeP& a)
+        {
+            return AddMultiplication(a, new CodeTree(1.0) );
+        }
+    };
+
+    bool CodeTree::ConstantFolding_MulGrouping()
+    {
+        bool should_regenerate = false;
+        MultiplicationSet mul;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            MultiplicationSet::MultiplicationResult
+                result = (Params[a]->Opcode == cPow)
+                    ? mul.AddMultiplication(Params[a]->Params[0], Params[a]->Params[1])
+                    : mul.AddMultiplication(Params[a]);
+            if(result == MultiplicationSet::Suboptimal)
+                should_regenerate = true;
+        }
+        std::vector<std::pair<CodeTreeP/*exponent*/,
+                              std::vector<CodeTreeP>/*children*/
+                             > > by_exponent;
+        for(size_t a=0; a<mul.multiplications.size(); ++a)
+        {
+            for(size_t b=0; b<by_exponent.size(); ++b)
+                if(mul.multiplications[a].exponent->IsIdenticalTo(
+                   *by_exponent[b].first))
+                {
+                    if(!by_exponent[b].first->IsImmed()
+                    || !FloatEqual(by_exponent[b].first->GetImmed(), 1.0))
+                    {
+                        should_regenerate = true;
+                    }
+                    by_exponent[b].second.push_back(mul.multiplications[a].value);
+                    goto skip_b;
+                }
+            by_exponent.push_back(
+                std::pair<CodeTreeP, std::vector<CodeTreeP> >
+                ( mul.multiplications[a].exponent,
+                  std::vector<CodeTreeP> (1, mul.multiplications[a].value)
+                ) );
+        skip_b:;
+        }
+
+        if(should_regenerate)
+        {
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Before ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            Params.clear();
+
+            /* Group by exponents */
+            for(size_t a=0; a<by_exponent.size(); ++a)
+            {
+                if(by_exponent[a].first->IsImmed()
+                && FloatEqual(by_exponent[a].first->GetImmed(), 0.0))
+                    continue;
+                if(by_exponent[a].first->IsImmed()
+                && FloatEqual(by_exponent[a].first->GetImmed(), 1.0))
+                {
+                    for(size_t b=0; b<by_exponent[a].second.size(); ++b)
+                        AddParamMove(by_exponent[a].second[b]);
+                }
+                else
+                {
+                    CodeTreeP mul = new CodeTree;
+                    mul->Opcode = cMul;
+                    mul->SetParamsMove( by_exponent[a].second );
+                    mul->ConstantFolding();
+                    mul->Sort();
+                    mul->Recalculate_Hash_NoRecursion();
+                    CodeTreeP pow = new CodeTree;
+                    pow->Opcode = cPow;
+                    pow->AddParamMove(mul);
+                    pow->AddParamMove(by_exponent[a].first);
+                    pow->ConstantFolding();
+                    pow->Recalculate_Hash_NoRecursion();
+                    AddParamMove(pow);
+                }
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "After ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            }
+            return true;
+        }
+        return false;
+    }
+
+    struct AdditionSet
+    {
+        struct Addition
+        {
+            CodeTreeP value;
+            CodeTreeP coeff;
+        };
+        std::vector<Addition> additions;
+        std::multimap<fphash_t, size_t> value_map;
+
+        enum AdditionResult
+        {
+            Ok,
+            Suboptimal
+        };
+
+        size_t FindIdenticalValueTo(const CodeTreeP& b) const
+        {
+            fphash_t hash = b->Hash;
+            for(std::multimap<fphash_t, size_t>::const_iterator i = value_map.lower_bound(hash);
+                i != value_map.end() && i->first == hash;
+                ++i)
+            {
+                if(additions[i->second].value->IsIdenticalTo(*b))
+                    return i->second;
+            }
+            return ~size_t(0);
+        }
+
+        AdditionResult AddAdditionTo(const CodeTreeP& coeff, size_t into_which)
+        {
+            CodeTreeP add = new CodeTree;
+            add->Opcode = cAdd;
+            add->AddParamMove(additions[into_which].coeff);
+            add->AddParam(coeff);
+            add->ConstantFolding();
+            add->Sort();
+            add->Recalculate_Hash_NoRecursion();
+            additions[into_which].coeff = add;
+            return Suboptimal;
+        }
+
+        AdditionResult AddAddition(const CodeTreeP& a, const CodeTreeP& coeff)
+        {
+            size_t c = FindIdenticalValueTo(a);
+            if(c != ~size_t(0))
+                return AddAdditionTo(coeff, c);
+            Addition add;
+            add.value  = a;
+            add.coeff = coeff;
+            additions.push_back(add);
+            value_map.insert(std::make_pair( a->Hash, additions.size()-1 ));
+            return Ok;
+        }
+        AdditionResult AddAddition(const CodeTreeP& a)
+        {
+            return AddAddition(a, new CodeTree(1.0) );
+        }
+    };
+
+    struct Select2stRev
+    {
+        template<typename T>
+        bool operator() (const T& a, const T& b) const
+        {
+            return a.second > b.second;
+        }
+    };
+
+    bool CodeTree::ConstantFolding_AddGrouping()
+    {
+        bool should_regenerate = false;
+        AdditionSet add;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == cMul) continue;
+            if(add.AddAddition(Params[a]) == AdditionSet::Suboptimal)
+                should_regenerate = true;
+            // This catches x + x and x - x
+        }
+        std::vector<bool> remaining ( Params.size() );
+        size_t has_mulgroups_remaining = 0;
+        for(size_t a=0; a<Params.size(); ++a)
+        {
+            if(Params[a]->Opcode == cMul)
+            {
+                // This catches x + y*x*z, producing x*(1 + y*z)
+                for(size_t b=0; b<Params[a]->Params.size(); ++b)
+                {
+                    size_t c = add.FindIdenticalValueTo(Params[a]->Params[b]);
+                    if(c != ~size_t(0))
+                    {
+                        CodeTreeP tmp = Params[a]->Clone();
+                        tmp->DelParam(b);
+                        tmp->ConstantFolding();
+                        tmp->Sort();
+                        tmp->Recalculate_Hash_NoRecursion();
+                        add.AddAdditionTo(tmp, c);
+                        should_regenerate = true;
+                        goto done_a;
+                    }
+                }
+                remaining[a]  = true;
+                has_mulgroups_remaining += 1;
+            done_a:;
+            }
+        }
+
+        if(has_mulgroups_remaining > 0)
+        {
+            std::vector< std::pair<CodeTreeP, size_t> > occurance_counts;
+            std::multimap<fphash_t, size_t> occurance_pos;
+            bool found_dup = false;
+            if(has_mulgroups_remaining > 1)
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(remaining[a])
+                    {
+                        // This catches x*a + x*b, producing x*(a+b)
+                        for(size_t b=0; b<Params[a]->Params.size(); ++b)
+                        {
+                            const CodeTreeP& p = Params[a]->Params[b];
+                            const fphash_t   p_hash = p->Hash;
+                            for(std::multimap<fphash_t, size_t>::const_iterator
+                                i = occurance_pos.lower_bound(p_hash);
+                                i != occurance_pos.end() && i->first == p_hash;
+                                ++i)
+                            {
+                                if(occurance_counts[i->second].first->IsIdenticalTo(*p))
+                                {
+                                    occurance_counts[i->second].second += 1;
+                                    found_dup = true;
+                                    goto found_mulgroup_item_dup;
+                                }
+                            }
+                            occurance_counts.push_back(std::make_pair(p, size_t(1)));
+                            occurance_pos.insert(std::make_pair(p_hash, occurance_counts.size()-1));
+                        found_mulgroup_item_dup:;
+                        }
+                    }
+            if(found_dup)
+            {
+                CodeTreeP group_by; { size_t max = 0;
+                for(size_t p=0; p<occurance_counts.size(); ++p)
+                    if(occurance_counts[p].second <= 1)
+                        occurance_counts[p].second = 0;
+                    else
+                    {
+                        occurance_counts[p].second *= occurance_counts[p].first->Depth;
+                        if(occurance_counts[p].second > max)
+                            { group_by = occurance_counts[p].first; max = occurance_counts[p].second; }
+                    } }
+                CodeTreeP group_add = new CodeTree;
+                group_add->Opcode = cAdd;
+
+    #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "Duplicate across some trees: ";
+                FPoptimizer_Grammar::DumpTree(*group_by);
+                std::cout << " in ";
+                FPoptimizer_Grammar::DumpTree(*this);
+                std::cout << "\n";
+    #endif
+
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(remaining[a])
+                    {
+                        for(size_t b=0; b<Params[a]->Params.size(); ++b)
+                            if(group_by->IsIdenticalTo(*Params[a]->Params[b]))
+                            {
+                                CodeTreeP tmp = Params[a]->Clone();
+                                tmp->DelParam(b);
+                                tmp->ConstantFolding();
+                                tmp->Sort();
+                                tmp->Recalculate_Hash_NoRecursion();
+                                group_add->AddParam(tmp);
+                                remaining[a] = false;
+                                break;
+                            }
+                    }
+
+                group_add->ConstantFolding();
+                group_add->Sort();
+                group_add->Recalculate_Hash_NoRecursion();
+                CodeTreeP group = new CodeTree;
+                group->Opcode = cMul;
+                group->AddParamMove(group_by);
+                group->AddParamMove(group_add);
+                group->ConstantFolding();
+                group->Sort();
+                group->Recalculate_Hash_NoRecursion();
+                add.AddAddition(group);
+                should_regenerate = true;
+            }
+
+            // all remaining mul-groups.
+            for(size_t a=0; a<Params.size(); ++a)
+                if(remaining[a])
+                {
+                    if(add.AddAddition(Params[a]) == AdditionSet::Suboptimal)
+                        should_regenerate = true;
+                }
+        }
+
+        std::vector<std::pair<CodeTreeP/*coefficient*/,
+                              std::vector<CodeTreeP>/*children*/
+                             > > by_coeff;
+        for(size_t a=0; a<add.additions.size(); ++a)
+        {
+            for(size_t b=0; b<by_coeff.size(); ++b)
+                if(add.additions[a].coeff->IsIdenticalTo(
+                   *by_coeff[b].first))
+                {
+                    if(!by_coeff[b].first->IsImmed()
+                    || !FloatEqual(by_coeff[b].first->GetImmed(), 1.0))
+                    {
+                        should_regenerate = true;
+                    }
+                    by_coeff[b].second.push_back(add.additions[a].value);
+                    goto skip_b;
+                 }
+            by_coeff.push_back(
+                std::pair<CodeTreeP, std::vector<CodeTreeP> >
+                ( add.additions[a].coeff,
+                  std::vector<CodeTreeP> (1, add.additions[a].value)
+                ) );
+        skip_b:;
+        }
+
+        if(should_regenerate)
+        {
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Before ConstantFolding_AddGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            Params.clear();
+
+            /* Group by coeffs */
+            for(size_t a=0; a<by_coeff.size(); ++a)
+            {
+                if(by_coeff[a].first->IsImmed()
+                && FloatEqual(by_coeff[a].first->GetImmed(), 0.0))
+                    continue;
+                if(by_coeff[a].first->IsImmed()
+                && FloatEqual(by_coeff[a].first->GetImmed(), 1.0))
+                {
+                    for(size_t b=0; b<by_coeff[a].second.size(); ++b)
+                        AddParamMove(by_coeff[a].second[b]);
+                }
+                else
+                {
+                    CodeTreeP add = new CodeTree;
+                    add->Opcode = cAdd;
+                    add->SetParamsMove( by_coeff[a].second );
+                    add->ConstantFolding();
+                    add->Sort();
+                    add->Recalculate_Hash_NoRecursion();
+                    CodeTreeP mul = new CodeTree;
+                    mul->Opcode = cMul;
+                    mul->AddParamMove(add);
+                    mul->AddParamMove(by_coeff[a].first);
+                    mul->ConstantFolding();
+                    mul->Recalculate_Hash_NoRecursion();
+                    AddParamMove(mul);
+                }
+            }
+          #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "After ConstantFolding_AddGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+          #endif
+            return true;
+        }
+        return false;
+    }
+
     void CodeTree::ConstantFolding()
     {
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Runs ConstantFolding for: "; FPoptimizer_Grammar::DumpTree(*this);
+        std::cout << "\n";
+    #endif
         using namespace std;
+    redo:;
 
         // Insert here any hardcoded constant-folding optimizations
         // that you want to be done whenever a new subtree is generated.
@@ -44,17 +722,23 @@ namespace FPoptimizer_CodeTree
             }
         }
 
-
         /* Sub-list assimilation prepass */
-        switch( (OPCODE) Opcode)
+        /* Done separately because the same procedure applies to several opcodes at once */
+        switch(Opcode)
         {
             case cAdd:
             case cMul:
             case cMin:
             case cMax:
+            case cAnd:
+            case cOr:
             {
                 /* If the list contains another list of the same kind, assimilate it */
                 for(size_t a=Params.size(); a-- > 0; )
+                {
+                    if(Opcode == cAnd || Opcode == cOr)
+                        Params[a]->ConstantFolding_FromLogicalParent();
+
                     if(Params[a]->Opcode == Opcode)
                     {
                         // Assimilate its children and remove it
@@ -62,23 +746,9 @@ namespace FPoptimizer_CodeTree
 
                         DelParam(a);
                         for(size_t b=0; b<tree->Params.size(); ++b)
-                            AddParam( tree->Params[b] );
+                            AddParamMove( tree->Params[b] );
                     }
-                break;
-            }
-            case cAnd:
-            case cOr:
-            {
-                /* If the list contains another list of the same kind, assimilate it */
-                for(size_t a=Params.size(); a-- > 0; )
-                    if(Params[a]->Opcode == Opcode)
-                    {
-                        // Assimilate its children and remove it
-                        CodeTreeP tree = Params[a];
-                        DelParam(a);
-                        for(size_t b=0; b<tree->Params.size(); ++b)
-                            AddParam(tree->Params[b]);
-                    }
+                }
                 break;
             }
             default: break;
@@ -119,7 +789,7 @@ namespace FPoptimizer_CodeTree
                 std::cout << "After replace: "; FPoptimizer_Grammar::DumpTree(*this);
                 std::cout << "\n";
               #endif
-                break;
+                goto redo;
 
             case cAnd:
             {
@@ -150,6 +820,7 @@ namespace FPoptimizer_CodeTree
                     Opcode = cNotNot;
                 }
                 if(Params.empty()) goto ReplaceTreeWithZero;
+                if(ConstantFolding_AndLogic()) goto redo;
                 break;
             }
             case cOr:
@@ -181,10 +852,25 @@ namespace FPoptimizer_CodeTree
                     Opcode = cNotNot;
                 }
                 if(Params.empty()) goto ReplaceTreeWithOne;
+                if(ConstantFolding_OrLogic()) goto redo;
                 break;
             }
             case cNot:
             {
+                Params[0]->ConstantFolding_FromLogicalParent();
+                switch(Params[0]->Opcode)
+                {
+                    case cEqual:   Params[0]->Opcode = cNEqual; goto ReplaceTreeWithParam0;
+                    case cNEqual:  Params[0]->Opcode = cEqual; goto ReplaceTreeWithParam0;
+                    case cLess:    Params[0]->Opcode = cGreaterOrEq; goto ReplaceTreeWithParam0;
+                    case cGreater: Params[0]->Opcode = cLessOrEq;    goto ReplaceTreeWithParam0;
+                    case cLessOrEq:    Params[0]->Opcode = cGreater; goto ReplaceTreeWithParam0;
+                    case cGreaterOrEq: Params[0]->Opcode = cLess;    goto ReplaceTreeWithParam0;
+                    //cNotNot already handled by ConstantFolding_FromLogicalParent()
+                    case cNot: Params[0]->Opcode = cNotNot; goto ReplaceTreeWithParam0;
+                    default: break;
+                }
+
                 // If the sub-expression evaluates to approx. zero, yield one.
                 // If the sub-expression evaluates to approx. nonzero, yield zero.
                 MinMaxTree p = Params[0]->CalculateResultBoundaries();
@@ -200,6 +886,12 @@ namespace FPoptimizer_CodeTree
             }
             case cNotNot:
             {
+                // The function of cNotNot is to protect a logical value from
+                // changing. If the parameter is already a logical value,
+                // then the cNotNot opcode is redundant.
+                if(Params[0]->IsLogicalValue())
+                    goto ReplaceTreeWithParam0;
+
                 // If the sub-expression evaluates to approx. zero, yield zero.
                 // If the sub-expression evaluates to approx. nonzero, yield one.
                 MinMaxTree p = Params[0]->CalculateResultBoundaries();
@@ -215,6 +907,16 @@ namespace FPoptimizer_CodeTree
             }
             case cIf:
             {
+                Params[0]->ConstantFolding_FromLogicalParent();
+                // If the If() condition begins with a cNot,
+                // remove the cNot and swap the branches.
+                while(Params[0]->Opcode == cNot)
+                {
+                    Params[0] = Params[0]->Params[0];
+                    Params[0]->Parent = this;
+                    std::swap(Params[1], Params[2]);
+                }
+
                 // If the sub-expression evaluates to approx. zero, yield param3.
                 // If the sub-expression evaluates to approx. nonzero, yield param2.
                 MinMaxTree p = Params[0]->CalculateResultBoundaries();
@@ -252,12 +954,16 @@ namespace FPoptimizer_CodeTree
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
-                    //std::cout << "cMul: Will add new immed " << mul_immed_sum << "\n";
+                #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "cMul: Will add new immed " << mul_immed_sum << "\n";
+                #endif
                     for(size_t a=Params.size(); a-->0; )
                         if(Params[a]->IsImmed())
                         {
-                            //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
-                            //std::cout << "\n";
+                        #ifdef DEBUG_SUBSTITUTIONS
+                            std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
+                            std::cout << "\n";
+                        #endif
                             DelParam(a);
                         }
                     if(!FloatEqual(mul_immed_sum, 1.0))
@@ -269,6 +975,7 @@ namespace FPoptimizer_CodeTree
                     goto ReplaceTreeWithParam0;
                 }
                 if(Params.empty()) goto ReplaceTreeWithOne;
+                if(ConstantFolding_MulGrouping()) goto redo;
                 break;
             }
             case cAdd:
@@ -288,15 +995,18 @@ namespace FPoptimizer_CodeTree
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
-                    //std::cout << "cAdd: Will add new immed " << immed_sum << "\n";
-                    //std::cout << "In: "; FPoptimizer_Grammar::DumpTree(*this);
-                    //std::cout << "\n";
-
+                #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "cAdd: Will add new immed " << immed_sum << "\n";
+                    std::cout << "In: "; FPoptimizer_Grammar::DumpTree(*this);
+                    std::cout << "\n";
+                #endif
                     for(size_t a=Params.size(); a-->0; )
                         if(Params[a]->IsImmed())
                         {
-                            //std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
-                            //std::cout << "\n";
+                        #ifdef DEBUG_SUBSTITUTIONS
+                            std::cout << " - For that, deleting immed " << Params[a]->GetImmed();
+                            std::cout << "\n";
+                        #endif
                             DelParam(a);
                         }
                     if(!FloatEqual(immed_sum, 0.0))
@@ -308,6 +1018,7 @@ namespace FPoptimizer_CodeTree
                     goto ReplaceTreeWithParam0;
                 }
                 if(Params.empty()) goto ReplaceTreeWithZero;
+                if(ConstantFolding_AddGrouping()) goto redo;
                 break;
             }
             case cMin:
@@ -391,6 +1102,7 @@ namespace FPoptimizer_CodeTree
 
             case cEqual:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithOne;
                 /* If we know the two operands' ranges don't overlap, we get zero.
                  * The opposite is more complex and is done in .dat code.
                  */
@@ -404,6 +1116,7 @@ namespace FPoptimizer_CodeTree
 
             case cNEqual:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithZero;
                 /* If we know the two operands' ranges don't overlap, we get one.
                  * The opposite is more complex and is done in .dat code.
                  */
@@ -417,6 +1130,7 @@ namespace FPoptimizer_CodeTree
 
             case cLess:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithZero;
                 MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max < p1.min)
@@ -428,6 +1142,7 @@ namespace FPoptimizer_CodeTree
 
             case cLessOrEq:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithOne;
                 MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
                 if(p0.has_max && p1.has_min && p0.max <= p1.min)
@@ -439,6 +1154,7 @@ namespace FPoptimizer_CodeTree
 
             case cGreater:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithZero;
                 // Note: Eq case not handled
                 MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
@@ -451,6 +1167,7 @@ namespace FPoptimizer_CodeTree
 
             case cGreaterOrEq:
             {
+                if(Params[0]->IsIdenticalTo(*Params[1])) goto ReplaceTreeWithOne;
                 // Note: Eq case not handled
                 MinMaxTree p0 = Params[0]->CalculateResultBoundaries();
                 MinMaxTree p1 = Params[1]->CalculateResultBoundaries();
@@ -506,7 +1223,7 @@ namespace FPoptimizer_CodeTree
                         std::cout << "AbsReplace-Before: ";
                         FPoptimizer_Grammar::DumpTree(*this);
                         std::cout << "\n" << std::flush;
-                        FPoptimizer_Grammar::DumpHashes(*this);
+                        FPoptimizer_Grammar::DumpHashes(*this, std::cout);
                 #endif
                         for(size_t a=p.Params.size(); a-- > 0; )
                         {
@@ -522,31 +1239,32 @@ namespace FPoptimizer_CodeTree
                         }
                         p.ConstantFolding();
                         p.Sort();
+                        p.Recalculate_Hash_NoRecursion();
 
                         CodeTreeP subtree = new CodeTree;
-                        p.Parent = &*subtree;
                         subtree->Opcode = cAbs;
-                        subtree->Params.swap(Params);
+                        subtree->SetParamsMove(Params);
                         subtree->ConstantFolding();
                         subtree->Sort();
-                        subtree->Rehash(false); // hash it and its children.
+                        subtree->Recalculate_Hash_NoRecursion();
 
                         /* Now:
                          * subtree = Abs(x*y)
                          * this    = Abs()
                          */
 
+                        Params.clear();
                         Opcode = cMul;
                         for(size_t a=0; a<pos_set.size(); ++a)
-                            AddParam(pos_set[a]);
-                        AddParam(subtree);
+                            AddParamMove(pos_set[a]);
+                        AddParamMove(subtree);
                         /* Now:
                          * this    = p * Abs(x*y)
                          */
                         if(!neg_set.empty())
                         {
                             for(size_t a=0; a<neg_set.size(); ++a)
-                                AddParam(neg_set[a]);
+                                AddParamMove(neg_set[a]);
                             AddParam( new CodeTree(-1.0) );
                             /* Now:
                              * this = p * n * -1 * Abs(x*y)
@@ -554,9 +1272,9 @@ namespace FPoptimizer_CodeTree
                         }
                 #ifdef DEBUG_SUBSTITUTIONS
                         std::cout << "AbsReplace-After: ";
-                        FPoptimizer_Grammar::DumpTree(*this);
+                        FPoptimizer_Grammar::DumpTree(*this, std::cout);
                         std::cout << "\n" << std::flush;
-                        FPoptimizer_Grammar::DumpHashes(*this);
+                        FPoptimizer_Grammar::DumpHashes(*this, std::cout);
                 #endif
                         /* We were changed into a cMul group. Do cMul folding. */
                         goto NowWeAreMulGroup;
@@ -677,6 +1395,27 @@ namespace FPoptimizer_CodeTree
                     // 1^x = 1
                     goto ReplaceTreeWithOne;
                 }
+
+                // 5^(20*x) = (5^20)^x
+                if(Params[0]->IsImmed()
+                && Params[1]->Opcode == cMul)
+                {
+                    CodeTree& mulgroup = *Params[1];
+                    for(size_t a=0; a<mulgroup.Params.size(); ++a)
+                    {
+                        if(mulgroup.Params[a]->IsImmed()
+                        && mulgroup.Params[a]->GetImmed() >= 0.0)
+                        {
+                            Params[0]->Value = std::pow(Params[0]->Value,
+                                                        mulgroup.Params[a]->GetImmed());
+                            mulgroup.DelParam(a);
+                            mulgroup.ConstantFolding();
+                            mulgroup.Sort();
+                            mulgroup.Recalculate_Hash_NoRecursion();
+                            break;
+                        }
+                    }
+                }
                 break;
             }
 
@@ -695,9 +1434,9 @@ namespace FPoptimizer_CodeTree
              * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context:
              */
-            case cDiv: // converted into cMul ~x
+            case cDiv: // converted into cPow y -1
             case cRDiv: // similar to above
-            case cSub: // converted into cAdd ~x
+            case cSub: // converted into cMul y -1
             case cRSub: // similar to above
             case cRad: // converted into cMul x CONSTANT_RD
             case cDeg: // converted into cMul x CONSTANT_DR
@@ -770,15 +1509,13 @@ namespace FPoptimizer_CodeTree
 #ifdef DEBUG_SUBSTITUTIONS
     {
         MinMaxTree tmp = CalculateResultBoundaries_do();
-        std::cout << std::flush;
-        fprintf(stderr, "Estimated boundaries: %g%s .. %g%s: ",
-            tmp.min, tmp.has_min?"":"(unknown)",
-            tmp.max, tmp.has_max?"":"(unknown)");
-        fflush(stderr);
+        std::cout << "Estimated boundaries: ";
+        if(tmp.has_min) std::cout << tmp.min; else std::cout << "-inf";
+        std::cout << " .. ";
+        if(tmp.has_max) std::cout << tmp.max; else std::cout << "+inf";
+        std::cout << ": ";
         FPoptimizer_Grammar::DumpTree(*this);
-        std::cout << std::flush;
-        fprintf(stderr, " \n");
-        fflush(stderr);
+        std::cout << std::endl;
         return tmp;
     }
     CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries_do() const

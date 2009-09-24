@@ -99,6 +99,8 @@ namespace FPoptimizer_CodeTree
                 if(ParamComparer() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLessOrEq; }
                 break;
+            default:
+                break;
         }
     }
 
@@ -166,25 +168,10 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    CodeTree* CodeTree::Clone()
+    CodeTreeP CodeTree::Clone()
     {
-        CodeTree* result = new CodeTree;
-        result->Opcode = Opcode;
-        switch(Opcode)
-        {
-            case cImmed:
-                result->Value  = Value;
-                break;
-            case cVar:
-                result->Var = Var;
-                break;
-            case cFCall: case cPCall:
-                result->Funcno = Funcno;
-                break;
-        }
-        result->SetParams(Params);
-        result->Hash   = Hash;
-        result->Depth  = Depth;
+        CodeTreeP result = new CodeTree;
+        result->Become(*this, false, true);
         //assert(Parent->RefCount > 0);
         result->Parent = Parent;
         return result;
@@ -194,6 +181,12 @@ namespace FPoptimizer_CodeTree
     {
         Params.push_back(param);
         Params.back()->Parent = this;
+    }
+    void CodeTree::AddParamMove(CodeTreeP& param)
+    {
+        param->Parent = this;
+        Params.push_back(CodeTreeP());
+        Params.back().swap(param);
     }
 
     void CodeTree::SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone)
@@ -234,6 +227,39 @@ namespace FPoptimizer_CodeTree
         return (GetLongIntegerImmed() & 1) ? IsNever : IsAlways;
     }
 
+    bool CodeTree::IsLogicalValue() const
+    {
+        switch( (OPCODE) Opcode)
+        {
+            case cImmed:
+                return FloatEqual(Value, 0.0)
+                    || FloatEqual(Value, 1.0);
+            case cAnd:
+            case cOr:
+            case cNot:
+            case cNotNot:
+            case cEqual:
+            case cNEqual:
+            case cLess:
+            case cLessOrEq:
+            case cGreater:
+            case cGreaterOrEq:
+                /* These operations always produce truth values (0 or 1) */
+                return true;
+            case cMul:
+                for(size_t a=0; a<Params.size(); ++a)
+                    if(!Params[a]->IsLogicalValue())
+                        return false;
+                return true;
+            case cIf:
+                return Params[1]->IsLogicalValue()
+                    && Params[2]->IsLogicalValue();
+            default:
+                break;
+        }
+        return false; // Not a logical value.
+    }
+
     bool CodeTree::IsAlwaysInteger() const
     {
         switch( (OPCODE) Opcode)
@@ -255,6 +281,9 @@ namespace FPoptimizer_CodeTree
             case cGreaterOrEq:
                 /* These operations always produce truth values (0 or 1) */
                 return true; /* 0 and 1 are both integers */
+            case cIf:
+                return Params[1]->IsAlwaysInteger()
+                    && Params[2]->IsAlwaysInteger();
             default:
                 break;
         }
@@ -283,6 +312,7 @@ namespace FPoptimizer_CodeTree
             case cVar:   if(Var   != b.Var)   return false; return true;
             case cFCall:
             case cPCall: if(Funcno != b.Funcno) return false; break;
+            default: break;
         }
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
@@ -310,6 +340,8 @@ namespace FPoptimizer_CodeTree
             SetParamsMove(b.Params);
         else
             SetParams(b.Params, do_clone);
+        Hash  = b.Hash;
+        Depth = b.Depth;
     }
 }
 
