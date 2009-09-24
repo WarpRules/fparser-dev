@@ -111,6 +111,7 @@ private:
     template<typename Operation>
     inline void AddBinaryOperationByConst();
     inline void incStackPtr();
+    bool CompilePowi(int);
 
     const char* CompileIf(const char*);
     const char* CompileFunctionParams(const char*, unsigned);

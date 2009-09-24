@@ -1,8 +1,6 @@
 #include <iostream>
 
 #define FP_GENERATING_POWI_TABLE
-extern signed char powi_table[256];
-
 #include "fpoptimizer_bytecodesynth.cc"
 #include "fpoptimizer_codetree.hh"
 #include "fptypes.hh"

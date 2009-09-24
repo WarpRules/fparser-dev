@@ -544,6 +544,61 @@ inline void FunctionParser::incStackPtr()
     if(++StackPtr > data->StackSize) ++(data->StackSize);
 }
 
+#ifdef FP_SUPPORT_OPTIMIZER
+namespace FPoptimizer_ByteCode
+{
+    extern signed char powi_table[256];
+}
+#endif
+inline bool FunctionParser::CompilePowi(int int_exponent)
+{
+    int num_muls=0;
+    while(int_exponent > 1)
+    {
+#ifdef FP_SUPPORT_OPTIMIZER
+        if(int_exponent < 256)
+        {
+            int half = FPoptimizer_ByteCode::powi_table[int_exponent];
+            if(half != 1 && !(int_exponent % half))
+            {
+                if(!CompilePowi(half)) return false;
+                int_exponent /= half;
+                continue;
+            }
+            else if(half >= 3)
+            {
+                data->ByteCode.push_back(cDup);
+                incStackPtr();
+                if(!CompilePowi(half-1)) return false;
+                data->ByteCode.push_back(cMul);
+                --StackPtr;
+                int_exponent -= half;
+                continue;
+            }
+        }
+#endif
+        if(!(int_exponent & 1))
+        {
+            int_exponent /= 2;
+            data->ByteCode.push_back(cSqr);
+        }
+        else
+        {
+            data->ByteCode.push_back(cDup);
+            incStackPtr();
+            int_exponent -= 1;
+            ++num_muls;
+        }
+    }
+    if(num_muls > 0)
+    {
+        data->ByteCode.resize(data->ByteCode.size()+num_muls,
+                              cMul);
+        StackPtr -= num_muls;
+    }
+    return true;
+}
+
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 {
     if(data->ByteCode.back() == cImmed)
@@ -650,42 +705,20 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               {
                   double original_immed = data->Immed.back();
                   int int_exponent = (int)original_immed;
-
                   if(original_immed >= 1.0 &&
                      original_immed == (double)int_exponent &&
-                     (original_immed <= 24.0 ||
+                     (original_immed <= 46.0 ||
                       (int_exponent <= 1024 &&
                        (int_exponent & (int_exponent - 1)) == 0)))
                   {
                       data->Immed.pop_back(); data->ByteCode.pop_back();
                       /*size_t bytecode_size = data->ByteCode.size();*/
-                      int num_muls=0;
-                      while(int_exponent > 1)
-                      {
-                          if(!(int_exponent & 1))
-                          {
-                              int_exponent /= 2;
-                              data->ByteCode.push_back(cSqr);
-                          }
-                          else
-                          {
-                              data->ByteCode.push_back(cDup);
-                              incStackPtr();
-                              int_exponent -= 1;
-                              ++num_muls;
-                          }
-                      }
-                      if(num_muls > 0)
-                      {
-                          data->ByteCode.resize(data->ByteCode.size()+num_muls,
-                                                cMul);
-                          StackPtr -= num_muls;
-                      }
-                      return;
+                      if(CompilePowi(int_exponent))
+                           return;
                       /*powi_failed:;
-                        data->ByteCode.resize(bytecode_size);
-                        data->Immed.push_back(original_immed);
-                        data->ByteCode.push_back(cImmed);*/
+                      data->ByteCode.resize(bytecode_size);
+                      data->Immed.push_back(original_immed);
+                      data->ByteCode.push_back(cImmed);*/
                   }
               }
         }
