@@ -73,7 +73,6 @@ namespace FPoptimizer_CodeTree
         /* Internal operation */
         FUNCTIONPARSERTYPES::fphash_t      Hash;
         size_t        Depth;
-        CodeTree*     Parent;
         const FPoptimizer_Grammar::Grammar* OptimizedUsing;
     public:
         CodeTree();
@@ -93,12 +92,6 @@ namespace FPoptimizer_CodeTree
             size_t& stacktop_max);
         void SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth);
 
-        /* Regenerates the hash.
-         * child_triggered=false: Recurse to children
-         * child_triggered=true:  Recurse to parents
-         */
-        void Rehash(bool child_triggered);
-        void Rehash_Parents();
         void Recalculate_Hash_NoRecursion();
 
         void Sort();

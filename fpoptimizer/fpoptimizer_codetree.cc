@@ -14,12 +14,12 @@ using namespace FUNCTIONPARSERTYPES;
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
-        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), Parent(), OptimizedUsing(0)
+        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
     }
 
     CodeTree::CodeTree(double i)
-        : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), Parent(), OptimizedUsing(0)
+        : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
         Value = i;
         Recalculate_Hash_NoRecursion();
@@ -27,32 +27,6 @@ namespace FPoptimizer_CodeTree
 
     CodeTree::~CodeTree()
     {
-    }
-
-    void CodeTree::Rehash(
-        bool child_triggered)
-    {
-        /* If we were triggered by a parent, recurse to children */
-        if(!child_triggered)
-        {
-            for(size_t a=0; a<Params.size(); ++a)
-                Params[a]->Rehash(false);
-        }
-
-        Recalculate_Hash_NoRecursion();
-
-        /* If we were triggered by a child, recurse to the parent */
-        if(child_triggered)
-            Rehash_Parents();
-    }
-
-    void CodeTree::Rehash_Parents()
-    {
-        if(Parent)
-        {
-            //assert(Parent->RefCount > 0);
-            Parent->Rehash(true);
-        }
     }
 
     struct ParamComparer
@@ -172,20 +146,16 @@ namespace FPoptimizer_CodeTree
     {
         CodeTreeP result = new CodeTree;
         result->Become(*this, false, true);
-        //assert(Parent->RefCount > 0);
-        result->Parent = Parent;
         return result;
     }
 
     void CodeTree::AddParam(const CodeTreeP& param)
     {
         //std::cout << "AddParam called\n";
-        param->Parent = this;
         Params.push_back(param);
     }
     void CodeTree::AddParamMove(CodeTreeP& param)
     {
-        param->Parent = this;
         Params.push_back(CodeTreeP());
         Params.back().swap(param);
     }
@@ -194,26 +164,15 @@ namespace FPoptimizer_CodeTree
     {
         //std::cout << "SetParams called" << (do_clone ? ", clone" : ", no clone") << "\n";
         Params = RefParams;
-        /**
-        *** Note: The only reason we need to CLONE the children here
-        ***       is because they must have the correct Parent field.
-        ***       The Parent is required because of backward-recursive
-        ***       hash regeneration. Is there any way around this?
-        */
-
-        for(size_t a=0; a<Params.size(); ++a)
-        {
-            if(do_clone) Params[a] = Params[a]->Clone();
-            Params[a]->Parent = this;
-        }
+        if(do_clone)
+            for(size_t a=0; a<Params.size(); ++a)
+                Params[a] = Params[a]->Clone();
     }
 
     void CodeTree::SetParamsMove(std::vector<CodeTreeP>& RefParams)
     {
         Params.clear();
         Params.swap(RefParams);
-        for(size_t a=0; a<Params.size(); ++a)
-            Params[a]->Parent = this;
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__

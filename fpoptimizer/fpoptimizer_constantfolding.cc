@@ -25,16 +25,10 @@ namespace FPoptimizer_CodeTree
                 goto redo;
             case cIf:
                 while(Params[1]->Opcode == cNotNot)
-                {
                     Params[1] = Params[1]->Params[0];
-                    Params[1]->Parent = this;
-                }
                 Params[1]->ConstantFolding_FromLogicalParent();
                 while(Params[2]->Opcode == cNotNot)
-                {
                     Params[2] = Params[2]->Params[0];
-                    Params[2]->Parent = this;
-                }
                 Params[2]->ConstantFolding_FromLogicalParent();
                 break;
             default: break;
@@ -913,7 +907,6 @@ namespace FPoptimizer_CodeTree
                 while(Params[0]->Opcode == cNot)
                 {
                     Params[0] = Params[0]->Params[0];
-                    Params[0]->Parent = this;
                     std::swap(Params[1], Params[2]);
                 }
 
@@ -1362,13 +1355,12 @@ namespace FPoptimizer_CodeTree
                     // Convert into a division
                     CodeTreeP subtree = new CodeTree;
                     Params[1].sign = true; /* FIXME: Not appropriate anymore */
-                    for(size_t a=0; a<Params.size(); ++a)
-                        Params[a]->Parent = &*subtree;
+                    subtree->SetParamsMove(Params);
+                    Params.clear();
                     subtree->Opcode = cMul;
-                    subtree->Params.swap(Params); // subtree = y/x
                     subtree->ConstantFolding();
                     subtree->Sort();
-                    subtree->Rehash(false);
+                    subtree->Recalculate_Hash_NoRecursion();
                     Opcode = cAtan;
                     AddParam(subtree); // we = atan(y/x)
                 }

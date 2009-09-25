@@ -181,7 +181,7 @@ namespace
             std::cout << "\n";
         #endif
             tree.Sort();
-            tree.Rehash(true);
+            tree.Recalculate_Hash_NoRecursion();
         }
     }
 }

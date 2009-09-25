@@ -202,7 +202,7 @@ namespace FPoptimizer_Grammar
             {
                 tree.ConstantFolding();
                 tree.Sort();
-                tree.Rehash(true); // rehash node and its parents
+                tree.Recalculate_Hash_NoRecursion();
                 // Give the parent node a rerun at optimization
                 return true;
             }
@@ -236,7 +236,9 @@ namespace FPoptimizer_Grammar
                 if(TestRuleAndApplyIfMatch(*range.first, tree))
                 {
                     changed = true;
-                    tree.Rehash_Parents();
+                    tree.ConstantFolding();
+                    tree.Sort();
+                    tree.Recalculate_Hash_NoRecursion();
                     break;
                 }
                 ++range.first;
