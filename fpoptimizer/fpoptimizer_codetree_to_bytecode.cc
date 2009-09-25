@@ -25,7 +25,7 @@ namespace
     using namespace FPoptimizer_CodeTree;
 
     bool AssembleSequence(
-                  CodeTree& tree, long count,
+                  const CodeTree& tree, long count,
                   const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
                   FPoptimizer_ByteCode::ByteCodeSynth& synth,
                   size_t max_bytecode_grow_length);
@@ -34,73 +34,77 @@ namespace
 namespace
 {
     typedef
-        std::map<fphash_t,  std::pair<size_t, CodeTreeP> >
+        std::map<fphash_t,  std::pair<size_t, CodeTree> >
         TreeCountType;
     typedef
-        std::multimap<fphash_t, CodeTreeP>
+        std::multimap<fphash_t, CodeTree>
         DoneTreesType;
 
-    void FindTreeCounts(TreeCountType& TreeCounts, CodeTreeP tree)
+    void FindTreeCounts(TreeCountType& TreeCounts, const CodeTree& tree)
     {
-        TreeCountType::iterator i = TreeCounts.lower_bound(tree->Hash);
+        TreeCountType::iterator i = TreeCounts.lower_bound(tree.GetHash());
         if(i != TreeCounts.end()
-        && tree->Hash == i->first
-        && tree->IsIdenticalTo( * i->second.second ) )
+        && tree.GetHash() == i->first
+        && tree.IsIdenticalTo( i->second.second ) )
             i->second.first += 1;
         else
-            TreeCounts.insert(i, std::make_pair(tree->Hash, std::make_pair(size_t(1), tree)));
+            TreeCounts.insert(i, std::make_pair(tree.GetHash(), std::make_pair(size_t(1), tree)));
 
-        for(size_t a=0; a<tree->Params.size(); ++a)
-            FindTreeCounts(TreeCounts, tree->Params[a]);
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
+            FindTreeCounts(TreeCounts, tree.GetParam(a));
     }
 
     void RememberRecursivelyHashList(DoneTreesType& hashlist,
-                                     const CodeTreeP& tree)
+                                     const CodeTree& tree)
     {
-        hashlist.insert( std::make_pair(tree->Hash, tree) );
-        for(size_t a=0; a<tree->Params.size(); ++a)
-            RememberRecursivelyHashList(hashlist, tree->Params[a]);
+        hashlist.insert( std::make_pair(tree.GetHash(), tree) );
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
+            RememberRecursivelyHashList(hashlist, tree.GetParam(a));
     }
-    void RecreateInversionsAndNegations(CodeTree& tree)
+    bool RecreateInversionsAndNegations(CodeTree& tree)
     {
-        for(size_t a=0; a<tree.Params.size(); ++a)
-            RecreateInversionsAndNegations(*tree.Params[a]);
+        tree.BeginChanging();
 
         bool changed = false;
-        switch(tree.Opcode) // Recreate inversions and negations
+
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
+            if(RecreateInversionsAndNegations(tree.GetParam(a)))
+                changed = true;
+
+        switch(tree.GetOpcode()) // Recreate inversions and negations
         {
             case cMul:
             {
-                std::vector<CodeTreeP> div_params;
+                std::vector<CodeTree> div_params;
 
-                for(size_t a = tree.Params.size(); a-- > 0; )
-                    if(tree.Params[a]->Opcode == cPow
-                    && tree.Params[a]->Params[1]->IsImmed()
-                    && FloatEqual(tree.Params[a]->Params[1]->GetImmed(), -1.0))
+                for(size_t a = tree.GetParamCount(); a-- > 0; )
+                    if(tree.GetParam(a).GetOpcode() == cPow
+                    && tree.GetParam(a).GetParam(1).IsImmed()
+                    && FloatEqual(tree.GetParam(a).GetParam(1).GetImmed(), -1.0))
                     {
-                        div_params.push_back(tree.Params[a]->Params[0]);
+                        div_params.push_back(tree.GetParam(a).GetParam(0));
                         tree.DelParam(a);
                         changed = true;
                     }
                 if(!div_params.empty())
                 {
-                    CodeTreeP divgroup(new CodeTree);
-                    divgroup->Opcode = cMul;
-                    divgroup->SetParamsMove(div_params);
-                    divgroup->ConstantFolding();
-                    divgroup->Sort();
-                    divgroup->Recalculate_Hash_NoRecursion();
-                    CodeTreeP mulgroup(new CodeTree);
-                    mulgroup->Opcode = cMul;
-                    mulgroup->SetParamsMove(tree.Params);
-                    mulgroup->ConstantFolding();
-                    mulgroup->Sort();
-                    mulgroup->Recalculate_Hash_NoRecursion();
-                    if(mulgroup->IsImmed() && FloatEqual(mulgroup->GetImmed(), 1.0))
-                        tree.Opcode = cInv;
+                    CodeTree divgroup;
+                    divgroup.BeginChanging();
+                    divgroup.SetOpcode(cMul);
+                    divgroup.SetParamsMove(div_params);
+                    divgroup.ConstantFolding();
+                    divgroup.FinishChanging();
+                    CodeTree mulgroup;
+                    mulgroup.BeginChanging();
+                    mulgroup.SetOpcode(cMul);
+                    mulgroup.SetParamsMove(tree.GetParams());
+                    mulgroup.ConstantFolding();
+                    mulgroup.FinishChanging();
+                    if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), 1.0))
+                        tree.SetOpcode(cInv);
                     else
                     {
-                        tree.Opcode = cDiv;
+                        tree.SetOpcode(cDiv);
                         tree.AddParam(mulgroup);
                     }
                     tree.AddParam(divgroup);
@@ -109,28 +113,28 @@ namespace
             }
             case cAdd:
             {
-                std::vector<CodeTreeP> sub_params;
+                std::vector<CodeTree> sub_params;
 
-                for(size_t a = tree.Params.size(); a-- > 0; )
-                    if(tree.Params[a]->Opcode == cMul)
+                for(size_t a = tree.GetParamCount(); a-- > 0; )
+                    if(tree.GetParam(a).GetOpcode() == cMul)
                     {
                         bool is_signed = false;
                         // if the mul group has a -1 constant...
                         bool subchanged = false;
-                        CodeTreeP mulgroup = tree.Params[a];
-                        for(size_t b=mulgroup->Params.size(); b-- > 0; )
-                            if(mulgroup->Params[b]->IsImmed()
-                            && FloatEqual(mulgroup->Params[b]->GetImmed(), -1.0))
+                        CodeTree mulgroup = tree.GetParam(a);
+                        for(size_t b=mulgroup.GetParamCount(); b-- > 0; )
+                            if(mulgroup.GetParam(b).IsImmed()
+                            && FloatEqual(mulgroup.GetParam(b).GetImmed(), -1.0))
                             {
-                                mulgroup->DelParam(b);
+                                if(!subchanged) mulgroup.BeginChanging();
+                                mulgroup.DelParam(b);
                                 is_signed = !is_signed;
                                 subchanged = true;
                             }
                         if(subchanged)
                         {
-                            mulgroup->ConstantFolding();
-                            mulgroup->Sort();
-                            mulgroup->Recalculate_Hash_NoRecursion();
+                            mulgroup.ConstantFolding();
+                            mulgroup.FinishChanging();
                             changed = true;
                         }
                         if(is_signed)
@@ -142,23 +146,23 @@ namespace
                     }
                 if(!sub_params.empty())
                 {
-                    CodeTreeP subgroup(new CodeTree);
-                    subgroup->Opcode = cAdd;
-                    subgroup->SetParamsMove(sub_params);
-                    subgroup->ConstantFolding();
-                    subgroup->Sort();
-                    subgroup->Recalculate_Hash_NoRecursion();
-                    CodeTreeP addgroup(new CodeTree);
-                    addgroup->Opcode = cAdd;
-                    addgroup->SetParamsMove(tree.Params);
-                    addgroup->ConstantFolding();
-                    addgroup->Sort();
-                    addgroup->Recalculate_Hash_NoRecursion();
-                    if(addgroup->IsImmed() && FloatEqual(addgroup->GetImmed(), 0.0))
-                        tree.Opcode = cNeg;
+                    CodeTree subgroup;
+                    subgroup.BeginChanging();
+                    subgroup.SetOpcode(cAdd);
+                    subgroup.SetParamsMove(sub_params);
+                    subgroup.ConstantFolding();
+                    subgroup.FinishChanging();
+                    CodeTree addgroup;
+                    addgroup.BeginChanging();
+                    addgroup.SetOpcode(cAdd);
+                    addgroup.SetParamsMove(tree.GetParams());
+                    addgroup.ConstantFolding();
+                    addgroup.FinishChanging();
+                    if(addgroup.IsImmed() && FloatEqual(addgroup.GetImmed(), 0.0))
+                        tree.SetOpcode(cNeg);
                     else
                     {
-                        tree.Opcode = cSub;
+                        tree.SetOpcode(cSub);
                         tree.AddParam(addgroup);
                     }
                     tree.AddParam(subgroup);
@@ -180,9 +184,10 @@ namespace
             FPoptimizer_Grammar::DumpTree(tree);
             std::cout << "\n";
         #endif
-            tree.Sort();
-            tree.Recalculate_Hash_NoRecursion();
+            tree.FinishChanging();
+            return true;
         }
+        return false;
     }
 }
 
@@ -205,7 +210,7 @@ namespace FPoptimizer_CodeTree
 
         /* Find common subtrees */
         TreeCountType TreeCounts;
-        FindTreeCounts(TreeCounts, this);
+        FindTreeCounts(TreeCounts, *this);
 
         /* Synthesize some of the most common ones */
         DoneTreesType AlreadyDoneTrees;
@@ -221,16 +226,16 @@ namespace FPoptimizer_CodeTree
             // It must always occur at least twice
             if(score < 2) continue;
             // And it must not be a simple expression
-            if(i->second.second->Depth < 2) CandSkip: continue;
+            if(i->second.second.GetDepth() < 2) CandSkip: continue;
             // And it must not yet have been synthesized
             DoneTreesType::const_iterator j = AlreadyDoneTrees.lower_bound(i->first);
             for(; j != AlreadyDoneTrees.end() && j->first == i->first; ++j)
             {
-                if(j->second->IsIdenticalTo(*i->second.second))
+                if(j->second.IsIdenticalTo(i->second.second))
                     goto CandSkip;
             }
             // Is a candidate.
-            score *= i->second.second->Depth;
+            score *= i->second.second.GetDepth();
             if(score > best_score)
                 { best_score = score; synth_it = i; }
         }
@@ -240,7 +245,7 @@ namespace FPoptimizer_CodeTree
             std::cout << "Found Common Subexpression:"; FPoptimizer_Grammar::DumpTree(*synth_it->second.second); std::cout << "\n";
     #endif
             /* Synthesize the selected tree */
-            synth_it->second.second->SynthesizeByteCode(synth);
+            synth_it->second.second.SynthesizeByteCode(synth);
             /* Add the tree and all its children to the AlreadyDoneTrees list,
              * to prevent it from being re-synthesized
              */
@@ -265,17 +270,16 @@ namespace FPoptimizer_CodeTree
         synth.Pull(ByteCode, Immed, stacktop_max);
     }
 
-    void CodeTree::SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth)
+    void CodeTree::SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth) const
     {
         // If the synth can already locate our operand in the stack,
         // never mind synthesizing it again, just dup it.
-        /* FIXME: Possible hash collisions. */
-        if(synth.FindAndDup(Hash))
+        if(synth.FindAndDup(*this))
         {
             return;
         }
 
-        switch(Opcode)
+        switch(GetOpcode())
         {
             case cVar:
                 synth.PushVar(GetVar());
@@ -290,49 +294,33 @@ namespace FPoptimizer_CodeTree
             case cAnd:
             case cOr:
             {
-                /*
-                // Try to ensure that Immeds don't have a sign
-                for(size_t a=0; a<Params.size(); ++a)
-                {
-                    CodeTreeP& param = Params[a];
-                    if(Params[a].sign && param->IsImmed())
-                        switch(Opcode)
-                        {
-                            case cAdd: param->NegateImmed(); Params[a].sign=false; break;
-                            case cMul: if(param->GetImmed() == 0.0) break;
-                                       param->InvertImmed(); Params[a].sign=false; break;
-                            case cAnd:
-                            case cOr:  param->NotTheImmed(); Params[a].sign=false; break;
-                        }
-                }
-                */
-                if(Opcode == cMul) // Special treatment for cMul sequences
+                if(GetOpcode() == cMul) // Special treatment for cMul sequences
                 {
                     // If the paramlist contains an Immed, and that Immed
                     // fits in a long-integer, try to synthesize it
                     // as add-sequences instead.
-                    for(size_t a=0; a<Params.size(); ++a)
+                    for(size_t a=0; a<GetParamCount(); ++a)
                     {
-                        if(Params[a]->IsLongIntegerImmed())
+                        if(GetParam(a).IsLongIntegerImmed())
                         {
-                            CodeTreeP param = Params[a];
+                            long value = GetParam(a).GetLongIntegerImmed();
 
-                            long value = param->GetLongIntegerImmed();
-                            DelParam(a);
+                            CodeTree tmp;
+                            tmp.Become(*this);
+                            tmp.BeginChanging();
+                            tmp.DelParam(a);
+                            tmp.ConstantFolding();
+                            tmp.FinishChanging();
 
                             bool success = AssembleSequence(
-                                *this, value, FPoptimizer_ByteCode::AddSequence,
+                                tmp, value, FPoptimizer_ByteCode::AddSequence,
                                 synth,
                                 MAX_MULI_BYTECODE_LENGTH);
-
-                            // Readd the token so that we don't need
-                            // to deal with allocationd/deallocation here.
-                            Params.insert(Params.begin()+a, param);
 
                             if(success)
                             {
                                 // this tree was treated just fine
-                                synth.StackTopIs(Hash);
+                                synth.StackTopIs(*this);
                                 return;
                             }
                         }
@@ -340,17 +328,15 @@ namespace FPoptimizer_CodeTree
                 }
 
                 int n_stacked = 0;
-                for(size_t a=0; a<Params.size(); ++a)
+                for(size_t a=0; a<GetParamCount(); ++a)
                 {
-                    CodeTreeP const & param = Params[a];
-
-                    param->SynthesizeByteCode(synth);
+                    GetParam(a).SynthesizeByteCode(synth);
                     ++n_stacked;
 
                     if(n_stacked > 1)
                     {
                         // Cumulate at the earliest opportunity.
-                        synth.AddOperation(Opcode, 2); // stack state: -2+1 = -1
+                        synth.AddOperation(GetOpcode(), 2); // stack state: -2+1 = -1
                         n_stacked = n_stacked - 2 + 1;
                     }
                 }
@@ -359,7 +345,7 @@ namespace FPoptimizer_CodeTree
                     // Uh, we got an empty cAdd/cMul/whatever...
                     // Synthesize a default value.
                     // This should never happen.
-                    switch(Opcode)
+                    switch(GetOpcode())
                     {
                         case cAdd:
                         case cOr:
@@ -384,54 +370,55 @@ namespace FPoptimizer_CodeTree
             }
             case cPow:
             {
-                const CodeTreeP& p0 = Params[0];
-                const CodeTreeP& p1 = Params[1];
+                const CodeTree& p0 = GetParam(0);
+                const CodeTree& p1 = GetParam(1);
 
-                if(p1->IsImmed() && p1->GetImmed() == 0.5)
+                if(p1.IsImmed() && p1.GetImmed() == 0.5)
                 {
-                    p0->SynthesizeByteCode(synth);
+                    p0.SynthesizeByteCode(synth);
                     synth.AddOperation(cSqrt, 1);
                 }
-                else if(p1->IsImmed() && p1->GetImmed() == -0.5)
+                else if(p1.IsImmed() && p1.GetImmed() == -0.5)
                 {
-                    p0->SynthesizeByteCode(synth);
+                    p0.SynthesizeByteCode(synth);
                     synth.AddOperation(cRSqrt, 1);
                 }
                 /*
-                else if(p0->IsImmed() && p0->GetImmed() == CONSTANT_E)
+                else if(p0.IsImmed() && p0.GetImmed() == CONSTANT_E)
                 {
-                    p1->SynthesizeByteCode(synth);
+                    p1.SynthesizeByteCode(synth);
                     synth.AddOperation(cExp, 1);
                 }
-                else if(p0->IsImmed() && p0->GetImmed() == CONSTANT_EI)
+                else if(p0.IsImmed() && p0.GetImmed() == CONSTANT_EI)
                 {
-                    p1->SynthesizeByteCode(synth);
+                    p1.SynthesizeByteCode(synth);
                     synth.AddOperation(cNeg, 1);
                     synth.AddOperation(cExp, 1);
                 }
                 */
-                else if(!p1->IsLongIntegerImmed()
+                else if(!p1.IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
-                        *p0, p1->GetLongIntegerImmed(),
+                        p0, p1.GetLongIntegerImmed(),
                         FPoptimizer_ByteCode::MulSequence,
                         synth,
                         MAX_POWI_BYTECODE_LENGTH)
                   )
                 {
-                    if(p0->IsImmed() && p0->GetImmed() > 0.0)
+                    if(p0.IsImmed() && p0.GetImmed() > 0.0)
                     {
                         // Convert into cExp or Exp2.
                         //    x^y = exp(log(x) * y) =
                         //    Can only be done when x is positive, though.
-                        double mulvalue = std::log( p0->GetImmed() );
-
-                        if(p1->Opcode == cMul)
+                        double mulvalue = std::log( p0.GetImmed() );
+                        const CodeTree& p1backup = p1;
+                        CodeTree p1 = p1backup;
+                        if(p1.GetOpcode() == cMul)
                         {
+                            p1.BeginChanging();
                             // Neat, we can delegate the multiplication to the child
-                            p1->AddParam( new CodeTree(mulvalue) );
-                            p1->ConstantFolding();
-                            p1->Sort();
-                            p1->Recalculate_Hash_NoRecursion();
+                            p1.AddParam( CodeTree(mulvalue) );
+                            p1.ConstantFolding();
+                            p1.FinishChanging();
                             mulvalue = 1.0;
                         }
 
@@ -442,7 +429,7 @@ namespace FPoptimizer_CodeTree
                       #else
                           mulvalue == (double)(long)mulvalue
                       #endif
-                        && AssembleSequence(*p1, (long)mulvalue,
+                        && AssembleSequence(p1, (long)mulvalue,
                                             FPoptimizer_ByteCode::AddSequence, synth,
                                             MAX_MULI_BYTECODE_LENGTH))
                         {
@@ -484,7 +471,7 @@ namespace FPoptimizer_CodeTree
                             else
                             {
                                 // Do with cMul and cExp2
-                                p1->SynthesizeByteCode(synth);
+                                p1.SynthesizeByteCode(synth);
                                 synth.PushImmed(mulvalue);
                                 synth.AddOperation(cMul, 2);
                                 synth.AddOperation(cExp2, 1);
@@ -493,7 +480,7 @@ namespace FPoptimizer_CodeTree
                         else
                         {
                             // Do with cMul and cExp
-                            p1->SynthesizeByteCode(synth);
+                            p1.SynthesizeByteCode(synth);
                             synth.PushImmed(mulvalue);
                             synth.AddOperation(cMul, 2);
                             synth.AddOperation(cExp, 1);
@@ -501,9 +488,9 @@ namespace FPoptimizer_CodeTree
                     }
                     else
                     {
-                        p0->SynthesizeByteCode(synth);
-                        p1->SynthesizeByteCode(synth);
-                        synth.AddOperation(Opcode, 2); // Create a vanilla cPow.
+                        p0.SynthesizeByteCode(synth);
+                        p1.SynthesizeByteCode(synth);
+                        synth.AddOperation(GetOpcode(), 2); // Create a vanilla cPow.
                     }
                 }
                 break;
@@ -512,49 +499,41 @@ namespace FPoptimizer_CodeTree
             {
                 size_t ofs;
                 // If the parameter amount is != 3, we're screwed.
-                Params[0]->SynthesizeByteCode(synth); // expression
+                GetParam(0).SynthesizeByteCode(synth); // expression
                 synth.SynthIfStep1(ofs);
-                Params[1]->SynthesizeByteCode(synth); // true branch
+                GetParam(1).SynthesizeByteCode(synth); // true branch
                 synth.SynthIfStep2(ofs);
-                Params[2]->SynthesizeByteCode(synth); // false branch
+                GetParam(2).SynthesizeByteCode(synth); // false branch
                 synth.SynthIfStep3(ofs);
                 break;
             }
             case cFCall:
-            {
-                // If the parameter count is invalid, we're screwed.
-                for(size_t a=0; a<Params.size(); ++a)
-                    Params[a]->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, (unsigned) Params.size());
-                synth.AddOperation(Funcno, 0, 0);
-                break;
-            }
             case cPCall:
             {
                 // If the parameter count is invalid, we're screwed.
-                for(size_t a=0; a<Params.size(); ++a)
-                    Params[a]->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, (unsigned) Params.size());
-                synth.AddOperation(Funcno, 0, 0);
+                for(size_t a=0; a<GetParamCount(); ++a)
+                    GetParam(a).SynthesizeByteCode(synth);
+                synth.AddOperation(GetOpcode(), (unsigned) GetParamCount());
+                synth.AddOperation(GetFuncNo(), 0, 0);
                 break;
             }
             default:
             {
                 // If the parameter count is invalid, we're screwed.
-                for(size_t a=0; a<Params.size(); ++a)
-                    Params[a]->SynthesizeByteCode(synth);
-                synth.AddOperation(Opcode, (unsigned) Params.size());
+                for(size_t a=0; a<GetParamCount(); ++a)
+                    GetParam(a).SynthesizeByteCode(synth);
+                synth.AddOperation(GetOpcode(), (unsigned) GetParamCount());
                 break;
             }
         }
-        synth.StackTopIs(Hash);
+        synth.StackTopIs(*this);
     }
 }
 
 namespace
 {
     bool AssembleSequence(
-        CodeTree& tree, long count,
+        const CodeTree& tree, long count,
         const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
         FPoptimizer_ByteCode::ByteCodeSynth& synth,
         size_t max_bytecode_grow_length)

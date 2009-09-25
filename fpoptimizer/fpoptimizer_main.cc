@@ -18,31 +18,29 @@ void FunctionParser::Optimize()
 
     //PrintByteCode(std::cout);
 
-    CodeTreeP tree
-        = CodeTree::GenerateFrom(data->ByteCode, data->Immed, *data);
+    CodeTree tree;
+    tree.GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(ApplyGrammar(pack.glist[0], *tree)) // entry
+    while(ApplyGrammar(pack.glist[0], tree)) // entry
         { //std::cout << "Rerunning 0\n";
         }
 
-    while(ApplyGrammar(pack.glist[1], *tree)) // intermediate
+    while(ApplyGrammar(pack.glist[1], tree)) // intermediate
         { //std::cout << "Rerunning 1\n";
         }
 
-    while(ApplyGrammar(pack.glist[2], *tree)) // final1
+    while(ApplyGrammar(pack.glist[2], tree)) // final1
         { //std::cout << "Rerunning 2\n";
         }
 
-    while(ApplyGrammar(pack.glist[3], *tree)) // final2
+    while(ApplyGrammar(pack.glist[3], tree)) // final2
         { //std::cout << "Rerunning 3\n";
         }
-
-    tree->Sort_Recursive();
 
     std::vector<unsigned> byteCode;
     std::vector<double> immed;
     size_t stacktop_max = 0;
-    tree->SynthesizeByteCode(byteCode, immed, stacktop_max);
+    tree.SynthesizeByteCode(byteCode, immed, stacktop_max);
 
     /*std::cout << std::flush;
     std::cerr << std::flush;

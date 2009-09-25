@@ -21,60 +21,60 @@ using namespace FPoptimizer_Optimize;
 namespace
 {
     /* Test the given constraints to a given CodeTree */
-    bool TestImmedConstraints(unsigned bitmask, CodeTreeP& tree)
+    bool TestImmedConstraints(unsigned bitmask, const CodeTree& tree)
     {
         switch(bitmask & ValueMask)
         {
             case Value_AnyNum: case ValueMask: break;
             case Value_EvenInt:
-                if(tree->GetEvennessInfo() != CodeTree::IsAlways)
+                if(tree.GetEvennessInfo() != CodeTree::IsAlways)
                     return false;
                 break;
             case Value_OddInt:
-                if(tree->GetEvennessInfo() != CodeTree::IsNever)
+                if(tree.GetEvennessInfo() != CodeTree::IsNever)
                     return false;
                 break;
             case Value_IsInteger:
-                if(!tree->IsAlwaysInteger()) return false;
+                if(!tree.IsAlwaysInteger()) return false;
                 break;
             case Value_NonInteger:
-                if(tree->IsAlwaysInteger()) return false;
+                if(tree.IsAlwaysInteger()) return false;
                 break;
             case Value_Logical:
-                if(!tree->IsLogicalValue()) return false;
+                if(!tree.IsLogicalValue()) return false;
                 break;
         }
         switch(bitmask & SignMask)
         {
             case Sign_AnySign: /*case SignMask:*/ break;
             case Sign_Positive:
-                if(!tree->IsAlwaysSigned(true)) return false;
+                if(!tree.IsAlwaysSigned(true)) return false;
                 break;
             case Sign_Negative:
-                if(!tree->IsAlwaysSigned(false)) return false;
+                if(!tree.IsAlwaysSigned(false)) return false;
                 break;
             case Sign_NoIdea:
-                if(tree->IsAlwaysSigned(true)) return false;
-                if(tree->IsAlwaysSigned(false)) return false;
+                if(tree.IsAlwaysSigned(true)) return false;
+                if(tree.IsAlwaysSigned(false)) return false;
                 break;
         }
         switch(bitmask & OnenessMask)
         {
             case Oneness_Any: case OnenessMask: break;
             case Oneness_One:
-                if(!tree->IsImmed()) return false;
-                if(!FloatEqual(fabs(tree->GetImmed()), 1.0)) return false;
+                if(!tree.IsImmed()) return false;
+                if(!FloatEqual(fabs(tree.GetImmed()), 1.0)) return false;
                 break;
             case Oneness_NotOne:
-                if(!tree->IsImmed()) return false;
-                if(FloatEqual(fabs(tree->GetImmed()), 1.0)) return false;
+                if(!tree.IsImmed()) return false;
+                if(FloatEqual(fabs(tree.GetImmed()), 1.0)) return false;
                 break;
         }
         switch(bitmask & ConstnessMask)
         {
             case Constness_Any: /*case ConstnessMask:*/ break;
             case Constness_Const:
-                if(!tree->IsImmed()) return false;
+                if(!tree.IsImmed()) return false;
                 break;
         }
         return true;
@@ -130,16 +130,16 @@ namespace
                     break;
             }
         }
-        if(tree.Params.size() < minimum_need)
+        if(tree.GetParamCount() < minimum_need)
         {
             // Impossible to satisfy
             return false;
         }
 
         // Figure out what we have (note: we already assume that the opcode of the tree matches!)
-        for(size_t a=0; a<tree.Params.size(); ++a)
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
         {
-            unsigned opcode = tree.Params[a]->Opcode;
+            unsigned opcode = tree.GetParam(a).GetOpcode();
             switch(opcode)
             {
                 case cImmed:
@@ -177,7 +177,7 @@ namespace
             if(NeedList.Immeds < 0
             || NeedList.SubTrees < 0
             || NeedList.Others < 0/*
-            || params.count != tree.Params.size() - already checked*/)
+            || params.count != tree.GetParamCount() - already checked*/)
             {
                 // Something was too much.
                 return false;
@@ -187,7 +187,7 @@ namespace
     }
 
     /* Construct CodeTree from a GroupFunction, hopefully evaluating to a constant value */
-    CodeTreeP CalculateGroupFunction(
+    CodeTree CalculateGroupFunction(
         const ParamSpec& parampair,
         const MatchInfo& info)
     {
@@ -198,13 +198,13 @@ namespace
             case NumConstant:
             {
                 const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                return new CodeTree( param.constvalue ); // Note: calculates hash too.
+                return CodeTree( param.constvalue ); // Note: calculates hash too.
             }
             case ParamHolder:
             {
                 const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
-                CodeTreeP result ( info.GetParamHolderValueIfFound( param.index ) );
-                if(&*result)
+                CodeTree result ( info.GetParamHolderValueIfFound( param.index ) );
+                if(result.IsDefined())
                     return result;
                 break; // The immed is not defined
             }
@@ -215,25 +215,24 @@ namespace
                  * constant-folding our expression. It will also
                  * indicate whether the result is, in fact,
                  * a constant at all. */
-                CodeTreeP result = new CodeTree;
-                result->Opcode = param.data.subfunc_opcode;
+                CodeTree result;
+                result.BeginChanging();
+                result.SetOpcode( param.data.subfunc_opcode );
                 for(unsigned a=0; a<param.data.param_count; ++a)
-                    result->AddParam(
+                    result.AddParam(
                             CalculateGroupFunction(
                                 ParamSpec_Extract(param.data.param_list, a), info)
                                     );
-                result->ConstantFolding();
-                /* Must calculate hash because of the call to IsIdenticalTo that comes next. */
-                result->Sort();
-                result->Recalculate_Hash_NoRecursion();
+                result.ConstantFolding();
+                result.FinishChanging();
                 return result;
             }
         }
         // Issue an un-calculatable tree.
-        CodeTreeP result = new CodeTree;
-        result->Opcode = cVar;
-        result->Var    = 999;
-        result->Recalculate_Hash_NoRecursion();
+        CodeTree result;
+        result.BeginChanging();
+        result.SetVar(999);
+        result.FinishChanging();
         return result;
     }
 }
@@ -243,7 +242,7 @@ namespace FPoptimizer_Optimize
     /* Test the given parameter to a given CodeTree */
     MatchResultType TestParam(
         const ParamSpec& parampair,
-        CodeTreeP& tree,
+        const CodeTree& tree,
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info)
     {
@@ -253,8 +252,8 @@ namespace FPoptimizer_Optimize
             case NumConstant: /* A particular numeric value */
             {
                 const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                if(!tree->IsImmed()) return false;
-                return FloatEqual(tree->GetImmed(), param.constvalue);
+                if(!tree.IsImmed()) return false;
+                return FloatEqual(tree.GetImmed(), param.constvalue);
             }
             case ParamHolder: /* Any arbitrary node */
             {
@@ -269,19 +268,19 @@ namespace FPoptimizer_Optimize
                 { /* A constant value acquired from this formula */
                     if(!TestImmedConstraints(param.constraints, tree)) return false;
                     /* Construct the formula */
-                    CodeTreeP  grammar_func = CalculateGroupFunction(parampair, info);
+                    CodeTree  grammar_func = CalculateGroupFunction(parampair, info);
                     /* Evaluate it and compare */
-                    return tree->IsIdenticalTo(*grammar_func);
+                    return grammar_func.IsIdenticalTo(tree);
                 }
                 else /* A subtree conforming these specs */
                 {
                     if(!&*start_at)
                     {
                         if(!TestImmedConstraints(param.constraints, tree)) return false;
-                        if(tree->Opcode != param.data.subfunc_opcode) return false;
+                        if(tree.GetOpcode() != param.data.subfunc_opcode) return false;
                     }
                     return TestParams(param.data,
-                                      *tree, start_at, info, false);
+                                      tree, start_at, info, false);
                 }
             }
         }
@@ -327,7 +326,7 @@ namespace FPoptimizer_Optimize
 
     MatchResultType TestParam_AnyWhere(
         const ParamSpec& parampair,
-        CodeTree& tree,
+        const CodeTree& tree,
         const MatchPositionSpecBaseP& start_at,
         MatchInfo&         info,
         std::vector<bool>& used,
@@ -343,17 +342,17 @@ namespace FPoptimizer_Optimize
         }
         else
         {
-            position = new MatchPositionSpec_AnyWhere(tree.Params.size());
+            position = new MatchPositionSpec_AnyWhere(tree.GetParamCount());
             a = 0;
         }
-        for(; a < tree.Params.size(); ++a)
+        for(; a < tree.GetParamCount(); ++a)
         {
             if(used[a]) continue;
 
         retry_anywhere:
           { MatchResultType r = TestParam(
                 parampair,
-                tree.Params[a],
+                tree.GetParam(a),
                 (*position)[a].start_at,
                 info);
 
@@ -399,7 +398,7 @@ namespace FPoptimizer_Optimize
     /* Test the list of parameters to a given CodeTree */
     MatchResultType TestParams(
         const ParamSpec_SubFunctionData& model_tree,
-        CodeTree& tree,
+        const CodeTree& tree,
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info,
         bool TopLevel)
@@ -409,7 +408,7 @@ namespace FPoptimizer_Optimize
          */
         if(model_tree.match_type != AnyParams)
         {
-            if(model_tree.param_count != tree.Params.size())
+            if(model_tree.param_count != tree.GetParamCount())
                 return false;
         }
 
@@ -446,7 +445,7 @@ namespace FPoptimizer_Optimize
                 retry_positionalparams:
                   { MatchResultType r = TestParam(
                         ParamSpec_Extract(model_tree.param_list, a),
-                        tree.Params[a],
+                        tree.GetParam(a),
                         (*position)[a].start_at,
                         info);
 
@@ -478,14 +477,14 @@ namespace FPoptimizer_Optimize
                 return MatchResultType(true, &*position);
             }
             case SelectedParams:
-                // same as AnyParams, except that model_tree.count==tree.Params.size()
+                // same as AnyParams, except that model_tree.count==tree.GetParamCount()
                 //                       and that there are no RestHolders
             case AnyParams:
             {
                 /* Ensure that all given parameters are found somewhere, in any order */
 
                 FPOPT_autoptr<MatchPositionSpec_AnyParams> position;
-                std::vector<bool> used( tree.Params.size() );
+                std::vector<bool> used( tree.GetParamCount() );
                 std::vector<unsigned> depcodes( model_tree.param_count );
                 std::vector<unsigned> test_order( model_tree.param_count );
                 for(unsigned a=0; a<model_tree.param_count; ++a)
@@ -512,7 +511,7 @@ namespace FPoptimizer_Optimize
                 else
                 {
                     position = new MatchPositionSpec_AnyParams(model_tree.param_count,
-                                                               tree.Params.size());
+                                                               tree.GetParamCount());
                     a = 0;
                     if(model_tree.param_count != 0)
                     {
@@ -562,13 +561,13 @@ namespace FPoptimizer_Optimize
                 // Capture anything remaining in the restholder
                 if(model_tree.restholder_index != 0)
                 {
-                    for(unsigned b = 0; b < tree.Params.size(); ++b)
+                    for(unsigned b = 0; b < tree.GetParamCount(); ++b)
                     {
                         if(used[b]) continue; // Ignore subtrees that were already used
                         // Save this tree to this restholder
 
                         info.SaveRestHolderMatch(model_tree.restholder_index,
-                                                 tree.Params[b]);
+                                                 tree.GetParam(b));
                         used[b] = true;
                         if(TopLevel) info.SaveMatchedParamIndex(b);
                     }

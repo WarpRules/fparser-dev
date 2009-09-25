@@ -5,7 +5,7 @@
 #include "fparser.hh"
 #include "fptypes.hh"
 
-#include "fpoptimizer_hash.hh"
+#include "fpoptimizer_codetree.hh"
 
 namespace FPoptimizer_ByteCode
 {
@@ -46,7 +46,7 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1);
         }
 
-        void StackTopIs(FUNCTIONPARSERTYPES::fphash_t hash)
+        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& hash)
         {
             if(StackTop > 0)
             {
@@ -95,11 +95,11 @@ namespace FPoptimizer_ByteCode
             StackHash[StackTop-1] = StackHash[src_pos];
         }
 
-        bool FindAndDup(FUNCTIONPARSERTYPES::fphash_t hash)
+        bool FindAndDup(const FPoptimizer_CodeTree::CodeTree& hash)
         {
             for(size_t a=StackHash.size(); a-->0; )
             {
-                if(StackHash[a].first && StackHash[a].second == hash)
+                if(StackHash[a].first && StackHash[a].second.IsIdenticalTo(hash))
                 {
                     DoDup(a);
                     return true;
@@ -154,7 +154,7 @@ namespace FPoptimizer_ByteCode
         std::vector<double>   Immed;
 
         std::vector<
-            std::pair<bool/*known*/, FUNCTIONPARSERTYPES::fphash_t/*hash*/>
+            std::pair<bool/*known*/, FPoptimizer_CodeTree::CodeTree/*hash*/>
                    > StackHash;
         size_t StackTop;
         size_t StackMax;

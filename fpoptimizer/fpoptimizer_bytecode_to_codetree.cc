@@ -69,44 +69,49 @@ namespace FPoptimizer_CodeTree
     class CodeTreeParserData
     {
     private:
-        std::vector<CodeTreeP> stack;
+        std::vector<CodeTree> stack;
     public:
         CodeTreeParserData() : stack() { }
 
-        void Eat(size_t nparams, OPCODE opcode, bool check_const = true)
+        void Eat(size_t nparams, OPCODE opcode)
         {
-            CodeTreeP newnode = new CodeTree;
-            newnode->Opcode = opcode;
+            CodeTree newnode;
+            newnode.BeginChanging();
+            newnode.SetOpcode(opcode);
             size_t stackhead = stack.size() - nparams;
             for(size_t a=0; a<nparams; ++a)
-            {
-                newnode->AddParam( stack[stackhead + a] );
-            }
+                newnode.AddParam( stack[stackhead + a] );
+            newnode.ConstantFolding();
+            newnode.FinishChanging();
             stack.resize(stackhead);
             stack.push_back(newnode);
-            if(check_const)
-                CheckConst();
         }
 
-        void EatFunc(size_t params, OPCODE opcode, unsigned funcno)
+        void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
         {
-            Eat(params, opcode, false);
-            stack.back()->Funcno = funcno;
-            CheckConst();
+            CodeTree newnode;
+            newnode.BeginChanging();
+            newnode.SetFuncOpcode(opcode, funcno);
+            size_t stackhead = stack.size() - nparams;
+            for(size_t a=0; a<nparams; ++a)
+                newnode.AddParam( stack[stackhead + a] );
+            newnode.ConstantFolding();
+            newnode.FinishChanging();
+            stack.resize(stackhead);
+            stack.push_back(newnode);
         }
 
         void AddConst(double value)
         {
-            CodeTreeP newnode = new CodeTree(value);
-            stack.push_back(newnode);
+            stack.push_back( CodeTree(value) );
         }
 
         void AddVar(unsigned varno)
         {
-            CodeTreeP newnode = new CodeTree;
-            newnode->Opcode = cVar;
-            newnode->Var    = varno;
-            newnode->Recalculate_Hash_NoRecursion();
+            CodeTree newnode;
+            newnode.BeginChanging();
+            newnode.SetVar(varno);
+            newnode.FinishChanging();
             stack.push_back(newnode);
         }
 
@@ -123,7 +128,7 @@ namespace FPoptimizer_CodeTree
 
         void Fetch(size_t which)
         {
-            stack.push_back(stack[which]->Clone());
+            stack.push_back(stack[which]);
         }
 
         void PopNMov(size_t target, size_t source)
@@ -132,32 +137,23 @@ namespace FPoptimizer_CodeTree
             stack.resize(target+1);
         }
 
-        CodeTreeP PullResult()
+        CodeTree PullResult()
         {
-            CodeTreeP result = stack.back();
+            CodeTree result = stack.back();
             stack.resize(stack.size()-1);
             return result;
-        }
-
-        void CheckConst()
-        {
-            // Check if the last token on stack can be optimized with constant math
-            CodeTreeP result = stack.back();
-            result->ConstantFolding();
-            result->Sort();
-            result->Recalculate_Hash_NoRecursion();
         }
     private:
         CodeTreeParserData(const CodeTreeParserData&);
         CodeTreeParserData& operator=(const CodeTreeParserData&);
     };
 
-    CodeTreeP CodeTree::GenerateFrom(
+    void CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
         const FunctionParser::Data& fpdata)
     {
-        CodeTreeParserData data;
+        CodeTreeParserData sim;
         std::vector<size_t> labels;
 
         for(size_t IP=0, DP=0; ; ++IP)
@@ -165,7 +161,7 @@ namespace FPoptimizer_CodeTree
             while(!labels.empty() && labels.back() == IP)
             {
                 // The "else" of an "if" ends here
-                data.Eat(3, cIf);
+                sim.Eat(3, cIf);
                 labels.erase(labels.end()-1);
             }
         after_powi:
@@ -180,8 +176,8 @@ namespace FPoptimizer_CodeTree
                 if(exponent != 1)
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
-                    data.AddConst(exponent);
-                    data.Eat(2, cPow);
+                    sim.AddConst( (double) exponent);
+                    sim.Eat(2, cPow);
                     goto after_powi;
                 }
                 if(opcode == cDup)
@@ -190,15 +186,15 @@ namespace FPoptimizer_CodeTree
                     if(factor != 1)
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
-                        data.AddConst(factor);
-                        data.Eat(2, cMul);
+                        sim.AddConst( (double) factor);
+                        sim.Eat(2, cMul);
                         goto after_powi;
                     }
                 }
             }
             if(OPCODE(opcode) >= VarBegin)
             {
-                data.AddVar(opcode);
+                sim.AddVar(opcode);
             }
             else
             {
@@ -213,10 +209,10 @@ namespace FPoptimizer_CodeTree
                         IP += 2;
                         continue;
                     case cImmed:
-                        data.AddConst(Immed[DP++]);
+                        sim.AddConst(Immed[DP++]);
                         break;
                     case cDup:
-                        data.Dup();
+                        sim.Dup();
                         break;
                     case cNop:
                         break;
@@ -224,112 +220,112 @@ namespace FPoptimizer_CodeTree
                     {
                         unsigned funcno = ByteCode[++IP];
                         unsigned params = fpdata.FuncPtrs[funcno].params;
-                        data.EatFunc(params, OPCODE(opcode), funcno);
+                        sim.EatFunc(params, OPCODE(opcode), funcno);
                         break;
                     }
                     case cPCall:
                     {
                         unsigned funcno = ByteCode[++IP];
                         unsigned params = fpdata.FuncParsers[funcno].params;
-                        data.EatFunc(params, OPCODE(opcode), funcno);
+                        sim.EatFunc(params, OPCODE(opcode), funcno);
                         break;
                     }
                     // Unary operators requiring special attention
                     case cInv: // from fpoptimizer
-                        data.AddConst(-1);
-                        data.Eat(2, cPow); // 1/x is x^-1
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow); // 1/x is x^-1
                         break;
                     case cNeg:
-                        data.AddConst(-1);
-                        data.Eat(2, cMul); // -x is x*-1
+                        sim.AddConst(-1);
+                        sim.Eat(2, cMul); // -x is x*-1
                         break;
                     case cSqr: // from fpoptimizer
-                        data.AddConst(2.0);
-                        data.Eat(2, cPow);
+                        sim.AddConst(2.0);
+                        sim.Eat(2, cPow);
                         break;
                     // Unary functions requiring special attention
                     case cDeg:
-                        data.AddConst(CONSTANT_DR);
-                        data.Eat(2, cMul);
+                        sim.AddConst(CONSTANT_DR);
+                        sim.Eat(2, cMul);
                         break;
                     case cRad:
-                        data.AddConst(CONSTANT_RD);
-                        data.Eat(2, cMul);
+                        sim.AddConst(CONSTANT_RD);
+                        sim.Eat(2, cMul);
                         break;
                     case cExp:
-                        data.AddConst(CONSTANT_E);
-                        data.SwapLastTwoInStack();
-                        data.Eat(2, cPow);
+                        sim.AddConst(CONSTANT_E);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(2, cPow);
                         break;
                     case cExp2: // from fpoptimizer
-                        data.AddConst(2.0);
-                        data.SwapLastTwoInStack();
-                        data.Eat(2, cPow);
+                        sim.AddConst(2.0);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(2, cPow);
                         break;
                     case cSqrt:
-                        data.AddConst(0.5);
-                        data.Eat(2, cPow);
+                        sim.AddConst(0.5);
+                        sim.Eat(2, cPow);
                         break;
                     case cCot:
-                        data.Eat(1, cTan);
-                        data.AddConst(-1);
-                        data.Eat(2, cPow);
+                        sim.Eat(1, cTan);
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow);
                         break;
                     case cCsc:
-                        data.Eat(1, cSin);
-                        data.AddConst(-1);
-                        data.Eat(2, cPow);
+                        sim.Eat(1, cSin);
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow);
                         break;
                     case cSec:
-                        data.Eat(1, cCos);
-                        data.AddConst(-1);
-                        data.Eat(2, cPow);
+                        sim.Eat(1, cCos);
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow);
                         break;
                     case cLog10:
-                        data.Eat(1, cLog);
-                        data.AddConst(CONSTANT_L10I);
-                        data.Eat(2, cMul);
+                        sim.Eat(1, cLog);
+                        sim.AddConst(CONSTANT_L10I);
+                        sim.Eat(2, cMul);
                         break;
                     case cLog2:
-                        data.Eat(1, cLog);
-                        data.AddConst(CONSTANT_L2I);
-                        data.Eat(2, cMul);
+                        sim.Eat(1, cLog);
+                        sim.AddConst(CONSTANT_L2I);
+                        sim.Eat(2, cMul);
                         break;
                     //case cLog:
-                    //    data.Eat(1, cLog2);
-                    //    data.AddConst(CONSTANT_L2);
-                    //    data.Eat(2, cMul);
+                    //    sim.Eat(1, cLog2);
+                    //    sim.AddConst(CONSTANT_L2);
+                    //    sim.Eat(2, cMul);
                     //    break;
                     // Binary operators requiring special attention
                     case cSub:
-                        data.AddConst(-1);
-                        data.Eat(2, cMul); // -x is x*-1
-                        data.Eat(2, cAdd); // Minus is negative adding
+                        sim.AddConst(-1);
+                        sim.Eat(2, cMul); // -x is x*-1
+                        sim.Eat(2, cAdd); // Minus is negative adding
                         break;
                     case cRSub: // from fpoptimizer
-                        data.SwapLastTwoInStack();
-                        data.AddConst(-1);
-                        data.Eat(2, cMul); // -x is x*-1
-                        data.Eat(2, cAdd);
+                        sim.SwapLastTwoInStack();
+                        sim.AddConst(-1);
+                        sim.Eat(2, cMul); // -x is x*-1
+                        sim.Eat(2, cAdd);
                         break;
                     case cDiv:
-                        data.AddConst(-1);
-                        data.Eat(2, cPow); // 1/x is x^-1
-                        data.Eat(2, cMul); // Divide is inverse multiply
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow); // 1/x is x^-1
+                        sim.Eat(2, cMul); // Divide is inverse multiply
                         break;
                     case cRDiv: // from fpoptimizer
-                        data.SwapLastTwoInStack();
-                        data.AddConst(-1);
-                        data.Eat(2, cPow); // 1/x is x^-1
-                        data.Eat(2, cMul); // Divide is inverse multiply
+                        sim.SwapLastTwoInStack();
+                        sim.AddConst(-1);
+                        sim.Eat(2, cPow); // 1/x is x^-1
+                        sim.Eat(2, cMul); // Divide is inverse multiply
                         break;
                     case cRPow:
-                        data.SwapLastTwoInStack();
-                        data.Eat(2, cPow);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(2, cPow);
                         break;
                     case cRSqrt: // from fpoptimizer
-                        data.AddConst(-0.5);
-                        data.Eat(2, cPow);
+                        sim.AddConst(-0.5);
+                        sim.Eat(2, cPow);
                         break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:
@@ -337,22 +333,22 @@ namespace FPoptimizer_CodeTree
                     case cEqual: case cLess: case cGreater:
                     case cNEqual: case cLessOrEq: case cGreaterOrEq:
                     case cAnd: case cOr:
-                        data.Eat(2, OPCODE(opcode));
+                        sim.Eat(2, OPCODE(opcode));
                         break;
                     // Unary operators not requiring special attention
                     case cNot:
                     case cNotNot: // from fpoptimizer
-                        data.Eat(1, OPCODE(opcode));
+                        sim.Eat(1, OPCODE(opcode));
                         break;
                     // Special opcodes generated by fpoptimizer itself
                     case cFetch:
-                        data.Fetch(ByteCode[++IP]);
+                        sim.Fetch(ByteCode[++IP]);
                         break;
                     case cPopNMov:
                     {
                         unsigned stackOffs_target = ByteCode[++IP];
                         unsigned stackOffs_source = ByteCode[++IP];
-                        data.PopNMov(stackOffs_target, stackOffs_source);
+                        sim.PopNMov(stackOffs_target, stackOffs_source);
                         break;
                     }
                     // Note: cVar should never be encountered in bytecode.
@@ -361,7 +357,7 @@ namespace FPoptimizer_CodeTree
                     case cEval:
                     {
                         size_t paramcount = fpdata.variableRefs.size();
-                        data.Eat(paramcount, OPCODE(opcode));
+                        sim.Eat(paramcount, OPCODE(opcode));
                         break;
                     }
 #endif
@@ -369,12 +365,12 @@ namespace FPoptimizer_CodeTree
                         unsigned funcno = opcode-cAbs;
                         assert(funcno < FUNC_AMOUNT);
                         const FuncDefinition& func = Functions[funcno];
-                        data.Eat(func.params, OPCODE(opcode));
+                        sim.Eat(func.params, OPCODE(opcode));
                         break;
                 }
             }
         }
-        return data.PullResult();
+        Become(sim.PullResult());
     }
 }
 

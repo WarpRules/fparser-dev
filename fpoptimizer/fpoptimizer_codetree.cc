@@ -14,14 +14,13 @@ using namespace FUNCTIONPARSERTYPES;
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
-        : RefCount(0), Opcode(), Params(), Hash(), Depth(1), OptimizedUsing(0)
+        : data()
     {
     }
 
     CodeTree::CodeTree(double i)
-        : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
+        : data(new CodeTreeData(i))
     {
-        Value = i;
         Recalculate_Hash_NoRecursion();
     }
 
@@ -31,15 +30,15 @@ namespace FPoptimizer_CodeTree
 
     struct ParamComparer
     {
-        bool operator() (const CodeTreeP& a, const CodeTreeP& b) const
+        bool operator() (const CodeTree& a, const CodeTree& b) const
         {
-            if(a->Depth != b->Depth)
-                return a->Depth > b->Depth;
-            return a->Hash < b->Hash;
+            if(a.GetDepth() != b.GetDepth())
+                return a.GetDepth() > b.GetDepth();
+            return a.GetHash() < b.GetHash();
         }
     };
 
-    void CodeTree::Sort()
+    void CodeTreeData::Sort()
     {
         /* If the tree is commutative, order the parameters
          * in a set order in order to make equality tests
@@ -78,15 +77,7 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    void CodeTree::Sort_Recursive()
-    {
-        Sort();
-        for(size_t a=0; a<Params.size(); ++a)
-            Params[a]->Sort_Recursive();
-        Recalculate_Hash_NoRecursion();
-    }
-
-    void CodeTree::Recalculate_Hash_NoRecursion()
+    void CodeTreeData::Recalculate_Hash_NoRecursion()
     {
         fphash_t NewHash = { Opcode * FPHASH_CONST(0x3A83A83A83A83A0),
                              Opcode * FPHASH_CONST(0x1131462E270012B)};
@@ -94,7 +85,6 @@ namespace FPoptimizer_CodeTree
         switch(Opcode)
         {
             case cImmed:
-            {
                 if(Value != 0.0)
                 {
                     crc32_t crc = crc32::calc( (const unsigned char*) &Value,
@@ -103,7 +93,6 @@ namespace FPoptimizer_CodeTree
                     NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
                 }
                 break; // no params
-            }
             case cVar:
                 NewHash.hash1 ^= (Var<<24) | (Var>>24);
                 NewHash.hash2 += (fphash_value_t(Var)*5) ^ 2345678;
@@ -120,17 +109,17 @@ namespace FPoptimizer_CodeTree
                 size_t MaxChildDepth = 0;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
-                    if(Params[a]->Depth > MaxChildDepth)
-                        MaxChildDepth = Params[a]->Depth;
+                    if(Params[a].GetDepth() > MaxChildDepth)
+                        MaxChildDepth = Params[a].GetDepth();
 
                     NewHash.hash1 += (1)*FPHASH_CONST(0x2492492492492492);
                     NewHash.hash1 *= FPHASH_CONST(1099511628211);
                     //assert(&*Params[a] != this);
-                    NewHash.hash1 += Params[a]->Hash.hash1;
+                    NewHash.hash1 += Params[a].GetHash().hash1;
 
                     NewHash.hash2 += (3)*FPHASH_CONST(0x9ABCD801357);
                     NewHash.hash2 *= FPHASH_CONST(0xECADB912345);
-                    NewHash.hash2 += (~Params[a]->Hash.hash1) ^ 4567890;
+                    NewHash.hash2 += (~Params[a].GetHash().hash1) ^ 4567890;
                 }
                 Depth += MaxChildDepth;
             }
@@ -142,41 +131,51 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    CodeTreeP CodeTree::Clone()
-    {
-        CodeTreeP result = new CodeTree;
-        result->Become(*this, false, true);
-        return result;
-    }
-
-    void CodeTree::AddParam(const CodeTreeP& param)
+    void CodeTree::AddParam(const CodeTree& param)
     {
         //std::cout << "AddParam called\n";
-        Params.push_back(param);
+        data->Params.push_back(param);
     }
-    void CodeTree::AddParamMove(CodeTreeP& param)
+    void CodeTree::AddParamMove(CodeTree& param)
     {
-        Params.push_back(CodeTreeP());
-        Params.back().swap(param);
+        data->Params.push_back(CodeTree());
+        data->Params.back().swap(param);
+    }
+    void CodeTree::SetParam(size_t which, const CodeTree& b)
+    {
+        data->Params[which] = b;
+    }
+    void CodeTree::SetParamMove(size_t which, CodeTree& b)
+    {
+        data->Params[which].swap(b);
     }
 
-    void CodeTree::SetParams(const std::vector<CodeTreeP>& RefParams, bool do_clone)
+    void CodeTree::AddParams(const std::vector<CodeTree>& RefParams)
+    {
+        data->Params.insert(data->Params.end(), RefParams.begin(), RefParams.end());
+    }
+    void CodeTree::AddParamsMove(std::vector<CodeTree>& RefParams)
+    {
+        size_t endpos = data->Params.size(), added = RefParams.size();
+        data->Params.resize(endpos + added, CodeTree());
+        for(size_t p=0; p<added; ++p)
+            data->Params[endpos+p].swap( RefParams[p] );
+    }
+
+    void CodeTree::SetParams(const std::vector<CodeTree>& RefParams)
     {
         //std::cout << "SetParams called" << (do_clone ? ", clone" : ", no clone") << "\n";
-        Params = RefParams;
-        if(do_clone)
-            for(size_t a=0; a<Params.size(); ++a)
-                Params[a] = Params[a]->Clone();
+        data->Params = RefParams;
     }
 
-    void CodeTree::SetParamsMove(std::vector<CodeTreeP>& RefParams)
+    void CodeTree::SetParamsMove(std::vector<CodeTree>& RefParams)
     {
-        Params.clear();
-        Params.swap(RefParams);
+        data->Params.clear();
+        data->Params.swap(RefParams);
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    void CodeTree::SetParams(std::vector<CodeTreeP>&& RefParams)
+    void CodeTree::SetParams(std::vector<CodeTree>&& RefParams)
     {
         //std::cout << "SetParams&& called\n";
         SetParamsMove(RefParams);
@@ -185,16 +184,17 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::DelParam(size_t index)
     {
+        std::vector<CodeTree>& Params = data->Params;
         //std::cout << "DelParam(" << index << ") called\n";
     #ifdef __GXX_EXPERIMENTAL_CXX0X__
         /* rvalue reference semantics makes this optimal */
         Params.erase( Params.begin() + index );
     #else
         /* This labor evades the need for refcount +1/-1 shuffling */
-        Params[index] = 0;
+        Params[index].data = 0;
         for(size_t p=index; p+1<Params.size(); ++p)
-            Params[p].UnsafeSetP( &*Params[p+1] );
-        Params[Params.size()-1].UnsafeSetP( 0 );
+            Params[p].data.UnsafeSetP( &*Params[p+1].data );
+        Params[Params.size()-1].data.UnsafeSetP( 0 );
         Params.resize(Params.size()-1);
     #endif
     }
@@ -209,11 +209,11 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::IsLogicalValue() const
     {
-        switch( (OPCODE) Opcode)
+        switch(data->Opcode)
         {
             case cImmed:
-                return FloatEqual(Value, 0.0)
-                    || FloatEqual(Value, 1.0);
+                return FloatEqual(data->Value, 0.0)
+                    || FloatEqual(data->Value, 1.0);
             case cAnd:
             case cOr:
             case cNot:
@@ -227,13 +227,19 @@ namespace FPoptimizer_CodeTree
                 /* These operations always produce truth values (0 or 1) */
                 return true;
             case cMul:
+            {
+                std::vector<CodeTree>& Params = data->Params;
                 for(size_t a=0; a<Params.size(); ++a)
-                    if(!Params[a]->IsLogicalValue())
+                    if(!Params[a].IsLogicalValue())
                         return false;
                 return true;
+            }
             case cIf:
-                return Params[1]->IsLogicalValue()
-                    && Params[2]->IsLogicalValue();
+            {
+                std::vector<CodeTree>& Params = data->Params;
+                return Params[1].IsLogicalValue()
+                    && Params[2].IsLogicalValue();
+            }
             default:
                 break;
         }
@@ -242,7 +248,7 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::IsAlwaysInteger() const
     {
-        switch( (OPCODE) Opcode)
+        switch(data->Opcode)
         {
             case cImmed:
                 return IsLongIntegerImmed();
@@ -262,8 +268,11 @@ namespace FPoptimizer_CodeTree
                 /* These operations always produce truth values (0 or 1) */
                 return true; /* 0 and 1 are both integers */
             case cIf:
-                return Params[1]->IsAlwaysInteger()
-                    && Params[2]->IsAlwaysInteger();
+            {
+                std::vector<CodeTree>& Params = data->Params;
+                return Params[1].IsAlwaysInteger()
+                    && Params[2].IsAlwaysInteger();
+            }
             default:
                 break;
         }
@@ -284,6 +293,13 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::IsIdenticalTo(const CodeTree& b) const
     {
+        if((!&*data) != (!&*b.data)) return false;
+        if(&*data == &*b.data) return true;
+        return data->IsIdenticalTo(*b.data);
+    }
+
+    bool CodeTreeData::IsIdenticalTo(const CodeTreeData& b) const
+    {
         if(Hash   != b.Hash) return false; // a quick catch-all
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
@@ -297,18 +313,43 @@ namespace FPoptimizer_CodeTree
         if(Params.size() != b.Params.size()) return false;
         for(size_t a=0; a<Params.size(); ++a)
         {
-            if(!Params[a]->IsIdenticalTo(*b.Params[a])) return false;
+            if(!Params[a].IsIdenticalTo(b.Params[a])) return false;
         }
         return true;
     }
 
-    bool    CodeTree::IsImmed() const { return Opcode == cImmed; }
-    bool    CodeTree::IsVar()   const { return Opcode == cVar; }
-
-    void CodeTree::Become(CodeTree& b, bool thrash_original, bool do_clone)
+    void CodeTree::Become(const CodeTree& b)
     {
-        //std::cout << "Become called\n";
-        Opcode = b.Opcode;
+        if(&b != this && &*data != &*b.data)
+        {
+            DataP tmp = b.data;
+            CopyOnWrite();
+            data.swap(tmp);
+        }
+    }
+
+    void CodeTree::CopyOnWrite()
+    {
+        if(!&*data)
+            data = new CodeTreeData;
+        else if(data->RefCount > 1)
+            data = new CodeTreeData(*data);
+    }
+
+    CodeTreeData::CodeTreeData()
+        : RefCount(0),
+          Opcode(), Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
+    }
+
+    CodeTreeData::CodeTreeData(const CodeTreeData& b)
+        : RefCount(0),
+          Opcode(b.Opcode),
+          Params(b.Params),
+          Hash(b.Hash),
+          Depth(b.Depth),
+          OptimizedUsing(b.OptimizedUsing)
+    {
         switch(Opcode)
         {
             case cVar:   Var   = b.Var; break;
@@ -317,12 +358,32 @@ namespace FPoptimizer_CodeTree
             case cFCall: Funcno = b.Funcno; break;
             default: break;
         }
-        if(thrash_original)
-            SetParamsMove(b.Params);
-        else
-            SetParams(b.Params, do_clone);
-        Hash  = b.Hash;
-        Depth = b.Depth;
+    }
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    CodeTreeData::CodeTreeData(CodeTreeData&& b)
+        : RefCount(0),
+          Opcode(b.Opcode),
+          Params(b.Params),
+          Hash(b.Hash),
+          Depth(b.Depth),
+          OptimizedUsing(b.OptimizedUsing)
+    {
+        switch(Opcode)
+        {
+            case cVar:   Var   = b.Var; break;
+            case cImmed: Value = b.Value; break;
+            case cPCall:
+            case cFCall: Funcno = b.Funcno; break;
+            default: break;
+        }
+    }
+#endif
+
+    CodeTreeData::CodeTreeData(double i)
+        : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
+        Value = i;
     }
 }
 

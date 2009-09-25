@@ -17,23 +17,23 @@ namespace FPoptimizer_Optimize
     class MatchInfo
     {
     public:
-        std::multimap<unsigned, CodeTreeP> restholder_matches;
-        std::map<unsigned, CodeTreeP> paramholder_matches;
+        std::multimap<unsigned, CodeTree> restholder_matches;
+        std::map<unsigned, CodeTree> paramholder_matches;
         std::vector<unsigned> matched_params;
     public:
         /* These functions save data from matching */
-        void SaveRestHolderMatch(unsigned restholder_index, const CodeTreeP& treeptr)
+        void SaveRestHolderMatch(unsigned restholder_index, const CodeTree& treeptr)
         {
             restholder_matches.insert( std::make_pair(restholder_index, treeptr) );
         }
 
-        bool SaveOrTestParamHolder(unsigned paramholder_index, const CodeTreeP& treeptr)
+        bool SaveOrTestParamHolder(unsigned paramholder_index, const CodeTree& treeptr)
         {
-            std::map<unsigned, CodeTreeP>::iterator i = paramholder_matches.lower_bound(paramholder_index);
+            std::map<unsigned, CodeTree>::iterator i = paramholder_matches.lower_bound(paramholder_index);
             if(i == paramholder_matches.end() || i->first != paramholder_index)
                 { paramholder_matches.insert(i, std::make_pair(paramholder_index, treeptr));
                   return true; }
-            return treeptr->IsIdenticalTo(*i->second);
+            return treeptr.IsIdenticalTo(i->second);
         }
 
         void SaveMatchedParamIndex(unsigned index)
@@ -43,28 +43,29 @@ namespace FPoptimizer_Optimize
 
         /* These functions retrieve the data from matching
          * for use when synthesizing the resulting tree.
-         * It is expected that when synthesizing codetrees,
-         * it will use Clone() from the original tree.
          */
-        CodeTreeP GetParamHolderValueIfFound( unsigned paramholder_index ) const
+        const CodeTree& GetParamHolderValueIfFound( unsigned paramholder_index ) const
         {
-            std::map<unsigned, CodeTreeP>::const_iterator i = paramholder_matches.find(paramholder_index);
+            std::map<unsigned, CodeTree>::const_iterator i = paramholder_matches.find(paramholder_index);
             if(i == paramholder_matches.end() || i->first != paramholder_index)
-                return 0;
+            {
+                static const CodeTree dummytree;
+                return dummytree;
+            }
             return i->second;
         }
 
-        CodeTreeP GetParamHolderValue( unsigned paramholder_index ) const
-            { return paramholder_matches.find(paramholder_index)->second->Clone(); }
+        const CodeTree& GetParamHolderValue( unsigned paramholder_index ) const
+            { return paramholder_matches.find(paramholder_index)->second; }
 
-        std::vector<CodeTreeP> GetRestHolderValues( unsigned restholder_index ) const
+        std::vector<CodeTree> GetRestHolderValues( unsigned restholder_index ) const
         {
-            std::vector<CodeTreeP> result;
-            for(std::multimap<unsigned, CodeTreeP>::const_iterator
+            std::vector<CodeTree> result;
+            for(std::multimap<unsigned, CodeTree>::const_iterator
                 i = restholder_matches.lower_bound(restholder_index);
                 i != restholder_matches.end() && i->first == restholder_index;
                 ++i)
-                result.push_back(i->second->Clone());
+                result.push_back(i->second);
             return result;
         }
 
@@ -124,14 +125,14 @@ namespace FPoptimizer_Optimize
     /* Test the given parameter to a given CodeTree */
     MatchResultType TestParam(
         const ParamSpec& parampair,
-        CodeTreeP& tree,
+        const CodeTree& tree,
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info);
 
     /* Test the list of parameters to a given CodeTree */
     MatchResultType TestParams(
         const ParamSpec_SubFunctionData& model_tree,
-        CodeTree& tree,
+        const CodeTree& tree,
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info,
         bool TopLevel);

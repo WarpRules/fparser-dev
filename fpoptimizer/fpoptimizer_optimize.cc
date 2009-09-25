@@ -109,10 +109,10 @@ namespace
             /* If this function returns true, len=half.
              */
 
-            if(tree.Opcode != rule.match_tree.subfunc_opcode)
-                return tree.Opcode < rule.match_tree.subfunc_opcode;
+            if(tree.GetOpcode() != rule.match_tree.subfunc_opcode)
+                return tree.GetOpcode() < rule.match_tree.subfunc_opcode;
 
-            if(tree.Params.size() < rule.n_minimum_params)
+            if(tree.GetParamCount() < rule.n_minimum_params)
             {
                 // Tree has fewer params than required?
                 return true; // Failure
@@ -125,10 +125,10 @@ namespace
             /* If this function returns true, rule will be excluded from the equal_range
              */
 
-            if(rule.match_tree.subfunc_opcode != tree.Opcode)
-                return rule.match_tree.subfunc_opcode < tree.Opcode;
+            if(rule.match_tree.subfunc_opcode != tree.GetOpcode())
+                return rule.match_tree.subfunc_opcode < tree.GetOpcode();
 
-            if(rule.n_minimum_params < tree.Params.size())
+            if(rule.n_minimum_params < tree.GetParamCount())
             {
                 // Tree has more params than the pattern has?
                 switch(rule.match_tree.match_type)
@@ -147,14 +147,15 @@ namespace
     /* Test and apply a rule to a given CodeTree */
     bool TestRuleAndApplyIfMatch(
         const Rule& rule,
-        CodeTree& tree)
+        CodeTree& tree,
+        GrammarChanger* parent_notify)
     {
         MatchInfo info;
 
         MatchResultType found(false, MatchPositionSpecBaseP());
 
         /*std::cout << "TESTING: ";
-        DumpMatch(rule, tree, info, false);*/
+        DumpMatch(rule, *tree, info, false);*/
 
         for(;;)
         {
@@ -164,15 +165,17 @@ namespace
             {
                 // Did not match
         #ifdef DEBUG_SUBSTITUTIONS
-                DumpMatch(rule, tree, info, false);
+                DumpMatch(rule, *tree, info, false);
         #endif
                 return false;
             }
         }
         // Matched
     #ifdef DEBUG_SUBSTITUTIONS
-        DumpMatch(rule, tree, info, true);
+        DumpMatch(rule, *tree, info, true);
     #endif
+        if(parent_notify != 0)
+            parent_notify->BeginChanging();
         SynthesizeRule(rule, tree, info);
         return true;
     }
@@ -180,19 +183,28 @@ namespace
 
 namespace FPoptimizer_Grammar
 {
+    void GrammarChanger::BeginChanging()
+    {
+        if(parent) parent->BeginChanging();
+        ours.BeginChanging();
+    }
+
     /* Apply the grammar to a given CodeTree */
     bool ApplyGrammar(
         const Grammar& grammar,
-        CodeTree& tree)
+        CodeTree& tree,
+        GrammarChanger* parent_notify)
     {
         bool changed = false;
 
-        if(tree.OptimizedUsing != &grammar)
+        if(tree.GetOptimizedUsing() != &grammar)
         {
             /* First optimize all children */
-            for(size_t a=0; a<tree.Params.size(); ++a)
+            for(size_t a=0; a<tree.GetParamCount(); ++a)
             {
-                if( ApplyGrammar( grammar, *tree.Params[a] ) )
+                GrammarChanger subnotify = { parent_notify, tree };
+
+                if( ApplyGrammar( grammar, tree.GetParam(a), &subnotify ) )
                 {
                     changed = true;
                 }
@@ -201,8 +213,7 @@ namespace FPoptimizer_Grammar
             if(changed)
             {
                 tree.ConstantFolding();
-                tree.Sort();
-                tree.Recalculate_Hash_NoRecursion();
+                tree.FinishChanging();
                 // Give the parent node a rerun at optimization
                 return true;
             }
@@ -219,8 +230,8 @@ namespace FPoptimizer_Grammar
 #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "Input (Grammar #"
                       << (&grammar - pack.glist)
-                      << ", " << FP_GetOpcodeName(tree.Opcode)
-                      << "[" << tree.Params.size()
+                      << ", " << FP_GetOpcodeName(tree.GetOpcode())
+                      << "[" << tree.GetParamCount()
                       << "]" ", rules "
                       << (range.first - pack.glist[0].rule_begin)
                       << ".."
@@ -233,12 +244,9 @@ namespace FPoptimizer_Grammar
             while(range.first != range.second)
             {
                 /* Check if this rule matches */
-                if(TestRuleAndApplyIfMatch(*range.first, tree))
+                if(TestRuleAndApplyIfMatch(*range.first, tree, parent_notify))
                 {
                     changed = true;
-                    tree.ConstantFolding();
-                    tree.Sort();
-                    tree.Recalculate_Hash_NoRecursion();
                     break;
                 }
                 ++range.first;
@@ -249,9 +257,14 @@ namespace FPoptimizer_Grammar
             std::cout << "\n" << std::flush;
 #endif
 
-            if(!changed)
+            if(changed)
             {
-                tree.OptimizedUsing = &grammar;
+                tree.ConstantFolding();
+                tree.FinishChanging();
+            }
+            else
+            {
+                tree.SetOptimizedUsing(&grammar);
             }
         }
         else
