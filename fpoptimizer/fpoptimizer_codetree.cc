@@ -24,6 +24,14 @@ namespace FPoptimizer_CodeTree
         Recalculate_Hash_NoRecursion();
     }
 
+    CodeTree::CodeTree(unsigned v, CodeTree::VarTag)
+        : data(new CodeTreeData)
+    {
+        data->Opcode = cVar;
+        data->Var    = v;
+        Recalculate_Hash_NoRecursion();
+    }
+
     CodeTree::~CodeTree()
     {
     }
@@ -160,6 +168,37 @@ namespace FPoptimizer_CodeTree
         data->Params.resize(endpos + added, CodeTree());
         for(size_t p=0; p<added; ++p)
             data->Params[endpos+p].swap( RefParams[p] );
+    }
+    void CodeTree::AddParamsMove(std::vector<CodeTree>& RefParams, size_t replacing_slot)
+    {
+        const size_t n_added = RefParams.size();
+        const size_t oldsize = data->Params.size();
+        const size_t newsize = oldsize + n_added - 1;
+        if(RefParams.empty())
+            DelParam(replacing_slot);
+        else
+        {
+            //    0 1 2 3 4 5 6 7 8 9 10 11
+            //    a a a a X b b b b b
+            //    a a a a Y Y Y b b b b  b
+            //
+            //   replacing_slot = 4
+            //   n_added = 3
+            //   oldsize = 10
+            //   newsize = 12
+            //   tail_length = 5
+
+            data->Params.resize(newsize);
+            data->Params[replacing_slot].data = 0;
+            const size_t tail_length = oldsize - replacing_slot -1;
+            for(size_t tail=0; tail<tail_length; ++tail)
+                data->Params[newsize-1-tail].data.UnsafeSetP(
+                &*data->Params[newsize-1-tail-(n_added-1)].data);
+            for(size_t head=1; head<n_added; ++head)
+                data->Params[replacing_slot+head].data.UnsafeSetP( 0 );
+            for(size_t p=0; p<n_added; ++p)
+                data->Params[replacing_slot+p].swap( RefParams[p] );
+        }
     }
 
     void CodeTree::SetParams(const std::vector<CodeTree>& RefParams)
@@ -384,6 +423,34 @@ namespace FPoptimizer_CodeTree
         : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
         Value = i;
+    }
+
+    void ParentChanger::BeginChanging()
+    {
+        if(changed) return;
+        //if(parent) parent->BeginChanging();
+        ours.BeginChanging();
+        changed = true;
+
+        for(ParentChanger *p = parent; p; p=p->parent)
+            p->changed = true;
+    }
+
+    void ParentChanger::FinishChanging()
+    {
+        if(!changed) return;
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "BEGIN CONSTANTFOLDING: ";
+        FPoptimizer_Grammar::DumpTree(ours);
+        std::cout << "\n";
+    #endif
+        ours.FinishChanging();
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "END CONSTANTFOLDING:   ";
+        FPoptimizer_Grammar::DumpTree(ours);
+        std::cout << "\n";
+    #endif
+        if(parent) parent->FinishChanging();
     }
 }
 

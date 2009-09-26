@@ -2,6 +2,8 @@
 #include <cassert>
 
 #include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_optimize.hh"
+#include "fpoptimizer_opcodename.hh"
 #include "fptypes.hh"
 
 #include "fpoptimizer_consts.hh"
@@ -68,8 +70,6 @@ namespace FPoptimizer_CodeTree
 {
     class CodeTreeParserData
     {
-    private:
-        std::vector<CodeTree> stack;
     public:
         CodeTreeParserData() : stack() { }
 
@@ -80,11 +80,20 @@ namespace FPoptimizer_CodeTree
             newnode.SetOpcode(opcode);
             size_t stackhead = stack.size() - nparams;
             for(size_t a=0; a<nparams; ++a)
-                newnode.AddParam( stack[stackhead + a] );
-            newnode.ConstantFolding();
+                newnode.AddParamMove( stack[stackhead + a] );
+            //newnode.Recalculate_Hash_NoRecursion();
+            //fphash_t hash_before = newnode.GetHash();
             newnode.FinishChanging();
-            stack.resize(stackhead);
-            stack.push_back(newnode);
+            FindClone(newnode, false);//newnode.GetHash() != hash_before);
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "POP " << nparams << ", " << FP_GetOpcodeName(opcode)
+                      << "->" << FP_GetOpcodeName(newnode.GetOpcode())
+                      << ": PUSH ";
+            FPoptimizer_Grammar::DumpTree(newnode);
+            std::cout <<std::endl;
+        #endif
+            stack.resize(stackhead+1);
+            stack.back().swap(newnode);
         }
 
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
@@ -94,31 +103,47 @@ namespace FPoptimizer_CodeTree
             newnode.SetFuncOpcode(opcode, funcno);
             size_t stackhead = stack.size() - nparams;
             for(size_t a=0; a<nparams; ++a)
-                newnode.AddParam( stack[stackhead + a] );
-            newnode.ConstantFolding();
+                newnode.AddParamMove( stack[stackhead + a] );
             newnode.FinishChanging();
-            stack.resize(stackhead);
-            stack.push_back(newnode);
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "POP " << nparams << ", PUSH ";
+            FPoptimizer_Grammar::DumpTree(newnode);
+            std::cout << std::endl;
+        #endif
+            FindClone(newnode);
+            stack.resize(stackhead+1);
+            stack.back().swap(newnode);
         }
 
         void AddConst(double value)
         {
-            stack.push_back( CodeTree(value) );
+            CodeTree newnode(value);
+            FindClone(newnode);
+            stack.resize(stack.size()+1);
+            stack.back().swap(newnode);
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "PUSH ";
+            FPoptimizer_Grammar::DumpTree(stack.back());
+            std::cout << std::endl;
+        #endif
         }
 
         void AddVar(unsigned varno)
         {
-            CodeTree newnode;
-            newnode.BeginChanging();
-            newnode.SetVar(varno);
-            newnode.FinishChanging();
-            stack.push_back(newnode);
+            CodeTree newnode(varno, CodeTree::VarTag());
+            FindClone(newnode);
+            stack.resize(stack.size()+1);
+            stack.back().swap(newnode);
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "PUSH ";
+            FPoptimizer_Grammar::DumpTree(stack.back());
+            std::cout << std::endl;
+        #endif
         }
 
         void SwapLastTwoInStack()
         {
-            std::swap(stack[stack.size()-1],
-                      stack[stack.size()-2]);
+            stack[stack.size()-1].swap( stack[stack.size()-2] );
         }
 
         void Dup()
@@ -129,6 +154,11 @@ namespace FPoptimizer_CodeTree
         void Fetch(size_t which)
         {
             stack.push_back(stack[which]);
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "PUSH ";
+            FPoptimizer_Grammar::DumpTree(stack.back());
+            std::cout << std::endl;
+        #endif
         }
 
         void PopNMov(size_t target, size_t source)
@@ -139,10 +169,30 @@ namespace FPoptimizer_CodeTree
 
         CodeTree PullResult()
         {
+            clones.clear();
             CodeTree result = stack.back();
             stack.resize(stack.size()-1);
             return result;
         }
+    private:
+        void FindClone(CodeTree& tree, bool recurse = true)
+        {
+            std::multimap<fphash_t, CodeTree>::const_iterator
+                i = clones.lower_bound(tree.GetHash());
+            for(; i != clones.end() && i->first == tree.GetHash(); ++i)
+            {
+                if(i->second.IsIdenticalTo(tree))
+                    tree.Become(i->second);
+            }
+            if(recurse)
+                for(size_t a=0; a<tree.GetParamCount(); ++a)
+                    FindClone(tree.GetParam(a));
+            clones.insert(std::make_pair(tree.GetHash(), tree));
+        }
+    private:
+        std::vector<CodeTree> stack;
+        std::multimap<fphash_t, CodeTree> clones;
+
     private:
         CodeTreeParserData(const CodeTreeParserData&);
         CodeTreeParserData& operator=(const CodeTreeParserData&);
@@ -371,6 +421,10 @@ namespace FPoptimizer_CodeTree
             }
         }
         Become(sim.PullResult());
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Produced tree:\n";
+        FPoptimizer_Grammar::DumpTreeWithIndent(*this);
+    #endif
     }
 }
 

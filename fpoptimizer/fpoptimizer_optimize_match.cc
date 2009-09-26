@@ -223,17 +223,12 @@ namespace
                             CalculateGroupFunction(
                                 ParamSpec_Extract(param.data.param_list, a), info)
                                     );
-                result.ConstantFolding();
                 result.FinishChanging();
                 return result;
             }
         }
         // Issue an un-calculatable tree.
-        CodeTree result;
-        result.BeginChanging();
-        result.SetVar(999);
-        result.FinishChanging();
-        return result;
+        return CodeTree(999, CodeTree::VarTag());
     }
 }
 

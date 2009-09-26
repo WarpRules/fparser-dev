@@ -43,6 +43,8 @@ namespace FPoptimizer_CodeTree
         ~CodeTree();
 
         explicit CodeTree(double v); // produce an immed
+        struct VarTag { };
+        explicit CodeTree(unsigned varno, VarTag); // produce a var reference
 
         /* Generates a CodeTree from the given bytecode */
         void GenerateFrom(
@@ -67,6 +69,7 @@ namespace FPoptimizer_CodeTree
         void AddParamMove(CodeTree& param);
         void AddParams(const std::vector<CodeTree>& RefParams);
         void AddParamsMove(std::vector<CodeTree>& RefParams);
+        void AddParamsMove(std::vector<CodeTree>& RefParams, size_t replacing_slot);
         void DelParam(size_t index);
 
         void Become(const CodeTree& b);
@@ -92,6 +95,7 @@ namespace FPoptimizer_CodeTree
         bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
         long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool    IsLogicalValue() const;
+        inline unsigned GetRefCount() const;
 
         struct MinMaxTree
         {
@@ -124,6 +128,7 @@ namespace FPoptimizer_CodeTree
         bool ConstantFolding_LogicCommon(bool is_or);
         bool ConstantFolding_MulGrouping();
         bool ConstantFolding_AddGrouping();
+        bool ConstantFolding_Assimilate();
 
         inline void BeginChanging()
         {
@@ -131,6 +136,7 @@ namespace FPoptimizer_CodeTree
         }
         inline void FinishChanging()
         {
+            ConstantFolding();
             Sort();
             Recalculate_Hash_NoRecursion();
         }
@@ -140,9 +146,9 @@ namespace FPoptimizer_CodeTree
 
         void swap(CodeTree& b) { data.swap(b.data); }
         bool IsIdenticalTo(const CodeTree& b) const;
+        inline void Recalculate_Hash_NoRecursion();
     private:
         void CopyOnWrite();
-        inline void Recalculate_Hash_NoRecursion();
         inline void Sort();
     };
 
@@ -216,6 +222,18 @@ namespace FPoptimizer_CodeTree
         { return data->OptimizedUsing; }
     inline void CodeTree::SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g)
         { data->OptimizedUsing = g; }
+    inline unsigned CodeTree::GetRefCount() const { return data->RefCount; }
+
+    class ParentChanger
+    {
+    public:
+        ParentChanger*                  parent;
+        FPoptimizer_CodeTree::CodeTree& ours;
+        bool                            changed;
+        //
+        void BeginChanging();
+        void FinishChanging();
+    };
 }
 
 #endif

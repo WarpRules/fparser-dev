@@ -11,6 +11,7 @@
 namespace FPoptimizer_CodeTree
 {
     class CodeTree;
+    class ParentChanger;
 }
 
 namespace FPoptimizer_Grammar
@@ -201,15 +202,9 @@ namespace FPoptimizer_Grammar
         unsigned       rule_count;
     };
 
-    struct GrammarChanger
-    {
-        GrammarChanger*                 parent;
-        FPoptimizer_CodeTree::CodeTree& ours;
-        void BeginChanging();
-    };
     bool ApplyGrammar(const Grammar& grammar,
                       FPoptimizer_CodeTree::CodeTree& tree,
-                      GrammarChanger* parent_notify = 0);
+                      FPoptimizer_CodeTree::ParentChanger* parent_notify = 0);
 
     /* GrammarPack is the structure which contains all
      * the information regarding the optimization rules.

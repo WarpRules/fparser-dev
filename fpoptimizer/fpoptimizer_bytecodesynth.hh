@@ -18,6 +18,7 @@ namespace FPoptimizer_ByteCode
             /* estimate the initial requirements as such */
             ByteCode.reserve(64);
             Immed.reserve(8);
+            StackHash.reserve(16);
         }
 
         void Pull(std::vector<unsigned>& bc,
@@ -97,7 +98,7 @@ namespace FPoptimizer_ByteCode
 
         bool FindAndDup(const FPoptimizer_CodeTree::CodeTree& hash)
         {
-            for(size_t a=StackHash.size(); a-->0; )
+            for(size_t a=StackTop; a-->0; )
             {
                 if(StackHash[a].first && StackHash[a].second.IsIdenticalTo(hash))
                 {
@@ -145,8 +146,11 @@ namespace FPoptimizer_ByteCode
         void SetStackTop(size_t value)
         {
             StackTop = value;
-            if(StackTop > StackMax) StackMax = StackTop;
-            StackHash.resize(value);
+            if(StackTop > StackMax)
+            {
+                StackMax = StackTop;
+                StackHash.resize(StackMax);
+            }
         }
 
     private:

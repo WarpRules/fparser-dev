@@ -1,4 +1,5 @@
 #include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_optimize.hh"
 #include "fpoptimizer_consts.hh"
 
 #include <cmath> /* for CalculateResultBoundaries() */
@@ -15,8 +16,6 @@ namespace FPoptimizer_CodeTree
 {
     void CodeTree::ConstantFolding_FromLogicalParent()
     {
-        // Upon entry, BeginChanging() has already been
-        // called, so we have an unique reference to *data.
     redo:;
         switch(GetOpcode())
         {
@@ -25,13 +24,15 @@ namespace FPoptimizer_CodeTree
                 Become(GetParam(0));
                 goto redo;
             case cIf:
+                BeginChanging();
                 while(GetParam(1).GetOpcode() == cNotNot)
-                    SetParamMove(1, GetParam(1).GetParam(0));
+                    { CodeTree p = GetParam(1).GetParam(0); SetParamMove(1, p); }
                 GetParam(1).ConstantFolding_FromLogicalParent();
 
                 while(GetParam(2).GetOpcode() == cNotNot)
-                    SetParamMove(2, GetParam(2).GetParam(0));
+                    { CodeTree p = GetParam(2).GetParam(0); SetParamMove(2, p); }
                 GetParam(2).ConstantFolding_FromLogicalParent();
+                FinishChanging();
                 break;
             default: break;
         }
@@ -248,7 +249,6 @@ namespace FPoptimizer_CodeTree
                 }
                 r.AddParamMove(comp.relationships[a].a);
                 r.AddParamMove(comp.relationships[a].b);
-                r.ConstantFolding();
                 r.FinishChanging();
                 AddParamMove(r);
             }
@@ -314,7 +314,6 @@ namespace FPoptimizer_CodeTree
                 add.SetOpcode(cAdd);
                 add.AddParamMove(multiplications[c].exponent);
                 add.AddParam(exponent);
-                add.ConstantFolding();
                 add.FinishChanging();
                 multiplications[c].exponent = add;
                 return Suboptimal;
@@ -396,14 +395,12 @@ namespace FPoptimizer_CodeTree
                     mul.BeginChanging();
                     mul.SetOpcode(cMul);
                     mul.SetParamsMove( by_exponent[a].second );
-                    mul.ConstantFolding();
                     mul.FinishChanging();
                     CodeTree pow;
                     pow.BeginChanging();
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(mul);
                     pow.AddParamMove(by_exponent[a].first);
-                    pow.ConstantFolding();
                     pow.FinishChanging();
                     AddParamMove(pow);
                 }
@@ -453,7 +450,6 @@ namespace FPoptimizer_CodeTree
             add.SetOpcode(cAdd);
             add.AddParamMove(additions[into_which].coeff);
             add.AddParam(coeff);
-            add.ConstantFolding();
             add.FinishChanging();
             additions[into_which].coeff = add;
             return Suboptimal;
@@ -501,19 +497,25 @@ namespace FPoptimizer_CodeTree
         size_t has_mulgroups_remaining = 0;
         for(size_t a=0; a<GetParamCount(); ++a)
         {
-            if(GetParam(a).GetOpcode() == cMul)
+            const CodeTree& mulgroup = GetParam(a);
+            if(mulgroup.GetOpcode() == cMul)
             {
                 // This catches x + y*x*z, producing x*(1 + y*z)
-                for(size_t b=0; b<GetParam(a).GetParamCount(); ++b)
+                //
+                // However we avoid changing 7 + 7*x into 7*(x+1),
+                // because it may lead us into producing code such
+                // as 20*x + 50*(x+1) + 10, which would be much
+                // better expressed as 70*x + 60, and converting
+                // back to that format would be needlessly hairy.
+                for(size_t b=0; b<mulgroup.GetParamCount(); ++b)
                 {
-                    size_t c = add.FindIdenticalValueTo(GetParam(a).GetParam(b));
+                    if(mulgroup.GetParam(b).IsImmed()) continue;
+                    size_t c = add.FindIdenticalValueTo(mulgroup.GetParam(b));
                     if(c != ~size_t(0))
                     {
-                        CodeTree tmp;
-                        tmp.Become(GetParam(a));
+                        CodeTree tmp = mulgroup;
                         tmp.BeginChanging();
                         tmp.DelParam(b);
-                        tmp.ConstantFolding();
                         tmp.FinishChanging();
                         add.AddAdditionTo(tmp, c);
                         should_regenerate = true;
@@ -528,10 +530,11 @@ namespace FPoptimizer_CodeTree
 
         if(has_mulgroups_remaining > 0)
         {
-            std::vector< std::pair<CodeTree, size_t> > occurance_counts;
-            std::multimap<fphash_t, size_t> occurance_pos;
-            bool found_dup = false;
-            if(has_mulgroups_remaining > 1)
+            if(has_mulgroups_remaining > 1) // is it possible to find a duplicate?
+            {
+                std::vector< std::pair<CodeTree, size_t> > occurance_counts;
+                std::multimap<fphash_t, size_t> occurance_pos;
+                bool found_dup = false;
                 for(size_t a=0; a<GetParamCount(); ++a)
                     if(remaining[a])
                     {
@@ -557,59 +560,54 @@ namespace FPoptimizer_CodeTree
                         found_mulgroup_item_dup:;
                         }
                     }
-            if(found_dup)
-            {
-                CodeTree group_by; { size_t max = 0;
-                for(size_t p=0; p<occurance_counts.size(); ++p)
-                    if(occurance_counts[p].second <= 1)
-                        occurance_counts[p].second = 0;
-                    else
-                    {
-                        occurance_counts[p].second *= occurance_counts[p].first.GetDepth();
-                        if(occurance_counts[p].second > max)
-                            { group_by = occurance_counts[p].first; max = occurance_counts[p].second; }
-                    } }
-                CodeTree group_add;
-                group_add.BeginChanging();
-                group_add.SetOpcode(cAdd);
+                if(found_dup)
+                {
+                    // Find the "x" to group by
+                    CodeTree group_by; { size_t max = 0;
+                    for(size_t p=0; p<occurance_counts.size(); ++p)
+                        if(occurance_counts[p].second <= 1)
+                            occurance_counts[p].second = 0;
+                        else
+                        {
+                            occurance_counts[p].second *= occurance_counts[p].first.GetDepth();
+                            if(occurance_counts[p].second > max)
+                                { group_by = occurance_counts[p].first; max = occurance_counts[p].second; }
+                        } }
+                    // Collect the items for adding in the group (a+b)
+                    CodeTree group_add;
+                    group_add.BeginChanging();
+                    group_add.SetOpcode(cAdd);
 
-    #ifdef DEBUG_SUBSTITUTIONS
-                std::cout << "Duplicate across some trees: ";
-                FPoptimizer_Grammar::DumpTree(group_by);
-                std::cout << " in ";
-                FPoptimizer_Grammar::DumpTree(*this);
-                std::cout << "\n";
-    #endif
-
-                for(size_t a=0; a<GetParamCount(); ++a)
-                    if(remaining[a])
-                    {
-                        for(size_t b=0; b<GetParam(a).GetParamCount(); ++b)
-                            if(group_by.IsIdenticalTo(GetParam(a).GetParam(b)))
-                            {
-                                CodeTree tmp;
-                                tmp.Become(GetParam(a));
-                                tmp.BeginChanging();
-                                tmp.DelParam(b);
-                                tmp.ConstantFolding();
-                                tmp.FinishChanging();
-                                group_add.AddParamMove(tmp);
-                                remaining[a] = false;
-                                break;
-                            }
-                    }
-
-                group_add.ConstantFolding();
-                group_add.FinishChanging();
-                CodeTree group;
-                group.BeginChanging();
-                group.SetOpcode(cMul);
-                group.AddParamMove(group_by);
-                group.AddParamMove(group_add);
-                group.ConstantFolding();
-                group.FinishChanging();
-                add.AddAddition(group);
-                should_regenerate = true;
+        #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "Duplicate across some trees: ";
+                    FPoptimizer_Grammar::DumpTree(group_by);
+                    std::cout << " in ";
+                    FPoptimizer_Grammar::DumpTree(*this);
+                    std::cout << "\n";
+        #endif
+                    for(size_t a=0; a<GetParamCount(); ++a)
+                        if(remaining[a])
+                            for(size_t b=0; b<GetParam(a).GetParamCount(); ++b)
+                                if(group_by.IsIdenticalTo(GetParam(a).GetParam(b)))
+                                {
+                                    CodeTree tmp = GetParam(a);
+                                    tmp.BeginChanging();
+                                    tmp.DelParam(b);
+                                    tmp.FinishChanging();
+                                    group_add.AddParamMove(tmp);
+                                    remaining[a] = false;
+                                    break;
+                                }
+                    group_add.FinishChanging();
+                    CodeTree group;
+                    group.BeginChanging();
+                    group.SetOpcode(cMul);
+                    group.AddParamMove(group_by);
+                    group.AddParamMove(group_add);
+                    group.FinishChanging();
+                    add.AddAddition(group);
+                    should_regenerate = true;
+                }
             }
 
             // all remaining mul-groups.
@@ -621,30 +619,6 @@ namespace FPoptimizer_CodeTree
                 }
         }
 
-        std::vector<std::pair<CodeTree/*coefficient*/,
-                              std::vector<CodeTree>/*children*/
-                             > > by_coeff;
-        for(size_t a=0; a<add.additions.size(); ++a)
-        {
-            for(size_t b=0; b<by_coeff.size(); ++b)
-                if(add.additions[a].coeff.IsIdenticalTo( by_coeff[b].first ))
-                {
-                    if(!by_coeff[b].first.IsImmed()
-                    || !FloatEqual(by_coeff[b].first.GetImmed(), 1.0))
-                    {
-                        should_regenerate = true;
-                    }
-                    by_coeff[b].second.push_back(add.additions[a].value);
-                    goto skip_b;
-                 }
-            by_coeff.push_back(
-                std::pair<CodeTree, std::vector<CodeTree> >
-                ( add.additions[a].coeff,
-                  std::vector<CodeTree> (1, add.additions[a].value)
-                ) );
-        skip_b:;
-        }
-
         if(should_regenerate)
         {
           #ifdef DEBUG_SUBSTITUTIONS
@@ -653,32 +627,23 @@ namespace FPoptimizer_CodeTree
           #endif
             data->Params.clear();
 
-            /* Group by coeffs */
-            for(size_t a=0; a<by_coeff.size(); ++a)
+            for(size_t a=0; a<add.additions.size(); ++a)
             {
-                if(by_coeff[a].first.IsImmed()
-                && FloatEqual(by_coeff[a].first.GetImmed(), 0.0))
+                if(add.additions[a].coeff.IsImmed()
+                && FloatEqual(add.additions[a].coeff.GetImmed(), 0.0))
                     continue;
-                if(by_coeff[a].first.IsImmed()
-                && FloatEqual(by_coeff[a].first.GetImmed(), 1.0))
+                if(add.additions[a].coeff.IsImmed()
+                && FloatEqual(add.additions[a].coeff.GetImmed(), 1.0))
                 {
-                    for(size_t b=0; b<by_coeff[a].second.size(); ++b)
-                        AddParamMove(by_coeff[a].second[b]);
+                    AddParamMove(add.additions[a].value);
                 }
                 else
                 {
-                    CodeTree add;
-                    add.BeginChanging();
-                    add.SetOpcode(cAdd);
-                    add.SetParamsMove( by_coeff[a].second );
-                    add.ConstantFolding();
-                    add.FinishChanging();
                     CodeTree mul;
                     mul.BeginChanging();
                     mul.SetOpcode(cMul);
-                    mul.AddParamMove(add);
-                    mul.AddParamMove(by_coeff[a].first);
-                    mul.ConstantFolding();
+                    mul.AddParamMove(add.additions[a].value);
+                    mul.AddParamMove(add.additions[a].coeff);
                     mul.FinishChanging();
                     AddParamMove(mul);
                 }
@@ -690,6 +655,36 @@ namespace FPoptimizer_CodeTree
             return true;
         }
         return false;
+    }
+
+    bool CodeTree::ConstantFolding_Assimilate()
+    {
+        /* If the list contains another list of the same kind, assimilate it */
+        bool assimilated = false;
+        for(size_t a=GetParamCount(); a-- > 0; )
+            if(GetParam(a).GetOpcode() == GetOpcode())
+            {
+              #ifdef DEBUG_SUBSTITUTIONS
+                if(!assimilated)
+                {
+                    std::cout << "Before assimilation: "; FPoptimizer_Grammar::DumpTree(*this);
+                    std::cout << "\n";
+                    assimilated = true;
+                }
+              #endif
+                // Assimilate its children and remove it
+                CodeTree tree = GetParam(a);
+                tree.BeginChanging();
+                AddParamsMove(tree.GetParams(), a);
+            }
+      #ifdef DEBUG_SUBSTITUTIONS
+        if(assimilated)
+        {
+            std::cout << "After assimilation:   "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "\n";
+        }
+      #endif
+        return assimilated;
     }
 
     void CodeTree::ConstantFolding()
@@ -717,36 +712,6 @@ namespace FPoptimizer_CodeTree
                 const_value = p.min;
                 goto ReplaceTreeWithConstValue;
             }
-        }
-
-        /* Sub-list assimilation prepass */
-        /* Done separately because the same procedure applies to several opcodes at once */
-        switch(GetOpcode())
-        {
-            case cAdd:
-            case cMul:
-            case cMin:
-            case cMax:
-            case cAnd:
-            case cOr:
-            {
-                /* If the list contains another list of the same kind, assimilate it */
-                for(size_t a=GetParamCount(); a-- > 0; )
-                {
-                    if(GetOpcode() == cAnd || GetOpcode() == cOr)
-                        GetParam(a).ConstantFolding_FromLogicalParent();
-
-                    if(GetParam(a).GetOpcode() == GetOpcode())
-                    {
-                        // Assimilate its children and remove it
-                        CodeTree tree = GetParam(a);
-                        DelParam(a);
-                        AddParamsMove(tree.GetParams());
-                    }
-                }
-                break;
-            }
-            default: break;
         }
 
         /* Constant folding */
@@ -785,6 +750,9 @@ namespace FPoptimizer_CodeTree
 
             case cAnd:
             {
+                for(size_t a=0; a<GetParamCount(); ++a)
+                    GetParam(a).ConstantFolding_FromLogicalParent();
+                ConstantFolding_Assimilate();
                 // If the and-list contains an expression that evaluates to approx. zero,
                 // the whole list evaluates to zero.
                 // If all expressions within the and-list evaluate to approx. nonzero,
@@ -806,17 +774,19 @@ namespace FPoptimizer_CodeTree
                         all_values_are_nonzero = false;
                 }
                 if(all_values_are_nonzero) goto ReplaceTreeWithOne;
-                if(GetParamCount() == 1)
+                switch(GetParamCount())
                 {
-                    // Replace self with the single operand
-                    SetOpcode(cNotNot);
+                    case 0: goto ReplaceTreeWithZero;
+                    case 1: SetOpcode(cNotNot); break; // Replace self with the single operand
+                    default: if(ConstantFolding_AndLogic()) goto redo;
                 }
-                if(!GetParamCount()) goto ReplaceTreeWithZero;
-                if(ConstantFolding_AndLogic()) goto redo;
                 break;
             }
             case cOr:
             {
+                for(size_t a=0; a<GetParamCount(); ++a)
+                    GetParam(a).ConstantFolding_FromLogicalParent();
+                ConstantFolding_Assimilate();
                 // If the or-list contains an expression that evaluates to approx. nonzero,
                 // the whole list evaluates to one.
                 // If all expressions within the and-list evaluate to approx. zero,
@@ -838,13 +808,12 @@ namespace FPoptimizer_CodeTree
                         all_values_are_zero = false;
                 }
                 if(all_values_are_zero) goto ReplaceTreeWithZero;
-                if(GetParamCount() == 1)
+                switch(GetParamCount())
                 {
-                    // Replace self with the single operand
-                    SetOpcode(cNotNot);
+                    case 0: goto ReplaceTreeWithOne;
+                    case 1: SetOpcode(cNotNot); break; // Replace self with the single operand
+                    default: if(ConstantFolding_OrLogic()) goto redo;
                 }
-                if(!GetParamCount()) goto ReplaceTreeWithOne;
-                if(ConstantFolding_OrLogic()) goto redo;
                 break;
             }
             case cNot:
@@ -852,14 +821,17 @@ namespace FPoptimizer_CodeTree
                 GetParam(0).ConstantFolding_FromLogicalParent();
                 switch(GetParam(0).GetOpcode())
                 {
-                    case cEqual:   GetParam(0).SetOpcode(cNEqual); goto ReplaceTreeWithParam0;
-                    case cNEqual:  GetParam(0).SetOpcode(cEqual); goto ReplaceTreeWithParam0;
-                    case cLess:    GetParam(0).SetOpcode(cGreaterOrEq); goto ReplaceTreeWithParam0;
-                    case cGreater: GetParam(0).SetOpcode(cLessOrEq);    goto ReplaceTreeWithParam0;
-                    case cLessOrEq:    GetParam(0).SetOpcode(cGreater); goto ReplaceTreeWithParam0;
-                    case cGreaterOrEq: GetParam(0).SetOpcode(cLess);    goto ReplaceTreeWithParam0;
+                    case cEqual:       SetOpcode(cNEqual); goto cNot_moveparam;
+                    case cNEqual:      SetOpcode(cEqual); goto cNot_moveparam;
+                    case cLess:        SetOpcode(cGreaterOrEq); goto cNot_moveparam;
+                    case cGreater:     SetOpcode(cLessOrEq); goto cNot_moveparam;
+                    case cLessOrEq:    SetOpcode(cGreater); goto cNot_moveparam;
+                    case cGreaterOrEq: SetOpcode(cLess); goto cNot_moveparam;
                     //cNotNot already handled by ConstantFolding_FromLogicalParent()
-                    case cNot: GetParam(0).SetOpcode(cNotNot); goto ReplaceTreeWithParam0;
+                    case cNot:         SetOpcode(cNotNot); goto cNot_moveparam;
+                         { cNot_moveparam:;
+                               CodeTree p = GetParam(0);
+                               SetParamsMove(p.GetParams()); goto redo; }
                     default: break;
                 }
 
@@ -904,7 +876,7 @@ namespace FPoptimizer_CodeTree
                 // remove the cNot and swap the branches.
                 while(GetParam(0).GetOpcode() == cNot)
                 {
-                    SetParam(0, GetParam(0).GetParam(0));
+                    GetParam(0).Become( GetParam(0).GetParam(0) );
                     GetParam(1).swap(GetParam(2));
                 }
 
@@ -928,6 +900,7 @@ namespace FPoptimizer_CodeTree
             case cMul:
             {
             NowWeAreMulGroup: ;
+                ConstantFolding_Assimilate();
                 // If one sub-expression evalutes to exact zero, yield zero.
                 double mul_immed_sum = 1.0;
                 size_t n_mul_immeds = 0; bool needs_resynth=false;
@@ -971,6 +944,7 @@ namespace FPoptimizer_CodeTree
             }
             case cAdd:
             {
+                ConstantFolding_Assimilate();
                 double immed_sum = 0.0;
                 size_t n_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<GetParamCount(); ++a)
@@ -1014,6 +988,7 @@ namespace FPoptimizer_CodeTree
             }
             case cMin:
             {
+                ConstantFolding_Assimilate();
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -1050,6 +1025,7 @@ namespace FPoptimizer_CodeTree
             }
             case cMax:
             {
+                ConstantFolding_Assimilate();
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -1229,23 +1205,22 @@ namespace FPoptimizer_CodeTree
                              * n is saved in neg_set[]
                              */
                         }
-                        p.ConstantFolding();
                         p.FinishChanging();
 
                         CodeTree mulgroup;
                         mulgroup.BeginChanging();
                         mulgroup.SetOpcode(cMul);
-                        mulgroup.AddParamMove(*this);
-                        for(size_t a=0; a<pos_set.size(); ++a)
-                            mulgroup.AddParamMove(pos_set[a]);
+                        if(p.GetParamCount() > 0)
+                            mulgroup.AddParamMove(*this); // cAbs[whatever remains in p]
+                        mulgroup.AddParamsMove(pos_set);
                         /* Now:
                          * mulgroup  = p * Abs(x*y)
                          */
                         if(!neg_set.empty())
                         {
-                            for(size_t a=0; a<neg_set.size(); ++a)
-                                mulgroup.AddParamMove(neg_set[a]);
-                            mulgroup.AddParam( CodeTree(-1.0) );
+                            if(neg_set.size() % 2)
+                                mulgroup.AddParam( CodeTree(-1.0) );
+                            mulgroup.AddParamsMove(neg_set);
                             /* Now:
                              * mulgroup = p * n * -1 * Abs(x*y)
                              */
@@ -1346,9 +1321,7 @@ namespace FPoptimizer_CodeTree
                     subtree->SetParamsMove(Params);
                     Params.clear();
                     subtree->Opcode = cMul;
-                    subtree->ConstantFolding();
-                    subtree->Sort();
-                    subtree->Recalculate_Hash_NoRecursion();
+                    subtree->FinishChanging();
                     Opcode = cAtan;
                     AddParam(subtree); // we = atan(y/x)
                 }
@@ -1380,27 +1353,54 @@ namespace FPoptimizer_CodeTree
                 if(GetParam(0).IsImmed()
                 && GetParam(1).GetOpcode() == cMul)
                 {
-                    bool p0changed = false, p1changed = false;
-                    CodeTree& basevalue = GetParam(0);
+                    bool changes = false;
+                    double base_immed = GetParam(0).GetImmed();
                     CodeTree& mulgroup = GetParam(1);
                     for(size_t a=mulgroup.GetParamCount(); a-->0; )
-                    {
-                        if(mulgroup.GetParam(a).IsImmed()
-                        && mulgroup.GetParam(a).GetImmed() >= 0.0)
+                        if(mulgroup.GetParam(a).IsImmed())
                         {
-                            if(!p0changed)
-                                { p0changed = true; basevalue.BeginChanging(); }
-                            basevalue.data->Value =
-                                std::pow(basevalue.data->Value,
-                                         mulgroup.GetParam(a).GetImmed());
-                            if(!p1changed)
-                                { p1changed = true; mulgroup.BeginChanging(); }
-                            mulgroup.DelParam(a);
-                            break; //
+                            double imm = mulgroup.GetParam(a).GetImmed();
+                            if(imm >= 0.0)
+                            {
+                                if(!changes)
+                                {
+                                    changes = true;
+                                    mulgroup.BeginChanging();
+                                }
+                                base_immed = std::pow(base_immed, imm);
+                                mulgroup.DelParam(a);
+                                break; //
+                            }
                         }
+                    if(changes)
+                    {
+                        GetParam(0).data = new CodeTreeData(base_immed);
+                        GetParam(0).Recalculate_Hash_NoRecursion();
+                        mulgroup.FinishChanging();
                     }
-                    if(p1changed) { mulgroup.ConstantFolding(); mulgroup.FinishChanging(); }
-                    if(p0changed) { basevalue.FinishChanging(); }
+                }
+                // (x^3)^2 = x^6
+                // NOTE: If 3 is even and 3*2 is not, x must be changed to abs(x).
+                if(GetParam(0).GetOpcode() == cPow
+                && GetParam(1).IsImmed()
+                && GetParam(0).GetParam(1).IsImmed())
+                {
+                    double a = GetParam(0).GetParam(1).GetImmed();
+                    double b = GetParam(1).GetImmed();
+                    double c = a * b; // new exponent
+                    if(a == (double)(long)a && (long)a % 2 == 0     // a is an even int?
+                    && !(c == (double)(long)c && (long)c % 2 == 0)) // c is not?
+                    {
+                        CodeTree newbase;
+                        newbase.BeginChanging();
+                        newbase.SetOpcode(cAbs);
+                        newbase.AddParam(GetParam(0).GetParam(0));
+                        newbase.FinishChanging();
+                        SetParamMove(0, newbase);
+                    }
+                    else
+                        SetParam(0, GetParam(0).GetParam(0));
+                    SetParam(1, CodeTree(c));
                 }
                 break;
             }
@@ -1484,15 +1484,10 @@ namespace FPoptimizer_CodeTree
             case cEval:
                 break;
         }
-        /*
-        if(Parent)
-            Parent->ConstantFolding();
-
-        */
     }
 
     CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries() const
-#ifdef DEBUG_SUBSTITUTIONS
+#ifdef DEBUG_SUBSTITUTIONS_extra_verbose
     {
         MinMaxTree tmp = CalculateResultBoundaries_do();
         std::cout << "Estimated boundaries: ";
@@ -1925,11 +1920,9 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
                 MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
                 TriTruthValue p0_positivity =
-                    (p0.has_min && p0.has_max)
-                        ? ( (p0.min >= 0.0 && p0.max >= 0.0) ? IsAlways
-                          : (p0.min <  0.0 && p0.max <  0.0) ? IsNever
-                          : Unknown)
-                        : Unknown;
+                    (p0.has_min && p0.min >= 0.0) ? IsAlways
+                  : (p0.has_max && p0.max < 0.0 ? IsNever
+                    : Unknown);
                 TriTruthValue p1_evenness = GetParam(1).GetEvennessInfo();
 
                 /* If param0 IsAlways, the return value is also IsAlways */

@@ -34,7 +34,7 @@ namespace
 namespace
 {
     typedef
-        std::map<fphash_t,  std::pair<size_t, CodeTree> >
+        std::multimap<fphash_t,  std::pair<size_t, CodeTree> >
         TreeCountType;
     typedef
         std::multimap<fphash_t, CodeTree>
@@ -43,13 +43,15 @@ namespace
     void FindTreeCounts(TreeCountType& TreeCounts, const CodeTree& tree)
     {
         TreeCountType::iterator i = TreeCounts.lower_bound(tree.GetHash());
-        if(i != TreeCounts.end()
-        && tree.GetHash() == i->first
-        && tree.IsIdenticalTo( i->second.second ) )
-            i->second.first += 1;
-        else
-            TreeCounts.insert(i, std::make_pair(tree.GetHash(), std::make_pair(size_t(1), tree)));
-
+        for(; i != TreeCounts.end() && i->first == tree.GetHash(); ++i)
+        {
+            if(tree.IsIdenticalTo( i->second.second ) )
+            {
+                i->second.first += 1;
+                goto found;
+        }   }
+        TreeCounts.insert(i, std::make_pair(tree.GetHash(), std::make_pair(size_t(1), tree)));
+    found:
         for(size_t a=0; a<tree.GetParamCount(); ++a)
             FindTreeCounts(TreeCounts, tree.GetParam(a));
     }
@@ -61,15 +63,16 @@ namespace
         for(size_t a=0; a<tree.GetParamCount(); ++a)
             RememberRecursivelyHashList(hashlist, tree.GetParam(a));
     }
-    bool RecreateInversionsAndNegations(CodeTree& tree)
+
+    #ifdef DEBUG_SUBSTITUTIONS
+    CodeTree* root;
+    #endif
+
+    void RecreateInversionsAndNegations(CodeTree& tree, ParentChanger* parent_notify = 0)
     {
-        tree.BeginChanging();
-
-        bool changed = false;
-
+        ParentChanger subnotify = { parent_notify, tree, false };
         for(size_t a=0; a<tree.GetParamCount(); ++a)
-            if(RecreateInversionsAndNegations(tree.GetParam(a)))
-                changed = true;
+            RecreateInversionsAndNegations( tree.GetParam(a), &subnotify );
 
         switch(tree.GetOpcode()) // Recreate inversions and negations
         {
@@ -78,36 +81,37 @@ namespace
                 std::vector<CodeTree> div_params;
 
                 for(size_t a = tree.GetParamCount(); a-- > 0; )
-                    if(tree.GetParam(a).GetOpcode() == cPow
-                    && tree.GetParam(a).GetParam(1).IsImmed()
-                    && FloatEqual(tree.GetParam(a).GetParam(1).GetImmed(), -1.0))
+                {
+                    const CodeTree& powgroup = tree.GetParam(a);
+                    if(powgroup.GetOpcode() == cPow
+                    && powgroup.GetParam(1).IsImmed()
+                    && FloatEqual(powgroup.GetParam(1).GetImmed(), -1.0))
                     {
+                        subnotify.BeginChanging();
                         div_params.push_back(tree.GetParam(a).GetParam(0));
-                        tree.DelParam(a);
-                        changed = true;
+                        tree.DelParam(a); // delete the pow group
                     }
+                }
                 if(!div_params.empty())
                 {
                     CodeTree divgroup;
                     divgroup.BeginChanging();
                     divgroup.SetOpcode(cMul);
                     divgroup.SetParamsMove(div_params);
-                    divgroup.ConstantFolding();
-                    divgroup.FinishChanging();
+                    divgroup.FinishChanging(); // will reduce to div_params[0] if only one item
                     CodeTree mulgroup;
                     mulgroup.BeginChanging();
                     mulgroup.SetOpcode(cMul);
                     mulgroup.SetParamsMove(tree.GetParams());
-                    mulgroup.ConstantFolding();
-                    mulgroup.FinishChanging();
+                    mulgroup.FinishChanging(); // will reduce to 1.0 if none remained in this cMul
                     if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), 1.0))
                         tree.SetOpcode(cInv);
                     else
                     {
                         tree.SetOpcode(cDiv);
-                        tree.AddParam(mulgroup);
+                        tree.AddParamMove(mulgroup);
                     }
-                    tree.AddParam(divgroup);
+                    tree.AddParamMove(divgroup);
                 }
                 break;
             }
@@ -118,30 +122,24 @@ namespace
                 for(size_t a = tree.GetParamCount(); a-- > 0; )
                     if(tree.GetParam(a).GetOpcode() == cMul)
                     {
-                        bool is_signed = false;
-                        // if the mul group has a -1 constant...
-                        bool subchanged = false;
+                        bool is_signed = false; // if the mul group has a -1 constant...
+
                         CodeTree mulgroup = tree.GetParam(a);
+
                         for(size_t b=mulgroup.GetParamCount(); b-- > 0; )
                             if(mulgroup.GetParam(b).IsImmed()
                             && FloatEqual(mulgroup.GetParam(b).GetImmed(), -1.0))
                             {
-                                if(!subchanged) mulgroup.BeginChanging();
+                                mulgroup.BeginChanging();
                                 mulgroup.DelParam(b);
                                 is_signed = !is_signed;
-                                subchanged = true;
                             }
-                        if(subchanged)
-                        {
-                            mulgroup.ConstantFolding();
-                            mulgroup.FinishChanging();
-                            changed = true;
-                        }
                         if(is_signed)
                         {
-                            sub_params.push_back(mulgroup); // this mul group
+                            mulgroup.FinishChanging();
+                            subnotify.BeginChanging();
+                            sub_params.push_back(mulgroup);
                             tree.DelParam(a);
-                            changed = true;
                         }
                     }
                 if(!sub_params.empty())
@@ -150,44 +148,35 @@ namespace
                     subgroup.BeginChanging();
                     subgroup.SetOpcode(cAdd);
                     subgroup.SetParamsMove(sub_params);
-                    subgroup.ConstantFolding();
-                    subgroup.FinishChanging();
+                    subgroup.FinishChanging(); // will reduce to sub_params[0] if only one item
                     CodeTree addgroup;
                     addgroup.BeginChanging();
                     addgroup.SetOpcode(cAdd);
                     addgroup.SetParamsMove(tree.GetParams());
-                    addgroup.ConstantFolding();
-                    addgroup.FinishChanging();
+                    addgroup.FinishChanging(); // will reduce to 0.0 if none remained in this cAdd
                     if(addgroup.IsImmed() && FloatEqual(addgroup.GetImmed(), 0.0))
                         tree.SetOpcode(cNeg);
                     else
                     {
                         tree.SetOpcode(cSub);
-                        tree.AddParam(addgroup);
+                        tree.AddParamMove(addgroup);
                     }
-                    tree.AddParam(subgroup);
+                    tree.AddParamMove(subgroup);
                 }
                 break;
             }
             default: break;
         }
-        if(changed)
+
+        if(subnotify.changed)
         {
-        #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "BEGIN CONSTANTFOLDING: ";
-            FPoptimizer_Grammar::DumpTree(tree);
-            std::cout << "\n";
-        #endif
-            tree.ConstantFolding();
-        #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "END CONSTANTFOLDING:   ";
-            FPoptimizer_Grammar::DumpTree(tree);
-            std::cout << "\n";
-        #endif
             tree.FinishChanging();
-            return true;
+            // no need for subnotify.FinishChanging(); parent will be dealt with upon return.
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "One change issued, produced:\n";
+            FPoptimizer_Grammar::DumpTreeWithIndent(*root);
+        #endif
         }
-        return false;
     }
 }
 
@@ -199,7 +188,8 @@ namespace FPoptimizer_CodeTree
         size_t& stacktop_max)
     {
     #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Making bytecode for:       "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
+        std::cout << "Making bytecode for:\n";
+        FPoptimizer_Grammar::DumpTreeWithIndent(*this); root=this;
     #endif
         RecreateInversionsAndNegations(*this);
     #ifdef DEBUG_SUBSTITUTIONS
@@ -208,6 +198,7 @@ namespace FPoptimizer_CodeTree
 
         FPoptimizer_ByteCode::ByteCodeSynth synth;
 
+      { // begin scope for TreeCounts, AlreadyDoneTrees
         /* Find common subtrees */
         TreeCountType TreeCounts;
         FindTreeCounts(TreeCounts, *this);
@@ -222,27 +213,29 @@ namespace FPoptimizer_CodeTree
             i != TreeCounts.end();
             ++i)
         {
-            size_t score = i->second.first;
+            const fphash_t& hash = i->first;
+            size_t         score = i->second.first;
+            const CodeTree& tree = i->second.second;
             // It must always occur at least twice
             if(score < 2) continue;
             // And it must not be a simple expression
-            if(i->second.second.GetDepth() < 2) CandSkip: continue;
+            if(tree.GetDepth() < 2) CandSkip: continue;
             // And it must not yet have been synthesized
-            DoneTreesType::const_iterator j = AlreadyDoneTrees.lower_bound(i->first);
-            for(; j != AlreadyDoneTrees.end() && j->first == i->first; ++j)
+            DoneTreesType::const_iterator j = AlreadyDoneTrees.lower_bound(hash);
+            for(; j != AlreadyDoneTrees.end() && j->first == hash; ++j)
             {
-                if(j->second.IsIdenticalTo(i->second.second))
+                if(j->second.IsIdenticalTo(tree))
                     goto CandSkip;
             }
             // Is a candidate.
-            score *= i->second.second.GetDepth();
+            score *= tree.GetDepth();
             if(score > best_score)
                 { best_score = score; synth_it = i; }
         }
         if(best_score > 0)
         {
     #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Found Common Subexpression:"; FPoptimizer_Grammar::DumpTree(*synth_it->second.second); std::cout << "\n";
+            std::cout << "Found Common Subexpression:"; FPoptimizer_Grammar::DumpTree(synth_it->second.second); std::cout << "\n";
     #endif
             /* Synthesize the selected tree */
             synth_it->second.second.SynthesizeByteCode(synth);
@@ -252,9 +245,11 @@ namespace FPoptimizer_CodeTree
             RememberRecursivelyHashList(AlreadyDoneTrees, synth_it->second.second);
             goto FindMore;
         }
+      } // end scope for TreeCounts, AlreadyDoneTrees
 
     #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Actually synthesizing:     "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
+        std::cout << "Actually synthesizing:\n";
+        FPoptimizer_Grammar::DumpTreeWithIndent(*this);
     #endif
         /* Then synthesize the actual expression */
         SynthesizeByteCode(synth);
@@ -309,7 +304,6 @@ namespace FPoptimizer_CodeTree
                             tmp.Become(*this);
                             tmp.BeginChanging();
                             tmp.DelParam(a);
-                            tmp.ConstantFolding();
                             tmp.FinishChanging();
 
                             bool success = AssembleSequence(
@@ -417,7 +411,6 @@ namespace FPoptimizer_CodeTree
                             p1.BeginChanging();
                             // Neat, we can delegate the multiplication to the child
                             p1.AddParam( CodeTree(mulvalue) );
-                            p1.ConstantFolding();
                             p1.FinishChanging();
                             mulvalue = 1.0;
                         }

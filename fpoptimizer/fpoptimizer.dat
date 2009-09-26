@@ -336,23 +336,7 @@ cAdd (cMul (cPow[x %]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (
 cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul % & <1>) (cMul & (cAdd <2>)))
 
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
-cMul (cAdd %@M <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
-# ^ Only wise idea when % != 1. Otherwise, conflicts with cAdd x (cMul x <1>)
-#   When given 2*x+2
-#     You get 2*(1+x)
-#     And     2+ 2*x
-#     Alternatingly.
-
-# (x * 0.5 - 0.5) * z =
-# 0.5 * (x - 1) * z
-# Thus,
-# x * (y + (y * z)) -> x * y * (z + 1)      -- already accomplished by cAdd x* (cMul x <1>)
-# x * (y + (-y * z)) -> x * y * (1 - z)
-# x * (y + (y * -1 * z)) -> x * y * (1 - z) -- already accomplished by cAdd x* (cMul x <1>)
-# Becomes:
-#      y + (-y * z)  -> y * (1 - z)
-cAdd (cMul %@M <1>) -%   : (cMul % (cAdd [(cMul <1>) -1]))
-# ^ Using @M (non-1 constraint) to prevent falling into an infinite loop
+cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 
 #### Constant folding is now performed exclusively by ConstantFolding()
 

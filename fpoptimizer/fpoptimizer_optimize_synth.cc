@@ -39,7 +39,6 @@ namespace FPoptimizer_Optimize
                     for(size_t a=0; a<trees.size(); ++a)
                         subtree.AddParam( trees[a] );
                 }
-                subtree.ConstantFolding();
                 subtree.FinishChanging();
                 tree.AddParam( subtree );
                 break; }
@@ -61,7 +60,6 @@ namespace FPoptimizer_Optimize
                 /* SynthesizeParam will add a Param into temporary_tree. */
                 tree.Become(temporary_tree.GetParam(0)); // does not need BeginChanging()
                 // does not need ConstantFolding; we assume source_tree is already optimized
-                tree.FinishChanging();
                 break;
             }
             case ReplaceParams:
@@ -70,16 +68,12 @@ namespace FPoptimizer_Optimize
                 std::vector<unsigned> list = info.GetMatchedParamIndexes();
                 std::sort(list.begin(), list.end());
 
-                tree.BeginChanging();
                 for(size_t a=list.size(); a-->0; )
                     tree.DelParam( list[a] );
 
                 /* Synthesize the replacement params */
                 for(unsigned a=0; a < rule.repl_param_count; ++a)
                     SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, a), tree, info );
-
-                tree.ConstantFolding();
-                tree.FinishChanging();
                 break;
             }
         }

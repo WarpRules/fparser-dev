@@ -141,6 +141,7 @@ namespace FPoptimizer_Optimize
 namespace FPoptimizer_Grammar
 {
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
+    void DumpTreeWithIndent(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
     void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
     void DumpMatch(const Rule& rule,
                    const FPoptimizer_CodeTree::CodeTree& tree,

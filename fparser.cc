@@ -870,7 +870,9 @@ inline void FunctionParser::AddMultiplicationByConst(double value)
     {
         data->Immed.push_back(value);
         data->ByteCode.push_back(cImmed);
+        incStackPtr();
         AddBinaryOperationByConst<MulOp> ();
+        --StackPtr;
     }
 }
 

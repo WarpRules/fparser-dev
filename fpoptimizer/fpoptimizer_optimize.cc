@@ -145,10 +145,10 @@ namespace
     };
 
     /* Test and apply a rule to a given CodeTree */
-    bool TestRuleAndApplyIfMatch(
+    void TestRuleAndApplyIfMatch(
         const Rule& rule,
         CodeTree& tree,
-        GrammarChanger* parent_notify)
+        ParentChanger* parent_notify)
     {
         MatchInfo info;
 
@@ -165,54 +165,38 @@ namespace
             {
                 // Did not match
         #ifdef DEBUG_SUBSTITUTIONS
-                DumpMatch(rule, *tree, info, false);
+                //DumpMatch(rule, tree, info, false);
         #endif
-                return false;
+                return;
             }
         }
         // Matched
     #ifdef DEBUG_SUBSTITUTIONS
-        DumpMatch(rule, *tree, info, true);
+        DumpMatch(rule, tree, info, true);
     #endif
-        if(parent_notify != 0)
-            parent_notify->BeginChanging();
+        parent_notify->BeginChanging();
         SynthesizeRule(rule, tree, info);
-        return true;
     }
 }
 
 namespace FPoptimizer_Grammar
 {
-    void GrammarChanger::BeginChanging()
-    {
-        if(parent) parent->BeginChanging();
-        ours.BeginChanging();
-    }
-
     /* Apply the grammar to a given CodeTree */
     bool ApplyGrammar(
         const Grammar& grammar,
         CodeTree& tree,
-        GrammarChanger* parent_notify)
+        ParentChanger* parent_notify)
     {
-        bool changed = false;
+        ParentChanger subnotify = { parent_notify, tree, false };
 
         if(tree.GetOptimizedUsing() != &grammar)
         {
             /* First optimize all children */
             for(size_t a=0; a<tree.GetParamCount(); ++a)
-            {
-                GrammarChanger subnotify = { parent_notify, tree };
+                ApplyGrammar( grammar, tree.GetParam(a), &subnotify );
 
-                if( ApplyGrammar( grammar, tree.GetParam(a), &subnotify ) )
-                {
-                    changed = true;
-                }
-            }
-
-            if(changed)
+            if(subnotify.changed)
             {
-                tree.ConstantFolding();
                 tree.FinishChanging();
                 // Give the parent node a rerun at optimization
                 return true;
@@ -244,28 +228,30 @@ namespace FPoptimizer_Grammar
             while(range.first != range.second)
             {
                 /* Check if this rule matches */
-                if(TestRuleAndApplyIfMatch(*range.first, tree, parent_notify))
-                {
-                    changed = true;
+                TestRuleAndApplyIfMatch(*range.first, tree, &subnotify);
+                if(subnotify.changed)
                     break;
-                }
                 ++range.first;
             }
 
 #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << (changed ? "Changed." : "No changes.");
-            std::cout << "\n" << std::flush;
+            if(subnotify.changed)
+            {
+                std::cout << "Changed." << std::endl;
+                std::cout << "Output: ";
+                DumpTree(tree);
+                std::cout << "\n" << std::flush;
+            }
+            /*else
+                std::cout << "No changes." << std::endl;*/
 #endif
 
-            if(changed)
+            if(subnotify.changed)
             {
-                tree.ConstantFolding();
                 tree.FinishChanging();
             }
             else
-            {
                 tree.SetOptimizedUsing(&grammar);
-            }
         }
         else
         {
@@ -275,16 +261,7 @@ namespace FPoptimizer_Grammar
             std::cout << "\n" << std::flush;
 #endif
         }
-
-#ifdef DEBUG_SUBSTITUTIONS
-        //if(!recursion)
-        {
-            std::cout << "Output: ";
-            DumpTree(tree);
-            std::cout << "\n" << std::flush;
-        }
-#endif
-        return changed;
+        return subnotify.changed;
     }
 }
 
