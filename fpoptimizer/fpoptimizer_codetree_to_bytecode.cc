@@ -68,11 +68,20 @@ namespace
     CodeTree* root;
     #endif
 
-    void RecreateInversionsAndNegations(CodeTree& tree, ParentChanger* parent_notify = 0)
+    bool RecreateInversionsAndNegations(CodeTree& tree)
     {
-        ParentChanger subnotify = { parent_notify, tree, false };
+        bool changed = false;
+
         for(size_t a=0; a<tree.GetParamCount(); ++a)
-            RecreateInversionsAndNegations( tree.GetParam(a), &subnotify );
+            if(RecreateInversionsAndNegations( tree.GetParam(a) ))
+                changed = true;
+
+        if(changed)
+        {
+        exit_changed:
+            tree.Mark_Incompletely_Hashed();
+            return true;
+        }
 
         switch(tree.GetOpcode()) // Recreate inversions and negations
         {
@@ -87,23 +96,23 @@ namespace
                     && powgroup.GetParam(1).IsImmed()
                     && FloatEqual(powgroup.GetParam(1).GetImmed(), -1.0))
                     {
-                        subnotify.BeginChanging();
+                        tree.CopyOnWrite();
                         div_params.push_back(tree.GetParam(a).GetParam(0));
                         tree.DelParam(a); // delete the pow group
                     }
                 }
                 if(!div_params.empty())
                 {
+                    changed = true;
+
                     CodeTree divgroup;
-                    divgroup.BeginChanging();
                     divgroup.SetOpcode(cMul);
                     divgroup.SetParamsMove(div_params);
-                    divgroup.FinishChanging(); // will reduce to div_params[0] if only one item
+                    divgroup.Rehash(); // will reduce to div_params[0] if only one item
                     CodeTree mulgroup;
-                    mulgroup.BeginChanging();
                     mulgroup.SetOpcode(cMul);
                     mulgroup.SetParamsMove(tree.GetParams());
-                    mulgroup.FinishChanging(); // will reduce to 1.0 if none remained in this cMul
+                    mulgroup.Rehash(); // will reduce to 1.0 if none remained in this cMul
                     if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), 1.0))
                         tree.SetOpcode(cInv);
                     else
@@ -130,30 +139,28 @@ namespace
                             if(mulgroup.GetParam(b).IsImmed()
                             && FloatEqual(mulgroup.GetParam(b).GetImmed(), -1.0))
                             {
-                                mulgroup.BeginChanging();
+                                mulgroup.CopyOnWrite();
                                 mulgroup.DelParam(b);
                                 is_signed = !is_signed;
                             }
                         if(is_signed)
                         {
-                            mulgroup.FinishChanging();
-                            subnotify.BeginChanging();
+                            mulgroup.Rehash();
                             sub_params.push_back(mulgroup);
+                            tree.CopyOnWrite();
                             tree.DelParam(a);
                         }
                     }
                 if(!sub_params.empty())
                 {
                     CodeTree subgroup;
-                    subgroup.BeginChanging();
                     subgroup.SetOpcode(cAdd);
                     subgroup.SetParamsMove(sub_params);
-                    subgroup.FinishChanging(); // will reduce to sub_params[0] if only one item
+                    subgroup.Rehash(); // will reduce to sub_params[0] if only one item
                     CodeTree addgroup;
-                    addgroup.BeginChanging();
                     addgroup.SetOpcode(cAdd);
                     addgroup.SetParamsMove(tree.GetParams());
-                    addgroup.FinishChanging(); // will reduce to 0.0 if none remained in this cAdd
+                    addgroup.Rehash(); // will reduce to 0.0 if none remained in this cAdd
                     if(addgroup.IsImmed() && FloatEqual(addgroup.GetImmed(), 0.0))
                         tree.SetOpcode(cNeg);
                     else
@@ -168,15 +175,10 @@ namespace
             default: break;
         }
 
-        if(subnotify.changed)
-        {
-            tree.FinishChanging();
-            // no need for subnotify.FinishChanging(); parent will be dealt with upon return.
-        #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "One change issued, produced:\n";
-            FPoptimizer_Grammar::DumpTreeWithIndent(*root);
-        #endif
-        }
+        if(changed)
+            goto exit_changed;
+
+        return changed;
     }
 }
 
@@ -191,7 +193,14 @@ namespace FPoptimizer_CodeTree
         std::cout << "Making bytecode for:\n";
         FPoptimizer_Grammar::DumpTreeWithIndent(*this); root=this;
     #endif
-        RecreateInversionsAndNegations(*this);
+        while(RecreateInversionsAndNegations(*this))
+        {
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "One change issued, produced:\n";
+            FPoptimizer_Grammar::DumpTreeWithIndent(*root);
+        #endif
+            FixIncompleteHashes(*this);
+        }
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "After recreating inv/neg:  "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";
     #endif
@@ -300,12 +309,9 @@ namespace FPoptimizer_CodeTree
                         {
                             long value = GetParam(a).GetLongIntegerImmed();
 
-                            CodeTree tmp;
-                            tmp.Become(*this);
-                            tmp.BeginChanging();
+                            CodeTree tmp(*this, CodeTree::CloneTag());
                             tmp.DelParam(a);
-                            tmp.FinishChanging();
-
+                            tmp.Rehash();
                             bool success = AssembleSequence(
                                 tmp, value, FPoptimizer_ByteCode::AddSequence,
                                 synth,
@@ -404,14 +410,13 @@ namespace FPoptimizer_CodeTree
                         //    x^y = exp(log(x) * y) =
                         //    Can only be done when x is positive, though.
                         double mulvalue = std::log( p0.GetImmed() );
-                        const CodeTree& p1backup = p1;
-                        CodeTree p1 = p1backup;
-                        if(p1.GetOpcode() == cMul)
+                        CodeTree p1clone = p1;
+                        if(p1clone.GetOpcode() == cMul)
                         {
-                            p1.BeginChanging();
+                            p1clone.CopyOnWrite();
                             // Neat, we can delegate the multiplication to the child
-                            p1.AddParam( CodeTree(mulvalue) );
-                            p1.FinishChanging();
+                            p1clone.AddParam( CodeTree(mulvalue) );
+                            p1clone.Rehash();
                             mulvalue = 1.0;
                         }
 
@@ -422,58 +427,17 @@ namespace FPoptimizer_CodeTree
                       #else
                           mulvalue == (double)(long)mulvalue
                       #endif
-                        && AssembleSequence(p1, (long)mulvalue,
+                        && AssembleSequence(p1clone, (long)mulvalue,
                                             FPoptimizer_ByteCode::AddSequence, synth,
                                             MAX_MULI_BYTECODE_LENGTH))
                         {
                             // Done with a dup/add sequence, cExp
                             synth.AddOperation(cExp, 1);
                         }
-                        /* - disabled cExp2 optimizations for now, because it
-                         *   turns out that glibc for at least x86_64 has a
-                         *   particularly stupid exp2() implementation that
-                         *   is _slower_ than exp() or even pow(2,x)
-                         *
-                        else if(
-                          #ifndef FP_SUPPORT_EXP2
-                           #ifdef FP_EPSILON
-                            fabs(mulvalue - CONSTANT_L2) <= FP_EPSILON
-                           #else
-                            mulvalue == CONSTANT_L2
-                           #endif
-                          #else
-                            true
-                          #endif
-                            )
-                        {
-                            // Do with cExp2; in all likelihood it's never slower than cExp.
-                            mulvalue *= CONSTANT_L2I;
-                            if(
-                          #ifdef FP_EPSILON
-                              fabs(mulvalue - (double)(long)mulvalue) <= FP_EPSILON
-                          #else
-                              mulvalue == (double)(long)mulvalue
-                          #endif
-                            && AssembleSequence(*p1, (long)mulvalue,
-                                                FPoptimizer_ByteCode::AddSequence, synth,
-                                                MAX_MULI_BYTECODE_LENGTH))
-                            {
-                                // Done with a dup/add sequence, cExp2
-                                synth.AddOperation(cExp2, 1);
-                            }
-                            else
-                            {
-                                // Do with cMul and cExp2
-                                p1.SynthesizeByteCode(synth);
-                                synth.PushImmed(mulvalue);
-                                synth.AddOperation(cMul, 2);
-                                synth.AddOperation(cExp2, 1);
-                            }
-                        }*/
                         else
                         {
                             // Do with cMul and cExp
-                            p1.SynthesizeByteCode(synth);
+                            p1clone.SynthesizeByteCode(synth);
                             synth.PushImmed(mulvalue);
                             synth.AddOperation(cMul, 2);
                             synth.AddOperation(cExp, 1);

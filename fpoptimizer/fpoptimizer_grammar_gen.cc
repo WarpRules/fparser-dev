@@ -2688,7 +2688,6 @@ namespace FPoptimizer_Grammar
 int main()
 {
     GrammarData::Grammar Grammar_Basic;
-    GrammarData::Grammar Grammar_Entry;
     GrammarData::Grammar Grammar_Intermediate;
     GrammarData::Grammar Grammar_Final1;
     GrammarData::Grammar Grammar_Final2;
@@ -2702,8 +2701,6 @@ int main()
 
         if(sectionname == "BASIC")
             Grammar_Basic = x.grammar;
-        else if(sectionname == "ENTRY")
-            Grammar_Entry = x.grammar;
         else if(sectionname == "INTERMEDIATE")
             Grammar_Intermediate = x.grammar;
         else if(sectionname == "FINAL1")
@@ -2729,7 +2726,6 @@ int main()
     }
 
     Grammar_Basic.BuildFinalDepMask();
-    Grammar_Entry.BuildFinalDepMask();
     Grammar_Intermediate.BuildFinalDepMask();
     Grammar_Final1.BuildFinalDepMask();
     Grammar_Final2.BuildFinalDepMask();
@@ -2762,7 +2758,6 @@ int main()
         "#define P3(a,b,c) (P2(a,b) | (c << (PARAM_INDEX_BITS*2)))\n"
         "\n";
 
-    /*size_t e = */dumper.DumpGrammar(Grammar_Entry);
     /*size_t i = */dumper.DumpGrammar(Grammar_Intermediate);
     /*size_t f = */dumper.DumpGrammar(Grammar_Final1);
     /*size_t f = */dumper.DumpGrammar(Grammar_Final2);

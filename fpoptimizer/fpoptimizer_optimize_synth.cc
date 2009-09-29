@@ -14,33 +14,38 @@ namespace FPoptimizer_Optimize
     void SynthesizeParam(
         const ParamSpec& parampair,
         CodeTree& tree,
-        MatchInfo& info)
+        MatchInfo& info,
+        bool inner = true)
     {
         switch( parampair.first )
         {
             case NumConstant:
               { const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                tree.AddParam( CodeTree( param.constvalue ) );
+                tree.SetImmed( param.constvalue );
+                if(inner) tree.Rehash(false);
                 break; }
             case ParamHolder:
               { const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
-                tree.AddParam( info.GetParamHolderValue( param.index ) );
+                tree.Become( info.GetParamHolderValue( param.index ) );
                 break; }
             case SubFunction:
               { const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
-                CodeTree subtree;
-                subtree.BeginChanging();
-                subtree.SetOpcode( param.data.subfunc_opcode );
+                tree.SetOpcode( param.data.subfunc_opcode );
                 for(unsigned a=0; a < param.data.param_count; ++a)
-                    SynthesizeParam( ParamSpec_Extract(param.data.param_list, a), subtree, info );
+                {
+                    CodeTree nparam;
+                    SynthesizeParam( ParamSpec_Extract(param.data.param_list, a), nparam, info, true );
+                    tree.AddParamMove(nparam);
+                }
                 if(param.data.restholder_index != 0)
                 {
-                    std::vector<CodeTree> trees ( info.GetRestHolderValues( param.data.restholder_index ) );
-                    for(size_t a=0; a<trees.size(); ++a)
-                        subtree.AddParam( trees[a] );
+                    std::vector<CodeTree> trees
+                        ( info.GetRestHolderValues( param.data.restholder_index ) );
+                    tree.AddParamsMove(trees);
+                    // ^note: this fails if the same restholder is synth'd twice
                 }
-                subtree.FinishChanging();
-                tree.AddParam( subtree );
+                if(inner)
+                    tree.Rehash();
                 break; }
         }
     }
@@ -54,12 +59,8 @@ namespace FPoptimizer_Optimize
         {
             case ProduceNewTree:
             {
-                CodeTree temporary_tree;
-                temporary_tree.BeginChanging();
-                SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, 0), temporary_tree, info );
-                /* SynthesizeParam will add a Param into temporary_tree. */
-                tree.Become(temporary_tree.GetParam(0)); // does not need BeginChanging()
-                // does not need ConstantFolding; we assume source_tree is already optimized
+                tree.DelParams();
+                SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, 0), tree, info, false );
                 break;
             }
             case ReplaceParams:
@@ -67,13 +68,16 @@ namespace FPoptimizer_Optimize
                 /* Delete the matched parameters from the source tree */
                 std::vector<unsigned> list = info.GetMatchedParamIndexes();
                 std::sort(list.begin(), list.end());
-
                 for(size_t a=list.size(); a-->0; )
                     tree.DelParam( list[a] );
 
                 /* Synthesize the replacement params */
                 for(unsigned a=0; a < rule.repl_param_count; ++a)
-                    SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, a), tree, info );
+                {
+                    CodeTree nparam;
+                    SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, a), nparam, info, true );
+                    tree.AddParamMove(nparam);
+                }
                 break;
             }
         }

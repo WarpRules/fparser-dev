@@ -4,6 +4,7 @@
 #include "fpoptimizer_codetree.hh"
 #include "fpoptimizer_optimize.hh"
 #include "fpoptimizer_opcodename.hh"
+#include "fpoptimizer_grammar.hh"
 #include "fptypes.hh"
 
 #include "fpoptimizer_consts.hh"
@@ -76,15 +77,85 @@ namespace FPoptimizer_CodeTree
         void Eat(size_t nparams, OPCODE opcode)
         {
             CodeTree newnode;
-            newnode.BeginChanging();
             newnode.SetOpcode(opcode);
             size_t stackhead = stack.size() - nparams;
             for(size_t a=0; a<nparams; ++a)
                 newnode.AddParamMove( stack[stackhead + a] );
-            //newnode.Recalculate_Hash_NoRecursion();
-            //fphash_t hash_before = newnode.GetHash();
-            newnode.FinishChanging();
-            FindClone(newnode, false);//newnode.GetHash() != hash_before);
+
+            switch(opcode)
+            {
+                //        asinh: log(x + sqrt(x*x + 1))
+                //cAsinh [x] -> cLog (cAdd x (cPow (cAdd (cPow x 2) 1) 0.5))
+                // Note: ^ Replacement function refers to x twice
+
+                //        acosh: log(x + sqrt(x*x - 1))
+                //cAcosh [x] -> cLog (cAdd x (cPow (cAdd (cPow x 2) -1) 0.5))
+
+                //        atanh: log( (1+x) / (1-x)) / 2
+                //cAtanh [x] -> cMul (cLog (cMul (cAdd 1 x) (cPow (cAdd 1 (cMul -1 x)) -1))) 0.5
+
+                //     The hyperbolic functions themselves are:
+                //        sinh: (exp(x)-exp(-x)) / 2  = exp(-x) * (exp(2*x)-1) / 2
+                //cSinh [x] -> cMul 0.5 (cPow [CONSTANT_EI x]) (cAdd [-1 (cPow [CONSTANT_2E x])])
+
+                //        cosh: (exp(x)+exp(-x)) / 2  = exp(-x) * (exp(2*x)+1) / 2
+                //        cosh(-x) = cosh(x)
+                //cCosh [x] -> cMul 0.5 (cPow [CONSTANT_EI x]) (cAdd [ 1 (cPow [CONSTANT_2E x])])
+
+                //        tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
+                //cTanh [x] -> (cMul (cAdd {(cPow [CONSTANT_2E x]) -1}) (cPow [(cAdd {(cPow [CONSTANT_2E x]) 1}) -1]))
+                case cTanh:
+                {
+                    CodeTree sinh, cosh;
+                    sinh.SetOpcode(cSinh); sinh.AddParam(newnode.GetParam(0)); sinh.Rehash();
+                    cosh.SetOpcode(cCosh); cosh.AddParamMove(newnode.GetParam(0)); cosh.Rehash();
+                    CodeTree pow;
+                    pow.SetOpcode(cPow);
+                    pow.AddParamMove(cosh);
+                    pow.AddParam(CodeTree(-1.0));
+                    pow.Rehash();
+                    newnode.SetOpcode(cMul);
+                    newnode.SetParamMove(0, sinh);
+                    newnode.AddParamMove(pow);
+                    break;
+                }
+
+                //        tan: sin/cos
+                //cTan [x] -> (cMul (cSin [x]) (cPow [(cCos [x]) -1]))
+                case cTan:
+                {
+                    CodeTree sin, cos;
+                    sin.SetOpcode(cSin); sin.AddParam(newnode.GetParam(0)); sin.Rehash();
+                    cos.SetOpcode(cCos); cos.AddParamMove(newnode.GetParam(0)); cos.Rehash();
+                    CodeTree pow;
+                    pow.SetOpcode(cPow);
+                    pow.AddParamMove(cos);
+                    pow.AddParam(CodeTree(-1.0));
+                    pow.Rehash();
+                    newnode.SetOpcode(cMul);
+                    newnode.SetParamMove(0, sin);
+                    newnode.AddParamMove(pow);
+                    break;
+                }
+
+                // Should we change sin(x) into cos(pi/2-x)
+                //               or cos(x) into sin(pi/2-x)?
+                //                        note: cos(x-pi/2) = cos(pi/2-x) = sin(x)
+                //                        note: sin(x-pi/2) = -sin(pi/2-x) = -cos(x)
+                default: break;
+            }
+
+            newnode.Rehash();
+        /*
+            using namespace FPoptimizer_Grammar;
+            bool recurse = false;
+            while(ApplyGrammar(pack.glist[0], newnode, recurse)) // intermediate
+            { //std::cout << "Rerunning 1\n";
+                FixIncompleteHashes(newnode);
+                recurse = true;
+            }
+        */
+            FindClone(newnode, false);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "POP " << nparams << ", " << FP_GetOpcodeName(opcode)
                       << "->" << FP_GetOpcodeName(newnode.GetOpcode())
@@ -99,12 +170,11 @@ namespace FPoptimizer_CodeTree
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
         {
             CodeTree newnode;
-            newnode.BeginChanging();
             newnode.SetFuncOpcode(opcode, funcno);
             size_t stackhead = stack.size() - nparams;
             for(size_t a=0; a<nparams; ++a)
                 newnode.AddParamMove( stack[stackhead + a] );
-            newnode.FinishChanging();
+            newnode.Rehash(false);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "POP " << nparams << ", PUSH ";
             FPoptimizer_Grammar::DumpTree(newnode);

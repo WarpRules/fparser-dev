@@ -216,14 +216,13 @@ namespace
                  * indicate whether the result is, in fact,
                  * a constant at all. */
                 CodeTree result;
-                result.BeginChanging();
                 result.SetOpcode( param.data.subfunc_opcode );
                 for(unsigned a=0; a<param.data.param_count; ++a)
                     result.AddParam(
                             CalculateGroupFunction(
                                 ParamSpec_Extract(param.data.param_list, a), info)
                                     );
-                result.FinishChanging();
+                result.Rehash();
                 return result;
             }
         }

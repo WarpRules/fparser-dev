@@ -31,6 +31,16 @@ namespace FPoptimizer_CodeTree
 {
     class CodeTree;
 
+    struct MinMaxTree
+    {
+        double min,max;
+        bool has_min, has_max;
+        MinMaxTree() : min(),max(),has_min(false),has_max(false) { }
+        MinMaxTree(double mi,double ma): min(mi),max(ma),has_min(true),has_max(true) { }
+        MinMaxTree(bool,double ma): min(),max(ma),has_min(false),has_max(true) { }
+        MinMaxTree(double mi,bool): min(mi),max(),has_min(true),has_max(false) { }
+    };
+
     struct CodeTreeData;
     class CodeTree
     {
@@ -45,6 +55,8 @@ namespace FPoptimizer_CodeTree
         explicit CodeTree(double v); // produce an immed
         struct VarTag { };
         explicit CodeTree(unsigned varno, VarTag); // produce a var reference
+        struct CloneTag { };
+        explicit CodeTree(const CodeTree& b, CloneTag);
 
         /* Generates a CodeTree from the given bytecode */
         void GenerateFrom(
@@ -60,6 +72,10 @@ namespace FPoptimizer_CodeTree
 
         void SetParams(const std::vector<CodeTree>& RefParams);
         void SetParamsMove(std::vector<CodeTree>& RefParams);
+
+        CodeTree GetUniqueRef();
+        // ^use this when CodeTree tmp=x; tmp.CopyOnWrite(); does not do exactly what you want
+
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
         void SetParams(std::vector<CodeTree>&& RefParams);
 #endif
@@ -71,6 +87,7 @@ namespace FPoptimizer_CodeTree
         void AddParamsMove(std::vector<CodeTree>& RefParams);
         void AddParamsMove(std::vector<CodeTree>& RefParams, size_t replacing_slot);
         void DelParam(size_t index);
+        void DelParams();
 
         void Become(const CodeTree& b);
 
@@ -80,6 +97,7 @@ namespace FPoptimizer_CodeTree
         inline void SetOpcode(FUNCTIONPARSERTYPES::OPCODE o);
         inline void SetFuncOpcode(FUNCTIONPARSERTYPES::OPCODE o, unsigned f);
         inline void SetVar(unsigned v);
+        inline void SetImmed(double v);
         inline FUNCTIONPARSERTYPES::OPCODE GetOpcode() const;
         inline FUNCTIONPARSERTYPES::fphash_t GetHash() const;
         inline const std::vector<CodeTree>& GetParams() const;
@@ -96,16 +114,6 @@ namespace FPoptimizer_CodeTree
         long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool    IsLogicalValue() const;
         inline unsigned GetRefCount() const;
-
-        struct MinMaxTree
-        {
-            double min,max;
-            bool has_min, has_max;
-            MinMaxTree() : min(),max(),has_min(false),has_max(false) { }
-            MinMaxTree(double mi,double ma): min(mi),max(ma),has_min(true),has_max(true) { }
-            MinMaxTree(bool,double ma): min(),max(ma),has_min(false),has_max(true) { }
-            MinMaxTree(double mi,bool): min(mi),max(),has_min(true),has_max(false) { }
-        };
         /* This function calculates the minimum and maximum values
          * of the tree's result. If an estimate cannot be made,
          * has_min/has_max are indicated as false.
@@ -130,26 +138,16 @@ namespace FPoptimizer_CodeTree
         bool ConstantFolding_AddGrouping();
         bool ConstantFolding_Assimilate();
 
-        inline void BeginChanging()
-        {
-            CopyOnWrite();
-        }
-        inline void FinishChanging()
-        {
-            ConstantFolding();
-            Sort();
-            Recalculate_Hash_NoRecursion();
-        }
+        void Rehash(bool constantfolding = true);
+        inline void Mark_Incompletely_Hashed();
+        inline bool Is_Incompletely_Hashed() const;
 
         inline const FPoptimizer_Grammar::Grammar* GetOptimizedUsing() const;
         inline void SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g);
 
         void swap(CodeTree& b) { data.swap(b.data); }
         bool IsIdenticalTo(const CodeTree& b) const;
-        inline void Recalculate_Hash_NoRecursion();
-    private:
         void CopyOnWrite();
-        inline void Sort();
     };
 
     struct CodeTreeData
@@ -207,6 +205,8 @@ namespace FPoptimizer_CodeTree
         { SetOpcode(o); data->Funcno = f; }
     inline void CodeTree::SetVar(unsigned v)
         { SetOpcode(FUNCTIONPARSERTYPES::cVar); data->Var = v; }
+    inline void CodeTree::SetImmed(double v)
+        { SetOpcode(FUNCTIONPARSERTYPES::cImmed); data->Value = v; }
     inline FUNCTIONPARSERTYPES::OPCODE CodeTree::GetOpcode() const { return data->Opcode; }
     inline FUNCTIONPARSERTYPES::fphash_t CodeTree::GetHash() const { return data->Hash; }
     inline const std::vector<CodeTree>& CodeTree::GetParams() const { return data->Params; }
@@ -215,8 +215,6 @@ namespace FPoptimizer_CodeTree
     inline double CodeTree::GetImmed() const { return data->Value; }
     inline unsigned CodeTree::GetVar() const { return data->Var; }
     inline unsigned CodeTree::GetFuncNo() const { return data->Funcno; }
-    inline void CodeTree::Recalculate_Hash_NoRecursion() { data->Recalculate_Hash_NoRecursion(); }
-    inline void CodeTree::Sort() { data->Sort(); }
 
     inline const FPoptimizer_Grammar::Grammar* CodeTree::GetOptimizedUsing() const
         { return data->OptimizedUsing; }
@@ -224,16 +222,10 @@ namespace FPoptimizer_CodeTree
         { data->OptimizedUsing = g; }
     inline unsigned CodeTree::GetRefCount() const { return data->RefCount; }
 
-    class ParentChanger
-    {
-    public:
-        ParentChanger*                  parent;
-        FPoptimizer_CodeTree::CodeTree& ours;
-        bool                            changed;
-        //
-        void BeginChanging();
-        void FinishChanging();
-    };
+    inline void CodeTree::Mark_Incompletely_Hashed() { data->Depth = 0; }
+    inline bool CodeTree::Is_Incompletely_Hashed() const { return data->Depth == 0; }
+
+    void FixIncompleteHashes(CodeTree& tree);
 }
 
 #endif

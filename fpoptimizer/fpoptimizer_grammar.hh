@@ -11,7 +11,6 @@
 namespace FPoptimizer_CodeTree
 {
     class CodeTree;
-    class ParentChanger;
 }
 
 namespace FPoptimizer_Grammar
@@ -204,14 +203,14 @@ namespace FPoptimizer_Grammar
 
     bool ApplyGrammar(const Grammar& grammar,
                       FPoptimizer_CodeTree::CodeTree& tree,
-                      FPoptimizer_CodeTree::ParentChanger* parent_notify = 0);
+                      bool recurse = true);
 
     /* GrammarPack is the structure which contains all
      * the information regarding the optimization rules.
      */
     extern const struct GrammarPack
     {
-        Grammar               glist[4];
+        Grammar               glist[3];
     } pack;
 
     void DumpParam(const ParamSpec& p, std::ostream& o = std::cout);

@@ -111,12 +111,7 @@ namespace FPoptimizer_Optimize
                         const MatchPositionSpecBaseP& s) : found(f), specs(s) { }
     };
 
-    /* Synthesize the given grammatic parameter into the codetree */
-    void SynthesizeParam(
-        const ParamSpec& parampair,
-        CodeTree& tree,
-        MatchInfo& info);
-
+    /* Synthesize the given grammatic rule's replacement into the codetree */
     void SynthesizeRule(
         const Rule& rule,
         CodeTree& tree,

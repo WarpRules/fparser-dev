@@ -11,17 +11,43 @@
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
 
+namespace
+{
+    bool MarkIncompletes(FPoptimizer_CodeTree::CodeTree& tree)
+    {
+        if(tree.Is_Incompletely_Hashed())
+            return true;
+
+        bool needs_rehash = false;
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
+            needs_rehash |= MarkIncompletes(tree.GetParam(a));
+        if(needs_rehash)
+            tree.Mark_Incompletely_Hashed();
+        return needs_rehash;
+    }
+
+    void FixIncompletes(FPoptimizer_CodeTree::CodeTree& tree)
+    {
+        if(tree.Is_Incompletely_Hashed())
+        {
+            for(size_t a=0; a<tree.GetParamCount(); ++a)
+                FixIncompletes(tree.GetParam(a));
+            tree.Rehash();
+        }
+    }
+}
+
 namespace FPoptimizer_CodeTree
 {
     CodeTree::CodeTree()
-        : data()
+        : data(new CodeTreeData)
     {
     }
 
     CodeTree::CodeTree(double i)
         : data(new CodeTreeData(i))
     {
-        Recalculate_Hash_NoRecursion();
+        data->Recalculate_Hash_NoRecursion();
     }
 
     CodeTree::CodeTree(unsigned v, CodeTree::VarTag)
@@ -29,7 +55,12 @@ namespace FPoptimizer_CodeTree
     {
         data->Opcode = cVar;
         data->Var    = v;
-        Recalculate_Hash_NoRecursion();
+        data->Recalculate_Hash_NoRecursion();
+    }
+
+    CodeTree::CodeTree(const CodeTree& b, CodeTree::CloneTag)
+        : data(new CodeTreeData(*b.data))
+    {
     }
 
     CodeTree::~CodeTree()
@@ -83,6 +114,14 @@ namespace FPoptimizer_CodeTree
             default:
                 break;
         }
+    }
+
+    void CodeTree::Rehash(bool constantfolding)
+    {
+        if(constantfolding)
+            ConstantFolding();
+        data->Sort();
+        data->Recalculate_Hash_NoRecursion();
     }
 
     void CodeTreeData::Recalculate_Hash_NoRecursion()
@@ -151,10 +190,12 @@ namespace FPoptimizer_CodeTree
     }
     void CodeTree::SetParam(size_t which, const CodeTree& b)
     {
+        DataP slot_holder ( data->Params[which].data );
         data->Params[which] = b;
     }
     void CodeTree::SetParamMove(size_t which, CodeTree& b)
     {
+        DataP slot_holder ( data->Params[which].data );
         data->Params[which].swap(b);
     }
 
@@ -171,6 +212,10 @@ namespace FPoptimizer_CodeTree
     }
     void CodeTree::AddParamsMove(std::vector<CodeTree>& RefParams, size_t replacing_slot)
     {
+        DataP slot_holder ( data->Params[replacing_slot].data );
+        DelParam(replacing_slot);
+        AddParamsMove(RefParams);
+    /*
         const size_t n_added = RefParams.size();
         const size_t oldsize = data->Params.size();
         const size_t newsize = oldsize + n_added - 1;
@@ -199,18 +244,20 @@ namespace FPoptimizer_CodeTree
             for(size_t p=0; p<n_added; ++p)
                 data->Params[replacing_slot+p].swap( RefParams[p] );
         }
+    */
     }
 
     void CodeTree::SetParams(const std::vector<CodeTree>& RefParams)
     {
         //std::cout << "SetParams called" << (do_clone ? ", clone" : ", no clone") << "\n";
-        data->Params = RefParams;
+        std::vector<CodeTree> tmp(RefParams);
+        data->Params.swap(tmp);
     }
 
     void CodeTree::SetParamsMove(std::vector<CodeTree>& RefParams)
     {
-        data->Params.clear();
         data->Params.swap(RefParams);
+        RefParams.clear();
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
@@ -236,6 +283,11 @@ namespace FPoptimizer_CodeTree
         Params[Params.size()-1].data.UnsafeSetP( 0 );
         Params.resize(Params.size()-1);
     #endif
+    }
+
+    void CodeTree::DelParams()
+    {
+        data->Params.clear();
     }
 
     /* Is the value of this tree definitely odd(true) or even(false)? */
@@ -369,10 +421,15 @@ namespace FPoptimizer_CodeTree
 
     void CodeTree::CopyOnWrite()
     {
-        if(!&*data)
-            data = new CodeTreeData;
-        else if(data->RefCount > 1)
+        if(data->RefCount > 1)
             data = new CodeTreeData(*data);
+    }
+
+    CodeTree CodeTree::GetUniqueRef()
+    {
+        if(data->RefCount > 1)
+            return CodeTree(*this, CloneTag());
+        return *this;
     }
 
     CodeTreeData::CodeTreeData()
@@ -425,32 +482,10 @@ namespace FPoptimizer_CodeTree
         Value = i;
     }
 
-    void ParentChanger::BeginChanging()
+    void FixIncompleteHashes(CodeTree& tree)
     {
-        if(changed) return;
-        //if(parent) parent->BeginChanging();
-        ours.BeginChanging();
-        changed = true;
-
-        for(ParentChanger *p = parent; p; p=p->parent)
-            p->changed = true;
-    }
-
-    void ParentChanger::FinishChanging()
-    {
-        if(!changed) return;
-    #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "BEGIN CONSTANTFOLDING: ";
-        FPoptimizer_Grammar::DumpTree(ours);
-        std::cout << "\n";
-    #endif
-        ours.FinishChanging();
-    #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "END CONSTANTFOLDING:   ";
-        FPoptimizer_Grammar::DumpTree(ours);
-        std::cout << "\n";
-    #endif
-        if(parent) parent->FinishChanging();
+        MarkIncompletes(tree);
+        FixIncompletes(tree);
     }
 }
 

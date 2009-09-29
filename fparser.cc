@@ -776,7 +776,55 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
               AddFunctionOpcode(cRad);
         }
 
+    switch(opcode)
+    {
+      case cMin:
+          if(data->ByteCode.back() == cImmed
+          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+              data->Immed[data->Immed.size()-2] =
+                Min(data->Immed[data->Immed.size()-2], data->Immed.back());
+              data->ByteCode.pop_back();
+              data->Immed.pop_back();
+              goto skip_op;
+          }
+          break;
+      case cMax:
+          if(data->ByteCode.back() == cImmed
+          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+              data->Immed[data->Immed.size()-2] =
+                Max(data->Immed[data->Immed.size()-2], data->Immed.back());
+              data->ByteCode.pop_back();
+              data->Immed.pop_back();
+              goto skip_op;
+          }
+          break;
+      case cAtan2:
+          if(data->ByteCode.back() == cImmed
+          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+              data->Immed[data->Immed.size()-2] =
+                atan2(data->Immed[data->Immed.size()-2], data->Immed.back());
+              data->ByteCode.pop_back();
+              data->Immed.pop_back();
+              goto skip_op;
+          }
+          break;
+      case cPow:
+          if(data->ByteCode.back() == cImmed
+          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+              data->Immed[data->Immed.size()-2] =
+                pow(data->Immed[data->Immed.size()-2], data->Immed.back());
+              data->ByteCode.pop_back();
+              data->Immed.pop_back();
+              goto skip_op;
+          }
+          break;
+    }
     AddFunctionOpcode(opcode);
+ skip_op:;
 
     if(useDegreeConversion)
         switch(opcode)
@@ -1997,7 +2045,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                             size_t b = ByteCode[++IP];
                             if(showExpression)
                             {
-                                std::pair<int, std::string> stacktop = stack[b];
+                                std::pair<int, std::string> stacktop(0, "?");
+                                if(b < stack.size()) stacktop = stack[b];
                                 stack.resize(a);
                                 stack.push_back(stacktop);
                             }
@@ -2052,15 +2101,15 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             {
                 std::ostringstream buf;
                 const char *paramsep = ",", *suff = "";
-                int prio = 0;
+                int prio = 0; bool commutative = false;
                 switch(opcode)
                 {
                     case cIf: buf << "if("; suff = ")"; break;
-                    case cOr:  prio = 6; paramsep = "|"; break;
-                    case cAnd: prio = 5; paramsep = "&"; break;
-                    case cAdd: prio = 4; paramsep = "+"; break;
+                    case cOr:  prio = 6; paramsep = "|"; commutative = true; break;
+                    case cAnd: prio = 5; paramsep = "&"; commutative = true; break;
+                    case cAdd: prio = 4; paramsep = "+"; commutative = true; break;
                     case cSub: prio = 4; paramsep = "-"; break;
-                    case cMul: prio = 3; paramsep = "*"; break;
+                    case cMul: prio = 3; paramsep = "*"; commutative = true; break;
                     case cDiv: prio = 3; paramsep = "/"; break;
                     case cPow: prio = 2; paramsep = "^"; break;
 #ifdef FP_SUPPORT_OPTIMIZER
@@ -2073,12 +2122,16 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 for(unsigned a=0; a<params; ++a)
                 {
                     buf << sep;
-                    if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << '(';
                     if(stack.size() + a < params)
                         buf << "?";
                     else
-                        buf << stack[stack.size() - params + a].second;
-                    if(prio > 0 && stack[stack.size() - params + a].first > prio) buf << ')';
+                    {
+                        const std::pair<int,std::string>& prev = stack[stack.size() - params + a];
+                        if(prio > 0 && (prev.first > prio || (prev.first==prio && !commutative)))
+                            buf << '(' << prev.second << ')';
+                        else
+                            buf << prev.second;
+                    }
                     sep = paramsep;
                 }
                 if(stack.size() >= params)
@@ -2090,7 +2143,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 //if(n.size() <= 4 && !out_params) padLine(outputBuffer, 20);
             }
             //padLine(outputBuffer, 20);
-            output << "= " << stack.back().second;
+            output << "= ";
+            output << '[' << (stack.size()-1) << ']';
+            output << stack.back().second;
         }
 
         if(showExpression)

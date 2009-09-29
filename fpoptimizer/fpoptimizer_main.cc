@@ -13,7 +13,6 @@ using namespace FPoptimizer_Grammar;
 
 void FunctionParser::Optimize()
 {
-
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
@@ -21,20 +20,19 @@ void FunctionParser::Optimize()
     CodeTree tree;
     tree.GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(ApplyGrammar(pack.glist[0], tree)) // entry
-        { //std::cout << "Rerunning 0\n";
-        }
-
-    while(ApplyGrammar(pack.glist[1], tree)) // intermediate
+    while(ApplyGrammar(pack.glist[0], tree)) // intermediate
         { //std::cout << "Rerunning 1\n";
+            FixIncompleteHashes(tree);
         }
 
-    while(ApplyGrammar(pack.glist[2], tree)) // final1
+    while(ApplyGrammar(pack.glist[1], tree)) // final1
         { //std::cout << "Rerunning 2\n";
+            FixIncompleteHashes(tree);
         }
 
-    while(ApplyGrammar(pack.glist[3], tree)) // final2
+    while(ApplyGrammar(pack.glist[2], tree)) // final2
         { //std::cout << "Rerunning 3\n";
+            FixIncompleteHashes(tree);
         }
 
     std::vector<unsigned> byteCode;

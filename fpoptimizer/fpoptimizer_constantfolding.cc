@@ -24,15 +24,16 @@ namespace FPoptimizer_CodeTree
                 Become(GetParam(0));
                 goto redo;
             case cIf:
-                BeginChanging();
+                CopyOnWrite();
                 while(GetParam(1).GetOpcode() == cNotNot)
-                    { CodeTree p = GetParam(1).GetParam(0); SetParamMove(1, p); }
+                    SetParamMove(1, GetParam(1).GetUniqueRef().GetParam(0));
                 GetParam(1).ConstantFolding_FromLogicalParent();
 
                 while(GetParam(2).GetOpcode() == cNotNot)
-                    { CodeTree p = GetParam(2).GetParam(0); SetParamMove(2, p); }
+                    SetParamMove(2, GetParam(2).GetUniqueRef().GetParam(0));
                 GetParam(2).ConstantFolding_FromLogicalParent();
-                FinishChanging();
+
+                Rehash();
                 break;
             default: break;
         }
@@ -40,12 +41,12 @@ namespace FPoptimizer_CodeTree
 
     struct ComparisonSet
     {
-        static const int Lt_Mask = 0x1;
-        static const int Eq_Mask = 0x2;
-        static const int Gt_Mask = 0x4;
-        static const int Le_Mask = 0x3;
-        static const int Ne_Mask = 0x5;
-        static const int Ge_Mask = 0x6;
+        static const int Lt_Mask = 0x1; // 1=less
+        static const int Eq_Mask = 0x2; // 2=equal
+        static const int Le_Mask = 0x3; // 1+2 = Less or Equal
+        static const int Gt_Mask = 0x4; // 4=greater
+        static const int Ne_Mask = 0x5; // 4+1 = Greater or Less, i.e. Not equal
+        static const int Ge_Mask = 0x6; // 4+2 = Greater or Equal
         static int Swap_Mask(int m) { return (m&Eq_Mask)
                                   | ((m&Lt_Mask) ? Gt_Mask : 0)
                                   | ((m&Gt_Mask) ? Lt_Mask : 0); }
@@ -218,16 +219,15 @@ namespace FPoptimizer_CodeTree
             std::cout << "Before ConstantFolding_LogicCommon: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            data->Params.clear();
+            DelParams();
             for(size_t a=0; a<comp.plain_set.size(); ++a)
             {
                 if(comp.plain_set[a].negated)
                 {
                     CodeTree r;
-                    r.BeginChanging();
                     r.SetOpcode(cNot);
                     r.AddParamMove(comp.plain_set[a].value);
-                    r.FinishChanging();
+                    r.Rehash();
                     AddParamMove(r);
                 }
                 else
@@ -236,7 +236,6 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<comp.relationships.size(); ++a)
             {
                 CodeTree r;
-                r.BeginChanging();
                 r.SetOpcode(cAtan2);
                 switch(comp.relationships[a].relationship)
                 {
@@ -249,7 +248,7 @@ namespace FPoptimizer_CodeTree
                 }
                 r.AddParamMove(comp.relationships[a].a);
                 r.AddParamMove(comp.relationships[a].b);
-                r.FinishChanging();
+                r.Rehash();
                 AddParamMove(r);
             }
           #ifdef DEBUG_SUBSTITUTIONS
@@ -310,11 +309,10 @@ namespace FPoptimizer_CodeTree
             if(c != ~size_t(0))
             {
                 CodeTree add;
-                add.BeginChanging();
                 add.SetOpcode(cAdd);
                 add.AddParamMove(multiplications[c].exponent);
                 add.AddParam(exponent);
-                add.FinishChanging();
+                add.Rehash();
                 multiplications[c].exponent = add;
                 return Suboptimal;
             }
@@ -375,7 +373,7 @@ namespace FPoptimizer_CodeTree
             std::cout << "Before ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            data->Params.clear();
+            DelParams();
 
             /* Group by exponents */
             for(size_t a=0; a<by_exponent.size(); ++a)
@@ -392,16 +390,14 @@ namespace FPoptimizer_CodeTree
                 else
                 {
                     CodeTree mul;
-                    mul.BeginChanging();
                     mul.SetOpcode(cMul);
                     mul.SetParamsMove( by_exponent[a].second );
-                    mul.FinishChanging();
+                    mul.Rehash();
                     CodeTree pow;
-                    pow.BeginChanging();
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(mul);
                     pow.AddParamMove(by_exponent[a].first);
-                    pow.FinishChanging();
+                    pow.Rehash();
                     AddParamMove(pow);
                 }
           #ifdef DEBUG_SUBSTITUTIONS
@@ -446,11 +442,10 @@ namespace FPoptimizer_CodeTree
         AdditionResult AddAdditionTo(const CodeTree& coeff, size_t into_which)
         {
             CodeTree add;
-            add.BeginChanging();
             add.SetOpcode(cAdd);
             add.AddParamMove(additions[into_which].coeff);
             add.AddParam(coeff);
-            add.FinishChanging();
+            add.Rehash();
             additions[into_which].coeff = add;
             return Suboptimal;
         }
@@ -513,10 +508,9 @@ namespace FPoptimizer_CodeTree
                     size_t c = add.FindIdenticalValueTo(mulgroup.GetParam(b));
                     if(c != ~size_t(0))
                     {
-                        CodeTree tmp = mulgroup;
-                        tmp.BeginChanging();
+                        CodeTree tmp(mulgroup, CodeTree::CloneTag());
                         tmp.DelParam(b);
-                        tmp.FinishChanging();
+                        tmp.Rehash();
                         add.AddAdditionTo(tmp, c);
                         should_regenerate = true;
                         goto done_a;
@@ -575,7 +569,6 @@ namespace FPoptimizer_CodeTree
                         } }
                     // Collect the items for adding in the group (a+b)
                     CodeTree group_add;
-                    group_add.BeginChanging();
                     group_add.SetOpcode(cAdd);
 
         #ifdef DEBUG_SUBSTITUTIONS
@@ -590,21 +583,19 @@ namespace FPoptimizer_CodeTree
                             for(size_t b=0; b<GetParam(a).GetParamCount(); ++b)
                                 if(group_by.IsIdenticalTo(GetParam(a).GetParam(b)))
                                 {
-                                    CodeTree tmp = GetParam(a);
-                                    tmp.BeginChanging();
+                                    CodeTree tmp(GetParam(a), CodeTree::CloneTag());
                                     tmp.DelParam(b);
-                                    tmp.FinishChanging();
+                                    tmp.Rehash();
                                     group_add.AddParamMove(tmp);
                                     remaining[a] = false;
                                     break;
                                 }
-                    group_add.FinishChanging();
+                    group_add.Rehash();
                     CodeTree group;
-                    group.BeginChanging();
                     group.SetOpcode(cMul);
                     group.AddParamMove(group_by);
                     group.AddParamMove(group_add);
-                    group.FinishChanging();
+                    group.Rehash();
                     add.AddAddition(group);
                     should_regenerate = true;
                 }
@@ -625,7 +616,7 @@ namespace FPoptimizer_CodeTree
             std::cout << "Before ConstantFolding_AddGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            data->Params.clear();
+            DelParams();
 
             for(size_t a=0; a<add.additions.size(); ++a)
             {
@@ -640,11 +631,10 @@ namespace FPoptimizer_CodeTree
                 else
                 {
                     CodeTree mul;
-                    mul.BeginChanging();
                     mul.SetOpcode(cMul);
                     mul.AddParamMove(add.additions[a].value);
                     mul.AddParamMove(add.additions[a].coeff);
-                    mul.FinishChanging();
+                    mul.Rehash();
                     AddParamMove(mul);
                 }
             }
@@ -673,9 +663,7 @@ namespace FPoptimizer_CodeTree
                 }
               #endif
                 // Assimilate its children and remove it
-                CodeTree tree = GetParam(a);
-                tree.BeginChanging();
-                AddParamsMove(tree.GetParams(), a);
+                AddParamsMove(GetParam(a).GetUniqueRef().GetParams(), a);
             }
       #ifdef DEBUG_SUBSTITUTIONS
         if(assimilated)
@@ -830,8 +818,7 @@ namespace FPoptimizer_CodeTree
                     //cNotNot already handled by ConstantFolding_FromLogicalParent()
                     case cNot:         SetOpcode(cNotNot); goto cNot_moveparam;
                          { cNot_moveparam:;
-                               CodeTree p = GetParam(0);
-                               SetParamsMove(p.GetParams()); goto redo; }
+                               SetParamsMove(GetParam(0).GetUniqueRef().GetParams()); goto redo; }
                     default: break;
                 }
 
@@ -1169,7 +1156,7 @@ namespace FPoptimizer_CodeTree
                  */
                 if(GetParam(0).GetOpcode() == cMul)
                 {
-                    CodeTree& p = GetParam(0);
+                    const CodeTree& p = GetParam(0);
                     std::vector<CodeTree> pos_set;
                     std::vector<CodeTree> neg_set;
                     for(size_t a=0; a<p.GetParamCount(); ++a)
@@ -1192,26 +1179,29 @@ namespace FPoptimizer_CodeTree
                         std::cout << "\n" << std::flush;
                         FPoptimizer_Grammar::DumpHashes(*this, std::cout);
                 #endif
-                        p.BeginChanging();
-                        for(size_t a=p.GetParamCount(); a-- > 0; )
+                        CodeTree pclone;
+                        pclone.SetOpcode(cMul);
+                        for(size_t a=0; a<p.GetParamCount(); ++a)
                         {
                             p0 = p.GetParam(a).CalculateResultBoundaries();
                             if((p0.has_min && p0.min >= 0.0)
                             || (p0.has_max && p0.max <= NEGATIVE_MAXIMUM))
-                                p.DelParam(a);
-
+                                {/*pclone.DelParam(a);*/}
+                            else
+                                pclone.AddParam( p.GetParam(a) );
                             /* Here, p*n*x*y -> x*y.
                              * p is saved in pos_set[]
                              * n is saved in neg_set[]
                              */
                         }
-                        p.FinishChanging();
-
+                        pclone.Rehash();
+                        CodeTree abs_mul;
+                        abs_mul.SetOpcode(cAbs);
+                        abs_mul.AddParamMove(pclone);
+                        abs_mul.Rehash();
                         CodeTree mulgroup;
-                        mulgroup.BeginChanging();
                         mulgroup.SetOpcode(cMul);
-                        if(p.GetParamCount() > 0)
-                            mulgroup.AddParamMove(*this); // cAbs[whatever remains in p]
+                        mulgroup.AddParamMove(abs_mul); // cAbs[whatever remains in p]
                         mulgroup.AddParamsMove(pos_set);
                         /* Now:
                          * mulgroup  = p * Abs(x*y)
@@ -1311,21 +1301,23 @@ namespace FPoptimizer_CodeTree
                     { const_value = atan2(GetParam(0).GetImmed(),
                                           GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
-              #if 0
                 if((p1.has_min && p1.min > 0.0)
-                || (p1.has_max && p1.max < NEGATIVE_MAXIMUM))
+                || (p1.has_max && p1.max < NEGATIVE_MAXIMUM)) // become atan(p0 / p1)
                 {
-                    // Convert into a division
-                    CodeTree subtree = new CodeTree;
-                    Params[1].sign = true; /* FIXME: Not appropriate anymore */
-                    subtree->SetParamsMove(Params);
-                    Params.clear();
-                    subtree->Opcode = cMul;
-                    subtree->FinishChanging();
-                    Opcode = cAtan;
-                    AddParam(subtree); // we = atan(y/x)
+                    CodeTree pow_tree;
+                    pow_tree.SetOpcode(cPow);
+                    pow_tree.AddParam(GetParam(1));
+                    pow_tree.AddParam(CodeTree(-1.0));
+                    pow_tree.Rehash();
+                    CodeTree div_tree;
+                    div_tree.SetOpcode(cMul);
+                    div_tree.AddParam(GetParam(0));
+                    div_tree.AddParamMove(pow_tree);
+                    div_tree.Rehash();
+                    SetOpcode(cAtan);
+                    SetParamMove(0, div_tree);
+                    DelParam(1);
                 }
-              #endif
                 break;
             }
 
@@ -1365,7 +1357,7 @@ namespace FPoptimizer_CodeTree
                                 if(!changes)
                                 {
                                     changes = true;
-                                    mulgroup.BeginChanging();
+                                    mulgroup.CopyOnWrite();
                                 }
                                 base_immed = std::pow(base_immed, imm);
                                 mulgroup.DelParam(a);
@@ -1374,9 +1366,8 @@ namespace FPoptimizer_CodeTree
                         }
                     if(changes)
                     {
-                        GetParam(0).data = new CodeTreeData(base_immed);
-                        GetParam(0).Recalculate_Hash_NoRecursion();
-                        mulgroup.FinishChanging();
+                        GetParam(0).Become(CodeTree(base_immed));
+                        mulgroup.Rehash();
                     }
                 }
                 // (x^3)^2 = x^6
@@ -1392,10 +1383,9 @@ namespace FPoptimizer_CodeTree
                     && !(c == (double)(long)c && (long)c % 2 == 0)) // c is not?
                     {
                         CodeTree newbase;
-                        newbase.BeginChanging();
                         newbase.SetOpcode(cAbs);
                         newbase.AddParam(GetParam(0).GetParam(0));
-                        newbase.FinishChanging();
+                        newbase.Rehash();
                         SetParamMove(0, newbase);
                     }
                     else
@@ -1486,7 +1476,7 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries() const
+    MinMaxTree CodeTree::CalculateResultBoundaries() const
 #ifdef DEBUG_SUBSTITUTIONS_extra_verbose
     {
         MinMaxTree tmp = CalculateResultBoundaries_do();
@@ -1499,7 +1489,7 @@ namespace FPoptimizer_CodeTree
         std::cout << std::endl;
         return tmp;
     }
-    CodeTree::MinMaxTree CodeTree::CalculateResultBoundaries_do() const
+    MinMaxTree CodeTree::CalculateResultBoundaries_do() const
 #endif
     {
         using namespace std;

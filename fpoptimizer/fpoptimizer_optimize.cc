@@ -145,10 +145,9 @@ namespace
     };
 
     /* Test and apply a rule to a given CodeTree */
-    void TestRuleAndApplyIfMatch(
+    bool TestRuleAndApplyIfMatch(
         const Rule& rule,
-        CodeTree& tree,
-        ParentChanger* parent_notify)
+        CodeTree& tree)
     {
         MatchInfo info;
 
@@ -167,15 +166,15 @@ namespace
         #ifdef DEBUG_SUBSTITUTIONS
                 //DumpMatch(rule, tree, info, false);
         #endif
-                return;
+                return false;
             }
         }
         // Matched
     #ifdef DEBUG_SUBSTITUTIONS
         DumpMatch(rule, tree, info, true);
     #endif
-        parent_notify->BeginChanging();
         SynthesizeRule(rule, tree, info);
+        return true;
     }
 }
 
@@ -185,83 +184,86 @@ namespace FPoptimizer_Grammar
     bool ApplyGrammar(
         const Grammar& grammar,
         CodeTree& tree,
-        ParentChanger* parent_notify)
+        bool recurse)
     {
-        ParentChanger subnotify = { parent_notify, tree, false };
-
-        if(tree.GetOptimizedUsing() != &grammar)
-        {
-            /* First optimize all children */
-            for(size_t a=0; a<tree.GetParamCount(); ++a)
-                ApplyGrammar( grammar, tree.GetParam(a), &subnotify );
-
-            if(subnotify.changed)
-            {
-                tree.FinishChanging();
-                // Give the parent node a rerun at optimization
-                return true;
-            }
-
-            /* Figure out which rules _may_ match this tree */
-            typedef const Rule* ruleit;
-
-            std::pair<ruleit, ruleit> range
-                = MyEqualRange(grammar.rule_begin,
-                               grammar.rule_begin + grammar.rule_count,
-                               tree,
-                               OpcodeRuleCompare());
-
-#ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Input (Grammar #"
-                      << (&grammar - pack.glist)
-                      << ", " << FP_GetOpcodeName(tree.GetOpcode())
-                      << "[" << tree.GetParamCount()
-                      << "]" ", rules "
-                      << (range.first - pack.glist[0].rule_begin)
-                      << ".."
-                      << (range.second - pack.glist[0].rule_begin)
-                      << ": ";
-            DumpTree(tree);
-            std::cout << "\n" << std::flush;
-#endif
-
-            while(range.first != range.second)
-            {
-                /* Check if this rule matches */
-                TestRuleAndApplyIfMatch(*range.first, tree, &subnotify);
-                if(subnotify.changed)
-                    break;
-                ++range.first;
-            }
-
-#ifdef DEBUG_SUBSTITUTIONS
-            if(subnotify.changed)
-            {
-                std::cout << "Changed." << std::endl;
-                std::cout << "Output: ";
-                DumpTree(tree);
-                std::cout << "\n" << std::flush;
-            }
-            /*else
-                std::cout << "No changes." << std::endl;*/
-#endif
-
-            if(subnotify.changed)
-            {
-                tree.FinishChanging();
-            }
-            else
-                tree.SetOptimizedUsing(&grammar);
-        }
-        else
+        if(tree.GetOptimizedUsing() == &grammar)
         {
 #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "Already optimized:  ";
             DumpTree(tree);
             std::cout << "\n" << std::flush;
 #endif
+            return false;
         }
-        return subnotify.changed;
+
+        /* First optimize all children */
+        if(recurse)
+        {
+            bool changed = false;
+
+            for(size_t a=0; a<tree.GetParamCount(); ++a)
+                if(ApplyGrammar( grammar, tree.GetParam(a) ))
+                    changed = true;
+
+            if(changed)
+            {
+                // Give the parent node a rerun at optimization
+                tree.Mark_Incompletely_Hashed();
+                return true;
+            }
+        }
+
+        /* Figure out which rules _may_ match this tree */
+        typedef const Rule* ruleit;
+
+        std::pair<ruleit, ruleit> range
+            = MyEqualRange(grammar.rule_begin,
+                           grammar.rule_begin + grammar.rule_count,
+                           tree,
+                           OpcodeRuleCompare());
+
+#ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Input (Grammar #"
+                  << (&grammar - pack.glist)
+                  << ", " << FP_GetOpcodeName(tree.GetOpcode())
+                  << "[" << tree.GetParamCount()
+                  << "]" ", rules "
+                  << (range.first - pack.glist[0].rule_begin)
+                  << ".."
+                  << (range.second - pack.glist[0].rule_begin)
+                  << ": ";
+        DumpTree(tree);
+        std::cout << "\n" << std::flush;
+#endif
+
+        bool changed = false;
+
+        for(; range.first != range.second; ++range.first)
+        {
+            /* Check if this rule matches */
+            if(TestRuleAndApplyIfMatch(*range.first, tree))
+            {
+                changed = true;
+                break;
+            }
+        }
+
+        if(changed)
+        {
+#ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Changed." << std::endl;
+            std::cout << "Output: ";
+            DumpTree(tree);
+            std::cout << "\n" << std::flush;
+#endif
+            // Give the parent node a rerun at optimization
+            tree.Mark_Incompletely_Hashed();
+            return true;
+        }
+
+        // No changes, consider the tree properly optimized.
+        tree.SetOptimizedUsing(&grammar);
+        return false;
     }
 }
 
