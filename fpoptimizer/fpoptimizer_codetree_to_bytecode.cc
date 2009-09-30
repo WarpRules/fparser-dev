@@ -68,6 +68,32 @@ namespace
     CodeTree* root;
     #endif
 
+    bool IsOptimizableUsingPowi(long immed, long penalty = 0)
+    {
+        FPoptimizer_ByteCode::ByteCodeSynth synth;
+        return AssembleSequence(CodeTree(0, CodeTree::VarTag()),
+                                immed,
+                                FPoptimizer_ByteCode::MulSequence,
+                                synth,
+                                MAX_POWI_BYTECODE_LENGTH - penalty);
+    }
+
+    void ChangeIntoSqrtChain(CodeTree& tree, long sqrt_chain)
+    {
+        long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
+        while(abs_sqrt_chain > 2)
+        {
+            CodeTree tmp;
+            tmp.SetOpcode(cSqrt);
+            tmp.AddParamMove(tree.GetParam(0));
+            tmp.Rehash();
+            tree.SetParamMove(0, tmp);
+            abs_sqrt_chain /= 2;
+        }
+        tree.DelParam(1);
+        tree.SetOpcode(sqrt_chain < 0 ? cRSqrt : cSqrt);
+    }
+
     bool RecreateInversionsAndNegations(CodeTree& tree)
     {
         bool changed = false;
@@ -172,6 +198,90 @@ namespace
                 }
                 break;
             }
+            case cPow:
+            {
+                const CodeTree& p0 = tree.GetParam(0);
+                const CodeTree& p1 = tree.GetParam(1);
+                if(p1.IsImmed())
+                {
+                    if(p1.GetImmed() != 0.0 && !p1.IsLongIntegerImmed())
+                    {
+                        double inverse_exponent = 1.0 / p1.GetImmed();
+                        if(inverse_exponent >= -16.0 && inverse_exponent <= 16.0
+                        && inverse_exponent == (double)(long)inverse_exponent)
+                        {
+                            long sqrt_chain = (long) inverse_exponent;
+                            long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
+                            if((abs_sqrt_chain & (abs_sqrt_chain-1)) == 0) // 2, 4, 8 or 16
+                            {
+                                ChangeIntoSqrtChain(tree, sqrt_chain);
+                                changed = true;
+                                break;
+                            }
+                        }
+                    }
+                    if(!p1.IsLongIntegerImmed())
+                    {
+                        // x^1.5 is sqrt(x^3)
+                        for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
+                        {
+                            double with_sqrt_exponent = p1.GetImmed() * (1 << sqrt_count);
+                            if(with_sqrt_exponent == (double)(long)with_sqrt_exponent)
+                            {
+                                long int_sqrt_exponent = (long)with_sqrt_exponent;
+                                if(int_sqrt_exponent < 0)
+                                    int_sqrt_exponent = -int_sqrt_exponent;
+                                if(IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count))
+                                {
+                                    long sqrt_chain = 1 << sqrt_count;
+                                    if(with_sqrt_exponent < 0) sqrt_chain = -sqrt_chain;
+
+                                    CodeTree tmp;
+                                    tmp.AddParamMove(tree.GetParam(0));
+                                    tmp.AddParam(CodeTree());
+                                    ChangeIntoSqrtChain(tmp, sqrt_chain);
+                                    tmp.Rehash();
+                                    tree.SetParamMove(0, tmp);
+                                    tree.SetParam(1, CodeTree(p1.GetImmed() * sqrt_chain));
+                                    changed = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(!p1.IsLongIntegerImmed()
+                || !IsOptimizableUsingPowi(p1.GetLongIntegerImmed()))
+                {
+                    if(p0.IsImmed() && p0.GetImmed() > 0.0)
+                    {
+                        // Convert into cExp or Exp2.
+                        //    x^y = exp(log(x) * y) =
+                        //    Can only be done when x is positive, though.
+                        double mulvalue = std::log( p0.GetImmed() );
+                        if(mulvalue == 1.0)
+                        {
+                            // exp(1)^x becomes exp(x)
+                            tree.DelParam(0);
+                        }
+                        else
+                        {
+                            // exp(4)^x becomes exp(4*x)
+                            CodeTree exponent;
+                            exponent.SetOpcode(cMul);
+                            exponent.AddParam( CodeTree( mulvalue ) );
+                            exponent.AddParam(p1);
+                            exponent.Rehash();
+                            tree.SetParamMove(0, exponent);
+                            tree.DelParam(1);
+                        }
+                        tree.SetOpcode(cExp);
+                        changed = true;
+                    }
+                }
+                break;
+            }
+
             default: break;
         }
 
@@ -373,30 +483,7 @@ namespace FPoptimizer_CodeTree
                 const CodeTree& p0 = GetParam(0);
                 const CodeTree& p1 = GetParam(1);
 
-                if(p1.IsImmed() && p1.GetImmed() == 0.5)
-                {
-                    p0.SynthesizeByteCode(synth);
-                    synth.AddOperation(cSqrt, 1);
-                }
-                else if(p1.IsImmed() && p1.GetImmed() == -0.5)
-                {
-                    p0.SynthesizeByteCode(synth);
-                    synth.AddOperation(cRSqrt, 1);
-                }
-                /*
-                else if(p0.IsImmed() && p0.GetImmed() == CONSTANT_E)
-                {
-                    p1.SynthesizeByteCode(synth);
-                    synth.AddOperation(cExp, 1);
-                }
-                else if(p0.IsImmed() && p0.GetImmed() == CONSTANT_EI)
-                {
-                    p1.SynthesizeByteCode(synth);
-                    synth.AddOperation(cNeg, 1);
-                    synth.AddOperation(cExp, 1);
-                }
-                */
-                else if(!p1.IsLongIntegerImmed()
+                if(!p1.IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         p0, p1.GetLongIntegerImmed(),
                         FPoptimizer_ByteCode::MulSequence,
@@ -404,51 +491,9 @@ namespace FPoptimizer_CodeTree
                         MAX_POWI_BYTECODE_LENGTH)
                   )
                 {
-                    if(p0.IsImmed() && p0.GetImmed() > 0.0)
-                    {
-                        // Convert into cExp or Exp2.
-                        //    x^y = exp(log(x) * y) =
-                        //    Can only be done when x is positive, though.
-                        double mulvalue = std::log( p0.GetImmed() );
-                        CodeTree p1clone = p1;
-                        if(p1clone.GetOpcode() == cMul)
-                        {
-                            p1clone.CopyOnWrite();
-                            // Neat, we can delegate the multiplication to the child
-                            p1clone.AddParam( CodeTree(mulvalue) );
-                            p1clone.Rehash();
-                            mulvalue = 1.0;
-                        }
-
-                        // If the exponent needs multiplication, multiply it
-                        if(
-                      #ifdef FP_EPSILON
-                          fabs(mulvalue - (double)(long)mulvalue) <= FP_EPSILON
-                      #else
-                          mulvalue == (double)(long)mulvalue
-                      #endif
-                        && AssembleSequence(p1clone, (long)mulvalue,
-                                            FPoptimizer_ByteCode::AddSequence, synth,
-                                            MAX_MULI_BYTECODE_LENGTH))
-                        {
-                            // Done with a dup/add sequence, cExp
-                            synth.AddOperation(cExp, 1);
-                        }
-                        else
-                        {
-                            // Do with cMul and cExp
-                            p1clone.SynthesizeByteCode(synth);
-                            synth.PushImmed(mulvalue);
-                            synth.AddOperation(cMul, 2);
-                            synth.AddOperation(cExp, 1);
-                        }
-                    }
-                    else
-                    {
-                        p0.SynthesizeByteCode(synth);
-                        p1.SynthesizeByteCode(synth);
-                        synth.AddOperation(GetOpcode(), 2); // Create a vanilla cPow.
-                    }
+                    p0.SynthesizeByteCode(synth);
+                    p1.SynthesizeByteCode(synth);
+                    synth.AddOperation(GetOpcode(), 2); // Create a vanilla cPow.
                 }
                 break;
             }

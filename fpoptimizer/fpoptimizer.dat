@@ -161,10 +161,13 @@ cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>)
 #                  y^(log(x)+z)
 #                = y^(log(x*exp(z)))
 #                = (x*exp(z))^log(y)
-#cPow [y (cAdd {(cLog[x]) %})] : (cMul x EXP(%)) (cLog y)
+#                = x^log(y) * y^z
+#cPow [y (cAdd {(cLog[x]) %})] -> cMul (cPow [y %]) (cPow [x (cLog [y])])
+#
 # Probably beneficial to do it only when y is const,
 # though. Otherwise we only trade + for *, which is bad.
-cPow [& (cAdd {(cLog[x]) %})] : (cMul x EXP(%)) LOG(&)
+# Also z should be const, otherwise we get two pows instead of one.
+cPow [& (cAdd {(cLog[x]) %})] -> cMul (cPow [x LOG(&)]) POW(& %)
 
 # x^(y*z) = (x*y)^z - done by ConstantFolding
 
