@@ -140,13 +140,25 @@ namespace
                     mulgroup.SetParamsMove(tree.GetParams());
                     mulgroup.Rehash(); // will reduce to 1.0 if none remained in this cMul
                     if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), 1.0))
+                    {
                         tree.SetOpcode(cInv);
+                        tree.AddParamMove(divgroup);
+                    }
                     else
                     {
-                        tree.SetOpcode(cDiv);
-                        tree.AddParamMove(mulgroup);
+                        if(mulgroup.GetDepth() >= divgroup.GetDepth())
+                        {
+                            tree.SetOpcode(cDiv);
+                            tree.AddParamMove(mulgroup);
+                            tree.AddParamMove(divgroup);
+                        }
+                        else
+                        {
+                            tree.SetOpcode(cRDiv);
+                            tree.AddParamMove(divgroup);
+                            tree.AddParamMove(mulgroup);
+                        }
                     }
-                    tree.AddParamMove(divgroup);
                 }
                 break;
             }
@@ -188,13 +200,51 @@ namespace
                     addgroup.SetParamsMove(tree.GetParams());
                     addgroup.Rehash(); // will reduce to 0.0 if none remained in this cAdd
                     if(addgroup.IsImmed() && FloatEqual(addgroup.GetImmed(), 0.0))
+                    {
                         tree.SetOpcode(cNeg);
+                        tree.AddParamMove(subgroup);
+                    }
                     else
                     {
-                        tree.SetOpcode(cSub);
-                        tree.AddParamMove(addgroup);
+                        if(addgroup.GetDepth() == 1)
+                        {
+                            /* 5 - (x+y+z) is best expressed as rsub(x+y+z, 5);
+                             * this has lowest stack usage.
+                             * This is identified by addgroup having just one member.
+                             */
+                            tree.SetOpcode(cRSub);
+                            tree.AddParamMove(subgroup);
+                            tree.AddParamMove(addgroup);
+                        }
+                        else if(subgroup.GetOpcode() == cAdd)
+                        {
+                            /* a+b-(x+y+z) is expressed as a+b-x-y-z.
+                             * Making a long chain of cSubs is okay, because the
+                             * cost of cSub is the same as the cost of cAdd.
+                             * Thus we get the lowest stack usage.
+                             * This approach cannot be used for cDiv.
+                             */
+                            tree.SetOpcode(cSub);
+                            tree.AddParamMove(addgroup);
+                            tree.AddParamMove(subgroup.GetParam(0));
+                            for(size_t a=1; a<subgroup.GetParamCount(); ++a)
+                            {
+                                CodeTree innersub;
+                                innersub.SetOpcode(cSub);
+                                innersub.SetParamsMove(tree.GetParams());
+                                innersub.Rehash(false);
+                                //tree.DelParams();
+                                tree.AddParamMove(innersub);
+                                tree.AddParamMove(subgroup.GetParam(a));
+                            }
+                        }
+                        else
+                        {
+                            tree.SetOpcode(cSub);
+                            tree.AddParamMove(addgroup);
+                            tree.AddParamMove(subgroup);
+                        }
                     }
-                    tree.AddParamMove(subgroup);
                 }
                 break;
             }
