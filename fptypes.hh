@@ -218,6 +218,9 @@ namespace FUNCTIONPARSERTYPES
     { return a == b; }
 #endif // FP_EPSILON
 
+    inline bool IsIntegerConst(double a)
+    { return FloatEqual(a, (double)(long)a); }
+
 #endif // ONCE_FPARSER_H_
 }
 

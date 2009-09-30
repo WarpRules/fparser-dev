@@ -119,12 +119,27 @@ namespace
                 {
                     const CodeTree& powgroup = tree.GetParam(a);
                     if(powgroup.GetOpcode() == cPow
-                    && powgroup.GetParam(1).IsImmed()
-                    && FloatEqual(powgroup.GetParam(1).GetImmed(), -1.0))
+                    && powgroup.GetParam(1).IsImmed())
                     {
-                        tree.CopyOnWrite();
-                        div_params.push_back(tree.GetParam(a).GetParam(0));
-                        tree.DelParam(a); // delete the pow group
+                        const CodeTree& exp_param = powgroup.GetParam(1);
+                        double exponent = exp_param.GetImmed();
+                        if(FloatEqual(exponent, -1.0))
+                        {
+                            tree.CopyOnWrite();
+                            div_params.push_back(tree.GetParam(a).GetParam(0));
+                            tree.DelParam(a); // delete the pow group
+                        }
+                        else if(exponent < 0 && IsIntegerConst(exponent))
+                        {
+                            CodeTree edited_powgroup;
+                            edited_powgroup.SetOpcode(cPow);
+                            edited_powgroup.AddParam(powgroup.GetParam(0));
+                            edited_powgroup.AddParam(CodeTree(-exponent));
+                            edited_powgroup.Rehash();
+                            div_params.push_back(edited_powgroup);
+                            tree.CopyOnWrite();
+                            tree.DelParam(a); // delete the pow group
+                        }
                     }
                 }
                 if(!div_params.empty())
@@ -258,7 +273,7 @@ namespace
                     {
                         double inverse_exponent = 1.0 / p1.GetImmed();
                         if(inverse_exponent >= -16.0 && inverse_exponent <= 16.0
-                        && inverse_exponent == (double)(long)inverse_exponent)
+                        && IsIntegerConst(inverse_exponent))
                         {
                             long sqrt_chain = (long) inverse_exponent;
                             long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
@@ -276,7 +291,7 @@ namespace
                         for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
                         {
                             double with_sqrt_exponent = p1.GetImmed() * (1 << sqrt_count);
-                            if(with_sqrt_exponent == (double)(long)with_sqrt_exponent)
+                            if(IsIntegerConst(with_sqrt_exponent))
                             {
                                 long int_sqrt_exponent = (long)with_sqrt_exponent;
                                 if(int_sqrt_exponent < 0)
@@ -292,7 +307,7 @@ namespace
                                     ChangeIntoSqrtChain(tmp, sqrt_chain);
                                     tmp.Rehash();
                                     tree.SetParamMove(0, tmp);
-                                    tree.SetParam(1, CodeTree(p1.GetImmed() * sqrt_chain));
+                                    tree.SetParam(1, CodeTree(p1.GetImmed() * (double)sqrt_chain));
                                     changed = true;
                                 }
                                 break;
@@ -326,6 +341,25 @@ namespace
                             tree.DelParam(1);
                         }
                         tree.SetOpcode(cExp);
+                        changed = true;
+                    }
+                    else if(p1.IsImmed() && !p1.IsLongIntegerImmed())
+                    {
+                        // x^y can be safely converted into exp(y * log(x))
+                        // when y is _not_ integer, because we know that x >= 0.
+                        // Otherwise either expression will give a NaN or inf.
+                        CodeTree log;
+                        log.SetOpcode(cLog);
+                        log.AddParam(p0);
+                        log.Rehash();
+                        CodeTree exponent;
+                        exponent.SetOpcode(cMul);
+                        exponent.AddParam(p1);
+                        exponent.AddParamMove(log);
+                        exponent.Rehash();
+                        tree.SetOpcode(cExp);
+                        tree.SetParamMove(0, exponent);
+                        tree.DelParam(1);
                         changed = true;
                     }
                 }

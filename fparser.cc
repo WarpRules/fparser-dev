@@ -599,6 +599,76 @@ inline bool FunctionParser::CompilePowi(int int_exponent)
     return true;
 }
 
+namespace
+{
+    struct MulOp
+    {
+        enum { opcode = cMul, opposite = cDiv, combined = cMul };
+        static inline void action(double& target, double value)
+        { target *= value; }
+        static inline void combine_action(double& target, double value)
+        { target=value/target; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+        static inline bool is_redundant(double v) { return v==1.0; }
+    };
+    struct DivOp
+    {
+        enum { opcode = cDiv, opposite = cMul, combined = cMul };
+        static inline void action(double& target, double value)
+        { target /= value; }
+        static inline void combine_action(double& target, double value)
+        { target=target/value; }
+        static inline bool valid_rvalue(double v) { return v != 0.0; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==1.0; }
+    };
+    struct AddOp
+    {
+        enum { opcode = cAdd, opposite = cSub, combined = cAdd };
+        static inline void action(double& target, double value)
+        { target += value; }
+        static inline void combine_action(double& target, double value)
+        { target=value-target; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==0.0; }
+    };
+    struct SubOp
+    {
+        enum { opcode = cSub, opposite = cAdd, combined = cAdd };
+        static inline void action(double& target, double value)
+        { target -= value; }
+        static inline void combine_action(double& target, double value)
+        { target=target-value; }
+        static inline bool valid_rvalue(double) { return true; }
+        static inline bool valid_opposite_rvalue(double) { return true; }
+        static inline bool is_redundant(double v) { return v==0.0; }
+    };
+    struct ModOp
+    {
+        enum { opcode = cMod, opposite = cMod, combined = cMod };
+        static inline void action(double& target, double value)
+        { target = fmod(target, value); }
+        static inline void combine_action(double& target, double value)
+        { target = fmod(target, value); }
+        static inline bool valid_rvalue(double v) { return v != 0.0; }
+        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
+        static inline bool is_redundant(double) { return false; }
+    };
+
+    bool IsEligibleIntPowiExponent(int int_exponent)
+    {
+        int abs_int_exponent = int_exponent;
+        if(abs_int_exponent < 0) abs_int_exponent = -abs_int_exponent;
+
+        return (abs_int_exponent >= 1)
+            && (abs_int_exponent <= 46 ||
+              (abs_int_exponent <= 1024 &&
+              (abs_int_exponent & (abs_int_exponent - 1)) == 0));
+    }
+}
+
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 {
     if(data->ByteCode.back() == cImmed)
@@ -705,20 +775,52 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               {
                   double original_immed = data->Immed.back();
                   int int_exponent = (int)original_immed;
-                  if(original_immed >= 1.0 &&
-                     original_immed == (double)int_exponent &&
-                     (original_immed <= 46.0 ||
-                      (int_exponent <= 1024 &&
-                       (int_exponent & (int_exponent - 1)) == 0)))
+
+                  if(original_immed != (double)int_exponent)
                   {
+                      for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
+                      {
+                          int factor = 1 << sqrt_count;
+                          double changed_exponent = original_immed * (double)factor;
+                          if(IsIntegerConst(changed_exponent)
+                          && IsEligibleIntPowiExponent( (int)changed_exponent ) )
+                          {
+                              while(sqrt_count > 0)
+                              {
+                                  data->ByteCode.insert(data->ByteCode.end()-1, cSqrt);
+                                  --sqrt_count;
+                              }
+                              original_immed = changed_exponent;
+                              int_exponent   = (int)changed_exponent;
+                              goto do_powi;
+                          }
+                      }
+                  }
+                  else if(IsEligibleIntPowiExponent(int_exponent))
+                  {
+                  do_powi:;
+                      int abs_int_exponent = int_exponent;
+                      if(abs_int_exponent < 0) abs_int_exponent = -abs_int_exponent;
+
                       data->Immed.pop_back(); data->ByteCode.pop_back();
                       /*size_t bytecode_size = data->ByteCode.size();*/
-                      if(CompilePowi(int_exponent))
+                      if(int_exponent < 0) AddFunctionOpcode(cInv);
+                      if(CompilePowi(abs_int_exponent))
                            return;
                       /*powi_failed:;
                       data->ByteCode.resize(bytecode_size);
                       data->Immed.push_back(original_immed);
                       data->ByteCode.push_back(cImmed);*/
+                  }
+                  // x^y can be safely converted into exp(y * log(x))
+                  // when y is _not_ integer, because we know that x >= 0.
+                  // Otherwise either expression will give a NaN.
+                  if(original_immed != (double)int_exponent)
+                  {
+                      data->Immed.pop_back(); data->ByteCode.pop_back();
+                      AddFunctionOpcode(cLog);
+                      AddMultiplicationByConst(original_immed);
+                      opcode = cExp;
                   }
               }
         }
@@ -737,6 +839,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         eliminate_redundant_sequence(cLog2, cExp2);
         eliminate_redundant_sequence(cAsin, cSin);
         eliminate_redundant_sequence(cAcos, cCos);
+        eliminate_redundant_sequence(cInv, cInv);
         #undef eliminate_redundant_sequence
         case cAbs:
             // cAbs is redundant after any opcode that never
@@ -840,65 +943,6 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
         }
 }
 
-namespace
-{
-    struct MulOp
-    {
-        enum { opcode = cMul, opposite = cDiv, combined = cMul };
-        static inline void action(double& target, double value)
-        { target *= value; }
-        static inline void combine_action(double& target, double value)
-        { target=value/target; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
-        static inline bool is_redundant(double v) { return v==1.0; }
-    };
-    struct DivOp
-    {
-        enum { opcode = cDiv, opposite = cMul, combined = cMul };
-        static inline void action(double& target, double value)
-        { target /= value; }
-        static inline void combine_action(double& target, double value)
-        { target=target/value; }
-        static inline bool valid_rvalue(double v) { return v != 0.0; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==1.0; }
-    };
-    struct AddOp
-    {
-        enum { opcode = cAdd, opposite = cSub, combined = cAdd };
-        static inline void action(double& target, double value)
-        { target += value; }
-        static inline void combine_action(double& target, double value)
-        { target=value-target; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==0.0; }
-    };
-    struct SubOp
-    {
-        enum { opcode = cSub, opposite = cAdd, combined = cAdd };
-        static inline void action(double& target, double value)
-        { target -= value; }
-        static inline void combine_action(double& target, double value)
-        { target=target-value; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==0.0; }
-    };
-    struct ModOp
-    {
-        enum { opcode = cMod, opposite = cMod, combined = cMod };
-        static inline void action(double& target, double value)
-        { target = fmod(target, value); }
-        static inline void combine_action(double& target, double value)
-        { target = fmod(target, value); }
-        static inline bool valid_rvalue(double v) { return v != 0.0; }
-        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
-        static inline bool is_redundant(double) { return false; }
-    };
-}
-
 inline void FunctionParser::AddMultiplicationByConst(double value)
 {
     if(data->ByteCode.back() == cImmed)
@@ -932,6 +976,11 @@ inline void FunctionParser::AddBinaryOperationByConst()
     if(!Operation::valid_rvalue(data->Immed.back()))
     {
         data->ByteCode.push_back( unsigned(Operation::opcode) );
+    }
+    else if(Operation::is_redundant(data->Immed.back()))
+    {
+        data->Immed.pop_back();
+        data->ByteCode.pop_back();
     }
     else if(data->ByteCode[data->ByteCode.size()-2] == cImmed)
     {
@@ -1332,34 +1381,107 @@ inline const char* FunctionParser::CompileMult(const char* function)
     {
         ++function;
         while(isspace(*function)) ++function;
+
+        bool is_unary = false;
+        if(op != '%'
+        && data->ByteCode.back() == cImmed
+        && data->Immed.back() == 1.0)
+        {
+            is_unary = true;
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
+
         function = CompileUnaryMinus(function);
         if(!function) return 0;
 
-        // If operator is applied to two literals, calculate it now:
-        if(data->ByteCode.back() == cImmed)
+    op_changed:
+        switch(data->ByteCode.back())
         {
-            switch(op)
-            {
-                case '*':
-                    AddBinaryOperationByConst<MulOp>();
+            case cImmed:
+                // If operator is applied to two literals, calculate it now:
+                switch(op)
+                {
+                    case '%':
+                        AddBinaryOperationByConst<ModOp>();
+                        break;
+                    default:
+                    case '*':
+                        if(is_unary) break;
+                        AddBinaryOperationByConst<MulOp>();
+                        break;
+                    case '/':
+                        if(is_unary)
+                        {
+                            if(data->Immed.back() == 0.0)
+                                data->ByteCode.push_back(cInv); // avoid dividing by zero.
+                            else
+                                data->Immed.back() = 1.0 / data->Immed.back();
+                            break;
+                        }
+                        AddBinaryOperationByConst<DivOp>();
+                        break;
+                }
+                break;
+            case cInv: // x * y^-1 = x * (1/y) = x/y
+                switch(op)
+                {
+                    case '*': data->ByteCode.pop_back(); op = '/'; goto op_changed;
+                    case '/': data->ByteCode.pop_back(); op = '*'; goto op_changed;
+                    default: break;
+                }
+                // passthru
+            default:
+                // add opcode
+                switch(op)
+                {
+                  case '%':
+                    data->ByteCode.push_back(cMod);
                     break;
-                case '/':
-                    AddBinaryOperationByConst<DivOp>();
+                  case '/':
+                    if(is_unary)
+                        data->ByteCode.push_back(cInv);
+                    else
+                    {
+                        /* Change x / exp(log(y)*1.1)   -  x y Log  1.1 Mul Exp Div
+                         *   into x * exp(log(y)*-1.1)  -  x y Log -1.1 Mul Exp Mul
+                         *
+                         * Changing x / y^9000          -  x y  9000 Pow Div
+                         *    into  x * y^-9000         -  x y -9000 Pow Mul
+                         * is also possible, but at least on x86_64
+                         * it is detrimental for performance.
+                         * In fact, the opposite seems favorable.
+                         */
+                        if(data->ByteCode.back() == cExp
+                        && data->ByteCode[data->ByteCode.size()-2] == cMul
+                        && data->ByteCode[data->ByteCode.size()-3] == cImmed)
+                        {
+                            data->Immed.back() = -data->Immed.back();
+                            data->ByteCode.push_back(cMul);
+                        }
+                        else
+                            data->ByteCode.push_back(cDiv);
+                    }
                     break;
-                default:
-                    AddBinaryOperationByConst<ModOp>();
-            }
+                  default:
+                  case '*':
+                    if(is_unary)
+                        { }
+                    else
+                    {
+                        if(data->ByteCode.back() == cPow
+                        && data->ByteCode[data->ByteCode.size()-2] == cImmed
+                        && data->Immed.back() < 0)
+                        {
+                            data->Immed.back() = -data->Immed.back();
+                            data->ByteCode.push_back(cDiv);
+                        }
+                        else
+                            data->ByteCode.push_back(cMul);
+                    }
+                    break;
+                }
         }
-        else // add opcode
-        {
-            switch(op)
-            {
-              case '*': data->ByteCode.push_back(cMul); break;
-              case '/': data->ByteCode.push_back(cDiv); break;
-              case '%': data->ByteCode.push_back(cMod); break;
-            }
-        }
-
         --StackPtr;
     }
     return function;
@@ -1375,30 +1497,53 @@ inline const char* FunctionParser::CompileAddition(const char* function)
     {
         ++function;
         while(isspace(*function)) ++function;
+
+        bool is_unary = false;
+        if(data->ByteCode.back() == cImmed
+        && data->Immed.back() == 0.0)
+        {
+            is_unary = true;
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
+
         function = CompileMult(function);
         if(!function) return 0;
 
-        // If operator is applied to two literals, calculate it now:
-        if(data->ByteCode.back() == cImmed)
+    op_changed:
+        switch(data->ByteCode.back())
         {
-            switch(op)
-            {
-                case '+':
-                    AddBinaryOperationByConst<AddOp>();
-                    break;
-                default:
-                    AddBinaryOperationByConst<SubOp>();
-            }
+            case cImmed:
+                // If operator is applied to two literals, calculate it now:
+                switch(op)
+                {
+                    default:
+                    case '+':
+                        if(is_unary) break;
+                        AddBinaryOperationByConst<AddOp>();
+                        break;
+                    case '-':
+                        if(is_unary) { data->Immed.back() = -data->Immed.back(); break; }
+                        AddBinaryOperationByConst<SubOp>();
+                }
+                break;
+            case cNeg: // x + (-y) = x-y
+                switch(op)
+                {
+                    default:
+                    case '+': data->ByteCode.pop_back(); op = '-'; goto op_changed;
+                    case '-': data->ByteCode.pop_back(); op = '+'; goto op_changed;
+                }
+                // passthru (not reached)
+            default:
+                // add opcode
+                switch(op)
+                {
+                  default:
+                  case '+': if(!is_unary) data->ByteCode.push_back(cAdd); break;
+                  case '-': data->ByteCode.push_back(is_unary ? cNeg : cSub); break;
+                }
         }
-        else // add opcode
-        {
-            switch(op)
-            {
-              case '+': data->ByteCode.push_back(cAdd); break;
-              case '-': data->ByteCode.push_back(cSub); break;
-            }
-        }
-
         --StackPtr;
     }
     return function;
