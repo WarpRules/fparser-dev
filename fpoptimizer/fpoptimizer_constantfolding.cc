@@ -3,6 +3,7 @@
 #include "fpoptimizer_consts.hh"
 
 #include <cmath> /* for CalculateResultBoundaries() */
+#include <algorithm>
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -11,34 +12,12 @@
 #ifdef FP_SUPPORT_OPTIMIZER
 
 using namespace FUNCTIONPARSERTYPES;
+using namespace FPoptimizer_CodeTree;
 
-namespace FPoptimizer_CodeTree
+#define FP_MUL_COMBINE_EXPONENTS
+
+namespace
 {
-    void CodeTree::ConstantFolding_FromLogicalParent()
-    {
-    redo:;
-        switch(GetOpcode())
-        {
-            case cNotNot:
-            //ReplaceTreeWithParam0:
-                Become(GetParam(0));
-                goto redo;
-            case cIf:
-                CopyOnWrite();
-                while(GetParam(1).GetOpcode() == cNotNot)
-                    SetParamMove(1, GetParam(1).GetUniqueRef().GetParam(0));
-                GetParam(1).ConstantFolding_FromLogicalParent();
-
-                while(GetParam(2).GetOpcode() == cNotNot)
-                    SetParamMove(2, GetParam(2).GetUniqueRef().GetParam(0));
-                GetParam(2).ConstantFolding_FromLogicalParent();
-
-                Rehash();
-                break;
-            default: break;
-        }
-    }
-
     struct ComparisonSet /* For optimizing And, Or */
     {
         static const int Lt_Mask = 0x1; // 1=less
@@ -57,12 +36,12 @@ namespace FPoptimizer_CodeTree
             int relationship;
         };
         std::vector<Comparison> relationships;
-        struct Pole
+        struct Item
         {
             CodeTree value;
             bool negated;
         };
-        std::vector<Pole> plain_set;
+        std::vector<Item> plain_set;
 
         enum RelationshipResult
         {
@@ -72,35 +51,7 @@ namespace FPoptimizer_CodeTree
             Suboptimal
         };
 
-        RelationshipResult AddAndRelationship(CodeTree a, CodeTree b, int reltype)
-        {
-            if(reltype == 0) return BecomeZero;
-
-            if(!(a.GetHash() < b.GetHash()))
-            {
-                a.swap(b);
-                reltype = Swap_Mask(reltype);
-            }
-
-            for(size_t c=0; c<relationships.size(); ++c)
-            {
-                if(relationships[c].a.IsIdenticalTo(a)
-                && relationships[c].b.IsIdenticalTo(b))
-                {
-                    int newrel = relationships[c].relationship & reltype;
-                    if(newrel == 0) return BecomeZero;
-                    relationships[c].relationship = newrel;
-                    return Suboptimal;
-                }
-            }
-            Comparison comp;
-            comp.a = a;
-            comp.b = b;
-            comp.relationship = reltype;
-            relationships.push_back(comp);
-            return Ok;
-        }
-        RelationshipResult AddPole(const CodeTree& a, bool negated, bool is_or)
+        RelationshipResult AddItem(const CodeTree& a, bool negated, bool is_or)
         {
             for(size_t c=0; c<plain_set.size(); ++c)
                 if(plain_set[c].value.IsIdenticalTo(a))
@@ -109,25 +60,23 @@ namespace FPoptimizer_CodeTree
                         return is_or ? BecomeOne : BecomeZero;
                     return Suboptimal;
                 }
-            Pole pole;
+            Item pole;
             pole.value   = a;
             pole.negated = negated;
             plain_set.push_back(pole);
             return Ok;
         }
 
-        RelationshipResult AddAndPole(const CodeTree& a, bool negated)
+        RelationshipResult AddRelationship(CodeTree a, CodeTree b, int reltype, bool is_or)
         {
-            return AddPole(a, negated, false);
-        }
-        RelationshipResult AddOrPole(const CodeTree& a, bool negated)
-        {
-            return AddPole(a, negated, true);
-        }
-
-        RelationshipResult AddOrRelationship(CodeTree a, CodeTree b, int reltype)
-        {
-            if(reltype == 0x7) return BecomeOne;
+            if(is_or)
+            {
+                if(reltype == 7) return BecomeOne;
+            }
+            else
+            {
+                if(reltype == 0) return BecomeZero;
+            }
 
             if(!(a.GetHash() < b.GetHash()))
             {
@@ -140,9 +89,18 @@ namespace FPoptimizer_CodeTree
                 if(relationships[c].a.IsIdenticalTo(a)
                 && relationships[c].b.IsIdenticalTo(b))
                 {
-                    int newrel = relationships[c].relationship | reltype;
-                    if(newrel == 0x7) return BecomeOne;
-                    relationships[c].relationship = newrel;
+                    if(is_or)
+                    {
+                        int newrel = relationships[c].relationship | reltype;
+                        if(newrel == 7) return BecomeOne;
+                        relationships[c].relationship = newrel;
+                    }
+                    else
+                    {
+                        int newrel = relationships[c].relationship & reltype;
+                        if(newrel == 0) return BecomeZero;
+                        relationships[c].relationship = newrel;
+                    }
                     return Suboptimal;
                 }
             }
@@ -154,10 +112,14 @@ namespace FPoptimizer_CodeTree
             return Ok;
         }
 
-        RelationshipResult AddRelationship(const CodeTree& a, const CodeTree& b, int reltype, bool is_or)
+        RelationshipResult AddAndRelationship(CodeTree a, CodeTree b, int reltype)
         {
-            return is_or ? AddOrRelationship(a, b, reltype)
-                         :AddAndRelationship(a, b, reltype);
+            return AddRelationship(a, b, reltype, false);
+        }
+
+        RelationshipResult AddOrRelationship(CodeTree a, CodeTree b, int reltype)
+        {
+            return AddRelationship(a, b, reltype, true);
         }
     };
 
@@ -237,6 +199,167 @@ namespace FPoptimizer_CodeTree
         }
     };
 
+    struct Select2ndRev
+    {
+        template<typename T>
+        inline bool operator() (const T& a, const T& b) const
+        {
+            return a.second > b.second;
+        }
+    };
+    struct Select1st
+    {
+        template<typename T>
+        inline bool operator() (const T& a, const T& b) const
+        {
+            return a.first < b.first;
+        }
+        template<typename T, typename T2>
+        inline bool operator() (const T& a, const T2& b) const
+        {
+            return a.first < b;
+        }
+    };
+
+    bool IsEvenIntegerConst(double v)
+    {
+        return IsIntegerConst(v) && ((long)v % 2) == 0;
+    }
+
+    struct ConstantExponentCollection
+    {
+        typedef std::pair<double, std::vector<CodeTree> > ExponentInfo;
+        std::vector<ExponentInfo> data;
+
+        void MoveToSet_Unique(double exponent, std::vector<CodeTree>& source_set)
+        {
+            data.push_back( std::pair<double, std::vector<CodeTree> >
+                            (exponent, std::vector<CodeTree>() ) );
+            data.back().second.swap(source_set);
+        }
+        void MoveToSet_NonUnique(double exponent, std::vector<CodeTree>& source_set)
+        {
+            std::vector<ExponentInfo>::iterator i
+                = std::lower_bound(data.begin(), data.end(), exponent, Select1st());
+            if(i != data.end() && i->first == exponent)
+            {
+                i->second.insert(i->second.end(), source_set.begin(), source_set.end());
+            }
+            else
+            {
+                //MoveToSet_Unique(exponent, source_set);
+                data.insert(i,  std::pair<double, std::vector<CodeTree> >
+                                (exponent, source_set) );
+            }
+        }
+
+        bool Optimize()
+        {
+            /* TODO: Group them such that:
+             *
+             *      x^3 *         z^2 becomes (x*z)^2 * x^1
+             *      x^3 * y^2.5 * z^2 becomes (x*z*y)^2 * y^0.5 * x^1
+             *                    rather than (x*y*z)^2 * (x*y)^0.5 * x^0.5
+             *
+             *      x^4.5 * z^2.5     becomes (z * x)^2.5 * x^2
+             *                        becomes (x*z*x)^2 * (z*x)^0.5
+             *                        becomes (z*x*x*z*x)^0.5 * (z*x*x)^1.5 -- buzz, bad.
+             *
+             */
+            bool changed = false;
+            std::sort( data.begin(), data.end(), Select1st() );
+        redo:
+            /* Supposed algorithm:
+             * For the smallest pair of data[] where the difference
+             * between the two is a "neat value" (x*16 is positive integer),
+             * do the combining as indicated above.
+             */
+            /*
+             * NOTE: Hanged in Testbed test P44, looping the following
+             *       (Var0 ^ 0.75) * ((1.5 * Var0) ^ 1.0)
+             *     = (Var0 ^ 1.75) *  (1.5         ^ 1.0)
+             *       Fixed by limiting to cases where (exp_a != 1.0).
+             *
+             * TODO: Convert (x*z)^0.5 * x^16.5
+             *          into x^17 * z^0.5
+             *
+             *          this algorithm could make it into (x*z*x)^0.5 * x^16,
+             *          but this is wrong, for it falsely includes x^evenint.. twice.
+             */
+            for(size_t a=0; a<data.size(); ++a)
+            {
+                double exp_a = data[a].first;
+                if(FloatEqual(exp_a, 1.0)) continue;
+                for(size_t b=a+1; b<data.size(); ++b)
+                {
+                    double exp_b = data[b].first;
+                    double exp_diff = exp_b - exp_a;
+                    if(exp_diff >= fabs(exp_a)) break;
+                    if(IsIntegerConst(exp_diff * 16.0)
+                    && !(IsIntegerConst(exp_b) && !IsIntegerConst(exp_diff))
+                      )
+                    {
+                        std::vector<CodeTree>& a_set = data[a].second;
+                        std::vector<CodeTree>& b_set = data[b].second;
+
+                        if(IsIntegerConst(exp_b)
+                        && IsEvenIntegerConst(exp_b)
+                        && !IsEvenIntegerConst(exp_diff))
+                        {
+                            CodeTree tmp2;
+                            tmp2.SetOpcode(cMul);
+                            tmp2.SetParamsMove(b_set);
+                            tmp2.Rehash();
+                            CodeTree tmp;
+                            tmp.SetOpcode(cAbs);
+                            tmp.AddParamMove(tmp2);
+                            tmp.Rehash();
+                            b_set.resize(1);
+                            b_set[0].swap(tmp);
+                        }
+
+                        a_set.insert(a_set.end(), b_set.begin(), b_set.end());
+
+                        std::vector<CodeTree> b_copy = b_set;
+                        data.erase(data.begin() + b);
+                        MoveToSet_NonUnique(exp_diff, b_copy);
+                        changed = true;
+                        goto redo;
+                    }
+                }
+            }
+            return changed;
+        }
+    };
+}
+
+namespace FPoptimizer_CodeTree
+{
+    void CodeTree::ConstantFolding_FromLogicalParent()
+    {
+    redo:;
+        switch(GetOpcode())
+        {
+            case cNotNot:
+            //ReplaceTreeWithParam0:
+                Become(GetParam(0));
+                goto redo;
+            case cIf:
+                CopyOnWrite();
+                while(GetParam(1).GetOpcode() == cNotNot)
+                    SetParamMove(1, GetParam(1).GetUniqueRef().GetParam(0));
+                GetParam(1).ConstantFolding_FromLogicalParent();
+
+                while(GetParam(2).GetOpcode() == cNotNot)
+                    SetParamMove(2, GetParam(2).GetUniqueRef().GetParam(0));
+                GetParam(2).ConstantFolding_FromLogicalParent();
+
+                Rehash();
+                break;
+            default: break;
+        }
+    }
+
     bool CodeTree::ConstantFolding_LogicCommon(bool is_or)
     {
         bool should_regenerate = false;
@@ -244,31 +367,32 @@ namespace FPoptimizer_CodeTree
         for(size_t a=0; a<GetParamCount(); ++a)
         {
             ComparisonSet::RelationshipResult change = ComparisonSet::Ok;
-            switch(GetParam(a).GetOpcode())
+            const CodeTree& atree = GetParam(a);
+            switch(atree.GetOpcode())
             {
                 case cEqual:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Eq_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Eq_Mask, is_or);
                     break;
                 case cNEqual:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Ne_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ne_Mask, is_or);
                     break;
                 case cLess:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Lt_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Lt_Mask, is_or);
                     break;
                 case cLessOrEq:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Le_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Le_Mask, is_or);
                     break;
                 case cGreater:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Gt_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Gt_Mask, is_or);
                     break;
                 case cGreaterOrEq:
-                    change = comp.AddRelationship(GetParam(a).GetParam(0), GetParam(a).GetParam(1), ComparisonSet::Ge_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ge_Mask, is_or);
                     break;
                 case cNot:
-                    change = comp.AddPole(GetParam(a).GetParam(0), true, is_or);
+                    change = comp.AddItem(atree.GetParam(0), true, is_or);
                     break;
                 default:
-                    change = comp.AddPole(GetParam(a), false, is_or);
+                    change = comp.AddItem(atree, false, is_or);
             }
             switch(change)
             {
@@ -397,6 +521,27 @@ namespace FPoptimizer_CodeTree
         skip_b:;
         }
 
+    #ifdef FP_MUL_COMBINE_EXPONENTS
+        ConstantExponentCollection by_float_exponent;
+        for(exponent_map::iterator
+            j,i = by_exponent.begin();
+            i != by_exponent.end();
+            i=j)
+        {
+            j=i; ++j;
+            exponent_list& list = i->second;
+            if(list.first.IsImmed())
+            {
+                double exponent = list.first.GetImmed();
+                if(!FloatEqual(exponent, 0.0))
+                    by_float_exponent.MoveToSet_Unique(exponent, list.second);
+                by_exponent.erase(i);
+            }
+        }
+        if(by_float_exponent.Optimize())
+            should_regenerate = true;
+    #endif
+
         if(should_regenerate)
         {
           #ifdef DEBUG_SUBSTITUTIONS
@@ -406,9 +551,6 @@ namespace FPoptimizer_CodeTree
             DelParams();
 
             /* Group by exponents */
-        #if 0
-            std::map<double, std::vector<CodeTree> > by_float_exponent;
-        #endif
             /* First handle non-constant exponents */
             for(exponent_map::iterator
                 i = by_exponent.begin();
@@ -416,21 +558,18 @@ namespace FPoptimizer_CodeTree
                 ++i)
             {
                 exponent_list& list = i->second;
+        #ifndef FP_MUL_COMBINE_EXPONENTS
                 if(list.first.IsImmed())
                 {
                     double exponent = list.first.GetImmed();
                     if(FloatEqual(exponent, 0.0)) continue;
-                #if 0
-                    by_float_exponent[exponent].swap(list.second);
-                    continue;
-                #else
                     if(FloatEqual(exponent, 1.0))
                     {
                         AddParamsMove(list.second);
                         continue;
                     }
-                #endif
                 }
+        #endif
                 CodeTree mul;
                 mul.SetOpcode(cMul);
                 mul.SetParamsMove( list.second);
@@ -442,35 +581,25 @@ namespace FPoptimizer_CodeTree
                 pow.Rehash();
                 AddParamMove(pow);
             }
-        #if 0
+        #ifdef FP_MUL_COMBINE_EXPONENTS
             by_exponent.clear();
-
             /* Then handle constant exponents */
-            /* TODO: Group them such that:
-             *
-             *      x^3 *         z^2 becomes (x*z)^2 * x
-             *      x^3 * y^2.5 * z^2 becomes (x*z*y)^2 * y^0.5 * x
-             *                    rather than (x*y*z)^2 * (x*y)^0.5 * x^0.5
-             */
-            for(std::map<double, std::vector<CodeTree> >::iterator
-                i = by_float_exponent.begin();
-                i != by_float_exponent.end();
-                ++i)
+            for(size_t a=0; a<by_float_exponent.data.size(); ++a)
             {
-                double exponent = i->first;
+                double exponent = by_float_exponent.data[a].first;
                 if(FloatEqual(exponent, 1.0))
                 {
-                    AddParamsMove(i->second);
+                    AddParamsMove(by_float_exponent.data[a].second);
                     continue;
                 }
                 CodeTree mul;
                 mul.SetOpcode(cMul);
-                mul.SetParamsMove( i->second );
+                mul.SetParamsMove( by_float_exponent.data[a].second );
                 mul.Rehash();
                 CodeTree pow;
                 pow.SetOpcode(cPow);
                 pow.AddParamMove(mul);
-                pow.AddParam( CodeTree( i->first ) );
+                pow.AddParam( CodeTree( exponent ) );
                 pow.Rehash();
                 AddParamMove(pow);
             }
@@ -483,15 +612,6 @@ namespace FPoptimizer_CodeTree
         }
         return false;
     }
-
-    struct Select2stRev
-    {
-        template<typename T>
-        bool operator() (const T& a, const T& b) const
-        {
-            return a.second > b.second;
-        }
-    };
 
     bool CodeTree::ConstantFolding_AddGrouping()
     {
@@ -912,24 +1032,24 @@ namespace FPoptimizer_CodeTree
             NowWeAreMulGroup: ;
                 ConstantFolding_Assimilate();
                 // If one sub-expression evalutes to exact zero, yield zero.
-                double mul_immed_sum = 1.0;
-                size_t n_mul_immeds = 0; bool needs_resynth=false;
+                double immed_product = 1.0;
+                size_t n_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
                     if(!GetParam(a).IsImmed()) continue;
                     // ^ Only check constant values
                     double immed = GetParam(a).GetImmed();
                     if(FloatEqual(immed, 0.0)) goto ReplaceTreeWithZero;
-                    if(FloatEqual(immed, 1.0)) needs_resynth = true;
-                    mul_immed_sum *= immed; ++n_mul_immeds;
+                    immed_product *= immed; ++n_immeds;
                 }
                 // Merge immeds.
-                if(n_mul_immeds > 1) needs_resynth = true;
+                if(n_immeds > 1 || (n_immeds == 1 && FloatEqual(immed_product, 1.0)))
+                    needs_resynth = true;
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
                 #ifdef DEBUG_SUBSTITUTIONS
-                    std::cout << "cMul: Will add new immed " << mul_immed_sum << "\n";
+                    std::cout << "cMul: Will add new immed " << immed_product << "\n";
                 #endif
                     for(size_t a=GetParamCount(); a-->0; )
                         if(GetParam(a).IsImmed())
@@ -940,16 +1060,15 @@ namespace FPoptimizer_CodeTree
                         #endif
                             DelParam(a);
                         }
-                    if(!FloatEqual(mul_immed_sum, 1.0))
-                        AddParam( CodeTree(mul_immed_sum) );
+                    if(!FloatEqual(immed_product, 1.0))
+                        AddParam( CodeTree(immed_product) );
                 }
-                if(GetParamCount() == 1)
+                switch(GetParamCount())
                 {
-                    // Replace self with the single operand
-                    goto ReplaceTreeWithParam0;
+                    case 0: goto ReplaceTreeWithOne;
+                    case 1: goto ReplaceTreeWithParam0; // Replace self with the single operand
+                    default: if(ConstantFolding_MulGrouping()) goto redo;
                 }
-                if(!GetParamCount()) goto ReplaceTreeWithOne;
-                if(ConstantFolding_MulGrouping()) goto redo;
                 break;
             }
             case cAdd:
@@ -962,11 +1081,11 @@ namespace FPoptimizer_CodeTree
                     if(!GetParam(a).IsImmed()) continue;
                     // ^ Only check constant values
                     double immed = GetParam(a).GetImmed();
-                    if(FloatEqual(immed, 0.0)) needs_resynth = true;
                     immed_sum += immed; ++n_immeds;
                 }
                 // Merge immeds.
-                if(n_immeds > 1) needs_resynth = true;
+                if(n_immeds > 1 || (n_immeds == 1 && FloatEqual(immed_sum, 0.0)))
+                    needs_resynth = true;
                 if(needs_resynth)
                 {
                     // delete immeds and add new ones
@@ -987,13 +1106,12 @@ namespace FPoptimizer_CodeTree
                     if(!FloatEqual(immed_sum, 0.0))
                         AddParam( CodeTree(immed_sum) );
                 }
-                if(GetParamCount() == 1)
+                switch(GetParamCount())
                 {
-                    // Replace self with the single operand
-                    goto ReplaceTreeWithParam0;
+                    case 0: goto ReplaceTreeWithZero;
+                    case 1: goto ReplaceTreeWithParam0; // Replace self with the single operand
+                    default: if(ConstantFolding_AddGrouping()) goto redo;
                 }
-                if(!GetParamCount()) goto ReplaceTreeWithZero;
-                if(ConstantFolding_AddGrouping()) goto redo;
                 break;
             }
             case cMin:
@@ -1272,6 +1390,8 @@ namespace FPoptimizer_CodeTree
             case cTan: HANDLE_UNARY_CONST_FUNC(tan); break;
             case cCeil: HANDLE_UNARY_CONST_FUNC(ceil); break;
             case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
+            case cSqrt: HANDLE_UNARY_CONST_FUNC(sqrt); break; // converted into cPow x 0.5
+            case cExp: HANDLE_UNARY_CONST_FUNC(exp); break; // convered into cPow CONSTANT_E x
             case cInt:
                 if(GetParam(0).IsImmed())
                     { const_value = floor(GetParam(0).GetImmed() + 0.5);
@@ -1377,12 +1497,19 @@ namespace FPoptimizer_CodeTree
                             double imm = mulgroup.GetParam(a).GetImmed();
                             if(imm >= 0.0)
                             {
+                                double new_base_immed = std::pow(base_immed, imm);
+                                if(isinf(new_base_immed))
+                                {
+                                    // It produced an infinity. Do not change.
+                                    break;
+                                }
+
                                 if(!changes)
                                 {
                                     changes = true;
                                     mulgroup.CopyOnWrite();
                                 }
-                                base_immed = std::pow(base_immed, imm);
+                                base_immed = new_base_immed;
                                 mulgroup.DelParam(a);
                                 break; //
                             }
@@ -1402,8 +1529,8 @@ namespace FPoptimizer_CodeTree
                     double a = GetParam(0).GetParam(1).GetImmed();
                     double b = GetParam(1).GetImmed();
                     double c = a * b; // new exponent
-                    if(a == (double)(long)a && (long)a % 2 == 0     // a is an even int?
-                    && !(c == (double)(long)c && (long)c % 2 == 0)) // c is not?
+                    if(IsEvenIntegerConst(a) // a is an even int?
+                    && !IsEvenIntegerConst(c)) // c is not?
                     {
                         CodeTree newbase;
                         newbase.SetOpcode(cAbs);
@@ -1441,7 +1568,6 @@ namespace FPoptimizer_CodeTree
             case cDeg: // converted into cMul x CONSTANT_DR
             case cSqr: // converted into cMul x x
             case cExp2: // converted into cPow 2.0 x
-            case cSqrt: // converted into cPow x 0.5
             case cRSqrt: // converted into cPow x -0.5
             case cCot: // converted into cMul (cPow (cTan x) -1)
             case cSec: // converted into cMul (cPow (cCos x) -1)
@@ -1469,15 +1595,6 @@ namespace FPoptimizer_CodeTree
                 if(GetParam(0).IsImmed())
                 {
                     const_value = 1.0 / GetParam(0).GetImmed();
-                    goto ReplaceTreeWithConstValue;
-                }
-                break;
-            }
-            case cExp: // convered into cPow CONSTANT_E x
-            {
-                if(GetParam(0).IsImmed())
-                {
-                    const_value = exp( GetParam(0).GetImmed() );
                     goto ReplaceTreeWithConstValue;
                 }
                 break;

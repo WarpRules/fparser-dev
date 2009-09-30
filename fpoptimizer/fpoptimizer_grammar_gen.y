@@ -157,7 +157,18 @@ namespace GrammarData
                 ConstantValue = -p[0]->ConstantValue;
             }
             else
+            {
                 Func->Params.Params = p;
+                /*
+                if(o == cAdd && p[1]->Opcode == SubFunction
+                             && p[1]->Func->Opcode == cNeg
+                             && p.size() == 2)
+                {
+                    Func->Opcode = cSub;
+                    Func->Params.Params[1] = p[1]->Func->Params.Params[0];
+                } -- not done because ConstantFolding() cannot handle cSub
+                */
+            }
         }
 
         ParamSpec(unsigned i, ParamHolderTag)
