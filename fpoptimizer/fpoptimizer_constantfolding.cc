@@ -39,7 +39,7 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    struct ComparisonSet
+    struct ComparisonSet /* For optimizing And, Or */
     {
         static const int Lt_Mask = 0x1; // 1=less
         static const int Eq_Mask = 0x2; // 2=equal
@@ -161,6 +161,82 @@ namespace FPoptimizer_CodeTree
         }
     };
 
+    struct CollectionSet /* For optimizing Add,  Mul */
+    {
+        struct Collection
+        {
+            CodeTree value;
+            CodeTree factor;
+            bool factor_needs_rehashing;
+
+            Collection() : value(),factor(), factor_needs_rehashing(false) { }
+            Collection(const CodeTree& v, const CodeTree& f)
+                : value(v), factor(f), factor_needs_rehashing(false) { }
+        };
+        std::multimap<fphash_t, Collection> collections;
+
+        enum CollectionResult
+        {
+            Ok,
+            Suboptimal
+        };
+
+        typedef std::multimap<fphash_t, Collection>::iterator PositionType;
+
+        PositionType FindIdenticalValueTo(const CodeTree& value)
+        {
+            fphash_t hash = value.GetHash();
+            for(PositionType
+                i = collections.lower_bound(hash);
+                i != collections.end() && i->first == hash;
+                ++i)
+            {
+                if(value.IsIdenticalTo(i->second.value))
+                    return i;
+            }
+            return collections.end();
+        }
+        bool Found(const PositionType& b) { return b != collections.end(); }
+
+        CollectionResult AddCollectionTo(const CodeTree& factor,
+                                         const PositionType& into_which)
+        {
+            Collection& c = into_which->second;
+            if(c.factor_needs_rehashing)
+                c.factor.AddParam(factor);
+            else
+            {
+                CodeTree add;
+                add.SetOpcode(cAdd);
+                add.AddParamMove(c.factor);
+                add.AddParam(factor);
+                c.factor.swap(add);
+                c.factor_needs_rehashing = true;
+            }
+            return Suboptimal;
+        }
+
+        CollectionResult AddCollection(const CodeTree& value, const CodeTree& factor)
+        {
+            const fphash_t hash = value.GetHash();
+            PositionType i = collections.lower_bound(hash);
+            for(; i != collections.end() && i->first == hash; ++i)
+            {
+                if(i->second.value.IsIdenticalTo(value))
+                    return AddCollectionTo(factor, i);
+            }
+            collections.insert(
+                i,
+                std::make_pair( hash, Collection(value, factor) ) );
+            return Ok;
+        }
+
+        CollectionResult AddCollection(const CodeTree& a)
+        {
+            return AddCollection(a, CodeTree(1.0) );
+        }
+    };
+
     bool CodeTree::ConstantFolding_LogicCommon(bool is_or)
     {
         bool should_regenerate = false;
@@ -274,96 +350,50 @@ namespace FPoptimizer_CodeTree
         return ConstantFolding_LogicCommon(true);
     }
 
-    struct MultiplicationSet
-    {
-        struct Multiplication
-        {
-            CodeTree value;
-            CodeTree exponent;
-        };
-        std::vector<Multiplication> multiplications;
-        std::multimap<fphash_t, size_t> value_map;
-
-        enum MultiplicationResult
-        {
-            Ok,
-            Suboptimal
-        };
-
-        size_t FindIdenticalValueTo(const CodeTree& b) const
-        {
-            fphash_t hash = b.GetHash();
-            for(std::multimap<fphash_t, size_t>::const_iterator i = value_map.lower_bound(hash);
-                i != value_map.end() && i->first == hash;
-                ++i)
-            {
-                if(multiplications[i->second].value.IsIdenticalTo(b))
-                    return i->second;
-            }
-            return ~size_t(0);
-        }
-
-        MultiplicationResult AddMultiplication(const CodeTree& a, const CodeTree& exponent)
-        {
-            size_t c = FindIdenticalValueTo(a);
-            if(c != ~size_t(0))
-            {
-                CodeTree add;
-                add.SetOpcode(cAdd);
-                add.AddParamMove(multiplications[c].exponent);
-                add.AddParam(exponent);
-                add.Rehash();
-                multiplications[c].exponent = add;
-                return Suboptimal;
-            }
-            Multiplication mul;
-            mul.value    = a;
-            mul.exponent = exponent;
-            multiplications.push_back(mul);
-            value_map.insert(std::make_pair( a.GetHash(), multiplications.size()-1 ));
-            return Ok;
-        }
-        MultiplicationResult AddMultiplication(const CodeTree& a)
-        {
-            return AddMultiplication(a, CodeTree(1.0) );
-        }
-    };
-
     bool CodeTree::ConstantFolding_MulGrouping()
     {
         bool should_regenerate = false;
-        MultiplicationSet mul;
+        CollectionSet mul;
         for(size_t a=0; a<GetParamCount(); ++a)
         {
-            MultiplicationSet::MultiplicationResult
+            CollectionSet::CollectionResult
                 result = (GetParam(a).GetOpcode() == cPow)
-                    ? mul.AddMultiplication(GetParam(a).GetParam(0), GetParam(a).GetParam(1))
-                    : mul.AddMultiplication(GetParam(a));
-            if(result == MultiplicationSet::Suboptimal)
+                    ? mul.AddCollection(GetParam(a).GetParam(0), GetParam(a).GetParam(1))
+                    : mul.AddCollection(GetParam(a));
+            if(result == CollectionSet::Suboptimal)
                 should_regenerate = true;
         }
-        std::vector<std::pair<CodeTree/*exponent*/,
-                              std::vector<CodeTree>/*children*/
-                             > > by_exponent;
-        for(size_t a=0; a<mul.multiplications.size(); ++a)
+
+        typedef std::pair<CodeTree/*exponent*/,
+                          std::vector<CodeTree>/*base value (mul group)*/
+                         > exponent_list;
+        typedef std::multimap<fphash_t,/*exponent hash*/
+                              exponent_list> exponent_map;
+        exponent_map by_exponent;
+
+        for(CollectionSet::PositionType
+            j = mul.collections.begin();
+            j != mul.collections.end();
+            ++j)
         {
-            for(size_t b=0; b<by_exponent.size(); ++b)
-                if(mul.multiplications[a].exponent.IsIdenticalTo(
-                   by_exponent[b].first))
+            CodeTree& value = j->second.value;
+            CodeTree& exponent = j->second.factor;
+            if(j->second.factor_needs_rehashing) exponent.Rehash();
+            const fphash_t exponent_hash = exponent.GetHash();
+
+            exponent_map::iterator i = by_exponent.lower_bound(exponent_hash);
+            for(; i != by_exponent.end() && i->first == exponent_hash; ++i)
+                if(i->second.first.IsIdenticalTo(exponent))
                 {
-                    if(!by_exponent[b].first.IsImmed()
-                    || !FloatEqual(by_exponent[b].first.GetImmed(), 1.0))
-                    {
+                    if(!exponent.IsImmed() || !FloatEqual(exponent.GetImmed(), 1.0))
                         should_regenerate = true;
-                    }
-                    by_exponent[b].second.push_back(mul.multiplications[a].value);
+                    i->second.second.push_back(value);
                     goto skip_b;
                 }
-            by_exponent.push_back(
-                std::pair<CodeTree, std::vector<CodeTree> >
-                ( mul.multiplications[a].exponent,
-                  std::vector<CodeTree> (1, mul.multiplications[a].value)
-                ) );
+            by_exponent.insert(i, std::make_pair(exponent_hash,
+                std::make_pair(exponent,
+                               std::vector<CodeTree> (size_t(1), value)
+                              )));
         skip_b:;
         }
 
@@ -376,97 +406,83 @@ namespace FPoptimizer_CodeTree
             DelParams();
 
             /* Group by exponents */
-            for(size_t a=0; a<by_exponent.size(); ++a)
+        #if 0
+            std::map<double, std::vector<CodeTree> > by_float_exponent;
+        #endif
+            /* First handle non-constant exponents */
+            for(exponent_map::iterator
+                i = by_exponent.begin();
+                i != by_exponent.end();
+                ++i)
             {
-                if(by_exponent[a].first.IsImmed()
-                && FloatEqual(by_exponent[a].first.GetImmed(), 0.0))
+                exponent_list& list = i->second;
+                if(list.first.IsImmed())
+                {
+                    double exponent = list.first.GetImmed();
+                    if(FloatEqual(exponent, 0.0)) continue;
+                #if 0
+                    by_float_exponent[exponent].swap(list.second);
                     continue;
-                if(by_exponent[a].first.IsImmed()
-                && FloatEqual(by_exponent[a].first.GetImmed(), 1.0))
-                {
-                    for(size_t b=0; b<by_exponent[a].second.size(); ++b)
-                        AddParamMove(by_exponent[a].second[b]);
+                #else
+                    if(FloatEqual(exponent, 1.0))
+                    {
+                        AddParamsMove(list.second);
+                        continue;
+                    }
+                #endif
                 }
-                else
+                CodeTree mul;
+                mul.SetOpcode(cMul);
+                mul.SetParamsMove( list.second);
+                mul.Rehash();
+                CodeTree pow;
+                pow.SetOpcode(cPow);
+                pow.AddParamMove(mul);
+                pow.AddParamMove( list.first );
+                pow.Rehash();
+                AddParamMove(pow);
+            }
+        #if 0
+            by_exponent.clear();
+
+            /* Then handle constant exponents */
+            /* TODO: Group them such that:
+             *
+             *      x^3 *         z^2 becomes (x*z)^2 * x
+             *      x^3 * y^2.5 * z^2 becomes (x*z*y)^2 * y^0.5 * x
+             *                    rather than (x*y*z)^2 * (x*y)^0.5 * x^0.5
+             */
+            for(std::map<double, std::vector<CodeTree> >::iterator
+                i = by_float_exponent.begin();
+                i != by_float_exponent.end();
+                ++i)
+            {
+                double exponent = i->first;
+                if(FloatEqual(exponent, 1.0))
                 {
-                    CodeTree mul;
-                    mul.SetOpcode(cMul);
-                    mul.SetParamsMove( by_exponent[a].second );
-                    mul.Rehash();
-                    CodeTree pow;
-                    pow.SetOpcode(cPow);
-                    pow.AddParamMove(mul);
-                    pow.AddParamMove(by_exponent[a].first);
-                    pow.Rehash();
-                    AddParamMove(pow);
+                    AddParamsMove(i->second);
+                    continue;
                 }
+                CodeTree mul;
+                mul.SetOpcode(cMul);
+                mul.SetParamsMove( i->second );
+                mul.Rehash();
+                CodeTree pow;
+                pow.SetOpcode(cPow);
+                pow.AddParamMove(mul);
+                pow.AddParam( CodeTree( i->first ) );
+                pow.Rehash();
+                AddParamMove(pow);
+            }
+        #endif
           #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "After ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            }
             return true;
         }
         return false;
     }
-
-    struct AdditionSet
-    {
-        struct Addition
-        {
-            CodeTree value;
-            CodeTree coeff;
-        };
-        std::vector<Addition> additions;
-        std::multimap<fphash_t, size_t> value_map;
-
-        enum AdditionResult
-        {
-            Ok,
-            Suboptimal
-        };
-
-        size_t FindIdenticalValueTo(const CodeTree& b) const
-        {
-            fphash_t hash = b.GetHash();
-            for(std::multimap<fphash_t, size_t>::const_iterator i = value_map.lower_bound(hash);
-                i != value_map.end() && i->first == hash;
-                ++i)
-            {
-                if(additions[i->second].value.IsIdenticalTo(b))
-                    return i->second;
-            }
-            return ~size_t(0);
-        }
-
-        AdditionResult AddAdditionTo(const CodeTree& coeff, size_t into_which)
-        {
-            CodeTree add;
-            add.SetOpcode(cAdd);
-            add.AddParamMove(additions[into_which].coeff);
-            add.AddParam(coeff);
-            add.Rehash();
-            additions[into_which].coeff = add;
-            return Suboptimal;
-        }
-
-        AdditionResult AddAddition(const CodeTree& a, const CodeTree& coeff)
-        {
-            size_t c = FindIdenticalValueTo(a);
-            if(c != ~size_t(0))
-                return AddAdditionTo(coeff, c);
-            Addition add;
-            add.value  = a;
-            add.coeff = coeff;
-            additions.push_back(add);
-            value_map.insert(std::make_pair( a.GetHash(), additions.size()-1 ));
-            return Ok;
-        }
-        AdditionResult AddAddition(const CodeTree& a)
-        {
-            return AddAddition(a, CodeTree(1.0) );
-        }
-    };
 
     struct Select2stRev
     {
@@ -480,11 +496,11 @@ namespace FPoptimizer_CodeTree
     bool CodeTree::ConstantFolding_AddGrouping()
     {
         bool should_regenerate = false;
-        AdditionSet add;
+        CollectionSet add;
         for(size_t a=0; a<GetParamCount(); ++a)
         {
             if(GetParam(a).GetOpcode() == cMul) continue;
-            if(add.AddAddition(GetParam(a)) == AdditionSet::Suboptimal)
+            if(add.AddCollection(GetParam(a)) == CollectionSet::Suboptimal)
                 should_regenerate = true;
             // This catches x + x and x - x
         }
@@ -505,13 +521,14 @@ namespace FPoptimizer_CodeTree
                 for(size_t b=0; b<mulgroup.GetParamCount(); ++b)
                 {
                     if(mulgroup.GetParam(b).IsImmed()) continue;
-                    size_t c = add.FindIdenticalValueTo(mulgroup.GetParam(b));
-                    if(c != ~size_t(0))
+                    CollectionSet::PositionType c
+                        = add.FindIdenticalValueTo(mulgroup.GetParam(b));
+                    if(add.Found(c))
                     {
                         CodeTree tmp(mulgroup, CodeTree::CloneTag());
                         tmp.DelParam(b);
                         tmp.Rehash();
-                        add.AddAdditionTo(tmp, c);
+                        add.AddCollectionTo(tmp, c);
                         should_regenerate = true;
                         goto done_a;
                     }
@@ -596,7 +613,7 @@ namespace FPoptimizer_CodeTree
                     group.AddParamMove(group_by);
                     group.AddParamMove(group_add);
                     group.Rehash();
-                    add.AddAddition(group);
+                    add.AddCollection(group);
                     should_regenerate = true;
                 }
             }
@@ -605,7 +622,7 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<GetParamCount(); ++a)
                 if(remaining[a])
                 {
-                    if(add.AddAddition(GetParam(a)) == AdditionSet::Suboptimal)
+                    if(add.AddCollection(GetParam(a)) == CollectionSet::Suboptimal)
                         should_regenerate = true;
                 }
         }
@@ -618,25 +635,31 @@ namespace FPoptimizer_CodeTree
           #endif
             DelParams();
 
-            for(size_t a=0; a<add.additions.size(); ++a)
+            for(CollectionSet::PositionType
+                j = add.collections.begin();
+                j != add.collections.end();
+                ++j)
             {
-                if(add.additions[a].coeff.IsImmed()
-                && FloatEqual(add.additions[a].coeff.GetImmed(), 0.0))
-                    continue;
-                if(add.additions[a].coeff.IsImmed()
-                && FloatEqual(add.additions[a].coeff.GetImmed(), 1.0))
+                CodeTree& value = j->second.value;
+                CodeTree& coeff = j->second.factor;
+                if(j->second.factor_needs_rehashing) coeff.Rehash();
+
+                if(coeff.IsImmed())
                 {
-                    AddParamMove(add.additions[a].value);
+                    if(FloatEqual(coeff.GetImmed(), 0.0))
+                        continue;
+                    if(FloatEqual(coeff.GetImmed(), 1.0))
+                    {
+                        AddParamMove(value);
+                        continue;
+                    }
                 }
-                else
-                {
-                    CodeTree mul;
-                    mul.SetOpcode(cMul);
-                    mul.AddParamMove(add.additions[a].value);
-                    mul.AddParamMove(add.additions[a].coeff);
-                    mul.Rehash();
-                    AddParamMove(mul);
-                }
+                CodeTree mul;
+                mul.SetOpcode(cMul);
+                mul.AddParamMove(value);
+                mul.AddParamMove(coeff);
+                mul.Rehash();
+                AddParamMove(mul);
             }
           #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "After ConstantFolding_AddGrouping: "; FPoptimizer_Grammar::DumpTree(*this);

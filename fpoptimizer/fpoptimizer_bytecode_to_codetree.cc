@@ -189,8 +189,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(value);
             FindClone(newnode);
-            stack.resize(stack.size()+1);
-            stack.back().swap(newnode);
+            stack.push_back(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());
@@ -202,8 +201,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(varno, CodeTree::VarTag());
             FindClone(newnode);
-            stack.resize(stack.size()+1);
-            stack.back().swap(newnode);
+            stack.push_back(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());

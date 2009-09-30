@@ -151,10 +151,11 @@ cLog [(cPow [x@P y])] -> cMul [y (cLog[x])]
 cLog [(cPow [x y@E])] -> cMul [y (cLog [(cAbs [x])])]
 
 # CONSTANT_E^log(x) = x
-cPow [CONSTANT_E (cLog[x])]   -> x
-
-# Generalized as:  y^log(x) = x^log(y)
-cPow [% (cLog[x])]  : x LOG(%)
+# CONSTANT_E^(log(x)*y) = x^y
+# Generalized as:  p^ log(x)    = x^ log(p)
+#                  p^(log(x)*y) = x^(log(p)*y)
+cPow [%       (cLog[x])     ]   :     x        LOG(%)
+cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>)
 
 # Because log(exp(6)*x) = log(x)+6, we can also do this:
 #                  y^(log(x)+z)
@@ -165,16 +166,7 @@ cPow [% (cLog[x])]  : x LOG(%)
 # though. Otherwise we only trade + for *, which is bad.
 cPow [& (cAdd {(cLog[x]) %})] : (cMul x EXP(%)) LOG(&)
 
-# CONSTANT_E^(log(x)*y) = x^y
-cPow [CONSTANT_E (cMul (cLog[x]) <1>)]   :     x  (cMul <1>)
-
-# Generalization of the above.
-#  Note: if you have exp(log(x)*5), you may get two results (ambiguous rules):
-#                   a: x^5            -- the rule above,
-#                   b: exp(5)^log(x)  -- the rule below.
-#  Naturally, case "a" is more desirable,
-#  but if you get "b", the y^log(x) = x^log(y) rule will fix it so it becomes x^5.
-#cPow [%          (cMul & <1>)]   : POW(% &) (cMul <1>) - done by constantfolding
+# x^(y*z) = (x*y)^z - done by ConstantFolding
 
 # z^(log(x)/log(z)*y) = x^y
 # Note: This rule fails when z=0, because log(0)=-inf and 0^x = 1
