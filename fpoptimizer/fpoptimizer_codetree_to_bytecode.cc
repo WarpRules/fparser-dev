@@ -372,12 +372,12 @@ namespace FPoptimizer_CodeTree
     #endif
         /* Then synthesize the actual expression */
         SynthesizeByteCode(synth);
-      #ifndef FP_DISABLE_EVAL
+      #if 0
         /* Ensure that the expression result is
          * the only thing that remains in the stack
          */
         /* Removed: Fparser does not seem to care! */
-        /* But if cEval is supported, it still needs to be done. */
+        /* Seems that it is not required even when cEval is supported. */
         if(synth.GetStackTop() > 1)
             synth.DoPopNMov(0, synth.GetStackTop()-1);
       #endif
