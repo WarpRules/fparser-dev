@@ -533,7 +533,7 @@ namespace FPoptimizer_CodeTree
             if(list.first.IsImmed())
             {
                 double exponent = list.first.GetImmed();
-                if(!FloatEqual(exponent, 0.0))
+                if(!(exponent == 0.0))
                     by_float_exponent.MoveToSet_Unique(exponent, list.second);
                 by_exponent.erase(i);
             }
@@ -562,7 +562,7 @@ namespace FPoptimizer_CodeTree
                 if(list.first.IsImmed())
                 {
                     double exponent = list.first.GetImmed();
-                    if(FloatEqual(exponent, 0.0)) continue;
+                    if(exponent == 0.0) continue;
                     if(FloatEqual(exponent, 1.0))
                     {
                         AddParamsMove(list.second);
@@ -766,7 +766,7 @@ namespace FPoptimizer_CodeTree
 
                 if(coeff.IsImmed())
                 {
-                    if(FloatEqual(coeff.GetImmed(), 0.0))
+                    if(coeff.GetImmed() == 0.0)
                         continue;
                     if(FloatEqual(coeff.GetImmed(), 1.0))
                     {
@@ -1039,7 +1039,7 @@ namespace FPoptimizer_CodeTree
                     if(!GetParam(a).IsImmed()) continue;
                     // ^ Only check constant values
                     double immed = GetParam(a).GetImmed();
-                    if(FloatEqual(immed, 0.0)) goto ReplaceTreeWithZero;
+                    if(immed == 0.0) goto ReplaceTreeWithZero;
                     immed_product *= immed; ++n_immeds;
                 }
                 // Merge immeds.
@@ -1084,7 +1084,7 @@ namespace FPoptimizer_CodeTree
                     immed_sum += immed; ++n_immeds;
                 }
                 // Merge immeds.
-                if(n_immeds > 1 || (n_immeds == 1 && FloatEqual(immed_sum, 0.0)))
+                if(n_immeds > 1 || (n_immeds == 1 && immed_sum == 0.0))
                     needs_resynth = true;
                 if(needs_resynth)
                 {
@@ -1103,7 +1103,7 @@ namespace FPoptimizer_CodeTree
                         #endif
                             DelParam(a);
                         }
-                    if(!FloatEqual(immed_sum, 0.0))
+                    if(!(immed_sum == 0.0))
                         AddParam( CodeTree(immed_sum) );
                 }
                 switch(GetParamCount())
@@ -1495,7 +1495,7 @@ namespace FPoptimizer_CodeTree
                         if(mulgroup.GetParam(a).IsImmed())
                         {
                             double imm = mulgroup.GetParam(a).GetImmed();
-                            if(imm >= 0.0)
+                            //if(imm >= 0.0)
                             {
                                 double new_base_immed = std::pow(base_immed, imm);
                                 if(isinf(new_base_immed))
@@ -2032,12 +2032,12 @@ namespace FPoptimizer_CodeTree
             }
             case cPow:
             {
-                if(GetParam(1).IsImmed() && FloatEqual(GetParam(1).GetImmed(), 0.0))
+                if(GetParam(1).IsImmed() && GetParam(1).GetImmed() == 0.0)
                 {
                     // Note: This makes 0^0 evaluate into 1.
                     return MinMaxTree(1.0, 1.0); // x^0 = 1
                 }
-                if(GetParam(0).IsImmed() && FloatEqual(GetParam(0).GetImmed(), 0.0))
+                if(GetParam(0).IsImmed() && GetParam(0).GetImmed() == 0.0)
                 {
                     // Note: This makes 0^0 evaluate into 0.
                     return MinMaxTree(0.0, 0.0); // 0^x = 0

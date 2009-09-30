@@ -138,6 +138,33 @@ namespace FPoptimizer_CodeTree
                     break;
                 }
 
+                case cPow:
+                {
+                    const CodeTree& p0 = newnode.GetParam(0);
+                    const CodeTree& p1 = newnode.GetParam(1);
+                    if(p1.GetOpcode() == cAdd)
+                    {
+                        // convert x^(a + b) into x^a * x^b just so that
+                        // some optimizations can be run on it.
+                        // For instance, exp(log(x)*-61.1 + log(z)*-59.1)
+                        // won't be changed into exp(log(x*z)*-61.1)*z^2
+                        // unless we do this.
+                        std::vector<CodeTree> mulgroup(p1.GetParamCount());
+                        for(size_t a=0; a<p1.GetParamCount(); ++a)
+                        {
+                            CodeTree pow;
+                            pow.SetOpcode(cPow);
+                            pow.AddParam(p0);
+                            pow.AddParam(p1.GetParam(a));
+                            pow.Rehash();
+                            mulgroup[a].swap(pow);
+                        }
+                        newnode.SetOpcode(cMul);
+                        newnode.SetParamsMove(mulgroup);
+                    }
+                    break;
+                }
+
                 // Should we change sin(x) into cos(pi/2-x)
                 //               or cos(x) into sin(pi/2-x)?
                 //                        note: cos(x-pi/2) = cos(pi/2-x) = sin(x)
