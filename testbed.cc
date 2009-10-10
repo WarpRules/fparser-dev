@@ -371,18 +371,18 @@ double f33(const double* p)
 
 double f34(const double* p)
 {
-#define P34 "\360\220\200\200+\340\240\200*\302\200-t", \
-        "\360\220\200\200,\340\240\200,\302\200,t", \
+#define P34 "\343\201\212+\346\227\251*\343\201\206-t", \
+        "t,\343\201\206,\343\201\212,\346\227\251", \
         f34, 4, -5, 5, 1, false
-    const double x = p[0], y = p[1], z = p[2], t = p[3];
+    const double t = p[0], z = p[1], x = p[2], y = p[3];
     return x+y*z-t;
 }
 
 double f35(const double* p)
 {
-#define P35 "a_very_long_variable_name_1-a_very_long_variable_name_2+\
-Yet_a_third_very_long_variable_name*a_very_long_variable_name_1", \
-        "a_very_long_variable_name_1,a_very_long_variable_name_2,\
+#define P35 "A_very_long_variable_name_1-A_very_long_variable_name_2+\
+Yet_a_third_very_long_variable_name*A_very_long_variable_name_1", \
+        "A_very_long_variable_name_1,A_very_long_variable_name_2,\
 Yet_a_third_very_long_variable_name", f35, 3, -10, 10, 1, false
     const double x = p[0], y = p[1], z = p[2];
     return x-y+z*x;
@@ -515,7 +515,7 @@ double f47(const double* p)
 double f48(const double* p)
 {
 #define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + \
-!(x | !(x/4))" , "x", f48, 2, 2, 1e9, 1.2e7, false
+!(x | !(x/4))" , "x", f48, 1, 2, 1e9, 1.2e7, false
     const double x = p[0];
     return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2.0)+1)*log(2.0)) +
         (!(doubleToInt(x) || !doubleToInt(x/4)));
@@ -1530,6 +1530,84 @@ bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
     return true;
 }
 
+//=========================================================================
+// Test variable deduction
+//=========================================================================
+bool checkVarString(const char* idString,
+                    FunctionParser& fp, unsigned funcInd, int errorIndex,
+                    int variablesAmount, const std::string& variablesString)
+{
+    const bool stringsMatch = (variablesString == tests[funcInd].paramString);
+    if(errorIndex >= 0 ||
+       variablesAmount != int(tests[funcInd].paramAmount) ||
+       !stringsMatch)
+    {
+        std::cout << "\n" << idString
+                  << " ParseAndDeduceVariables() failed with function:\n\""
+                  << tests[funcInd].funcString << "\"\n";
+        if(errorIndex >= 0)
+            std::cout << "Error index: " << errorIndex
+                      << ": " << fp.ErrorMsg() << std::endl;
+        else if(!stringsMatch)
+            std::cout << "Deduced var string was \"" << variablesString
+                      << "\" instead of \"" << tests[funcInd].paramString
+                      << "\"." << std::endl;
+        else
+            std::cout << "Deduced variables amount was "
+                      << variablesAmount << " instead of "
+                      << tests[funcInd].paramAmount << "." << std::endl;
+        return false;
+    }
+    return true;
+}
+
+bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
+{
+    static std::string variablesString;
+    static std::vector<std::string> variables;
+
+    int variablesAmount = -1;
+    int retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
+                                            &variablesAmount,
+                                            tests[funcInd].useDegrees);
+    if(retval >= 0 || variablesAmount != int(tests[funcInd].paramAmount))
+    {
+        std::cout <<
+            "\nFirst ParseAndDeduceVariables() failed with function:\n\""
+                  << tests[funcInd].funcString << "\"\n";
+        if(retval >= 0)
+            std::cout << "Error index: " << retval
+                      << ": " << fp.ErrorMsg() << std::endl;
+        else
+            std::cout << "Deduced variables amount was "
+                      << variablesAmount << " instead of "
+                      << tests[funcInd].paramAmount << "." << std::endl;
+        return false;
+    }
+
+    variablesAmount = -1;
+    retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
+                                        variablesString,
+                                        &variablesAmount,
+                                        tests[funcInd].useDegrees);
+    if(!checkVarString("Second", fp, funcInd, retval, variablesAmount,
+                       variablesString))
+        return false;
+
+    retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
+                                        variables,
+                                        tests[funcInd].useDegrees);
+    variablesAmount = int(variables.size());
+    variablesString.clear();
+    for(unsigned i = 0; i < variables.size(); ++i)
+    {
+        if(i > 0) variablesString += ',';
+        variablesString += variables[i];
+    }
+    return checkVarString("Third", fp, funcInd, retval, variablesAmount,
+                          variablesString);
+}
+
 
 //=========================================================================
 // Main
@@ -1665,6 +1743,8 @@ int main()
         for(int j = 0; j < 20; ++j)
             fp.Optimize();
         if(!runTest(i, fp, true)) return 1;
+
+        if(!testVariableDeduction(fp, i)) return 1;
 
         if(verbose) std::cout << "Ok." << std::endl;
     }

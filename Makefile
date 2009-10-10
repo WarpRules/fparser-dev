@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison++
 #===========================================================================
 
-RELEASE_VERSION=3.2.1
+RELEASE_VERSION=3.3
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.

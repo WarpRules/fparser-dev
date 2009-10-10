@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v3.2.1                                          *|
+|* Function Parser for C++ v3.3                                            *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen                                                *|
 \***************************************************************************/
@@ -54,6 +54,18 @@ public:
     bool RemoveIdentifier(const std::string& name);
 
     void Optimize();
+
+
+    int ParseAndDeduceVariables(const std::string& function,
+                                int* amountOfVariablesFound = 0,
+                                bool useDegrees = false);
+    int ParseAndDeduceVariables(const std::string& function,
+                                std::string& resultVarString,
+                                int* amountOfVariablesFound = 0,
+                                bool useDegrees = false);
+    int ParseAndDeduceVariables(const std::string& function,
+                                std::vector<std::string>& resultVars,
+                                bool useDegrees = false);
 
 
     FunctionParser();

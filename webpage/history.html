@@ -9,6 +9,24 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v3.3
+<ul>
+ <li>The <code>Parse()</code> method now performs more exhaustive constant
+   folding (calculating constant expressions at parse time) than before.
+   Also integral powers (eg. like <code>"x^4"</code>) are now more optimized
+   at parse time, resulting in faster evaluation even without a call to the
+   <code>Optimize()</code> method (although the latter will sometimes still
+   result in an even better result). The speed impact of this on the
+   <code>Parse()</code> method has been kept minimal.
+ <li>More refactoring of the optimizer, making the <code>Optimize()</code>
+   method significantly faster than in the previous version. Also new and
+   more exhaustive rules have been added, resulting in better results in
+   certain cases (eg. when using basic operators in very complex functions).
+ <li>Added utility member functions to parse a function so that the variables
+   in the function are deduced automatically. The found variables are returned
+   to the caller if requested.
+</ul>
+
 <p>What's new in v3.2.1
 <ul>
  <li>Fixed bugs in optimizer: Functions in the form <code>"log(-x)"</code>
