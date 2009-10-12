@@ -2039,6 +2039,7 @@ namespace
     long ParseISequence(
         unsigned opcode_square,
         unsigned opcode_cumulate,
+        unsigned opcode_invert,
         const std::vector<unsigned>& ByteCode, unsigned& IP,
         unsigned limit,
         size_t factor_stack_base,
@@ -2050,6 +2051,12 @@ namespace
             if(ByteCode[IP] == opcode_square)
             {
                 result *= 2;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcode_invert)
+            {
+                result = -result;
                 ++IP;
                 continue;
             }
@@ -2083,7 +2090,7 @@ namespace
                 stack.push_back(result);
                 ++IP;
                 long subexponent = ParseISequence
-                    (opcode_square, opcode_cumulate,
+                    (opcode_square, opcode_cumulate, opcode_invert,
                      ByteCode, IP, limit,
                      factor_stack_base, stack);
                 if(IP >= limit || ByteCode[IP] != opcode_cumulate)
@@ -2108,7 +2115,7 @@ namespace
     {
         FactorStack stack;
         stack.push_back(1);
-        return ParseISequence(cSqr, cMul,
+        return ParseISequence(cSqr, cMul, cInv,
             ByteCode, IP, limit, factor_stack_base, stack);
     }
 
@@ -2118,7 +2125,7 @@ namespace
     {
         FactorStack stack;
         stack.push_back(1);
-        return ParseISequence(~unsigned(0), cAdd,
+        return ParseISequence(~unsigned(0), cAdd, cNeg,
             ByteCode, IP, limit, factor_stack_base, stack);
     }
 
@@ -2156,7 +2163,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
         if(showExpression && !if_stack.empty() && if_stack.back().endif_location == IP)
         {
             printHex(output, IP);
-            output << ": (end)";
+            output << ": (phi)";
             stack.resize(stack.size()+2);
             std::swap(stack[stack.size()-3], stack[stack.size()-1]);
             std::swap(if_stack.back().condition,  stack[stack.size()-3]);
@@ -2173,6 +2180,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
             if(showExpression && (
                 opcode == cSqr || opcode == cDup
+             || opcode == cInv
     #ifdef FP_SUPPORT_OPTIMIZER
              || opcode == cFetch
     #endif
@@ -2194,7 +2202,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                                                       ? (unsigned)ByteCode.size()
                                                       : if_stack.back().endif_location,
                                                     stack.size()-1);
-                    if(factor == 1) goto not_powi_or_muli;
+                    if(factor == 1 || factor == -1) goto not_powi_or_muli;
                     operation << '*' << factor;
                     prio = 3;
                 }
@@ -2219,6 +2227,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
                     switch(ByteCode[IP])
                     {
+                        case cInv: output << "inv"; break;
+                        case cNeg: output << "neg"; break;
                         case cDup: output << "dup"; break;
                         case cSqr: output << "sqr"; break;
                         case cMul: output << "mul"; break;
@@ -2479,8 +2489,13 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             }
             //padLine(outputBuffer, 20);
             output << "= ";
-            output << '[' << (stack.size()-1) << ']';
-            output << stack.back().second;
+            if((opcode == cIf && params != 3) || opcode == cJump || opcode == cNop)
+                output << "(void)";
+            else if(stack.empty())
+                output << "[?] ?";
+            else
+                output << '[' << (stack.size()-1) << ']'
+                       << stack.back().second;
         }
 
         if(showExpression)

@@ -23,6 +23,7 @@ namespace
     long ParseISequence(
         unsigned opcode_square,
         unsigned opcode_cumulate,
+        unsigned opcode_invert,
         const std::vector<unsigned>& ByteCode, size_t& IP,
         size_t limit,
         size_t factor_stack_base,
@@ -34,6 +35,12 @@ namespace
             if(ByteCode[IP] == opcode_square)
             {
                 result *= 2;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcode_invert)
+            {
+                result = -result;
                 ++IP;
                 continue;
             }
@@ -65,7 +72,7 @@ namespace
                 stack.push_back(result);
                 ++IP;
                 long subexponent = ParseISequence
-                    (opcode_square, opcode_cumulate,
+                    (opcode_square, opcode_cumulate, opcode_invert,
                      ByteCode, IP, limit,
                      factor_stack_base, stack);
                 if(IP >= limit || ByteCode[IP] != opcode_cumulate)
@@ -90,7 +97,7 @@ namespace
     {
         FactorStack stack;
         stack.push_back(1);
-        return ParseISequence(cSqr, cMul,
+        return ParseISequence(cSqr, cMul, cInv,
             ByteCode, IP, limit, factor_stack_base, stack);
     }
 
@@ -100,7 +107,7 @@ namespace
     {
         FactorStack stack;
         stack.push_back(1);
-        return ParseISequence(~unsigned(0), cAdd,
+        return ParseISequence(~unsigned(0), cAdd, cNeg,
             ByteCode, IP, limit, factor_stack_base, stack);
     }
 }
@@ -370,7 +377,9 @@ namespace FPoptimizer_CodeTree
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
-            if(opcode == cSqr || opcode == cDup || opcode == cFetch)
+            if(opcode == cSqr || opcode == cDup
+            || opcode == cInv || opcode == cNeg
+            || opcode == cFetch)
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
@@ -384,7 +393,9 @@ namespace FPoptimizer_CodeTree
                     sim.Eat(2, cPow);
                     goto after_powi;
                 }
-                if(opcode == cDup || opcode == cFetch)
+                if(opcode == cDup
+                || opcode == cFetch
+                || opcode == cNeg)
                 {
                     long factor = ParseMuliSequence(
                         ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
