@@ -18,20 +18,21 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP, size_t limit)
     {
         long result = 1.0;
-        while(IP < ByteCode.size() && ByteCode[IP] == cSqr)
+    recheck_sqr:
+        while(IP < limit && ByteCode[IP] == cSqr)
         {
             result *= 2;
             ++IP;
         }
-        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
+        if(IP < limit && ByteCode[IP] == cDup)
         {
             size_t dup_pos = IP;
             ++IP;
-            long subexponent = ParsePowiSequence(ByteCode, IP);
-            if(IP >= ByteCode.size() || ByteCode[IP] != cMul)
+            long subexponent = ParsePowiSequence(ByteCode, IP, limit);
+            if(IP >= limit || ByteCode[IP] != cMul)
             {
                 // It wasn't a powi-dup after all
                 IP = dup_pos;
@@ -40,19 +41,21 @@ namespace
             {
                 ++IP; // skip cMul
                 result *= 1 + subexponent;
+                goto recheck_sqr;
             }
         }
         return result;
     }
-    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+
+    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP, size_t limit)
     {
         long result = 1.0;
-        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
+        if(IP < limit && ByteCode[IP] == cDup)
         {
             size_t dup_pos = IP;
             ++IP;
-            long subfactor = ParseMuliSequence(ByteCode, IP);
-            if(IP >= ByteCode.size() || ByteCode[IP] != cAdd)
+            long subfactor = ParseMuliSequence(ByteCode, IP, limit);
+            if(IP >= limit || ByteCode[IP] != cAdd)
             {
                 // It wasn't a muli-dup after all
                 IP = dup_pos;
@@ -303,13 +306,13 @@ namespace FPoptimizer_CodeTree
 
         for(size_t IP=0, DP=0; ; ++IP)
         {
+        after_powi:
             while(!labels.empty() && labels.back() == IP)
             {
                 // The "else" of an "if" ends here
                 sim.Eat(3, cIf);
                 labels.erase(labels.end()-1);
             }
-        after_powi:
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
@@ -317,7 +320,7 @@ namespace FPoptimizer_CodeTree
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
-                long exponent = ParsePowiSequence(ByteCode, IP);
+                long exponent = ParsePowiSequence(ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back());
                 if(exponent != 1)
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
@@ -327,7 +330,7 @@ namespace FPoptimizer_CodeTree
                 }
                 if(opcode == cDup)
                 {
-                    long factor = ParseMuliSequence(ByteCode, IP);
+                    long factor = ParseMuliSequence(ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back());
                     if(factor != 1)
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
