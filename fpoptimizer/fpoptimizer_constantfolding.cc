@@ -285,11 +285,15 @@ namespace
              *     = (Var0 ^ 1.75) *  (1.5         ^ 1.0)
              *       Fixed by limiting to cases where (exp_a != 1.0).
              *
-             * TODO: Convert (x*z)^0.5 * x^16.5
-             *          into x^17 * z^0.5
+             * NOTE: Converting (x*z)^0.5 * x^16.5
+             *              into x^17 * z^0.5
+             *       is handled by code within CollectMulGroup().
+             *       However, bacause it is prone for infinite looping,
+             *       the use of "IsIdenticalTo(before)" is added at the
+             *       end of ConstantFolding_MulGrouping().
              *
-             *          this algorithm could make it into (x*z*x)^0.5 * x^16,
-             *          but this is wrong, for it falsely includes x^evenint.. twice.
+             *       This algorithm could make it into (x*z*x)^0.5 * x^16,
+             *       but this is wrong, for it falsely includes x^evenint.. twice.
              */
             for(size_t a=0; a<data.size(); ++a)
             {
@@ -300,7 +304,8 @@ namespace
                     double exp_b = data[b].first;
                     double exp_diff = exp_b - exp_a;
                     if(exp_diff >= fabs(exp_a)) break;
-                    if(IsIntegerConst(exp_diff * 16.0)
+                    double exp_diff_still_probable_integer = exp_diff * 16.0;
+                    if(IsIntegerConst(exp_diff_still_probable_integer)
                     && !(IsIntegerConst(exp_b) && !IsIntegerConst(exp_diff))
                       )
                     {
@@ -512,39 +517,110 @@ namespace FPoptimizer_CodeTree
     {
         return ConstantFolding_LogicCommon(true);
     }
+    
+    static CodeTree CollectMulGroup_Item(
+        CodeTree& value,
+        bool& has_highlevel_opcodes)
+    {
+        switch(value.GetOpcode())
+        {
+            case cPow:
+            {
+                CodeTree exponent = value.GetParam(1);
+                value.Become( value.GetParam(0) );
+                return exponent;
+            }
+            case cSqrt:
+                value.Become( value.GetParam(0) );
+                has_highlevel_opcodes = true;
+                return CodeTree(0.5);
+            case cRSqrt:
+                value.Become( value.GetParam(0) );
+                has_highlevel_opcodes = true;
+                return CodeTree(-0.5);
+            case cInv:
+                value.Become( value.GetParam(0) );
+                has_highlevel_opcodes = true;
+                return CodeTree(-1.0);
+            default: break;
+        }
+        return CodeTree(1.0);
+    }
+    
+    static void CollectMulGroup(
+        CollectionSet& mul, const CodeTree& tree, const CodeTree& factor,
+        bool& should_regenerate,
+        bool& has_highlevel_opcodes
+    )
+    {
+        for(size_t a=0; a<tree.GetParamCount(); ++a)
+        {
+            CodeTree value(tree.GetParam(a));
+
+            CodeTree exponent ( CollectMulGroup_Item(value, has_highlevel_opcodes) );
+
+            if(!factor.IsImmed() || factor.GetImmed() != 1.0)
+            {
+                CodeTree new_exp;
+                new_exp.SetOpcode(cMul);
+                new_exp.AddParam( exponent );
+                new_exp.AddParam( factor );
+                new_exp.Rehash();
+                exponent.swap( new_exp );
+            }
+        #if 0 /* FIXME: This does not work */
+            if(value.GetOpcode() == cMul)
+            {
+                if(1)
+                {
+                    // Avoid erroneously converting
+                    //          (x*z)^0.5 * z^2
+                    // into     x^0.5 * z^2.5
+                    // It should be x^0.5 * abs(z)^2.5, but this is not a good conversion.
+                    bool exponent_is_even = exponent.IsImmed() && IsEvenIntegerConst(exponent.GetImmed());
+
+                    for(size_t b=0; b<value.GetParamCount(); ++b)
+                    {
+                        bool tmp=false;
+                        CodeTree val(value.GetParam(b));
+                        CodeTree exp(CollectMulGroup_Item(val, tmp));
+                        if(exponent_is_even
+                        || (exp.IsImmed() && IsEvenIntegerConst(exp.GetImmed())))
+                        {
+                            CodeTree new_exp;
+                            new_exp.SetOpcode(cMul);
+                            new_exp.AddParam(exponent);
+                            new_exp.AddParamMove(exp);
+                            new_exp.ConstantFolding();
+                            if(!new_exp.IsImmed() || !IsEvenIntegerConst(new_exp.GetImmed()))
+                            {
+                                goto cannot_adopt_mul;
+                            }
+                        }
+                    }
+                }
+                CollectMulGroup(mul, value, exponent,
+                                should_regenerate,
+                                has_highlevel_opcodes);
+            }
+            else cannot_adopt_mul:
+        #endif
+            {
+                if(mul.AddCollection(value, exponent) == CollectionSet::Suboptimal)
+                    should_regenerate = true;
+            }
+        }
+    }
 
     bool CodeTree::ConstantFolding_MulGrouping()
     {
         bool has_highlevel_opcodes = false;
         bool should_regenerate = false;
         CollectionSet mul;
-        for(size_t a=0; a<GetParamCount(); ++a)
-        {
-            CollectionSet::CollectionResult result;
 
-            switch(GetParam(a).GetOpcode())
-            {
-                case cPow:
-                    result = mul.AddCollection(GetParam(a).GetParam(0), GetParam(a).GetParam(1));
-                    break;
-                case cSqrt:
-                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(0.5));
-                    has_highlevel_opcodes = true;
-                    break;
-                case cRSqrt:
-                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(-0.5));
-                    has_highlevel_opcodes = true;
-                    break;
-                case cInv:
-                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(-1.0));
-                    has_highlevel_opcodes = true;
-                    break;
-                default:
-                    result = mul.AddCollection(GetParam(a));
-            }
-            if(result == CollectionSet::Suboptimal)
-                should_regenerate = true;
-        }
+        CollectMulGroup(mul, *this, CodeTree(1.0),
+                        should_regenerate,
+                        has_highlevel_opcodes);
 
         typedef std::pair<CodeTree/*exponent*/,
                           std::vector<CodeTree>/*base value (mul group)*/
@@ -602,8 +678,11 @@ namespace FPoptimizer_CodeTree
 
         if(should_regenerate)
         {
+            CodeTree before = *this;
+            before.CopyOnWrite();
+
           #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Before ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
+            std::cout << "Before ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(before);
             std::cout << "\n";
           #endif
             DelParams();
@@ -697,7 +776,8 @@ namespace FPoptimizer_CodeTree
             std::cout << "After ConstantFolding_MulGrouping: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            return true;
+            // return true;
+            return !IsIdenticalTo(before); // avoids infinite looping
         }
         return false;
     }
