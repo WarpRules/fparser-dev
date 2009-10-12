@@ -1,6 +1,8 @@
 #include "fpoptimizer_codetree.hh"
 #include "fpoptimizer_grammar.hh"
 
+#ifdef FP_SUPPORT_OPTIMIZER
+
 #include <map>
 #include <vector>
 #include <iostream>
@@ -144,3 +146,5 @@ namespace FPoptimizer_Grammar
                    bool DidMatch,
                    std::ostream& o = std::cout);
 }
+
+#endif

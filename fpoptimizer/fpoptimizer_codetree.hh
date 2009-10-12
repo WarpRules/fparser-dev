@@ -1,12 +1,14 @@
 #ifndef FPOptimizer_CodeTreeHH
 #define FPOptimizer_CodeTreeHH
 
-#include <vector>
-#include <utility>
-
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
+
+#ifdef FP_SUPPORT_OPTIMIZER
+
+#include <vector>
+#include <utility>
 
 #include "fpoptimizer_hash.hh"
 #include "fpoptimizer_autoptr.hh"
@@ -227,5 +229,7 @@ namespace FPoptimizer_CodeTree
 
     void FixIncompleteHashes(CodeTree& tree);
 }
+
+#endif
 
 #endif

@@ -1,5 +1,7 @@
 #include "fpoptimizer_bytecodesynth.hh"
 
+#ifdef FP_SUPPORT_OPTIMIZER
+
 using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_ByteCode
@@ -445,3 +447,5 @@ namespace FPoptimizer_ByteCode
         }
     }
 }
+
+#endif

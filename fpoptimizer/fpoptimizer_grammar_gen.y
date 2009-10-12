@@ -1135,7 +1135,7 @@ static GrammarDumper dumper;
 %%
 
 #ifndef FP_SUPPORT_OPTIMIZER
-enum { cVar,cDup,cInv,cFetch,cPopNMov,cSqr,cRDiv,cRSub,cNotNot,cRSqrt };
+enum { cVar,cFetch,cPopNMov };
 #endif
 
 void FPoptimizerGrammarParser::yyerror(char* msg)
