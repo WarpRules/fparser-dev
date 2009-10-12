@@ -134,7 +134,8 @@ namespace
 
         printTimingInfo();
         gParser.Optimize(); // evaluating a twice-optimized parsing
-        info.mDoubleOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+        info.mDoubleOptimizedEvalTiming =
+            getTimingInfo<doEval, kEvalLoopsPerUnit>();
     }
 
     bool findValidVarValues(std::vector<FunctionInfo>& functions)
@@ -247,7 +248,8 @@ namespace
         static const char not_optimized[] = "not optimized";
         static const char optimized[]     = "optimized";
         static const char optimized2[]    = "double-optimized";
-        static const char* const optimize_labels[3] = {not_optimized,optimized,optimized2};
+        static const char* const optimize_labels[3] =
+            { not_optimized, optimized, optimized2 };
 
         ParserWithConsts parser1, parser2, parser3;
 
@@ -258,13 +260,19 @@ namespace
             parser2.Parse(functions[ind1].mFunctionString, gVarString);
             // parser 1 is not optimized
             parser2.Optimize(); // parser 2 is optimized once
-            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized))
+
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized,
+                                 parser2, optimized))
                 errors = true;
+
             parser2.Optimize(); // parser 2 is optimized twice
-            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized2))
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized,
+                                 parser2, optimized2))
                 errors = had_double_optimization_problems = true;
+
             parser1.Optimize(); // parser 1 is optimized once
-            if(!compareFunctions(ind1, ind1, parser1, optimized, parser2, optimized2))
+            if(!compareFunctions(ind1, ind1, parser1, optimized,
+                                 parser2, optimized2))
                 errors = had_double_optimization_problems = true;
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
@@ -355,30 +363,38 @@ namespace
             size_t one_column  = 38;
             size_t two_columns = one_column * 2 + 2;
 
-            streams[0] << "Function " << i+1 << " original\n"
-                       "-------------------\n";
+            streams[0] <<
+                "Function " << i+1 << " original\n"
+                "-------------------\n";
             parser.PrintByteCode(streams[0]);
 
-            streams[1] << "Optimized\n"
-                       "---------\n";
+            streams[1] <<
+                "Optimized\n"
+                "---------\n";
             parser.Optimize();
-            {std::ostringstream streams2_bytecodeonly;
-            parser.PrintByteCode(streams2_bytecodeonly);
-            streams[1] << streams2_bytecodeonly.str();
-
-            parser.Optimize();
-            {std::ostringstream streams3_bytecodeonly;
-            parser.PrintByteCode(streams3_bytecodeonly);
-
-            if(had_double_optimization_problems
-            || streams2_bytecodeonly.str() != streams3_bytecodeonly.str())
             {
-                streams[2] << "Double-optimized\n"
-                           "----------------\n";
-                streams[2] << streams3_bytecodeonly.str();
-                //one_column  = 24;
-                //two_columns = one_column * 2 + 2;
-            }}}
+                std::ostringstream streams2_bytecodeonly;
+                parser.PrintByteCode(streams2_bytecodeonly);
+                streams[1] << streams2_bytecodeonly.str();
+
+                parser.Optimize();
+                {
+                    std::ostringstream streams3_bytecodeonly;
+                    parser.PrintByteCode(streams3_bytecodeonly);
+
+                    if(had_double_optimization_problems ||
+                       streams2_bytecodeonly.str() !=
+                       streams3_bytecodeonly.str())
+                    {
+                        streams[2] <<
+                            "Double-optimized\n"
+                            "----------------\n";
+                        streams[2] << streams3_bytecodeonly.str();
+                        //one_column  = 24;
+                        //two_columns = one_column * 2 + 2;
+                    }
+                }
+            }
 
             std::string streams_wrap_buf[3];
             std::string lines[3];
@@ -403,11 +419,14 @@ namespace
                 if(mode != print_no_cut_or_wrap)
                 {
                     if(!lines[1].empty())
-                        wrapLine(lines[0], one_column, streams_wrap_buf[0], mode == print_cut);
+                        wrapLine(lines[0], one_column, streams_wrap_buf[0],
+                                 mode == print_cut);
                     else if(!lines[2].empty())
-                        wrapLine(lines[0], two_columns, streams_wrap_buf[0], mode == print_cut);
+                        wrapLine(lines[0], two_columns, streams_wrap_buf[0],
+                                 mode == print_cut);
                     if(!lines[2].empty() && !lines[1].empty())
-                        wrapLine(lines[1], one_column, streams_wrap_buf[1], mode == print_cut);
+                        wrapLine(lines[1], one_column, streams_wrap_buf[1],
+                                 mode == print_cut);
                 }
                 else
                 {
@@ -446,8 +465,10 @@ namespace
                 }
 
                 std::cout << colors[0] << lines[0];
-                if(!lines[1].empty()) std::cout << wall << colors[1] << lines[1];
-                if(!lines[2].empty()) std::cout << wall << colors[2] << lines[2];
+                if(!lines[1].empty())
+                    std::cout << wall << colors[1] << lines[1];
+                if(!lines[2].empty())
+                    std::cout << wall << colors[2] << lines[2];
                 std::cout << newline;
             }
             std::cout << SEPARATOR << std::endl;

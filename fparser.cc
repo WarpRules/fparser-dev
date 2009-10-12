@@ -2188,7 +2188,8 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_half)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(IsIntegerConst(result) && result > 0 &&
+                   ((long)result) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * 0.5)) break;
                 result *= 0.5;
@@ -2197,7 +2198,8 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_invhalf)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(IsIntegerConst(result) && result > 0 &&
+                   ((long)result) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * -0.5)) break;
                 result *= -0.5;
@@ -2253,20 +2255,24 @@ namespace
         return result;
     }
 
-    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                             unsigned limit, size_t factor_stack_base)
+    double ParsePowiSequence(const std::vector<unsigned>& ByteCode,
+                             unsigned& IP, unsigned limit,
+                             size_t factor_stack_base)
     {
         FactorStack stack;
         stack.push_back(1.0);
-        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
+        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit,
+                             factor_stack_base, stack);
     }
 
-    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                             unsigned limit, size_t factor_stack_base)
+    double ParseMuliSequence(const std::vector<unsigned>& ByteCode,
+                             unsigned& IP, unsigned limit,
+                             size_t factor_stack_base)
     {
         FactorStack stack;
         stack.push_back(1.0);
-        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
+        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit,
+                             factor_stack_base, stack);
     }
 
     struct IfInfo
@@ -2300,7 +2306,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
 
-        if(showExpression && !if_stack.empty() && if_stack.back().endif_location == IP)
+        if(showExpression && !if_stack.empty() &&
+           if_stack.back().endif_location == IP)
         {
             printHex(output, IP);
             output << ": (phi)";
@@ -2328,21 +2335,23 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             ))
             {
                 unsigned changed_ip = IP;
-                double exponent = ParsePowiSequence(ByteCode, changed_ip,
-                                                  if_stack.empty()
-                                                    ? (unsigned)ByteCode.size()
-                                                    : if_stack.back().endif_location,
-                                                  stack.size()-1);
+                double exponent =
+                    ParsePowiSequence(ByteCode, changed_ip,
+                                      if_stack.empty()
+                                      ? (unsigned)ByteCode.size()
+                                      : if_stack.back().endif_location,
+                                      stack.size()-1);
                 std::ostringstream operation;
                 int prio = 0;
                 if(exponent == 1.0)
                 {
                     if(opcode != cDup) goto not_powi_or_muli;
-                    double factor = ParseMuliSequence(ByteCode, changed_ip,
-                                                    if_stack.empty()
-                                                      ? (unsigned)ByteCode.size()
-                                                      : if_stack.back().endif_location,
-                                                    stack.size()-1);
+                    double factor =
+                        ParseMuliSequence(ByteCode, changed_ip,
+                                          if_stack.empty()
+                                          ? (unsigned)ByteCode.size()
+                                          : if_stack.back().endif_location,
+                                          stack.size()-1);
                     if(factor == 1.0 || factor == -1.0) goto not_powi_or_muli;
                     operation << '*' << factor;
                     prio = 3;
@@ -2361,7 +2370,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                     output << ": ";
 
                     const char* sep = "|";
-                    if(first_ip+1 == changed_ip) { sep = "="; explanation_prefix = " "; }
+                    if(first_ip+1 == changed_ip)
+                    { sep = "="; explanation_prefix = " "; }
                     else if(IP   == first_ip) sep = "\\";
                     else if(IP+1 == changed_ip) sep = "/";
                     else explanation_prefix = "=";
@@ -2645,7 +2655,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             }
             //padLine(outputBuffer, 20);
             output << "= ";
-            if((opcode == cIf && params != 3) || opcode == cJump || opcode == cNop)
+            if((opcode == cIf && params != 3) ||
+               opcode == cJump || opcode == cNop)
                 output << "(void)";
             else if(stack.empty())
                 output << "[?] ?";
