@@ -1,9 +1,11 @@
-#include <vector>
-#include <utility>
-
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
+
+#ifdef FP_SUPPORT_OPTIMIZER
+
+#include <vector>
+#include <utility>
 
 #include "fpoptimizer_codetree.hh"
 
@@ -177,3 +179,5 @@ namespace FPoptimizer_ByteCode
         const SequenceOpCode& sequencing,
         ByteCodeSynth& synth);
 }
+
+#endif

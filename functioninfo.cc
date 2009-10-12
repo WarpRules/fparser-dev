@@ -56,7 +56,9 @@ namespace
         TimingInfo mParseTiming;
         TimingInfo mEvalTiming;
         TimingInfo mOptimizeTiming;
+        TimingInfo mDoubleOptimizeTiming;
         TimingInfo mOptimizedEvalTiming;
+        TimingInfo mDoubleOptimizedEvalTiming;
     };
 
     ParserWithConsts gParser, gAuxParser;
@@ -79,8 +81,8 @@ namespace
             for(unsigned i = 0; i < loopsPerUnit; ++i)
                 Function();
             ++loopUnitsPerformed;
-            totalMilliseconds =
-                (std::clock() - iClock) * 1000 / CLOCKS_PER_SEC;
+            totalMilliseconds = unsigned(
+                (std::clock() - iClock) * 1000 / CLOCKS_PER_SEC );
         }
         while(totalMilliseconds < kTestTime);
         //std::cout << loopUnitsPerformed << "\n";
@@ -96,7 +98,8 @@ namespace
         return info;
     }
 
-    unsigned gTimingCounter = 0, gTimingTotalCount;
+    unsigned gTimingCounter = 0;
+    size_t gTimingTotalCount;
 
     void printTimingInfo()
     {
@@ -113,14 +116,25 @@ namespace
 
         printTimingInfo();
         info.mParseTiming = getTimingInfo<doParse, kParseLoopsPerUnit>();
+
         printTimingInfo();
         info.mEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+
         printTimingInfo();
-        info.mOptimizeTiming =
+        info.mOptimizeTiming = // optimizing a non-optimized parsing
             getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
-        gParser.Optimize();
+
         printTimingInfo();
+        gParser.Optimize();
+        info.mDoubleOptimizeTiming = // optimizing an already-optimized parsing
+            getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
+
+        printTimingInfo(); // evaluating an optimized parsing
         info.mOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+
+        printTimingInfo();
+        gParser.Optimize(); // evaluating a twice-optimized parsing
+        info.mDoubleOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
     }
 
     bool findValidVarValues(std::vector<FunctionInfo>& functions)
@@ -187,8 +201,8 @@ namespace
     }
 
     bool compareFunctions(size_t function1Index, size_t function2Index,
-                          ParserWithConsts& parser1, bool parser1Optimized,
-                          ParserWithConsts& parser2, bool parser2Optimized)
+                          ParserWithConsts& parser1, const char* parser1Type,
+                          ParserWithConsts& parser2, const char* parser2Type)
     {
         const size_t varsAmount = gVarValues[0].size();
         for(size_t varSetInd = 0; varSetInd < gVarValues.size(); ++varSetInd)
@@ -210,13 +224,11 @@ namespace
                     std::cout << values[i];
                 }
                 std::cout << ")\n";
-                std::cout << "******* function " << function1Index+1 << " (";
-                if(!parser1Optimized) std::cout << "not ";
-                std::cout << "optimized) returned "
+                std::cout << "******* function " << function1Index+1
+                          << " (" << parser1Type << ") returned "
                           << std::setprecision(18) << v1 << "\n";
-                std::cout << "******* function " << function2Index+1 << " (";
-                if(!parser2Optimized) std::cout << "not ";
-                std::cout << "optimized) returned "
+                std::cout << "******* function " << function2Index+1
+                          << " (" << parser2Type << ") returned "
                           << std::setprecision(18) << v2
                           << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
@@ -228,96 +240,215 @@ namespace
         return true;
     }
 
+    bool had_double_optimization_problems = false;
+
     bool checkEquality(const std::vector<FunctionInfo>& functions)
     {
-        ParserWithConsts parser1, parser2;
+        static const char not_optimized[] = "not optimized";
+        static const char optimized[]     = "optimized";
+        static const char optimized2[]    = "double-optimized";
+        static const char* const optimize_labels[3] = {not_optimized,optimized,optimized2};
+
+        ParserWithConsts parser1, parser2, parser3;
 
         bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
             parser1.Parse(functions[ind1].mFunctionString, gVarString);
             parser2.Parse(functions[ind1].mFunctionString, gVarString);
-            parser2.Optimize();
-            errors = errors || !compareFunctions(ind1, ind1, parser1, false, parser2, true);
+            // parser 1 is not optimized
+            parser2.Optimize(); // parser 2 is optimized once
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized))
+                errors = true;
+            parser2.Optimize(); // parser 2 is optimized twice
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized2))
+                errors = had_double_optimization_problems = true;
+            parser1.Optimize(); // parser 1 is optimized once
+            if(!compareFunctions(ind1, ind1, parser1, optimized, parser2, optimized2))
+                errors = had_double_optimization_problems = true;
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
                 parser1.Parse(functions[ind1].mFunctionString, gVarString);
-                parser2.Parse(functions[ind2].mFunctionString, gVarString);
-                bool ok = compareFunctions(ind1, ind2,
-                                           parser1, false, parser2, false);
-
-                if(ok)
+                for(int n_optimizes1 = 0; n_optimizes1 <= 2; ++n_optimizes1)
                 {
-                    parser1.Optimize();
-                    ok = compareFunctions(ind1, ind2,
-                                          parser1, true, parser2, false);
-                }
+                    if(errors) break;
+                    if(n_optimizes1 > 0) parser1.Optimize();
 
-                if(ok)
-                {
-                    parser2.Optimize();
-                    ok = compareFunctions(ind1, ind2,
-                                          parser1, true, parser2, true);
-                }
+                    parser2.Parse(functions[ind2].mFunctionString, gVarString);
 
-                if(ok)
-                {
-                    parser1.Parse(functions[ind1].mFunctionString, gVarString);
-                    compareFunctions(ind1, ind2,
-                                     parser1, false, parser2, true);
+                    for(int n_optimizes2 = 0; n_optimizes2 <= 2; ++n_optimizes2)
+                    {
+                        if(n_optimizes2 > 0) parser2.Optimize();
+                        bool ok = compareFunctions(ind1, ind2,
+                            parser1, optimize_labels[n_optimizes1],
+                            parser2, optimize_labels[n_optimizes2]);
+                        if(!ok)
+                        {
+                            errors = true;
+                            if(n_optimizes1 > 1 || n_optimizes2 > 1)
+                                had_double_optimization_problems = true;
+                            break;
+                        }
+                    }
                 }
-
-                if(!ok) errors = true;
             }
         }
         return !errors;
     }
 
-    void printByteCodes(const std::vector<FunctionInfo>& functions)
+    void wrapLine(std::string& line, size_t cutter, std::string& wrap_buf,
+                  bool always_cut = false)
+    {
+        if(line.size() <= cutter)
+            line.resize(cutter, ' ');
+        else
+        {
+            if(!always_cut)
+            {
+                for(size_t wrap_at = cutter; wrap_at > 0; --wrap_at)
+                {
+                    char c = line[wrap_at-1];
+                    if(c == '*' || c == '+' || c == '/' || c == '('
+                    || c == ')' || c == '^' || c == ',' || c == '&'
+                    || c == '|' || c == '-')
+                    {
+                        wrap_buf = std::string(20, ' ');
+                        wrap_buf += line.substr(wrap_at);
+                        line.erase(line.begin()+wrap_at, line.end());
+                        line.resize(cutter, ' ');
+                        return;
+                    }
+                }
+            }
+
+            line.resize(cutter, ' ');
+            line[cutter-1] = '~';
+        }
+    }
+
+    enum PrintMode { print_wrap, print_cut, print_no_cut_or_wrap };
+
+    void printByteCodes(const std::vector<FunctionInfo>& functions,
+                        PrintMode mode = print_no_cut_or_wrap)
     {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         ParserWithConsts parser;
+        const char* const wall =
+            (mode == print_no_cut_or_wrap)
+                ? "\33[0m| "
+                : "| ";
+        const char* const newline =
+            (mode == print_no_cut_or_wrap)
+                ? "\33[0m\n"
+                : "\n";
+        const char* colors[3] = { "\33[37m", "\33[36m", "\33[32m" };
+        if(mode != print_no_cut_or_wrap)
+            colors[0] = colors[1] = colors[2] = "";
+
         for(size_t i = 0; i < functions.size(); ++i)
         {
-            std::cout
-                << "Function " << i+1
-                << " original                   | Optimized\n"
-                << "-------------------                   | ---------"
-                << std::endl;
+            std::stringstream streams[3];
 
-            std::stringstream stream1, stream2;
             parser.Parse(functions[i].mFunctionString, gVarString);
-            parser.PrintByteCode(stream1);
-            parser.Optimize();
-            parser.PrintByteCode(stream2);
 
-            std::string line1, line2;
+            size_t one_column  = 38;
+            size_t two_columns = one_column * 2 + 2;
+
+            streams[0] << "Function " << i+1 << " original\n"
+                       "-------------------\n";
+            parser.PrintByteCode(streams[0]);
+
+            streams[1] << "Optimized\n"
+                       "---------\n";
+            parser.Optimize();
+            {std::ostringstream streams2_bytecodeonly;
+            parser.PrintByteCode(streams2_bytecodeonly);
+            streams[1] << streams2_bytecodeonly.str();
+
+            parser.Optimize();
+            {std::ostringstream streams3_bytecodeonly;
+            parser.PrintByteCode(streams3_bytecodeonly);
+
+            if(had_double_optimization_problems
+            || streams2_bytecodeonly.str() != streams3_bytecodeonly.str())
+            {
+                streams[2] << "Double-optimized\n"
+                           "----------------\n";
+                streams[2] << streams3_bytecodeonly.str();
+                //one_column  = 24;
+                //two_columns = one_column * 2 + 2;
+            }}}
+
+            std::string streams_wrap_buf[3];
+            std::string lines[3];
             while(true)
             {
-                if(stream1) std::getline(stream1, line1);
-                else line1.clear();
-                if(stream2) std::getline(stream2, line2);
-                else line2.clear();
-                if(line1.empty() && line2.empty()) break;
-
-                if(!line2.empty())
+                bool all_empty = true;
+                for(int p=0; p<3; ++p)
                 {
-                    if(line1.length() > 38)
+                    if(!streams_wrap_buf[p].empty())
                     {
-                        line1.resize(38, ' ');
-                        line1[37] = '~';
+                        lines[p].clear();
+                        lines[p].swap( streams_wrap_buf[p] );
                     }
-                    else line1.resize(38, ' ');
-                    /*if(line2.length() > 38)
-                    {
-                        line2.resize(38, ' ');
-                        line2[37] = '~';
-                    }*/
-                    std::cout << line1 << "| " << line2 << "\n";
+                    else if(streams[p])
+                        std::getline(streams[p], lines[p]);
+                    else
+                        lines[p].clear();
+                    if(!lines[p].empty()) all_empty = false;
+                }
+                if(all_empty) break;
+
+                if(mode != print_no_cut_or_wrap)
+                {
+                    if(!lines[1].empty())
+                        wrapLine(lines[0], one_column, streams_wrap_buf[0], mode == print_cut);
+                    else if(!lines[2].empty())
+                        wrapLine(lines[0], two_columns, streams_wrap_buf[0], mode == print_cut);
+                    if(!lines[2].empty() && !lines[1].empty())
+                        wrapLine(lines[1], one_column, streams_wrap_buf[1], mode == print_cut);
                 }
                 else
-                    std::cout << line1 << "\n";
+                {
+                    bool wrap0 = false;
+                    if(!lines[1].empty())
+                    {
+                        if(lines[0].size() >= one_column) wrap0 = true;
+                        else lines[0].resize(one_column, ' ');
+                    }
+                    else if(!lines[2].empty())
+                    {
+                        if(lines[0].size() >= two_columns) wrap0 = true;
+                        else lines[0].resize(two_columns, ' ');
+                    }
+
+                    if(wrap0)
+                    {
+                        lines[1].swap(streams_wrap_buf[1]);
+                        if(!lines[2].empty() && lines[0].size() >= two_columns)
+                            lines[2].swap(streams_wrap_buf[2]);
+                        else
+                            lines[0].resize(two_columns, ' ');
+                    }
+
+                    bool wrap1 = false;
+                    if(!lines[2].empty() && !lines[1].empty())
+                    {
+                        if(lines[1].size() >= one_column) wrap1 = true;
+                        else lines[1].resize(one_column, ' ');
+                    }
+
+                    if(wrap1 && !lines[2].empty())
+                    {
+                        lines[2].swap(streams_wrap_buf[2]);
+                    }
+                }
+
+                std::cout << colors[0] << lines[0];
+                if(!lines[1].empty()) std::cout << wall << colors[1] << lines[1];
+                if(!lines[2].empty()) std::cout << wall << colors[2] << lines[2];
+                std::cout << newline;
             }
             std::cout << SEPARATOR << std::endl;
         }
@@ -327,20 +458,24 @@ namespace
     void printFunctionTimings(std::vector<FunctionInfo>& functions)
     {
         std::printf
-        ("     ,--------------------------------------------------------,\n"
-         "     |        Parse |        Eval |    Eval (O) |    Optimize |\n"
-         ",----+--------------+-------------+-------------+-------------+\n");
+        ("    ,------------------------------------------------------------------------,\n"
+         "    |      Parse |      Eval |  Eval (O) | Eval (O2) |  Optimize  | Repeat O.|\n"
+         ",---+------------+-----------+-----------+-----------+------------+----------+\n");
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |\n", i+1,
+            std::printf("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%11.1f |%10.1f|\n",
+                        unsigned(i+1),
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
                         functions[i].mOptimizedEvalTiming.mMicroSeconds,
-                        functions[i].mOptimizeTiming.mMicroSeconds);
+                        functions[i].mDoubleOptimizedEvalTiming.mMicroSeconds,
+                        functions[i].mOptimizeTiming.mMicroSeconds,
+                        functions[i].mDoubleOptimizeTiming.mMicroSeconds
+                       );
         }
         std::printf
-        ("'-------------------------------------------------------------'\n");
+        ("'----------------------------------------------------------------------------'\n");
     }
 
     bool checkFunctionValidity(FunctionInfo& info)
@@ -456,8 +591,8 @@ int main(int argc, char* argv[])
     for(size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
-    const unsigned varsAmount = gVarValues[0].size();
-    const unsigned varValueSetsAmount = gVarValues.size();
+    const size_t varsAmount = gVarValues[0].size();
+    const size_t varValueSetsAmount = gVarValues.size();
     std::cout << "- Var string: \"" << gVarString << "\" ("
               << gVarValues[0].size()
               << (varsAmount == 1 ? " var" : " vars")

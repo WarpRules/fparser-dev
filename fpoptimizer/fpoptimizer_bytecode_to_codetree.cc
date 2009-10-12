@@ -18,52 +18,120 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+    typedef std::vector<double> FactorStack;
+
+    const struct PowiMuliType
     {
-        long result = 1;
-        while(IP < ByteCode.size() && ByteCode[IP] == cSqr)
+        unsigned opcode_square;
+        unsigned opcode_cumulate;
+        unsigned opcode_invert;
+        unsigned opcode_half;
+        unsigned opcode_invhalf;
+    } iseq_powi = {cSqr,cMul,cInv,cSqrt,cRSqrt},
+      iseq_muli = {~unsigned(0), cAdd,cNeg, ~unsigned(0),~unsigned(0) };
+
+    double ParsePowiMuli(
+        const PowiMuliType& opcodes,
+        const std::vector<unsigned>& ByteCode, size_t& IP,
+        size_t limit,
+        size_t factor_stack_base,
+        FactorStack& stack)
+    {
+        double result = 1;
+        while(IP < limit)
         {
-            result *= 2;
-            ++IP;
-        }
-        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
-        {
-            size_t dup_pos = IP;
-            ++IP;
-            long subexponent = ParsePowiSequence(ByteCode, IP);
-            if(IP >= ByteCode.size() || ByteCode[IP] != cMul)
+            if(ByteCode[IP] == opcodes.opcode_square)
             {
-                // It wasn't a powi-dup after all
-                IP = dup_pos;
+                if(!IsIntegerConst(result)) break;
+                result *= 2;
+                ++IP;
+                continue;
             }
-            else
+            if(ByteCode[IP] == opcodes.opcode_invert)
             {
-                ++IP; // skip cMul
-                result *= 1 + subexponent;
+                result = -result;
+                ++IP;
+                continue;
             }
+            if(ByteCode[IP] == opcodes.opcode_half)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                result *= 0.5;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcodes.opcode_invhalf)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                result *= -0.5;
+                ++IP;
+                continue;
+            }
+
+            size_t dup_fetch_pos = IP;
+            double lhs = 1.0;
+
+            if(ByteCode[IP] == cFetch)
+            {
+                unsigned index = ByteCode[++IP];
+                if(index < factor_stack_base
+                || size_t(index-factor_stack_base) >= stack.size())
+                {
+                    // It wasn't a powi-fetch after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                lhs = stack[index - factor_stack_base];
+                // Note: ^This assumes that cFetch of recentmost
+                //        is always converted into cDup.
+                goto dup_or_fetch;
+            }
+            if(ByteCode[IP] == cDup)
+            {
+                lhs = result;
+                goto dup_or_fetch;
+
+            dup_or_fetch:
+                stack.push_back(result);
+                ++IP;
+                double subexponent = ParsePowiMuli
+                    (opcodes,
+                     ByteCode, IP, limit,
+                     factor_stack_base, stack);
+                if(IP >= limit || ByteCode[IP] != opcodes.opcode_cumulate)
+                {
+                    // It wasn't a powi-dup after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                ++IP; // skip opcode_cumulate
+                stack.pop_back();
+                result += lhs*subexponent;
+                continue;
+            }
+            break;
         }
         return result;
     }
-    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
+
+    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+                           size_t limit,
+                           size_t factor_stack_base)
     {
-        long result = 1;
-        if(IP < ByteCode.size() && ByteCode[IP] == cDup)
-        {
-            size_t dup_pos = IP;
-            ++IP;
-            long subfactor = ParseMuliSequence(ByteCode, IP);
-            if(IP >= ByteCode.size() || ByteCode[IP] != cAdd)
-            {
-                // It wasn't a muli-dup after all
-                IP = dup_pos;
-            }
-            else
-            {
-                ++IP; // skip cAdd
-                result *= 1 + subfactor;
-            }
-        }
-        return result;
+        FactorStack stack;
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
+    }
+
+    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+                           size_t limit,
+                           size_t factor_stack_base)
+    {
+        FactorStack stack;
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
 }
 
@@ -216,7 +284,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(value);
             FindClone(newnode);
-            stack.push_back(newnode);
+            Push(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());
@@ -228,7 +296,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(varno, CodeTree::VarTag());
             FindClone(newnode);
-            stack.push_back(newnode);
+            Push(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());
@@ -248,12 +316,18 @@ namespace FPoptimizer_CodeTree
 
         void Fetch(size_t which)
         {
-            stack.push_back(stack[which]);
+            Push(stack[which]);
+        }
+
+        template<typename T>
+        void Push(T tree)
+        {
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
-            FPoptimizer_Grammar::DumpTree(stack.back());
+            FPoptimizer_Grammar::DumpTree(tree);
             std::cout << std::endl;
         #endif
+            stack.push_back(tree);
         }
 
         void PopNMov(size_t target, size_t source)
@@ -265,10 +339,12 @@ namespace FPoptimizer_CodeTree
         CodeTree PullResult()
         {
             clones.clear();
-            CodeTree result = stack.back();
+            CodeTree result(stack.back());
             stack.resize(stack.size()-1);
             return result;
         }
+
+        size_t GetStackTop() const { return stack.size(); }
     private:
         void FindClone(CodeTree& tree, bool recurse = true)
         {
@@ -293,45 +369,65 @@ namespace FPoptimizer_CodeTree
         CodeTreeParserData& operator=(const CodeTreeParserData&);
     };
 
+    struct IfInfo
+    {
+        CodeTree condition;
+        CodeTree thenbranch;
+        size_t endif_location;
+    };
+
     void CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
         const FunctionParser::Data& fpdata)
     {
         CodeTreeParserData sim;
-        std::vector<size_t> labels;
+        std::vector<IfInfo> if_stack;
 
         for(size_t IP=0, DP=0; ; ++IP)
         {
-            while(!labels.empty() && labels.back() == IP)
+        after_powi:
+            while(!if_stack.empty() && if_stack.back().endif_location == IP)
             {
                 // The "else" of an "if" ends here
+                CodeTree elsebranch = sim.PullResult();
+                sim.Push(if_stack.back().condition);
+                sim.Push(if_stack.back().thenbranch);
+                sim.Push(elsebranch);
                 sim.Eat(3, cIf);
-                labels.erase(labels.end()-1);
+                if_stack.pop_back();
             }
-        after_powi:
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
-            if(opcode == cSqr || opcode == cDup)
+            if(opcode == cSqr || opcode == cDup
+            || opcode == cInv || opcode == cNeg
+            || opcode == cSqrt || opcode == cRSqrt
+            || opcode == cFetch)
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
-                long exponent = ParsePowiSequence(ByteCode, IP);
-                if(exponent != 1)
+                double exponent = ParsePowiSequence(
+                    ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
+                    sim.GetStackTop()-1);
+                if(exponent != 1.0)
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
-                    sim.AddConst( (double) exponent);
+                    sim.AddConst(exponent);
                     sim.Eat(2, cPow);
                     goto after_powi;
                 }
-                if(opcode == cDup)
+                if(opcode == cDup
+                || opcode == cFetch
+                || opcode == cNeg)
                 {
-                    long factor = ParseMuliSequence(ByteCode, IP);
-                    if(factor != 1)
+                    double factor = ParseMuliSequence(
+                        ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
+                        sim.GetStackTop()-1);
+                    if(factor != 1.0)
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
-                        sim.AddConst( (double) factor);
+                        sim.AddConst(factor);
                         sim.Eat(2, cMul);
                         goto after_powi;
                     }
@@ -347,12 +443,22 @@ namespace FPoptimizer_CodeTree
                 {
                     // Specials
                     case cIf:
-                        IP += 2;
+                    {
+                        if_stack.resize(if_stack.size() + 1);
+                        CodeTree res( sim.PullResult() );
+                        if_stack.back().condition.swap( res );
+                        if_stack.back().endif_location = ByteCode.size();
+                        IP += 2; // dp,sp for elsebranch are irrelevant.
                         continue;
+                    }
                     case cJump:
-                        labels.push_back(ByteCode[IP+1]+1);
+                    {
+                        CodeTree res( sim.PullResult() );
+                        if_stack.back().thenbranch.swap( res );
+                        if_stack.back().endif_location = ByteCode[IP+1]+1;
                         IP += 2;
                         continue;
+                    }
                     case cImmed:
                         sim.AddConst(Immed[DP++]);
                         break;
@@ -376,19 +482,27 @@ namespace FPoptimizer_CodeTree
                         break;
                     }
                     // Unary operators requiring special attention
-                    case cInv: // from fpoptimizer
+                    /*case cInv:  // already handled by powi_opt
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1
-                        break;
-                    case cNeg:
+                        break; */
+                    /*case cNeg: // already handled by powi_opt
                         sim.AddConst(-1);
                         sim.Eat(2, cMul); // -x is x*-1
-                        break;
-                    case cSqr: // from fpoptimizer
+                        break;*/
+                    /*case cSqr: // already handled by powi_opt
                         sim.AddConst(2.0);
                         sim.Eat(2, cPow);
-                        break;
+                        break;*/
                     // Unary functions requiring special attention
+                    /*case cSqrt: // already handled by powi_opt
+                        sim.AddConst(0.5);
+                        sim.Eat(2, cPow);
+                        break;*/
+                    /*case cRSqrt: // already handled by powi_opt
+                        sim.AddConst(-0.5);
+                        sim.Eat(2, cPow);
+                        break; */
                     case cDeg:
                         sim.AddConst(CONSTANT_DR);
                         sim.Eat(2, cMul);
@@ -405,10 +519,6 @@ namespace FPoptimizer_CodeTree
                     case cExp2: // from fpoptimizer
                         sim.AddConst(2.0);
                         sim.SwapLastTwoInStack();
-                        sim.Eat(2, cPow);
-                        break;
-                    case cSqrt:
-                        sim.AddConst(0.5);
                         sim.Eat(2, cPow);
                         break;
                     case cCot:
@@ -466,10 +576,6 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cRPow:
                         sim.SwapLastTwoInStack();
-                        sim.Eat(2, cPow);
-                        break;
-                    case cRSqrt: // from fpoptimizer
-                        sim.AddConst(-0.5);
                         sim.Eat(2, cPow);
                         break;
                     // Binary operators not requiring special attention
