@@ -611,6 +611,7 @@ namespace
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
         static inline bool is_redundant(double v) { return v==1.0; }
+        static inline bool opposite_is_preferred() { return false; }
     };
     struct DivOp
     {
@@ -622,6 +623,7 @@ namespace
         static inline bool valid_rvalue(double v) { return v != 0.0; }
         static inline bool valid_opposite_rvalue(double) { return true; }
         static inline bool is_redundant(double v) { return v==1.0; }
+        static inline bool opposite_is_preferred() { return true; }
     };
     struct AddOp
     {
@@ -633,6 +635,7 @@ namespace
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double) { return true; }
         static inline bool is_redundant(double v) { return v==0.0; }
+        static inline bool opposite_is_preferred() { return false; }
     };
     struct SubOp
     {
@@ -644,6 +647,7 @@ namespace
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double) { return true; }
         static inline bool is_redundant(double v) { return v==0.0; }
+        static inline bool opposite_is_preferred() { return false; }
     };
     struct ModOp
     {
@@ -655,6 +659,7 @@ namespace
         static inline bool valid_rvalue(double v) { return v != 0.0; }
         static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
         static inline bool is_redundant(double) { return false; }
+        static inline bool opposite_is_preferred() { return false; }
     };
 
     bool IsEligibleIntPowiExponent(int int_exponent)
@@ -1030,6 +1035,12 @@ inline void FunctionParser::AddBinaryOperationByConst()
             data->ByteCode.pop_back();
             // bytecode top:  ...
         }
+    }
+    else if(Operation::opposite_is_preferred())
+    {
+        double p = 1; Operation::combine_action(p, data->Immed.back());
+        data->Immed.back() = p;
+        data->ByteCode.push_back(unsigned(Operation::opposite));
     }
     else
     {
