@@ -19,7 +19,7 @@
 
 namespace FPoptimizer_Grammar
 {
-    class Grammar;
+    struct Grammar;
 }
 
 namespace FPoptimizer_ByteCode
@@ -106,7 +106,7 @@ namespace FPoptimizer_CodeTree
         inline double GetImmed() const;
         inline unsigned GetVar() const;
         inline unsigned GetFuncNo() const;
-        inline bool IsDefined() const { return &*data; }
+        inline bool IsDefined() const { return (&*data) != 0; }
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
         inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::cVar; }

@@ -7,6 +7,8 @@
 using namespace FPoptimizer_Grammar;
 using namespace FUNCTIONPARSERTYPES;
 
+#include <cctype>
+
 namespace FPoptimizer_Grammar
 {
     bool ParamSpec_Compare(const void* aa, const void* bb, SpecialOpcode type)

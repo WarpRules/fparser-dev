@@ -20,7 +20,7 @@ namespace
 {
     long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
     {
-        long result = 1.0;
+        long result = 1;
         while(IP < ByteCode.size() && ByteCode[IP] == cSqr)
         {
             result *= 2;
@@ -46,7 +46,7 @@ namespace
     }
     long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP)
     {
-        long result = 1.0;
+        long result = 1;
         if(IP < ByteCode.size() && ByteCode[IP] == cDup)
         {
             size_t dup_pos = IP;
