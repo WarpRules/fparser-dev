@@ -56,6 +56,7 @@ namespace
         TimingInfo mParseTiming;
         TimingInfo mEvalTiming;
         TimingInfo mOptimizeTiming;
+        TimingInfo mDoubleOptimizeTiming;
         TimingInfo mOptimizedEvalTiming;
     };
 
@@ -118,7 +119,10 @@ namespace
         printTimingInfo();
         info.mOptimizeTiming =
             getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
+        printTimingInfo();
         gParser.Optimize();
+        info.mDoubleOptimizeTiming =
+            getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
         printTimingInfo();
         info.mOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
     }
@@ -369,20 +373,22 @@ namespace
     void printFunctionTimings(std::vector<FunctionInfo>& functions)
     {
         std::printf
-        ("     ,--------------------------------------------------------,\n"
-         "     |        Parse |        Eval |    Eval (O) |    Optimize |\n"
-         ",----+--------------+-------------+-------------+-------------+\n");
+        ("     ,---------------------------------------------------------------------,\n"
+         "     |        Parse |        Eval |    Eval (O) |    Optimize |  Repeat O. |\n"
+         ",----+--------------+-------------+-------------+-------------+------------+\n");
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |\n", i+1,
+            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |%12.1f|\n", i+1,
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
                         functions[i].mOptimizedEvalTiming.mMicroSeconds,
-                        functions[i].mOptimizeTiming.mMicroSeconds);
+                        functions[i].mOptimizeTiming.mMicroSeconds,
+                        functions[i].mDoubleOptimizeTiming.mMicroSeconds
+                       );
         }
         std::printf
-        ("'-------------------------------------------------------------'\n");
+        ("'--------------------------------------------------------------------------'\n");
     }
 
     bool checkFunctionValidity(FunctionInfo& info)
