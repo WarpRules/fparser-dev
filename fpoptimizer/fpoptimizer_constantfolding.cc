@@ -16,6 +16,11 @@ using namespace FPoptimizer_CodeTree;
 
 #define FP_MUL_COMBINE_EXPONENTS
 
+#ifdef _MSC_VER
+ #include <float.h>
+ #define isinf(x) (!_finite(x))
+#endif
+
 namespace
 {
     struct ComparisonSet /* For optimizing And, Or */
@@ -299,12 +304,23 @@ namespace
                     && !(IsIntegerConst(exp_b) && !IsIntegerConst(exp_diff))
                       )
                     {
+                        /* When input is x^3 * z^2,
+                         * exp_a = 2
+                         * a_set = z
+                         * exp_b = 3
+                         * b_set = x
+                         * exp_diff = 3-2 = 1
+                         */
                         std::vector<CodeTree>& a_set = data[a].second;
                         std::vector<CodeTree>& b_set = data[b].second;
-
+          #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "Before ConstantExponentCollection iteration:\n";
+                        Dump(std::cout);
+          #endif
                         if(IsIntegerConst(exp_b)
                         && IsEvenIntegerConst(exp_b)
-                        && !IsEvenIntegerConst(exp_diff))
+                        //&& !IsEvenIntegerConst(exp_diff)
+                        && !IsEvenIntegerConst(exp_diff+exp_a))
                         {
                             CodeTree tmp2;
                             tmp2.SetOpcode(cMul);
@@ -324,12 +340,35 @@ namespace
                         data.erase(data.begin() + b);
                         MoveToSet_NonUnique(exp_diff, b_copy);
                         changed = true;
+
+          #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "After ConstantExponentCollection iteration:\n";
+                        Dump(std::cout);
+          #endif
                         goto redo;
                     }
                 }
             }
             return changed;
         }
+
+    #ifdef DEBUG_SUBSTITUTIONS
+        void Dump(std::ostream& out)
+        {
+            for(size_t a=0; a<data.size(); ++a)
+            {
+                out.precision(12);
+                out << data[a].first << ": ";
+                for(size_t b=0; b<data[a].second.size(); ++b)
+                {
+                    if(b > 0) out << '*';
+                    FPoptimizer_Grammar::DumpTree(data[a].second[b], out);
+                }
+                out << std::endl;
+            }
+        }
+    #endif
+
     };
 }
 
