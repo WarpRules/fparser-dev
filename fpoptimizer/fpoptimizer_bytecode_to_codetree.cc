@@ -18,55 +18,91 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP, size_t limit)
+    typedef std::vector<long> FactorStack;
+
+    long ParseISequence(
+        unsigned opcode_square,
+        unsigned opcode_cumulate,
+        const std::vector<unsigned>& ByteCode, size_t& IP,
+        size_t limit,
+        size_t factor_stack_base,
+        FactorStack& stack)
     {
-        long result = 1.0;
-    recheck_sqr:
-        while(IP < limit && ByteCode[IP] == cSqr)
+        long result = 1;
+        while(IP < limit)
         {
-            result *= 2;
-            ++IP;
-        }
-        if(IP < limit && ByteCode[IP] == cDup)
-        {
-            size_t dup_pos = IP;
-            ++IP;
-            long subexponent = ParsePowiSequence(ByteCode, IP, limit);
-            if(IP >= limit || ByteCode[IP] != cMul)
+            if(ByteCode[IP] == opcode_square)
             {
-                // It wasn't a powi-dup after all
-                IP = dup_pos;
+                result *= 2;
+                ++IP;
+                continue;
             }
-            else
+
+            size_t dup_fetch_pos = IP;
+            long lhs = 1;
+
+            if(ByteCode[IP] == cFetch)
             {
-                ++IP; // skip cMul
-                result *= 1 + subexponent;
-                goto recheck_sqr;
+                unsigned index = ByteCode[++IP];
+                if(index < factor_stack_base
+                || size_t(index-factor_stack_base) >= stack.size())
+                {
+                    // It wasn't a powi-fetch after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                lhs = stack[index - factor_stack_base];
+                // Note: ^This assumes that cFetch of recentmost
+                //        is always converted into cDup.
+                goto dup_or_fetch;
             }
+    #endif
+            if(ByteCode[IP] == cDup)
+            {
+                lhs = result;
+                goto dup_or_fetch;
+
+            dup_or_fetch:
+                stack.push_back(result);
+                ++IP;
+                long subexponent = ParseISequence
+                    (opcode_square, opcode_cumulate,
+                     ByteCode, IP, limit,
+                     factor_stack_base, stack);
+                if(IP >= limit || ByteCode[IP] != opcode_cumulate)
+                {
+                    // It wasn't a powi-dup after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                ++IP; // skip opcode_cumulate
+                stack.pop_back();
+                result += lhs*subexponent;
+                continue;
+            }
+            break;
         }
         return result;
     }
 
-    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP, size_t limit)
+    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+                           size_t limit,
+                           size_t factor_stack_base)
     {
-        long result = 1.0;
-        if(IP < limit && ByteCode[IP] == cDup)
-        {
-            size_t dup_pos = IP;
-            ++IP;
-            long subfactor = ParseMuliSequence(ByteCode, IP, limit);
-            if(IP >= limit || ByteCode[IP] != cAdd)
-            {
-                // It wasn't a muli-dup after all
-                IP = dup_pos;
-            }
-            else
-            {
-                ++IP; // skip cAdd
-                result *= 1 + subfactor;
-            }
-        }
-        return result;
+        FactorStack stack;
+        stack.push_back(1);
+        return ParseISequence(cSqr, cMul,
+            ByteCode, IP, limit, factor_stack_base, stack);
+    }
+
+    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+                           size_t limit,
+                           size_t factor_stack_base)
+    {
+        FactorStack stack;
+        stack.push_back(1);
+        return ParseISequence(~unsigned(0), cAdd,
+            ByteCode, IP, limit, factor_stack_base, stack);
     }
 }
 
@@ -272,6 +308,8 @@ namespace FPoptimizer_CodeTree
             stack.resize(stack.size()-1);
             return result;
         }
+
+        size_t GetStackTop() const { return stack.size(); }
     private:
         void FindClone(CodeTree& tree, bool recurse = true)
         {
@@ -320,7 +358,9 @@ namespace FPoptimizer_CodeTree
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
-                long exponent = ParsePowiSequence(ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back());
+                long exponent = ParsePowiSequence(
+                    ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back(),
+                    sim.GetStackTop()-1);
                 if(exponent != 1)
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
@@ -330,7 +370,9 @@ namespace FPoptimizer_CodeTree
                 }
                 if(opcode == cDup)
                 {
-                    long factor = ParseMuliSequence(ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back());
+                    long factor = ParseMuliSequence(
+                        ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back(),
+                        sim.GetStackTop()-1);
                     if(factor != 1)
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";

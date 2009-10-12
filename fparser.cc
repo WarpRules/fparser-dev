@@ -2033,6 +2033,94 @@ namespace
         }
         return "?";
     }
+
+    typedef std::vector<long> FactorStack;
+
+    long ParseISequence(
+        unsigned opcode_square,
+        unsigned opcode_cumulate,
+        const std::vector<unsigned>& ByteCode, unsigned& IP,
+        unsigned limit,
+        size_t factor_stack_base,
+        FactorStack& stack)
+    {
+        long result = 1;
+        while(IP < limit)
+        {
+            if(ByteCode[IP] == opcode_square)
+            {
+                result *= 2;
+                ++IP;
+                continue;
+            }
+
+            unsigned dup_fetch_pos = IP;
+            long lhs = 1;
+
+    #ifdef FP_SUPPORT_OPTIMIZER
+            if(ByteCode[IP] == cFetch)
+            {
+                unsigned index = ByteCode[++IP];
+                if(index < factor_stack_base
+                || size_t(index-factor_stack_base) >= stack.size())
+                {
+                    // It wasn't a powi-fetch after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                lhs = stack[index - factor_stack_base];
+                // Note: ^This assumes that cFetch of recentmost
+                //        is always converted into cDup.
+                goto dup_or_fetch;
+            }
+    #endif
+            if(ByteCode[IP] == cDup)
+            {
+                lhs = result;
+                goto dup_or_fetch;
+
+            dup_or_fetch:
+                stack.push_back(result);
+                ++IP;
+                long subexponent = ParseISequence
+                    (opcode_square, opcode_cumulate,
+                     ByteCode, IP, limit,
+                     factor_stack_base, stack);
+                if(IP >= limit || ByteCode[IP] != opcode_cumulate)
+                {
+                    // It wasn't a powi-dup after all
+                    IP = dup_fetch_pos;
+                    break;
+                }
+                ++IP; // skip opcode_cumulate
+                stack.pop_back();
+                result += lhs*subexponent;
+                continue;
+            }
+            break;
+        }
+        return result;
+    }
+
+    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
+                           unsigned limit,
+                           size_t factor_stack_base)
+    {
+        FactorStack stack;
+        stack.push_back(1);
+        return ParseISequence(cSqr, cMul,
+            ByteCode, IP, limit, factor_stack_base, stack);
+    }
+
+    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
+                           unsigned limit,
+                           size_t factor_stack_base)
+    {
+        FactorStack stack;
+        stack.push_back(1);
+        return ParseISequence(~unsigned(0), cAdd,
+            ByteCode, IP, limit, factor_stack_base, stack);
+    }
 }
 
 void FunctionParser::PrintByteCode(std::ostream& dest,
@@ -2051,6 +2139,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
     for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
     {
+    after_powi_or_muli:;
         std::string n;
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
@@ -2069,6 +2158,88 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             if(IP >= ByteCode.size()) break;
             opcode = ByteCode[IP];
 
+            if(showExpression && (
+                opcode == cSqr || opcode == cDup
+    #ifdef FP_SUPPORT_OPTIMIZER
+             || opcode == cFetch
+    #endif
+            ))
+            {
+                unsigned changed_ip = IP;
+                long exponent = ParsePowiSequence(ByteCode, changed_ip,
+                                                  if_stack.empty()
+                                                    ? (unsigned)ByteCode.size()
+                                                    : if_stack.back(),
+                                                  stack.size()-1);
+                std::ostringstream operation;
+                int prio = 0;
+                if(exponent == 1)
+                {
+                    if(opcode != cDup) goto not_powi_or_muli;
+                    long factor = ParseMuliSequence(ByteCode, changed_ip,
+                                                    if_stack.empty()
+                                                      ? (unsigned)ByteCode.size()
+                                                      : if_stack.back(),
+                                                    stack.size()-1);
+                    if(factor == 1) goto not_powi_or_muli;
+                    operation << '*' << factor;
+                    prio = 3;
+                }
+                else
+                {
+                    prio = 2;
+                    operation << '^' << exponent;
+                }
+
+                unsigned explanation_before = changed_ip-2;
+                const char* explanation_prefix = "_";
+                for(const unsigned first_ip = IP; IP < changed_ip; ++IP)
+                {
+                    printHex(output, IP);
+                    output << ": ";
+
+                    const char* sep = "|";
+                    if(first_ip+1 == changed_ip) { sep = "="; explanation_prefix = " "; }
+                    else if(IP   == first_ip) sep = "\\";
+                    else if(IP+1 == changed_ip) sep = "/";
+                    else explanation_prefix = "=";
+
+                    switch(ByteCode[IP])
+                    {
+                        case cDup: output << "dup"; break;
+                        case cSqr: output << "sqr"; break;
+                        case cMul: output << "mul"; break;
+                        case cAdd: output << "add"; break;
+    #ifdef FP_SUPPORT_OPTIMIZER
+                        case cFetch:
+                        {
+                            unsigned index = ByteCode[++IP];
+                            output << "cFetch(" << index << ")";
+                            break;
+                        }
+    #endif
+                        default: break;
+                    }
+                    padLine(outputBuffer, 20);
+                    output << sep;
+                    if(IP >= explanation_before)
+                    {
+                        explanation_before = (unsigned)ByteCode.size();
+                        output << explanation_prefix
+                               << '[' << (stack.size()-1) << ']';
+                        std::string& last = stack.back().second;
+                        if(stack.back().first >= prio)
+                            last = "(" + last + ")";
+                        last += operation.str();
+                        output << last;
+                        stack.back().first = prio;
+                    }
+                    dest << outputBuffer.str() << std::endl;
+                    outputBuffer.str("");
+                }
+                goto after_powi_or_muli;
+            }
+        not_powi_or_muli:;
             printHex(output, IP);
             output << ": ";
 
