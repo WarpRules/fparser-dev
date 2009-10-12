@@ -56,7 +56,6 @@ namespace
                 //        is always converted into cDup.
                 goto dup_or_fetch;
             }
-    #endif
             if(ByteCode[IP] == cDup)
             {
                 lhs = result;
@@ -255,7 +254,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(value);
             FindClone(newnode);
-            stack.push_back(newnode);
+            Push(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());
@@ -267,7 +266,7 @@ namespace FPoptimizer_CodeTree
         {
             CodeTree newnode(varno, CodeTree::VarTag());
             FindClone(newnode);
-            stack.push_back(newnode);
+            Push(newnode);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
             FPoptimizer_Grammar::DumpTree(stack.back());
@@ -287,12 +286,18 @@ namespace FPoptimizer_CodeTree
 
         void Fetch(size_t which)
         {
-            stack.push_back(stack[which]);
+            Push(stack[which]);
+        }
+
+        template<typename T>
+        void Push(T tree)
+        {
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
-            FPoptimizer_Grammar::DumpTree(stack.back());
+            FPoptimizer_Grammar::DumpTree(tree);
             std::cout << std::endl;
         #endif
+            stack.push_back(tree);
         }
 
         void PopNMov(size_t target, size_t source)
@@ -304,7 +309,7 @@ namespace FPoptimizer_CodeTree
         CodeTree PullResult()
         {
             clones.clear();
-            CodeTree result = stack.back();
+            CodeTree result(stack.back());
             stack.resize(stack.size()-1);
             return result;
         }
@@ -334,32 +339,43 @@ namespace FPoptimizer_CodeTree
         CodeTreeParserData& operator=(const CodeTreeParserData&);
     };
 
+    struct IfInfo
+    {
+        CodeTree condition;
+        CodeTree thenbranch;
+        size_t endif_location;
+    };
+
     void CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
         const FunctionParser::Data& fpdata)
     {
         CodeTreeParserData sim;
-        std::vector<size_t> labels;
+        std::vector<IfInfo> if_stack;
 
         for(size_t IP=0, DP=0; ; ++IP)
         {
         after_powi:
-            while(!labels.empty() && labels.back() == IP)
+            while(!if_stack.empty() && if_stack.back().endif_location == IP)
             {
                 // The "else" of an "if" ends here
+                CodeTree elsebranch = sim.PullResult();
+                sim.Push(if_stack.back().condition);
+                sim.Push(if_stack.back().thenbranch);
+                sim.Push(elsebranch);
                 sim.Eat(3, cIf);
-                labels.erase(labels.end()-1);
+                if_stack.pop_back();
             }
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
-            if(opcode == cSqr || opcode == cDup)
+            if(opcode == cSqr || opcode == cDup || opcode == cFetch)
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
                 long exponent = ParsePowiSequence(
-                    ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back(),
+                    ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
                 if(exponent != 1)
                 {
@@ -368,10 +384,10 @@ namespace FPoptimizer_CodeTree
                     sim.Eat(2, cPow);
                     goto after_powi;
                 }
-                if(opcode == cDup)
+                if(opcode == cDup || opcode == cFetch)
                 {
                     long factor = ParseMuliSequence(
-                        ByteCode, IP, labels.empty() ? ByteCode.size() : labels.back(),
+                        ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                         sim.GetStackTop()-1);
                     if(factor != 1)
                     {
@@ -392,12 +408,22 @@ namespace FPoptimizer_CodeTree
                 {
                     // Specials
                     case cIf:
-                        IP += 2;
+                    {
+                        if_stack.resize(if_stack.size() + 1);
+                        CodeTree res( sim.PullResult() );
+                        if_stack.back().condition.swap( res );
+                        if_stack.back().endif_location = ByteCode.size();
+                        IP += 2; // dp,sp for elsebranch are irrelevant.
                         continue;
+                    }
                     case cJump:
-                        labels.push_back(ByteCode[IP+1]+1);
+                    {
+                        CodeTree res( sim.PullResult() );
+                        if_stack.back().thenbranch.swap( res );
+                        if_stack.back().endif_location = ByteCode[IP+1]+1;
                         IP += 2;
                         continue;
+                    }
                     case cImmed:
                         sim.AddConst(Immed[DP++]);
                         break;

@@ -2121,6 +2121,15 @@ namespace
         return ParseISequence(~unsigned(0), cAdd,
             ByteCode, IP, limit, factor_stack_base, stack);
     }
+
+    struct IfInfo
+    {
+        std::pair<int,std::string> condition;
+        std::pair<int,std::string> thenbranch;
+        unsigned endif_location;
+
+        IfInfo() : condition(), thenbranch(), endif_location() { }
+    };
 }
 
 void FunctionParser::PrintByteCode(std::ostream& dest,
@@ -2135,7 +2144,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
     const std::vector<double>& Immed = data->Immed;
 
     std::vector<std::pair<int,std::string> > stack;
-    std::vector<unsigned> if_stack;
+    std::vector<IfInfo> if_stack;
 
     for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
     {
@@ -2144,14 +2153,18 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
 
-        if(showExpression && !if_stack.empty() && if_stack.back() == IP)
+        if(showExpression && !if_stack.empty() && if_stack.back().endif_location == IP)
         {
             printHex(output, IP);
             output << ": (end)";
+            stack.resize(stack.size()+2);
+            std::swap(stack[stack.size()-3], stack[stack.size()-1]);
+            std::swap(if_stack.back().condition,  stack[stack.size()-3]);
+            std::swap(if_stack.back().thenbranch, stack[stack.size()-2]);
             opcode = cIf;
             params = 3;
             --IP;
-            if_stack.resize(if_stack.size()-1); // pop_back
+            if_stack.pop_back();
         }
         else
         {
@@ -2169,7 +2182,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 long exponent = ParsePowiSequence(ByteCode, changed_ip,
                                                   if_stack.empty()
                                                     ? (unsigned)ByteCode.size()
-                                                    : if_stack.back(),
+                                                    : if_stack.back().endif_location,
                                                   stack.size()-1);
                 std::ostringstream operation;
                 int prio = 0;
@@ -2179,7 +2192,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                     long factor = ParseMuliSequence(ByteCode, changed_ip,
                                                     if_stack.empty()
                                                       ? (unsigned)ByteCode.size()
-                                                      : if_stack.back(),
+                                                      : if_stack.back().endif_location,
                                                     stack.size()-1);
                     if(factor == 1) goto not_powi_or_muli;
                     operation << '*' << factor;
@@ -2253,6 +2266,11 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                   params = 1;
                   produces = 0;
                   IP += 2;
+
+                  if_stack.resize(if_stack.size() + 1);
+                  std::swap( if_stack.back().condition, stack.back() );
+                  if_stack.back().endif_location = (unsigned) ByteCode.size();
+                  stack.pop_back();
                   break;
               }
 
@@ -2260,8 +2278,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
               {
                   unsigned label = ByteCode[IP+1]+1;
 
-                  if(showExpression)
-                      if_stack.push_back(label);
+                  std::swap(if_stack.back().thenbranch, stack.back());
+                  if_stack.back().endif_location = label;
+                  stack.pop_back();
 
                   output << "jump ";
                   printHex(output, label);
