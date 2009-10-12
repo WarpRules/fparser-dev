@@ -187,8 +187,8 @@ namespace
     }
 
     bool compareFunctions(size_t function1Index, size_t function2Index,
-                          ParserWithConsts& parser1, bool parser1Optimized,
-                          ParserWithConsts& parser2, bool parser2Optimized)
+                          ParserWithConsts& parser1, const char* parser1Type,
+                          ParserWithConsts& parser2, const char* parser2Type)
     {
         const size_t varsAmount = gVarValues[0].size();
         for(size_t varSetInd = 0; varSetInd < gVarValues.size(); ++varSetInd)
@@ -210,13 +210,11 @@ namespace
                     std::cout << values[i];
                 }
                 std::cout << ")\n";
-                std::cout << "******* function " << function1Index+1 << " (";
-                if(!parser1Optimized) std::cout << "not ";
-                std::cout << "optimized) returned "
+                std::cout << "******* function " << function1Index+1
+                          << " (" << parser1Type << ") returned "
                           << std::setprecision(18) << v1 << "\n";
-                std::cout << "******* function " << function2Index+1 << " (";
-                if(!parser2Optimized) std::cout << "not ";
-                std::cout << "optimized) returned "
+                std::cout << "******* function " << function2Index+1
+                          << " (" << parser2Type << ") returned "
                           << std::setprecision(18) << v2
                           << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
@@ -228,47 +226,58 @@ namespace
         return true;
     }
 
+    bool had_double_optimization_problems = false;
+
     bool checkEquality(const std::vector<FunctionInfo>& functions)
     {
-        ParserWithConsts parser1, parser2;
+        static const char not_optimized[] = "not optimized";
+        static const char optimized[]     = "optimized";
+        static const char optimized2[]    = "double-optimized";
+        static const char* const optimize_labels[3] = {not_optimized,optimized,optimized2};
+
+        ParserWithConsts parser1, parser2, parser3;
 
         bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
             parser1.Parse(functions[ind1].mFunctionString, gVarString);
             parser2.Parse(functions[ind1].mFunctionString, gVarString);
-            parser2.Optimize();
-            errors = errors || !compareFunctions(ind1, ind1, parser1, false, parser2, true);
+            // parser 1 is not optimized
+            parser2.Optimize(); // parser 2 is optimized once
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized))
+                errors = true;
+            parser2.Optimize(); // parser 2 is optimized twice
+            if(!compareFunctions(ind1, ind1, parser1, not_optimized, parser2, optimized2))
+                errors = had_double_optimization_problems = true;
+            parser1.Optimize(); // parser 1 is optimized once
+            if(!compareFunctions(ind1, ind1, parser1, optimized, parser2, optimized2))
+                errors = had_double_optimization_problems = true;
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
                 parser1.Parse(functions[ind1].mFunctionString, gVarString);
-                parser2.Parse(functions[ind2].mFunctionString, gVarString);
-                bool ok = compareFunctions(ind1, ind2,
-                                           parser1, false, parser2, false);
-
-                if(ok)
+                for(int n_optimizes1 = 0; n_optimizes1 <= 2; ++n_optimizes1)
                 {
-                    parser1.Optimize();
-                    ok = compareFunctions(ind1, ind2,
-                                          parser1, true, parser2, false);
-                }
+                    if(errors) break;
+                    if(n_optimizes1 > 0) parser1.Optimize();
 
-                if(ok)
-                {
-                    parser2.Optimize();
-                    ok = compareFunctions(ind1, ind2,
-                                          parser1, true, parser2, true);
-                }
+                    parser2.Parse(functions[ind2].mFunctionString, gVarString);
 
-                if(ok)
-                {
-                    parser1.Parse(functions[ind1].mFunctionString, gVarString);
-                    compareFunctions(ind1, ind2,
-                                     parser1, false, parser2, true);
+                    for(int n_optimizes2 = 0; n_optimizes2 <= 2; ++n_optimizes2)
+                    {
+                        if(n_optimizes2 > 0) parser2.Optimize();
+                        bool ok = compareFunctions(ind1, ind2,
+                            parser1, optimize_labels[n_optimizes1],
+                            parser2, optimize_labels[n_optimizes2]);
+                        if(!ok)
+                        {
+                            errors = true;
+                            if(n_optimizes1 > 1 || n_optimizes2 > 1)
+                                had_double_optimization_problems = true;
+                            break;
+                        }
+                    }
                 }
-
-                if(!ok) errors = true;
             }
         }
         return !errors;
@@ -280,26 +289,44 @@ namespace
         ParserWithConsts parser;
         for(size_t i = 0; i < functions.size(); ++i)
         {
-            std::cout
-                << "Function " << i+1
-                << " original                   | Optimized\n"
-                << "-------------------                   | ---------"
-                << std::endl;
+            std::stringstream stream1, stream2, stream3;
 
-            std::stringstream stream1, stream2;
             parser.Parse(functions[i].mFunctionString, gVarString);
-            parser.PrintByteCode(stream1);
-            parser.Optimize();
-            parser.PrintByteCode(stream2);
 
-            std::string line1, line2;
+            stream1 << "Function " << i+1 << " original\n"
+                       "-------------------\n";
+            parser.PrintByteCode(stream1);
+
+            stream2 << "Optimized\n"
+                       "---------\n";
+            parser.Optimize();
+            {std::ostringstream stream2_bytecodeonly;
+            parser.PrintByteCode(stream2_bytecodeonly);
+            stream2 << stream2_bytecodeonly.str();
+
+            parser.Optimize();
+            {std::ostringstream stream3_bytecodeonly;
+            parser.PrintByteCode(stream3_bytecodeonly);
+
+            if(had_double_optimization_problems
+            || stream2_bytecodeonly.str() != stream3_bytecodeonly.str())
+            {
+                stream3 << "Double-optimized\n"
+                           "----------------\n";
+                stream3 << stream3_bytecodeonly.str();
+            }}}
+
+            std::string line1, line2, line3;
             while(true)
             {
                 if(stream1) std::getline(stream1, line1);
                 else line1.clear();
                 if(stream2) std::getline(stream2, line2);
                 else line2.clear();
-                if(line1.empty() && line2.empty()) break;
+                if(stream3) std::getline(stream3, line3);
+                else line3.clear();
+
+                if(line1.empty() && line2.empty() && line3.empty()) break;
 
                 if(!line2.empty())
                 {
@@ -309,15 +336,30 @@ namespace
                         line1[37] = '~';
                     }
                     else line1.resize(38, ' ');
-                    /*if(line2.length() > 38)
+                }
+                else if(!line3.empty())
+                {
+                    if(line1.length() > 78)
+                    {
+                        line1.resize(78, ' ');
+                        line1[77] = '~';
+                    }
+                    else line1.resize(78, ' ');
+                }
+                if(!line3.empty() && !line2.empty())
+                {
+                    if(line2.length() > 38)
                     {
                         line2.resize(38, ' ');
                         line2[37] = '~';
-                    }*/
-                    std::cout << line1 << "| " << line2 << "\n";
+                    }
+                    else line2.resize(38, ' ');
                 }
-                else
-                    std::cout << line1 << "\n";
+
+                std::cout << line1;
+                if(!line2.empty()) std::cout << "| " << line2;
+                if(!line3.empty()) std::cout << "| " << line3;
+                std::cout << "\n";
             }
             std::cout << SEPARATOR << std::endl;
         }
