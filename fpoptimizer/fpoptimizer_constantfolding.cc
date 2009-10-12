@@ -1498,7 +1498,7 @@ namespace FPoptimizer_CodeTree
                             //if(imm >= 0.0)
                             {
                                 double new_base_immed = std::pow(base_immed, imm);
-                                if(isinf(new_base_immed))
+                                if(isinf(new_base_immed) || new_base_immed == 0.0)
                                 {
                                     // It produced an infinity. Do not change.
                                     break;
