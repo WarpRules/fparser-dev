@@ -908,7 +908,7 @@ namespace FPoptimizer_CodeTree
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithZero;
-                    case 1: SetOpcode(cNotNot); break; // Replace self with the single operand
+                    case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
                     default: if(ConstantFolding_AndLogic()) goto redo;
                 }
                 break;
@@ -942,7 +942,7 @@ namespace FPoptimizer_CodeTree
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithOne;
-                    case 1: SetOpcode(cNotNot); break; // Replace self with the single operand
+                    case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
                     default: if(ConstantFolding_OrLogic()) goto redo;
                 }
                 break;
