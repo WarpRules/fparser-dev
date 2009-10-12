@@ -515,14 +515,33 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::ConstantFolding_MulGrouping()
     {
+        bool has_highlevel_opcodes = false;
         bool should_regenerate = false;
         CollectionSet mul;
         for(size_t a=0; a<GetParamCount(); ++a)
         {
-            CollectionSet::CollectionResult
-                result = (GetParam(a).GetOpcode() == cPow)
-                    ? mul.AddCollection(GetParam(a).GetParam(0), GetParam(a).GetParam(1))
-                    : mul.AddCollection(GetParam(a));
+            CollectionSet::CollectionResult result;
+
+            switch(GetParam(a).GetOpcode())
+            {
+                case cPow:
+                    result = mul.AddCollection(GetParam(a).GetParam(0), GetParam(a).GetParam(1));
+                    break;
+                case cSqrt:
+                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(0.5));
+                    has_highlevel_opcodes = true;
+                    break;
+                case cRSqrt:
+                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(-0.5));
+                    has_highlevel_opcodes = true;
+                    break;
+                case cInv:
+                    result = mul.AddCollection(GetParam(a).GetParam(0), CodeTree(-1.0));
+                    has_highlevel_opcodes = true;
+                    break;
+                default:
+                    result = mul.AddCollection(GetParam(a));
+            }
             if(result == CollectionSet::Suboptimal)
                 should_regenerate = true;
         }
@@ -613,6 +632,37 @@ namespace FPoptimizer_CodeTree
                 mul.SetOpcode(cMul);
                 mul.SetParamsMove( list.second);
                 mul.Rehash();
+
+                if(has_highlevel_opcodes && list.first.IsImmed())
+                {
+                    if(list.first.GetImmed() == 0.5)
+                    {
+                        CodeTree sqrt;
+                        sqrt.SetOpcode(cSqrt);
+                        sqrt.AddParamMove(mul);
+                        sqrt.Rehash();
+                        AddParamMove(sqrt);
+                        continue;
+                    }
+                    if(list.first.GetImmed() == -0.5)
+                    {
+                        CodeTree rsqrt;
+                        rsqrt.SetOpcode(cRSqrt);
+                        rsqrt.AddParamMove(mul);
+                        rsqrt.Rehash();
+                        AddParamMove(rsqrt);
+                        continue;
+                    }
+                    if(list.first.GetImmed() == -1.0)
+                    {
+                        CodeTree inv;
+                        inv.SetOpcode(cInv);
+                        inv.AddParamMove(mul);
+                        inv.Rehash();
+                        AddParamMove(inv);
+                        continue;
+                    }
+                }
                 CodeTree pow;
                 pow.SetOpcode(cPow);
                 pow.AddParamMove(mul);
