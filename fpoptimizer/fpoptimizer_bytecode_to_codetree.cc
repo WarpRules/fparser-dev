@@ -18,35 +18,60 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    typedef std::vector<long> FactorStack;
+    typedef std::vector<double> FactorStack;
 
-    long ParseISequence(
-        unsigned opcode_square,
-        unsigned opcode_cumulate,
-        unsigned opcode_invert,
+    const struct PowiMuliType
+    {
+        unsigned opcode_square;
+        unsigned opcode_cumulate;
+        unsigned opcode_invert;
+        unsigned opcode_half;
+        unsigned opcode_invhalf;
+    } iseq_powi = {cSqr,cMul,cInv,cSqrt,cRSqrt},
+      iseq_muli = {~unsigned(0), cAdd,cNeg, ~unsigned(0),~unsigned(0) };
+
+    double ParsePowiMuli(
+        const PowiMuliType& opcodes,
         const std::vector<unsigned>& ByteCode, size_t& IP,
         size_t limit,
         size_t factor_stack_base,
         FactorStack& stack)
     {
-        long result = 1;
+        double result = 1;
         while(IP < limit)
         {
-            if(ByteCode[IP] == opcode_square)
+            if(ByteCode[IP] == opcodes.opcode_square)
             {
+                if(!IsIntegerConst(result)) break;
                 result *= 2;
                 ++IP;
                 continue;
             }
-            if(ByteCode[IP] == opcode_invert)
+            if(ByteCode[IP] == opcodes.opcode_invert)
             {
                 result = -result;
                 ++IP;
                 continue;
             }
+            if(ByteCode[IP] == opcodes.opcode_half)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                result *= 0.5;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcodes.opcode_invhalf)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                result *= -0.5;
+                ++IP;
+                continue;
+            }
 
             size_t dup_fetch_pos = IP;
-            long lhs = 1;
+            double lhs = 1.0;
 
             if(ByteCode[IP] == cFetch)
             {
@@ -71,11 +96,11 @@ namespace
             dup_or_fetch:
                 stack.push_back(result);
                 ++IP;
-                long subexponent = ParseISequence
-                    (opcode_square, opcode_cumulate, opcode_invert,
+                double subexponent = ParsePowiMuli
+                    (opcodes,
                      ByteCode, IP, limit,
                      factor_stack_base, stack);
-                if(IP >= limit || ByteCode[IP] != opcode_cumulate)
+                if(IP >= limit || ByteCode[IP] != opcodes.opcode_cumulate)
                 {
                     // It wasn't a powi-dup after all
                     IP = dup_fetch_pos;
@@ -91,24 +116,22 @@ namespace
         return result;
     }
 
-    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
                            size_t limit,
                            size_t factor_stack_base)
     {
         FactorStack stack;
-        stack.push_back(1);
-        return ParseISequence(cSqr, cMul, cInv,
-            ByteCode, IP, limit, factor_stack_base, stack);
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
-    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
+    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
                            size_t limit,
                            size_t factor_stack_base)
     {
         FactorStack stack;
-        stack.push_back(1);
-        return ParseISequence(~unsigned(0), cAdd, cNeg,
-            ByteCode, IP, limit, factor_stack_base, stack);
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
 }
 
@@ -379,17 +402,18 @@ namespace FPoptimizer_CodeTree
             unsigned opcode = ByteCode[IP];
             if(opcode == cSqr || opcode == cDup
             || opcode == cInv || opcode == cNeg
+            || opcode == cSqrt || opcode == cRSqrt
             || opcode == cFetch)
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
-                long exponent = ParsePowiSequence(
+                double exponent = ParsePowiSequence(
                     ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
-                if(exponent != 1)
+                if(exponent != 1.0)
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
-                    sim.AddConst( (double) exponent);
+                    sim.AddConst(exponent);
                     sim.Eat(2, cPow);
                     goto after_powi;
                 }
@@ -397,13 +421,13 @@ namespace FPoptimizer_CodeTree
                 || opcode == cFetch
                 || opcode == cNeg)
                 {
-                    long factor = ParseMuliSequence(
+                    double factor = ParseMuliSequence(
                         ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                         sim.GetStackTop()-1);
-                    if(factor != 1)
+                    if(factor != 1.0)
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
-                        sim.AddConst( (double) factor);
+                        sim.AddConst(factor);
                         sim.Eat(2, cMul);
                         goto after_powi;
                     }
@@ -458,19 +482,27 @@ namespace FPoptimizer_CodeTree
                         break;
                     }
                     // Unary operators requiring special attention
-                    case cInv: // from fpoptimizer
+                    /*case cInv:  // already handled by powi_opt
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1
-                        break;
-                    case cNeg:
+                        break; */
+                    /*case cNeg: // already handled by powi_opt
                         sim.AddConst(-1);
                         sim.Eat(2, cMul); // -x is x*-1
-                        break;
-                    case cSqr: // from fpoptimizer
+                        break;*/
+                    /*case cSqr: // already handled by powi_opt
                         sim.AddConst(2.0);
                         sim.Eat(2, cPow);
-                        break;
+                        break;*/
                     // Unary functions requiring special attention
+                    /*case cSqrt: // already handled by powi_opt
+                        sim.AddConst(0.5);
+                        sim.Eat(2, cPow);
+                        break;*/
+                    /*case cRSqrt: // already handled by powi_opt
+                        sim.AddConst(-0.5);
+                        sim.Eat(2, cPow);
+                        break; */
                     case cDeg:
                         sim.AddConst(CONSTANT_DR);
                         sim.Eat(2, cMul);
@@ -487,10 +519,6 @@ namespace FPoptimizer_CodeTree
                     case cExp2: // from fpoptimizer
                         sim.AddConst(2.0);
                         sim.SwapLastTwoInStack();
-                        sim.Eat(2, cPow);
-                        break;
-                    case cSqrt:
-                        sim.AddConst(0.5);
                         sim.Eat(2, cPow);
                         break;
                     case cCot:
@@ -548,10 +576,6 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cRPow:
                         sim.SwapLastTwoInStack();
-                        sim.Eat(2, cPow);
-                        break;
-                    case cRSqrt: // from fpoptimizer
-                        sim.AddConst(-0.5);
                         sim.Eat(2, cPow);
                         break;
                     // Binary operators not requiring special attention

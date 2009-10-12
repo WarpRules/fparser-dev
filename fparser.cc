@@ -2034,35 +2034,63 @@ namespace
         return "?";
     }
 
-    typedef std::vector<long> FactorStack;
+    typedef std::vector<double> FactorStack;
 
-    long ParseISequence(
-        unsigned opcode_square,
-        unsigned opcode_cumulate,
-        unsigned opcode_invert,
+    const struct PowiMuliType
+    {
+        unsigned opcode_square;
+        unsigned opcode_cumulate;
+        unsigned opcode_invert;
+        unsigned opcode_half;
+        unsigned opcode_invhalf;
+    } iseq_powi = {cSqr,cMul,cInv,cSqrt,cRSqrt},
+      iseq_muli = {~unsigned(0), cAdd,cNeg, ~unsigned(0),~unsigned(0) };
+
+    double ParsePowiMuli(
+        const PowiMuliType& opcodes,
         const std::vector<unsigned>& ByteCode, unsigned& IP,
         unsigned limit,
         size_t factor_stack_base,
         FactorStack& stack)
     {
-        long result = 1;
+        double result = 1.0;
         while(IP < limit)
         {
-            if(ByteCode[IP] == opcode_square)
+            if(ByteCode[IP] == opcodes.opcode_square)
             {
+                if(!IsIntegerConst(result)) break;
                 result *= 2;
                 ++IP;
                 continue;
             }
-            if(ByteCode[IP] == opcode_invert)
+            if(ByteCode[IP] == opcodes.opcode_invert)
             {
+                if(result < 0) break;
                 result = -result;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcodes.opcode_half)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                if(IsIntegerConst(result * 0.5)) break;
+                result *= 0.5;
+                ++IP;
+                continue;
+            }
+            if(ByteCode[IP] == opcodes.opcode_invhalf)
+            {
+                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                    break;
+                if(IsIntegerConst(result * -0.5)) break;
+                result *= -0.5;
                 ++IP;
                 continue;
             }
 
             unsigned dup_fetch_pos = IP;
-            long lhs = 1;
+            double lhs = 1.0;
 
     #ifdef FP_SUPPORT_OPTIMIZER
             if(ByteCode[IP] == cFetch)
@@ -2089,11 +2117,11 @@ namespace
             dup_or_fetch:
                 stack.push_back(result);
                 ++IP;
-                long subexponent = ParseISequence
-                    (opcode_square, opcode_cumulate, opcode_invert,
+                double subexponent = ParsePowiMuli
+                    (opcodes,
                      ByteCode, IP, limit,
                      factor_stack_base, stack);
-                if(IP >= limit || ByteCode[IP] != opcode_cumulate)
+                if(IP >= limit || ByteCode[IP] != opcodes.opcode_cumulate)
                 {
                     // It wasn't a powi-dup after all
                     IP = dup_fetch_pos;
@@ -2109,24 +2137,20 @@ namespace
         return result;
     }
 
-    long ParsePowiSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                           unsigned limit,
-                           size_t factor_stack_base)
+    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
+                             unsigned limit, size_t factor_stack_base)
     {
         FactorStack stack;
-        stack.push_back(1);
-        return ParseISequence(cSqr, cMul, cInv,
-            ByteCode, IP, limit, factor_stack_base, stack);
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
-    long ParseMuliSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                           unsigned limit,
-                           size_t factor_stack_base)
+    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
+                             unsigned limit, size_t factor_stack_base)
     {
         FactorStack stack;
-        stack.push_back(1);
-        return ParseISequence(~unsigned(0), cAdd, cNeg,
-            ByteCode, IP, limit, factor_stack_base, stack);
+        stack.push_back(1.0);
+        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
     struct IfInfo
@@ -2181,28 +2205,29 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             if(showExpression && (
                 opcode == cSqr || opcode == cDup
              || opcode == cInv
+             || opcode == cSqrt || opcode == cRSqrt
     #ifdef FP_SUPPORT_OPTIMIZER
              || opcode == cFetch
     #endif
             ))
             {
                 unsigned changed_ip = IP;
-                long exponent = ParsePowiSequence(ByteCode, changed_ip,
+                double exponent = ParsePowiSequence(ByteCode, changed_ip,
                                                   if_stack.empty()
                                                     ? (unsigned)ByteCode.size()
                                                     : if_stack.back().endif_location,
                                                   stack.size()-1);
                 std::ostringstream operation;
                 int prio = 0;
-                if(exponent == 1)
+                if(exponent == 1.0)
                 {
                     if(opcode != cDup) goto not_powi_or_muli;
-                    long factor = ParseMuliSequence(ByteCode, changed_ip,
+                    double factor = ParseMuliSequence(ByteCode, changed_ip,
                                                     if_stack.empty()
                                                       ? (unsigned)ByteCode.size()
                                                       : if_stack.back().endif_location,
                                                     stack.size()-1);
-                    if(factor == 1 || factor == -1) goto not_powi_or_muli;
+                    if(factor == 1.0 || factor == -1.0) goto not_powi_or_muli;
                     operation << '*' << factor;
                     prio = 3;
                 }
@@ -2233,6 +2258,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cSqr: output << "sqr"; break;
                         case cMul: output << "mul"; break;
                         case cAdd: output << "add"; break;
+                        case cSqrt: output << "sqrt"; break;
+                        case cRSqrt: output << "rsqrt"; break;
     #ifdef FP_SUPPORT_OPTIMIZER
                         case cFetch:
                         {
