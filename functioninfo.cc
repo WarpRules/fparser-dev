@@ -80,8 +80,8 @@ namespace
             for(unsigned i = 0; i < loopsPerUnit; ++i)
                 Function();
             ++loopUnitsPerformed;
-            totalMilliseconds =
-                (std::clock() - iClock) * 1000 / CLOCKS_PER_SEC;
+            totalMilliseconds = unsigned(
+                (std::clock() - iClock) * 1000 / CLOCKS_PER_SEC );
         }
         while(totalMilliseconds < kTestTime);
         //std::cout << loopUnitsPerformed << "\n";
@@ -97,7 +97,8 @@ namespace
         return info;
     }
 
-    unsigned gTimingCounter = 0, gTimingTotalCount;
+    unsigned gTimingCounter = 0;
+    size_t gTimingTotalCount;
 
     void printTimingInfo()
     {
@@ -287,82 +288,101 @@ namespace
         return !errors;
     }
 
+    void wrapLine(std::string& line, unsigned cutter, std::string& wrap_buf)
+    {
+        if(line.size() <= cutter)
+            line.resize(cutter, ' ');
+        else
+        {
+            for(unsigned wrap_at = cutter; wrap_at > 0; --wrap_at)
+            {
+                char c = line[wrap_at-1];
+                if(c == '*' || c == '+' || c == '/' || c == '('
+                || c == ')' || c == '^' || c == ',' || c == '&'
+                || c == '|' || c == '-')
+                {
+                    wrap_buf = std::string(20, ' ');
+                    wrap_buf += line.substr(wrap_at);
+                    line.erase(line.begin()+wrap_at, line.end());
+                    line.resize(cutter, ' ');
+                    return;
+                }
+            }
+
+            line.resize(cutter, ' ');
+            line[cutter-1] = '~';
+        }
+    }
+
     void printByteCodes(const std::vector<FunctionInfo>& functions)
     {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         ParserWithConsts parser;
         for(size_t i = 0; i < functions.size(); ++i)
         {
-            std::stringstream stream1, stream2, stream3;
+            std::stringstream streams[3];
 
             parser.Parse(functions[i].mFunctionString, gVarString);
 
-            stream1 << "Function " << i+1 << " original\n"
+            streams[0] << "Function " << i+1 << " original\n"
                        "-------------------\n";
-            parser.PrintByteCode(stream1);
+            parser.PrintByteCode(streams[0]);
 
-            stream2 << "Optimized\n"
+            streams[1] << "Optimized\n"
                        "---------\n";
             parser.Optimize();
-            {std::ostringstream stream2_bytecodeonly;
-            parser.PrintByteCode(stream2_bytecodeonly);
-            stream2 << stream2_bytecodeonly.str();
+            {std::ostringstream streams2_bytecodeonly;
+            parser.PrintByteCode(streams2_bytecodeonly);
+            streams[1] << streams2_bytecodeonly.str();
 
             parser.Optimize();
-            {std::ostringstream stream3_bytecodeonly;
-            parser.PrintByteCode(stream3_bytecodeonly);
+            {std::ostringstream streams3_bytecodeonly;
+            parser.PrintByteCode(streams3_bytecodeonly);
 
             if(had_double_optimization_problems
-            || stream2_bytecodeonly.str() != stream3_bytecodeonly.str())
+            || streams2_bytecodeonly.str() != streams3_bytecodeonly.str())
             {
-                stream3 << "Double-optimized\n"
+                streams[2] << "Double-optimized\n"
                            "----------------\n";
-                stream3 << stream3_bytecodeonly.str();
+                streams[2] << streams3_bytecodeonly.str();
             }}}
 
-            std::string line1, line2, line3;
+            std::string streams_wrap_buf[3];
+            std::string lines[3];
             while(true)
             {
-                if(stream1) std::getline(stream1, line1);
-                else line1.clear();
-                if(stream2) std::getline(stream2, line2);
-                else line2.clear();
-                if(stream3) std::getline(stream3, line3);
-                else line3.clear();
-
-                if(line1.empty() && line2.empty() && line3.empty()) break;
-
-                if(!line2.empty())
+                bool all_empty = true;
+                for(int p=0; p<3; ++p)
                 {
-                    if(line1.length() > 38)
+                    if(!streams_wrap_buf[p].empty())
                     {
-                        line1.resize(38, ' ');
-                        line1[37] = '~';
+                        lines[p].clear();
+                        lines[p].swap( streams_wrap_buf[p] );
                     }
-                    else line1.resize(38, ' ');
+                    else if(streams[p])
+                        std::getline(streams[p], lines[p]);
+                    else
+                        lines[p].clear();
+                    if(!lines[p].empty()) all_empty = false;
                 }
-                else if(!line3.empty())
+                if(all_empty) break;
+
+                if(!lines[1].empty())
                 {
-                    if(line1.length() > 78)
-                    {
-                        line1.resize(78, ' ');
-                        line1[77] = '~';
-                    }
-                    else line1.resize(78, ' ');
+                    wrapLine(lines[0], 38, streams_wrap_buf[0]);
                 }
-                if(!line3.empty() && !line2.empty())
+                else if(!lines[2].empty())
                 {
-                    if(line2.length() > 38)
-                    {
-                        line2.resize(38, ' ');
-                        line2[37] = '~';
-                    }
-                    else line2.resize(38, ' ');
+                    wrapLine(lines[0], 78, streams_wrap_buf[0]);
+                }
+                if(!lines[2].empty() && !lines[1].empty())
+                {
+                    wrapLine(lines[1], 38, streams_wrap_buf[1]);
                 }
 
-                std::cout << line1;
-                if(!line2.empty()) std::cout << "| " << line2;
-                if(!line3.empty()) std::cout << "| " << line3;
+                std::cout << lines[0];
+                if(!lines[1].empty()) std::cout << "| " << lines[1];
+                if(!lines[2].empty()) std::cout << "| " << lines[2];
                 std::cout << "\n";
             }
             std::cout << SEPARATOR << std::endl;
@@ -379,7 +399,8 @@ namespace
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |%12.1f|\n", i+1,
+            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |%12.1f|\n",
+                        unsigned(i+1),
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
                         functions[i].mOptimizedEvalTiming.mMicroSeconds,
@@ -504,8 +525,8 @@ int main(int argc, char* argv[])
     for(size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
-    const unsigned varsAmount = gVarValues[0].size();
-    const unsigned varValueSetsAmount = gVarValues.size();
+    const size_t varsAmount = gVarValues[0].size();
+    const size_t varValueSetsAmount = gVarValues.size();
     std::cout << "- Var string: \"" << gVarString << "\" ("
               << gVarValues[0].size()
               << (varsAmount == 1 ? " var" : " vars")
