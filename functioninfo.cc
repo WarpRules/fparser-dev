@@ -58,6 +58,7 @@ namespace
         TimingInfo mOptimizeTiming;
         TimingInfo mDoubleOptimizeTiming;
         TimingInfo mOptimizedEvalTiming;
+        TimingInfo mDoubleOptimizedEvalTiming;
     };
 
     ParserWithConsts gParser, gAuxParser;
@@ -115,17 +116,25 @@ namespace
 
         printTimingInfo();
         info.mParseTiming = getTimingInfo<doParse, kParseLoopsPerUnit>();
+
         printTimingInfo();
         info.mEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+
         printTimingInfo();
-        info.mOptimizeTiming =
+        info.mOptimizeTiming = // optimizing a non-optimized parsing
             getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
+
         printTimingInfo();
         gParser.Optimize();
-        info.mDoubleOptimizeTiming =
+        info.mDoubleOptimizeTiming = // optimizing an already-optimized parsing
             getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
-        printTimingInfo();
+
+        printTimingInfo(); // evaluating an optimized parsing
         info.mOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+
+        printTimingInfo();
+        gParser.Optimize(); // evaluating a twice-optimized parsing
+        info.mDoubleOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
     }
 
     bool findValidVarValues(std::vector<FunctionInfo>& functions)
@@ -288,7 +297,7 @@ namespace
         return !errors;
     }
 
-    void wrapLine(std::string& line, unsigned cutter, std::string& wrap_buf,
+    void wrapLine(std::string& line, size_t cutter, std::string& wrap_buf,
                   bool always_cut = false)
     {
         if(line.size() <= cutter)
@@ -297,7 +306,7 @@ namespace
         {
             if(!always_cut)
             {
-                for(unsigned wrap_at = cutter; wrap_at > 0; --wrap_at)
+                for(size_t wrap_at = cutter; wrap_at > 0; --wrap_at)
                 {
                     char c = line[wrap_at-1];
                     if(c == '*' || c == '+' || c == '/' || c == '('
@@ -343,8 +352,8 @@ namespace
 
             parser.Parse(functions[i].mFunctionString, gVarString);
 
-            int one_column  = 38;
-            int two_columns = one_column * 2 + 2;
+            size_t one_column  = 38;
+            size_t two_columns = one_column * 2 + 2;
 
             streams[0] << "Function " << i+1 << " original\n"
                        "-------------------\n";
@@ -449,23 +458,24 @@ namespace
     void printFunctionTimings(std::vector<FunctionInfo>& functions)
     {
         std::printf
-        ("     ,---------------------------------------------------------------------,\n"
-         "     |        Parse |        Eval |    Eval (O) |    Optimize |  Repeat O. |\n"
-         ",----+--------------+-------------+-------------+-------------+------------+\n");
+        ("    ,------------------------------------------------------------------------,\n"
+         "    |      Parse |      Eval |  Eval (O) | Eval (O2) |  Optimize  | Repeat O.|\n"
+         ",---+------------+-----------+-----------+-----------+------------+----------+\n");
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("| %2u | %12.3f |%12.3f |%12.3f |%12.1f |%12.1f|\n",
+            std::printf("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%11.1f |%10.1f|\n",
                         unsigned(i+1),
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
                         functions[i].mOptimizedEvalTiming.mMicroSeconds,
+                        functions[i].mDoubleOptimizedEvalTiming.mMicroSeconds,
                         functions[i].mOptimizeTiming.mMicroSeconds,
                         functions[i].mDoubleOptimizeTiming.mMicroSeconds
                        );
         }
         std::printf
-        ("'--------------------------------------------------------------------------'\n");
+        ("'----------------------------------------------------------------------------'\n");
     }
 
     bool checkFunctionValidity(FunctionInfo& info)
