@@ -288,24 +288,28 @@ namespace
         return !errors;
     }
 
-    void wrapLine(std::string& line, unsigned cutter, std::string& wrap_buf)
+    void wrapLine(std::string& line, unsigned cutter, std::string& wrap_buf,
+                  bool always_cut = false)
     {
         if(line.size() <= cutter)
             line.resize(cutter, ' ');
         else
         {
-            for(unsigned wrap_at = cutter; wrap_at > 0; --wrap_at)
+            if(!always_cut)
             {
-                char c = line[wrap_at-1];
-                if(c == '*' || c == '+' || c == '/' || c == '('
-                || c == ')' || c == '^' || c == ',' || c == '&'
-                || c == '|' || c == '-')
+                for(unsigned wrap_at = cutter; wrap_at > 0; --wrap_at)
                 {
-                    wrap_buf = std::string(20, ' ');
-                    wrap_buf += line.substr(wrap_at);
-                    line.erase(line.begin()+wrap_at, line.end());
-                    line.resize(cutter, ' ');
-                    return;
+                    char c = line[wrap_at-1];
+                    if(c == '*' || c == '+' || c == '/' || c == '('
+                    || c == ')' || c == '^' || c == ',' || c == '&'
+                    || c == '|' || c == '-')
+                    {
+                        wrap_buf = std::string(20, ' ');
+                        wrap_buf += line.substr(wrap_at);
+                        line.erase(line.begin()+wrap_at, line.end());
+                        line.resize(cutter, ' ');
+                        return;
+                    }
                 }
             }
 
@@ -314,15 +318,33 @@ namespace
         }
     }
 
-    void printByteCodes(const std::vector<FunctionInfo>& functions)
+    enum PrintMode { print_wrap, print_cut, print_no_cut_or_wrap };
+
+    void printByteCodes(const std::vector<FunctionInfo>& functions,
+                        PrintMode mode = print_no_cut_or_wrap)
     {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         ParserWithConsts parser;
+        const char* const wall =
+            (mode == print_no_cut_or_wrap)
+                ? "\33[0m| "
+                : "| ";
+        const char* const newline =
+            (mode == print_no_cut_or_wrap)
+                ? "\33[0m\n"
+                : "\n";
+        const char* colors[3] = { "\33[37m", "\33[36m", "\33[32m" };
+        if(mode != print_no_cut_or_wrap)
+            colors[0] = colors[1] = colors[2] = "";
+
         for(size_t i = 0; i < functions.size(); ++i)
         {
             std::stringstream streams[3];
 
             parser.Parse(functions[i].mFunctionString, gVarString);
+
+            int one_column  = 38;
+            int two_columns = one_column * 2 + 2;
 
             streams[0] << "Function " << i+1 << " original\n"
                        "-------------------\n";
@@ -345,6 +367,8 @@ namespace
                 streams[2] << "Double-optimized\n"
                            "----------------\n";
                 streams[2] << streams3_bytecodeonly.str();
+                //one_column  = 24;
+                //two_columns = one_column * 2 + 2;
             }}}
 
             std::string streams_wrap_buf[3];
@@ -367,23 +391,55 @@ namespace
                 }
                 if(all_empty) break;
 
-                if(!lines[1].empty())
+                if(mode != print_no_cut_or_wrap)
                 {
-                    wrapLine(lines[0], 38, streams_wrap_buf[0]);
+                    if(!lines[1].empty())
+                        wrapLine(lines[0], one_column, streams_wrap_buf[0], mode == print_cut);
+                    else if(!lines[2].empty())
+                        wrapLine(lines[0], two_columns, streams_wrap_buf[0], mode == print_cut);
+                    if(!lines[2].empty() && !lines[1].empty())
+                        wrapLine(lines[1], one_column, streams_wrap_buf[1], mode == print_cut);
                 }
-                else if(!lines[2].empty())
+                else
                 {
-                    wrapLine(lines[0], 78, streams_wrap_buf[0]);
-                }
-                if(!lines[2].empty() && !lines[1].empty())
-                {
-                    wrapLine(lines[1], 38, streams_wrap_buf[1]);
+                    bool wrap0 = false;
+                    if(!lines[1].empty())
+                    {
+                        if(lines[0].size() >= one_column) wrap0 = true;
+                        else lines[0].resize(one_column, ' ');
+                    }
+                    else if(!lines[2].empty())
+                    {
+                        if(lines[0].size() >= two_columns) wrap0 = true;
+                        else lines[0].resize(two_columns, ' ');
+                    }
+
+                    if(wrap0)
+                    {
+                        lines[1].swap(streams_wrap_buf[1]);
+                        if(!lines[2].empty() && lines[0].size() >= two_columns)
+                            lines[2].swap(streams_wrap_buf[2]);
+                        else
+                            lines[0].resize(two_columns, ' ');
+                    }
+
+                    bool wrap1 = false;
+                    if(!lines[2].empty() && !lines[1].empty())
+                    {
+                        if(lines[1].size() >= one_column) wrap1 = true;
+                        else lines[1].resize(one_column, ' ');
+                    }
+
+                    if(wrap1 && !lines[2].empty())
+                    {
+                        lines[2].swap(streams_wrap_buf[2]);
+                    }
                 }
 
-                std::cout << lines[0];
-                if(!lines[1].empty()) std::cout << "| " << lines[1];
-                if(!lines[2].empty()) std::cout << "| " << lines[2];
-                std::cout << "\n";
+                std::cout << colors[0] << lines[0];
+                if(!lines[1].empty()) std::cout << wall << colors[1] << lines[1];
+                if(!lines[2].empty()) std::cout << wall << colors[2] << lines[2];
+                std::cout << newline;
             }
             std::cout << SEPARATOR << std::endl;
         }
