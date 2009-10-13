@@ -7,27 +7,20 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v3.2.1  </h1>
+<h1>Function Parser for C++ v3.3.1  </h1>
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser3.2.1.zip">fparser3.2.1.zip</a> v3.2.1
-(released 27 Aug 2009)
+<p>Download <a href="fparser3.3.1.zip">fparser3.3.1.zip</a> v3.3.1
+(released 12 Oct 2009)
 
 <p>(Older versions:
-<a href="fparser3.1.4.zip">v3.1.5</a>,
-<!-- <a href="fparser3.1.4.zip">v3.1.4</a>, -->
-<!-- <a href="fparser3.1.3.zip">v3.1.3</a>, -->
+<a href="fparser3.2.1.zip">v3.2.1</a>,
+<a href="fparser3.1.5.zip">v3.1.5</a>,
 <a href="fparser3.0.3.zip">v3.0.3</a>,
-<!-- <a href="fparser302.zip">v3.0.2</a>, -->
-<!-- <a href="fparser301.zip">v3.0.1</a>, -->
 <a href="fparser284.zip">v2.84</a>,
-<!-- <a href="fparser283.zip">v2.83</a>, -->
-<!-- <a href="fparser282.zip">v2.82</a>, -->
-<!-- <a href="fparser281.zip">v2.81</a>, -->
 <a href="fparser28.zip">v2.8</a>,
 <a href="fparser271.zip">v2.71</a>,
-<!-- <a href="fparser27.zip">v2.7</a>, -->
 <a href="fparser263.zip">v2.63</a>,
 <a href="fparser251.zip">v2.51</a>,
 <a href="fparser24.zip">v2.4</a>,
@@ -47,50 +40,32 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser3.2.1_devel.tar.bz2">fparser3.2.1_devel.tar.bz2</a>
+<a href="fparser3.3.1_devel.tar.bz2">fparser3.3.1_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
 
-<p>What's new in v3.2.1
+<p>What's new in v3.3.1
 <ul>
- <li>Fixed bugs in optimizer: Functions in the form <code>"log(-x)"</code>
-   and certain integral powers (eg. <code>"x^14"</code>) were optimized
-   incorrectly. (In the case of the integral powers, the error manifested
-   itself when <code>x==0</code>.)
- <li>Fixed some incompatibilities which made the library not compile with
-   MSVC.
- <li>Fixed major crash in <code>FunctionParser::Eval()</code> which happened
-   if it was called without <code>FunctionParser::Parse()</code> having been
-   called successfully (or at all). (Now it always returns 0.0 in such
-   situations.)
- <li>Changed <code>FunctionParser::ErrorMsg()</code> to return an empty
-   string rather than a null pointer if the previous parsing was successful.
-   (Its return value was never intended to be used as a check for success
-   anyways. <code>FunctionParser::GetParseErrorType()</code> can be used for
-   this purpose, if necessary.) This is to avoid potential crashes in the
-   calling program if it assumes that this function always returns a valid
-   string.
+ <li>Fixed some incompatibilities with MS Visual Studio introduced with the
+   refactored optimizer.
 </ul>
 
-<p>What's new in v3.2
+<p>What's new in v3.3
 <ul>
- <li>The <code>FP_SUPPORT_ASINH</code> and <code>FP_NO_ASINH</code>
-   precompiler constants have been replaced with a more generic
-   <code>FP_SUPPORT_TR1_MATH_FUNCS</code> precompiler constant, which
-   enables other similar functions as well. Consult the documentation
-   on this subject for details.
- <li>The "<code>asinh</code>", "<code>acosh</code>" and "<code>atanh</code>"
-   functions are now <em>always</em> available in the function syntax
-   regardless of whether <code>FP_SUPPORT_TR1_MATH_FUNCS</code> has been
-   defined or not. (If it's not, then they will be calculated using
-   equivalent formulas.)
- <li>Significant refactoring of the optimizer code, and addition of numerous
-   new optimization rules (related to the <code>abs()</code> function in
-   diverse situations, some exponentiation, logarithm and hyperbolic
-   trigonometry optimizations, and others).
- <li>Fixed bug in the optimizer which caused functions like
-   <code>"sqrt(x*x)"</code> and <code>"(x*x)^0.25"</code> to be optimized
-   incorrectly (for negative values of <code>x</code>).
+ <li>The <code>Parse()</code> method now performs more exhaustive constant
+   folding (calculating constant expressions at parse time) than before.
+   Also integral powers (eg. like <code>"x^4"</code>) are now more optimized
+   at parse time, resulting in faster evaluation even without a call to the
+   <code>Optimize()</code> method (although the latter will sometimes still
+   result in an even better result). The speed impact of this on the
+   <code>Parse()</code> method has been kept minimal.
+ <li>More refactoring of the optimizer, making the <code>Optimize()</code>
+   method significantly faster than in the previous version. Also new and
+   more exhaustive rules have been added, resulting in better results in
+   certain cases (eg. when using basic operators in very complex functions).
+ <li>Added utility member functions to parse a function so that the variables
+   in the function are deduced automatically. The found variables are returned
+   to the caller if requested.
 </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.

@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v3.2.1                                          *|
+|* Function Parser for C++ v3.3.1                                          *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen                                                *|
 \***************************************************************************/
@@ -9,6 +9,7 @@
 #include "fptypes.hh"
 using namespace FUNCTIONPARSERTYPES;
 
+#include <set>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
@@ -810,13 +811,16 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                       for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
                       {
                           int factor = 1 << sqrt_count;
-                          double changed_exponent = original_immed * (double)factor;
-                          if(IsIntegerConst(changed_exponent)
-                          && IsEligibleIntPowiExponent( (int)changed_exponent ) )
+                          double changed_exponent =
+                              original_immed * (double)factor;
+                          if(IsIntegerConst(changed_exponent) &&
+                             IsEligibleIntPowiExponent
+                             ( (int)changed_exponent ) )
                           {
                               while(sqrt_count > 0)
                               {
-                                  data->ByteCode.insert(data->ByteCode.end()-1, cSqrt);
+                                  data->ByteCode.insert(data->ByteCode.end()-1,
+                                                        cSqrt);
                                   --sqrt_count;
                               }
                               original_immed = changed_exponent;
@@ -829,7 +833,8 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                   {
                   do_powi:;
                       int abs_int_exponent = int_exponent;
-                      if(abs_int_exponent < 0) abs_int_exponent = -abs_int_exponent;
+                      if(abs_int_exponent < 0)
+                          abs_int_exponent = -abs_int_exponent;
 
                       data->Immed.pop_back(); data->ByteCode.pop_back();
                       /*size_t bytecode_size = data->ByteCode.size();*/
@@ -1470,63 +1475,66 @@ inline const char* FunctionParser::CompileMult(const char* function)
     op_changed:
         switch(data->ByteCode.back())
         {
-            case cImmed:
-                // If operator is applied to two literals, calculate it now:
-                switch(op)
-                {
-                    case '%':
-                        AddBinaryOperationByConst<ModOp>();
+          case cImmed:
+              // If operator is applied to two literals, calculate it now:
+              switch(op)
+              {
+                case '%':
+                    AddBinaryOperationByConst<ModOp>();
+                    break;
+                default:
+                case '*':
+                    if(is_unary) break;
+                    AddBinaryOperationByConst<MulOp>();
+                    break;
+                case '/':
+                    if(is_unary)
+                    {
+                        if(data->Immed.back() == 0.0)
+                            // avoid dividing by zero.
+                            data->ByteCode.push_back(cInv);
+                        else
+                            data->Immed.back() = 1.0 / data->Immed.back();
                         break;
-                    default:
-                    case '*':
-                        if(is_unary) break;
-                        AddBinaryOperationByConst<MulOp>();
-                        break;
-                    case '/':
-                        if(is_unary)
-                        {
-                            if(data->Immed.back() == 0.0)
-                                data->ByteCode.push_back(cInv); // avoid dividing by zero.
-                            else
-                                data->Immed.back() = 1.0 / data->Immed.back();
-                            break;
-                        }
-                        AddBinaryOperationByConst<DivOp>();
-                        break;
-                }
-                break;
-            case cInv: // x * y^-1 = x * (1/y) = x/y
-                switch(op)
-                {
-                    case '*': data->ByteCode.pop_back(); op = '/'; goto op_changed;
-                    case '/': data->ByteCode.pop_back(); op = '*'; goto op_changed;
-                    default: break;
-                }
-                // passthru
-            default:
-                // add opcode
-                switch(op)
-                {
-                  case '%':
+                    }
+                    AddBinaryOperationByConst<DivOp>();
+                    break;
+              }
+              break;
+          case cInv: // x * y^-1 = x * (1/y) = x/y
+              switch(op)
+              {
+                case '*':
+                    data->ByteCode.pop_back(); op = '/'; goto op_changed;
+                case '/':
+                    data->ByteCode.pop_back(); op = '*'; goto op_changed;
+                default: break;
+              }
+              // passthru
+          default:
+              // add opcode
+              switch(op)
+              {
+                case '%':
                     data->ByteCode.push_back(cMod);
                     break;
-                  case '/':
+                case '/':
                     if(is_unary)
                         data->ByteCode.push_back(cInv);
                     else
                     {
-                        /* Change x / exp(log(y)*1.1)   -  x y Log  1.1 Mul Exp Div
-                         *   into x * exp(log(y)*-1.1)  -  x y Log -1.1 Mul Exp Mul
-                         *
-                         * Changing x / y^9000          -  x y  9000 Pow Div
-                         *    into  x * y^-9000         -  x y -9000 Pow Mul
-                         * is also possible, but at least on x86_64
-                         * it is detrimental for performance.
-                         * In fact, the opposite seems favorable.
-                         */
+                    /* Change x / exp(log(y)*1.1)   -  x y Log  1.1 Mul Exp Div
+                     *   into x * exp(log(y)*-1.1)  -  x y Log -1.1 Mul Exp Mul
+                     *
+                     * Changing x / y^9000          -  x y  9000 Pow Div
+                     *    into  x * y^-9000         -  x y -9000 Pow Mul
+                     * is also possible, but at least on x86_64
+                     * it is detrimental for performance.
+                     * In fact, the opposite seems favorable.
+                     */
                         if(data->ByteCode.back() == cExp
-                        && data->ByteCode[data->ByteCode.size()-2] == cMul
-                        && data->ByteCode[data->ByteCode.size()-3] == cImmed)
+                           && data->ByteCode[data->ByteCode.size()-2] == cMul
+                           && data->ByteCode[data->ByteCode.size()-3] == cImmed)
                         {
                             data->Immed.back() = -data->Immed.back();
                             data->ByteCode.push_back(cMul);
@@ -1535,15 +1543,15 @@ inline const char* FunctionParser::CompileMult(const char* function)
                             data->ByteCode.push_back(cDiv);
                     }
                     break;
-                  default:
-                  case '*':
+                default:
+                case '*':
                     if(is_unary)
-                        { }
+                    { }
                     else
                     {
                         if(data->ByteCode.back() == cPow
-                        && data->ByteCode[data->ByteCode.size()-2] == cImmed
-                        && data->Immed.back() < 0)
+                           && data->ByteCode[data->ByteCode.size()-2] == cImmed
+                           && data->Immed.back() < 0)
                         {
                             data->Immed.back() = -data->Immed.back();
                             data->ByteCode.push_back(cDiv);
@@ -1552,7 +1560,7 @@ inline const char* FunctionParser::CompileMult(const char* function)
                             data->ByteCode.push_back(cMul);
                     }
                     break;
-                }
+              }
         }
         --StackPtr;
     }
@@ -1585,36 +1593,41 @@ inline const char* FunctionParser::CompileAddition(const char* function)
     op_changed:
         switch(data->ByteCode.back())
         {
-            case cImmed:
-                // If operator is applied to two literals, calculate it now:
-                switch(op)
-                {
-                    default:
-                    case '+':
-                        if(is_unary) break;
-                        AddBinaryOperationByConst<AddOp>();
-                        break;
-                    case '-':
-                        if(is_unary) { data->Immed.back() = -data->Immed.back(); break; }
-                        AddBinaryOperationByConst<SubOp>();
-                }
-                break;
-            case cNeg: // x + (-y) = x-y
-                switch(op)
-                {
-                    default:
-                    case '+': data->ByteCode.pop_back(); op = '-'; goto op_changed;
-                    case '-': data->ByteCode.pop_back(); op = '+'; goto op_changed;
-                }
-                // passthru (not reached)
-            default:
-                // add opcode
-                switch(op)
-                {
-                  default:
-                  case '+': if(!is_unary) data->ByteCode.push_back(cAdd); break;
-                  case '-': data->ByteCode.push_back(is_unary ? cNeg : cSub); break;
-                }
+          case cImmed:
+              // If operator is applied to two literals, calculate it now:
+              switch(op)
+              {
+                default:
+                case '+':
+                    if(is_unary) break;
+                    AddBinaryOperationByConst<AddOp>();
+                    break;
+                case '-':
+                    if(is_unary)
+                    { data->Immed.back() = -data->Immed.back(); break; }
+                    AddBinaryOperationByConst<SubOp>();
+              }
+              break;
+          case cNeg: // x + (-y) = x-y
+              switch(op)
+              {
+                default:
+                case '+':
+                    data->ByteCode.pop_back(); op = '-'; goto op_changed;
+                case '-':
+                    data->ByteCode.pop_back(); op = '+'; goto op_changed;
+              }
+              // passthru (not reached)
+          default:
+              // add opcode
+              switch(op)
+              {
+                default:
+                case '+':
+                    if(!is_unary) data->ByteCode.push_back(cAdd); break;
+                case '-':
+                    data->ByteCode.push_back(is_unary ? cNeg : cSub); break;
+              }
         }
         --StackPtr;
     }
@@ -2069,6 +2082,98 @@ double FunctionParser::Eval(const double* Vars)
 }
 
 
+//===========================================================================
+// Variable deduction
+//===========================================================================
+namespace
+{
+    int deduceVariables(FunctionParser& fParser,
+                        const char* funcStr,
+                        std::string& destVarString,
+                        int* amountOfVariablesFound,
+                        std::vector<std::string>* destVarNames,
+                        bool useDegrees)
+    {
+        typedef std::set<std::string> StrSet;
+        StrSet varNames;
+
+        int oldIndex = -1;
+
+        while(true)
+        {
+            destVarString.clear();
+            for(StrSet::iterator iter = varNames.begin();
+                iter != varNames.end();
+                ++iter)
+            {
+                if(iter != varNames.begin()) destVarString += ",";
+                destVarString += *iter;
+            }
+
+            const int index =
+                fParser.Parse(funcStr, destVarString, useDegrees);
+            if(index < 0) break;
+            if(index == oldIndex) return index;
+
+            const char* endPtr = readIdentifier(funcStr + index);
+            if(endPtr == funcStr + index) return index;
+
+            varNames.insert(std::string(funcStr + index, endPtr));
+            oldIndex = index;
+        }
+
+        if(amountOfVariablesFound)
+            *amountOfVariablesFound = int(varNames.size());
+
+        if(destVarNames)
+            destVarNames->assign(varNames.begin(), varNames.end());
+
+        return -1;
+    }
+}
+
+int FunctionParser::ParseAndDeduceVariables
+(const std::string& function,
+ int* amountOfVariablesFound,
+ bool useDegrees)
+{
+    std::string varString;
+    return deduceVariables(*this, function.c_str(), varString,
+                           amountOfVariablesFound, 0, useDegrees);
+}
+
+int FunctionParser::ParseAndDeduceVariables
+(const std::string& function,
+ std::string& resultVarString,
+ int* amountOfVariablesFound,
+ bool useDegrees)
+{
+    std::string varString;
+    const int index =
+        deduceVariables(*this, function.c_str(), varString,
+                        amountOfVariablesFound, 0, useDegrees);
+    if(index < 0) resultVarString = varString;
+    return index;
+}
+
+int FunctionParser::ParseAndDeduceVariables
+(const std::string& function,
+ std::vector<std::string>& resultVars,
+ bool useDegrees)
+{
+    std::string varString;
+    std::vector<std::string> vars;
+    const int index =
+        deduceVariables(*this, function.c_str(), varString,
+                        0, &vars, useDegrees);
+    if(index < 0) resultVars.swap(vars);
+    return index;
+}
+
+
+//===========================================================================
+// Debug output
+//===========================================================================
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 #include <iomanip>
 #include <sstream>
@@ -2144,7 +2249,8 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_half)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(IsIntegerConst(result) && result > 0 &&
+                   ((long)result) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * 0.5)) break;
                 result *= 0.5;
@@ -2153,7 +2259,8 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_invhalf)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(IsIntegerConst(result) && result > 0 &&
+                   ((long)result) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * -0.5)) break;
                 result *= -0.5;
@@ -2209,20 +2316,24 @@ namespace
         return result;
     }
 
-    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                             unsigned limit, size_t factor_stack_base)
+    double ParsePowiSequence(const std::vector<unsigned>& ByteCode,
+                             unsigned& IP, unsigned limit,
+                             size_t factor_stack_base)
     {
         FactorStack stack;
         stack.push_back(1.0);
-        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
+        return ParsePowiMuli(iseq_powi, ByteCode, IP, limit,
+                             factor_stack_base, stack);
     }
 
-    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, unsigned& IP,
-                             unsigned limit, size_t factor_stack_base)
+    double ParseMuliSequence(const std::vector<unsigned>& ByteCode,
+                             unsigned& IP, unsigned limit,
+                             size_t factor_stack_base)
     {
         FactorStack stack;
         stack.push_back(1.0);
-        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
+        return ParsePowiMuli(iseq_muli, ByteCode, IP, limit,
+                             factor_stack_base, stack);
     }
 
     struct IfInfo
@@ -2256,7 +2367,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
         bool out_params = false;
         unsigned params = 2, produces = 1, opcode = 0;
 
-        if(showExpression && !if_stack.empty() && if_stack.back().endif_location == IP)
+        if(showExpression && !if_stack.empty() &&
+           if_stack.back().endif_location == IP)
         {
             printHex(output, IP);
             output << ": (phi)";
@@ -2284,21 +2396,23 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             ))
             {
                 unsigned changed_ip = IP;
-                double exponent = ParsePowiSequence(ByteCode, changed_ip,
-                                                  if_stack.empty()
-                                                    ? (unsigned)ByteCode.size()
-                                                    : if_stack.back().endif_location,
-                                                  stack.size()-1);
+                double exponent =
+                    ParsePowiSequence(ByteCode, changed_ip,
+                                      if_stack.empty()
+                                      ? (unsigned)ByteCode.size()
+                                      : if_stack.back().endif_location,
+                                      stack.size()-1);
                 std::ostringstream operation;
                 int prio = 0;
                 if(exponent == 1.0)
                 {
                     if(opcode != cDup) goto not_powi_or_muli;
-                    double factor = ParseMuliSequence(ByteCode, changed_ip,
-                                                    if_stack.empty()
-                                                      ? (unsigned)ByteCode.size()
-                                                      : if_stack.back().endif_location,
-                                                    stack.size()-1);
+                    double factor =
+                        ParseMuliSequence(ByteCode, changed_ip,
+                                          if_stack.empty()
+                                          ? (unsigned)ByteCode.size()
+                                          : if_stack.back().endif_location,
+                                          stack.size()-1);
                     if(factor == 1.0 || factor == -1.0) goto not_powi_or_muli;
                     operation << '*' << factor;
                     prio = 3;
@@ -2317,7 +2431,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                     output << ": ";
 
                     const char* sep = "|";
-                    if(first_ip+1 == changed_ip) { sep = "="; explanation_prefix = " "; }
+                    if(first_ip+1 == changed_ip)
+                    { sep = "="; explanation_prefix = " "; }
                     else if(IP   == first_ip) sep = "\\";
                     else if(IP+1 == changed_ip) sep = "/";
                     else explanation_prefix = "=";
@@ -2548,20 +2663,31 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 int prio = 0; bool commutative = false;
                 switch(opcode)
                 {
-                    case cIf: buf << "if("; suff = ")"; break;
-                    case cOr:  prio = 6; paramsep = "|"; commutative = true; break;
-                    case cAnd: prio = 5; paramsep = "&"; commutative = true; break;
-                    case cAdd: prio = 4; paramsep = "+"; commutative = true; break;
-                    case cSub: prio = 4; paramsep = "-"; break;
-                    case cMul: prio = 3; paramsep = "*"; commutative = true; break;
-                    case cDiv: prio = 3; paramsep = "/"; break;
-                    case cPow: prio = 2; paramsep = "^"; break;
+                  case cIf: buf << "if("; suff = ")";
+                      break;
+                  case cOr:  prio = 6; paramsep = "|"; commutative = true;
+                      break;
+                  case cAnd: prio = 5; paramsep = "&"; commutative = true;
+                      break;
+                  case cAdd: prio = 4; paramsep = "+"; commutative = true;
+                      break;
+                  case cSub: prio = 4; paramsep = "-";
+                      break;
+                  case cMul: prio = 3; paramsep = "*"; commutative = true;
+                      break;
+                  case cDiv: prio = 3; paramsep = "/";
+                      break;
+                  case cPow: prio = 2; paramsep = "^";
+                      break;
 #ifdef FP_SUPPORT_OPTIMIZER
-                    case cSqr: prio = 2; suff = "^2"; break;
+                  case cSqr: prio = 2; suff = "^2";
+                      break;
 #endif
-                    case cNeg: buf << "(-"; suff = ")"; break;
-                    default: buf << n << '('; suff = ")";
+                  case cNeg: buf << "(-"; suff = ")";
+                      break;
+                  default: buf << n << '('; suff = ")";
                 }
+
                 const char* sep = "";
                 for(unsigned a=0; a<params; ++a)
                 {
@@ -2570,8 +2696,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         buf << "?";
                     else
                     {
-                        const std::pair<int,std::string>& prev = stack[stack.size() - params + a];
-                        if(prio > 0 && (prev.first > prio || (prev.first==prio && !commutative)))
+                        const std::pair<int,std::string>& prev =
+                            stack[stack.size() - params + a];
+                        if(prio > 0 && (prev.first > prio ||
+                                        (prev.first==prio && !commutative)))
                             buf << '(' << prev.second << ')';
                         else
                             buf << prev.second;
@@ -2588,7 +2716,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             }
             //padLine(outputBuffer, 20);
             output << "= ";
-            if((opcode == cIf && params != 3) || opcode == cJump || opcode == cNop)
+            if((opcode == cIf && params != 3) ||
+               opcode == cJump || opcode == cNop)
                 output << "(void)";
             else if(stack.empty())
                 output << "[?] ?";
@@ -2615,4 +2744,3 @@ void FunctionParser::Optimize()
     // Do nothing if no optimizations are supported.
 }
 #endif
-

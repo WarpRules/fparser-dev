@@ -17,8 +17,8 @@ using namespace FPoptimizer_CodeTree;
 #define FP_MUL_COMBINE_EXPONENTS
 
 #ifdef _MSC_VER
- #include <float.h>
- #define isinf(x) (!_finite(x))
+#include <float.h>
+#define isinf(x) (!_finite(x))
 #endif
 
 namespace
@@ -214,15 +214,23 @@ namespace
     };
     struct Select1st
     {
-        template<typename T>
-        inline bool operator() (const T& a, const T& b) const
+        template<typename T1, typename T2>
+        inline bool operator() (const std::pair<T1,T2>& a,
+                                const std::pair<T1,T2>& b) const
         {
             return a.first < b.first;
         }
-        template<typename T, typename T2>
-        inline bool operator() (const T& a, const T2& b) const
+
+        template<typename T1, typename T2>
+        inline bool operator() (const std::pair<T1,T2>& a, T1 b) const
         {
             return a.first < b;
+        }
+
+        template<typename T1, typename T2>
+        inline bool operator() (T1 a, const std::pair<T1,T2>& b) const
+        {
+            return a < b.first;
         }
     };
 
