@@ -511,12 +511,14 @@ cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
 cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 
 #        asinh: log(x + sqrt(x*x + 1))
-#        exp(asinh): x + sqrt(x*x + 1)
-cAdd {(cPow [(cAdd {(cPow [x 2])  1}) 0.5]) x} -> cPow [CONSTANT_E (cAsinh [x])]
+#        exp(asinh): x + sqrt(x*x + 1)#
+# Disabled: On x86_64, "asinh(x)" is slower than "log(sqrt(x^2+1)+x)"
+#cAdd {(cPow [(cAdd {(cPow [x 2])  1}) 0.5]) x} -> cPow [CONSTANT_E (cAsinh [x])]
 
 #        acosh: log(x + sqrt(x*x - 1))
 #        exp(acosh): x + sqrt(x*x - 1)
-cLog  [(cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x})] -> cAcosh [x]
+# Disabled: On x86_64, "acosh(x)" is slower than "log(sqrt(x^2-1)+x)"
+#cLog  [(cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x})] -> cAcosh [x]
 #cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x} -> cPow [CONSTANT_E (cAcosh [x])]
 
 #        atanh(x):   log( (1+x) / (1-x)) / 2
