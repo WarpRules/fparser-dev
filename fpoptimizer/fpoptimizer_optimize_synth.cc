@@ -76,6 +76,7 @@ namespace FPoptimizer_Optimize
                 break;
             }
             case ReplaceParams:
+            default:
             {
                 /* Delete the matched parameters from the source tree */
                 std::vector<unsigned> list = info.GetMatchedParamIndexes();

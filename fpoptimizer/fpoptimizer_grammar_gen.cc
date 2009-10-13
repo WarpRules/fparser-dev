@@ -978,7 +978,7 @@ public:
                     FPoptimizer_Grammar::DumpParam(
                         ParamSpec_Extract(rlist[a].repl_param_list, 0) );
                     break;
-                case ReplaceParams:
+                case ReplaceParams: default:
                     std::cout <<
                     "\n"
                     "         *\t:\t";

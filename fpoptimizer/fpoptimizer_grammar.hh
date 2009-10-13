@@ -140,11 +140,15 @@ namespace FPoptimizer_Grammar
          *      are to be matched, in any order.
          * When synthesizing, the type is ignored.
          */
-        ParamMatchingType match_type : 2; /* When SubFunction */
+        ParamMatchingType match_type : 3; /* When SubFunction */
+        /* Note: match_type needs 2, but we specify 3 because
+         * otherwise Microsoft VC++ borks things up
+         * as it interprets the value as signed.
+         */
         /* Optional restholder index for capturing the rest of parameters (0=not used)
          * Only valid when match_type = AnyParams
          */
-        unsigned restholder_index : 6;
+        unsigned restholder_index : 5;
     } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+30+6+2+8=48 bits=6 bytes
 
     struct ParamSpec_SubFunction
