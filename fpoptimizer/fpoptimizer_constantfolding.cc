@@ -517,7 +517,7 @@ namespace FPoptimizer_CodeTree
     {
         return ConstantFolding_LogicCommon(true);
     }
-    
+
     static CodeTree CollectMulGroup_Item(
         CodeTree& value,
         bool& has_highlevel_opcodes)
@@ -546,7 +546,7 @@ namespace FPoptimizer_CodeTree
         }
         return CodeTree(1.0);
     }
-    
+
     static void CollectMulGroup(
         CollectionSet& mul, const CodeTree& tree, const CodeTree& factor,
         bool& should_regenerate,

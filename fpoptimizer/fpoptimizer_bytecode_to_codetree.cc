@@ -285,11 +285,6 @@ namespace FPoptimizer_CodeTree
             CodeTree newnode(value);
             FindClone(newnode);
             Push(newnode);
-        #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "PUSH ";
-            FPoptimizer_Grammar::DumpTree(stack.back());
-            std::cout << std::endl;
-        #endif
         }
 
         void AddVar(unsigned varno)
@@ -297,11 +292,6 @@ namespace FPoptimizer_CodeTree
             CodeTree newnode(varno, CodeTree::VarTag());
             FindClone(newnode);
             Push(newnode);
-        #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "PUSH ";
-            FPoptimizer_Grammar::DumpTree(stack.back());
-            std::cout << std::endl;
-        #endif
         }
 
         void SwapLastTwoInStack()

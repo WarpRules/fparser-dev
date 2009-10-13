@@ -145,10 +145,10 @@ cNot [(cMul {-1 x})] : x
 
 #### Logarithm optimizations
 # log(x^y) = y*log(x)
-cLog [(cPow [x@P y])] -> cMul [y (cLog[x])]
+cLog [(cPow [x@P y])] -> cMul y (cLog[x])
 
 # log(x^e) = e * log(abs(x))   (e is an even integer)
-cLog [(cPow [x y@E])] -> cMul [y (cLog [(cAbs [x])])]
+cLog [(cPow [x y@E])] -> cMul y (cLog [(cAbs [x])])
 
 # CONSTANT_E^log(x) = x
 # CONSTANT_E^(log(x)*y) = x^y
@@ -166,12 +166,12 @@ cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>)
 #                = y^(log(x*exp(z)))
 #                = (x*exp(z))^log(y)
 #                = x^log(y) * y^z
-#cPow [y (cAdd {(cLog[x]) %})] -> cMul (cPow [y %]) (cPow [x (cLog [y])])
+#cPow [y (cAdd {(cLog[x]) &})] -> cMul (cPow [y &]) (cPow [x (cLog [y])])
 #
 # Probably beneficial to do it only when y is const,
 # though. Otherwise we only trade + for *, which is bad.
 # Also z should be const, otherwise we get two pows instead of one.
-cPow [& (cAdd {(cLog[x]) %})] -> cMul (cPow [x LOG(&)]) POW(& %)
+cPow [% (cAdd {(cLog[x]) &})]              -> cMul POW(% &) (cPow [x LOG(%)])
 
 # x^(y*z) = (x*y)^z - done by ConstantFolding
 
@@ -182,9 +182,14 @@ cPow [% (cMul /LOG(%)                (cLog[x])  <1>)] : x (cMul <1>)
 
 # (x*5) ^ 2 = x^2 * (5^2)
 # Note: This also applies to (x*5)^-1 --> 0.2/x , shrug
-cPow [(cMul % <1>) &] -> (cMul POW(% &) (cPow [(cMul <1>) &]))
+cPow [(cMul % <1>) &]                      -> cMul POW(% &)   (cPow [(cMul <1>) &])
 
-
+# z^(x+y/log(z)) = z^x * exp(y)
+# Note: This rule fails when z=0, because log(0)=-inf and 0^z = 1
+cPow [z (cAdd <1> (cMul <2> (cPow [(cLog [z]) -1])))] -> cMul (cPow [z (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
+#cPow [% (cAdd <1> (cMul <2> /LOG(%)))]    -> cMul (cPow [% (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
+cPow [z (cAdd <1> (cPow [(cLog [z]) -1]))] -> cMul CONSTANT_E (cPow [z (cAdd <1>)])
+cPow [% (cAdd <1> &@M)]                    -> cMul POW(% &)   (cPow [% (cAdd <1>)])
 
 # x*y / (x*z) = y/z
 cMul (cPow [(cMul x <2>) -1]) x : (cPow [(cMul <2>) -1])
@@ -199,9 +204,9 @@ cLog  [(cMul %@P <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
 #              = log(x) + log(z)*y
 # Only worthwhile when z is an immed, otherwise we trade cPow for cLog
 # Note that when z = CONSTANT_E, this reduces rather nicely into log(x) + y
-cLog  [(cMul (cPow [% y]) <1>)] -> cAdd {(cMul [LOG(%) y]) (cLog [(cMul <1>)])}
+cLog  [(cMul (cPow [% y]) <1>)]  -> cAdd (cMul [LOG(%) y]) (cLog [(cMul <1>)])
 
-#cLog  [(cMul (cPow [% y]) <1>)] -> cMul [LOG(%) (cAdd [y (cMul (cLog [(cMul <1>)]) /LOG(%))])]
+#cLog  [(cMul (cPow [% y]) <1>)] -> cMul LOG(%) (cAdd [y (cMul (cLog [(cMul <1>)]) /LOG(%))])
 # When y=1, the reverse is more useful:
 cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
 

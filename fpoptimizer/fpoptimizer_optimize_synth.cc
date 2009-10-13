@@ -5,6 +5,7 @@
 #ifdef FP_SUPPORT_OPTIMIZER
 
 #include <algorithm>
+#include <assert.h>
 
 #include "fpoptimizer_optimize.hh"
 
@@ -43,6 +44,17 @@ namespace FPoptimizer_Optimize
                         ( info.GetRestHolderValues( param.data.restholder_index ) );
                     tree.AddParamsMove(trees);
                     // ^note: this fails if the same restholder is synth'd twice
+                    if(tree.GetParamCount() == 1)
+                    {
+                        /* Convert cMul <1> into <1> when <1> only contains one operand.
+                         * This is redundant code; it is also done in ConstantFolding(),
+                         * but it might be better for performance to do it here, too.
+                         */
+                        assert(tree.GetOpcode() == cAdd || tree.GetOpcode() == cMul
+                            || tree.GetOpcode() == cMin || tree.GetOpcode() == cMax
+                            || tree.GetOpcode() == cAnd || tree.GetOpcode() == cOr);
+                        tree.Become(tree.GetParam(0));
+                    }
                 }
                 if(inner)
                     tree.Rehash();

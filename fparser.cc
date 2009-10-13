@@ -603,7 +603,7 @@ namespace
 {
     struct MulOp
     {
-        enum { opcode = cMul, opposite = cDiv, combined = cMul };
+        enum { opcode = cMul, opposite = cDiv, combined = cMul, defval=1 };
         static inline void action(double& target, double value)
         { target *= value; }
         static inline void combine_action(double& target, double value)
@@ -615,7 +615,7 @@ namespace
     };
     struct DivOp
     {
-        enum { opcode = cDiv, opposite = cMul, combined = cMul };
+        enum { opcode = cDiv, opposite = cMul, combined = cMul, defval=1 };
         static inline void action(double& target, double value)
         { target /= value; }
         static inline void combine_action(double& target, double value)
@@ -627,7 +627,7 @@ namespace
     };
     struct AddOp
     {
-        enum { opcode = cAdd, opposite = cSub, combined = cAdd };
+        enum { opcode = cAdd, opposite = cSub, combined = cAdd, defval=0 };
         static inline void action(double& target, double value)
         { target += value; }
         static inline void combine_action(double& target, double value)
@@ -639,7 +639,7 @@ namespace
     };
     struct SubOp
     {
-        enum { opcode = cSub, opposite = cAdd, combined = cAdd };
+        enum { opcode = cSub, opposite = cAdd, combined = cAdd, defval=0 };
         static inline void action(double& target, double value)
         { target -= value; }
         static inline void combine_action(double& target, double value)
@@ -647,11 +647,11 @@ namespace
         static inline bool valid_rvalue(double) { return true; }
         static inline bool valid_opposite_rvalue(double) { return true; }
         static inline bool is_redundant(double v) { return v==0.0; }
-        static inline bool opposite_is_preferred() { return false; }
+        static inline bool opposite_is_preferred() { return true; }
     };
     struct ModOp
     {
-        enum { opcode = cMod, opposite = cMod, combined = cMod };
+        enum { opcode = cMod, opposite = cMod, combined = cMod, defval=1 };
         static inline void action(double& target, double value)
         { target = fmod(target, value); }
         static inline void combine_action(double& target, double value)
@@ -760,6 +760,30 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               data->Immed.back() = DegreesToRadians(data->Immed.back());
               return;
           case cPow:
+          {
+              unsigned before_immed_opcode = data->ByteCode[data->ByteCode.size()-2];
+              if(before_immed_opcode == cExp
+              || before_immed_opcode == cExp2
+              || before_immed_opcode == cPow)
+              {
+                  /* Change  ... Exp immed (Pow)
+                   *      to ... immed mul Exp
+                   * Similarly with Exp, Exp2 and Pow
+                   *
+                   * This helps change exp(x*3)^5 into exp(x*15)
+                   */
+                  data->ByteCode.pop_back();
+                  data->ByteCode.back() = cImmed;
+                  AddBinaryOperationByConst<MulOp> ();
+                  data->ByteCode.push_back(before_immed_opcode);
+                  return;
+              }
+              /*if(before_immed_opcode == cImmed)
+              {
+                  data->Immed[data->Immed.size()-2] = pow(data->Immed[data->Immed.size()-2, data->Immed.back());
+                  data->Immed.pop_back();
+                  return;
+              }*/
               // if the exponent is a special constant value
               if(data->Immed.back() == 0.5)
               {
@@ -828,6 +852,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                       opcode = cExp;
                   }
               }
+          } // pow
         }
     }
     switch(opcode)
@@ -862,6 +887,31 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                 case cAcos: case cCosh:
                     return;
             }
+    }
+    switch(opcode)
+    {
+        case cExp:
+            /* Change "immed Add Exp" to "Exp exp(immed) Mul" */
+            if(data->ByteCode.back() == cAdd
+            && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+            {
+                data->ByteCode[data->ByteCode.size()-2] = cExp;
+                data->ByteCode.back() = cImmed;
+                data->Immed.back() = exp(data->Immed.back());
+                opcode = cMul;
+            }
+            break;
+        case cExp2:
+            /* Change "immed Add Exp2" to "Exp2 exp2(immed) Mul" */
+            if(data->ByteCode.back() == cAdd
+            && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+            {
+                data->ByteCode[data->ByteCode.size()-2] = cExp2;
+                data->ByteCode.back() = cImmed;
+                data->Immed.back() = pow(2.0, data->Immed.back());
+                opcode = cMul;
+            }
+            break;
     }
     data->ByteCode.push_back(opcode);
 }
@@ -980,10 +1030,12 @@ inline void FunctionParser::AddBinaryOperationByConst()
     // that is, data->ByteCode[data->ByteCode.size()-1]
     if(!Operation::valid_rvalue(data->Immed.back()))
     {
+        /* If the function has something like x/0, don't try optimizing it. */
         data->ByteCode.push_back( unsigned(Operation::opcode) );
     }
     else if(Operation::is_redundant(data->Immed.back()))
     {
+        /* If the function has x*1 or x/1, just keep x. */
         data->Immed.pop_back();
         data->ByteCode.pop_back();
     }
@@ -1038,12 +1090,21 @@ inline void FunctionParser::AddBinaryOperationByConst()
     }
     else if(Operation::opposite_is_preferred())
     {
-        double p = 1; Operation::combine_action(p, data->Immed.back());
+        double p = (double) Operation::defval;
+        Operation::combine_action(p, data->Immed.back());
         data->Immed.back() = p;
         data->ByteCode.push_back(unsigned(Operation::opposite));
     }
     else
     {
+        /* Possibilities:
+         *  Change "Exp immed Mul" into "log(immed) Add Exp"
+         *         "Exp2 immed Mul" into "log2(immed) Add Exp2"
+         * Or the opposite:
+         *         "immed Add Exp" to "Exp exp(immed) Mul"
+         * this is now actually done in AddFunctionOpcode(),
+         * because it allows optimizing exp(y+1)*2 into exp(y)*5.437.
+         */
         data->ByteCode.push_back(unsigned(Operation::opcode));
     }
 }
