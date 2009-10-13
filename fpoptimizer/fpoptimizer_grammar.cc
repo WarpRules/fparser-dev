@@ -64,10 +64,10 @@ namespace FPoptimizer_Grammar
         return 0;
     }
 
-    static const char ParamHolderNames[][2]  = {"%","&", "x","y","z","a","b","c"};
-
     void DumpParam(const ParamSpec& parampair, std::ostream& o)
     {
+        static const char ParamHolderNames[][2]  = {"%","&", "x","y","z","a","b","c"};
+
         //o << "/*p" << (&p-pack.plist) << "*/";
         unsigned constraints = 0;
         switch(parampair.first)

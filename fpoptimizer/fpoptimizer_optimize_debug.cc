@@ -13,14 +13,14 @@ using namespace FPoptimizer_Optimize;
 
 namespace FPoptimizer_Grammar
 {
-    static const char ParamHolderNames[][2] = {"%","&","x","y","z","a","b","c"};
-
     void DumpMatch(const Rule& rule,
                    const CodeTree& tree,
                    const MatchInfo& info,
                    bool DidMatch,
                    std::ostream& o)
     {
+        static const char ParamHolderNames[][2] = {"%","&","x","y","z","a","b","c"};
+
         o <<
             "Found " << (DidMatch ? "match" : "mismatch") << ":\n"
             "  Pattern    : ";
