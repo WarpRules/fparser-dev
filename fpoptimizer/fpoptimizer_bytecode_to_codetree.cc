@@ -140,7 +140,8 @@ namespace FPoptimizer_CodeTree
     class CodeTreeParserData
     {
     public:
-        CodeTreeParserData() : stack() { }
+        explicit CodeTreeParserData(bool k_powi)
+            : stack(), keep_powi(k_powi) { }
 
         void Eat(size_t nparams, OPCODE opcode)
         {
@@ -150,6 +151,7 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<nparams; ++a)
                 newnode.AddParamMove( stack[stackhead + a] );
 
+            if(!keep_powi)
             switch(opcode)
             {
                 //        asinh: log(x + sqrt(x*x + 1))
@@ -240,7 +242,7 @@ namespace FPoptimizer_CodeTree
                 default: break;
             }
 
-            newnode.Rehash();
+            newnode.Rehash(!keep_powi);
         /*
             using namespace FPoptimizer_Grammar;
             bool recurse = false;
@@ -354,6 +356,8 @@ namespace FPoptimizer_CodeTree
         std::vector<CodeTree> stack;
         std::multimap<fphash_t, CodeTree> clones;
 
+        bool keep_powi;
+
     private:
         CodeTreeParserData(const CodeTreeParserData&);
         CodeTreeParserData& operator=(const CodeTreeParserData&);
@@ -369,9 +373,10 @@ namespace FPoptimizer_CodeTree
     void CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
-        const FunctionParser::Data& fpdata)
+        const FunctionParser::Data& fpdata,
+        bool keep_powi)
     {
-        CodeTreeParserData sim;
+        CodeTreeParserData sim(keep_powi);
         std::vector<IfInfo> if_stack;
 
         for(size_t IP=0, DP=0; ; ++IP)
@@ -390,10 +395,11 @@ namespace FPoptimizer_CodeTree
             if(IP >= ByteCode.size()) break;
 
             unsigned opcode = ByteCode[IP];
-            if(opcode == cSqr || opcode == cDup
-            || opcode == cInv || opcode == cNeg
-            || opcode == cSqrt || opcode == cRSqrt
-            || opcode == cFetch)
+            if((opcode == cSqr || opcode == cDup
+             || opcode == cInv || opcode == cNeg
+             || opcode == cSqrt || opcode == cRSqrt
+             || opcode == cFetch)
+             && !keep_powi)
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
@@ -472,18 +478,26 @@ namespace FPoptimizer_CodeTree
                         break;
                     }
                     // Unary operators requiring special attention
-                    /*case cInv:  // already handled by powi_opt
-                        sim.AddConst(-1);
-                        sim.Eat(2, cPow); // 1/x is x^-1
-                        break; */
-                    /*case cNeg: // already handled by powi_opt
-                        sim.AddConst(-1);
-                        sim.Eat(2, cMul); // -x is x*-1
-                        break;*/
-                    /*case cSqr: // already handled by powi_opt
-                        sim.AddConst(2.0);
-                        sim.Eat(2, cPow);
-                        break;*/
+                    case cInv:  // already handled by powi_opt
+                        sim.Eat(1, cInv);
+                        break;
+                        sim.AddConst(1);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(2, cDiv);
+                        break;
+                    case cNeg: // already handled by powi_opt
+                        sim.Eat(1, cNeg);
+                        break;
+                        sim.AddConst(0);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(2, cSub);
+                        break;
+                    case cSqr: // already handled by powi_opt
+                        sim.Eat(1, cSqr);
+                        break;
+                        sim.Dup();
+                        sim.Eat(2, cMul);
+                        break;
                     // Unary functions requiring special attention
                     /*case cSqrt: // already handled by powi_opt
                         sim.AddConst(0.5);
@@ -502,11 +516,13 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cMul);
                         break;
                     case cExp:
+                        if(keep_powi) goto default_function_handling;
                         sim.AddConst(CONSTANT_E);
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
                         break;
                     case cExp2: // from fpoptimizer
+                        if(keep_powi) goto default_function_handling;
                         sim.AddConst(2.0);
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
@@ -543,29 +559,34 @@ namespace FPoptimizer_CodeTree
                     //    break;
                     // Binary operators requiring special attention
                     case cSub:
+                        if(keep_powi) { sim.Eat(2, cSub); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cMul); // -x is x*-1
                         sim.Eat(2, cAdd); // Minus is negative adding
                         break;
                     case cRSub: // from fpoptimizer
                         sim.SwapLastTwoInStack();
+                        if(keep_powi) { sim.Eat(2, cSub); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cMul); // -x is x*-1
                         sim.Eat(2, cAdd);
                         break;
                     case cDiv:
+                        if(keep_powi) { sim.Eat(2, cDiv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1
                         sim.Eat(2, cMul); // Divide is inverse multiply
                         break;
                     case cRDiv: // from fpoptimizer
                         sim.SwapLastTwoInStack();
+                        if(keep_powi) { sim.Eat(2, cDiv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1
                         sim.Eat(2, cMul); // Divide is inverse multiply
                         break;
                     case cRPow:
                         sim.SwapLastTwoInStack();
+                        if(keep_powi) { opcode = cPow; goto default_function_handling; }
                         sim.Eat(2, cPow);
                         break;
                     // Binary operators not requiring special attention
@@ -592,7 +613,7 @@ namespace FPoptimizer_CodeTree
                         sim.PopNMov(stackOffs_target, stackOffs_source);
                         break;
                     }
-                    // Note: cVar should never be encountered in bytecode.
+                    // Note: cVar, cCouple and cDecouple should never be encountered in bytecode.
                     // Other functions
 #ifndef FP_DISABLE_EVAL
                     case cEval:
@@ -603,6 +624,7 @@ namespace FPoptimizer_CodeTree
                     }
 #endif
                     default:
+                    default_function_handling:;
                         unsigned funcno = opcode-cAbs;
                         assert(funcno < FUNC_AMOUNT);
                         const FuncDefinition& func = Functions[funcno];
