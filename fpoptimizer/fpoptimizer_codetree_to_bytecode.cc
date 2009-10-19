@@ -93,31 +93,34 @@ namespace
         tree.DelParam(1);
         tree.SetOpcode(sqrt_chain < 0 ? cRSqrt : cSqrt);
     }
+}
 
-    bool RecreateInversionsAndNegations(CodeTree& tree)
+namespace FPoptimizer_CodeTree
+{
+    bool CodeTree::RecreateInversionsAndNegations(bool prefer_base2)
     {
         bool changed = false;
 
-        for(size_t a=0; a<tree.GetParamCount(); ++a)
-            if(RecreateInversionsAndNegations( tree.GetParam(a) ))
+        for(size_t a=0; a<GetParamCount(); ++a)
+            if(GetParam(a).RecreateInversionsAndNegations(prefer_base2))
                 changed = true;
 
         if(changed)
         {
         exit_changed:
-            tree.Mark_Incompletely_Hashed();
+            Mark_Incompletely_Hashed();
             return true;
         }
 
-        switch(tree.GetOpcode()) // Recreate inversions and negations
+        switch(GetOpcode()) // Recreate inversions and negations
         {
             case cMul:
             {
                 std::vector<CodeTree> div_params;
-
-                for(size_t a = tree.GetParamCount(); a-- > 0; )
+                CodeTree found_log2;
+                for(size_t a = GetParamCount(); a-- > 0; )
                 {
-                    const CodeTree& powgroup = tree.GetParam(a);
+                    const CodeTree& powgroup = GetParam(a);
                     if(powgroup.GetOpcode() == cPow
                     && powgroup.GetParam(1).IsImmed())
                     {
@@ -125,9 +128,9 @@ namespace
                         double exponent = exp_param.GetImmed();
                         if(FloatEqual(exponent, -1.0))
                         {
-                            tree.CopyOnWrite();
-                            div_params.push_back(tree.GetParam(a).GetParam(0));
-                            tree.DelParam(a); // delete the pow group
+                            CopyOnWrite();
+                            div_params.push_back(GetParam(a).GetParam(0));
+                            DelParam(a); // delete the pow group
                         }
                         else if(exponent < 0 && IsIntegerConst(exponent))
                         {
@@ -137,9 +140,15 @@ namespace
                             edited_powgroup.AddParam(CodeTree(-exponent));
                             edited_powgroup.Rehash();
                             div_params.push_back(edited_powgroup);
-                            tree.CopyOnWrite();
-                            tree.DelParam(a); // delete the pow group
+                            CopyOnWrite();
+                            DelParam(a); // delete the pow group
                         }
+                    }
+                    else if(powgroup.GetOpcode() == cLog2 && !found_log2.IsDefined())
+                    {
+                        found_log2 = powgroup.GetParam(0);
+                        CopyOnWrite();
+                        DelParam(a);
                     }
                 }
                 if(!div_params.empty())
@@ -152,28 +161,39 @@ namespace
                     divgroup.Rehash(); // will reduce to div_params[0] if only one item
                     CodeTree mulgroup;
                     mulgroup.SetOpcode(cMul);
-                    mulgroup.SetParamsMove(tree.GetParams());
+                    mulgroup.SetParamsMove(GetParams());
                     mulgroup.Rehash(); // will reduce to 1.0 if none remained in this cMul
                     if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), 1.0))
                     {
-                        tree.SetOpcode(cInv);
-                        tree.AddParamMove(divgroup);
+                        SetOpcode(cInv);
+                        AddParamMove(divgroup);
                     }
                     else
                     {
                         if(mulgroup.GetDepth() >= divgroup.GetDepth())
                         {
-                            tree.SetOpcode(cDiv);
-                            tree.AddParamMove(mulgroup);
-                            tree.AddParamMove(divgroup);
+                            SetOpcode(cDiv);
+                            AddParamMove(mulgroup);
+                            AddParamMove(divgroup);
                         }
                         else
                         {
-                            tree.SetOpcode(cRDiv);
-                            tree.AddParamMove(divgroup);
-                            tree.AddParamMove(mulgroup);
+                            SetOpcode(cRDiv);
+                            AddParamMove(divgroup);
+                            AddParamMove(mulgroup);
                         }
                     }
+                }
+                if(found_log2.IsDefined())
+                {
+                    CodeTree mulgroup;
+                    mulgroup.SetOpcode(cMul);
+                    mulgroup.SetParamsMove(GetParams());
+                    mulgroup.Rehash();
+                    SetOpcode(cLog2by);
+                    AddParamMove(found_log2);
+                    AddParamMove(mulgroup);
+                    changed = true;
                 }
                 break;
             }
@@ -181,12 +201,12 @@ namespace
             {
                 std::vector<CodeTree> sub_params;
 
-                for(size_t a = tree.GetParamCount(); a-- > 0; )
-                    if(tree.GetParam(a).GetOpcode() == cMul)
+                for(size_t a = GetParamCount(); a-- > 0; )
+                    if(GetParam(a).GetOpcode() == cMul)
                     {
                         bool is_signed = false; // if the mul group has a -1 constant...
 
-                        CodeTree mulgroup = tree.GetParam(a);
+                        CodeTree mulgroup = GetParam(a);
 
                         for(size_t b=mulgroup.GetParamCount(); b-- > 0; )
                             if(mulgroup.GetParam(b).IsImmed()
@@ -200,8 +220,8 @@ namespace
                         {
                             mulgroup.Rehash();
                             sub_params.push_back(mulgroup);
-                            tree.CopyOnWrite();
-                            tree.DelParam(a);
+                            CopyOnWrite();
+                            DelParam(a);
                         }
                     }
                 if(!sub_params.empty())
@@ -212,12 +232,12 @@ namespace
                     subgroup.Rehash(); // will reduce to sub_params[0] if only one item
                     CodeTree addgroup;
                     addgroup.SetOpcode(cAdd);
-                    addgroup.SetParamsMove(tree.GetParams());
+                    addgroup.SetParamsMove(GetParams());
                     addgroup.Rehash(); // will reduce to 0.0 if none remained in this cAdd
                     if(addgroup.IsImmed() && FloatEqual(addgroup.GetImmed(), 0.0))
                     {
-                        tree.SetOpcode(cNeg);
-                        tree.AddParamMove(subgroup);
+                        SetOpcode(cNeg);
+                        AddParamMove(subgroup);
                     }
                     else
                     {
@@ -227,9 +247,9 @@ namespace
                              * this has lowest stack usage.
                              * This is identified by addgroup having just one member.
                              */
-                            tree.SetOpcode(cRSub);
-                            tree.AddParamMove(subgroup);
-                            tree.AddParamMove(addgroup);
+                            SetOpcode(cRSub);
+                            AddParamMove(subgroup);
+                            AddParamMove(addgroup);
                         }
                         else if(subgroup.GetOpcode() == cAdd)
                         {
@@ -239,34 +259,125 @@ namespace
                              * Thus we get the lowest stack usage.
                              * This approach cannot be used for cDiv.
                              */
-                            tree.SetOpcode(cSub);
-                            tree.AddParamMove(addgroup);
-                            tree.AddParamMove(subgroup.GetParam(0));
+                            SetOpcode(cSub);
+                            AddParamMove(addgroup);
+                            AddParamMove(subgroup.GetParam(0));
                             for(size_t a=1; a<subgroup.GetParamCount(); ++a)
                             {
                                 CodeTree innersub;
                                 innersub.SetOpcode(cSub);
-                                innersub.SetParamsMove(tree.GetParams());
+                                innersub.SetParamsMove(GetParams());
                                 innersub.Rehash(false);
-                                //tree.DelParams();
-                                tree.AddParamMove(innersub);
-                                tree.AddParamMove(subgroup.GetParam(a));
+                                //DelParams();
+                                AddParamMove(innersub);
+                                AddParamMove(subgroup.GetParam(a));
                             }
                         }
                         else
                         {
-                            tree.SetOpcode(cSub);
-                            tree.AddParamMove(addgroup);
-                            tree.AddParamMove(subgroup);
+                            SetOpcode(cSub);
+                            AddParamMove(addgroup);
+                            AddParamMove(subgroup);
                         }
                     }
                 }
                 break;
             }
+            case cLog:
+            {
+                if(prefer_base2)
+                {
+                    SetOpcode(cLog2);
+                    CodeTree mul;
+                    mul.SetOpcode(cMul);
+                    mul.AddParamMove(*this);
+                    mul.AddParam(CodeTree(CONSTANT_L2));
+                    Become(mul);
+                    changed = true;
+                }
+                break;
+            }
+            case cLog10:
+            {
+                if(prefer_base2)
+                {
+                    SetOpcode(cLog2);
+                    CodeTree mul;
+                    mul.SetOpcode(cMul);
+                    mul.AddParamMove(*this);
+                    mul.AddParam(CodeTree(CONSTANT_L10B));
+                    Become(mul);
+                    changed = true;
+                }
+                break;
+            }
+            case cExp:
+            {
+                if(prefer_base2)
+                {
+                    CodeTree p0 = GetParam(0), mul;
+                    mul.SetOpcode(cMul);
+                    // exp(x) -> exp2(x*CONSTANT_L2I)
+                    if(p0.GetOpcode() == cLog2by)
+                    {
+                        // exp(log2by(x,y)) -> exp2(log2(x)*y*CONSTANT_L2I)
+                        // This so that y*CONSTANT_L2I gets a chance for
+                        // constant folding. log2by() is regenerated thereafter.
+                        p0.CopyOnWrite();
+                        mul.AddParamMove(p0.GetParam(1));
+                        p0.DelParam(1);
+                        p0.SetOpcode(cLog2);
+                        p0.Rehash();
+                    }
+                    mul.AddParamMove(p0);
+                    mul.AddParam(CodeTree(CONSTANT_L2I));
+                    mul.Rehash();
+                    SetOpcode(cExp2);
+                    SetParamMove(0, mul);
+                    changed = true;
+                }
+                break;
+            }
+            case cAsin:
+            {
+                if(prefer_base2) // asin(x) = atan2(x, sqrt(1-x*x))
+                {
+                    CodeTree p0 = GetParam(0);
+                    CodeTree op_a;
+                    op_a.SetOpcode(cSqr); op_a.AddParam(p0);
+                    op_a.Rehash();
+                    CodeTree op_c;
+                    op_c.SetOpcode(cSub); op_c.AddParam(CodeTree(1.0)); op_c.AddParamMove(op_a);
+                    op_c.Rehash();
+                    CodeTree op_d;
+                    op_d.SetOpcode(cSqrt); op_d.AddParamMove(op_c);
+                    op_d.Rehash();
+                    SetOpcode(cAtan2); DelParams(); AddParamMove(p0); AddParamMove(op_d);
+                }
+                break;
+            }
+            case cAcos:
+            {
+                if(prefer_base2) // acos(x) = atan2(sqrt(1-x*x), x)
+                {
+                    CodeTree p0 = GetParam(0);
+                    CodeTree op_a;
+                    op_a.SetOpcode(cSqr); op_a.AddParam(p0);
+                    op_a.Rehash();
+                    CodeTree op_c;
+                    op_c.SetOpcode(cSub); op_c.AddParam(CodeTree(1.0)); op_c.AddParamMove(op_a);
+                    op_c.Rehash();
+                    CodeTree op_d;
+                    op_d.SetOpcode(cSqrt); op_d.AddParamMove(op_c);
+                    op_d.Rehash();
+                    SetOpcode(cAtan2); DelParams(); AddParamMove(op_d); AddParamMove(p0);
+                }
+                break;
+            }
             case cPow:
             {
-                const CodeTree& p0 = tree.GetParam(0);
-                const CodeTree& p1 = tree.GetParam(1);
+                const CodeTree& p0 = GetParam(0);
+                const CodeTree& p1 = GetParam(1);
                 if(p1.IsImmed())
                 {
                     if(p1.GetImmed() != 0.0 && !p1.IsLongIntegerImmed())
@@ -279,7 +390,7 @@ namespace
                             long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
                             if((abs_sqrt_chain & (abs_sqrt_chain-1)) == 0) // 2, 4, 8 or 16
                             {
-                                ChangeIntoSqrtChain(tree, sqrt_chain);
+                                ChangeIntoSqrtChain(*this, sqrt_chain);
                                 changed = true;
                                 break;
                             }
@@ -302,12 +413,12 @@ namespace
                                     if(with_sqrt_exponent < 0) sqrt_chain = -sqrt_chain;
 
                                     CodeTree tmp;
-                                    tmp.AddParamMove(tree.GetParam(0));
+                                    tmp.AddParamMove(GetParam(0));
                                     tmp.AddParam(CodeTree());
                                     ChangeIntoSqrtChain(tmp, sqrt_chain);
                                     tmp.Rehash();
-                                    tree.SetParamMove(0, tmp);
-                                    tree.SetParam(1, CodeTree(p1.GetImmed() * (double)sqrt_chain));
+                                    SetParamMove(0, tmp);
+                                    SetParam(1, CodeTree(p1.GetImmed() * (double)sqrt_chain));
                                     changed = true;
                                 }
                                 break;
@@ -323,24 +434,48 @@ namespace
                         // Convert into cExp or Exp2.
                         //    x^y = exp(log(x) * y) =
                         //    Can only be done when x is positive, though.
-                        double mulvalue = std::log( p0.GetImmed() );
-                        if(mulvalue == 1.0)
+                        if(prefer_base2)
                         {
-                            // exp(1)^x becomes exp(x)
-                            tree.DelParam(0);
+                            double mulvalue = std::log( p0.GetImmed() ) * CONSTANT_L2I;
+                            if(mulvalue == 1.0)
+                            {
+                                // exp2(1)^x becomes exp2(x)
+                                DelParam(0);
+                            }
+                            else
+                            {
+                                // exp2(4)^x becomes exp2(4*x)
+                                CodeTree exponent;
+                                exponent.SetOpcode(cMul);
+                                exponent.AddParam( CodeTree( mulvalue ) );
+                                exponent.AddParam(p1);
+                                exponent.Rehash();
+                                SetParamMove(0, exponent);
+                                DelParam(1);
+                            }
+                            SetOpcode(cExp2);
                         }
                         else
                         {
-                            // exp(4)^x becomes exp(4*x)
-                            CodeTree exponent;
-                            exponent.SetOpcode(cMul);
-                            exponent.AddParam( CodeTree( mulvalue ) );
-                            exponent.AddParam(p1);
-                            exponent.Rehash();
-                            tree.SetParamMove(0, exponent);
-                            tree.DelParam(1);
+                            double mulvalue = std::log( p0.GetImmed() );
+                            if(mulvalue == 1.0)
+                            {
+                                // exp(1)^x becomes exp(x)
+                                DelParam(0);
+                            }
+                            else
+                            {
+                                // exp(4)^x becomes exp(4*x)
+                                CodeTree exponent;
+                                exponent.SetOpcode(cMul);
+                                exponent.AddParam( CodeTree( mulvalue ) );
+                                exponent.AddParam(p1);
+                                exponent.Rehash();
+                                SetParamMove(0, exponent);
+                                DelParam(1);
+                            }
+                            SetOpcode(cExp);
                         }
-                        tree.SetOpcode(cExp);
                         changed = true;
                     }
                     else if(p1.IsImmed() && !p1.IsLongIntegerImmed())
@@ -348,18 +483,36 @@ namespace
                         // x^y can be safely converted into exp(y * log(x))
                         // when y is _not_ integer, because we know that x >= 0.
                         // Otherwise either expression will give a NaN or inf.
-                        CodeTree log;
-                        log.SetOpcode(cLog);
-                        log.AddParam(p0);
-                        log.Rehash();
-                        CodeTree exponent;
-                        exponent.SetOpcode(cMul);
-                        exponent.AddParam(p1);
-                        exponent.AddParamMove(log);
-                        exponent.Rehash();
-                        tree.SetOpcode(cExp);
-                        tree.SetParamMove(0, exponent);
-                        tree.DelParam(1);
+                        if(prefer_base2)
+                        {
+                            CodeTree log;
+                            log.SetOpcode(cLog2);
+                            log.AddParam(p0);
+                            log.Rehash();
+                            CodeTree exponent;
+                            exponent.SetOpcode(cMul);
+                            exponent.AddParam(p1);
+                            exponent.AddParamMove(log);
+                            exponent.Rehash();
+                            SetOpcode(cExp2);
+                            SetParamMove(0, exponent);
+                            DelParam(1);
+                        }
+                        else
+                        {
+                            CodeTree log;
+                            log.SetOpcode(cLog);
+                            log.AddParam(p0);
+                            log.Rehash();
+                            CodeTree exponent;
+                            exponent.SetOpcode(cMul);
+                            exponent.AddParam(p1);
+                            exponent.AddParamMove(log);
+                            exponent.Rehash();
+                            SetOpcode(cExp);
+                            SetParamMove(0, exponent);
+                            DelParam(1);
+                        }
                         changed = true;
                     }
                 }
@@ -374,10 +527,7 @@ namespace
 
         return changed;
     }
-}
 
-namespace FPoptimizer_CodeTree
-{
     void CodeTree::SynthesizeByteCode(
         std::vector<unsigned>& ByteCode,
         std::vector<double>&   Immed,
@@ -387,13 +537,13 @@ namespace FPoptimizer_CodeTree
         std::cout << "Making bytecode for:\n";
         FPoptimizer_Grammar::DumpTreeWithIndent(*this); root=this;
     #endif
-        while(RecreateInversionsAndNegations(*this))
+        while(RecreateInversionsAndNegations())
         {
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "One change issued, produced:\n";
             FPoptimizer_Grammar::DumpTreeWithIndent(*root);
         #endif
-            FixIncompleteHashes(*this);
+            FixIncompleteHashes();
         }
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "After recreating inv/neg:  "; FPoptimizer_Grammar::DumpTree(*this); std::cout << "\n";

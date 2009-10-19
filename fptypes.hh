@@ -48,6 +48,7 @@ namespace FUNCTIONPARSERTYPES
                    (next value is index) */
         cPopNMov, /* cPopNMov(x,y) moves [y] to [x] and deletes anything
                      above [x] */
+        cLog2by, /* log2by(x,y) = log2(x) * y */
 #endif
 
         cDup,   /* Duplicates the last value in the stack:

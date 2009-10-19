@@ -22,17 +22,17 @@ void FunctionParser::Optimize()
 
     while(ApplyGrammar(pack.glist[0], tree)) // INTERMEDIATE + BASIC
         { //std::cout << "Rerunning 1\n";
-            FixIncompleteHashes(tree);
+            tree.FixIncompleteHashes();
         }
 
     while(ApplyGrammar(pack.glist[1], tree)) // FINAL1 + BASIC
         { //std::cout << "Rerunning 2\n";
-            FixIncompleteHashes(tree);
+            tree.FixIncompleteHashes();
         }
 
     while(ApplyGrammar(pack.glist[2], tree)) // FINAL2
         { //std::cout << "Rerunning 3\n";
-            FixIncompleteHashes(tree);
+            tree.FixIncompleteHashes();
         }
 
     std::vector<unsigned> byteCode;

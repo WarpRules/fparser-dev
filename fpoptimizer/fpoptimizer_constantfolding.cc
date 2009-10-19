@@ -1579,6 +1579,12 @@ namespace FPoptimizer_CodeTree
                     { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L2I;
                       goto ReplaceTreeWithConstValue; }
                 break;
+            case cLog2by:
+                if(GetParam(0).IsImmed()
+                && GetParam(1).IsImmed())
+                    { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L2I * GetParam(1).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cLog10:
                 if(GetParam(0).IsImmed())
                     { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L10I;
@@ -2358,6 +2364,7 @@ namespace FPoptimizer_CodeTree
             case cCsc: // converted into cMul (cPow (cSin x) -1)
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
             case cRPow: // converted into cPow y x
+            case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */

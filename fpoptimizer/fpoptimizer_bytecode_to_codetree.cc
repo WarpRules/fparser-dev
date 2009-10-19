@@ -169,46 +169,6 @@ namespace FPoptimizer_CodeTree
 
                 //        acos: atan2(sqrt(1-x*x), x)
                 //cAcos[x] -> cAtan2 [(cPow [(cAdd 1 (cMul (cPow [x 2] -1)) 0.5]) x]
-                /*case cAcos:
-                {
-                    CodeTree p0 = newnode.GetParam(0);
-                    CodeTree op_a; // x^2
-                    op_a.SetOpcode(cPow); op_a.AddParam(p0); op_a.AddParam(CodeTree(2));
-                    op_a.Rehash();
-                    CodeTree op_b; // -x^2
-                    op_b.SetOpcode(cMul); op_b.AddParamMove(op_a); op_b.AddParam(CodeTree(-1.0));
-                    op_b.Rehash();
-                    CodeTree op_c; // 1-x^2
-                    op_c.SetOpcode(cAdd); op_c.AddParamMove(op_b); op_c.AddParam(CodeTree(1.0));
-                    op_c.Rehash();
-                    CodeTree op_d; // (1-x^2)^0.5
-                    op_d.SetOpcode(cPow); op_d.AddParamMove(op_c); op_d.AddParam(CodeTree(0.5));
-                    op_d.Rehash();
-                    newnode.SetOpcode(cAtan2); newnode.DelParams(); newnode.AddParamMove(op_d); newnode.AddParamMove(p0);
-                    newnode.Rehash();
-                    break;
-                }
-                case cAsin:
-                {
-                    CodeTree p0 = newnode.GetParam(0);
-                    CodeTree op_a;
-                    op_a.SetOpcode(cPow); op_a.AddParam(p0); op_a.AddParam(CodeTree(2));
-                    op_a.Rehash();
-                    CodeTree op_b;
-                    op_b.SetOpcode(cMul); op_b.AddParamMove(op_a); op_b.AddParam(CodeTree(-1.0));
-                    op_b.Rehash();
-                    CodeTree op_c;
-                    op_c.SetOpcode(cAdd); op_c.AddParamMove(op_b); op_c.AddParam(CodeTree(1.0));
-                    op_c.Rehash();
-                    CodeTree op_d;
-                    op_d.SetOpcode(cPow); op_d.AddParamMove(op_c); op_d.AddParam(CodeTree(-0.5));
-                    op_d.Rehash();
-                    CodeTree op_e;
-                    op_e.SetOpcode(cMul); op_e.AddParamMove(op_d); op_e.AddParamMove(p0);
-                    newnode.SetOpcode(cAtan); newnode.DelParams(); newnode.AddParamMove(op_e);
-                    newnode.Rehash();
-                    break;
-                }*/
 
                 //     The hyperbolic functions themselves are:
                 //        sinh: (exp(x)-exp(-x)) / 2  = exp(-x) * (exp(2*x)-1) / 2
@@ -294,7 +254,7 @@ namespace FPoptimizer_CodeTree
             bool recurse = false;
             while(ApplyGrammar(pack.glist[0], newnode, recurse)) // intermediate
             { //std::cout << "Rerunning 1\n";
-                FixIncompleteHashes(newnode);
+                newnode.FixIncompleteHashes();
                 recurse = true;
             }
         */
@@ -597,6 +557,12 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(1, cLog);
                         sim.AddConst(CONSTANT_L2I);
                         sim.Eat(2, cMul);
+                        break;
+                    case cLog2by: // x y     -> log(x)*CONSTANT_L2I*y
+                        sim.SwapLastTwoInStack();   // y x
+                        sim.Eat(1, cLog);           // y log(x)
+                        sim.AddConst(CONSTANT_L2I); // y log(x) CONSTANT_L2I
+                        sim.Eat(3, cMul);           // y*log(x)*CONSTANT_L2I
                         break;
                     //case cLog:
                     //    sim.Eat(1, cLog2);

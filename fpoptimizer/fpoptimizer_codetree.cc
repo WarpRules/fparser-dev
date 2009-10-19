@@ -434,7 +434,7 @@ namespace FPoptimizer_CodeTree
 
     CodeTreeData::CodeTreeData()
         : RefCount(0),
-          Opcode(), Params(), Hash(), Depth(1), OptimizedUsing(0)
+          Opcode(cNop), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
     }
 
@@ -482,10 +482,10 @@ namespace FPoptimizer_CodeTree
         Value = i;
     }
 
-    void FixIncompleteHashes(CodeTree& tree)
+    void CodeTree::FixIncompleteHashes()
     {
-        MarkIncompletes(tree);
-        FixIncompletes(tree);
+        MarkIncompletes(*this);
+        FixIncompletes(*this);
     }
 }
 

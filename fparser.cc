@@ -2040,6 +2040,18 @@ double FunctionParser::Eval(const double* Vars)
                   SP = stackOffs_target;
                   break;
               }
+
+          case  cLog2by:
+#                    ifndef FP_NO_EVALUATION_CHECKS
+                       if(Stack[SP-1] <= 0) { evalErrorType=3; return 0; }
+#                    endif
+                     #ifdef FP_SUPPORT_LOG2
+                       Stack[SP-1] = log2(Stack[SP-1]) * Stack[SP];
+                     #else
+                       Stack[SP-1] = log(Stack[SP-1]) * Stack[SP] * 1.4426950408889634074;
+                     #endif
+                       --SP;
+                       break;
 #endif // FP_SUPPORT_OPTIMIZER
 
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
@@ -2589,6 +2601,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
     #ifdef FP_SUPPORT_OPTIMIZER
                         case cVar:    n = "(var)"; break;
+                        case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];

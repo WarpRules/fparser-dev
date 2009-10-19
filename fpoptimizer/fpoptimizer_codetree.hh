@@ -109,7 +109,7 @@ namespace FPoptimizer_CodeTree
         inline double GetImmed() const;
         inline unsigned GetVar() const;
         inline unsigned GetFuncNo() const;
-        inline bool IsDefined() const { return (&*data) != 0; }
+        inline bool IsDefined() const { return GetOpcode() != FUNCTIONPARSERTYPES::cNop; }
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
         inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::cVar; }
@@ -147,6 +147,9 @@ namespace FPoptimizer_CodeTree
 
         inline const FPoptimizer_Grammar::Grammar* GetOptimizedUsing() const;
         inline void SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g);
+
+        bool RecreateInversionsAndNegations(bool prefer_base2 = false);
+        void FixIncompleteHashes();
 
         void swap(CodeTree& b) { data.swap(b.data); }
         bool IsIdenticalTo(const CodeTree& b) const;
@@ -227,8 +230,6 @@ namespace FPoptimizer_CodeTree
 
     inline void CodeTree::Mark_Incompletely_Hashed() { data->Depth = 0; }
     inline bool CodeTree::Is_Incompletely_Hashed() const { return data->Depth == 0; }
-
-    void FixIncompleteHashes(CodeTree& tree);
 }
 
 #endif
