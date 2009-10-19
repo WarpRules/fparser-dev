@@ -510,6 +510,17 @@ cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cSin
 cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
 cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 
+# asin(tan(x)) = x / (1-x^2)^0.5
+#cAsin [(cTan [x])] -> cMul x (cPow [(cAdd (cMul (cPow [x 2]) -1) 1) -0.5])
+#
+# ^Disabled: Incorrectly produces error when x = 1
+
+# acos(tan(x)) = (1-x^2)^0.5 / x
+#cAcos [(cTan [x])] -> cMul (cPow [x -1]) (cPow [(cAdd (cMul (cPow [x 2]) -1) 1) 0.5])
+#
+# ^Disabled: Incorrectly produces error when x = 0
+#            Incorrectly produces negative numbers when acos does no such thing
+
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#
 # Disabled: On x86_64, "asinh(x)" is slower than "log(sqrt(x^2+1)+x)"
@@ -524,6 +535,17 @@ cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 #        atanh(x):   log( (1+x) / (1-x)) / 2
 #        2*atanh(x): log( (1+x) / (1-x))
 cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAtanh [x]) 2]
+
+cAtan [(cMul {x (cPow [y -1])})] -> cAtan2 [x y]
+
+#        asin(x): atan2(x, (1-x*x)^0.5)
+#        asin(x): atan(x * (1-x*x)^-0.5)
+cAtan2 [x (cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5])] -> cAsin[x]
+cAtan [(cMul {(cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) -0.5]) x})] -> cAsin[x]
+
+#        acos(x): atan2((1-x*x)^0.5, x)
+#        acos(x): atan((1-x*x)^0.5 * x^-1)
+cAtan2 [(cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5]) x] -> cAcos[x]
 
 
 #        atanh(y*x):   log( (1+y*x) / (1+(-1*y*x))) / 2
@@ -566,6 +588,8 @@ cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAt
 
 # tan(atan(x)) = x
 cTan [(cAtan [x])] -> x
+
+cTan [(cAtan2 [x y])] -> cMul x (cPow [y -1])
 
 [FINAL2]
 

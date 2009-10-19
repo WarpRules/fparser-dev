@@ -20,17 +20,17 @@ void FunctionParser::Optimize()
     CodeTree tree;
     tree.GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(ApplyGrammar(pack.glist[0], tree)) // intermediate
+    while(ApplyGrammar(pack.glist[0], tree)) // INTERMEDIATE + BASIC
         { //std::cout << "Rerunning 1\n";
             FixIncompleteHashes(tree);
         }
 
-    while(ApplyGrammar(pack.glist[1], tree)) // final1
+    while(ApplyGrammar(pack.glist[1], tree)) // FINAL1 + BASIC
         { //std::cout << "Rerunning 2\n";
             FixIncompleteHashes(tree);
         }
 
-    while(ApplyGrammar(pack.glist[2], tree)) // final2
+    while(ApplyGrammar(pack.glist[2], tree)) // FINAL2
         { //std::cout << "Rerunning 3\n";
             FixIncompleteHashes(tree);
         }

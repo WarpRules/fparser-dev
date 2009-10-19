@@ -22,7 +22,8 @@ namespace FPoptimizer_Grammar
         static const char ParamHolderNames[][2] = {"%","&","x","y","z","a","b","c"};
 
         o <<
-            "Found " << (DidMatch ? "match" : "mismatch") << ":\n"
+            "Found " << (DidMatch ? "match" : "mismatch")
+          << " (rule " << (&rule - pack.glist[0].rule_begin) << "):\n"
             "  Pattern    : ";
         { ParamSpec tmp;
           tmp.first = SubFunction;
