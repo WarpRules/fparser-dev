@@ -286,8 +286,15 @@ cAdd (cPow[x 2]) (cPow[y 2]) (cMul x y <1>) : (cPow [(cAdd [x y]) 2]) (cMul [x y
 # These are the same as above, but work also if pow() is expanded
 # Note: It would work even with y and z instead of % and &, but we
 # limit into numeric literals for simplicity.
-cAdd (cMul (cPow[x %]) <1>)  (cMul (cPow[x &]) <2>) : (cMul (cPow[x MIN(% &)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% &))]))  (cMul <2> (cPow[x (cAdd & -MIN(% &))]))))
-cAdd (cMul (cPow[x %]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+cAdd (cMul (cPow[x %@P]) <1>)  (cMul (cPow[x &]) <2>) : (cMul (cPow[x MIN(% &)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% &))]))  (cMul <2> (cPow[x (cAdd & -MIN(% &))]))))
+
+# Note:
+#   x^4*a + b*x^9  -> (x^5 * b + a)*x^4:  Eval time goes 0.046 -> 0.056
+#   x^5*a + b*x^11 -> (x^6 * b + a)*x^5:  Eval time goes 0.060 -> 0.049
+#     srsly, what?
+
+
+cAdd (cMul (cPow[x %@P]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
 # The replacement expanded below:
 #  (cMul (cPow[x MIN(% 1)])
 #        (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))
@@ -295,7 +302,7 @@ cAdd (cMul (cPow[x %]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (
 #
 # Example: x^2*y  + x*z -> x^1  * (y*x^1 + z*x^0)
 # Example: x^6*y  + x*z -> x^1  * (y*x^5 + z*x^0)
-# Example: x^-6*y + x*z -> x^-6 * (y*x^0 + z*x^7)
+# Example: x^-6*y + x*z -> x^-6 * (y*x^0 + z*x^7) -- not good, so restricted with @P
 #
 
 
