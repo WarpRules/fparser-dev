@@ -64,9 +64,10 @@ namespace
     ParserWithConsts gParser, gAuxParser;
     std::string gFunctionString, gVarString;
     std::vector<std::vector<double> > gVarValues;
+    bool gUseDegrees = false;
     const double* gEvalParameters = 0;
 
-    inline void doParse() { gParser.Parse(gFunctionString, gVarString); }
+    inline void doParse() { gParser.Parse(gFunctionString, gVarString, gUseDegrees); }
     inline void doEval() { gParser.Eval(gEvalParameters); }
     inline void doOptimize() { gAuxParser = gParser; gAuxParser.Optimize(); }
 
@@ -256,8 +257,8 @@ namespace
         bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
-            parser1.Parse(functions[ind1].mFunctionString, gVarString);
-            parser2.Parse(functions[ind1].mFunctionString, gVarString);
+            parser1.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
+            parser2.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
             // parser 1 is not optimized
             parser2.Optimize(); // parser 2 is optimized once
 
@@ -277,13 +278,13 @@ namespace
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
-                parser1.Parse(functions[ind1].mFunctionString, gVarString);
+                parser1.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
                 for(int n_optimizes1 = 0; n_optimizes1 <= 2; ++n_optimizes1)
                 {
                     if(errors) break;
                     if(n_optimizes1 > 0) parser1.Optimize();
 
-                    parser2.Parse(functions[ind2].mFunctionString, gVarString);
+                    parser2.Parse(functions[ind2].mFunctionString, gVarString, gUseDegrees);
 
                     for(int n_optimizes2 = 0; n_optimizes2 <= 2; ++n_optimizes2)
                     {
@@ -358,7 +359,7 @@ namespace
         {
             std::stringstream streams[3];
 
-            parser.Parse(functions[i].mFunctionString, gVarString);
+            parser.Parse(functions[i].mFunctionString, gVarString, gUseDegrees);
 
             size_t one_column  = 38;
             size_t two_columns = one_column * 2 + 2;
@@ -501,7 +502,7 @@ namespace
 
     bool checkFunctionValidity(FunctionInfo& info)
     {
-        int result = info.mParser.Parse(info.mFunctionString, gVarString);
+        int result = info.mParser.Parse(info.mFunctionString, gVarString, gUseDegrees);
         if(result >= 0)
         {
             std::cerr << "\"" << info.mFunctionString << "\"\n"
@@ -534,7 +535,7 @@ namespace
                     gVarString += *iter;
                 }
 
-                int index = parser.Parse(funcStr, gVarString);
+                int index = parser.Parse(funcStr, gVarString, gUseDegrees);
                 if(index < 0) break;
                 if(index == oldIndex) return;
 
@@ -586,6 +587,8 @@ int main(int argc, char* argv[])
         }
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
+        else if(std::strcmp(argv[i], "-deg") == 0)
+            gUseDegrees = true;
         else if(std::strcmp(argv[i], "-ntd") == 0)
             noTimingIfEqualityErrors = true;
         else
