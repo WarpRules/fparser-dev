@@ -91,15 +91,18 @@ public:
         }
         return true;
     }
-    void Report(const char* title, const char* unit)
+    void Report(const char* title, const char* unit,
+                bool printTimeAsInt = false)
     {
         if(gPrintHTML)
         {
             std::cout.precision(2);
-            std::cout << " <li>";
+            std::cout << " <li>" << std::fixed;
         }
-        std::cout << title << ": " << result
-                  << (gPrintHTML ? " &micro;s. (" : " us. (")
+        std::cout << title << ": ";
+        if(printTimeAsInt) std::cout << int(result);
+        else std::cout << result;
+        std::cout << (gPrintHTML ? " &micro;s. (" : " us. (")
                   << beautify(int(1e6/result)) << " " << unit << "/s)\n";
     }
     void TakeResult()
@@ -209,7 +212,7 @@ int main(int argc, char* argv[])
             fp2 = fp;
             fp2.Optimize();
         }
-        tester.Report("Optimization time", "optimizes");
+        tester.Report("Optimization time", "optimizes", gPrintHTML);
 
 
         // Measure C++ function speed
