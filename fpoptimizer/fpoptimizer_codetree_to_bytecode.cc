@@ -206,16 +206,28 @@ namespace FPoptimizer_CodeTree
                     {
                         bool is_signed = false; // if the mul group has a -1 constant...
 
-                        CodeTree mulgroup = GetParam(a);
+                        CodeTree& mulgroup = GetParam(a);
 
                         for(size_t b=mulgroup.GetParamCount(); b-- > 0; )
-                            if(mulgroup.GetParam(b).IsImmed()
-                            && FloatEqual(mulgroup.GetParam(b).GetImmed(), -1.0))
+                        {
+                            if(mulgroup.GetParam(b).IsImmed())
                             {
-                                mulgroup.CopyOnWrite();
-                                mulgroup.DelParam(b);
-                                is_signed = !is_signed;
+                                double factor = mulgroup.GetParam(b).GetImmed();
+                                if(FloatEqual(factor, -1.0))
+                                {
+                                    mulgroup.CopyOnWrite();
+                                    mulgroup.DelParam(b);
+                                    is_signed = !is_signed;
+                                }
+                                else if(FloatEqual(factor, -2.0))
+                                {
+                                    mulgroup.CopyOnWrite();
+                                    mulgroup.DelParam(b);
+                                    mulgroup.AddParam( CodeTree(2.0) );
+                                    is_signed = !is_signed;
+                                }
                             }
+                        }
                         if(is_signed)
                         {
                             mulgroup.Rehash();
