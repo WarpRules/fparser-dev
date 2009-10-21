@@ -1475,7 +1475,7 @@ bool testUserDefinedFunctions()
 //=========================================================================
 // Main test function
 //=========================================================================
-bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
+bool runTest(unsigned testIndex, FunctionParser& fp, const char* type)
 {
     double vars[10];
 
@@ -1507,8 +1507,7 @@ bool runTest(unsigned testIndex, FunctionParser& fp, bool wasOptimized)
             if(!verbose)
                 std::cout << "\nFunction:\n\"" << tests[testIndex].funcString
                           << "\"\n("
-                          << (wasOptimized ? "After optimization)" :
-                              "Not optimized)");
+                          << type << ")";
 
             std::cout << std::endl << "Error: For (";
             for(unsigned ind = 0; ind < tests[testIndex].paramAmount; ++ind)
@@ -1727,22 +1726,21 @@ int main()
         else
             std::cout << i+1 << std::flush << " ";
 
-        if(!runTest(i, fp, false)) return 1;
-
+        if(!runTest(i, fp, "Not optimized")) return 1;
         if(verbose) std::cout << "Ok." << std::endl;
 
         fp.Optimize();
         //fp.PrintByteCode(std::cout);
 
         if(verbose) std::cout << "    Optimized: " << std::flush;
-        if(!runTest(i, fp, true)) return 1;
+        if(!runTest(i, fp, "After optimization")) return 1;
 
         if(verbose)
             std::cout << "(Calling Optimize() several times) " << std::flush;
 
         for(int j = 0; j < 20; ++j)
             fp.Optimize();
-        if(!runTest(i, fp, true)) return 1;
+        if(!runTest(i, fp, "After several optimization runs")) return 1;
 
         if(!testVariableDeduction(fp, i)) return 1;
 

@@ -625,7 +625,7 @@ namespace FPoptimizer_CodeTree
                         sim.PopNMov(stackOffs_target, stackOffs_source);
                         break;
                     }
-                    // Note: cVar, cCouple and cDecouple should never be encountered in bytecode.
+                    // Note: cVar should never be encountered in bytecode.
                     // Other functions
 #ifndef FP_DISABLE_EVAL
                     case cEval:

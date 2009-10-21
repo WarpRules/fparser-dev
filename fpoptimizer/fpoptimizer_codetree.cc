@@ -42,6 +42,7 @@ namespace FPoptimizer_CodeTree
     CodeTree::CodeTree()
         : data(new CodeTreeData)
     {
+        data->Opcode = cNop;
     }
 
     CodeTree::CodeTree(double i)
