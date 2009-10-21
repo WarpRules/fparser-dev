@@ -872,6 +872,8 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                 break
         eliminate_redundant_sequence(cLog, cExp);
         eliminate_redundant_sequence(cLog2, cExp2);
+        eliminate_redundant_sequence(cExp, cLog);
+        eliminate_redundant_sequence(cExp2, cLog2);
         eliminate_redundant_sequence(cAsin, cSin);
         eliminate_redundant_sequence(cAcos, cCos);
         eliminate_redundant_sequence(cInv, cInv);
