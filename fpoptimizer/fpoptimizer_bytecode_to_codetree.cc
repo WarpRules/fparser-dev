@@ -548,6 +548,11 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
+                    case cInt: // int(x) = floor(x + 0.5)
+                        sim.AddConst(0.5);
+                        sim.Eat(2, cAdd);
+                        sim.Eat(1, cFloor);
+                        break;
                     case cLog10:
                         sim.Eat(1, cLog);
                         sim.AddConst(CONSTANT_L10I);

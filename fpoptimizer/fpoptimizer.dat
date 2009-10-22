@@ -634,6 +634,8 @@ cMul  CONSTANT_DR <1> -> cDeg [(cMul <1>)]
 # x * CONSTANT_RD = cRad(x)
 cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
 
+cFloor [(cAdd 0.5 <1>)] -> cInt [(cAdd <1>)]
+
 # log(x) / CONSTANT_L10  = log10(x)
 #cMul        (cLog [x])      CONSTANT_L10I  :        (cLog10 [x])
 #cMul (cPow [(cLog [x]) -1]) CONSTANT_L10   : (cPow [(cLog10 [x]) -1])
