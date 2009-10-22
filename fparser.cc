@@ -1190,6 +1190,11 @@ const char* FunctionParser::CompileIf(const char* function)
     if(*function != ')')
         return SetErrorType(noParenthError(*function), function);
 
+    /* A cNop is added as an easy fix for the problem which happens if cNeg
+       or other similar opcodes optimized by Parse() immediately follow an
+       else-branch which could be confused as optimizable with that opcode
+       (eg. cImmed). The optimizer removes the cNop safely.
+     */
     data->ByteCode.push_back(cNop);
 
     // Set jump indices
@@ -1323,6 +1328,19 @@ const char* FunctionParser::CompileElement(const char* function)
 
               case NameData::UNIT: break;
 
+      /* The reason why a cNop is added after a cFCall and a cPCall opcode is
+         that the function index could otherwise be confused with an actual
+         opcode (most prominently cImmed), making parse-time optimizations bug
+         (eg. if cNeg immediately follows an index value equal to cImmed, in
+         which case the parser would "optimize" it to negating the (inexistent)
+         literal, causing mayhem). The optimizer gets rid of the cNop safely.
+         (Another option would be to add some offset to the function index
+         when storing it in the bytecode, and then subtract that offset when
+         interpreting the bytecode, but this causes more programming overhead
+         than the speed overhead caused by the cNop to be worth the trouble,
+         especially since the function call caused by the opcode is quite slow
+         anyways.)
+       */
               case NameData::FUNC_PTR:
                   function = CompileFunctionParams
                       (endPtr, data->FuncPtrs[nameData->index].params);

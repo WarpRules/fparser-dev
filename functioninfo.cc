@@ -8,6 +8,7 @@
 #include <ctime>
 #include <cmath>
 #include <sstream>
+#include <cassert>
 
 #define SEPARATOR \
 "----------------------------------------------------------------------------"
@@ -43,6 +44,16 @@ namespace
         return 10.0;
     }
 
+    class InitializableParser: public FunctionParser
+    {
+     public:
+        InitializableParser(const char* function, const char* vars)
+        {
+            assert(Parse(function, vars) < 0);
+        }
+    };
+
+
     class ParserWithConsts: public FunctionParser
     {
      public:
@@ -58,9 +69,11 @@ namespace
             AddFunction("sqr", Sqr, 1);
             AddFunction("sub", Sub, 2);
             AddFunction("value", Value, 0);
-            static FunctionParser SqrFun; SqrFun.Parse("x*x", "x");
-            static FunctionParser SubFun; SubFun.Parse("x-y", "x,y");
-            static FunctionParser ValueFun; ValueFun.Parse("5", "");
+
+            static InitializableParser SqrFun("x*x", "x");
+            static InitializableParser SubFun("x-y", "x,y");
+            static InitializableParser ValueFun("5", "");
+
             AddFunction("psqr", SqrFun);
             AddFunction("psub", SubFun);
             AddFunction("pvalue", ValueFun);
@@ -91,9 +104,12 @@ namespace
     bool gUseDegrees = false;
     const double* gEvalParameters = 0;
 
-    inline void doParse() { gParser.Parse(gFunctionString, gVarString, gUseDegrees); }
-    inline void doEval() { gParser.Eval(gEvalParameters); }
-    inline void doOptimize() { gAuxParser = gParser; gAuxParser.Optimize(); }
+    inline void doParse()
+        { gParser.Parse(gFunctionString, gVarString, gUseDegrees); }
+    inline void doEval()
+        { gParser.Eval(gEvalParameters); }
+    inline void doOptimize()
+        { gAuxParser = gParser; gAuxParser.Optimize(); }
 
     template<void(*Function)(), unsigned loopsPerUnit>
     TimingInfo getTimingInfo()
@@ -281,8 +297,10 @@ namespace
         bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
-            parser1.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
-            parser2.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
+            parser1.Parse
+                (functions[ind1].mFunctionString, gVarString, gUseDegrees);
+            parser2.Parse
+                (functions[ind1].mFunctionString, gVarString, gUseDegrees);
             // parser 1 is not optimized
             parser2.Optimize(); // parser 2 is optimized once
 
@@ -302,13 +320,15 @@ namespace
 
             for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
-                parser1.Parse(functions[ind1].mFunctionString, gVarString, gUseDegrees);
+                parser1.Parse(functions[ind1].mFunctionString, gVarString,
+                              gUseDegrees);
                 for(int n_optimizes1 = 0; n_optimizes1 <= 2; ++n_optimizes1)
                 {
                     if(errors) break;
                     if(n_optimizes1 > 0) parser1.Optimize();
 
-                    parser2.Parse(functions[ind2].mFunctionString, gVarString, gUseDegrees);
+                    parser2.Parse(functions[ind2].mFunctionString, gVarString,
+                                  gUseDegrees);
 
                     for(int n_optimizes2 = 0; n_optimizes2 <= 2; ++n_optimizes2)
                     {
@@ -526,7 +546,8 @@ namespace
 
     bool checkFunctionValidity(FunctionInfo& info)
     {
-        int result = info.mParser.Parse(info.mFunctionString, gVarString, gUseDegrees);
+        int result = info.mParser.Parse(info.mFunctionString, gVarString,
+                                        gUseDegrees);
         if(result >= 0)
         {
             std::cerr << "\"" << info.mFunctionString << "\"\n"
