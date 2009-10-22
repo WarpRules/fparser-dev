@@ -453,16 +453,21 @@ namespace FPoptimizer_CodeTree
         switch(GetOpcode())
         {
             case cNotNot:
+            case cAbsNotNot:
+            case cAbs:
             //ReplaceTreeWithParam0:
                 Become(GetParam(0));
                 goto redo;
             case cIf:
+            case cAbsIf:
                 CopyOnWrite();
-                while(GetParam(1).GetOpcode() == cNotNot)
+                while(GetParam(1).GetOpcode() == cNotNot
+                   || GetParam(1).GetOpcode() == cAbsNotNot)
                     SetParamMove(1, GetParam(1).GetUniqueRef().GetParam(0));
                 GetParam(1).ConstantFolding_FromLogicalParent();
 
-                while(GetParam(2).GetOpcode() == cNotNot)
+                while(GetParam(2).GetOpcode() == cNotNot
+                   || GetParam(2).GetOpcode() == cAbsNotNot)
                     SetParamMove(2, GetParam(2).GetUniqueRef().GetParam(0));
                 GetParam(2).ConstantFolding_FromLogicalParent();
 
@@ -1846,7 +1851,7 @@ namespace FPoptimizer_CodeTree
                         goto NowWeAreMulGroup;
                     }
                 }
-                
+
                 // (x^3)^2 = x^6
                 // NOTE: If 3 is even and 3*2 is not, x must be changed to abs(x).
                 if(GetParam(0).GetOpcode() == cPow
@@ -1900,6 +1905,11 @@ namespace FPoptimizer_CodeTree
             case cSec: // converted into cMul (cPow (cCos x) -1)
             case cCsc: // converted into cMul (cPow (cSin x) -1)
             case cRPow: // converted into cPow y x
+            case cAbsNot:
+            case cAbsNotNot:
+            case cAbsOr:
+            case cAbsAnd:
+            case cAbsIf:
                 break; /* Should never occur */
 
             /* The following opcodes are processed by GenerateFrom(),
@@ -2509,6 +2519,11 @@ namespace FPoptimizer_CodeTree
             case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
             case cRPow: // converted into cPow y x
             case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
+            case cAbsNot:
+            case cAbsNotNot:
+            case cAbsOr:
+            case cAbsAnd:
+            case cAbsIf:
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */

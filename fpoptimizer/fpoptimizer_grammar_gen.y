@@ -98,7 +98,9 @@ namespace GrammarData
         void RecursivelySetDefaultParamMatchingType()
         {
             Params.RecursivelySetDefaultParamMatchingType();
-            if((Opcode == cAdd || Opcode == cMul || Opcode == cAnd || Opcode == cOr)
+            if((Opcode == cAdd || Opcode == cMul
+            || Opcode == cAnd || Opcode == cOr
+            || Opcode == cAbsAnd || Opcode == cAbsOr)
             && Params.Type == PositionalParams)
                 Params.Type = SelectedParams;
         }
@@ -1332,6 +1334,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cGreaterOrEq") { lval->opcode = cGreaterOrEq; return OPCODE; }
             if(IdBuf == "cNot") { lval->opcode = cNot; return OPCODE; }
             if(IdBuf == "cNotNot") { lval->opcode = cNotNot; return OPCODE; }
+            if(IdBuf == "cAbsNot") { lval->opcode = cAbsNot; return OPCODE; }
+            if(IdBuf == "cAbsNotNot") { lval->opcode = cAbsNotNot; return OPCODE; }
+            if(IdBuf == "cAbsAnd") { lval->opcode = cAbsAnd; return OPCODE; }
+            if(IdBuf == "cAbsOr") { lval->opcode = cAbsOr; return OPCODE; }
+            if(IdBuf == "cAbsIf") { lval->opcode = cAbsIf; return OPCODE; }
             if(IdBuf == "cDeg")  { lval->opcode = cDeg; return OPCODE; }
             if(IdBuf == "cRad")  { lval->opcode = cRad; return OPCODE; }
             if(IdBuf == "cInv")  { lval->opcode = cInv; return OPCODE; }

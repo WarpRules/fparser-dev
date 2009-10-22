@@ -683,3 +683,11 @@ cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 #cOr  x@L y@L          : (cAdd x y)
 #cOr  x@L (cAdd <1>)@P : (cAdd x <1>)
 #cAnd x@L          y   : (cMul x y)
+
+cNot    [x@P] -> cAbsNot [x]
+cNotNot [x@P] -> cAbsNotNot [x]
+cAnd x@P y@P <1> -> cAbsAnd x y (cAnd <1>)
+cOr x@P y@P <1>  -> cAbsOr x y (cOr <1>)
+cIf [x@P y z]    -> cAbsIf x y z
+cAbsAnd 1 :
+cAbsOr  0 :

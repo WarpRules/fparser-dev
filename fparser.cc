@@ -185,6 +185,10 @@ namespace
         //return !!(d<0 ? -int((-d)+.5) : int(d+.5));
         return fabs(d) >= 0.5;
     }
+    inline bool truthValue_abs(double abs_d)
+    {
+        return abs_d >= 0.5;
+    }
 
     inline double Min(double d1, double d2)
     {
@@ -674,6 +678,26 @@ namespace
               (abs_int_exponent <= 1024 &&
               (abs_int_exponent & (abs_int_exponent - 1)) == 0));
     }
+
+    bool IsNeverNegativeValueOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cAnd: case cAbsAnd:
+          case cOr:  case cAbsOr:
+          case cNot: case cAbsNot:
+          case cNotNot: case cAbsNotNot:
+          case cEqual: case cNEqual:
+          case cLess: case cLessOrEq:
+          case cGreater: case cGreaterOrEq:
+          case cSqrt: case cRSqrt:
+          case cAbs:
+          case cAcos: case cCosh:
+              return true;
+          default: break;
+        }
+        return false;
+    }
 }
 
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
@@ -880,21 +904,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         eliminate_redundant_sequence(cInv, cInv);
         #undef eliminate_redundant_sequence
         case cAbs:
+            // abs(-x) = abs(x). Don't test cAbs here, it is done by IsNeverNegativeValueOpcode().
+            if(data->ByteCode.back() == cNeg) data->ByteCode.pop_back();
             // cAbs is redundant after any opcode that never
             // returns a negative value
-            switch(data->ByteCode.back())
-            {
-                case cSqrt: case cRSqrt:
-                case cAbs:
-                case cAnd: case cOr:
-                case cEqual: case cNEqual:
-                case cLess: case cLessOrEq:
-                case cGreater: case cGreaterOrEq:
-                case cNot: case cNotNot:
-                case cLog: case cLog2: case cLog10:
-                case cAcos: case cCosh:
-                    return;
-            }
+            if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
+                return;
     }
     switch(opcode)
     {
@@ -1140,7 +1155,18 @@ const char* FunctionParser::CompileIf(const char* function)
     if(!function) return 0;
     if(*function != ',') return SetErrorType(noCommaError(*function), function);
 
-    data->ByteCode.push_back(cIf);
+    OPCODE opcode = cIf;
+    if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
+    {
+        // If we know that the condition to be tested is always
+        // a positive value (such as when produced by "x<y"),
+        // we can use the faster opcode to evaluate it.
+        // cIf tests whether fabs(cond) >= 0.5,
+        // cAbsIf simply tests whether cond >= 0.5.
+        opcode = cAbsIf;
+    }
+
+    data->ByteCode.push_back(opcode);
     const unsigned curByteCodeSize = unsigned(data->ByteCode.size());
     data->ByteCode.push_back(0); // Jump index; to be set later
     data->ByteCode.push_back(0); // Immed jump index; to be set later
@@ -1428,21 +1454,76 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
         }
         else
         {
-            // if notting a constant, change the constant itself:
-            if(data->ByteCode.back() == cImmed)
-                data->Immed.back() = !truthValue(data->Immed.back());
-
-            // !!x is a common paradigm: instead of x cNot cNot,
-            // we produce x cNotNot.
-            else if(data->ByteCode.back() == cNot)
-                data->ByteCode.back() = cNotNot;
-
-            // !!!x is simply x cNot. The cNotNot in the middle is redundant.
-            else if(data->ByteCode.back() == cNotNot)
-                data->ByteCode.back() = cNot;
-
-            else
-                data->ByteCode.push_back(cNot);
+            switch(data->ByteCode.back())
+            {
+              case cImmed:
+                  // if notting a constant, change the constant itself:
+                  data->Immed.back() = !truthValue(data->Immed.back());
+                  break;
+              case cNot:
+                  // !!x is a common paradigm: instead of x cNot cNot,
+                  // we produce x cNotNot.
+                  data->ByteCode.back() = cNotNot;
+                  break;
+              case cAbsNot:
+                  // However, if the preceding opcode is a logical opcode
+                  // such as cAnd, the cNotNot is completely redundant.
+                  // Chances for that are high after cAbsNot (and non-existing
+                  // after cNot), so we test it here and not in cNot.
+                  switch(data->ByteCode[data->ByteCode.size()-2])
+                  {
+                      case cLess: case cLessOrEq:
+                      case cEqual: case cNEqual:
+                      case cGreater: case cGreaterOrEq:
+                      case cAnd: case cAbsAnd:
+                      case cOr: case cAbsOr:
+                          data->ByteCode.pop_back();
+                          break;
+                      default:
+                          data->ByteCode.back() = cAbsNotNot;
+                  }
+                  break;
+  
+              // !!!x is simply x cNot. The cNotNot in the middle is redundant.
+              case cNotNot:
+                  data->ByteCode.back() = cNot;
+                  break;
+              case cAbsNotNot:
+                  data->ByteCode.back() = cAbsNot;
+                  break;
+  
+              case cEqual: // !(x==y)  -> x!=y
+                  data->ByteCode.back() = cNEqual;
+                  break;
+              case cNEqual: // !(x!=y)  -> x==y
+                  data->ByteCode.back() = cEqual;
+                  break;
+              case cLess: // !(x<y)  -> x>=y
+                  data->ByteCode.back() = cGreaterOrEq;
+                  break;
+              case cLessOrEq: // !(x<=y)  -> x>y
+                  data->ByteCode.back() = cGreater;
+                  break;
+              case cGreater: // !(x>y)  -> x<=y
+                  data->ByteCode.back() = cLessOrEq;
+                  break;
+              case cGreaterOrEq: // !(x>=y)  -> x<y
+                  data->ByteCode.back() = cLess;
+                  break;
+  
+              default:
+                  // !-x = !x  , !-abs(x) = !x
+                  if(data->ByteCode.back() == cNeg)
+                      data->ByteCode.pop_back();
+                  // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
+                  if(data->ByteCode.back() == cAbs)
+                      data->ByteCode.pop_back();
+                  // !(x&y) = AbsNot(x&y)
+                  if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
+                      data->ByteCode.push_back(cAbsNot);
+                  else
+                      data->ByteCode.push_back(cNot);
+            }
         }
     }
     else
@@ -2056,6 +2137,25 @@ double FunctionParser::Eval(const double* Vars)
                        --SP;
                        break;
 #endif // FP_SUPPORT_OPTIMIZER
+          case   cAbsNot:  Stack[SP] = !truthValue_abs(Stack[SP]); break;
+          case cAbsNotNot: Stack[SP] =  truthValue_abs(Stack[SP]); break;
+          case cAbsAnd:  Stack[SP-1] = truthValue_abs(Stack[SP-1])
+                                    && truthValue_abs(Stack[SP]);
+                         --SP; break;
+          case cAbsOr:  Stack[SP-1] = truthValue_abs(Stack[SP-1])
+                                   || truthValue_abs(Stack[SP]);
+                        --SP; break;
+          case cAbsIf:
+              {
+                  unsigned jumpAddr = ByteCode[++IP];
+                  unsigned immedAddr = ByteCode[++IP];
+                  if(!truthValue_abs(Stack[SP]))
+                  {
+                      IP = jumpAddr;
+                      DP = immedAddr;
+                  }
+                  --SP; break;
+              }
 
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
 
@@ -2512,6 +2612,21 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                   stack.pop_back();
                   break;
               }
+              case cAbsIf:
+              {
+                  unsigned label = ByteCode[IP+1]+1;
+                  output << "jz_abs ";
+                  printHex(output, label);
+                  params = 1;
+                  produces = 0;
+                  IP += 2;
+
+                  if_stack.resize(if_stack.size() + 1);
+                  std::swap( if_stack.back().condition, stack.back() );
+                  if_stack.back().endif_location = (unsigned) ByteCode.size();
+                  stack.pop_back();
+                  break;
+              }
 
               case cJump:
               {
@@ -2630,6 +2745,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                             break;
                         }
     #endif
+                        case cAbsAnd: n = "abs_and"; break;
+                        case cAbsOr:  n = "abs_or"; break;
+                        case cAbsNot: n = "abs_not"; params = 1; break;
+                        case cAbsNotNot: n = "abs_notnot"; params = 1; break;
                         case cDup:
                         {
                             if(showExpression)
@@ -2681,6 +2800,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 {
                   case cIf: buf << "if("; suff = ")";
                       break;
+                  case cAbsIf: buf << "if("; suff = ")";
+                      break;
                   case cOr:  prio = 6; paramsep = "|"; commutative = true;
                       break;
                   case cAnd: prio = 5; paramsep = "&"; commutative = true;
@@ -2695,10 +2816,12 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                       break;
                   case cPow: prio = 2; paramsep = "^";
                       break;
-#ifdef FP_SUPPORT_OPTIMIZER
+                  case cAbsOr:  prio = 6; paramsep = "|"; commutative = true;
+                      break;
+                  case cAbsAnd: prio = 5; paramsep = "&"; commutative = true;
+                      break;
                   case cSqr: prio = 2; suff = "^2";
                       break;
-#endif
                   case cNeg: buf << "(-"; suff = ")";
                       break;
                   default: buf << n << '('; suff = ")";
@@ -2732,8 +2855,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
             }
             //padLine(outputBuffer, 20);
             output << "= ";
-            if((opcode == cIf && params != 3) ||
-               opcode == cJump || opcode == cNop)
+            if(((opcode == cIf || opcode == cAbsIf) && params != 3)
+              || opcode == cJump || opcode == cNop)
                 output << "(void)";
             else if(stack.empty())
                 output << "[?] ?";

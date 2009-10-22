@@ -445,6 +445,7 @@ namespace FPoptimizer_CodeTree
                 {
                     // Specials
                     case cIf:
+                    case cAbsIf:
                     {
                         if_stack.resize(if_stack.size() + 1);
                         CodeTree res( sim.PullResult() );
@@ -605,6 +606,18 @@ namespace FPoptimizer_CodeTree
                         sim.SwapLastTwoInStack();
                         if(keep_powi) { opcode = cPow; goto default_function_handling; }
                         sim.Eat(2, cPow);
+                        break;
+                    case cAbsOr: // from optimizer
+                        sim.Eat(2, cOr); // downgrade the opcode for simplicity
+                        break;
+                    case cAbsAnd: // from optimizer
+                        sim.Eat(2, cAnd); // downgrade the opcode for simplicity
+                        break;
+                    case cAbsNot: // from optimizer
+                        sim.Eat(1, cNot); // downgrade the opcode for simplicity
+                        break;
+                    case cAbsNotNot: // from optimizer
+                        sim.Eat(1, cNotNot); // downgrade the opcode for simplicity
                         break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:

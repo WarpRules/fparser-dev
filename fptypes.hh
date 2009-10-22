@@ -50,6 +50,11 @@ namespace FUNCTIONPARSERTYPES
                      above [x] */
         cLog2by, /* log2by(x,y) = log2(x) * y */
 #endif
+        cAbsAnd,    /* As cAnd,       but assume both operands are absolute values */
+        cAbsOr,     /* As cOr,        but assume both operands are absolute values */
+        cAbsNot,    /* As cAbsNot,    but assume the operand is an absolute value */
+        cAbsNotNot, /* As cAbsNotNot, but assume the operand is an absolute value */
+        cAbsIf,     /* As cAbsIf,     but assume the 1st operand is an absolute value */
 
         cDup,   /* Duplicates the last value in the stack:
                    Pop A, Push A, Push A */

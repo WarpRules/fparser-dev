@@ -310,6 +310,10 @@ namespace FPoptimizer_CodeTree
             case cOr:
             case cNot:
             case cNotNot:
+            case cAbsAnd:
+            case cAbsOr:
+            case cAbsNot:
+            case cAbsNotNot:
             case cEqual:
             case cNEqual:
             case cLess:
@@ -327,6 +331,7 @@ namespace FPoptimizer_CodeTree
                 return true;
             }
             case cIf:
+            case cAbsIf:
             {
                 std::vector<CodeTree>& Params = data->Params;
                 return Params[1].IsLogicalValue()

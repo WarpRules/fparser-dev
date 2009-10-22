@@ -655,6 +655,8 @@ namespace FPoptimizer_CodeTree
             case cMax:
             case cAnd:
             case cOr:
+            case cAbsAnd:
+            case cAbsOr:
             {
                 if(GetOpcode() == cMul) // Special treatment for cMul sequences
                 {
@@ -707,10 +709,12 @@ namespace FPoptimizer_CodeTree
                     {
                         case cAdd:
                         case cOr:
+                        case cAbsOr:
                             synth.PushImmed(0);
                             break;
                         case cMul:
                         case cAnd:
+                        case cAbsAnd:
                             synth.PushImmed(1);
                             break;
                         case cMin:
@@ -746,11 +750,12 @@ namespace FPoptimizer_CodeTree
                 break;
             }
             case cIf:
+            case cAbsIf:
             {
                 size_t ofs;
                 // If the parameter amount is != 3, we're screwed.
                 GetParam(0).SynthesizeByteCode(synth); // expression
-                synth.SynthIfStep1(ofs);
+                synth.SynthIfStep1(ofs, GetOpcode());
                 GetParam(1).SynthesizeByteCode(synth); // true branch
                 synth.SynthIfStep2(ofs);
                 GetParam(2).SynthesizeByteCode(synth); // false branch

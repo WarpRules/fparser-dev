@@ -111,13 +111,13 @@ namespace FPoptimizer_ByteCode
             return false;
         }
 
-        void SynthIfStep1(size_t& ofs)
+        void SynthIfStep1(size_t& ofs, FUNCTIONPARSERTYPES::OPCODE op)
         {
             using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // the If condition was popped.
 
             ofs = ByteCode.size();
-            ByteCode.push_back(cIf);
+            ByteCode.push_back(op);
             ByteCode.push_back(0); // code index
             ByteCode.push_back(0); // Immed index
         }
