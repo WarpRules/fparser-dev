@@ -396,7 +396,9 @@ namespace FPoptimizer_CodeTree
                     {
                         double inverse_exponent = 1.0 / p1.GetImmed();
                         if(inverse_exponent >= -16.0 && inverse_exponent <= 16.0
-                        && IsIntegerConst(inverse_exponent))
+                        && IsIntegerConst(inverse_exponent)
+                        && (int)inverse_exponent != 1
+                        && (int)inverse_exponent != -1)
                         {
                             long sqrt_chain = (long) inverse_exponent;
                             long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;

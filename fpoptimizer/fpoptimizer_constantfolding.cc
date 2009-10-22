@@ -1753,13 +1753,16 @@ namespace FPoptimizer_CodeTree
                                         GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 if(GetParam(1).IsImmed()
-                && GetParam(1).GetImmed() == 1.0)
+                && (float)GetParam(1).GetImmed() == 1.0)
                 {
+                    // Conversion through a float type value gets rid of
+                    // awkward abs(x)^1 generated from exp(log(x^6)/6),
+                    // without sacrificing as much precision as FloatEqual() does.
                     // x^1 = x
                     goto ReplaceTreeWithParam0;
                 }
                 if(GetParam(0).IsImmed()
-                && GetParam(0).GetImmed() == 1.0)
+                && (float)GetParam(0).GetImmed() == 1.0)
                 {
                     // 1^x = 1
                     goto ReplaceTreeWithOne;
@@ -1801,6 +1804,49 @@ namespace FPoptimizer_CodeTree
                         mulgroup.Rehash();
                     }
                 }
+                // (x*20)^2 = x^2 * 20^2
+                if(GetParam(1).IsImmed()
+                && GetParam(0).GetOpcode() == cMul)
+                {
+                    double exponent_immed = GetParam(1).GetImmed();
+                    double factor_immed   = 1.0;
+                    bool changes = false;
+                    CodeTree& mulgroup = GetParam(0);
+                    for(size_t a=mulgroup.GetParamCount(); a-->0; )
+                        if(mulgroup.GetParam(a).IsImmed())
+                        {
+                            double imm = mulgroup.GetParam(a).GetImmed();
+                            //if(imm >= 0.0)
+                            {
+                                double new_factor_immed = std::pow(imm, exponent_immed);
+                                if(isinf(new_factor_immed) || new_factor_immed == 0.0)
+                                {
+                                    // It produced an infinity. Do not change.
+                                    break;
+                                }
+                                if(!changes)
+                                {
+                                    changes = true;
+                                    mulgroup.CopyOnWrite();
+                                }
+                                factor_immed *= new_factor_immed;
+                                mulgroup.DelParam(a);
+                                break; //
+                            }
+                        }
+                    if(changes)
+                    {
+                        mulgroup.Rehash();
+                        CodeTree newpow;
+                        newpow.SetOpcode(cPow);
+                        newpow.SetParamsMove(GetParams());
+                        SetOpcode(cMul);
+                        AddParamMove(newpow);
+                        AddParam( CodeTree(factor_immed) );
+                        goto NowWeAreMulGroup;
+                    }
+                }
+                
                 // (x^3)^2 = x^6
                 // NOTE: If 3 is even and 3*2 is not, x must be changed to abs(x).
                 if(GetParam(0).GetOpcode() == cPow
