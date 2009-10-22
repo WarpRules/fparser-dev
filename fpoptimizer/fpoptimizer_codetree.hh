@@ -136,7 +136,10 @@ namespace FPoptimizer_CodeTree
         void ConstantFolding_FromLogicalParent();
         bool ConstantFolding_AndLogic();
         bool ConstantFolding_OrLogic();
-        bool ConstantFolding_LogicCommon(bool is_or);
+        bool ConstantFolding_MulLogicItems();
+        bool ConstantFolding_AddLogicItems();
+        template<typename CondType>
+        bool ConstantFolding_LogicCommon(CondType cond_type, bool is_logical);
         bool ConstantFolding_MulGrouping();
         bool ConstantFolding_AddGrouping();
         bool ConstantFolding_Assimilate();

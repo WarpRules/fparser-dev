@@ -246,6 +246,31 @@ cPow [(cMul (cAbs[x]) <1>) y@E] : (cMul x <1>) y
 cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # Note: ^ Replacement function refers to b twice
 
+# !x = abs(x) < 0.5
+# Note: Due to range-based optimizations, % can never be 0 here. These are safe.
+cLess        [(cAbs[x]) %] -> cNot[(cMul x 0.5 /%)]
+cGreaterOrEq [(cAbs[x]) %] -> cNotNot[(cMul x 0.5 /%)]
+cGreater     [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]
+cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
+
+# Contradictory comparisons always produce both 0 and 1
+#  These are done by ConstantFolding:
+#cAdd (cLess[x y]) (cGreaterOrEq[x y]) : 1
+#cAdd (cLessOrEq[x y]) (cGreater[x y]) : 1
+#cAdd (cEqual[x y]) (cNEqual[x y])     : 1
+#cAdd (cNot[x]) (cNotNot[x])           : 1
+#cMul (cLess[x y]) (cGreaterOrEq[x y]) -> 0
+#cMul (cLessOrEq[x y]) (cGreater[x y]) -> 0
+#cMul (cEqual[x y]) (cNEqual[x y])     -> 0
+#cMul (cNot[x]) (cNotNot[x])           -> 0
+## Comparisons that have overlap can be reduced
+#cAdd (cLessOrEq[x y]) (cGreaterOrEq[x y])  : 1 (cEqual[x y])
+## equal*2 + less
+##cAdd (cLessOrEq[x y]) (cEqual[x y])
+#cMul (cLessOrEq[x y]) (cGreaterOrEq[x y])  : (cEqual[x y])
+#cMul (cEqual[x y])    (cGreaterOrEq[x y])  : (cEqual[x y])
+#cMul (cEqual[x y])    (cLessOrEq[x y])     : (cEqual[x y])
+
 [INTERMEDIATE]
 
 # Opcodes we will NOT find in the intermediate stage:
@@ -649,6 +674,8 @@ cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 #cPow [ (cSec[x]) %@F@N ] : (cCos[x]) -%
 #cPow [ (cCot[x]) %@F@N ] : (cTan[x]) -%
 
-cOr  x@L y@L          : (cAdd x y)
-cOr  x@L (cAdd <1>)@P : (cAdd x <1>)
-cAnd x@L          y   : (cMul x y)
+# These optimizations are fine when used as truth values, but because
+# they produce values other than 0 or 1, they cannot really be used.
+#cOr  x@L y@L          : (cAdd x y)
+#cOr  x@L (cAdd <1>)@P : (cAdd x <1>)
+#cAnd x@L          y   : (cMul x y)

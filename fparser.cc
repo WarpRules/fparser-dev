@@ -180,9 +180,10 @@ namespace
         return *endPtr == '\0';
     }
 
-    inline int doubleToInt(double d)
+    inline bool truthValue(double d)
     {
-        return d<0 ? -int((-d)+.5) : int(d+.5);
+        //return !!(d<0 ? -int((-d)+.5) : int(d+.5));
+        return fabs(d) >= 0.5;
     }
 
     inline double Min(double d1, double d2)
@@ -1429,7 +1430,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
         {
             // if notting a constant, change the constant itself:
             if(data->ByteCode.back() == cImmed)
-                data->Immed.back() = !doubleToInt(data->Immed.back());
+                data->Immed.back() = !truthValue(data->Immed.back());
 
             // !!x is a common paradigm: instead of x cNot cNot,
             // we produce x cNotNot.
@@ -1839,7 +1840,7 @@ double FunctionParser::Eval(const double* Vars)
               {
                   unsigned jumpAddr = ByteCode[++IP];
                   unsigned immedAddr = ByteCode[++IP];
-                  if(doubleToInt(Stack[SP]) == 0)
+                  if(!truthValue(Stack[SP]))
                   {
                       IP = jumpAddr;
                       DP = immedAddr;
@@ -1974,19 +1975,19 @@ double FunctionParser::Eval(const double* Vars)
                          --SP; break;
 #endif
 
-          case   cNot: Stack[SP] = !doubleToInt(Stack[SP]); break;
+          case   cNot: Stack[SP] = !truthValue(Stack[SP]); break;
 
           case   cAnd: Stack[SP-1] =
-                           (doubleToInt(Stack[SP-1]) &&
-                            doubleToInt(Stack[SP]));
+                           (truthValue(Stack[SP-1]) &&
+                            truthValue(Stack[SP  ]));
                        --SP; break;
 
           case    cOr: Stack[SP-1] =
-                           (doubleToInt(Stack[SP-1]) ||
-                            doubleToInt(Stack[SP]));
+                           (truthValue(Stack[SP-1]) ||
+                            truthValue(Stack[SP  ]));
                        --SP; break;
 
-          case cNotNot: Stack[SP] = !!doubleToInt(Stack[SP]); break;
+          case cNotNot: Stack[SP] = truthValue(Stack[SP]); break;
 
 // Degrees-radians conversion:
           case   cDeg: Stack[SP] = RadiansToDegrees(Stack[SP]); break;

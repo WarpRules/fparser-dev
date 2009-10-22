@@ -47,6 +47,7 @@ namespace
             bool negated;
         };
         std::vector<Item> plain_set;
+        int const_offset;
 
         enum RelationshipResult
         {
@@ -55,14 +56,41 @@ namespace
             BecomeOne,
             Suboptimal
         };
+        enum ConditionType
+        {
+            cond_or,
+            cond_and,
+            cond_mul,
+            cond_add
+        };
 
-        RelationshipResult AddItem(const CodeTree& a, bool negated, bool is_or)
+        ComparisonSet():
+            relationships(),
+            plain_set(),
+            const_offset(0)
+        {
+        }
+
+        RelationshipResult AddItem(const CodeTree& a, bool negated, ConditionType type)
         {
             for(size_t c=0; c<plain_set.size(); ++c)
                 if(plain_set[c].value.IsIdenticalTo(a))
                 {
                     if(negated != plain_set[c].negated)
-                        return is_or ? BecomeOne : BecomeZero;
+                    {
+                        switch(type)
+                        {
+                            case cond_or:
+                                return BecomeOne;
+                            case cond_add:
+                                plain_set.erase(plain_set.begin() + c);
+                                const_offset += 1;
+                                return Suboptimal;
+                            case cond_and:
+                            case cond_mul:
+                                return BecomeZero;
+                        }
+                    }
                     return Suboptimal;
                 }
             Item pole;
@@ -72,15 +100,20 @@ namespace
             return Ok;
         }
 
-        RelationshipResult AddRelationship(CodeTree a, CodeTree b, int reltype, bool is_or)
+        RelationshipResult AddRelationship(CodeTree a, CodeTree b, int reltype, ConditionType type)
         {
-            if(is_or)
+            switch(type)
             {
-                if(reltype == 7) return BecomeOne;
-            }
-            else
-            {
-                if(reltype == 0) return BecomeZero;
+                case cond_or:
+                    if(reltype == 7) return BecomeOne;
+                    break;
+                case cond_add:
+                    if(reltype == 7) { const_offset += 1; return Suboptimal; }
+                    break;
+                case cond_and:
+                case cond_mul:
+                    if(reltype == 0) return BecomeZero;
+                    break;
             }
 
             if(!(a.GetHash() < b.GetHash()))
@@ -94,17 +127,54 @@ namespace
                 if(relationships[c].a.IsIdenticalTo(a)
                 && relationships[c].b.IsIdenticalTo(b))
                 {
-                    if(is_or)
+                    switch(type)
                     {
-                        int newrel = relationships[c].relationship | reltype;
-                        if(newrel == 7) return BecomeOne;
-                        relationships[c].relationship = newrel;
-                    }
-                    else
-                    {
-                        int newrel = relationships[c].relationship & reltype;
-                        if(newrel == 0) return BecomeZero;
-                        relationships[c].relationship = newrel;
+                        case cond_or:
+                        {
+                            int newrel = relationships[c].relationship | reltype;
+                            if(newrel == 7) return BecomeOne;
+                            relationships[c].relationship = newrel;
+                            break;
+                        }
+                        case cond_and:
+                        case cond_mul:
+                        {
+                            int newrel = relationships[c].relationship & reltype;
+                            if(newrel == 0) return BecomeZero;
+                            relationships[c].relationship = newrel;
+                            break;
+                        }
+                        case cond_add:
+                        {
+                            int newrel_or  = relationships[c].relationship | reltype;
+                            int newrel_and = relationships[c].relationship & reltype;
+                            if(newrel_or  == 5 // < + >
+                            && newrel_and == 0)
+                            {
+                                // (x<y) + (x>y) = x!=y
+                                relationships[c].relationship = Ne_Mask;
+                                return Suboptimal;
+                            }
+                            if(newrel_or  == 7
+                            && newrel_and == 0)
+                            {
+                                // (x<y) + (x>=y) = 1
+                                // (x<=y) + (x>y) = 1
+                                // (x=y) + (x!=y) = 1
+                                const_offset += 1;
+                                relationships.erase(relationships.begin()+c);
+                                return Suboptimal;
+                            }
+                            if(newrel_or  == 7
+                            && newrel_and == Eq_Mask)
+                            {
+                                // (x<=y) + (x>=y) = 1 + (x=y)
+                                relationships[c].relationship = Eq_Mask;
+                                const_offset += 1;
+                                return Suboptimal;
+                            }
+                            continue;
+                        }
                     }
                     return Suboptimal;
                 }
@@ -115,16 +185,6 @@ namespace
             comp.relationship = reltype;
             relationships.push_back(comp);
             return Ok;
-        }
-
-        RelationshipResult AddAndRelationship(CodeTree a, CodeTree b, int reltype)
-        {
-            return AddRelationship(a, b, reltype, false);
-        }
-
-        RelationshipResult AddOrRelationship(CodeTree a, CodeTree b, int reltype)
-        {
-            return AddRelationship(a, b, reltype, true);
         }
     };
 
@@ -412,7 +472,8 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    bool CodeTree::ConstantFolding_LogicCommon(bool is_or)
+    template<typename CondType> /* ComparisonSet::ConditionType */
+    bool CodeTree::ConstantFolding_LogicCommon(CondType cond_type, bool is_logical)
     {
         bool should_regenerate = false;
         ComparisonSet comp;
@@ -423,28 +484,32 @@ namespace FPoptimizer_CodeTree
             switch(atree.GetOpcode())
             {
                 case cEqual:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Eq_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Eq_Mask, cond_type);
                     break;
                 case cNEqual:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ne_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ne_Mask, cond_type);
                     break;
                 case cLess:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Lt_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Lt_Mask, cond_type);
                     break;
                 case cLessOrEq:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Le_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Le_Mask, cond_type);
                     break;
                 case cGreater:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Gt_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Gt_Mask, cond_type);
                     break;
                 case cGreaterOrEq:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ge_Mask, is_or);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet::Ge_Mask, cond_type);
                     break;
                 case cNot:
-                    change = comp.AddItem(atree.GetParam(0), true, is_or);
+                    change = comp.AddItem(atree.GetParam(0), true, cond_type);
+                    break;
+                case cNotNot:
+                    change = comp.AddItem(atree.GetParam(0), false, cond_type);
                     break;
                 default:
-                    change = comp.AddItem(atree, false, is_or);
+                    if(is_logical || atree.IsLogicalValue())
+                        change = comp.AddItem(atree, false, cond_type);
             }
             switch(change)
             {
@@ -471,13 +536,46 @@ namespace FPoptimizer_CodeTree
             std::cout << "Before ConstantFolding_LogicCommon: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
           #endif
-            DelParams();
+
+            if(is_logical)
+            {
+                DelParams(); // delete all params
+            }
+            else
+            {
+                // Delete only logical params
+                for(size_t a=GetParamCount(); a-- > 0; )
+                {
+                    const CodeTree& atree = GetParam(a);
+                    switch(atree.GetOpcode())
+                    {
+                        case cEqual: case cNEqual:
+                        case cLess: case cLessOrEq:
+                        case cGreater: case cGreaterOrEq:
+                        case cNot: case cNotNot:
+                            DelParam(a);
+                            break;
+                        default:
+                            if(atree.IsLogicalValue())
+                                DelParam(a);
+                    }
+                }
+            }
+
             for(size_t a=0; a<comp.plain_set.size(); ++a)
             {
                 if(comp.plain_set[a].negated)
                 {
                     CodeTree r;
                     r.SetOpcode(cNot);
+                    r.AddParamMove(comp.plain_set[a].value);
+                    r.Rehash();
+                    AddParamMove(r);
+                }
+                else if(!is_logical)
+                {
+                    CodeTree r;
+                    r.SetOpcode(cNotNot);
                     r.AddParamMove(comp.plain_set[a].value);
                     r.Rehash();
                     AddParamMove(r);
@@ -503,6 +601,8 @@ namespace FPoptimizer_CodeTree
                 r.Rehash();
                 AddParamMove(r);
             }
+            if(comp.const_offset != 0)
+                AddParam( CodeTree( double(comp.const_offset) ) );
           #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "After ConstantFolding_LogicCommon: "; FPoptimizer_Grammar::DumpTree(*this);
             std::cout << "\n";
@@ -519,11 +619,19 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::ConstantFolding_AndLogic()
     {
-        return ConstantFolding_LogicCommon(false);
+        return ConstantFolding_LogicCommon( ComparisonSet::cond_and, true );
     }
     bool CodeTree::ConstantFolding_OrLogic()
     {
-        return ConstantFolding_LogicCommon(true);
+        return ConstantFolding_LogicCommon( ComparisonSet::cond_or, true );
+    }
+    bool CodeTree::ConstantFolding_AddLogicItems()
+    {
+        return ConstantFolding_LogicCommon( ComparisonSet::cond_add, false );
+    }
+    bool CodeTree::ConstantFolding_MulLogicItems()
+    {
+        return ConstantFolding_LogicCommon( ComparisonSet::cond_mul, false );
     }
 
     static CodeTree CollectMulGroup_Item(
@@ -1061,30 +1169,23 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<GetParamCount(); ++a)
                     GetParam(a).ConstantFolding_FromLogicalParent();
                 ConstantFolding_Assimilate();
-                // If the and-list contains an expression that evaluates to approx. zero,
-                // the whole list evaluates to zero.
-                // If all expressions within the and-list evaluate to approx. nonzero,
-                // the whole list evaluates to one.
-                bool all_values_are_nonzero = true;
-                for(size_t a=0; a<GetParamCount(); ++a)
+                for(size_t a=GetParamCount(); a-- > 0; )
                 {
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
                     if(p.has_min && p.has_max
-                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
                     {
                         goto ReplaceTreeWithZero;
                     }
                     else if( (p.has_max && p.max <= -0.5)
                           || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
                     {
+                        DelParam(a); // x & y & 1 = x & y;  x & 1 = !!x
                     }
-                    else
-                        all_values_are_nonzero = false;
                 }
-                if(all_values_are_nonzero) goto ReplaceTreeWithOne;
                 switch(GetParamCount())
                 {
-                    case 0: goto ReplaceTreeWithZero;
+                    case 0: goto ReplaceTreeWithOne;
                     case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
                     default: if(ConstantFolding_AndLogic()) goto redo;
                 }
@@ -1095,30 +1196,23 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<GetParamCount(); ++a)
                     GetParam(a).ConstantFolding_FromLogicalParent();
                 ConstantFolding_Assimilate();
-                // If the or-list contains an expression that evaluates to approx. nonzero,
-                // the whole list evaluates to one.
-                // If all expressions within the and-list evaluate to approx. zero,
-                // the whole list evaluates to zero.
-                bool all_values_are_zero = true;
-                for(size_t a=0; a<GetParamCount(); ++a)
+                for(size_t a=GetParamCount(); a-- > 0; )
                 {
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
                     if(p.has_min && p.has_max
-                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
                     {
+                        DelParam(a); // x | y | 0 = x | y;  x | 0 = !!x
                     }
                     else if( (p.has_max && p.max <= -0.5)
                           || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
                     {
                         goto ReplaceTreeWithOne;
                     }
-                    else
-                        all_values_are_zero = false;
                 }
-                if(all_values_are_zero) goto ReplaceTreeWithZero;
                 switch(GetParamCount())
                 {
-                    case 0: goto ReplaceTreeWithOne;
+                    case 0: goto ReplaceTreeWithZero;
                     case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
                     default: if(ConstantFolding_OrLogic()) goto redo;
                 }
@@ -1244,7 +1338,9 @@ namespace FPoptimizer_CodeTree
                 {
                     case 0: goto ReplaceTreeWithOne;
                     case 1: goto ReplaceTreeWithParam0; // Replace self with the single operand
-                    default: if(ConstantFolding_MulGrouping()) goto redo;
+                    default:
+                        if(ConstantFolding_MulGrouping()) goto redo;
+                        if(ConstantFolding_MulLogicItems()) goto redo;
                 }
                 break;
             }
@@ -1287,7 +1383,9 @@ namespace FPoptimizer_CodeTree
                 {
                     case 0: goto ReplaceTreeWithZero;
                     case 1: goto ReplaceTreeWithParam0; // Replace self with the single operand
-                    default: if(ConstantFolding_AddGrouping()) goto redo;
+                    default:
+                        if(ConstantFolding_AddGrouping()) goto redo;
+                        if(ConstantFolding_AddLogicItems()) goto redo;
                 }
                 break;
             }

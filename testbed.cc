@@ -220,10 +220,10 @@ double f18(const double* p)
 
 double f19(const double* p)
 {
-#define P19 "(x<y)+(x>y)+10*((x <= y)+(x>=y))+100*((x=y)+(x!=y))", "x,y", \
+#define P19 "(x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x=y)+100000*(x!=y)", "x,y", \
         f19, 2, -100, 100, .5, false
     const double x = p[0], y = p[1];
-    return (x<y)+(x>y)+10*((x <= y)+(x>=y))+100*((x==y)+(x!=y));
+    return (x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x==y)+100000*(x!=y);
 }
 
 double f20(const double* p)
