@@ -28,6 +28,15 @@ namespace
     const double kVarValuesDeltaFactor2 = 10.0;
     const double kVarValuesDeltaFactor2Threshold = 10.0;
 
+    double Sqr(const double* p)
+    {
+        return p[0]*p[0];
+    }
+
+    double Sub(const double* p)
+    {
+        return p[0]-p[1];
+    }
 
     class ParserWithConsts: public FunctionParser
     {
@@ -40,6 +49,13 @@ namespace
             AddUnit("M", 1000000);
             AddUnit("dozen", 12);
             AddUnit("dozens", 12);
+
+            AddFunction("sqr", Sqr, 1);
+            AddFunction("sub", Sub, 2);
+            static FunctionParser SqrFun; SqrFun.Parse("x*x", "x");
+            static FunctionParser SubFun; SubFun.Parse("x-y", "x,y");
+            AddFunction("psqr", SqrFun);
+            AddFunction("psub", SubFun);
         }
     };
 
