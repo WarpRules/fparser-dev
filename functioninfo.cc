@@ -38,6 +38,11 @@ namespace
         return p[0]-p[1];
     }
 
+    double Value(const double* )
+    {
+        return 10.0;
+    }
+
     class ParserWithConsts: public FunctionParser
     {
      public:
@@ -52,10 +57,13 @@ namespace
 
             AddFunction("sqr", Sqr, 1);
             AddFunction("sub", Sub, 2);
+            AddFunction("value", Value, 0);
             static FunctionParser SqrFun; SqrFun.Parse("x*x", "x");
             static FunctionParser SubFun; SubFun.Parse("x-y", "x,y");
+            static FunctionParser ValueFun; ValueFun.Parse("5", "");
             AddFunction("psqr", SqrFun);
             AddFunction("psub", SubFun);
+            AddFunction("pvalue", ValueFun);
         }
     };
 
