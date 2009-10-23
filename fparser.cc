@@ -1507,7 +1507,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
                           data->ByteCode.back() = cAbsNotNot;
                   }
                   break;
-  
+
               // !!!x is simply x cNot. The cNotNot in the middle is redundant.
               case cNotNot:
                   data->ByteCode.back() = cNot;
@@ -1515,7 +1515,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
               case cAbsNotNot:
                   data->ByteCode.back() = cAbsNot;
                   break;
-  
+
               case cEqual: // !(x==y)  -> x!=y
                   data->ByteCode.back() = cNEqual;
                   break;
@@ -1534,7 +1534,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
               case cGreaterOrEq: // !(x>=y)  -> x<y
                   data->ByteCode.back() = cLess;
                   break;
-  
+
               default:
                   // !(x&y) = AbsNot(x&y)
                   if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
@@ -1783,7 +1783,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 {
     function = CompileComparison(function);
     if(!function) return 0;
-    
+
     while(*function == '&')
     {
         size_t param0end = data->ByteCode.size();
@@ -1792,7 +1792,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
         while(isspace(*function)) ++function;
         function = CompileComparison(function);
         if(!function) return 0;
-        
+
         if(IsNeverNegativeValueOpcode(data->ByteCode.back())
         && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
             data->ByteCode.push_back(cAbsAnd);
@@ -1817,7 +1817,7 @@ const char* FunctionParser::CompileExpression(const char* function)
         while(isspace(*function)) ++function;
         function = CompileAnd(function);
         if(!function) return 0;
-        
+
         if(IsNeverNegativeValueOpcode(data->ByteCode.back())
         && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
             data->ByteCode.push_back(cAbsOr);
