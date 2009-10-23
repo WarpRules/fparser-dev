@@ -1472,6 +1472,12 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
         }
         else
         {
+            // !-x = !x  , !-abs(x) = !x
+            if(data->ByteCode.back() == cNeg)
+                data->ByteCode.pop_back();
+            // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
+            if(data->ByteCode.back() == cAbs)
+                data->ByteCode.pop_back();
             switch(data->ByteCode.back())
             {
               case cImmed:
@@ -1530,12 +1536,6 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
                   break;
   
               default:
-                  // !-x = !x  , !-abs(x) = !x
-                  if(data->ByteCode.back() == cNeg)
-                      data->ByteCode.pop_back();
-                  // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
-                  if(data->ByteCode.back() == cAbs)
-                      data->ByteCode.pop_back();
                   // !(x&y) = AbsNot(x&y)
                   if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
                       data->ByteCode.push_back(cAbsNot);
