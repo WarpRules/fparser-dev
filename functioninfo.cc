@@ -273,7 +273,7 @@ namespace
             const double diff = sv2-sv1;
             if(std::fabs(diff) > kEpsilon)
             {
-                std::cout << "******* For variable values (";
+                std::cout << SEPARATOR << "\n******* For variable values (";
                 for(size_t i = 0; i < varsAmount; ++i)
                 {
                     if(i > 0) std::cout << ",";
@@ -288,8 +288,8 @@ namespace
                           << std::setprecision(18) << v2
                           << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
-                          << std::setprecision(18) << diff << ")\n"
-                          << SEPARATOR << std::endl;
+                          << std::setprecision(18) << diff << ")"
+                          << std::endl;
                 return false;
             }
         }
@@ -415,6 +415,8 @@ namespace
 
         for(size_t i = 0; i < functions.size(); ++i)
         {
+            std::cout << SEPARATOR << std::endl;
+
             std::stringstream streams[3];
 
             parser.Parse(functions[i].mFunctionString, gVarString, gUseDegrees);
@@ -530,7 +532,6 @@ namespace
                     std::cout << wall << colors[2] << lines[2];
                 std::cout << newline;
             }
-            std::cout << SEPARATOR << std::endl;
         }
 #endif
     }
@@ -539,12 +540,12 @@ namespace
     {
         std::printf
         ("    ,------------------------------------------------------------------------,\n"
-         "    |      Parse |      Eval |  Eval (O) | Eval (O2) |  Optimize  | Repeat O.|\n"
-         ",---+------------+-----------+-----------+-----------+------------+----------+\n");
+         "    |      Parse |      Eval |  Eval (O) | Eval (O2) |  Optimize |  Repeat O.|\n"
+         ",---+------------+-----------+-----------+-----------+-----------+-----------+\n");
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%11.1f |%10.1f|\n",
+            std::printf("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%10.1f |%10.1f |\n",
                         unsigned(i+1),
                         functions[i].mParseTiming.mMicroSeconds,
                         functions[i].mEvalTiming.mMicroSeconds,
@@ -567,6 +568,9 @@ namespace
             std::cerr << "\"" << info.mFunctionString << "\"\n"
                       << std::string(result+1, ' ')
                       << "^ " << info.mParser.ErrorMsg() << std::endl;
+            if(info.mParser.GetParseErrorType() ==
+               FunctionParser::INVALID_VARS)
+                std::cerr << "Vars: \"" << gVarString << "\"" << std::endl;
             return false;
         }
         return true;
@@ -625,7 +629,8 @@ namespace
             "Options:\n"
             "  -vars <var string> : Specify a var string.\n"
             "  -nt                : No timing measurements.\n"
-            "  -ntd               : No timing if functions differ.\n";
+            "  -ntd               : No timing if functions differ.\n"
+            "  -deg               : Use degrees for trigonometry.\n";
         return 1;
     }
 }
@@ -646,10 +651,10 @@ int main(int argc, char* argv[])
         }
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
-        else if(std::strcmp(argv[i], "-deg") == 0)
-            gUseDegrees = true;
         else if(std::strcmp(argv[i], "-ntd") == 0)
             noTimingIfEqualityErrors = true;
+        else if(std::strcmp(argv[i], "-deg") == 0)
+            gUseDegrees = true;
         else
         {
             functions.push_back(FunctionInfo());
@@ -681,10 +686,9 @@ int main(int argc, char* argv[])
               << (varsAmount == 1 ? " var" : " vars")
               << ") (using " << varValueSetsAmount << " set"
               << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
-    std::cout << SEPARATOR << std::endl;
 
 #if(0)
-    std::cout << "Testing with variable values:\n";
+    std::cout << SEPARATOR << "\nTesting with variable values:\n";
     for(size_t i = 0; i < gVarValues.size(); ++i)
     {
         if(i > 0) std::cout << (i%5==0 ? "\n" : " ");
@@ -701,9 +705,9 @@ int main(int argc, char* argv[])
     std::cout << "\n" << SEPARATOR << std::endl;
 #else
     if(!validVarValuesFound)
-        std::cout << "Warning: No valid variable values were found."
-                  << " Using (0,0).\n"
-                  << SEPARATOR << std::endl;
+        std::cout << SEPARATOR
+                  << "\nWarning: No valid variable values were found."
+                  << " Using (0,0)." << std::endl;
 #endif
 
     const bool equalityErrors = checkEquality(functions) == false;

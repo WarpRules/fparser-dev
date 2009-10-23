@@ -586,6 +586,22 @@ double f54(const double* p)
         !((x<y)&(x<3))+!!(!(x>y)|(x>3));
 }
 
+double f55(const double* p)
+{
+#define P55 "(x^1.2 < 0) + (y^2.5 < 0) + 2*(x*x<0) + 3*(y^3<0) + 4*(x^4<0)", \
+        "x,y", f55, 2, 1, 100, .5, false
+    const double x = p[0], y = p[1];
+    return (pow(x,1.2) < 0) + (pow(y,2.5) < 0) + 2*(x*x<0) + 3*(pow(y,3)<0) +
+        4*(pow(x,4)<0);
+}
+
+double f56(const double* p)
+{
+#define P56 "(2^70*1.41)%x", "x", f56, 1, .25, 100, .25, false
+    const double x = p[0];
+    return fmod(pow(2,70)*1.41, x);
+}
+
 
 namespace
 {
@@ -600,7 +616,8 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 },
+        { P55 }, { P56 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
