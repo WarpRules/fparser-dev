@@ -41,6 +41,11 @@ namespace
     inline double sec(double x) { return 1.0 / std::cos(x); }
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
+    inline bool fBool(double x) { return fabs(x) >= 0.5; }
+    inline bool fAnd(double x, double y) { return fBool(x) && fBool(y); }
+    inline bool fOr(double x, double y) { return fBool(x) || fBool(y); }
+    inline bool fNot(double x) { return !fBool(x); }
+
 #ifndef FP_SUPPORT_ASINH
     inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
     inline double fp_acosh(double x) { return log(x + sqrt(x*x - 1)); }
@@ -560,6 +565,16 @@ double f52(const double* p)
     return P52Code + pow(2.0, 3.0);
 }
 
+double f53(const double* p)
+{
+#define P53 "(x&y) + 1.1*(int(x/10)|int(y/10)) + 1.2*((-!-!-x)+(!-!-!y)) + \
+1.3*(-------x + !!!!!!!y)" , "x,y", f53, 2, 0, 10, 1, false
+    const double x = p[0], y = p[1];
+    return fAnd(x,y) + 1.1*(fOr(doubleToInt(x/10.0),doubleToInt(y/10.0))) +
+        1.2*((-fNot(-fNot(-x))) + fNot(-fNot(-fNot(y)))) +
+        1.3*(-x + fNot(y));
+}
+
 
 namespace
 {
@@ -574,7 +589,7 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
