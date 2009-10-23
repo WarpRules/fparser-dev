@@ -90,6 +90,8 @@ namespace
     {
         std::string mFunctionString;
         ParserWithConsts mParser;
+        std::vector<double> mValidVarValues;
+
         TimingInfo mParseTiming;
         TimingInfo mEvalTiming;
         TimingInfo mOptimizeTiming;
@@ -105,11 +107,19 @@ namespace
     const double* gEvalParameters = 0;
 
     inline void doParse()
-        { gParser.Parse(gFunctionString, gVarString, gUseDegrees); }
+    {
+        gParser.Parse(gFunctionString, gVarString, gUseDegrees);
+    }
+
     inline void doEval()
-        { gParser.Eval(gEvalParameters); }
+    {
+        gParser.Eval(gEvalParameters);
+    }
+
     inline void doOptimize()
-        { gAuxParser = gParser; gAuxParser.Optimize(); }
+    {
+        gAuxParser = gParser; gAuxParser.Optimize();
+    }
 
     template<void(*Function)(), unsigned loopsPerUnit>
     TimingInfo getTimingInfo()
@@ -153,7 +163,7 @@ namespace
     void getTimingInfo(FunctionInfo& info)
     {
         gFunctionString = info.mFunctionString;
-        gEvalParameters = &gVarValues.back()[0];
+        gEvalParameters = &info.mValidVarValues[0];
 
         printTimingInfo();
         info.mParseTiming = getTimingInfo<doParse, kParseLoopsPerUnit>();
@@ -189,6 +199,9 @@ namespace
         std::vector<double> varValues(varsAmount, 0);
         std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
 
+        for(size_t i = 0; i < functions.size(); ++i)
+            functions[i].mValidVarValues = varValues;
+
         while(true)
         {
             bool wasOk = false;
@@ -197,10 +210,11 @@ namespace
                 double value = functions[i].mParser.Eval(&varValues[0]);
                 if(!(value < -1e14 || value > 1e14))
                 {
+                    functions[i].mValidVarValues = varValues;
                     wasOk = true;
-                    break;
                 }
             }
+
             if(wasOk)
             {
                 gVarValues.push_back(varValues);
