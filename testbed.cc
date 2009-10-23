@@ -225,12 +225,13 @@ double f18(const double* p)
 
 double f19(const double* p)
 {
-#define P19 "(x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x=y)+100000*(x!=y)+(x&y)*2+(x|y)*20+(!x)*200+(!!x)*2000+4*!((x<y)&(x<3))+40*!!(!(x>y)|(x>3))", "x,y", \
-        f19, 2, -100, 100, .5, false
+#define P19 "(x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x=y)+100000*(x!=y)+\
+(x&y)*2+(x|y)*20+(!x)*200+(!!x)*2000+4*!((x<y)&(x<3))+40*!!(!(x>y)|(x>3))", \
+        "x,y", f19, 2, -100, 100, .5, false
     const double x = p[0], y = p[1];
     return (x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x==y)+100000*(x!=y)
-          +(x&&y)*2+(x||y)*20+(!x)*200+(!!x)*2000
-          +4*!((x<y)&&(x<3))+40*!!(!(x>y)||(x>3));
+        +(x&&y)*2+(x||y)*20+(!x)*200+(!!x)*2000
+        +4*!((x<y)&&(x<3))+40*!!(!(x>y)||(x>3));
 }
 
 double f20(const double* p)
@@ -575,6 +576,16 @@ double f53(const double* p)
         1.3*(-x + fNot(y));
 }
 
+double f54(const double* p)
+{
+#define P54 "(x<y)+(x<=y)+(x>y)+(x>=y)+(x=y)+(x!=y)+(x&y)+(x|y)+(!x)+(!!x)+\
+!((x<y)&(x<3))+!!(!(x>y)|(x>3))", \
+        "x,y", f54, 2, -100, 100, .5, false
+    const double x = p[0], y = p[1];
+    return (x<y)+(x<=y)+(x>y)+(x>=y)+(x==y)+(x!=y)+(x&&y)+(x||y)+(!x)+(!!x)+
+        !((x<y)&(x<3))+!!(!(x>y)|(x>3));
+}
+
 
 namespace
 {
@@ -589,7 +600,7 @@ namespace
         { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }
+        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 }
     };
 
     const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
