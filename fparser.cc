@@ -1783,14 +1783,21 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 {
     function = CompileComparison(function);
     if(!function) return 0;
-
+    
     while(*function == '&')
     {
+        size_t param0end = data->ByteCode.size();
+
         ++function;
         while(isspace(*function)) ++function;
         function = CompileComparison(function);
         if(!function) return 0;
-        data->ByteCode.push_back(cAnd);
+        
+        if(IsNeverNegativeValueOpcode(data->ByteCode.back())
+        && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
+            data->ByteCode.push_back(cAbsAnd);
+        else
+            data->ByteCode.push_back(cAnd);
         --StackPtr;
     }
     return function;
@@ -1804,11 +1811,18 @@ const char* FunctionParser::CompileExpression(const char* function)
 
     while(*function == '|')
     {
+        size_t param0end = data->ByteCode.size();
+
         ++function;
         while(isspace(*function)) ++function;
         function = CompileAnd(function);
         if(!function) return 0;
-        data->ByteCode.push_back(cOr);
+        
+        if(IsNeverNegativeValueOpcode(data->ByteCode.back())
+        && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
+            data->ByteCode.push_back(cAbsOr);
+        else
+            data->ByteCode.push_back(cOr);
         --StackPtr;
     }
     return function;
