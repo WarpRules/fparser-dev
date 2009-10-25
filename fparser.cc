@@ -2746,7 +2746,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
-                        case cEval: n = "call 0"; break;
+                        case cEval: n = "eval"; params = data->variableRefs.size(); break;
     #endif
 
     #ifdef FP_SUPPORT_OPTIMIZER
