@@ -913,6 +913,14 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             // returns a negative value
             if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
                 return;
+        case cFloor:
+            if(data->ByteCode.back() == cNeg)
+                { data->ByteCode.back() = cCeil; data->ByteCode.push_back(cNeg); return; }
+            break;
+        case cCeil:
+            if(data->ByteCode.back() == cNeg)
+                { data->ByteCode.back() = cFloor; data->ByteCode.push_back(cNeg); return; }
+            break;
     }
     switch(opcode)
     {
@@ -1052,6 +1060,12 @@ inline void FunctionParser::AddMultiplicationByConst(double value)
 template<typename Operation>
 inline void FunctionParser::AddBinaryOperationByConst()
 {
+    if(data->ByteCode[data->ByteCode.size()-2] == cNeg
+        && (Operation::opcode == (int)cMul || Operation::opcode == (int)cDiv))
+    {
+        data->Immed.back() *= -1;
+        data->ByteCode.erase(data->ByteCode.end()-2);
+    }
     // data->ByteCode.back() is assumed to be cImmed here
     // that is, data->ByteCode[data->ByteCode.size()-1]
     if(!Operation::valid_rvalue(data->Immed.back()))

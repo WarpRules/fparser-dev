@@ -125,6 +125,21 @@ cIf [y (cNotNot[x]) (cOr  x <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y x@L         (cOr x@L <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y (cOr  x <1>) (cOr  x <2>)] -> cOr  [x (cIf [y (cOr  <1>) (cOr  <2>)])]
 
+cIf [(cGreater[x y])     x y] -> cMax x y
+cIf [(cGreaterOrEq[x y]) x y] -> cMax x y
+cIf [(cLess[x y])        x y] -> cMin x y
+cIf [(cLessOrEq[x y])    x y] -> cMin x y
+cIf [(cGreater[x y])     y x] -> cMin x y
+cIf [(cGreaterOrEq[x y]) y x] -> cMin x y
+cIf [(cLess[x y])        y x] -> cMax x y
+cIf [(cLessOrEq[x y])    y x] -> cMax x y
+cIf [(cGreater[0 x]) (cCeil[x]) (cFloor[x])] -> cTrunc x
+cIf [(cLess[0 x])    (cFloor[x]) (cCeil[x])] -> cTrunc x
+
+# ceil(-x) = -floor(x); floor(-x) = -ceil(x)
+cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])
+cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
+
 #cIf [x y@L 0] -> cAnd x y
 #cIf [x 0 y@L] -> cAnd (cNot[x]) y
 #cIf [x y 0] -> cMul (cNotNot[x]) y
