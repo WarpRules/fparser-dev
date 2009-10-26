@@ -779,6 +779,9 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           case cTanh:
               data->Immed.back() = tanh(data->Immed.back());
               return;
+          case cTrunc:
+              data->Immed.back() = fp_trunc(data->Immed.back());
+              return;
           case cDeg:
               data->Immed.back() = RadiansToDegrees(data->Immed.back());
               return;
@@ -1996,6 +1999,8 @@ double FunctionParser::Eval(const double* Vars)
                        --SP; break;
           case   cRPow: Stack[SP-1] = pow(Stack[SP], Stack[SP-1]);
                         --SP; break;
+
+          case  cTrunc: Stack[SP] = fp_trunc(Stack[SP]); break;
 
           case   cSec:
               {

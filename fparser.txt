@@ -716,6 +716,8 @@ or functions using the following operators in this order of precedence:
   atanh(A)  : Same as atan() but for hyperbolic tangent.
   ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
               Rounds up to the next higher integer.
+              E.g. -2.9, -2.5 and -2.1 are rounded to -2.0,
+              and 2.9, 2.5 and 2.1 are rounded to 3.0.
   cos(A)    : Cosine of A. Returns the cosine of the angle A, where A is
               measured in radians.
   cosh(A)   : Same as cos() but for hyperbolic cosine.
@@ -730,11 +732,15 @@ or functions using the following operators in this order of precedence:
               non-repeating value approximately equal to 2.71828182846.
   floor(A)  : Floor of A. Returns the largest integer less than A. Rounds
               down to the next lower integer.
+              E.g. -2.9, -2.5 and -2.1 are rounded to -3.0,
+              and 2.9, 2.5 and 2.1 are rounded to 2.0.
   if(A,B,C) : If int(A) differs from 0, the return value of this function is B,
               else C. Only the parameter which needs to be evaluated is
               evaluated, the other parameter is skipped; this makes it safe to
               use eval() in them.
-  int(A)    : Rounds A to the closest integer. 0.5 is rounded to 1.
+  int(A)    : Rounds A to the closest integer. Equidistant values are rounded up.
+              E.g. -2.9 is rounded to -3.0; -2.5 and -2.1 are rounded to -2.0,
+              and 2.9 and 2.5 are rounded to 3.0; 2.1 is rounded to 2.0.
   log(A)    : Natural (base e) logarithm of A.
   log10(A)  : Base 10 logarithm of A.
   max(A,B)  : If A>B, the result is A, else B.
@@ -748,6 +754,10 @@ or functions using the following operators in this order of precedence:
   tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
               is measured in radians.
   tanh(A)   : Same as tan() but for hyperbolic tangent.
+  trunc(A)  : Truncated value of A. Returns an integer corresponding
+              to the value of A without its fractional part.
+              E.g. -2.9, -2.5 and -2.1 are rounded to -2.0,
+              and 2.9, 2.5 and 2.1 are rounded to 2.0.
 
 
   Examples of function string understood by the class:

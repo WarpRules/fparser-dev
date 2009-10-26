@@ -29,6 +29,7 @@ namespace FUNCTIONPARSERTYPES
         cEval,
         cExp, cExp2, cFloor, cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
+        cTrunc,
 
 // These do not need any ordering:
         cImmed, cJump,
@@ -131,7 +132,8 @@ namespace FUNCTIONPARSERTYPES
         { "sinh", 4, cSinh, 1, true },
         { "sqrt", 4, cSqrt, 1, true },
         { "tan", 3, cTan, 1, true },
-        { "tanh", 4, cTanh, 1, true }
+        { "tanh", 4, cTanh, 1, true },
+        { "trunc", 5, cTrunc, 1, true }
     };
 
     struct NamePtr
@@ -215,6 +217,7 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_acosh(double x) { return acosh(x); }
     inline double fp_atanh(double x) { return atanh(x); }
 #endif // FP_SUPPORT_ASINH
+    inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
 
 #ifdef FP_EPSILON
     inline bool FloatEqual(double a, double b)

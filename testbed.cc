@@ -55,6 +55,7 @@ namespace
     inline double fp_acosh(double x) { return acosh(x); }
     inline double fp_atanh(double x) { return atanh(x); }
 #endif // FP_SUPPORT_ASINH
+    inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
 
     inline int doubleToInt(double d)
     {
@@ -303,11 +304,12 @@ cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", \
 double f28(const double* p)
 {
 #define P28 "exp(x)+floor(x)+int(x)+log(x)+log10(x)+max(x,y)+min(x,y)+\
-sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)", "x,y", \
+sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)+ceil(y)+trunc(y)", "x,y", \
         f28, 2, .1, .9, .025, false
     const double x = p[0], y = p[1];
     return exp(x)+floor(x)+floor(x+.5)+log(x)+log10(x)+std::max(x,y)+
-        std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x);
+        std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)+
+        ceil(y)+fp_trunc(y);
 }
 
 double f29(const double* p)

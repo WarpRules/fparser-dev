@@ -1669,6 +1669,7 @@ namespace FPoptimizer_CodeTree
             case cCos: HANDLE_UNARY_CONST_FUNC(cos); break;
             case cTan: HANDLE_UNARY_CONST_FUNC(tan); break;
             case cCeil: HANDLE_UNARY_CONST_FUNC(ceil); break;
+            case cTrunc: HANDLE_UNARY_CONST_FUNC(fp_trunc); break;
             case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
             case cSqrt: HANDLE_UNARY_CONST_FUNC(sqrt); break; // converted into cPow x 0.5
             case cExp: HANDLE_UNARY_CONST_FUNC(exp); break; // convered into cPow CONSTANT_E x

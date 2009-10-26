@@ -77,6 +77,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cSqrt: p = "cSqrt"; break;
         case cTan: p = "cTan"; break;
         case cTanh: p = "cTanh"; break;
+        case cTrunc: p = "cTrunc"; break;
         case cImmed: p = "cImmed"; break;
         case cJump: p = "cJump"; break;
         case cNeg: p = "cNeg"; break;
