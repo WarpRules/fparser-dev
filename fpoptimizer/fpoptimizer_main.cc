@@ -3,13 +3,12 @@
 #include "fptypes.hh"
 
 #include "fpoptimizer_codetree.hh"
-#include "fpoptimizer_grammar.hh"
+#include "fpoptimizer_optimize.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
 #ifdef FP_SUPPORT_OPTIMIZER
 using namespace FPoptimizer_CodeTree;
-using namespace FPoptimizer_Grammar;
 
 void FunctionParser::Optimize()
 {
@@ -20,20 +19,7 @@ void FunctionParser::Optimize()
     CodeTree tree;
     tree.GenerateFrom(data->ByteCode, data->Immed, *data);
 
-    while(ApplyGrammar(pack.glist[0], tree)) // INTERMEDIATE + BASIC
-        { //std::cout << "Rerunning 1\n";
-            tree.FixIncompleteHashes();
-        }
-
-    while(ApplyGrammar(pack.glist[1], tree)) // FINAL1 + BASIC
-        { //std::cout << "Rerunning 2\n";
-            tree.FixIncompleteHashes();
-        }
-
-    while(ApplyGrammar(pack.glist[2], tree)) // FINAL2
-        { //std::cout << "Rerunning 3\n";
-            tree.FixIncompleteHashes();
-        }
+    FPoptimizer_Optimize::ApplyGrammars(tree);
 
     std::vector<unsigned> byteCode;
     std::vector<double> immed;

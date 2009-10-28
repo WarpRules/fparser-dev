@@ -9,6 +9,13 @@
 
 #include "fpoptimizer_codetree.hh"
 
+#ifndef FP_GENERATING_POWI_TABLE
+enum { MAX_POWI_BYTECODE_LENGTH = 15 };
+#else
+enum { MAX_POWI_BYTECODE_LENGTH = 999 };
+#endif
+enum { MAX_MULI_BYTECODE_LENGTH = 3 };
+
 namespace FPoptimizer_ByteCode
 {
     class ByteCodeSynth

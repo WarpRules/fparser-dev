@@ -1,3 +1,9 @@
+#include "fpconfig.hh"
+#include "fparser.hh"
+#include "fptypes.hh"
+
+#ifdef FP_SUPPORT_OPTIMIZER
+
 #include "fpoptimizer_grammar.hh"
 #include "fpoptimizer_consts.hh"
 #include "fpoptimizer_opcodename.hh"
@@ -8,12 +14,6 @@
 #include <algorithm>
 #include <map>
 #include <sstream>
-
-#include "fpconfig.hh"
-#include "fparser.hh"
-#include "fptypes.hh"
-
-#ifdef FP_SUPPORT_OPTIMIZER
 
 using namespace FUNCTIONPARSERTYPES;
 using namespace FPoptimizer_Grammar;
@@ -104,10 +104,11 @@ namespace
     struct OpcodeRuleCompare
     {
         bool operator() (const CodeTree& tree,
-                         const Rule& rule) const
+                         unsigned rulenumber) const
         {
             /* If this function returns true, len=half.
              */
+            const Rule& rule = grammar_rules[rulenumber];
 
             if(tree.GetOpcode() != rule.match_tree.subfunc_opcode)
                 return tree.GetOpcode() < rule.match_tree.subfunc_opcode;
@@ -119,11 +120,12 @@ namespace
             }
             return false;
         }
-        bool operator() (const Rule& rule,
+        bool operator() (unsigned rulenumber,
                          const CodeTree& tree) const
         {
             /* If this function returns true, rule will be excluded from the equal_range
              */
+            const Rule& rule = grammar_rules[rulenumber];
 
             if(rule.match_tree.subfunc_opcode != tree.GetOpcode())
                 return rule.match_tree.subfunc_opcode < tree.GetOpcode();
@@ -178,7 +180,7 @@ namespace
     }
 }
 
-namespace FPoptimizer_Grammar
+namespace FPoptimizer_Optimize
 {
     /* Apply the grammar to a given CodeTree */
     bool ApplyGrammar(
@@ -214,34 +216,31 @@ namespace FPoptimizer_Grammar
         }
 
         /* Figure out which rules _may_ match this tree */
-        typedef const Rule* ruleit;
+        typedef const unsigned char* rulenumit;
 
-        std::pair<ruleit, ruleit> range
-            = MyEqualRange(grammar.rule_begin,
-                           grammar.rule_begin + grammar.rule_count,
+        std::pair<rulenumit, rulenumit> range
+            = MyEqualRange(grammar.rule_list,
+                           grammar.rule_list + grammar.rule_count,
                            tree,
                            OpcodeRuleCompare());
 
 #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Input (Grammar #"
-                  << (&grammar - pack.glist)
-                  << ", " << FP_GetOpcodeName(tree.GetOpcode())
+        std::cout << "Input (" << FP_GetOpcodeName(tree.GetOpcode())
                   << "[" << tree.GetParamCount()
-                  << "]" ", rules "
-                  << (range.first - pack.glist[0].rule_begin)
-                  << ".."
-                  << (range.second - pack.glist[0].rule_begin)
-                  << ": ";
+                  << "], rules:";
+        for(rulenumit r = range.first; r != range.second; ++r)
+            std::cout << ' ' << *r;
+        std::cout << ": ";
         DumpTree(tree);
         std::cout << "\n" << std::flush;
 #endif
 
         bool changed = false;
 
-        for(; range.first != range.second; ++range.first)
+        for(rulenumit r = range.first; r != range.second; ++r)
         {
             /* Check if this rule matches */
-            if(TestRuleAndApplyIfMatch(*range.first, tree))
+            if(TestRuleAndApplyIfMatch(grammar_rules[*r], tree))
             {
                 changed = true;
                 break;
@@ -264,6 +263,30 @@ namespace FPoptimizer_Grammar
         // No changes, consider the tree properly optimized.
         tree.SetOptimizedUsing(&grammar);
         return false;
+    }
+
+    void ApplyGrammars(FPoptimizer_CodeTree::CodeTree& tree)
+    {
+    #ifdef FPOPTIMIZER_MERGED_FILE
+        #define C *(const Grammar*)&
+    #else
+        #define C
+    #endif
+        while(ApplyGrammar(C grammar_optimize_round1, tree))
+            { //std::cout << "Rerunning 1\n";
+                tree.FixIncompleteHashes();
+            }
+
+        while(ApplyGrammar(C grammar_optimize_round2, tree))
+            { //std::cout << "Rerunning 2\n";
+                tree.FixIncompleteHashes();
+            }
+
+        while(ApplyGrammar(C grammar_optimize_round3, tree))
+            { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
+        #undef C
     }
 }
 

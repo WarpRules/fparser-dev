@@ -133,13 +133,15 @@ namespace FPoptimizer_Optimize
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info,
         bool TopLevel);
+
+    bool ApplyGrammar(const Grammar& grammar,
+                      FPoptimizer_CodeTree::CodeTree& tree,
+                      bool recurse = true);
+    void ApplyGrammars(FPoptimizer_CodeTree::CodeTree& tree);
 }
 
 namespace FPoptimizer_Grammar
 {
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-    void DumpTreeWithIndent(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
-    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
     void DumpMatch(const Rule& rule,
                    const FPoptimizer_CodeTree::CodeTree& tree,
                    const FPoptimizer_Optimize::MatchInfo& info,

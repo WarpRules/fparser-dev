@@ -6,7 +6,6 @@ FPoptimizer changes the bytecode expression into tree format.
 An FPoptimizer expression is called a CodeTree.
 
 A CodeTree node has:
-	- Single parent
 	- 0 to N children
 	- Type (Opcode)
 	- Type-dependent other fields

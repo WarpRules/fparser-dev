@@ -10,7 +10,6 @@
 #include "fpoptimizer_consts.hh"
 #include "fparser.hh"
 
-
 #ifdef FP_SUPPORT_OPTIMIZER
 
 using namespace FUNCTIONPARSERTYPES;
@@ -18,6 +17,8 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
+    using namespace FPoptimizer_CodeTree;
+
     typedef std::vector<double> FactorStack;
 
     const struct PowiMuliType
@@ -133,10 +134,7 @@ namespace
         stack.push_back(1.0);
         return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
-}
 
-namespace FPoptimizer_CodeTree
-{
     class CodeTreeParserData
     {
     public:
@@ -263,7 +261,7 @@ namespace FPoptimizer_CodeTree
             std::cout << "POP " << nparams << ", " << FP_GetOpcodeName(opcode)
                       << "->" << FP_GetOpcodeName(newnode.GetOpcode())
                       << ": PUSH ";
-            FPoptimizer_Grammar::DumpTree(newnode);
+            DumpTree(newnode);
             std::cout <<std::endl;
         #endif
             stack.resize(stackhead+1);
@@ -280,7 +278,7 @@ namespace FPoptimizer_CodeTree
             newnode.Rehash(false);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "POP " << nparams << ", PUSH ";
-            FPoptimizer_Grammar::DumpTree(newnode);
+            DumpTree(newnode);
             std::cout << std::endl;
         #endif
             FindClone(newnode);
@@ -322,7 +320,7 @@ namespace FPoptimizer_CodeTree
         {
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
-            FPoptimizer_Grammar::DumpTree(tree);
+            DumpTree(tree);
             std::cout << std::endl;
         #endif
             stack.push_back(tree);
@@ -375,7 +373,10 @@ namespace FPoptimizer_CodeTree
         CodeTree thenbranch;
         size_t endif_location;
     };
+}
 
+namespace FPoptimizer_CodeTree
+{
     void CodeTree::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
@@ -666,7 +667,7 @@ namespace FPoptimizer_CodeTree
         Become(sim.PullResult());
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Produced tree:\n";
-        FPoptimizer_Grammar::DumpTreeWithIndent(*this);
+        DumpTreeWithIndent(*this);
     #endif
     }
 }

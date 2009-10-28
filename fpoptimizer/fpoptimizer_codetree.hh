@@ -152,6 +152,7 @@ namespace FPoptimizer_CodeTree
         inline void SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g);
 
         bool RecreateInversionsAndNegations(bool prefer_base2 = false);
+        std::vector<CodeTree> FindCommonSubExpressions();
         void FixIncompleteHashes();
 
         void swap(CodeTree& b) { data.swap(b.data); }
@@ -233,6 +234,10 @@ namespace FPoptimizer_CodeTree
 
     inline void CodeTree::Mark_Incompletely_Hashed() { data->Depth = 0; }
     inline bool CodeTree::Is_Incompletely_Hashed() const { return data->Depth == 0; }
+
+    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
+    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
+    void DumpTreeWithIndent(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
 }
 
 #endif

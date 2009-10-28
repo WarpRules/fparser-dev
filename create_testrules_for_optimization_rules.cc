@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <sstream>
 #include <cmath>
+#include <set>
 
 using namespace FPoptimizer_Grammar;
 using namespace FUNCTIONPARSERTYPES;
@@ -100,6 +101,7 @@ namespace
                     op(cSqrt,sqrt,sqrt);
                     op(cTan,tan,tan);
                     op(cTanh,tanh,tanh);
+                    op(cTrunc,trunc,trunc);
                     #undef op
                     case cImmed: return; // does not occur
                     case cJump: return; // does not occur
@@ -267,74 +269,85 @@ namespace
     };
 }
 
+static std::set<const Rule*> Rules;
+
+static void FindRules(const Grammar& g)
+{
+    for(unsigned a=0; a<g.rule_count; ++a)
+        Rules.insert(&grammar_rules[g.rule_list[a]]);
+}
+
 int main()
 {
-    for(unsigned grammar_no = 0; grammar_no < 4; ++grammar_no)
+    FindRules(grammar_optimize_round1);
+    FindRules(grammar_optimize_round2);
+    FindRules(grammar_optimize_round3);
+    
+    for(std::set<const Rule*>::const_iterator
+        i = Rules.begin();
+        i != Rules.end();
+        ++i)
     {
-        const Grammar& g = pack.glist[grammar_no];
-        for(unsigned rule_no = 0; rule_no < g.rule_count; ++rule_no)
+        const Rule& r = **i;
+
+        ParamSpec_SubFunctionData in_func = r.match_tree;
+        if(r.ruletype == ReplaceParams
+        && (in_func.subfunc_opcode == cAdd
+        || in_func.subfunc_opcode == cMul
+        || in_func.subfunc_opcode == cAnd
+        || in_func.subfunc_opcode == cOr))
         {
-            const Rule& r = g.rule_begin[rule_no];
-
-            ParamSpec_SubFunctionData in_func = r.match_tree;
-            if(r.ruletype == ReplaceParams
-            && (in_func.subfunc_opcode == cAdd
-            || in_func.subfunc_opcode == cMul
-            || in_func.subfunc_opcode == cAnd
-            || in_func.subfunc_opcode == cOr))
-            {
-                in_func.restholder_index = 7;
-            }
-            TestGenerator gen;
-            TestFunction test = gen.CreateTest(in_func, 0);
-
-            TestFunction repl;
-            if(r.ruletype == ReplaceParams)
-            {
-                ParamSpec_SubFunctionData repl_func =
-                { r.repl_param_count, r.repl_param_list,
-                  r.match_tree.subfunc_opcode,
-                  PositionalParams, in_func.restholder_index };
-                repl = gen.CreateTest(repl_func, 0);
-            }
-            else
-            {
-                ParamSpec p = ParamSpec_Extract(r.repl_param_list, 0);
-                if(p.first == SubFunction)
-                    repl = gen.CreateTest(*(const ParamSpec_SubFunctionData*)p.second, 0);
-                else if(p.first == ParamHolder)
-                    repl = gen.CreateTest(*(const ParamSpec_ParamHolder*)p.second);
-                else
-                    repl = gen.CreateTest(*(const ParamSpec_NumConstant*)p.second);
-            }
-            ParamSpec_SubFunction tmp = {r.match_tree,0,0};
-
-            std::cout << "echo '---------NEW TEST-----------'\n";
-            std::cout << "echo 'Rule: ";
-            FPoptimizer_Grammar::DumpParam( ParamSpec(SubFunction, (const void*) &tmp) );
-            std::cout << "'\n";
-            if(r.ruletype == ProduceNewTree)
-            {
-                std::cout << "echo '  ->  ";
-                FPoptimizer_Grammar::DumpParam(
-                                            ParamSpec_Extract(r.repl_param_list, 0) );
-                std::cout << "'\n";
-            }
-            else
-            {
-                std::cout << "echo '  :   ";
-                FPoptimizer_Grammar::DumpParams(
-                                            r.repl_param_list, r.repl_param_count );
-                std::cout << "'\n";
-            }
-
-            std::cout << "./functioninfo '" << test.fparser_test
-                      << "' '" << repl.fparser_test << "'\n";
-            /*
-            std::cout << test.fparser_test <<
-                 "\n" << test.cpp_test <<
-                 "\n\n";
-            */
+            in_func.restholder_index = 7;
         }
+        TestGenerator gen;
+        TestFunction test = gen.CreateTest(in_func, 0);
+
+        TestFunction repl;
+        if(r.ruletype == ReplaceParams)
+        {
+            ParamSpec_SubFunctionData repl_func =
+            { r.repl_param_count, r.repl_param_list,
+              r.match_tree.subfunc_opcode,
+              PositionalParams, in_func.restholder_index };
+            repl = gen.CreateTest(repl_func, 0);
+        }
+        else
+        {
+            ParamSpec p = ParamSpec_Extract(r.repl_param_list, 0);
+            if(p.first == SubFunction)
+                repl = gen.CreateTest(*(const ParamSpec_SubFunctionData*)p.second, 0);
+            else if(p.first == ParamHolder)
+                repl = gen.CreateTest(*(const ParamSpec_ParamHolder*)p.second);
+            else
+                repl = gen.CreateTest(*(const ParamSpec_NumConstant*)p.second);
+        }
+        ParamSpec_SubFunction tmp = {r.match_tree,0,0};
+
+        std::cout << "echo '---------NEW TEST-----------'\n";
+        std::cout << "echo 'Rule: ";
+        FPoptimizer_Grammar::DumpParam( ParamSpec(SubFunction, (const void*) &tmp) );
+        std::cout << "'\n";
+        if(r.ruletype == ProduceNewTree)
+        {
+            std::cout << "echo '  ->  ";
+            FPoptimizer_Grammar::DumpParam(
+                                        ParamSpec_Extract(r.repl_param_list, 0) );
+            std::cout << "'\n";
+        }
+        else
+        {
+            std::cout << "echo '  :   ";
+            FPoptimizer_Grammar::DumpParams(
+                                        r.repl_param_list, r.repl_param_count );
+            std::cout << "'\n";
+        }
+
+        std::cout << "./functioninfo '" << test.fparser_test
+                  << "' '" << repl.fparser_test << "'\n";
+        /*
+        std::cout << test.fparser_test <<
+             "\n" << test.cpp_test <<
+             "\n\n";
+        */
     }
 }

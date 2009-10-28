@@ -201,21 +201,26 @@ namespace FPoptimizer_Grammar
     struct Grammar
     {
         /* The rules of this grammar */
-        const Rule*    rule_begin;
-        unsigned       rule_count;
+        unsigned rule_count;
+        unsigned char rule_list[999]; // maximum limit...
+        /* Note: Changing the limit has no effect to performance of
+         * fparser. The limit is only actually used within grammar_parser.
+         * A too low limit causes a memory corruption during the parse.
+         * A too high limit just may cause inconvenience.
+         * The actual grammar items linked to fparser are optimized for size,
+         * and the size of the Grammar object may be considerably smaller
+         * than what is indicated by this prototype.
+         */
     };
 
-    bool ApplyGrammar(const Grammar& grammar,
-                      FPoptimizer_CodeTree::CodeTree& tree,
-                      bool recurse = true);
-
-    /* GrammarPack is the structure which contains all
-     * the information regarding the optimization rules.
-     */
-    extern const struct GrammarPack
-    {
-        Grammar               glist[3];
-    } pack;
+    extern "C" {
+        extern const Rule      grammar_rules[];
+    #ifndef FPOPTIMIZER_MERGED_FILE
+        extern const Grammar   grammar_optimize_round1;
+        extern const Grammar   grammar_optimize_round2;
+        extern const Grammar   grammar_optimize_round3;
+    #endif
+    }
 
     void DumpParam(const ParamSpec& p, std::ostream& o = std::cout);
     void DumpParams(unsigned paramlist, unsigned count, std::ostream& o = std::cout);

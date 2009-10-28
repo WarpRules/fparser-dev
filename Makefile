@@ -50,8 +50,8 @@ all: testbed speedtest example functioninfo
 FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_grammar_data.o \
 		fpoptimizer/fpoptimizer_main.o \
-		fpoptimizer/fpoptimizer_bytecode_to_codetree.o \
-		fpoptimizer/fpoptimizer_codetree_to_bytecode.o \
+		fpoptimizer/fpoptimizer_readbytecode.o \
+		fpoptimizer/fpoptimizer_makebytecode.o \
 		fpoptimizer/fpoptimizer_codetree.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_optimize.o \
@@ -59,8 +59,12 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_optimize_synth.o \
 		fpoptimizer/fpoptimizer_optimize_debug.o \
 		fpoptimizer/fpoptimizer_constantfolding.o \
+		fpoptimizer/fpoptimizer_rangeestimation.o \
 		fpoptimizer/fpoptimizer_opcodename.o \
-		fpoptimizer/fpoptimizer_bytecodesynth.o
+		fpoptimizer/fpoptimizer_bytecodesynth.o \
+		fpoptimizer/fpoptimizer_transformations.o \
+		fpoptimizer/fpoptimizer_debug.o \
+		fpoptimizer/fpoptimizer_hash.o
 
 RELEASE_PACK_FILES = example.cc fparser.cc fparser.hh fpoptimizer.cc \
 	fpconfig.hh fptypes.hh fparser.html style.css
@@ -94,25 +98,25 @@ koe: koe.o $(FP_MODULES)
 functioninfo: functioninfo.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
-fpoptimizer/fpoptimizer_grammar_gen: \
-		fpoptimizer/fpoptimizer_grammar_gen.o \
+fpoptimizer/grammar_parser: \
+		fpoptimizer/grammar_parser.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_opcodename.o
 	$(LD) -o $@ $^
 
-fpoptimizer/fpoptimizer_grammar_gen.cc: \
-		fpoptimizer/fpoptimizer_grammar_gen.y
+fpoptimizer/grammar_parser.cc: \
+		fpoptimizer/grammar_parser.y
 	bison++ --output=$@ $<
 
 fpoptimizer/fpoptimizer_grammar_data.cc: \
-		fpoptimizer/fpoptimizer_grammar_gen \
-		fpoptimizer/fpoptimizer_grammar_gen.y \
+		fpoptimizer/grammar_parser \
+		fpoptimizer/grammar_parser.y \
 		fpoptimizer/fpoptimizer.dat
-	fpoptimizer/fpoptimizer_grammar_gen < fpoptimizer/fpoptimizer.dat > $@
+	fpoptimizer/grammar_parser < fpoptimizer/fpoptimizer.dat > $@
 
 fpoptimizer.cc: \
-		fpoptimizer/fpoptimizer_grammar_gen.y \
-		fpoptimizer/fpoptimizer_grammar_gen.cc \
+		fpoptimizer/grammar_parser.y \
+		fpoptimizer/grammar_parser.cc \
 		fpoptimizer/fpoptimizer_autoptr.hh \
 		fpoptimizer/fpoptimizer_codetree.hh \
 		fpoptimizer/fpoptimizer_grammar.hh \
@@ -120,7 +124,9 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_optimize.hh \
 		fpoptimizer/fpoptimizer_hash.hh \
 		fpoptimizer/fpoptimizer_main.cc \
+		fpoptimizer/fpoptimizer_hash.cc \
 		fpoptimizer/fpoptimizer_codetree.cc \
+		fpoptimizer/fpoptimizer_debug.cc \
 		fpoptimizer/fpoptimizer_grammar.cc \
 		fpoptimizer/fpoptimizer_grammar_data.cc \
 		fpoptimizer/fpoptimizer_optimize.cc \
@@ -131,9 +137,11 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_opcodename.hh \
 		fpoptimizer/fpoptimizer_bytecodesynth.cc \
 		fpoptimizer/fpoptimizer_bytecodesynth.hh \
-		fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
-		fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+		fpoptimizer/fpoptimizer_makebytecode.cc \
+		fpoptimizer/fpoptimizer_readbytecode.cc \
 		fpoptimizer/fpoptimizer_constantfolding.cc \
+		fpoptimizer/fpoptimizer_rangeestimation.cc \
+		fpoptimizer/fpoptimizer_transformations.cc \
 		fpoptimizer/fpoptimizer_header.txt \
 		fpoptimizer/fpoptimizer_footer.txt
 	rm -f fpoptimizer.cc
@@ -151,6 +159,7 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_bytecodesynth.hh \
 	    fpoptimizer/fpoptimizer_bytecodesynth.cc \
 	    fpoptimizer/fpoptimizer_codetree.cc \
+	    fpoptimizer/fpoptimizer_debug.cc \
 	    fpoptimizer/fpoptimizer_grammar.cc \
 	    fpoptimizer/fpoptimizer_grammar_data.cc \
 	    fpoptimizer/fpoptimizer_optimize.cc \
@@ -158,9 +167,12 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_optimize_synth.cc \
 	    fpoptimizer/fpoptimizer_optimize_debug.cc \
 	    fpoptimizer/fpoptimizer_main.cc \
-	    fpoptimizer/fpoptimizer_codetree_to_bytecode.cc \
-	    fpoptimizer/fpoptimizer_bytecode_to_codetree.cc \
+	    fpoptimizer/fpoptimizer_hash.cc \
+	    fpoptimizer/fpoptimizer_makebytecode.cc \
+	    fpoptimizer/fpoptimizer_readbytecode.cc \
 	    fpoptimizer/fpoptimizer_constantfolding.cc \
+	    fpoptimizer/fpoptimizer_rangeestimation.cc \
+	    fpoptimizer/fpoptimizer_transformations.cc \
 	    fpoptimizer/fpoptimizer_footer.txt \
 	; do \
 		echo "#line 1 \"$$file\""; \
@@ -194,15 +206,15 @@ devel_pack: set_version_string
 	Makefile example.cc fparser.cc fparser.hh fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
-	fpoptimizer/*.txt fpoptimizer/fpoptimizer_grammar_gen.y \
+	fpoptimizer/*.txt fpoptimizer/grammar_parser.y \
 	run_full_release_testing.sh VersionChanger.cc functioninfo.cc
 
 clean:
 	rm -f	testbed testbed_release speedtest speedtest_release \
 		example ftest powi_speedtest \
-		fpoptimizer/fpoptimizer_grammar_gen \
+		fpoptimizer/grammar_parser \
 		*.o fpoptimizer/*.o .dep \
-		fpoptimizer/fpoptimizer_grammar_gen.output
+		fpoptimizer/grammar_parser.output
 
 release_clean:
 	rm -f testbed_release speedtest_release \

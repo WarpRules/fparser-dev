@@ -86,17 +86,7 @@
 #     |  /* empty */
 #     ;
 
-[BASIC]
-
-###### Note: Before adding new rules (especially those which handle constant values),
-######       verify that it is not already done in ConstantFolding().
-
-#### Remove redundant components:
-
-# In a min-list, two identical components are reduced into one
-cMin x x    : x
-# In a max-list, two identical components are reduced into one
-cMax x x    : x
+[LOGICAL]
 
 # If both branches of an If() are identical, the test becomes unnecessary
 cIf [y x x] -> x
@@ -136,9 +126,24 @@ cIf [(cLessOrEq[x y])    y x] -> cMax x y
 cIf [(cGreater[0 x]) (cCeil[x]) (cFloor[x])] -> cTrunc x
 cIf [(cLess[0 x])    (cFloor[x]) (cCeil[x])] -> cTrunc x
 
-# ceil(-x) = -floor(x); floor(-x) = -ceil(x)
-cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])
-cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
+cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
+cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
+cMul (cNotNot[x]) (cNotNot[y]) : (cAnd x y)
+# ^Warning: There is probably chance for infinite loop in those rules
+#cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr x y)])
+# ^causes crash.
+
+# From logic, follows that...
+#   (a==b) & (b==c) & (a==c) -- one of these is redundant
+cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
+# Note: ^ Replacement function refers to y twice
+
+# !x = abs(x) < 0.5
+# Note: Due to range-based optimizations, % can never be 0 here. These are safe.
+cLess        [(cAbs[x]) %] -> cNot[(cMul x 0.5 /%)]
+cGreaterOrEq [(cAbs[x]) %] -> cNotNot[(cMul x 0.5 /%)]
+cGreater     [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]
+cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
 
 #cIf [x y@L 0] -> cAnd x y
 #cIf [x 0 y@L] -> cAnd (cNot[x]) y
@@ -147,16 +152,22 @@ cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
 # These cannot be done because y may have side
 # effects or just be computation-heavy.
 
-cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
-cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
-cMul (cNotNot[x]) (cNotNot[y]) : (cAnd x y)
-# ^Warning: There is probably chance for infinite loop in those rules
-#cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr x y)])
-# ^causes crash.
+[REMOVE_REDUNDANT]
+
+# In a min-list, two identical components are reduced into one
+cMin x x    : x
+# In a max-list, two identical components are reduced into one
+cMax x x    : x
 
 cNot [(cMul {-1 x})] : x
 
-#### Flattening the topology of add/mul/min/max/and/or groups:
+[EXTRACT1]
+
+# ceil(-x) = -floor(x); floor(-x) = -ceil(x)
+cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])
+cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
+
+[LOGARITHM]
 
 #### Logarithm optimizations
 # log(x^y) = y*log(x)
@@ -195,22 +206,9 @@ cPow [% (cAdd {(cLog[x]) &})]              -> cMul POW(% &) (cPow [x LOG(%)])
 cPow [z (cMul (cPow [(cLog[z])  -1]) (cLog[x])  <1>)] : x (cMul <1>)
 cPow [% (cMul /LOG(%)                (cLog[x])  <1>)] : x (cMul <1>)
 
-# (x*5) ^ 2 = x^2 * (5^2)
-# Note: This also applies to (x*5)^-1 --> 0.2/x , shrug
-cPow [(cMul % <1>) &]                      -> cMul POW(% &)   (cPow [(cMul <1>) &])
-
-# z^(x+y/log(z)) = z^x * exp(y)
-# Note: This rule fails when z=0, because log(0)=-inf and 0^z = 1
-cPow [z (cAdd <1> (cMul <2> (cPow [(cLog [z]) -1])))] -> cMul (cPow [z (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
-#cPow [% (cAdd <1> (cMul <2> /LOG(%)))]    -> cMul (cPow [% (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
-cPow [z (cAdd <1> (cPow [(cLog [z]) -1]))] -> cMul CONSTANT_E (cPow [z (cAdd <1>)])
-cPow [% (cAdd <1> &@M)]                    -> cMul POW(% &)   (cPow [% (cAdd <1>)])
-
-# x*y / (x*z) = y/z
-cMul (cPow [(cMul x <2>) -1]) x : (cPow [(cMul <2>) -1])
-
 # log(x) + log(y) = log(x*y)
 cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
+
 # When x is const, the reverse is more beneficial
 #  i.e.  log(2*x) = log(x) + log(2)
 cLog  [(cMul %@P <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
@@ -225,17 +223,28 @@ cLog  [(cMul (cPow [% y]) <1>)]  -> cAdd (cMul [LOG(%) y]) (cLog [(cMul <1>)])
 # When y=1, the reverse is more useful:
 cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
 
+[POW_TRICKS]
 
-#### Linear combining and polynomials
+###### Note: Before adding new rules (especially those which handle constant values),
+######       verify that it is not already done in ConstantFolding().
 
-# If a mul-list contains the same element two or more times,
-# replace the element with a pow with an integer exponent
-# (note: inversions are treated as a negative exponent)
-# e.g. ...*x*x*x*x = ...*x^4
-# x*2 + x*5 = x*(2+5)
-# All done by ConstantFolding()
+# (x*5) ^ 2 = x^2 * (5^2)
+# (x*5)^-1  = 0.2/x , shrug
+cPow [(cMul %@P <1>) &]                      -> cMul POW(% &)   (cPow [(cMul <1>) &])
+# ^Limited to positive values so that (-4*x)^3.3 won't be changed into nan*x^3.3
 
-#### Remote double negations/inversions
+cPow [(cMul %@N <1>) &@E]                    -> cMul POW(% &)   (cPow [(cMul <1>) &])
+# ^This changes (-5*x)^2 into x^2 * (-5)^2 = x^2 * 25, but only when & is an even integer.
+
+# z^(x+y/log(z)) = z^x * exp(y)
+# Note: This rule fails when z=0, because log(0)=-inf and 0^z = 1
+cPow [z (cAdd <1> (cMul <2> (cPow [(cLog [z]) -1])))] -> cMul (cPow [z (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
+#cPow [% (cAdd <1> (cMul <2> /LOG(%)))]    -> cMul (cPow [% (cAdd <1>)]) (cPow [CONSTANT_E (cMul <2>)])
+cPow [z (cAdd <1> (cPow [(cLog [z]) -1]))] -> cMul CONSTANT_E (cPow [z (cAdd <1>)])
+cPow [% (cAdd <1> &@M)]                    -> cMul POW(% &)   (cPow [% (cAdd <1>)])
+
+# x*y / (x*z) = y/z
+cMul (cPow [(cMul x <2>) -1]) x : (cPow [(cMul <2>) -1])
 
 # (x^g)^z        -> x^(g*z)  (g is odd or float)
 cPow [ (cPow[x y@O]) z ]       : x (cMul [y z])
@@ -244,49 +253,18 @@ cPow [ (cPow[x y@F]) z ]       : x (cMul [y z])
 # (x^y)^z where y is positive can be changed safely into x^(y*z)
 cPow [(cPow [x@P y]) z]        : x (cMul [y z])
 # (x^y)^z where (y*z) makes an even integer could also be changed safely
-#cPow [(cPow [x y@E]) z@I]        : x (cMul [y z])
-#cPow [(cPow [x y@I]) z@E]        : x (cMul [y z])
+#cPow [(cPow [x y@E]) z@I]     : x (cMul [y z])
+#cPow [(cPow [x y@I]) z@E]     : x (cMul [y z])
 
 # If pow() makes a signless value into a positive value, guard that fact with abs()
 cPow [ (cPow[x@Q y])@P z ]     : (cAbs [x]) (cMul [y z])
+
 # abs(x)^e -> x^e when e=even integer
 # This removes the abs() generated by the above rule when needless
-cPow [(cAbs[x]) y@E] : x y
-cPow [(cMul (cAbs[x]) <1>) y@E] : (cMul x <1>) y
+cPow [(cAbs[x]) y@E]            : x y
+cPow [(cMul (cAbs[x]) <1>) y@E] : (cMul  x <1>) y
 
-#### Logical optimizations
-
-# From logic, follows that...
-#   (a==b) & (b==c) & (a==c) -- one of these is redundant
-cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
-# Note: ^ Replacement function refers to b twice
-
-# !x = abs(x) < 0.5
-# Note: Due to range-based optimizations, % can never be 0 here. These are safe.
-cLess        [(cAbs[x]) %] -> cNot[(cMul x 0.5 /%)]
-cGreaterOrEq [(cAbs[x]) %] -> cNotNot[(cMul x 0.5 /%)]
-cGreater     [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]
-cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
-
-# Contradictory comparisons always produce both 0 and 1
-#  These are done by ConstantFolding:
-#cAdd (cLess[x y]) (cGreaterOrEq[x y]) : 1
-#cAdd (cLessOrEq[x y]) (cGreater[x y]) : 1
-#cAdd (cEqual[x y]) (cNEqual[x y])     : 1
-#cAdd (cNot[x]) (cNotNot[x])           : 1
-#cMul (cLess[x y]) (cGreaterOrEq[x y]) -> 0
-#cMul (cLessOrEq[x y]) (cGreater[x y]) -> 0
-#cMul (cEqual[x y]) (cNEqual[x y])     -> 0
-#cMul (cNot[x]) (cNotNot[x])           -> 0
-## Comparisons that have overlap can be reduced
-#cAdd (cLessOrEq[x y]) (cGreaterOrEq[x y])  : 1 (cEqual[x y])
-## equal*2 + less
-##cAdd (cLessOrEq[x y]) (cEqual[x y])
-#cMul (cLessOrEq[x y]) (cGreaterOrEq[x y])  : (cEqual[x y])
-#cMul (cEqual[x y])    (cGreaterOrEq[x y])  : (cEqual[x y])
-#cMul (cEqual[x y])    (cLessOrEq[x y])     : (cEqual[x y])
-
-[INTERMEDIATE]
+[BINOMIAL]
 
 # Opcodes we will NOT find in the intermediate stage:
 #  Done by bytecode parser:
@@ -305,7 +283,7 @@ cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
 #### CONTINUED: Flattening the topology of add/mul/min/max/and/or groups
 
 # a^2 + a*b*X/Z + b^2 = (a+b)^2 + (X/Z-2)*(a*b)
-cAdd (cPow[x 2]) (cPow[y 2]) (cMul x y <1>) : (cPow [(cAdd [x y]) 2]) (cMul [x y (cAdd [(cMul <1>) -2])])
+#cAdd (cPow[x 2]) (cPow[y 2]) (cMul x y <1>) : (cPow [(cAdd [x y]) 2]) (cMul [x y (cAdd [(cMul <1>) -2])])
 # For optimizing x^2+2*x*y+y^2:
 #  With this rule,    eval=0.287154 us, optimized = 0.0758879 us
 #  Without this rule, eval=0.314538 us, optimized = 0.0831386 us
@@ -356,9 +334,8 @@ cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul % & <1>) (cMul & (cAdd <2>)))
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
 cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 
-#### Constant folding is now performed exclusively by ConstantFolding()
+[TRIGONOMETRIC]
 
-#### Trigonometric:
 # sin(-x) = -sin(x)
 cSin [(cMul %@N <1>)] -> cMul -1 (cSin [(cMul -% <1>)])
 # cos(-x) = cos(x)
@@ -398,9 +375,6 @@ cAdd  (cMul {(cCos[x]) (cCos[y]) -1}) (cMul {(cSin[x]) (cSin[y])   }) : (cMul [-
 #cAdd (cMul {(cSin[x]) (cCos[y]) -1}) (cMul {(cCos[x]) (cSin[y])   }) : (cMul [-1 (cSin [(cAdd[x (cMul [-1 y])])]) ])
 # ^This one is redudant: It just reaffirms that sin(x) = -sin(-x).
 
-
-#### Self-defeating function calls:
-
 # sin(asin(x)) = x
 cSin [(cAsin [x])] -> x
 
@@ -410,11 +384,9 @@ cCos [(cAcos [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
-cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
-
-
 
 [FINAL1]
+
 # These optimizations are done only once, after the intermediate conversions.
 # This process generates high-level opcodes that are not
 # expected to be found in the intermediate stage.
@@ -426,6 +398,8 @@ cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
 # Do not reduce add/mul/min/max/and/or lists to two-operand topology.
 # Those are done in the bytecode generation automatically.
 #
+
+cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
 
 cAtan2 [(cMul  x <1>) (cMul  x <2>)]   : (cMul <1>) (cMul <2>)
 #cAtan2 [(cMul  % <1>) (cMul  % <2>)]   : (cMul <1>) (cMul <2>)
@@ -640,13 +614,14 @@ cTan [(cAtan [x])] -> x
 
 cTan [(cAtan2 [x y])] -> cMul x (cPow [y -1])
 
+
 [FINAL2]
 
 # x * CONSTANT_DR = cDeg(x)
 cMul  CONSTANT_DR <1> -> cDeg [(cMul <1>)]
 # Note: This may produce one-operand cMul lists.
 # Those are treated properly in the bytecode generation,
-# and do not need to be handled by [INTERMEDIATE].
+# and do not need to be handled by [BINOMIAL].
 
 # x * CONSTANT_RD = cRad(x)
 cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
@@ -698,6 +673,9 @@ cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 #cOr  x@L y@L          : (cAdd x y)
 #cOr  x@L (cAdd <1>)@P : (cAdd x <1>)
 #cAnd x@L          y   : (cMul x y)
+cOr  x@L y@L          : (cNotNot (cAdd x y))
+cOr  x@L (cAdd <1>)@P : (cNotNot (cAdd x <1>))
+cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
 
 cNot    [x@P] -> cAbsNot [x]
 cNotNot [x@P] -> cAbsNotNot [x]
@@ -706,3 +684,23 @@ cOr x@P y@P <1>  -> cAbsOr x y (cOr <1>)
 cIf [x@P y z]    -> cAbsIf x y z
 cAbsAnd 1 :
 cAbsOr  0 :
+
+##### Now construct the rounds of optimization:
+
+$optimize_round1:
+LOGICAL
+REMOVE_REDUNDANT
+LOGARITHM
+POW_TRICKS
+BINOMIAL
+TRIGONOMETRIC
+EXTRACT1
+
+$optimize_round2:
+LOGICAL
+REMOVE_REDUNDANT
+POW_TRICKS
+FINAL1
+
+$optimize_round3:
+FINAL2

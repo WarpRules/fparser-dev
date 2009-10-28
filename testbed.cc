@@ -533,9 +533,9 @@ double f48(const double* p)
 
 double f49(const double* p)
 {
-#define P49 "atan2(0, x)" , "x", f49, 1, -100, 100, .03, false
+#define P49 "atan2(0, x) + (-4*(x-100))^3.3" , "x", f49, 1, -100, 100, .03, false
     const double x = p[0];
-    return atan2(0, x);
+    return atan2(0, x) + pow(-4*(x-100), 3.3);
 }
 
 double f50(const double* p)
