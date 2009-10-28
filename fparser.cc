@@ -2526,6 +2526,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
     std::vector<std::pair<int,std::string> > stack;
     std::vector<IfInfo> if_stack;
 
+    std::map<std::string, std::string> fetch_items;
+
     for(unsigned IP = 0, DP = 0; IP <= ByteCode.size(); ++IP)
     {
     after_powi_or_muli:;
@@ -2775,7 +2777,17 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         {
                             unsigned index = ByteCode[++IP];
                             if(showExpression)
-                                stack.push_back(stack[index]);
+                            {
+                                static unsigned fetch_counter=0;
+                                std::ostringstream tmp;
+                                tmp << "f" << fetch_counter++;
+
+                                fetch_items[tmp.str()] = stack[index].second;
+                                stack.push_back(std::make_pair(0, tmp.str()));
+
+                                tmp << " = " << stack[index].second;
+                                n = tmp.str();
+                            }
                             output << "cFetch(" << index << ")";
                             produces = 0;
                             break;
@@ -2911,6 +2923,10 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                 output << "(void)";
             else if(stack.empty())
                 output << "[?] ?";
+        #ifdef FP_SUPPORT_OPTIMIZER
+            else if(opcode == cFetch)
+                output << n;
+        #endif
             else
                 output << '[' << (stack.size()-1) << ']'
                        << stack.back().second;
