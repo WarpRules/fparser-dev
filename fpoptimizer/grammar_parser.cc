@@ -490,21 +490,29 @@ struct RuleComparer
     {
         if(a.match_tree.subfunc_opcode != b.match_tree.subfunc_opcode)
             return a.match_tree.subfunc_opcode < b.match_tree.subfunc_opcode;
+
         if(a.n_minimum_params != b.n_minimum_params)
             return a.n_minimum_params < b.n_minimum_params;
         // Other rules to break ties
+
         if(a.ruletype != b.ruletype)
             return a.ruletype < b.ruletype;
+
         if(a.match_tree.match_type != b.match_tree.match_type)
             return a.match_tree.match_type < b.match_tree.match_type;
-        if(a.match_tree.param_list != b.match_tree.param_list)
-            return a.match_tree.param_list < b.match_tree.param_list;
+
         if(a.match_tree.param_count != b.match_tree.param_count)
             return a.match_tree.param_count < b.match_tree.param_count;
-        if(a.repl_param_list != b.repl_param_list)
-            return a.repl_param_list < b.repl_param_list;
+
         if(a.repl_param_count != b.repl_param_count)
             return a.repl_param_count < b.repl_param_count;
+
+        if(a.match_tree.param_list != b.match_tree.param_list)
+            return a.match_tree.param_list < b.match_tree.param_list;
+
+        if(a.repl_param_list != b.repl_param_list)
+            return a.repl_param_list < b.repl_param_list;
+
         return false;
     }
 
@@ -640,6 +648,42 @@ public:
         return ritem;
     }
 
+    void RegisterGrammar(const std::vector<GrammarData::Grammar>& gset)
+    {
+        std::vector<Rule> this_rules;
+
+        for(size_t a=0; a<gset.size(); ++a)
+        {
+            const GrammarData::Grammar& g = gset[a];
+
+            for(size_t a=0; a<g.rules.size(); ++a)
+            {
+                if(g.rules[a].Input.Opcode == cNop) continue;
+                this_rules.push_back( CreateRule(g.rules[a]) );
+            }
+        }
+
+        std::sort(this_rules.begin(), this_rules.end(),
+                  RuleComparer());
+
+        for(size_t a=0; a<this_rules.size(); ++a)
+        {
+            const Rule& r = this_rules[a];
+
+            // Add to global rule list, unless it's already there
+            bool dup=false;
+            for(size_t c=0; c<rlist.size(); ++c)
+                if(memcmp(&r, &rlist[c], sizeof(r)) == 0)
+                {
+                    // Already in global rule list...
+                    dup = true;
+                    break;
+                }
+            if(!dup)
+                rlist.push_back(r);
+        }
+    }
+
     void DumpGrammar(const std::string& grammarname,
                      const std::vector<GrammarData::Grammar>& gset)
     {
@@ -674,7 +718,7 @@ public:
                     // Add to grammar's rule list unless it's already there
                     dup = false;
                     for(size_t b=0; b<rule_list.size(); ++b)
-                        if(c == rule_list[b]) 
+                        if(c == rule_list[b])
                         {
                             dup = true;
                             break;
@@ -1104,7 +1148,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 1009 "fpoptimizer/grammar_parser.y"
+#line 1053 "fpoptimizer/grammar_parser.y"
 typedef union {
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1528,9 +1572,9 @@ static const short yyrhs[] = {    20,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-  1045,  1051,  1052,  1055,  1065,  1083,  1104,  1116,  1125,  1133,
-  1142,  1147,  1157,  1163,  1168,  1173,  1184,  1189,  1194,  1208,
-  1213
+  1089,  1095,  1096,  1099,  1109,  1127,  1148,  1160,  1169,  1177,
+  1186,  1191,  1201,  1207,  1212,  1217,  1228,  1233,  1238,  1252,
+  1257
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -2099,14 +2143,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 1047 "fpoptimizer/grammar_parser.y"
+#line 1091 "fpoptimizer/grammar_parser.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 4:
-#line 1058 "fpoptimizer/grammar_parser.y"
+#line 1102 "fpoptimizer/grammar_parser.y"
 {
         yyvsp[-1].a->RecursivelySetDefaultParamMatchingType();
 
@@ -2115,7 +2159,7 @@ case 4:
       ;
     break;}
 case 5:
-#line 1068 "fpoptimizer/grammar_parser.y"
+#line 1112 "fpoptimizer/grammar_parser.y"
 {
         GrammarData::ParamSpec* p = new GrammarData::ParamSpec(yyvsp[-1].f);
         p->RecursivelySetDefaultParamMatchingType();
@@ -2132,7 +2176,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 1085 "fpoptimizer/grammar_parser.y"
+#line 1129 "fpoptimizer/grammar_parser.y"
 {
         if(yyvsp[-3].f->Params.RestHolderIndex != 0)
         {
@@ -2152,7 +2196,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 1106 "fpoptimizer/grammar_parser.y"
+#line 1150 "fpoptimizer/grammar_parser.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2163,34 +2207,34 @@ case 7:
        ;
     break;}
 case 8:
-#line 1121 "fpoptimizer/grammar_parser.y"
+#line 1165 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p);
          delete yyvsp[-1].p;
        ;
     break;}
 case 9:
-#line 1129 "fpoptimizer/grammar_parser.y"
+#line 1173 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p->SetType(SelectedParams));
          delete yyvsp[-1].p;
        ;
     break;}
 case 10:
-#line 1136 "fpoptimizer/grammar_parser.y"
+#line 1180 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-1].opcode, *yyvsp[0].p->SetType(AnyParams));
          delete yyvsp[0].p;
        ;
     break;}
 case 11:
-#line 1144 "fpoptimizer/grammar_parser.y"
+#line 1188 "fpoptimizer/grammar_parser.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 12:
-#line 1148 "fpoptimizer/grammar_parser.y"
+#line 1192 "fpoptimizer/grammar_parser.y"
 {
           if(yyvsp[-1].p->RestHolderIndex != 0)
           {
@@ -2202,26 +2246,26 @@ case 12:
         ;
     break;}
 case 13:
-#line 1158 "fpoptimizer/grammar_parser.y"
+#line 1202 "fpoptimizer/grammar_parser.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 14:
-#line 1165 "fpoptimizer/grammar_parser.y"
+#line 1209 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 15:
-#line 1169 "fpoptimizer/grammar_parser.y"
+#line 1213 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::ParamHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index | Constness_Const);
        ;
     break;}
 case 16:
-#line 1174 "fpoptimizer/grammar_parser.y"
+#line 1218 "fpoptimizer/grammar_parser.y"
 {
          /* Verify that $3 consists of constants */
          yyval.a = new GrammarData::ParamSpec(yyvsp[-3].opcode, yyvsp[-1].p->GetParams() );
@@ -2234,21 +2278,21 @@ case 16:
        ;
     break;}
 case 17:
-#line 1185 "fpoptimizer/grammar_parser.y"
+#line 1229 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index + 2, GrammarData::ParamSpec::ParamHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 18:
-#line 1190 "fpoptimizer/grammar_parser.y"
+#line 1234 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-2].f);
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 19:
-#line 1195 "fpoptimizer/grammar_parser.y"
+#line 1239 "fpoptimizer/grammar_parser.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2262,13 +2306,13 @@ case 19:
        ;
     break;}
 case 20:
-#line 1210 "fpoptimizer/grammar_parser.y"
+#line 1254 "fpoptimizer/grammar_parser.y"
 {
          yyval.index = yyvsp[-1].index | yyvsp[0].index;
        ;
     break;}
 case 21:
-#line 1214 "fpoptimizer/grammar_parser.y"
+#line 1258 "fpoptimizer/grammar_parser.y"
 {
          yyval.index = 0;
        ;
@@ -2477,7 +2521,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1218 "fpoptimizer/grammar_parser.y"
+#line 1262 "fpoptimizer/grammar_parser.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
@@ -2867,12 +2911,23 @@ int main()
         "#define P3(a,b,c) (P2(a,b) | (c << (PARAM_INDEX_BITS*2)))\n"
         "\n";
 
+    std::vector<GrammarData::Grammar> components;
     for(std::map<std::string, std::vector<std::string> >::const_iterator
         i = grammar_components.begin();
         i != grammar_components.end();
         ++i)
     {
-        std::vector<GrammarData::Grammar> components;
+        for(size_t a=0; a<i->second.size(); ++a)
+            components.push_back(sections[ i->second[a] ]);
+    }
+    dumper.RegisterGrammar(components);
+
+    for(std::map<std::string, std::vector<std::string> >::const_iterator
+        i = grammar_components.begin();
+        i != grammar_components.end();
+        ++i)
+    {
+        components.clear();
         for(size_t a=0; a<i->second.size(); ++a)
             components.push_back(sections[ i->second[a] ]);
         dumper.DumpGrammar(i->first, components);

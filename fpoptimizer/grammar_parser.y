@@ -388,21 +388,29 @@ struct RuleComparer
     {
         if(a.match_tree.subfunc_opcode != b.match_tree.subfunc_opcode)
             return a.match_tree.subfunc_opcode < b.match_tree.subfunc_opcode;
+
         if(a.n_minimum_params != b.n_minimum_params)
             return a.n_minimum_params < b.n_minimum_params;
         // Other rules to break ties
+
         if(a.ruletype != b.ruletype)
             return a.ruletype < b.ruletype;
+
         if(a.match_tree.match_type != b.match_tree.match_type)
             return a.match_tree.match_type < b.match_tree.match_type;
-        if(a.match_tree.param_list != b.match_tree.param_list)
-            return a.match_tree.param_list < b.match_tree.param_list;
+
         if(a.match_tree.param_count != b.match_tree.param_count)
             return a.match_tree.param_count < b.match_tree.param_count;
-        if(a.repl_param_list != b.repl_param_list)
-            return a.repl_param_list < b.repl_param_list;
+
         if(a.repl_param_count != b.repl_param_count)
             return a.repl_param_count < b.repl_param_count;
+
+        if(a.match_tree.param_list != b.match_tree.param_list)
+            return a.match_tree.param_list < b.match_tree.param_list;
+
+        if(a.repl_param_list != b.repl_param_list)
+            return a.repl_param_list < b.repl_param_list;
+
         return false;
     }
 
@@ -536,6 +544,42 @@ public:
         ritem.repl_param_count = pcount;
         ritem.repl_param_list  = plist;
         return ritem;
+    }
+
+    void RegisterGrammar(const std::vector<GrammarData::Grammar>& gset)
+    {
+        std::vector<Rule> this_rules;
+
+        for(size_t a=0; a<gset.size(); ++a)
+        {
+            const GrammarData::Grammar& g = gset[a];
+
+            for(size_t a=0; a<g.rules.size(); ++a)
+            {
+                if(g.rules[a].Input.Opcode == cNop) continue;
+                this_rules.push_back( CreateRule(g.rules[a]) );
+            }
+        }
+
+        std::sort(this_rules.begin(), this_rules.end(),
+                  RuleComparer());
+
+        for(size_t a=0; a<this_rules.size(); ++a)
+        {
+            const Rule& r = this_rules[a];
+
+            // Add to global rule list, unless it's already there
+            bool dup=false;
+            for(size_t c=0; c<rlist.size(); ++c)
+                if(memcmp(&r, &rlist[c], sizeof(r)) == 0)
+                {
+                    // Already in global rule list...
+                    dup = true;
+                    break;
+                }
+            if(!dup)
+                rlist.push_back(r);
+        }
     }
 
     void DumpGrammar(const std::string& grammarname,
@@ -1604,12 +1648,23 @@ int main()
         "#define P3(a,b,c) (P2(a,b) | (c << (PARAM_INDEX_BITS*2)))\n"
         "\n";
 
+    std::vector<GrammarData::Grammar> components;
     for(std::map<std::string, std::vector<std::string> >::const_iterator
         i = grammar_components.begin();
         i != grammar_components.end();
         ++i)
     {
-        std::vector<GrammarData::Grammar> components;
+        for(size_t a=0; a<i->second.size(); ++a)
+            components.push_back(sections[ i->second[a] ]);
+    }
+    dumper.RegisterGrammar(components);
+
+    for(std::map<std::string, std::vector<std::string> >::const_iterator
+        i = grammar_components.begin();
+        i != grammar_components.end();
+        ++i)
+    {
+        components.clear();
         for(size_t a=0; a<i->second.size(); ++a)
             components.push_back(sections[ i->second[a] ]);
         dumper.DumpGrammar(i->first, components);

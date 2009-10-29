@@ -176,7 +176,7 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_footer.txt \
 	; do \
 		echo "#line 1 \"$$file\""; \
-		sed -r "s@^#include (\"fpoptimizer|\"crc32).*@// line removed@" < "$$file"; \
+		sed -r "s@^(#include (\"fpoptimizer|\"crc32).*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
 	done > $@
 

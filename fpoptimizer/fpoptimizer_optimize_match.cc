@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <cstring>
 #include <cmath>
 
 #include <memory> /* for auto_ptr */
@@ -80,30 +81,56 @@ namespace
         return true;
     }
 
-    /* Test the list of parameters to a given CodeTree */
-    /* A helper function which simply checks whether the
-     * basic shape of the tree matches what we are expecting
-     * i.e. given number of numeric constants, etc.
-     */
-    bool IsLogisticallyPlausibleParamsMatch(
-        const ParamSpec_SubFunctionData& params,
-        const CodeTree& tree)
+    template<unsigned extent, unsigned nbits, typename item_type=unsigned int>
+    struct nbitmap
     {
-        /* First, check if the tree has any chances of matching... */
-        /* Figure out what we need. */
-        struct Needs
+    private:
+        static const unsigned bits_in_char = 8;
+        static const unsigned per_item = (sizeof(item_type)*bits_in_char)/nbits;
+        item_type data[(extent+per_item-1) / per_item];
+    public:
+        void inc(unsigned index, int by=1)
         {
-            int SubTrees; // This many subtrees
-            int Others;   // This many others (namedholder)
-            unsigned SubTreesDetail[VarBegin]; // This many subtrees of each opcode type
+            data[pos(index)] += by * item_type(1 << shift(index));
+        }
+        inline void dec(unsigned index) { inc(index, -1); }
+        int get(unsigned index) const { return (data[pos(index)] >> shift(index)) & mask(); }
 
-            int Immeds;      // This many immeds
+        static inline unsigned pos(unsigned index) { return index/per_item; }
+        static inline unsigned shift(unsigned index) { return nbits * (index%per_item); }
+        static inline unsigned mask() { return (1 << nbits)-1; }
+        static inline unsigned mask(unsigned index) { return mask() << shift(index); }
+    };
 
-            Needs(): SubTrees(0), Others(0), SubTreesDetail(), Immeds() { }
-        } NeedList;
+    struct Needs
+    {
+        int SubTrees     : 8; // This many subtrees
+        int Others       : 8; // This many others (namedholder)
+        int minimum_need : 8; // At least this many leaves (restholder may require more)
+        int Immeds       : 8; // This many immeds
+
+        nbitmap<VarBegin,2> SubTreesDetail; // This many subtrees of each opcode type
+
+        Needs()
+        {
+            std::memset(this, 0, sizeof(*this));
+        }
+        Needs(const Needs& b)
+        {
+            std::memcpy(this, &b, sizeof(b));
+        }
+        Needs& operator= (const Needs& b)
+        {
+            std::memcpy(this, &b, sizeof(b));
+            return *this;
+        }
+    };
+
+    Needs CreateNeedList_uncached(const ParamSpec_SubFunctionData& params)
+    {
+        Needs NeedList;
 
         // Figure out what we need
-        unsigned minimum_need = 0;
         for(unsigned a = 0; a < params.param_count; ++a)
         {
             const ParamSpec& parampair = ParamSpec_Extract(params.param_list, a);
@@ -118,19 +145,51 @@ namespace
                     {
                         NeedList.SubTrees += 1;
                         assert( param.data.subfunc_opcode < VarBegin );
-                        NeedList.SubTreesDetail[ param.data.subfunc_opcode ] += 1;
+                        NeedList.SubTreesDetail.inc(param.data.subfunc_opcode);
                     }
-                    ++minimum_need;
+                    ++NeedList.minimum_need;
                     break;
                 }
                 case NumConstant:
                 case ParamHolder:
                     NeedList.Others += 1;
-                    ++minimum_need;
+                    ++NeedList.minimum_need;
                     break;
             }
         }
-        if(tree.GetParamCount() < minimum_need)
+
+        return NeedList;
+    }
+
+    Needs& CreateNeedList(const ParamSpec_SubFunctionData& params)
+    {
+        typedef std::map<const ParamSpec_SubFunctionData*, Needs> needlist_cached_t;
+        static needlist_cached_t needlist_cached;
+
+        needlist_cached_t::iterator i = needlist_cached.lower_bound(&params);
+        if(i != needlist_cached.end() && i->first == &params)
+            return i->second;
+
+        return
+            needlist_cached.insert(i,
+                 std::make_pair(&params, CreateNeedList_uncached(params))
+            )->second;
+    }
+
+    /* Test the list of parameters to a given CodeTree */
+    /* A helper function which simply checks whether the
+     * basic shape of the tree matches what we are expecting
+     * i.e. given number of numeric constants, etc.
+     */
+    bool IsLogisticallyPlausibleParamsMatch(
+        const ParamSpec_SubFunctionData& params,
+        const CodeTree& tree)
+    {
+        /* First, check if the tree has any chances of matching... */
+        /* Figure out what we need. */
+        Needs NeedList ( CreateNeedList(params) );
+
+        if(tree.GetParamCount() < NeedList.minimum_need)
         {
             // Impossible to satisfy
             return false;
@@ -154,10 +213,10 @@ namespace
                 default:
                     assert( opcode < VarBegin );
                     if(NeedList.SubTrees > 0
-                    && NeedList.SubTreesDetail[opcode] > 0)
+                    && NeedList.SubTreesDetail.get(opcode) > 0)
                     {
                         NeedList.SubTrees -= 1;
-                        NeedList.SubTreesDetail[opcode] -= 1;
+                        NeedList.SubTreesDetail.dec(opcode);
                     }
                     else NeedList.Others -= 1;
             }
@@ -174,10 +233,12 @@ namespace
 
         if(params.match_type != AnyParams)
         {
-            if(NeedList.Immeds < 0
+            if(0
+            //|| NeedList.Immeds < 0 - already checked
             || NeedList.SubTrees < 0
-            || NeedList.Others < 0/*
-            || params.count != tree.GetParamCount() - already checked*/)
+            || NeedList.Others < 0
+            //|| params.count != tree.GetParamCount() - already checked
+              )
             {
                 // Something was too much.
                 return false;
@@ -191,8 +252,6 @@ namespace
         const ParamSpec& parampair,
         const MatchInfo& info)
     {
-        using namespace std;
-
         switch( parampair.first )
         {
             case NumConstant:
@@ -203,10 +262,9 @@ namespace
             case ParamHolder:
             {
                 const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
-                CodeTree result ( info.GetParamHolderValueIfFound( param.index ) );
-                if(result.IsDefined())
-                    return result;
-                break; // The immed is not defined
+                return info.GetParamHolderValueIfFound( param.index );
+                // If the ParamHolder is not defined, it will simply
+                // return an Undefined tree. This is ok.
             }
             case SubFunction:
             {
@@ -217,17 +275,21 @@ namespace
                  * a constant at all. */
                 CodeTree result;
                 result.SetOpcode( param.data.subfunc_opcode );
+                result.GetParams().reserve(param.data.param_count);
                 for(unsigned a=0; a<param.data.param_count; ++a)
-                    result.AddParam(
-                            CalculateGroupFunction(
-                                ParamSpec_Extract(param.data.param_list, a), info)
-                                    );
-                result.Rehash();
+                {
+                    CodeTree tmp(
+                        CalculateGroupFunction
+                        (ParamSpec_Extract(param.data.param_list, a), info)
+                                );
+                    result.AddParamMove(tmp);
+                }
+                result.Rehash(); // This will also call ConstantFolding().
                 return result;
             }
         }
-        // Issue an un-calculatable tree.
-        return CodeTree(999, CodeTree::VarTag());
+        // Issue an un-calculatable tree. (This should be unreachable)
+        return CodeTree(); // cNop
     }
 }
 
@@ -273,8 +335,7 @@ namespace FPoptimizer_Optimize
                         if(!TestImmedConstraints(param.constraints, tree)) return false;
                         if(tree.GetOpcode() != param.data.subfunc_opcode) return false;
                     }
-                    return TestParams(param.data,
-                                      tree, start_at, info, false);
+                    return TestParams(param.data, tree, start_at, info, false);
                 }
             }
         }
