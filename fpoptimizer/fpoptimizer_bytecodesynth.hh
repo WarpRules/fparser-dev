@@ -65,16 +65,28 @@ namespace FPoptimizer_ByteCode
             }
         }
 
+        void EatNParams(unsigned eat_count)
+        {
+            SetStackTop(StackTop - eat_count);
+        }
+
+        void ProducedNParams(unsigned produce_count)
+        {
+            SetStackTop(StackTop + produce_count);
+        }
+
         void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
         {
-            using namespace FUNCTIONPARSERTYPES;
-            SetStackTop(StackTop - eat_count);
+            EatNParams(eat_count);
 
-            if(opcode == cMul && ByteCode.back() == cDup)
+            using namespace FUNCTIONPARSERTYPES;
+
+            if(!ByteCode.empty() && opcode == cMul && ByteCode.back() == cDup)
                 ByteCode.back() = cSqr;
             else
                 ByteCode.push_back(opcode);
-            SetStackTop(StackTop + produce_count);
+
+            ProducedNParams(produce_count);
         }
 
         void DoPopNMov(size_t targetpos, size_t srcpos)
@@ -151,7 +163,7 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1); // one or the other was pushed.
         }
 
-    private:
+    protected:
         void SetStackTop(size_t value)
         {
             StackTop = value;

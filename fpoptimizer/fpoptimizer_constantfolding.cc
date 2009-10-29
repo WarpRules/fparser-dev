@@ -1945,6 +1945,7 @@ namespace FPoptimizer_CodeTree
             case cJump:
             case VarBegin:
                 break; /* Should never occur */
+
             /* Opcodes that we can't do anything about */
             case cPCall:
             case cFCall:

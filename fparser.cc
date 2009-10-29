@@ -2776,7 +2776,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];
-                            if(showExpression)
+                            if(showExpression && index < stack.size())
                             {
                                 static unsigned fetch_counter=0;
                                 std::ostringstream tmp;
@@ -2796,7 +2796,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         {
                             size_t a = ByteCode[++IP];
                             size_t b = ByteCode[++IP];
-                            if(showExpression)
+                            if(showExpression && b < stack.size())
                             {
                                 std::pair<int, std::string> stacktop(0, "?");
                                 if(b < stack.size()) stacktop = stack[b];

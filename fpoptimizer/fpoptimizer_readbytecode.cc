@@ -405,8 +405,7 @@ namespace FPoptimizer_CodeTree
             if((opcode == cSqr || opcode == cDup
              || opcode == cInv || opcode == cNeg
              || opcode == cSqrt || opcode == cRSqrt
-             || opcode == cFetch)
-             && !keep_powi)
+             || opcode == cFetch))
             {
                 // Parse a powi sequence
                 //size_t was_ip = IP;
@@ -474,6 +473,7 @@ namespace FPoptimizer_CodeTree
                     case cFCall:
                     {
                         unsigned funcno = ByteCode[++IP];
+                        assert(funcno < fpdata.FuncPtrs.size());
                         unsigned params = fpdata.FuncPtrs[funcno].params;
                         sim.EatFunc(params, OPCODE(opcode), funcno);
                         break;
@@ -481,14 +481,15 @@ namespace FPoptimizer_CodeTree
                     case cPCall:
                     {
                         unsigned funcno = ByteCode[++IP];
+                        assert(funcno < fpdata.FuncParsers.size());
                         unsigned params = fpdata.FuncParsers[funcno].params;
                         sim.EatFunc(params, OPCODE(opcode), funcno);
                         break;
                     }
                     // Unary operators requiring special attention
                     case cInv:  // already handled by powi_opt
-                        sim.Eat(1, cInv);
-                        break;
+                        //sim.Eat(1, cInv);
+                        //break;
                         sim.AddConst(1);
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cDiv);
@@ -501,20 +502,20 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cSub);
                         break;
                     case cSqr: // already handled by powi_opt
-                        sim.Eat(1, cSqr);
-                        break;
-                        sim.Dup();
-                        sim.Eat(2, cMul);
+                        //sim.Eat(1, cSqr);
+                        //break;
+                        sim.AddConst(2);
+                        sim.Eat(2, cPow);
                         break;
                     // Unary functions requiring special attention
-                    /*case cSqrt: // already handled by powi_opt
+                    case cSqrt: // already handled by powi_opt
                         sim.AddConst(0.5);
                         sim.Eat(2, cPow);
-                        break;*/
-                    /*case cRSqrt: // already handled by powi_opt
+                        break;
+                    case cRSqrt: // already handled by powi_opt
                         sim.AddConst(-0.5);
                         sim.Eat(2, cPow);
-                        break; */
+                        break;
                     case cDeg:
                         sim.AddConst(CONSTANT_DR);
                         sim.Eat(2, cMul);
@@ -537,20 +538,26 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cCot:
                         sim.Eat(1, cTan);
+                        if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
                     case cCsc:
                         sim.Eat(1, cSin);
+                        if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
                     case cSec:
                         sim.Eat(1, cCos);
+                        if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
                     case cInt: // int(x) = floor(x + 0.5)
+                    #ifndef __x86_64
+                        if(keep_powi) { sim.Eat(1, cInt); break; }
+                    #endif
                         sim.AddConst(0.5);
                         sim.Eat(2, cAdd);
                         sim.Eat(1, cFloor);
@@ -654,6 +661,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     }
 #endif
+
                     default:
                     default_function_handling:;
                         unsigned funcno = opcode-cAbs;

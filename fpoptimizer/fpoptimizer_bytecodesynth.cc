@@ -22,6 +22,11 @@ using namespace FPoptimizer_ByteCode;
 #define POWI_WINDOW_SIZE 3
 namespace FPoptimizer_ByteCode
 {
+    #ifndef FP_GENERATING_POWI_TABLE
+    extern const
+    signed char powi_table[POWI_TABLE_SIZE];
+    const
+    #endif
     signed char powi_table[POWI_TABLE_SIZE] =
     {
           0,   1,   1,   1,   2,   1,   3,   1, /*   0 -   7 */

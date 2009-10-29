@@ -94,7 +94,61 @@ namespace FPoptimizer_CodeTree
             case cMul:
             {
                 std::vector<CodeTree> div_params;
-                CodeTree found_log2;
+                CodeTree found_log2, found_log2by;
+
+                if(true)
+                {
+                    /* This lengthy bit of code
+                     * changes log2(x)^3 * 5
+                     * to      log2by(x, 5^(1/3)) ^ 3
+                     * which is better for runtime
+                     * than    log2by(x,1)^3 * 5
+                     */
+                    bool found_log2_on_exponent = false;
+                    double log2_exponent = 0;
+                    for(size_t a = GetParamCount(); a-- > 0; )
+                    {
+                        const CodeTree& powgroup = GetParam(a);
+                        if(powgroup.GetOpcode() == cPow
+                        && powgroup.GetParam(0).GetOpcode() == cLog2
+                        && powgroup.GetParam(1).IsImmed())
+                        {
+                            // Found log2 on exponent
+                            found_log2_on_exponent = true;
+                            log2_exponent = powgroup.GetParam(1).GetImmed();
+                            break;
+                        }
+                    }
+                    if(found_log2_on_exponent)
+                    {
+                        double immeds = 1.0;
+                        for(size_t a = GetParamCount(); a-- > 0; )
+                        {
+                            const CodeTree& powgroup = GetParam(a);
+                            if(powgroup.IsImmed())
+                            {
+                                immeds *= powgroup.GetImmed();
+                                DelParam(a);
+                            }
+                        }
+                        for(size_t a = GetParamCount(); a-- > 0; )
+                        {
+                            CodeTree& powgroup = GetParam(a);
+                            if(powgroup.GetOpcode() == cPow
+                            && powgroup.GetParam(0).GetOpcode() == cLog2
+                            && powgroup.GetParam(1).IsImmed())
+                            {
+                                CodeTree& log2 = powgroup.GetParam(0);
+                                log2.CopyOnWrite();
+                                log2.SetOpcode(cLog2by);
+                                log2.AddParam( CodeTree( pow(immeds, 1.0 / log2_exponent) ) );
+                                log2.Rehash();
+                                break;
+                            }
+                        }
+                    }
+                }
+
                 for(size_t a = GetParamCount(); a-- > 0; )
                 {
                     const CodeTree& powgroup = GetParam(a);
@@ -127,6 +181,12 @@ namespace FPoptimizer_CodeTree
                         CopyOnWrite();
                         DelParam(a);
                     }
+                    else if(powgroup.GetOpcode() == cLog2by && !found_log2by.IsDefined())
+                    {
+                        found_log2by = powgroup;
+                        CopyOnWrite();
+                        DelParam(a);
+                    }
                 }
                 if(!div_params.empty())
                 {
@@ -145,6 +205,15 @@ namespace FPoptimizer_CodeTree
                         SetOpcode(cInv);
                         AddParamMove(divgroup);
                     }
+                    /*else if(mulgroup.IsImmed() && FloatEqual(mulgroup.GetImmed(), -1.0))
+                    {
+                        CodeTree invgroup;
+                        invgroup.SetOpcode(cInv);
+                        invgroup.AddParamMove(divgroup);
+                        invgroup.Rehash();
+                        SetOpcode(cNeg);
+                        AddParamMove(invgroup);
+                    }*/
                     else
                     {
                         if(mulgroup.GetDepth() >= divgroup.GetDepth())
@@ -164,11 +233,28 @@ namespace FPoptimizer_CodeTree
                 if(found_log2.IsDefined())
                 {
                     CodeTree mulgroup;
-                    mulgroup.SetOpcode(cMul);
+                    mulgroup.SetOpcode(GetOpcode());
                     mulgroup.SetParamsMove(GetParams());
                     mulgroup.Rehash();
+                    while(mulgroup.RecreateInversionsAndNegations(prefer_base2))
+                        mulgroup.FixIncompleteHashes();
                     SetOpcode(cLog2by);
                     AddParamMove(found_log2);
+                    AddParamMove(mulgroup);
+                    changed = true;
+                }
+                if(found_log2by.IsDefined())
+                {
+                    CodeTree mulgroup;
+                    mulgroup.SetOpcode(cMul);
+                    mulgroup.AddParamMove(found_log2by.GetParam(1));
+                    mulgroup.AddParamsMove(GetParams());
+                    mulgroup.Rehash();
+                    while(mulgroup.RecreateInversionsAndNegations(prefer_base2))
+                        mulgroup.FixIncompleteHashes();
+                    DelParams();
+                    SetOpcode(cLog2by);
+                    AddParamMove(found_log2by.GetParam(0));
                     AddParamMove(mulgroup);
                     changed = true;
                 }
@@ -272,16 +358,18 @@ namespace FPoptimizer_CodeTree
                 }
                 break;
             }
+#if 0
             case cLog:
             {
                 if(prefer_base2)
                 {
-                    SetOpcode(cLog2);
-                    CodeTree mul;
-                    mul.SetOpcode(cMul);
-                    mul.AddParamMove(*this);
-                    mul.AddParam(CodeTree(CONSTANT_L2));
-                    Become(mul);
+                    CodeTree log2;
+                    log2.SetOpcode(cLog2),
+                    log2.SetParamsMove(GetParams());
+                    log2.Rehash();
+                    SetOpcode(cMul);
+                    AddParamMove(log2);
+                    AddParam(CodeTree(CONSTANT_L2));
                     changed = true;
                 }
                 break;
@@ -290,12 +378,13 @@ namespace FPoptimizer_CodeTree
             {
                 if(prefer_base2)
                 {
-                    SetOpcode(cLog2);
-                    CodeTree mul;
-                    mul.SetOpcode(cMul);
-                    mul.AddParamMove(*this);
-                    mul.AddParam(CodeTree(CONSTANT_L10B));
-                    Become(mul);
+                    CodeTree log2;
+                    log2.SetOpcode(cLog2),
+                    log2.SetParamsMove(GetParams());
+                    log2.Rehash();
+                    SetOpcode(cMul);
+                    AddParamMove(log2);
+                    AddParam(CodeTree(CONSTANT_L10B));
                     changed = true;
                 }
                 break;
@@ -342,6 +431,7 @@ namespace FPoptimizer_CodeTree
                     op_d.SetOpcode(cSqrt); op_d.AddParamMove(op_c);
                     op_d.Rehash();
                     SetOpcode(cAtan2); DelParams(); AddParamMove(p0); AddParamMove(op_d);
+                    changed = true;
                 }
                 break;
             }
@@ -360,9 +450,144 @@ namespace FPoptimizer_CodeTree
                     op_d.SetOpcode(cSqrt); op_d.AddParamMove(op_c);
                     op_d.Rehash();
                     SetOpcode(cAtan2); DelParams(); AddParamMove(op_d); AddParamMove(p0);
+                    changed = true;
                 }
                 break;
             }
+
+            case cSinh:
+            {
+                if(prefer_base2) // sin(x) = (exp(x) - 1/exp(x)) * 0.5
+                {
+                    CodeTree exp;
+                    exp.SetOpcode(cExp); exp.AddParam(GetParam(0)); exp.Rehash();
+                    CodeTree exp_inv;
+                    exp_inv.SetOpcode(cInv); exp_inv.AddParam(exp); exp_inv.Rehash();
+                    CodeTree sub;
+                    sub.SetOpcode(cSub);
+                    sub.AddParamMove(exp);
+                    sub.AddParamMove(exp_inv);
+                    sub.Rehash();
+                    SetOpcode(cMul);
+                    SetParamMove(0, sub);
+                    AddParam(CodeTree(0.5));
+                    changed = true;
+                }
+                break;
+            }
+
+            case cCosh:
+            {
+                if(prefer_base2) // sin(x) = (exp(x) + 1/exp(x)) * 0.5
+                {
+                    CodeTree exp;
+                    exp.SetOpcode(cExp); exp.AddParam(GetParam(0)); exp.Rehash();
+                    CodeTree exp_inv;
+                    exp_inv.SetOpcode(cInv); exp_inv.AddParam(exp); exp_inv.Rehash();
+                    CodeTree sub;
+                    sub.SetOpcode(cAdd);
+                    sub.AddParamMove(exp);
+                    sub.AddParamMove(exp_inv);
+                    sub.Rehash();
+                    SetOpcode(cMul);
+                    SetParamMove(0, sub);
+                    AddParam(CodeTree(0.5));
+                    changed = true;
+                }
+                break;
+            }
+
+            case cTanh:
+            {
+                if(prefer_base2)
+                {
+                    // tanh(x) = sinh(x) / cosh(x)
+                    //         = (exp(2*x)-1) / (exp(2*x)+1)
+                    CodeTree xdup;
+                    xdup.SetOpcode(cAdd);
+                    xdup.AddParam(GetParam(0));
+                    xdup.AddParam(GetParam(0));
+                    xdup.Rehash();
+                    CodeTree exp;
+                    exp.SetOpcode(cExp); exp.AddParamMove(xdup); exp.Rehash();
+                    CodeTree m1,p1;
+                    m1.SetOpcode(cAdd); m1.AddParam(exp); m1.AddParam(CodeTree(-1.0)); m1.Rehash();
+                    p1.SetOpcode(cAdd); p1.AddParam(exp); p1.AddParam(CodeTree( 1.0)); p1.Rehash();
+
+                    SetOpcode(cDiv);
+                    SetParamMove(0, m1);
+                    AddParamMove(p1);
+                    changed = true;
+                }
+                break;
+            }
+
+            case cAtanh:
+            {
+                if(prefer_base2)
+                {
+                    // atanh(x) = log( (1+x) / (1-x)) * 0.5
+                    //          = log2by( (1+x) / (1-x), 0.5 * CONSTANT_L2 )
+                    CodeTree p1, m1;
+                    p1.SetOpcode(cAdd); p1.AddParam(CodeTree(1.0)); p1.AddParam(GetParam(0)); p1.Rehash();
+                    m1.SetOpcode(cSub); m1.AddParam(CodeTree(1.0)); m1.AddParam(GetParam(0)); m1.Rehash();
+                    CodeTree div;
+                    div.SetOpcode(cDiv);
+                    div.AddParamMove(p1);
+                    div.AddParamMove(m1);
+                    div.Rehash();
+                    SetOpcode(cLog2by);
+                    SetParamMove(0, div);
+                    AddParam( CodeTree(0.5 * CONSTANT_L2) );
+                    changed = true;
+                }
+                break;
+            }
+
+            case cAsinh:
+            {
+                if(prefer_base2)
+                {
+                    // asinh(x) = log(x + sqrt(x*x + 1))
+                    CodeTree xsqr;
+                    xsqr.SetOpcode(cSqr); xsqr.AddParam(GetParam(0)); xsqr.Rehash();
+                    CodeTree xsqrp1;
+                    xsqrp1.SetOpcode(cAdd); xsqrp1.AddParamMove(xsqr);
+                    xsqrp1.AddParam(CodeTree(1.0)); xsqrp1.Rehash();
+                    CodeTree sqrt;
+                    sqrt.SetOpcode(cSqrt); sqrt.AddParamMove(xsqrp1); sqrt.Rehash();
+                    CodeTree add;
+                    add.SetOpcode(cAdd); add.SetParamsMove(GetParams());
+                    add.AddParamMove(sqrt);
+                    SetOpcode(cLog);
+                    AddParamMove(add);
+                    changed = true;
+                }
+                break;
+            }
+
+            case cAcosh:
+            {
+                if(prefer_base2)
+                {
+                    // acosh(x) = log(x + sqrt(x*x - 1))
+                    CodeTree xsqr;
+                    xsqr.SetOpcode(cSqr); xsqr.AddParam(GetParam(0)); xsqr.Rehash();
+                    CodeTree xsqrp1;
+                    xsqrp1.SetOpcode(cAdd); xsqrp1.AddParamMove(xsqr);
+                    xsqrp1.AddParam(CodeTree(-1.0)); xsqrp1.Rehash();
+                    CodeTree sqrt;
+                    sqrt.SetOpcode(cSqrt); sqrt.AddParamMove(xsqrp1); sqrt.Rehash();
+                    CodeTree add;
+                    add.SetOpcode(cAdd); add.SetParamsMove(GetParams());
+                    add.AddParamMove(sqrt);
+                    SetOpcode(cLog);
+                    AddParamMove(add);
+                    changed = true;
+                }
+                break;
+            }
+#endif
             case cPow:
             {
                 const CodeTree& p0 = GetParam(0);
