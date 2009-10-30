@@ -229,7 +229,7 @@ namespace FPoptimizer_Optimize
                   << "[" << tree.GetParamCount()
                   << "], rules:";
         for(rulenumit r = range.first; r != range.second; ++r)
-            std::cout << ' ' << *r;
+            std::cout << ' ' << (unsigned)*r;
         std::cout << ": ";
         DumpTree(tree);
         std::cout << "\n" << std::flush;

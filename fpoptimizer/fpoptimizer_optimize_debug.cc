@@ -23,7 +23,8 @@ namespace FPoptimizer_Grammar
 
         o <<
             "Found " << (DidMatch ? "match" : "mismatch")
-          << " (rule " << (&rule - pack.glist[0].rule_begin) << "):\n"
+          << " (rule " << (&rule - grammar_rules) << ")"
+          << ":\n"
             "  Pattern    : ";
         { ParamSpec tmp;
           tmp.first = SubFunction;

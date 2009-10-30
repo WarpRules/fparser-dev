@@ -171,17 +171,6 @@ cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
 cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])
 cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
 
-# sinh(-x) = -sinh(x)
-cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
-
-# cosh(-x) = cosh(x)
-cCosh [(cMul -1 <1>)] : (cMul <1>)
-
-# However,  -sinh(5*x) better expressed as sinh(-5*x), same for tanh
-cMul -1 (cSinh [(cMul % <1>)]) : (cSinh [(cMul -% <1>)])
-cMul -1 (cSin [(cMul % <1>)]) : (cSin [(cMul -% <1>)])
-
-
 [LOGARITHM]
 
 #### Logarithm optimizations
@@ -355,9 +344,19 @@ cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 [TRIGONOMETRIC]
 
 # sin(-x) = -sin(x)
-cSin [(cMul %@N <1>)] -> cMul -1 (cSin [(cMul -% <1>)])
+cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])
+# sinh(-x) = -sinh(x)
+cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
+
+# However,  -sinh(5*x) better expressed as sinh(-5*x)
+cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
+cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
+
+
 # cos(-x) = cos(x)
-cCos [(cMul %@N <1>)] : (cMul -% <1>)
+cCos [(cMul -1 <1>)] : (cMul <1>)
+# cosh(-x) = cosh(x)
+cCosh [(cMul -1 <1>)] : (cMul <1>)
 
 
 # cos(pi/2 - x) = sin(x)
@@ -447,8 +446,9 @@ cTan [(cMul -1 <1>)] -> cMul [-1 (cTan [(cMul <1>)])]
 cTanh [(cMul -1 <1>)] -> cMul [-1 (cTanh [(cMul <1>)])]
 
 # However,  -tanh(5*x) better expressed as tanh(-5*x)
-cMul -1 (cTanh [(cMul % <1>)]) : (cTanh [(cMul -% <1>)])
-cMul -1 (cTan [(cMul % <1>)]) : (cTan [(cMul -% <1>)])
+cMul -1 (cTanh [(cMul %@N <1>)]) : (cTanh [(cMul -% <1>)])
+cMul -1 (cTan [(cMul %@N <1>)]) : (cTan [(cMul -% <1>)])
+
 
 #        tanh(x) = (exp(2*x)-1) / (exp(2*x)+1)
 #      1/tanh(x) = (exp(2*x)+1) / (exp(2*x)-1)
