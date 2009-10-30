@@ -698,6 +698,23 @@ namespace
         }
         return false;
     }
+    bool IsAlwaysIntegerOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cAnd: case cAbsAnd:
+          case cOr:  case cAbsOr:
+          case cNot: case cAbsNot:
+          case cNotNot: case cAbsNotNot:
+          case cEqual: case cNEqual:
+          case cLess: case cLessOrEq:
+          case cGreater: case cGreaterOrEq:
+          case cInt: case cFloor: case cCeil: case cTrunc:
+              return true;
+          default: break;
+        }
+        return false;
+    }
 }
 
 inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
@@ -914,12 +931,34 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
                 return;
         case cFloor:
+            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
             if(data->ByteCode.back() == cNeg)
-                { data->ByteCode.back() = cCeil; data->ByteCode.push_back(cNeg); return; }
+            {
+                if(!IsAlwaysIntegerOpcode(data->ByteCode[data->ByteCode.size()-2]))
+                {
+                    data->ByteCode.back() = cCeil;
+                    data->ByteCode.push_back(cNeg);
+                }
+                return;
+            }
             break;
         case cCeil:
+            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
             if(data->ByteCode.back() == cNeg)
-                { data->ByteCode.back() = cFloor; data->ByteCode.push_back(cNeg); return; }
+            {
+                if(!IsAlwaysIntegerOpcode(data->ByteCode[data->ByteCode.size()-2]))
+                {
+                    data->ByteCode.back() = cFloor;
+                    data->ByteCode.push_back(cNeg);
+                }
+                return;
+            }
+            break;
+        case cInt:
+            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
+            break;
+        case cTrunc:
+            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
             break;
     }
     switch(opcode)

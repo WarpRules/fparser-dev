@@ -442,6 +442,39 @@ namespace
     #endif
 
     };
+
+    struct RangeComparisonData
+    {
+        enum Decision { MakeFalse=0, MakeTrue=1, MakeNEqual=2, MakeEqual=3, Unchanged=4 };
+
+        Decision if_identical; // What to do when operands are identical
+        Decision if_always[4]; // What to do if Always <, <=, >, >=
+
+        Decision Analyze(const CodeTree& a, const CodeTree& b) const
+        {
+            if(a.IsIdenticalTo(b))
+                return if_identical;
+
+            MinMaxTree p0 = a.CalculateResultBoundaries();
+            MinMaxTree p1 = b.CalculateResultBoundaries();
+            if(p0.has_max && p1.has_min)
+            {
+                if(p0.max <  p1.min)// && if_always[0] != Unchanged)
+                    return if_always[0]; // p0 < p1
+                if(p0.max <= p1.min)// && if_always[1] != Unchanged)
+                    return if_always[1]; // p0 <= p1
+            }
+            if(p0.has_min && p1.has_max)
+            {
+                if(p0.min >  p1.max)// && if_always[2] != Unchanged)
+                    return if_always[2]; // p0 > p1
+                if(p0.min >= p1.max)// && if_always[3] != Unchanged)
+                    return if_always[3]; // p0 >= p1
+            }
+            return Unchanged;
+        }
+    };
+
 }
 
 namespace FPoptimizer_CodeTree
@@ -1122,6 +1155,8 @@ namespace FPoptimizer_CodeTree
 
         double const_value = 1.0;
         size_t which_param = 0;
+        RangeComparisonData::Decision range_decision =
+            RangeComparisonData::Unchanged;
 
         if(GetOpcode() != cImmed)
         {
@@ -1167,6 +1202,16 @@ namespace FPoptimizer_CodeTree
                 std::cout << "\n";
               #endif
                 goto redo;
+            ApplyRangeDecision:
+                switch(range_decision)
+                {
+                    case RangeComparisonData::MakeFalse: goto ReplaceTreeWithZero;
+                    case RangeComparisonData::MakeTrue: goto ReplaceTreeWithOne;
+                    case RangeComparisonData::MakeEqual: SetOpcode(cEqual); break;
+                    case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); break;
+                    case RangeComparisonData::Unchanged:;
+                }
+                break;
 
             case cAnd:
             {
@@ -1406,6 +1451,7 @@ namespace FPoptimizer_CodeTree
                  *            2. eliminate all operands where their minimum is
                  *               larger than the selected maximum.
                  */
+                size_t preserve=0;
                 MinMaxTree smallest_maximum;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
@@ -1414,12 +1460,13 @@ namespace FPoptimizer_CodeTree
                     {
                         smallest_maximum.max = p.max;
                         smallest_maximum.has_max = true;
+                        preserve=a;
                 }   }
                 if(smallest_maximum.has_max)
                     for(size_t a=GetParamCount(); a-- > 0; )
                     {
                         MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                        if(p.has_min && p.min > smallest_maximum.max)
+                        if(p.has_min && a != preserve && p.min >= smallest_maximum.max)
                             DelParam(a);
                     }
                 //fprintf(stderr, "Remains: %u\n", (unsigned)GetParamCount());
@@ -1443,6 +1490,7 @@ namespace FPoptimizer_CodeTree
                  *            2. eliminate all operands where their maximum is
                  *               smaller than the selected minimum.
                  */
+                size_t preserve=0;
                 MinMaxTree biggest_minimum;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
@@ -1451,6 +1499,7 @@ namespace FPoptimizer_CodeTree
                     {
                         biggest_minimum.min = p.min;
                         biggest_minimum.has_min = true;
+                        preserve=a;
                 }   }
                 if(biggest_minimum.has_min)
                 {
@@ -1458,7 +1507,7 @@ namespace FPoptimizer_CodeTree
                     for(size_t a=GetParamCount(); a-- > 0; )
                     {
                         MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                        if(p.has_max && p.max < biggest_minimum.min)
+                        if(p.has_max && a != preserve && p.max < biggest_minimum.min)
                         {
                             //fprintf(stderr, "Removing %g\n", p.max);
                             DelParam(a);
@@ -1504,52 +1553,64 @@ namespace FPoptimizer_CodeTree
 
             case cLess:
             {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithZero;
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if(p0.has_max && p1.has_min && p0.max < p1.min)
-                    goto ReplaceTreeWithOne; // We know p0 < p1
-                if(p1.has_max && p0.has_min && p1.max <= p0.min)
-                    goto ReplaceTreeWithZero; // We know p1 >= p0
-                break;
+                // Case:      p0 < p1   Antonym: p0 >= p1
+                // Synonym:   p1 > p0   Antonym: p1 <= p0
+                // TODO: When can we change to cNEqual?
+                static const RangeComparisonData data =
+                { RangeComparisonData::MakeFalse,  // If identical: always false
+                  {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
+                   RangeComparisonData::MakeNEqual,
+                   RangeComparisonData::Unchanged,
+                   RangeComparisonData::MakeFalse} // If Always p0 >= p1: always false
+                };
+                range_decision = data.Analyze(GetParam(0), GetParam(1));
+                goto ApplyRangeDecision;
             }
 
             case cLessOrEq:
             {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithOne;
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if(p0.has_max && p1.has_min && p0.max <= p1.min)
-                    goto ReplaceTreeWithOne; // We know p0 <= p1
-                if(p1.has_max && p0.has_min && p1.max < p0.min)
-                    goto ReplaceTreeWithZero; // We know p1 > p0
-                break;
+                // Case:      p0 <= p1  Antonym: p0 > p1
+                // Synonym:   p1 >= p0  Antonym: p1 < p0
+                static const RangeComparisonData data =
+                { RangeComparisonData::MakeTrue,   // If identical: always true
+                  {RangeComparisonData::Unchanged,
+                   RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
+                   RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
+                   RangeComparisonData::MakeEqual} // If Never  p0  < p1:  use cEqual
+                };
+                range_decision = data.Analyze(GetParam(0), GetParam(1));
+                goto ApplyRangeDecision;
             }
 
             case cGreater:
             {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithZero;
-                // Note: Eq case not handled
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if(p0.has_max && p1.has_min && p0.max <= p1.min)
-                    goto ReplaceTreeWithZero; // We know p0 <= p1
-                if(p1.has_max && p0.has_min && p1.max < p0.min)
-                    goto ReplaceTreeWithOne; // We know p1 > p0
-                break;
+                // Case:      p0 >  p1  Antonym: p0 <= p1
+                // Synonym:   p1 <  p0  Antonym: p1 >= p0
+                // TODO: When can we change to cNEqual?
+                static const RangeComparisonData data =
+                { RangeComparisonData::MakeFalse,  // If identical: always false
+                  {RangeComparisonData::Unchanged,
+                   RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
+                   RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
+                   RangeComparisonData::MakeNEqual}
+                };
+                range_decision = data.Analyze(GetParam(0), GetParam(1));
+                goto ApplyRangeDecision;
             }
 
             case cGreaterOrEq:
             {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithOne;
-                // Note: Eq case not handled
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if(p0.has_max && p1.has_min && p0.max < p1.min)
-                    goto ReplaceTreeWithZero; // We know p0 < p1
-                if(p1.has_max && p0.has_min && p1.max <= p0.min)
-                    goto ReplaceTreeWithOne; // We know p1 >= p0
-                break;
+                // Case:      p0 >= p1  Antonym: p0 < p1
+                // Synonym:   p1 <= p0  Antonym: p1 > p0
+                static const RangeComparisonData data =
+                { RangeComparisonData::MakeTrue,   // If identical: always true
+                  {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
+                   RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
+                   RangeComparisonData::Unchanged,
+                   RangeComparisonData::MakeTrue}  // If Never  p0  > p1:  use cEqual
+                };
+                range_decision = data.Analyze(GetParam(0), GetParam(1));
+                goto ApplyRangeDecision;
             }
 
             case cAbs:
@@ -1890,21 +1951,86 @@ namespace FPoptimizer_CodeTree
 
             /* The following opcodes are processed by GenerateFrom()
              * within fpoptimizer_bytecode_to_codetree.cc and thus
-             * they will never occur in the calling context:
+             * they will never occur in the calling context for the
+             * most of the parsing context. They may however occur
+             * at the late phase, so we deal with them.
              */
             case cDiv: // converted into cPow y -1
-            case cRDiv: // similar to above
+                if(GetParam(0).IsImmed()
+                && GetParam(0).IsImmed()
+                && GetParam(1).GetImmed() != 0.0)
+                    { const_value = GetParam(0).GetImmed() / GetParam(1).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            case cInv: // converted into cPow y -1
+                if(GetParam(0).IsImmed()
+                && GetParam(0).GetImmed() != 0.0)
+                    { const_value = 1.0 / GetParam(0).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                // Note: Could use (mulgroup)^immed optimization from cPow
+                break;
             case cSub: // converted into cMul y -1
-            case cRSub: // similar to above
+                if(GetParam(0).IsImmed()
+                && GetParam(0).IsImmed())
+                    { const_value = GetParam(0).GetImmed() - GetParam(1).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                break;
+            case cNeg: // converted into cMul x -1
+                if(GetParam(0).IsImmed())
+                    { const_value = -GetParam(0).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cRad: // converted into cMul x CONSTANT_RD
+                if(GetParam(0).IsImmed())
+                    { const_value = GetParam(0).GetImmed() * CONSTANT_RD;
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cDeg: // converted into cMul x CONSTANT_DR
+                if(GetParam(0).IsImmed())
+                    { const_value = GetParam(0).GetImmed() * CONSTANT_DR;
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cSqr: // converted into cMul x x
+                if(GetParam(0).IsImmed())
+                    { const_value = GetParam(0).GetImmed() * GetParam(0).GetImmed();
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cExp2: // converted into cPow 2.0 x
+                if(GetParam(0).IsImmed())
+                    { const_value = pow(2.0, GetParam(0).GetImmed());
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cRSqrt: // converted into cPow x -0.5
+                if(GetParam(0).IsImmed())
+                    { const_value = 1.0 / sqrt(GetParam(0).GetImmed());
+                      goto ReplaceTreeWithConstValue; }
+                break;
             case cCot: // converted into cMul (cPow (cTan x) -1)
+                if(GetParam(0).IsImmed())
+                    { double tmp = tan(GetParam(0).GetImmed());
+                      if(tmp != 0.0)
+                      { const_value = 1.0 / tmp;
+                        goto ReplaceTreeWithConstValue; } }
+                break;
             case cSec: // converted into cMul (cPow (cCos x) -1)
+                if(GetParam(0).IsImmed())
+                    { double tmp = cos(GetParam(0).GetImmed());
+                      if(tmp != 0.0)
+                      { const_value = 1.0 / tmp;
+                        goto ReplaceTreeWithConstValue; } }
+                break;
             case cCsc: // converted into cMul (cPow (cSin x) -1)
-            case cRPow: // converted into cPow y x
+                if(GetParam(0).IsImmed())
+                    { double tmp = sin(GetParam(0).GetImmed());
+                      if(tmp != 0.0)
+                      { const_value = 1.0 / tmp;
+                        goto ReplaceTreeWithConstValue; } }
+                break;
+
+            /* The following opcodes are processed by GenerateFrom()
+             * within fpoptimizer_bytecode_to_codetree.cc and thus
+             * they will never occur in the calling context:
+             */
             case cAbsNot:
             case cAbsNotNot:
             case cAbsOr:
@@ -1912,32 +2038,10 @@ namespace FPoptimizer_CodeTree
             case cAbsIf:
                 break; /* Should never occur */
 
-            /* The following opcodes are processed by GenerateFrom(),
-             * but they may still be synthesized in the grammar matching
-             * process:
-             * TODO: Figure out whether we should just convert
-             * these particular trees into their atomic counterparts
-             */
-            case cNeg: // converted into cMul x -1
-            {
-                if(GetParam(0).IsImmed())
-                {
-                    const_value = -GetParam(0).GetImmed();
-                    goto ReplaceTreeWithConstValue;
-                }
-                break;
-            }
-            case cInv: // converted into cPow x -1
-            {
-                if(GetParam(0).IsImmed())
-                {
-                    const_value = 1.0 / GetParam(0).GetImmed();
-                    goto ReplaceTreeWithConstValue;
-                }
-                break;
-            }
-
             /* Opcodes that do not occur in the tree for other reasons */
+            case cRDiv: // version of cDiv
+            case cRSub: // version of cSub
+            case cRPow: // version of cPow
             case cDup:
             case cFetch:
             case cPopNMov:

@@ -126,6 +126,7 @@ cIf [(cLessOrEq[x y])    y x] -> cMax x y
 cIf [(cGreater[0 x]) (cCeil[x]) (cFloor[x])] -> cTrunc x
 cIf [(cLess[0 x])    (cFloor[x]) (cCeil[x])] -> cTrunc x
 
+
 cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
 cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
 cMul (cNotNot[x]) (cNotNot[y]) : (cAnd x y)
@@ -153,6 +154,82 @@ cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
 # effects or just be computation-heavy.
 
 
+[SIMPLIFY_EQUATION]
+
+cLess        (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+cLessOrEq    (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+cGreater     (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+cGreaterOrEq (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+cEqual       (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+cNEqual      (cAdd % <1>) &  : (cAdd <1>) +(& -%)
+
+cLess        (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+cLessOrEq    (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+cGreater     (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+cGreaterOrEq (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+cEqual       (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+cNEqual      (cAdd % <1>) (cAdd & <2>) : (cAdd <1>)  (cAdd <2> & -%)
+
+cLess        (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+cLessOrEq    (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+cGreater     (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+cGreaterOrEq (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+cEqual       (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+cNEqual      (cAdd x <1>) (cAdd x <2>) : (cAdd <1>) (cAdd <2>)
+
+cLess        (cMul % <1>) &  : (cMul <1>) *(& /%)
+cLessOrEq    (cMul % <1>) &  : (cMul <1>) *(& /%)
+cGreater     (cMul % <1>) &  : (cMul <1>) *(& /%)
+cGreaterOrEq (cMul % <1>) &  : (cMul <1>) *(& /%)
+cEqual       (cMul % <1>) &  : (cMul <1>) *(& /%)
+cNEqual      (cMul % <1>) &  : (cMul <1>) *(& /%)
+
+cLess        (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+cLessOrEq    (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+cGreater     (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+cGreaterOrEq (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+cEqual       (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+cNEqual      (cMul % <1>) (cMul & <2>) : (cMul <1>)  (cMul <2> & /%)
+
+#cLess        (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+#cLessOrEq    (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+#cGreater     (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+#cGreaterOrEq (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+#cEqual       (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+#cNEqual      (cMul x <1>) (cMul x <2>) : (cMul <1>) (cMul <2>)
+# ^ Note: This fails when x=0
+
+# Instead of x, generate (x^%)^(1/%) to further
+# delegate the possible responsibility of adding an abs() call.
+cLess        (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cLessOrEq    (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cGreater     (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cGreaterOrEq (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cEqual       (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cNEqual      (cPow [x %]) &  : (cPow [(cPow [x %]) /%]) POW(& /%)
+
+cLess        (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+cLessOrEq    (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+cGreater     (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+cGreaterOrEq (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+cEqual       (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+cNEqual      (cPow [x %@P]) (cPow [y &@P])  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+
+cLess        (cPow [% x]) (cPow [% y]) : x y
+cLessOrEq    (cPow [% x]) (cPow [% y]) : x y
+cGreater     (cPow [% x]) (cPow [% y]) : x y
+cGreaterOrEq (cPow [% x]) (cPow [% y]) : x y
+cEqual       (cPow [% x]) (cPow [% y]) : x y
+cNEqual      (cPow [% x]) (cPow [% y]) : x y
+#  ^Note: This fails on exp(x)=exp(y) because of epsilon
+
+cLess        (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+cLessOrEq    (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+cGreater     (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+cGreaterOrEq (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+cEqual       (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+cNEqual      (cPow [%@P x]) &@P : x *(LOG(&) /LOG(%))
+
 [REMOVE_REDUNDANT]
 
 # In a min-list, two identical components are reduced into one
@@ -160,10 +237,14 @@ cMin x x    : x
 # In a max-list, two identical components are reduced into one
 cMax x x    : x
 
-cNot [(cMul {-1 x})] : x
+cNot [(cMul %@N <1>)] : (cMul -% <1>)
 
 cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
 
+cFloor [x@I] -> x
+cInt   [x@I] -> x
+cTrunc [x@I] -> x
+cCeil  [x@I] -> x
 
 [EXTRACT1]
 
@@ -175,9 +256,9 @@ cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
 
 #### Logarithm optimizations
 # log(x^y) = y*log(x)
+#cLog [(cPow [x y])] -> cMul y (cLog[(cPow [(cPow [x y]) (cPow [y -1])])])
+# ^makes an infinite loop
 cLog [(cPow [x@P y])] -> cMul y (cLog[x])
-
-# log(x^e) = e * log(abs(x))   (e is an even integer)
 cLog [(cPow [x y@E])] -> cMul y (cLog [(cAbs [x])])
 
 # CONSTANT_E^log(x) = x
@@ -268,6 +349,8 @@ cPow [ (cPow[x@Q y])@P z ]     : (cAbs [x]) (cMul [y z])
 # This removes the abs() generated by the above rule when needless
 cPow [(cAbs[x]) y@E]            : x y
 cPow [(cMul (cAbs[x]) <1>) y@E] : (cMul  x <1>) y
+#cPow [(cMul %@N      <1>) y@E] : (cMul -% <1>) y
+# ^ already done by constantfolding
 
 
 [BINOMIAL]
@@ -404,6 +487,7 @@ cCos [(cAcos [x])] -> x
 cAtan [(cMul {x (cPow [y %@N])})] -> cAtan2 [x (cPow [y -%])]
 
 cAtan2 [(cMul  x <1>) (cMul  x <2>)]   : (cMul <1>) (cMul <2>)
+# ^ Note: This fails when x=0
 #cAtan2 [(cMul  % <1>) (cMul  % <2>)]   : (cMul <1>) (cMul <2>)
 
 #        asin(x): atan2(x, (1-x*x)^0.5)
@@ -699,5 +783,6 @@ SINH_COSH_EXP_TRANSFORMATIONS
 ASINH_ACOSH_ATANH_TRANSFORMATIONS
 
 $optimize_round3:
+SIMPLIFY_EQUATION
 REGENERATE_TAN_AND_TANH
 REGENERATE_HIGHLEVEL_OPCODES

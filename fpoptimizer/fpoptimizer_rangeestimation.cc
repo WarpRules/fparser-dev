@@ -8,6 +8,8 @@
 using namespace FUNCTIONPARSERTYPES;
 using namespace FPoptimizer_CodeTree;
 
+//#define DEBUG_SUBSTITUTIONS_extra_verbose
+
 namespace FPoptimizer_CodeTree
 {
     MinMaxTree CodeTree::CalculateResultBoundaries() const
@@ -19,7 +21,7 @@ namespace FPoptimizer_CodeTree
         std::cout << " .. ";
         if(tmp.has_max) std::cout << tmp.max; else std::cout << "+inf";
         std::cout << ": ";
-        FPoptimizer_Grammar::DumpTree(*this);
+        FPoptimizer_CodeTree::DumpTree(*this);
         std::cout << std::endl;
         return tmp;
     }
@@ -90,6 +92,14 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L2I; } // No boundaries
                 if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L2I; }
+                return m;
+            }
+
+            case cLog10: /* Defined for 0.0 < x <= inf */
+            {
+                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L10I; } // No boundaries
+                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L10I; }
                 return m;
             }
 
@@ -317,12 +327,7 @@ namespace FPoptimizer_CodeTree
             }
             case cMul:
             {
-                /* It's complicated. Follow the logic below. */
-                /* Note: This also deals with the following opcodes:
-                 *       cInv, cDiv, cRDiv, cRad, cDeg, cSqr
-                 *       cCot, Sec, cCsc, cLog2, cLog10
-                 */
-
+                /* It's very complicated. Follow the logic below. */
                 struct Value
                 {
                     enum ValueType { Finite, MinusInf, PlusInf };
@@ -562,27 +567,142 @@ namespace FPoptimizer_CodeTree
 
             /* The following opcodes are processed by GenerateFrom()
              * within fpoptimizer_bytecode_to_codetree.cc and thus
+             * they will never occur in the calling context for the
+             * most of the parsing context. They may however occur
+             * at the late phase, so we deal with them.
+             */
+            case cNeg:
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cMul);
+                tmp.AddParam(CodeTree(-1.0));
+                tmp.AddParam(GetParam(0));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cSub: // converted into cMul y -1
+            {
+                CodeTree tmp, tmp2;
+                tmp.SetOpcode(cAdd);
+                tmp.AddParam(GetParam(0));
+                tmp2.SetOpcode(cNeg);
+                tmp2.AddParam(GetParam(1));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cInv: // converted into cPow x -1
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(-1.0));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cDiv: // converted into cPow y -1
+            {
+                CodeTree tmp, tmp2;
+                tmp2.SetOpcode(cInv);
+                tmp2.AddParam(GetParam(1));
+                tmp.SetOpcode(cMul);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParamMove(tmp2);
+                return tmp.CalculateResultBoundaries();
+            }
+            case cRad: // converted into cMul x CONSTANT_RD
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cMul);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(CONSTANT_RD));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cDeg: // converted into cMul x CONSTANT_DR
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cMul);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(CONSTANT_DR));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cSqr: // converted into cMul x x
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cMul);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(GetParam(0));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cExp: // converted into cPow CONSTANT_E x
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(CodeTree(CONSTANT_E));
+                tmp.AddParam(GetParam(0));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cExp2: // converted into cPow 2 x
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(CodeTree(2.0));
+                tmp.AddParam(GetParam(0));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cSqrt: // converted into cPow x 0.5
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(0.5));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cRSqrt: // converted into cPow x -0.5
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(-0.5));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
+            {
+                CodeTree tmp, tmp2;
+                tmp2.SetOpcode(cLog2);
+                tmp2.AddParam(GetParam(0));
+                tmp.SetOpcode(cMul);
+                tmp.AddParamMove(tmp2);
+                tmp.AddParam(GetParam(1));
+                return tmp.CalculateResultBoundaries();
+            }
+            case cCot: // converted into 1 / cTan
+            {
+                CodeTree tmp, tmp2;
+                tmp2.SetOpcode(cTan);
+                tmp2.AddParam(GetParam(0));
+                tmp.SetOpcode(cInv);
+                tmp.AddParamMove(tmp2);
+                return tmp.CalculateResultBoundaries();
+            }
+            case cSec: // converted into 1 / cCos
+            {
+                CodeTree tmp, tmp2;
+                tmp2.SetOpcode(cCos);
+                tmp2.AddParam(GetParam(0));
+                tmp.SetOpcode(cInv);
+                tmp.AddParamMove(tmp2);
+                return tmp.CalculateResultBoundaries();
+            }
+            case cCsc: // converted into 1 / cSin
+            {
+                CodeTree tmp, tmp2;
+                tmp2.SetOpcode(cSin);
+                tmp2.AddParam(GetParam(0));
+                tmp.SetOpcode(cInv);
+                tmp.AddParamMove(tmp2);
+                return tmp.CalculateResultBoundaries();
+            }
+            /* The following opcodes are processed by GenerateFrom()
+             * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context:
              */
-            case cNeg: // converted into cMul x -1
-            case cInv: // converted into cPow x -1
-            case cDiv: // converted into cPow y -1
-            case cRDiv: // similar to above
-            case cSub: // converted into cMul y -1
-            case cRSub: // similar to above
-            case cRad: // converted into cMul x CONSTANT_RD
-            case cDeg: // converted into cMul x CONSTANT_DR
-            case cSqr: // converted into cMul x x
-            case cExp: // converted into cPow CONSTANT_E x
-            case cExp2: // converted into cPow 2 x
-            case cSqrt: // converted into cPow x 0.5
-            case cRSqrt: // converted into cPow x -0.5
-            case cCot: // converted into cMul (cPow (cTan x) -1)
-            case cSec: // converted into cMul (cPow (cCos x) -1)
-            case cCsc: // converted into cMul (cPow (cSin x) -1)
-            case cLog10: // converted into cMul CONSTANT_L10I (cLog x)
-            case cRPow: // converted into cPow y x
-            case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
             case cAbsNot:
             case cAbsNotNot:
             case cAbsOr:
@@ -591,6 +711,9 @@ namespace FPoptimizer_CodeTree
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */
+            case cRDiv: // version of cDiv
+            case cRSub: // version of cSub
+            case cRPow: // version of cPow
             case cDup:
             case cFetch:
             case cPopNMov:
@@ -605,10 +728,6 @@ namespace FPoptimizer_CodeTree
             case cFCall:
             case cEval:
                 break; // Cannot deduce
-
-
-            //default:
-                break;
         }
         return MinMaxTree(); /* Cannot deduce */
     }

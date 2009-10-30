@@ -280,6 +280,15 @@ namespace FPoptimizer_CodeTree
                 std::vector<CodeTree>& Params = data->Params;
                 return Params[1].IsAlwaysInteger(integer)
                     && Params[2].IsAlwaysInteger(integer);
+                return true; /* 0 and 1 are both integers */
+            }
+            case cAdd:
+            case cMul:
+            {
+                for(size_t a=GetParamCount(); a-- > 0; )
+                    if(!GetParam(a).IsAlwaysInteger(integer))
+                        return false;
+                return true;
             }
             default:
                 break;
