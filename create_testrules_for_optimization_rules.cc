@@ -282,7 +282,7 @@ int main()
     FindRules(grammar_optimize_round1);
     FindRules(grammar_optimize_round2);
     FindRules(grammar_optimize_round3);
-    
+
     for(std::set<const Rule*>::const_iterator
         i = Rules.begin();
         i != Rules.end();

@@ -136,7 +136,7 @@ namespace FPoptimizer_Optimize
 
     bool ApplyGrammar(const Grammar& grammar,
                       FPoptimizer_CodeTree::CodeTree& tree,
-                      bool recurse = true);
+                      bool from_logical_context = false);
     void ApplyGrammars(FPoptimizer_CodeTree::CodeTree& tree);
 }
 

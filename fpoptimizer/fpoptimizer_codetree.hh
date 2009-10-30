@@ -133,7 +133,6 @@ namespace FPoptimizer_CodeTree
         bool IsAlwaysInteger(bool integer) const;
 
         void ConstantFolding();
-        void ConstantFolding_FromLogicalParent();
         bool ConstantFolding_AndLogic();
         bool ConstantFolding_OrLogic();
         bool ConstantFolding_MulLogicItems();

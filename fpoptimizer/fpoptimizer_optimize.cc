@@ -149,11 +149,20 @@ namespace
     /* Test and apply a rule to a given CodeTree */
     bool TestRuleAndApplyIfMatch(
         const Rule& rule,
-        CodeTree& tree)
+        CodeTree& tree,
+        bool from_logical_context)
     {
         MatchInfo info;
 
         MatchResultType found(false, MatchPositionSpecBaseP());
+
+        if(rule.logical_context && !from_logical_context)
+        {
+            /* If the rule only applies in logical contexts,
+             * but we do not have a logical context, fail the rule
+             */
+            goto fail;
+        }
 
         /*std::cout << "TESTING: ";
         DumpMatch(rule, *tree, info, false);*/
@@ -164,6 +173,7 @@ namespace
             if(found.found) break;
             if(!&*found.specs)
             {
+            fail:;
                 // Did not match
         #ifdef DEBUG_SUBSTITUTIONS
                 //DumpMatch(rule, tree, info, false);
@@ -186,7 +196,7 @@ namespace FPoptimizer_Optimize
     bool ApplyGrammar(
         const Grammar& grammar,
         CodeTree& tree,
-        bool recurse)
+        bool from_logical_context)
     {
         if(tree.GetOptimizedUsing() == &grammar)
         {
@@ -199,13 +209,33 @@ namespace FPoptimizer_Optimize
         }
 
         /* First optimize all children */
-        if(recurse)
+        if(true)
         {
             bool changed = false;
 
-            for(size_t a=0; a<tree.GetParamCount(); ++a)
-                if(ApplyGrammar( grammar, tree.GetParam(a) ))
-                    changed = true;
+            switch(tree.GetOpcode())
+            {
+                case cNot:
+                case cNotNot:
+                case cAnd:
+                case cOr:
+                    for(size_t a=0; a<tree.GetParamCount(); ++a)
+                        if(ApplyGrammar( grammar, tree.GetParam(a), true))
+                            changed = true;
+                    break;
+                case cIf:
+                case cAbsIf:
+                    if(ApplyGrammar( grammar, tree.GetParam(0), tree.GetOpcode() == cIf))
+                        changed = true;
+                    for(size_t a=1; a<tree.GetParamCount(); ++a)
+                        if(ApplyGrammar( grammar, tree.GetParam(a), from_logical_context))
+                            changed = true;
+                    break;
+                default:
+                    for(size_t a=0; a<tree.GetParamCount(); ++a)
+                        if(ApplyGrammar( grammar, tree.GetParam(a), false))
+                            changed = true;
+            }
 
             if(changed)
             {
@@ -238,14 +268,11 @@ namespace FPoptimizer_Optimize
         bool changed = false;
 
         for(rulenumit r = range.first; r != range.second; ++r)
-        {
-            /* Check if this rule matches */
-            if(TestRuleAndApplyIfMatch(grammar_rules[*r], tree))
+            if(TestRuleAndApplyIfMatch(grammar_rules[*r], tree, from_logical_context))
             {
                 changed = true;
                 break;
             }
-        }
 
         if(changed)
         {

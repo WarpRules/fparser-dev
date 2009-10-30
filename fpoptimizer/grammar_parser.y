@@ -254,16 +254,24 @@ namespace GrammarData
 
         FunctionType  Input;
         MatchedParams Replacement; // length should be 1 if ProduceNewTree is used
+        bool LogicalContext;
     public:
         Rule(RuleType t, const FunctionType& f, const MatchedParams& r)
-            : Type(t), Input(f), Replacement(r) { }
+            : Type(t), Input(f), Replacement(r), LogicalContext(false)
+        { }
+
         Rule(RuleType t, const FunctionType& f, ParamSpec* p)
-            : Type(t), Input(f), Replacement() { Replacement.AddParam(p); }
+            : Type(t), Input(f), Replacement(), LogicalContext(false)
+        { Replacement.AddParam(p); }
 
         void BuildFinalDepMask()
         {
             Input.Params.BuildFinalDepMask();
             //Replacement.BuildFinalDepMask(); -- not needed, though not wrong either.
+        }
+        void SetLogicalContextOnly()
+        {
+            LogicalContext = true;
         }
     };
 
@@ -391,7 +399,10 @@ struct RuleComparer
 
         if(a.n_minimum_params != b.n_minimum_params)
             return a.n_minimum_params < b.n_minimum_params;
+
         // Other rules to break ties
+        if(a.logical_context != b.logical_context)
+            return a.logical_context < b.logical_context;
 
         if(a.ruletype != b.ruletype)
             return a.ruletype < b.ruletype;
@@ -531,6 +542,7 @@ public:
         memset(&ritem, 0, sizeof(ritem));
         ritem.n_minimum_params          = min_params;
         ritem.ruletype                  = r.Type;
+        ritem.logical_context           = r.LogicalContext;
         ritem.match_tree.subfunc_opcode = r.Input.Opcode;
         ritem.match_tree.match_type     = r.Input.Params.Type;
         ritem.match_tree.restholder_index = r.Input.Params.RestHolderIndex;
@@ -1000,6 +1012,7 @@ public:
                         << (rlist[a].ruletype == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].ruletype == ReplaceParams ?*/ "ReplaceParams "
                            )
+                        << ", " << (rlist[a].logical_context ? "true " : "false")
                         << ", " << rlist[a].repl_param_count
                         <<  "," << collection.ParamListToString(rlist[a].repl_param_list, rlist[a].repl_param_count)
                         << ", " << collection.SubFunctionDataToString(rlist[a].match_tree)
@@ -1091,6 +1104,18 @@ static GrammarDumper dumper;
       {
         this->grammar.AddRule(*$2);
         delete $2;
+      }
+    | grammar param_constraints substitution
+      {
+        if($2 != Value_Logical)
+        {
+            char msg[] = "Only @L rule constraint is allowed for now";
+            yyerror(msg); YYERROR;
+        }
+        if($2 & Value_Logical)
+            $3->SetLogicalContextOnly();
+        this->grammar.AddRule(*$3);
+        delete $3;
       }
     | grammar NEWLINE
     | /* empty */

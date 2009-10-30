@@ -479,36 +479,6 @@ namespace
 
 namespace FPoptimizer_CodeTree
 {
-    void CodeTree::ConstantFolding_FromLogicalParent()
-    {
-    redo:;
-        switch(GetOpcode())
-        {
-            case cNotNot:
-            case cAbsNotNot:
-            case cAbs:
-            //ReplaceTreeWithParam0:
-                Become(GetParam(0));
-                goto redo;
-            case cIf:
-            case cAbsIf:
-                CopyOnWrite();
-                while(GetParam(1).GetOpcode() == cNotNot
-                   || GetParam(1).GetOpcode() == cAbsNotNot)
-                    SetParamMove(1, GetParam(1).GetUniqueRef().GetParam(0));
-                GetParam(1).ConstantFolding_FromLogicalParent();
-
-                while(GetParam(2).GetOpcode() == cNotNot
-                   || GetParam(2).GetOpcode() == cAbsNotNot)
-                    SetParamMove(2, GetParam(2).GetUniqueRef().GetParam(0));
-                GetParam(2).ConstantFolding_FromLogicalParent();
-
-                Rehash();
-                break;
-            default: break;
-        }
-    }
-
     template<typename CondType> /* ComparisonSet::ConditionType */
     bool CodeTree::ConstantFolding_LogicCommon(CondType cond_type, bool is_logical)
     {
@@ -1215,8 +1185,6 @@ namespace FPoptimizer_CodeTree
 
             case cAnd:
             {
-                for(size_t a=0; a<GetParamCount(); ++a)
-                    GetParam(a).ConstantFolding_FromLogicalParent();
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
                 {
@@ -1242,8 +1210,6 @@ namespace FPoptimizer_CodeTree
             }
             case cOr:
             {
-                for(size_t a=0; a<GetParamCount(); ++a)
-                    GetParam(a).ConstantFolding_FromLogicalParent();
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
                 {
@@ -1269,7 +1235,6 @@ namespace FPoptimizer_CodeTree
             }
             case cNot:
             {
-                GetParam(0).ConstantFolding_FromLogicalParent();
                 switch(GetParam(0).GetOpcode())
                 {
                     case cEqual:       SetOpcode(cNEqual); goto cNot_moveparam;
@@ -1278,7 +1243,7 @@ namespace FPoptimizer_CodeTree
                     case cGreater:     SetOpcode(cLessOrEq); goto cNot_moveparam;
                     case cLessOrEq:    SetOpcode(cGreater); goto cNot_moveparam;
                     case cGreaterOrEq: SetOpcode(cLess); goto cNot_moveparam;
-                    //cNotNot already handled by ConstantFolding_FromLogicalParent()
+                    //cNotNot already handled by grammar: @L cNotNot
                     case cNot:         SetOpcode(cNotNot); goto cNot_moveparam;
                          { cNot_moveparam:;
                                SetParamsMove(GetParam(0).GetUniqueRef().GetParams()); goto redo; }
@@ -1321,7 +1286,6 @@ namespace FPoptimizer_CodeTree
             }
             case cIf:
             {
-                GetParam(0).ConstantFolding_FromLogicalParent();
                 // If the If() condition begins with a cNot,
                 // remove the cNot and swap the branches.
                 while(GetParam(0).GetOpcode() == cNot)

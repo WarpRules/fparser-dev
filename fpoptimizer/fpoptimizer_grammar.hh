@@ -174,7 +174,7 @@ namespace FPoptimizer_Grammar
         /* For optimization: Number of minimum parameters (leaves)
          * that the source tree must contain for this rule to match.
          */
-        unsigned  n_minimum_params : 2;
+        unsigned  n_minimum_params : 8;
 
         /* If the rule matched, this field describes how to perform
          * the replacement.
@@ -187,7 +187,8 @@ namespace FPoptimizer_Grammar
          *       described at repl_param_begin[0..repl_param_count].
          *       Other leaves remain intact.
          */
-        RuleType  ruletype         : 1;
+        RuleType  ruletype         : 2;
+        bool      logical_context  : 1;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
         unsigned  repl_param_count : 2; /* Assumed to be 1 when type == ProduceNewTree */
@@ -195,7 +196,7 @@ namespace FPoptimizer_Grammar
 
         /* The function that we must match. Always a SubFunction. */
         ParamSpec_SubFunctionData match_tree;
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+1+2+27 + 48 = 80 bits = 10 bytes
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 8+2+1+2+27 + 48 = 88 bits = 11 bytes
 
     /* Grammar is a set of rules for tree substitutions. */
     struct Grammar
