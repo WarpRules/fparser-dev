@@ -130,7 +130,7 @@ namespace FPoptimizer_CodeTree
         bool IsAlwaysSigned(bool positive) const;
         bool IsAlwaysParity(bool odd) const
             { return GetEvennessInfo() == (odd?IsNever:IsAlways); }
-        bool IsAlwaysInteger() const;
+        bool IsAlwaysInteger(bool integer) const;
 
         void ConstantFolding();
         void ConstantFolding_FromLogicalParent();

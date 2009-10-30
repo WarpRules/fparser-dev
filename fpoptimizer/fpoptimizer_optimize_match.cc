@@ -36,10 +36,10 @@ namespace
                     return false;
                 break;
             case Value_IsInteger:
-                if(!tree.IsAlwaysInteger()) return false;
+                if(!tree.IsAlwaysInteger(true)) return false;
                 break;
             case Value_NonInteger:
-                if(tree.IsAlwaysInteger()) return false;
+                if(!tree.IsAlwaysInteger(false)) return false;
                 break;
             case Value_Logical:
                 if(!tree.IsLogicalValue()) return false;

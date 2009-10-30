@@ -513,7 +513,7 @@ namespace FPoptimizer_CodeTree
                                  * though it may be NaN instead.
                                  */
                                 if(GetParam(1).IsImmed()
-                                && !GetParam(1).IsAlwaysInteger()
+                                && GetParam(1).IsAlwaysInteger(false)
                                 && GetParam(1).GetImmed() >= 0.0)
                                 {
                                     result_positivity = IsAlways;

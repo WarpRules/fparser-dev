@@ -254,15 +254,15 @@ namespace FPoptimizer_CodeTree
         return false; // Not a logical value.
     }
 
-    bool CodeTree::IsAlwaysInteger() const
+    bool CodeTree::IsAlwaysInteger(bool integer) const
     {
         switch(data->Opcode)
         {
             case cImmed:
-                return IsLongIntegerImmed();
+                return IsLongIntegerImmed() ? integer==true : integer==false;
             case cFloor:
             case cInt:
-                return true;
+                return integer==true;
             case cAnd:
             case cOr:
             case cNot:
@@ -274,12 +274,12 @@ namespace FPoptimizer_CodeTree
             case cGreater:
             case cGreaterOrEq:
                 /* These operations always produce truth values (0 or 1) */
-                return true; /* 0 and 1 are both integers */
+                return integer==true; /* 0 and 1 are both integers */
             case cIf:
             {
                 std::vector<CodeTree>& Params = data->Params;
-                return Params[1].IsAlwaysInteger()
-                    && Params[2].IsAlwaysInteger();
+                return Params[1].IsAlwaysInteger(integer)
+                    && Params[2].IsAlwaysInteger(integer);
             }
             default:
                 break;
