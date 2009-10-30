@@ -1921,7 +1921,7 @@ namespace FPoptimizer_CodeTree
              */
             case cDiv: // converted into cPow y -1
                 if(GetParam(0).IsImmed()
-                && GetParam(0).IsImmed()
+                && GetParam(1).IsImmed()
                 && GetParam(1).GetImmed() != 0.0)
                     { const_value = GetParam(0).GetImmed() / GetParam(1).GetImmed();
                       goto ReplaceTreeWithConstValue; }
@@ -1935,7 +1935,7 @@ namespace FPoptimizer_CodeTree
                 break;
             case cSub: // converted into cMul y -1
                 if(GetParam(0).IsImmed()
-                && GetParam(0).IsImmed())
+                && GetParam(1).IsImmed())
                     { const_value = GetParam(0).GetImmed() - GetParam(1).GetImmed();
                       goto ReplaceTreeWithConstValue; }
                 break;
