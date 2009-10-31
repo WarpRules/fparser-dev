@@ -119,16 +119,16 @@ cIf [y (cNotNot[x]) (cOr  x <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y x@L         (cOr x@L <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y (cOr  x <1>) (cOr  x <2>)] -> cOr  [x (cIf [y (cOr  <1>) (cOr  <2>)])]
 
-cIf [(cGreater[x y])     x y] -> cMax x y
-cIf [(cGreaterOrEq[x y]) x y] -> cMax x y
-cIf [(cLess[x y])        x y] -> cMin x y
-cIf [(cLessOrEq[x y])    x y] -> cMin x y
-cIf [(cGreater[x y])     y x] -> cMin x y
-cIf [(cGreaterOrEq[x y]) y x] -> cMin x y
-cIf [(cLess[x y])        y x] -> cMax x y
-cIf [(cLessOrEq[x y])    y x] -> cMax x y
-cIf [(cGreater[0 x]) (cCeil[x]) (cFloor[x])] -> cTrunc x
-cIf [(cLess[0 x])    (cFloor[x]) (cCeil[x])] -> cTrunc x
+# Change cLessOrEq into cLess for less rules to check
+# This way, the only comparison opcodes appearing in cIf
+# are cEqual,cNEqual,cLess.
+# cNEqual could be changed to cEqual, but we see no need.
+cIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
+#cIf [(cNEqual[x y]) z a]   : (cEqual[y x]) a z
+
+cIf [(cLess[x y]) x y] -> cMin x y
+cIf [(cLess[x y]) y x] -> cMax x y
+cIf [(cLess[0 x]) (cFloor[x]) (cCeil[x])] -> cTrunc x
 
 
 cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
@@ -147,7 +147,7 @@ cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # Thus, !(x*2) = abs(x) < 0.5/2
 # Note: Due to range-based optimizations, % can never be 0 here. These are safe.
 cLess        [(cAbs[x]) %] -> cNot[(cMul x 0.5 /%)]
-cGreaterOrEq [(cAbs[x]) %] -> cNotNot[(cMul x 0.5 /%)]
+cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
 
 # abs(x) > 0  -->  abs(x) != 0  -->  x != 0
 cEqual       [(cAbs[x]) 0] : x 0
@@ -174,43 +174,31 @@ cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
 
 cLess        [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
 cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cGreater     [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
 cEqual       [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
 cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
 
 cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
 cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cGreater     [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
 cEqual       [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
 cNEqual      [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
 
 cLess        [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cLessOrEq    [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cGreater     [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cGreaterOrEq [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 
 cLess        [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 cLessOrEq    [(cMul % <1>) &]  : (cMul <1>) *(& /%)
-cGreater     [(cMul % <1>) &]  : (cMul <1>) *(& /%)
-cGreaterOrEq [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 cEqual       [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 cNEqual      [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 
 cLess        [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 cLessOrEq    [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cGreater     [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cGreaterOrEq [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 
 #cLess        [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cLessOrEq    [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
-#cGreater     [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
-#cGreaterOrEq [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cEqual       [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cNEqual      [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 # ^ Note: This fails when x=0
@@ -219,30 +207,22 @@ cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 # delegate the possible responsibility of adding an abs() call.
 cLess        [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
 cLessOrEq    [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreater     [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreaterOrEq [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
 cEqual       [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
 cNEqual      [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
 
 cLess        [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
 cLessOrEq    [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cGreater     [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cGreaterOrEq [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
 cEqual       [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
 cNEqual      [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
 
 cLess        [(cPow [% x]) (cPow [% y])] : x y
 cLessOrEq    [(cPow [% x]) (cPow [% y])] : x y
-cGreater     [(cPow [% x]) (cPow [% y])] : x y
-cGreaterOrEq [(cPow [% x]) (cPow [% y])] : x y
 cEqual       [(cPow [% x]) (cPow [% y])] : x y
 cNEqual      [(cPow [% x]) (cPow [% y])] : x y
 #  ^Note: This fails on exp(x)=exp(y) because of epsilon
 
 cLess        [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
 cLessOrEq    [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cGreater     [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cGreaterOrEq [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
 cEqual       [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
 cNEqual      [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
 
