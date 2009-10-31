@@ -137,6 +137,23 @@ cIf [y (cNotNot[x]) (cOr  x <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y x@L         (cOr x@L <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
 cIf [y (cOr  x <1>) (cOr  x <2>)] -> cOr  [x (cIf [y (cOr  <1>) (cOr  <2>)])]
 
+cIf [(cIf [x y 0]) z a] -> cIf [x (cIf [y z a]) a]
+cIf [(cIf [x 1 y]) z a] -> cIf [x z (cIf [y z a])]
+
+cIf [x (cIf [y z a]) (cIf [y z b])] : y z (cIf [x a b])
+cIf [x (cIf [y a z]) (cIf [y b z])] : y (cIf [x a b]) z
+cIf [x (cIf [y a b]) (cIf [z a b])] : (cIf [x y z]) a b
+cIf [x (cIf [y a b]) (cIf [z b a])] : (cIf [x y (cNot[z])]) a b
+
+#cIf [x (cIf [y a z]) (cIf [y z b])] : (cXor x y) z (cIf[x a b])
+# cXor could be (cOr (cAnd x (cNot y))  (cAnd y (cNot x)))
+#         or    (cSub (cNotNot x) (cNotNot y))
+#  xy
+#  00 b
+#  01 z
+#  10 z
+#  11 a
+
 # Change cLessOrEq into cLess for less rules to check
 # This way, the only comparison opcodes appearing in cIf
 # are cEqual,cNEqual,cLess.
@@ -170,17 +187,6 @@ cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
 # abs(x) > 0  -->  abs(x) != 0  -->  x != 0
 cEqual       [(cAbs[x]) 0] : x 0
 cNEqual      [(cAbs[x]) 0] : x 0
-
-#cIf [x y@L 0] -> cAnd x y
-#cIf [x 0 y@L] -> cAnd (cNot[x]) y
-#cIf [x y 0] -> cMul (cNotNot[x]) y
-#cIf [x 0 y] -> cMul (cNot[x])    y
-# These cannot be done because y may have side
-# effects or just be computation-heavy.
-
-cOr  x@L y@L          : (cNotNot (cAdd x y))
-cOr  x@L (cAdd <1>)@P : (cNotNot (cAdd x <1>))
-cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
 
 # In logical contexts:
 @L cMul %@N            : -%
@@ -747,6 +753,8 @@ cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
 cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
 cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 
+[ABS_LOGICAL]
+
 cNot    [x@P] -> cAbsNot [x]
 cNotNot [x@P] -> cAbsNotNot [x]
 cAnd x@P y@P <1> -> cAbsAnd x y (cAnd <1>)
@@ -759,9 +767,60 @@ cAbsOr  0 :
 @L cIf [x (cAbsNotNot[y]) z] : x y z
 @L cIf [x y (cAbsNotNot[z])] : x y z
 
+cAbsIf [(cAbsIf [x y 0]) z a] -> cAbsIf [x (cAbsIf [y z a]) a]
+cAbsIf [(cAbsIf [x 0 y]) z a] -> cAbsIf [x a (cAbsIf [y z a])]
+cAbsIf [(cAbsIf [x 1 y]) z a] -> cAbsIf [x z (cAbsIf [y z a])]
+cAbsIf [(cAbsIf [x y 1]) z a] -> cAbsIf [x (cAbsIf [y z a]) z]
+cAbsIf [(cIf [x y 0]) z a] -> cIf [x (cAbsIf [y z a]) a]
+cAbsIf [(cIf [x 0 y]) z a] -> cIf [x a (cAbsIf [y z a])]
+cAbsIf [(cIf [x 1 y]) z a] -> cIf [x z (cAbsIf [y z a])]
+cAbsIf [(cIf [x y 1]) z a] -> cIf [x (cAbsIf [y z a]) z]
+cIf [(cAbsIf [x y 0]) z a] -> cAbsIf [x (cIf [y z a]) a]
+cIf [(cAbsIf [x 0 y]) z a] -> cAbsIf [x a (cIf [y z a])]
+cIf [(cAbsIf [x 1 y]) z a] -> cAbsIf [x z (cIf [y z a])]
+cIf [(cAbsIf [x y 1]) z a] -> cAbsIf [x (cIf [y z a]) z]
+
+cAbsIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
+cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
+
+[NON_SHORTCUT_LOGICAL_EVALUATION]
+
+cOr  x@L y@L          : (cNotNot (cAdd x y))
+cOr  x@L (cAdd <1>)@P : (cNotNot (cAdd x <1>))
+cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
+
+[SHORTCUT_LOGICAL_EVALUATION]
+
+# @L cAdd x@L@M <1> -> cOr x (cAdd <1>)
+# cMul x@L   <1>    -> cAnd x (cMul <1>)
+
+#cAdd x@L@M <1>    -> cAbsIf [x (cAdd <1> 1) (cAdd <1>)]
+cMul x@L   <1>    -> cAbsIf [x (cMul <1>) 0]
+
+cAnd x y        -> cIf [x (cNotNot[y]) 0]
+cOr  x y        -> cIf [x 1 (cNotNot[y])]
+cAbsAnd x y     -> cAbsIf [x   (cAbsNotNot[y]) 0]
+cAbsOr  x y     -> cAbsIf [x 1 (cAbsNotNot[y])  ]
+
+[IGNORE_IF_SIDEEFFECTS]
+
+cIf [x y@L 0] -> cAnd x y
+cIf [x 0 y@L] -> cAnd (cNot[x]) y
+cIf [x y 0] -> cMul (cNotNot[x]) y
+cIf [x 0 y] -> cMul (cNot[x])    y
+
+cIf [x 1 y@L] -> cOr x y
+cIf [x y@L 1] -> cOr (cNot[x]) y
+cIf [x y 0] -> cMul (cNotNot[x]) y
+cIf [x 0 y] -> cMul (cNot[x])    y
+
+# These cannot be done because y may have side
+# effects or just be computation-heavy.
+
 ##### Now construct the rounds of optimization:
 
 $optimize_round1:
+NON_SHORTCUT_LOGICAL_EVALUATION
 LOGICAL
 REMOVE_REDUNDANT
 LOGARITHM
@@ -784,3 +843,13 @@ REGENERATE_TANH
 
 $optimize_round4:
 REGENERATE_HIGHLEVEL_OPCODES
+ABS_LOGICAL
+
+$optimize_ignore_if_sideeffects
+IGNORE_IF_SIDEEFFECTS
+LOGICAL
+
+$optimize_shortcut_logical_evaluation
+SHORTCUT_LOGICAL_EVALUATION
+ABS_LOGICAL
+LOGICAL

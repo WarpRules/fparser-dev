@@ -50,6 +50,22 @@
 
 
 /*
+ Whether to use shortcut evaluation for the & and | operators:
+*/
+#ifndef FP_DISABLE_SHORTCUT_LOGICAL_EVALUATION
+#define FP_ENABLE_SHORTCUT_LOGICAL_EVALUATION
+#endif
+
+/*
+ Whether to enable optimizations that may ignore side effects
+ of if() calls, such as changing if(x,!y,0) into x&!y.
+ This is basically the polar opposite of "shortcut logical evaluation".
+ Disabled by default, because it makes eval() rather unsafe.
+*/
+#ifdef FP_ENABLE_IGNORE_IF_SIDEEFFECTS
+#endif
+
+/*
  Comment out the following lines out if you are not going to use the
  optimizer and want a slightly smaller library. The Optimize() method
  can still be called, but it will not do anything.

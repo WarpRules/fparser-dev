@@ -348,6 +348,27 @@ namespace FPoptimizer_Optimize
             { //std::cout << "Rerunning 4\n";
                 tree.FixIncompleteHashes();
             }
+
+        #ifdef FP_ENABLE_SHORTCUT_LOGICAL_EVALUATION
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_shortcut_logical_evaluation\n";
+        #endif
+        while(ApplyGrammar(C grammar_optimize_shortcut_logical_evaluation, tree))
+            { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
+        #endif
+
+        #ifdef FP_ENABLE_IGNORE_IF_SIDEEFFECTS
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_ignore_if_sideeffects\n";
+        #endif
+        while(ApplyGrammar(C grammar_optimize_ignore_if_sideeffects, tree))
+            { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
+        #endif
+
         #undef C
     }
 }
