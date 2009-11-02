@@ -299,6 +299,50 @@ namespace FPoptimizer_CodeTree
                             DelParam(a);
                         }
                     }
+                    else if(GetParam(a).GetOpcode() == cDiv)
+                    {
+                        bool is_signed = false;
+                        CodeTree& divgroup = GetParam(a);
+                        if(divgroup.GetParam(0).IsImmed())
+                        {
+                            if(FloatEqual(divgroup.GetParam(0).GetImmed(), -1.0))
+                            {
+                                divgroup.CopyOnWrite();
+                                divgroup.DelParam(0);
+                                divgroup.SetOpcode(cInv);
+                                is_signed = !is_signed;
+                            }
+                        }
+                        if(is_signed)
+                        {
+                            divgroup.Rehash();
+                            sub_params.push_back(divgroup);
+                            CopyOnWrite();
+                            DelParam(a);
+                        }
+                    }
+                    else if(GetParam(a).GetOpcode() == cRDiv)
+                    {
+                        bool is_signed = false;
+                        CodeTree& divgroup = GetParam(a);
+                        if(divgroup.GetParam(1).IsImmed())
+                        {
+                            if(FloatEqual(divgroup.GetParam(1).GetImmed(), -1.0))
+                            {
+                                divgroup.CopyOnWrite();
+                                divgroup.DelParam(1);
+                                divgroup.SetOpcode(cInv);
+                                is_signed = !is_signed;
+                            }
+                        }
+                        if(is_signed)
+                        {
+                            divgroup.Rehash();
+                            sub_params.push_back(divgroup);
+                            CopyOnWrite();
+                            DelParam(a);
+                        }
+                    }
                 if(!sub_params.empty())
                 {
                     CodeTree subgroup;
