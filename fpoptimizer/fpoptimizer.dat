@@ -346,6 +346,17 @@ cPow [(cMul (cAbs[x]) <1>) y@E] : (cMul  x <1>) y
 #cPow [(cMul %@N      <1>) y@E] : (cMul -% <1>) y
 # ^ already done by constantfolding
 
+# x^y *  (n + x^z) = n*x^y + x^(y+z)
+cMul (cPow [x y]) (cAdd {%@1 (cPow [x z])}) : (cAdd (cMul (cPow[x y]) %) (cPow[x (cAdd y z)]))
+# x^y *  (n + a^z) = n*x^y + x^(y+z*log(a)/log(x))
+cMul (cPow [& y]) (cAdd { 1 (cPow [x@P z])}) : (cAdd       (cPow[& y])     (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
+cMul (cPow [& y]) (cAdd {-1 (cPow [x@P z])}) : (cAdd (cMul (cPow[& y]) -1) (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
+# exp(-x)*(exp(2*n)+1)*4
+#   becomes
+# exp(1) ^ (-x) * (exp(2) ^ n * 4 + 4)
+#   so we detect that here as well.
+cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})  %}) : % (cAdd       (cPow[& y])     (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
+cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])}) -%}) : % (cAdd (cMul (cPow[& y]) -1) (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
 
 [BINOMIAL]
 
@@ -422,18 +433,12 @@ cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
 
 # sin(-x) = -sin(x)
 cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])
-# sinh(-x) = -sinh(x)
-cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
-
-# However,  -sinh(5*x) better expressed as sinh(-5*x)
+# However,  -sin(5*x) better expressed as sin(-5*x)
 cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
-cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
-
-
 # cos(-x) = cos(x)
 cCos [(cMul -1 <1>)] : (cMul <1>)
-# cosh(-x) = cosh(x)
-cCosh [(cMul -1 <1>)] : (cMul <1>)
+
+
 
 
 # cos(pi/2 - x) = sin(x)
@@ -567,13 +572,53 @@ cTan [(cAtan2 [x y])] -> cMul x (cPow [y -1])
 
 [SINH_COSH_EXP_TRANSFORMATIONS]
 
-# sinh(x)*2 = (exp(x)-   exp(-x))
-# sinh(x)*2 = (exp(x)- 1/exp(x))
-# cosh(x)*2 = (exp(x)+   exp(-x))
-# cosh(x)*2 = (exp(x)+ 1/exp(x))
+# sinh(-x) = -sinh(x)
+cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
+# However,  -sinh(5*x) better expressed as sinh(-5*x)
+cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
+# cosh(-x) = cosh(x)
+cCosh [(cMul -1 <1>)] : (cMul <1>)
+
+#   asinh: log(x + sqrt(x*x + 1))
+#   acosh: log(x + sqrt(x*x - 1))
+#   atanh: log( (1+x) / (1-x)) / 2
+#   asin: atan2(x, sqrt(1-x*x))
+#   acos: atan2(sqrt(1-x*x), x)
+#   sinh: (exp(x)-exp(-x)) / 2
+#       = exp(-x) * (exp(2*x)-1) / 2
+#   cosh: (exp(x)+exp(-x)) / 2
+#       = exp(-x) * (exp(2*x)+1) / 2
+#   tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
+#   tan: sin/cos
+
+# sinh(x)*2 = (exp(x)-exp(-x))    -- note: exp(-x) = 1/exp(x)
+# cosh(x)*2 = (exp(x)+exp(-x))	
 cAdd (cPow [&  x]) (cMul { -1 (cPow [/& x]) }) : (cMul (cSinh [(cMul x LOG(&))]) 2)
 #cAdd (cMul { -1 (cPow [& x]) }) (cPow [/&  x]) : (cMul (cSinh [(cMul x LOG(/&))]) 2)
 cAdd (cPow [&  x])            (cPow [/& x])    : (cMul (cCosh [(cMul x LOG(&))]) 2)
+
+# exp(x)  = cosh(x)+sinh(x)
+cAdd        (cCosh [x])             (cSinh [x])      :        (cPow [CONSTANT_E  x])
+# -cosh(x) = sinh(x)-exp(x)
+#  cosh(x) = exp(x)-sinh(x)
+# -sinh(x) = cosh(x)-exp(x)
+#  sinh(x) = exp(x)-cosh(x)
+cAdd        (cSinh [x])      (cMul {(cPow [CONSTANT_E  x]) -1}) : (cMul -1 (cCosh [x]))
+cAdd (cMul {(cSinh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cCosh [x])
+cAdd        (cCosh [x])      (cMul {(cPow [CONSTANT_E  x]) -1}) : (cMul -1 (cSinh [x]))
+cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cSinh [x])
+# exp(-x) = cosh(x)-sinh(x)
+# -exp(-x) = sinh(x)-cosh(x)
+cAdd        (cCosh [x])      (cMul {(cSinh [x]) -1}) :        (cPow [CONSTANT_EI x])
+cAdd (cMul {(cCosh [x]) -1})        (cSinh [x])      : (cMul {(cPow [CONSTANT_EI x]) -1})
+#  sinh(x) = cosh(x)-exp(-x)
+# -sinh(x) = exp(-x)-cosh(x)
+#  cosh(x) = exp(-x)+sinh(x)
+cAdd        (cCosh [x])      (cMul {(cPow [CONSTANT_EI x]) -1}) :          (cSinh [x])
+cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_EI x])      : (cMul -1 (cSinh [x]))
+cAdd        (cSinh [x])             (cPow [CONSTANT_EI x])      :          (cCosh [x])
+
+
 
 # sinh(x)   = ((((E^2) ^ x) + -1) * ((E^-1) ^ x) * 0.5)
 # sinh(3*x) = ((((E^6) ^ x) + -1) * ((E^-3) ^ x) * 0.5)
@@ -593,48 +638,6 @@ cAdd (cPow [&  x])            (cPow [/& x])    : (cMul (cCosh [(cMul x LOG(&))])
 cAdd (cMul {-1 (cPow [& x])})            (cPow [/& x])   : (cMul (cSinh [(cMul x LOG(&))]) -2)
 cAdd (cMul {% (cPow [& x])})  (cMul { -% (cPow [/& x])}) : (cMul (cSinh [(cMul x LOG(&))]) 2 %)
 cAdd (cMul {% (cPow [& x])})  (cMul {  % (cPow [/& x])}) : (cMul (cCosh [(cMul x LOG(&))]) 2 %)
-
-# Note: I have no idea why (exp(x)-exp(-x)) / (exp(x)+exp(-x))
-#                 produces (exp(2*x)-1) / (exp(2*x)+1)
-#       It just says so in Wikipedia.
-#       Maybe this could be utilized for more generic optimizations?
-#
-# Maxima gives that exp(x) + n*exp(-x)
-#                 = exp(-x) * (exp(2*x) + n)
-# but I still have no idea why is that.
-#
-# In more generic form:
-#   exp( d*y) * ((a * exp(b*x + -1*d*y)) + c)   = a*exp(    b*x) + c*exp( d*y)
-#
-#   exp(   y) * ((a * exp(  x + -1*  y)) + c)   = a*exp(      x) + c*exp(   y)
-#   exp(   y) * ((    exp(  x + -1*  y)) + c)   =   exp(      x) + c*exp(   y)
-#
-#   exp( d*x) * ((a * exp(x*(b + -1*d))) + c)   = a*exp(    b*x) + c*exp( d*x)
-#   exp(   x) * ((a * exp(x*b         )) + c)   = a*exp((b+1)*x) + c*exp(   x)
-#   exp(   x) * ((a * exp(x           )) + c)   = a*exp(    2*x) + c*exp(   x)
-# This is quite hairy.
-# A rare special case too.
-#
-#cMul (cPow [CONSTANT_E y]) (cAdd <2> (cMul <1> (cPow [CONSTANT_E (cAdd <3> (cMul {-1 y}))]))) : (cAdd (cMul (cAdd <2>) (cPow [CONSTANT_E y])) (cMul <1> (cPow [CONSTANT_E (cAdd <3>)])))
-#cMul (cPow [CONSTANT_E y]) (cAdd <2>           (cPow [CONSTANT_E (cAdd <3> (cMul {-1 y}))]))  : (cAdd (cMul (cAdd <2>) (cPow [CONSTANT_E y]))           (cPow [CONSTANT_E (cAdd <3>)]))
-#cMul (cPow [CONSTANT_E x]) (cAdd <2> (cMul <1> (cPow [CONSTANT_E x]))) : (cAdd (cMul (cAdd <2>) (cPow [CONSTANT_E x])) (cMul <1> (cPow [CONSTANT_E (cMul [2 x])])))
-#cMul (cPow [CONSTANT_E x]) (cAdd <2> (cMul <1> (cPow [CONSTANT_E (cMul x <3>)]))) : (cAdd (cMul (cAdd <2>) (cPow [CONSTANT_E x])) (cMul <1> (cPow [CONSTANT_E  (cMul [(cAdd 1 (cMul <3>)) x])])))
-
-
-# exp(x)  = cosh(x)+sinh(x)
-# exp(-x) = cosh(x)-sinh(x)
-# -exp(-x) = sinh(x)-cosh(x)
-cAdd        (cCosh [x])             (cSinh [x])      :        (cPow [CONSTANT_E  x])
-cAdd        (cCosh [x])      (cMul {(cSinh [x]) -1}) :        (cPow [CONSTANT_EI x])
-cAdd (cMul {(cCosh [x]) -1})        (cSinh [x])      : (cMul {(cPow [CONSTANT_EI x]) -1})
-# -cosh(x) = sinh(x)-exp(x)
-#  cosh(x) = exp(x)-sinh(x)
-# -sinh(x) = cosh(x)-exp(x)
-#  sinh(x) = exp(x)-cosh(x)
-cAdd        (cSinh [x])      (cMul {(cPow [CONSTANT_E  x]) -1}) : (cMul -1 (cCosh [x]))
-cAdd (cMul {(cSinh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cCosh [x])
-cAdd        (cCosh [x])      (cMul {(cPow [CONSTANT_E  x]) -1}) : (cMul -1 (cSinh [x]))
-cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cSinh [x])
 
 #   tanh(x) / cosh(x)
 # = sinh(x) / cosh(x)^2
@@ -692,9 +695,6 @@ cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAt
 
 # x * CONSTANT_DR = cDeg(x)
 cMul  CONSTANT_DR <1> -> cDeg [(cMul <1>)]
-# Note: This may produce one-operand cMul lists.
-# Those are treated properly in the bytecode generation,
-# and do not need to be handled by [BINOMIAL].
 
 # x * CONSTANT_RD = cRad(x)
 cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
@@ -702,44 +702,16 @@ cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
 cFloor [(cAdd 0.5 <1>)] -> cInt [(cAdd <1>)]
 
 # log(x) / CONSTANT_L10  = log10(x)
-#cMul        (cLog [x])      CONSTANT_L10I  :        (cLog10 [x])
-#cMul (cPow [(cLog [x]) -1]) CONSTANT_L10   : (cPow [(cLog10 [x]) -1])
+cMul        (cLog [x])      CONSTANT_L10I  :        (cLog10 [x])
+cMul (cPow [(cLog [x]) -1]) CONSTANT_L10   : (cPow [(cLog10 [x]) -1])
 
 # log(x) / CONSTANT_L2 = log2(x)
-#cMul        (cLog [x])      CONSTANT_L2I  :        (cLog2 [x])
-#cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
-
-# log2(x) * CONSTANT_L2 = log(x)
-#cMul        (cLog2 [x])      CONSTANT_L2   :        (cLog [x])
-#cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L2I  : (cPow [(cLog [x]) -1])
-
-# log2(x) * CONSTANT_L10B = log10(x)
-#cMul        (cLog2 [x])      CONSTANT_L10B   :        (cLog10 [x])
-#cMul (cPow [(cLog2 [x]) -1]) CONSTANT_L10BI  : (cPow [(cLog10 [x]) -1])
-
-# log2(x) and log10(x) have turned out to be horrible at their performance
-#   - except, log10 is faster on IA32, slower on X86_64
-#
-#cMul (cLog2  [x]) % : (cLog[x]) % CONSTANT_L2I
-#cMul (cLog10 [x]) % : (cLog[x]) % CONSTANT_L10I
-#cLog2  [x]         -> (cMul (cLog[x]) CONSTANT_L2I)
-#cLog10 [x]         -> (cMul (cLog[x]) CONSTANT_L10I)
-#cMul CONSTANT_L2  (cAdd { (cLog2[x]) % } )    : (cAdd (cLog [x]) LOG(POW(2 %)))
-#cMul CONSTANT_L10 (cAdd { (cLog10[x]) % } )   : (cAdd (cLog [x]) LOG(POW(10 %)))
-
-#cAdd (cMul {& (cLog2[x])}) *(LOG(&) CONSTANT_L2I) : cAdd (cLog2[x])  --unfinished
-
-# inverted pow is better expressed with negated exponent
-#  this makes x^-acos(x) , which is turned into 1/x^acos(x)
-#  turn back into x^-acos(x)
-# but do only if y is not integer constant -- TODO: Figure out why?
+cMul        (cLog [x])      CONSTANT_L2I  :        (cLog2 [x])
+cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
 
 cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
 cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
 cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
-#cPow [ (cCsc[x]) %@F@N ] : (cSin[x]) -%
-#cPow [ (cSec[x]) %@F@N ] : (cCos[x]) -%
-#cPow [ (cCot[x]) %@F@N ] : (cTan[x]) -%
 
 cNot    [x@P] -> cAbsNot [x]
 cNotNot [x@P] -> cAbsNotNot [x]

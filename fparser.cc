@@ -2029,7 +2029,9 @@ double FunctionParser::Eval(const double* Vars)
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
 #                    endif
-                       Stack[SP] = log10(Stack[SP]); break;
+                       //Stack[SP] = log10(Stack[SP]);
+                       Stack[SP] = log(Stack[SP]) * 0.43429448190325176116;
+                       break;
 
           case  cLog2:
 #                    ifndef FP_NO_EVALUATION_CHECKS
