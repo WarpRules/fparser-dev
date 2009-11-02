@@ -141,7 +141,7 @@ namespace FPoptimizer_CodeTree
                                 CodeTree& log2 = powgroup.GetParam(0);
                                 log2.CopyOnWrite();
                                 log2.SetOpcode(cLog2by);
-                                log2.AddParam( CodeTree( pow(immeds, 1.0 / log2_exponent) ) );
+                                log2.AddParam( CodeTree( fp_pow(immeds, 1.0 / log2_exponent) ) );
                                 log2.Rehash();
                                 break;
                             }

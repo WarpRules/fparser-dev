@@ -64,7 +64,14 @@ namespace FPoptimizer_CodeTree
         */
         switch(tree.GetOpcode())
         {
-            case cImmed: o << tree.GetImmed(); return;
+            case cImmed:
+                o << tree.GetImmed();
+                /*
+                o << "(" << std::hex
+                  << *(const uint_least64_t*)&tree.GetImmed()
+                  << std::dec << ")";
+                */
+                return;
             case cVar:   o << "Var" << (tree.GetVar() - VarBegin); return;
             case cAdd: sep2 = " +"; break;
             case cMul: sep2 = " *"; break;

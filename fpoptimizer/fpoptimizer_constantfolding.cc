@@ -1,4 +1,5 @@
 #include "fpoptimizer_codetree.hh"
+#include "fpoptimizer_optimize.hh"
 #include "fpoptimizer_consts.hh"
 
 #include <cmath> /* for CalculateResultBoundaries() */
@@ -1155,7 +1156,15 @@ namespace FPoptimizer_CodeTree
             ReplaceTreeWithConstValue:
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "Replacing "; DumpTree(*this);
-                std::cout << " with const value " << const_value << "\n";
+                if(IsImmed())
+                    std::cout << "(" << std::hex
+                              << *(const uint_least64_t*)&GetImmed()
+                              << std::dec << ")";
+                std::cout << " with const value " << const_value;
+                std::cout << "(" << std::hex
+                          << *(const uint_least64_t*)&const_value
+                          << std::dec << ")";
+                std::cout << "\n";
               #endif
                 data = new CodeTreeData(const_value);
                 break;
@@ -1779,8 +1788,8 @@ namespace FPoptimizer_CodeTree
             {
                 if(GetParam(0).IsImmed()
                 && GetParam(1).IsImmed())
-                    { const_value = pow(GetParam(0).GetImmed(),
-                                        GetParam(1).GetImmed());
+                    { const_value = fp_pow(GetParam(0).GetImmed(),
+                                           GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 if(GetParam(1).IsImmed()
                 && (float)GetParam(1).GetImmed() == 1.0)
@@ -1804,14 +1813,14 @@ namespace FPoptimizer_CodeTree
                 {
                     bool changes = false;
                     double base_immed = GetParam(0).GetImmed();
-                    CodeTree& mulgroup = GetParam(1);
+                    CodeTree mulgroup = GetParam(1);
                     for(size_t a=mulgroup.GetParamCount(); a-->0; )
                         if(mulgroup.GetParam(a).IsImmed())
                         {
                             double imm = mulgroup.GetParam(a).GetImmed();
                             //if(imm >= 0.0)
                             {
-                                double new_base_immed = std::pow(base_immed, imm);
+                                double new_base_immed = fp_pow(base_immed, imm);
                                 if(isinf(new_base_immed) || new_base_immed == 0.0)
                                 {
                                     // It produced an infinity. Do not change.
@@ -1830,8 +1839,17 @@ namespace FPoptimizer_CodeTree
                         }
                     if(changes)
                     {
-                        GetParam(0).Become(CodeTree(base_immed));
                         mulgroup.Rehash();
+                    #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "Before pow-mul change: "; DumpTree(*this);
+                        std::cout << "\n";
+                    #endif
+                        GetParam(0).Become(CodeTree(base_immed));
+                        GetParam(1).Become(mulgroup);
+                    #ifdef DEBUG_SUBSTITUTIONS
+                        std::cout << "After pow-mul change: "; DumpTree(*this);
+                        std::cout << "\n";
+                    #endif
                     }
                 }
                 // (x*20)^2 = x^2 * 20^2
@@ -1848,7 +1866,7 @@ namespace FPoptimizer_CodeTree
                             double imm = mulgroup.GetParam(a).GetImmed();
                             //if(imm >= 0.0)
                             {
-                                double new_factor_immed = std::pow(imm, exponent_immed);
+                                double new_factor_immed = fp_pow(imm, exponent_immed);
                                 if(isinf(new_factor_immed) || new_factor_immed == 0.0)
                                 {
                                     // It produced an infinity. Do not change.
@@ -1961,7 +1979,7 @@ namespace FPoptimizer_CodeTree
                 break;
             case cExp2: // converted into cPow 2.0 x
                 if(GetParam(0).IsImmed())
-                    { const_value = pow(2.0, GetParam(0).GetImmed());
+                    { const_value = fp_pow(2.0, GetParam(0).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 break;
             case cRSqrt: // converted into cPow x -0.5

@@ -219,6 +219,22 @@ namespace FUNCTIONPARSERTYPES
 #endif // FP_SUPPORT_ASINH
     inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
 
+    /* fp_pow() is a wrapper for std::pow()
+     * that produces an identical value for
+     * exp(1) ^ 2.0  (0x4000000000000000)
+     * as exp(2.0)   (0x4000000000000000)
+     * - std::pow() on x86_64
+     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
+     */
+    inline double fp_pow(double x,double y)
+    {
+        //if(x == 1.0) return 1.0;
+        if(x > 0) return std::exp(std::log(x) * y);
+        if(y == 0.0) return 1.0;
+        if(y < 0) return 1.0 / fp_pow(x, -y);
+        return std::pow(x, y);
+    }
+
 #ifdef FP_EPSILON
     inline bool FloatEqual(double a, double b)
     { return fabs(a - b) <= FP_EPSILON; }

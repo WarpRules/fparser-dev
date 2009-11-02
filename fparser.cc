@@ -759,7 +759,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               data->Immed.back() = exp(data->Immed.back());
               return;
           case cExp2:
-              data->Immed.back() = pow(2.0, data->Immed.back());
+              data->Immed.back() = fp_pow(2.0, data->Immed.back());
               return;
           case cFloor:
               data->Immed.back() = floor(data->Immed.back());
@@ -826,7 +826,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               }
               /*if(before_immed_opcode == cImmed)
               {
-                  data->Immed[data->Immed.size()-2] = pow(data->Immed[data->Immed.size()-2, data->Immed.back());
+                  data->Immed[data->Immed.size()-2] = fp_pow(data->Immed[data->Immed.size()-2, data->Immed.back());
                   data->Immed.pop_back();
                   return;
               }*/
@@ -981,7 +981,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             {
                 data->ByteCode[data->ByteCode.size()-2] = cExp2;
                 data->ByteCode.back() = cImmed;
-                data->Immed.back() = pow(2.0, data->Immed.back());
+                data->Immed.back() = fp_pow(2.0, data->Immed.back());
                 opcode = cMul;
             }
             break;
@@ -1047,7 +1047,7 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
           && data->ByteCode[data->ByteCode.size()-2] == cImmed)
           {
               data->Immed[data->Immed.size()-2] =
-                pow(data->Immed[data->Immed.size()-2], data->Immed.back());
+                fp_pow(data->Immed[data->Immed.size()-2], data->Immed.back());
               data->ByteCode.pop_back();
               data->Immed.pop_back();
               goto skip_op;
@@ -1474,7 +1474,7 @@ const char* FunctionParser::CompilePow(const char* function)
         {
             // If operator is applied to two literals, calculate it now:
             if(base_is_immed)
-                data->Immed.back() = pow(base_immed, data->Immed.back());
+                data->Immed.back() = fp_pow(base_immed, data->Immed.back());
             else
                 AddFunctionOpcode(cPow);
         }
@@ -1999,7 +1999,7 @@ double FunctionParser::Eval(const double* Vars)
             //#ifdef FP_SUPPORT_EXP2
             //  Stack[SP] = exp2(Stack[SP]);
             //#else
-              Stack[SP] = pow(2.0, Stack[SP]);
+              Stack[SP] = fp_pow(2.0, Stack[SP]);
             //#endif
               break;
 
@@ -2050,9 +2050,9 @@ double FunctionParser::Eval(const double* Vars)
           case   cMin: Stack[SP-1] = Min(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-          case   cPow: Stack[SP-1] = pow(Stack[SP-1], Stack[SP]);
+          case   cPow: Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
                        --SP; break;
-          case   cRPow: Stack[SP-1] = pow(Stack[SP], Stack[SP-1]);
+          case   cRPow: Stack[SP-1] = fp_pow(Stack[SP], Stack[SP-1]);
                         --SP; break;
 
           case  cTrunc: Stack[SP] = fp_trunc(Stack[SP]); break;
