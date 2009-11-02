@@ -207,6 +207,19 @@ namespace
     {
         return radians*(180.0/M_PI);
     }
+
+    inline bool isEvenInteger(double value)
+    {
+        long longval = (long)value;
+        return FloatEqual(value, (double)longval)
+            && (longval%2) == 0;
+    }
+    inline bool isOddInteger(double value)
+    {
+        long longval = (long)value;
+        return FloatEqual(value, (double)longval)
+            && (longval%2) != 0;
+    }
 }
 
 
@@ -807,6 +820,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               return;
           case cPow:
           {
+              double original_immed = data->Immed.back();
               unsigned before_immed_opcode = data->ByteCode[data->ByteCode.size()-2];
               if(before_immed_opcode == cExp
               || before_immed_opcode == cExp2
@@ -817,12 +831,47 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                    * Similarly with Exp, Exp2 and Pow
                    *
                    * This helps change exp(x*3)^5 into exp(x*15)
+                   *
+                   * Special attention must be taken to
+                   * not convert (x^2)^1.5 into x^3
+                   * - it must be abs(x)^3 instead.
+                   *
                    */
-                  data->ByteCode.pop_back();
-                  data->ByteCode.back() = cImmed;
-                  AddBinaryOperationByConst<MulOp> ();
-                  data->ByteCode.push_back(before_immed_opcode);
-                  return;
+                  if(data->ByteCode[data->ByteCode.size()-3] == cImmed)
+                  {
+                      data->ByteCode.pop_back();
+                      data->ByteCode.back() = cImmed;
+                      if(isEvenInteger(data->Immed[data->Immed.size()-2])
+                      && !isEvenInteger(data->Immed[data->Immed.size()-2]
+                                      * original_immed))
+                      {
+                          data->ByteCode.insert(data->ByteCode.end()-2, cAbs);
+                      }
+                      AddBinaryOperationByConst<MulOp> ();
+                      data->ByteCode.push_back(before_immed_opcode);
+                      return;
+                  }
+                  /* (x^y)^1.5  is unacceptable,
+                   *            for y might be 2, resulting in x^3
+                   *              f(-2)  = 8
+                   *              f'(-2) = -8
+                   * (x^y)^5    is okay
+                   *            for y might be 1.2, reuslting in x^6
+                   *              f(-2) = nan
+                   *              f'(-2) = 64
+                   * (x^y)^2    is okay,
+                   *            for y might be 1.5, resulting in x^3
+                   *              f(-2) = nan  <- ok because of this
+                   *              f'(-2) = -8
+                   */
+                  if(IsIntegerConst(original_immed))
+                  {
+                      data->ByteCode.pop_back();
+                      data->ByteCode.back() = cImmed;
+                      AddBinaryOperationByConst<MulOp> ();
+                      data->ByteCode.push_back(before_immed_opcode);
+                      return;
+                  }
               }
               /*if(before_immed_opcode == cImmed)
               {
@@ -831,24 +880,23 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                   return;
               }*/
               // if the exponent is a special constant value
-              if(data->Immed.back() == 0.5)
+              if(original_immed == 0.5)
               {
                   data->Immed.pop_back(); data->ByteCode.pop_back();
                   opcode = cSqrt;
               }
-              else if(data->Immed.back() == -0.5)
+              else if(original_immed == -0.5)
               {
                   data->Immed.pop_back(); data->ByteCode.pop_back();
                   opcode = (cRSqrt);
               }
-              else if(data->Immed.back() == -1.0)
+              else if(original_immed == -1.0)
               {
                   data->Immed.pop_back(); data->ByteCode.pop_back();
                   opcode = (cInv);
               }
               else
               {
-                  double original_immed = data->Immed.back();
                   int int_exponent = (int)original_immed;
 
                   if(original_immed != (double)int_exponent)
@@ -883,18 +931,23 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
 
                       data->Immed.pop_back(); data->ByteCode.pop_back();
                       /*size_t bytecode_size = data->ByteCode.size();*/
-                      if(int_exponent < 0) AddFunctionOpcode(cInv);
                       if(CompilePowi(abs_int_exponent))
-                           return;
+                      {
+                          if(int_exponent < 0) AddFunctionOpcode(cInv);
+                          return;
+                      }
                       /*powi_failed:;
                       data->ByteCode.resize(bytecode_size);
                       data->Immed.push_back(original_immed);
                       data->ByteCode.push_back(cImmed);*/
                   }
+                  // When we don't know whether x >= 0, we still know that
                   // x^y can be safely converted into exp(y * log(x))
                   // when y is _not_ integer, because we know that x >= 0.
                   // Otherwise either expression will give a NaN.
-                  if(original_immed != (double)int_exponent)
+                  if(original_immed != (double)int_exponent
+                  || IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2])
+                    )
                   {
                       data->Immed.pop_back(); data->ByteCode.pop_back();
                       AddFunctionOpcode(cLog);
@@ -921,7 +974,6 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         eliminate_redundant_sequence(cExp2, cLog2);
         eliminate_redundant_sequence(cAsin, cSin);
         eliminate_redundant_sequence(cAcos, cCos);
-        eliminate_redundant_sequence(cInv, cInv);
         #undef eliminate_redundant_sequence
         case cAbs:
             // abs(-x) = abs(x). Don't test cAbs here, it is done by IsNeverNegativeValueOpcode().
@@ -960,6 +1012,19 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
         case cTrunc:
             if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
             break;
+        case cInv:
+            if(data->ByteCode.back() == cInv) // 1/1/x = x
+            {
+                data->ByteCode.pop_back();
+                return;
+            }
+            if(data->ByteCode.back() == cPow) // 1/x^y = x^-y
+            {
+                data->ByteCode.pop_back();
+                AddNegOpcode();
+                data->ByteCode.push_back(cPow);
+                return;
+            }
     }
     switch(opcode)
     {
@@ -1185,6 +1250,93 @@ inline void FunctionParser::AddBinaryOperationByConst()
          * because it allows optimizing exp(y+1)*2 into exp(y)*5.437.
          */
         data->ByteCode.push_back(unsigned(Operation::opcode));
+    }
+}
+
+inline void FunctionParser::AddNegOpcode()
+{
+    // if we are negating a negation, we can remove both:
+    if((data->ByteCode.back() == cNeg))
+        data->ByteCode.pop_back();
+
+    // if we are negating a constant, negate the constant itself:
+    else if(data->ByteCode.back() == cImmed)
+        data->Immed.back() = -data->Immed.back();
+
+    else data->ByteCode.push_back(cNeg);
+}
+
+inline void FunctionParser::AddNotOpcode()
+{
+    // !-x = !x  , !-abs(x) = !x
+    if(data->ByteCode.back() == cNeg)
+        data->ByteCode.pop_back();
+    // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
+    if(data->ByteCode.back() == cAbs)
+        data->ByteCode.pop_back();
+    switch(data->ByteCode.back())
+    {
+      case cImmed:
+          // if notting a constant, change the constant itself:
+          data->Immed.back() = !truthValue(data->Immed.back());
+          break;
+      case cNot:
+          // !!x is a common paradigm: instead of x cNot cNot,
+          // we produce x cNotNot.
+          data->ByteCode.back() = cNotNot;
+          break;
+      case cAbsNot:
+          // However, if the preceding opcode is a logical opcode
+          // such as cAnd, the cNotNot is completely redundant.
+          // Chances for that are high after cAbsNot (and non-existing
+          // after cNot), so we test it here and not in cNot.
+          switch(data->ByteCode[data->ByteCode.size()-2])
+          {
+              case cLess: case cLessOrEq:
+              case cEqual: case cNEqual:
+              case cGreater: case cGreaterOrEq:
+              case cAnd: case cAbsAnd:
+              case cOr: case cAbsOr:
+                  data->ByteCode.pop_back();
+                  break;
+              default:
+                  data->ByteCode.back() = cAbsNotNot;
+          }
+          break;
+
+      // !!!x is simply x cNot. The cNotNot in the middle is redundant.
+      case cNotNot:
+          data->ByteCode.back() = cNot;
+          break;
+      case cAbsNotNot:
+          data->ByteCode.back() = cAbsNot;
+          break;
+
+      case cEqual: // !(x==y)  -> x!=y
+          data->ByteCode.back() = cNEqual;
+          break;
+      case cNEqual: // !(x!=y)  -> x==y
+          data->ByteCode.back() = cEqual;
+          break;
+      case cLess: // !(x<y)  -> x>=y
+          data->ByteCode.back() = cGreaterOrEq;
+          break;
+      case cLessOrEq: // !(x<=y)  -> x>y
+          data->ByteCode.back() = cGreater;
+          break;
+      case cGreater: // !(x>y)  -> x<=y
+          data->ByteCode.back() = cLessOrEq;
+          break;
+      case cGreaterOrEq: // !(x>=y)  -> x<y
+          data->ByteCode.back() = cLess;
+          break;
+
+      default:
+          // !(x&y) = AbsNot(x&y)
+          if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
+              data->ByteCode.push_back(cAbsNot);
+          else
+              data->ByteCode.push_back(cNot);
     }
 }
 
@@ -1516,88 +1668,11 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
 
         if(op == '-')
         {
-            // if we are negating a negation, we can remove both:
-            if((data->ByteCode.back() == cNeg))
-                data->ByteCode.pop_back();
-
-            // if we are negating a constant, negate the constant itself:
-            else if(data->ByteCode.back() == cImmed)
-                data->Immed.back() = -data->Immed.back();
-
-            else data->ByteCode.push_back(cNeg);
+            AddNegOpcode();
         }
         else
         {
-            // !-x = !x  , !-abs(x) = !x
-            if(data->ByteCode.back() == cNeg)
-                data->ByteCode.pop_back();
-            // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
-            if(data->ByteCode.back() == cAbs)
-                data->ByteCode.pop_back();
-            switch(data->ByteCode.back())
-            {
-              case cImmed:
-                  // if notting a constant, change the constant itself:
-                  data->Immed.back() = !truthValue(data->Immed.back());
-                  break;
-              case cNot:
-                  // !!x is a common paradigm: instead of x cNot cNot,
-                  // we produce x cNotNot.
-                  data->ByteCode.back() = cNotNot;
-                  break;
-              case cAbsNot:
-                  // However, if the preceding opcode is a logical opcode
-                  // such as cAnd, the cNotNot is completely redundant.
-                  // Chances for that are high after cAbsNot (and non-existing
-                  // after cNot), so we test it here and not in cNot.
-                  switch(data->ByteCode[data->ByteCode.size()-2])
-                  {
-                      case cLess: case cLessOrEq:
-                      case cEqual: case cNEqual:
-                      case cGreater: case cGreaterOrEq:
-                      case cAnd: case cAbsAnd:
-                      case cOr: case cAbsOr:
-                          data->ByteCode.pop_back();
-                          break;
-                      default:
-                          data->ByteCode.back() = cAbsNotNot;
-                  }
-                  break;
-
-              // !!!x is simply x cNot. The cNotNot in the middle is redundant.
-              case cNotNot:
-                  data->ByteCode.back() = cNot;
-                  break;
-              case cAbsNotNot:
-                  data->ByteCode.back() = cAbsNot;
-                  break;
-
-              case cEqual: // !(x==y)  -> x!=y
-                  data->ByteCode.back() = cNEqual;
-                  break;
-              case cNEqual: // !(x!=y)  -> x==y
-                  data->ByteCode.back() = cEqual;
-                  break;
-              case cLess: // !(x<y)  -> x>=y
-                  data->ByteCode.back() = cGreaterOrEq;
-                  break;
-              case cLessOrEq: // !(x<=y)  -> x>y
-                  data->ByteCode.back() = cGreater;
-                  break;
-              case cGreater: // !(x>y)  -> x<=y
-                  data->ByteCode.back() = cLessOrEq;
-                  break;
-              case cGreaterOrEq: // !(x>=y)  -> x<y
-                  data->ByteCode.back() = cLess;
-                  break;
-
-              default:
-                  // !(x&y) = AbsNot(x&y)
-                  if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
-                      data->ByteCode.push_back(cAbsNot);
-                  else
-                      data->ByteCode.push_back(cNot);
-            }
+            AddNotOpcode();
         }
     }
     else
@@ -1678,7 +1753,7 @@ inline const char* FunctionParser::CompileMult(const char* function)
                     break;
                 case '/':
                     if(is_unary)
-                        data->ByteCode.push_back(cInv);
+                        AddFunctionOpcode(cInv);
                     else
                     {
                     /* Change x / exp(log(y)*1.1)   -  x y Log  1.1 Mul Exp Div

@@ -122,6 +122,8 @@ private:
     inline void AddMultiplicationByConst(double value);
     template<typename Operation>
     inline void AddBinaryOperationByConst();
+    inline void AddNegOpcode();
+    inline void AddNotOpcode();
     inline void incStackPtr();
     bool CompilePowi(int);
 
