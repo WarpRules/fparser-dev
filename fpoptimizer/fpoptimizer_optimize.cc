@@ -109,16 +109,7 @@ namespace
             /* If this function returns true, len=half.
              */
             const Rule& rule = grammar_rules[rulenumber];
-
-            if(tree.GetOpcode() != rule.match_tree.subfunc_opcode)
-                return tree.GetOpcode() < rule.match_tree.subfunc_opcode;
-
-            if(tree.GetParamCount() < rule.n_minimum_params)
-            {
-                // Tree has fewer params than required?
-                return true; // Failure
-            }
-            return false;
+            return tree.GetOpcode() < rule.match_tree.subfunc_opcode;
         }
         bool operator() (unsigned rulenumber,
                          const CodeTree& tree) const
@@ -126,23 +117,7 @@ namespace
             /* If this function returns true, rule will be excluded from the equal_range
              */
             const Rule& rule = grammar_rules[rulenumber];
-
-            if(rule.match_tree.subfunc_opcode != tree.GetOpcode())
-                return rule.match_tree.subfunc_opcode < tree.GetOpcode();
-
-            if(rule.n_minimum_params < tree.GetParamCount())
-            {
-                // Tree has more params than the pattern has?
-                switch(rule.match_tree.match_type)
-                {
-                    case PositionalParams:
-                    case SelectedParams:
-                        return true; // Failure
-                    case AnyParams:
-                        return false; // Not a failure
-                }
-            }
-            return false;
+            return rule.match_tree.subfunc_opcode < tree.GetOpcode();
         }
     };
 
@@ -169,6 +144,9 @@ namespace
 
         for(;;)
         {
+        #ifdef DEBUG_SUBSTITUTIONS
+            DumpMatch(rule, tree, info, "Testing");
+        #endif
             found = TestParams(rule.match_tree, tree, found.specs, info, true);
             if(found.found) break;
             if(!&*found.specs)
@@ -176,7 +154,7 @@ namespace
             fail:;
                 // Did not match
         #ifdef DEBUG_SUBSTITUTIONS
-                //DumpMatch(rule, tree, info, false);
+                DumpMatch(rule, tree, info, false);
         #endif
                 return false;
             }
@@ -248,43 +226,83 @@ namespace FPoptimizer_Optimize
         /* Figure out which rules _may_ match this tree */
         typedef const unsigned char* rulenumit;
 
-        std::pair<rulenumit, rulenumit> range
-            = MyEqualRange(grammar.rule_list,
-                           grammar.rule_list + grammar.rule_count,
-                           tree,
-                           OpcodeRuleCompare());
+        std::pair<rulenumit, rulenumit> range =
+            MyEqualRange(grammar.rule_list,
+                         grammar.rule_list + grammar.rule_count,
+                         tree,
+                         OpcodeRuleCompare());
 
-#ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Input (" << FP_GetOpcodeName(tree.GetOpcode())
-                  << "[" << tree.GetParamCount()
-                  << "], rules:";
-        for(rulenumit r = range.first; r != range.second; ++r)
-            std::cout << ' ' << (unsigned)*r;
-        std::cout << ": ";
-        DumpTree(tree);
-        std::cout << "\n" << std::flush;
-#endif
-
-        bool changed = false;
-
-        for(rulenumit r = range.first; r != range.second; ++r)
-            if(TestRuleAndApplyIfMatch(grammar_rules[*r], tree, from_logical_context))
-            {
-                changed = true;
-                break;
-            }
-
-        if(changed)
+        if(range.first != range.second)
         {
 #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Changed." << std::endl;
-            std::cout << "Output: ";
-            DumpTree(tree);
-            std::cout << "\n" << std::flush;
+            std::vector<unsigned char> rules;
+            rules.reserve(range.second - range.first);
+            for(rulenumit r = range.first; r != range.second; ++r)
+            {
+                //if(grammar_rules[*r].match_tree.subfunc_opcode != tree.GetOpcode()) continue;
+                if(IsLogisticallyPlausibleParamsMatch(grammar_rules[*r].match_tree, tree))
+                    rules.push_back(*r);
+            }
+            range.first = &rules[0];
+            range.second = &rules[rules.size()-1]+1;
+
+            if(range.first != range.second)
+            {
+                std::cout << "Input (" << FP_GetOpcodeName(tree.GetOpcode())
+                          << "[" << tree.GetParamCount()
+                          << "]";
+
+                unsigned first=~unsigned(0), prev=~unsigned(0);
+                const char* sep = ", rules ";
+                for(rulenumit r = range.first; r != range.second; ++r)
+                {
+                    if(first==~unsigned(0)) first=prev=*r;
+                    else if(*r == prev+1) prev=*r;
+                    else
+                    {
+                        std::cout << sep << first; sep=",";
+                        if(prev != first) std::cout << '-' << prev;
+                        first = prev = *r;
+                    }
+                }
+                if(first != ~unsigned(0))
+                {
+                    std::cout << sep << first;
+                    if(prev != first) std::cout << '-' << prev;
+                }
+                std::cout << ": ";
+                DumpTree(tree);
+                std::cout << "\n" << std::flush;
+            }
 #endif
-            // Give the parent node a rerun at optimization
-            tree.Mark_Incompletely_Hashed();
-            return true;
+
+            bool changed = false;
+
+            for(rulenumit r = range.first; r != range.second; ++r)
+            {
+            #ifndef DEBUG_SUBSTITUTIONS
+                if(!IsLogisticallyPlausibleParamsMatch(grammar_rules[*r].match_tree, tree))
+                    continue;
+            #endif
+                if(TestRuleAndApplyIfMatch(grammar_rules[*r], tree, from_logical_context))
+                {
+                    changed = true;
+                    break;
+                }
+            }
+
+            if(changed)
+            {
+    #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "Changed." << std::endl;
+                std::cout << "Output: ";
+                DumpTree(tree);
+                std::cout << "\n" << std::flush;
+    #endif
+                // Give the parent node a rerun at optimization
+                tree.Mark_Incompletely_Hashed();
+                return true;
+            }
         }
 
         // No changes, consider the tree properly optimized.
@@ -299,18 +317,35 @@ namespace FPoptimizer_Optimize
     #else
         #define C
     #endif
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_round1\n";
+        #endif
         while(ApplyGrammar(C grammar_optimize_round1, tree))
             { //std::cout << "Rerunning 1\n";
                 tree.FixIncompleteHashes();
             }
 
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_round2\n";
+        #endif
         while(ApplyGrammar(C grammar_optimize_round2, tree))
             { //std::cout << "Rerunning 2\n";
                 tree.FixIncompleteHashes();
             }
 
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_round3\n";
+        #endif
         while(ApplyGrammar(C grammar_optimize_round3, tree))
             { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
+
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_round4\n";
+        #endif
+        while(ApplyGrammar(C grammar_optimize_round4, tree))
+            { //std::cout << "Rerunning 4\n";
                 tree.FixIncompleteHashes();
             }
         #undef C

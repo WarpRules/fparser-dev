@@ -599,9 +599,12 @@ double f55(const double* p)
 
 double f56(const double* p)
 {
-#define P56 "(2^70*1.41)%x", "x", f56, 1, .25, 100, .25, false
+#define P56 "1.6646342e+21%x", "x", f56, 1, .25, 100, .25, false
     const double x = p[0];
-    return fmod(pow(2,70)*1.41, x);
+    // 1.6646342e+21 chosen as such to be larger than 2^64,
+    // which is the limit where repeated runs of fprem opcode
+    // on 387 is required.
+    return fmod(1.6646342e+21, x);
 }
 
 

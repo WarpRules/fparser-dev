@@ -5,6 +5,7 @@
 #ifdef DEBUG_SUBSTITUTIONS
 
 #include <sstream>
+#include <cstring>
 
 using namespace FUNCTIONPARSERTYPES;
 using namespace FPoptimizer_Grammar;
@@ -19,10 +20,18 @@ namespace FPoptimizer_Grammar
                    bool DidMatch,
                    std::ostream& o)
     {
+        DumpMatch(rule,tree,info,DidMatch?"Found match":"Found mismatch",o);
+    }
+
+    void DumpMatch(const Rule& rule,
+                   const CodeTree& tree,
+                   const MatchInfo& info,
+                   const char* whydump,
+                   std::ostream& o)
+    {
         static const char ParamHolderNames[][2] = {"%","&","x","y","z","a","b","c"};
 
-        o <<
-            "Found " << (DidMatch ? "match" : "mismatch")
+        o << whydump
           << " (rule " << (&rule - grammar_rules) << ")"
           << ":\n"
             "  Pattern    : ";
@@ -42,7 +51,7 @@ namespace FPoptimizer_Grammar
             "  Tree       : ";
         DumpTree(tree, o);
         o << "\n";
-        if(DidMatch) DumpHashes(tree, o);
+        if(!std::strcmp(whydump,"Found match")) DumpHashes(tree, o);
 
         for(std::map<unsigned, CodeTree>::const_iterator
             i = info.paramholder_matches.begin();
@@ -54,14 +63,17 @@ namespace FPoptimizer_Grammar
             o << "\n";
         }
 
-        for(std::multimap<unsigned, CodeTree>::const_iterator
+        for(std::map<unsigned, std::vector<CodeTree> >::const_iterator
             i = info.restholder_matches.begin();
             i != info.restholder_matches.end();
             ++i)
         {
-            o << "         <" << i->first << "> = ";
-            DumpTree(i->second, o);
-            o << std::endl;
+            for(size_t a=0; a<i->second.size(); ++a)
+            {
+                o << "         <" << i->first << "> = ";
+                DumpTree(i->second[a], o);
+                o << std::endl;
+            }
         }
         o << std::flush;
     }

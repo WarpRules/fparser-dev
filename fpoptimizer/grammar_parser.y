@@ -397,9 +397,6 @@ struct RuleComparer
         if(a.match_tree.subfunc_opcode != b.match_tree.subfunc_opcode)
             return a.match_tree.subfunc_opcode < b.match_tree.subfunc_opcode;
 
-        if(a.n_minimum_params != b.n_minimum_params)
-            return a.n_minimum_params < b.n_minimum_params;
-
         // Other rules to break ties
         if(a.logical_context != b.logical_context)
             return a.logical_context < b.logical_context;
@@ -540,7 +537,7 @@ public:
 
         Rule ritem;
         memset(&ritem, 0, sizeof(ritem));
-        ritem.n_minimum_params          = min_params;
+        //ritem.n_minimum_params          = min_params;
         ritem.ruletype                  = r.Type;
         ritem.logical_context           = r.LogicalContext;
         ritem.match_tree.subfunc_opcode = r.Input.Opcode;
@@ -986,6 +983,7 @@ public:
             std::cout <<
             "        /* " << a << ":\t";
             ParamSpec_SubFunction tmp = {rlist[a].match_tree,0,0};
+            if(rlist[a].logical_context) std::cout << "@L ";
             FPoptimizer_Grammar::DumpParam( ParamSpec(SubFunction, (const void*) &tmp) );
             switch(rlist[a].ruletype)
             {
@@ -1007,8 +1005,6 @@ public:
             "\n"
             "         */\t\t "
                         "{"
-                        << rlist[a].n_minimum_params
-                        << ", "
                         << (rlist[a].ruletype == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].ruletype == ReplaceParams ?*/ "ReplaceParams "
                            )
@@ -1152,11 +1148,11 @@ static GrammarDumper dumper;
     | function_match SUBST_OP_COLON  paramlist NEWLINE
       /* The params provided are replaced with the new param_maybeinv_list */
       {
-        if($1->Params.RestHolderIndex != 0)
+        /*if($1->Params.RestHolderIndex != 0)
         {
             char msg[] = "Restholder is not valid in the outermost function when ReplaceParams is used";
             yyerror(msg); YYERROR;
-        }
+        }*/
         $3->RecursivelySetDefaultParamMatchingType();
         /*if(!$3->EnsureNoRepeatedNamedHolders())
         {

@@ -175,78 +175,6 @@ namespace
                  std::make_pair(&params, CreateNeedList_uncached(params))
             )->second;
     }
-
-    /* Test the list of parameters to a given CodeTree */
-    /* A helper function which simply checks whether the
-     * basic shape of the tree matches what we are expecting
-     * i.e. given number of numeric constants, etc.
-     */
-    bool IsLogisticallyPlausibleParamsMatch(
-        const ParamSpec_SubFunctionData& params,
-        const CodeTree& tree)
-    {
-        /* First, check if the tree has any chances of matching... */
-        /* Figure out what we need. */
-        Needs NeedList ( CreateNeedList(params) );
-
-        if(tree.GetParamCount() < NeedList.minimum_need)
-        {
-            // Impossible to satisfy
-            return false;
-        }
-
-        // Figure out what we have (note: we already assume that the opcode of the tree matches!)
-        for(size_t a=0; a<tree.GetParamCount(); ++a)
-        {
-            unsigned opcode = tree.GetParam(a).GetOpcode();
-            switch(opcode)
-            {
-                case cImmed:
-                    if(NeedList.Immeds > 0) NeedList.Immeds -= 1;
-                    else NeedList.Others -= 1;
-                    break;
-                case cVar:
-                case cFCall:
-                case cPCall:
-                    NeedList.Others -= 1;
-                    break;
-                default:
-                    assert( opcode < VarBegin );
-                    if(NeedList.SubTrees > 0
-                    && NeedList.SubTreesDetail.get(opcode) > 0)
-                    {
-                        NeedList.SubTrees -= 1;
-                        NeedList.SubTreesDetail.dec(opcode);
-                    }
-                    else NeedList.Others -= 1;
-            }
-        }
-
-        // Check whether all needs were satisfied
-        if(NeedList.Immeds > 0
-        || NeedList.SubTrees > 0
-        || NeedList.Others > 0)
-        {
-            // Something came short, impossible to satisfy.
-            return false;
-        }
-
-        if(params.match_type != AnyParams)
-        {
-            if(0
-            //|| NeedList.Immeds < 0 - already checked
-            || NeedList.SubTrees < 0
-            || NeedList.Others < 0
-            //|| params.count != tree.GetParamCount() - already checked
-              )
-            {
-                // Something was too much.
-                return false;
-            }
-        }
-        return true;
-    }
-
     /* Construct CodeTree from a GroupFunction, hopefully evaluating to a constant value */
     CodeTree CalculateGroupFunction(
         const ParamSpec& parampair,
@@ -295,6 +223,79 @@ namespace
 
 namespace FPoptimizer_Optimize
 {
+    /* Test the list of parameters to a given CodeTree */
+    /* A helper function which simply checks whether the
+     * basic shape of the tree matches what we are expecting
+     * i.e. given number of numeric constants, etc.
+     */
+    bool IsLogisticallyPlausibleParamsMatch(
+        const ParamSpec_SubFunctionData& params,
+        const CodeTree& tree)
+    {
+        /* First, check if the tree has any chances of matching... */
+        /* Figure out what we need. */
+        Needs NeedList ( CreateNeedList(params) );
+
+        size_t nparams = tree.GetParamCount();
+
+        if(nparams < NeedList.minimum_need)
+        {
+            // Impossible to satisfy
+            return false;
+        }
+
+        // Figure out what we have (note: we already assume that the opcode of the tree matches!)
+        for(size_t a=0; a<nparams; ++a)
+        {
+            unsigned opcode = tree.GetParam(a).GetOpcode();
+            switch(opcode)
+            {
+                case cImmed:
+                    if(NeedList.Immeds > 0) NeedList.Immeds -= 1;
+                    else NeedList.Others -= 1;
+                    break;
+                case cVar:
+                case cFCall:
+                case cPCall:
+                    NeedList.Others -= 1;
+                    break;
+                default:
+                    assert( opcode < VarBegin );
+                    if(NeedList.SubTrees > 0
+                    && NeedList.SubTreesDetail.get(opcode) > 0)
+                    {
+                        NeedList.SubTrees -= 1;
+                        NeedList.SubTreesDetail.dec(opcode);
+                    }
+                    else NeedList.Others -= 1;
+            }
+        }
+
+        // Check whether all needs were satisfied
+        if(NeedList.Immeds > 0
+        || NeedList.SubTrees > 0
+        || NeedList.Others > 0)
+        {
+            // Something came short, impossible to satisfy.
+            return false;
+        }
+
+        if(params.match_type != AnyParams)
+        {
+            if(0
+            //|| NeedList.Immeds < 0 - already checked
+            || NeedList.SubTrees < 0
+            || NeedList.Others < 0
+            //|| params.count != nparams - already checked
+              )
+            {
+                // Something was too much.
+                return false;
+            }
+        }
+        return true;
+    }
+
     /* Test the given parameter to a given CodeTree */
     MatchResultType TestParam(
         const ParamSpec& parampair,
@@ -302,6 +303,12 @@ namespace FPoptimizer_Optimize
         const MatchPositionSpecBaseP& start_at,
         MatchInfo& info)
     {
+        /*std::cout << "TestParam(";
+        DumpParam(parampair);
+        std::cout << ", ";
+        DumpTree(tree);
+        std::cout << ")\n";*/
+
         /* What kind of param are we expecting */
         switch( parampair.first )
         {
@@ -325,6 +332,21 @@ namespace FPoptimizer_Optimize
                     if(!TestImmedConstraints(param.constraints, tree)) return false;
                     /* Construct the formula */
                     CodeTree  grammar_func = CalculateGroupFunction(parampair, info);
+        #ifdef DEBUG_SUBSTITUTIONS
+                    DumpHashes(grammar_func);
+                    std::cout << *(const void**)&grammar_func.GetImmed();
+                    std::cout << "\n";
+                    std::cout << *(const void**)&tree.GetImmed();
+                    std::cout << "\n";
+                    DumpHashes(tree);
+                    std::cout << "Comparing ";
+                    DumpTree(grammar_func);
+                    std::cout << " and ";
+                    DumpTree(tree);
+                    std::cout << ": ";
+                    std::cout << (grammar_func.IsIdenticalTo(tree) ? "true" : "false");
+                    std::cout << "\n";
+        #endif
                     /* Evaluate it and compare */
                     return grammar_func.IsIdenticalTo(tree);
                 }
@@ -560,6 +582,11 @@ namespace FPoptimizer_Optimize
                 if(&*start_at)
                 {
                     position = (MatchPositionSpec_AnyParams*) &*start_at;
+                    if(model_tree.param_count == 0)
+                    {
+                        a = 0;
+                        goto retry_anyparams_4;
+                    }
                     a = model_tree.param_count - 1;
                     goto retry_anyparams_2;
                 }
@@ -604,6 +631,7 @@ namespace FPoptimizer_Optimize
                         goto retry_anyparams;
                     }
                     // no, backtrack
+                retry_anyparams_3:
                     if(a > 0)
                     {
                         --a;
@@ -613,21 +641,68 @@ namespace FPoptimizer_Optimize
                     info = (*position)[0].info;
                     return false;
                 }
+            retry_anyparams_4:
                 // Capture anything remaining in the restholder
                 if(model_tree.restholder_index != 0)
                 {
-                    for(unsigned b = 0; b < tree.GetParamCount(); ++b)
-                    {
-                        if(used[b]) continue; // Ignore subtrees that were already used
-                        // Save this tree to this restholder
+                    //std::vector<bool> used_backup(used);
+                    //MatchInfo         info_backup(info);
 
-                        info.SaveRestHolderMatch(model_tree.restholder_index,
-                                                 tree.GetParam(b));
-                        used[b] = true;
-                        if(TopLevel) info.SaveMatchedParamIndex(b);
+                    if(!TopLevel
+                    || !info.HasRestHolder(model_tree.restholder_index))
+                    {
+                        std::vector<CodeTree> matches;
+                        matches.reserve(tree.GetParamCount());
+                        for(unsigned b = 0; b < tree.GetParamCount(); ++b)
+                        {
+                            if(used[b]) continue; // Ignore subtrees that were already used
+                            // Save this tree to this restholder
+
+                            matches.push_back(tree.GetParam(b));
+                            used[b] = true;
+                            if(TopLevel) info.SaveMatchedParamIndex(b);
+                        }
+                        if(!info.SaveOrTestRestHolder(model_tree.restholder_index, matches))
+                        {
+                            // Failure at restholder matching. Backtrack if possible.
+                            //used.swap(used_backup);
+                            //info.swap(info_backup);
+                            goto retry_anyparams_3;
+                        }
+                        //std::cout << "Saved restholder " << model_tree.restholder_index << "\n";
+                    }
+                    else
+                    {
+                        const std::vector<CodeTree>& matches
+                            = info.GetRestHolderValues(model_tree.restholder_index);
+                        //std::cout << "Testing restholder " << model_tree.restholder_index << std::flush;
+                        for(size_t a=0; a<matches.size(); ++a)
+                        {
+                            bool found = false;
+                            for(unsigned b = 0; b < tree.GetParamCount(); ++b)
+                            {
+                                if(used[b]) continue;
+                                if(matches[a].IsIdenticalTo(tree.GetParam(b)))
+                                {
+                                    used[b] = true;
+                                    if(TopLevel) info.SaveMatchedParamIndex(b);
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if(!found)
+                            {
+                                //std::cout << " ... failed\n";
+                                // Failure at restholder matching. Backtrack if possible.
+                                //used.swap(used_backup);
+                                //info.swap(info_backup);
+                                goto retry_anyparams_3;
+                            }
+                        }
+                        //std::cout << " ... ok\n";
                     }
                 }
-                return MatchResultType(true, &*position);
+                return MatchResultType(true, model_tree.param_count ? &*position : 0);
             }
             case GroupFunction: // never occurs
                 break;

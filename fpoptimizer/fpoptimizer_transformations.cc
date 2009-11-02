@@ -738,8 +738,10 @@ namespace FPoptimizer_CodeTree
                         }
                         changed = true;
                     }
-                    else if(p1.IsImmed() && !p1.IsLongIntegerImmed())
+                    else if(p0.IsAlwaysSigned(true)
+                         || (p1.IsImmed() && !p1.IsLongIntegerImmed()))
                     {
+                        // When we don't know whether x >= 0, we still know that
                         // x^y can be safely converted into exp(y * log(x))
                         // when y is _not_ integer, because we know that x >= 0.
                         // Otherwise either expression will give a NaN or inf.

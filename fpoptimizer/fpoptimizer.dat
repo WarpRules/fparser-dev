@@ -10,6 +10,24 @@
 #               for Warp's Function Parser (fparser).
 #
 
+#   asinh: log(x + sqrt(x*x + 1))
+#   acosh: log(x + sqrt(x*x - 1))
+#   atanh: log( (1+x) / (1-x)) / 2
+#   asin: atan2(x, sqrt(1-x*x))
+#   acos: atan2(sqrt(1-x*x), x)
+#   atan2: atan(x/y)
+#   sinh: (exp(x)-exp(-x)) / 2
+#       = exp(-x) * (exp(2*x)-1) / 2
+#   cosh: (exp(x)+exp(-x)) / 2
+#       = exp(-x) * (exp(2*x)+1) / 2
+#   tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
+#   tan: sin/cos
+#   log10: log/CONSTANT_L10I
+#   log2: log/CONSTANT_L2I
+#   sqrt: pow(x, 0.5)
+#   exp: pow(CONSTANT_E, x)
+#   int: floor(x + 0.5)
+
 # Substitution rule syntax:
 #
 # %token NUMERIC_CONSTANT     # literals such as 0, 1, 1.5 or CONSTANT_DR, CONSTANT_L10I
@@ -252,8 +270,9 @@ cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
 # log(x^y) = y*log(x)
 #cLog [(cPow [x y])] -> cMul y (cLog[(cPow [(cPow [x y]) (cPow [y -1])])])
 # ^makes an infinite loop
-cLog [(cPow [x@P y])] -> cMul y (cLog[x])
-cLog [(cPow [x y@E])] -> cMul y (cLog [(cAbs [x])])
+#cLog [(cPow [x@P y])] -> cMul y (cLog[x])
+#cLog [(cPow [x y@E])] -> cMul y (cLog [(cAbs [x])])
+# ^ Done in ConstantFolding()
 
 # CONSTANT_E^log(x) = x
 # CONSTANT_E^(log(x)*y) = x^y
@@ -326,15 +345,15 @@ cPow [% (cAdd <1> &@M)]                    -> cMul POW(% &)   (cPow [% (cAdd <1>
 # x*y / (x*z) = y/z
 cMul (cPow [(cMul x <2>) -1]) x : (cPow [(cMul <2>) -1])
 
-# (x^g)^z        -> x^(g*z)  (g is odd or float)
-cPow [ (cPow[x y@O]) z ]       : x (cMul [y z])
-cPow [ (cPow[x y@F]) z ]       : x (cMul [y z])
+# (x^y)^z        -> x^(y*z)
+#  safe when y is odd or float, or z is an integer, or x is not negative
+cPow [ (cPow[x   y@O])  z ]       : x (cMul [y z])
+cPow [ (cPow[x   y@F])  z ]       : x (cMul [y z])
+cPow [ (cPow[x   y])  z@I ]       : x (cMul [y z])
+cPow [ (cPow[x@P y])    z ]       : x (cMul [y z])
 
-# (x^y)^z where y is positive can be changed safely into x^(y*z)
-cPow [(cPow [x@P y]) z]        : x (cMul [y z])
 # (x^y)^z where (y*z) makes an even integer could also be changed safely
-#cPow [(cPow [x y@E]) z@I]     : x (cMul [y z])
-#cPow [(cPow [x y@I]) z@E]     : x (cMul [y z])
+#cPow [(cPow [x y@I]) z@E]        : x (cMul [y z])
 
 # If pow() makes a signless value into a positive value, guard that fact with abs()
 cPow [ (cPow[x@Q y])@P z ]     : (cAbs [x]) (cMul [y z])
@@ -419,6 +438,12 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)
 # Example: x*z + 2*x^0.7 -> x^0.7 * (x^0.3 * z+2) -- not good, so also restricted with @I
 #
 
+# Note: These two rules should be done in constantfolding, but it's complicated.
+# 5*x - 5*y = 5*(x-y)
+cAdd (cMul %@P <1>) (cMul -% <2>) : (cMul % (cAdd <1> (cMul -1 <2>)))
+# 5 - 5*x   = -5*(x-1)
+#cAdd %@M            (cMul -% <2>) : (cMul -% (cAdd (cMul <2>) -1))
+cAdd %@M            (cMul -% <2>) : (cMul % (cAdd 1 (cMul <2> -1)))
 
 #    (5.1*x +      4.1*y      + z+w)*2
 # -> (5.1*2*x + 2*(4.1*y      + z+w))
@@ -426,7 +451,7 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)
 cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul % & <1>) (cMul & (cAdd <2>)))
 
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
-cMul (cAdd % <1>) &  :  (cAdd *(% &) (cMul & (cAdd <1>)))
+cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))
 
 
 [TRIGONOMETRIC]
@@ -437,8 +462,6 @@ cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])
 cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
 # cos(-x) = cos(x)
 cCos [(cMul -1 <1>)] : (cMul <1>)
-
-
 
 
 # cos(pi/2 - x) = sin(x)
@@ -498,14 +521,7 @@ cAtan2 [x (cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5])] -> cAsin[x]
 cAtan2 [(cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5]) x] -> cAcos[x]
 
 
-[REGENERATE_TAN_AND_TANH]
-
-# sinh(x)/cosh(x) = tanh(x)
-cMul        (cSinh[x])     (cPow [(cCosh[x]) -1]) :        (cTanh[x])
-cMul (cPow [(cSinh[x]) -1])       (cCosh[x])      : (cPow [(cTanh[x]) -1])
-cMul        (cTanh[x])            (cCosh[x])      :        (cSinh[x])
-cMul        (cTanh[x])     (cPow [(cSinh[x]) -1]) : (cPow [(cCosh[x]) -1])
-cMul (cPow [(cTanh[x]) -1])       (cSinh[x])      :        (cCosh[x])
+[REGENERATE_TAN]
 
 # sin(x)/cos(x) = tan(x)
 cMul        (cSin[x])     (cPow [(cCos[x]) -1]) :        (cTan[x])
@@ -517,31 +533,14 @@ cMul (cPow [(cTan[x]) -1])       (cSin[x])      :        (cCos[x])
 # cos(x)^(-2) * sin(x) = tan(x)/cos(x)
 # sin(x)^2    / cos(x) = tan(x)*sin(x)
 
-# sinh(-5*x) / cosh(5*x) = tanh(-5*x)
-#cMul (cSinh [(cMul % <1>)]) (cPow [(cCosh [(cMul -% <1>)]) -1]) : (cTanh [(cMul % <1>)])
-#cMul (cSin  [(cMul % <1>)]) (cPow [(cCos  [(cMul -% <1>)]) -1]) : (cTan  [(cMul % <1>)])
-#^ DISABLED: MULTIPLE/REPEATED RESTHOLDERS
+# sin(-5*x) / cos(5*x) = tan(-5*x)
+cMul (cSin  [(cMul % <1>)]) (cPow [(cCos  [(cMul -% <1>)]) -1]) : (cTan  [(cMul % <1>)])
 
 # tan(-x) = -tan(x)
 cTan [(cMul -1 <1>)] -> cMul [-1 (cTan [(cMul <1>)])]
 
-# tanh(-x) = -tanh(x)
-cTanh [(cMul -1 <1>)] -> cMul [-1 (cTanh [(cMul <1>)])]
-
-# However,  -tanh(5*x) better expressed as tanh(-5*x)
-cMul -1 (cTanh [(cMul %@N <1>)]) : (cTanh [(cMul -% <1>)])
+# However,  -tan(5*x) better expressed as tan(-5*x)
 cMul -1 (cTan [(cMul %@N <1>)]) : (cTan [(cMul -% <1>)])
-
-
-#        tanh(x) = (exp(2*x)-1) / (exp(2*x)+1)
-#      1/tanh(x) = (exp(2*x)+1) / (exp(2*x)-1)
-#        tanh(-x) = -tanh(x), so
-#       -tanh(x) = (exp(-2*x)-1) / (exp(-2*x)+1)
-#     1/-tanh(x) = (exp(-2*x)+1) / (exp(-2*x)-1)
-cMul (cAdd {(cPow [CONSTANT_2EI x]) -1}) (cPow [(cAdd {(cPow [CONSTANT_2EI x])  1}) -1]) : -1 (cTanh [x])
-cMul (cAdd {(cPow [CONSTANT_2E  x]) -1}) (cPow [(cAdd {(cPow [CONSTANT_2E  x])  1}) -1]) : (cTanh [x])
-cMul (cAdd {(cPow [CONSTANT_2EI x])  1}) (cPow [(cAdd {(cPow [CONSTANT_2EI x]) -1}) -1]) : (cPow [(cMul [-1 (cTanh [x])]) -1])
-cMul (cAdd {(cPow [CONSTANT_2E  x])  1}) (cPow [(cAdd {(cPow [CONSTANT_2E  x]) -1}) -1]) : (cPow [(cTanh [x]) -1])
 
 # asin(tan(x)) = x / (1-x^2)^0.5
 #cAsin [(cTan [x])] -> cMul x (cPow [(cAdd (cMul (cPow [x 2]) -1) 1) -0.5])
@@ -560,14 +559,44 @@ cMul (cAdd {(cPow [CONSTANT_2E  x])  1}) (cPow [(cAdd {(cPow [CONSTANT_2E  x]) -
 #                      but cot() isn't exactly bad, so keep it
 #cPow [(cTan[x]) -1] -> cTan [(cAdd [CONSTANT_PIHALF (cMul [-1 x])])]
 
-#cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
-#^ DISABLED: MULTIPLE/REPEATED RESTHOLDERS
-
+cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul {-1 x})})]) (cTan [x]) : 1
+cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
 
 # tan(atan(x)) = x
 cTan [(cAtan [x])] -> x
 
 cTan [(cAtan2 [x y])] -> cMul x (cPow [y -1])
+
+
+[REGENERATE_TANH]
+
+# sinh(x)/cosh(x) = tanh(x)
+cMul        (cSinh[x])     (cPow [(cCosh[x]) -1]) :        (cTanh[x])
+cMul (cPow [(cSinh[x]) -1])       (cCosh[x])      : (cPow [(cTanh[x]) -1])
+cMul        (cTanh[x])            (cCosh[x])      :        (cSinh[x])
+cMul        (cTanh[x])     (cPow [(cSinh[x]) -1]) : (cPow [(cCosh[x]) -1])
+cMul (cPow [(cTanh[x]) -1])       (cSinh[x])      :        (cCosh[x])
+
+# sinh(-5*x) / cosh(5*x) = tanh(-5*x)
+cMul (cSinh [(cMul {% x})]) (cPow [(cCosh [(cMul {-% x})]) -1]) : (cTanh [(cMul % x)])
+cMul (cSin  [(cMul {% x})]) (cPow [(cCos  [(cMul {-% x})]) -1]) : (cTan  [(cMul % x)])
+#^ Note: Should use (cMul % <1>) instead of (cMul {% x}),
+#        but cannot, due to repeated restholders
+
+# tanh(-x) = -tanh(x)
+cTanh [(cMul -1 <1>)] -> cMul [-1 (cTanh [(cMul <1>)])]
+
+# However,  -tanh(5*x) better expressed as tanh(-5*x)
+cMul -1 (cTanh [(cMul %@N <1>)]) : (cTanh [(cMul -% <1>)])
+
+
+#        tanh(x) = (exp(2*x)-1) / (exp(2*x)+1)
+#      1/tanh(x) = (exp(2*x)+1) / (exp(2*x)-1)
+#            exp(2*x) = exp(2)^x
+#            y^x = exp(log(y)*x)
+#        tanh(x*log(y)/2) = (y^x-1) / (y^x+1)
+cMul (cAdd {(cPow [% x]) -1}) (cPow [(cAdd {(cPow [% x])  1}) -1]) : (cTanh [(cMul x LOG(%) 0.5)])
+cMul (cAdd {(cPow [% x])  1}) (cPow [(cAdd {(cPow [% x]) -1}) -1]) : (cPow [(cTanh [(cMul x LOG(%) 0.5)]) -1])
 
 
 [SINH_COSH_EXP_TRANSFORMATIONS]
@@ -579,23 +608,27 @@ cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
 # cosh(-x) = cosh(x)
 cCosh [(cMul -1 <1>)] : (cMul <1>)
 
-#   asinh: log(x + sqrt(x*x + 1))
-#   acosh: log(x + sqrt(x*x - 1))
-#   atanh: log( (1+x) / (1-x)) / 2
-#   asin: atan2(x, sqrt(1-x*x))
-#   acos: atan2(sqrt(1-x*x), x)
-#   sinh: (exp(x)-exp(-x)) / 2
-#       = exp(-x) * (exp(2*x)-1) / 2
-#   cosh: (exp(x)+exp(-x)) / 2
-#       = exp(-x) * (exp(2*x)+1) / 2
-#   tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
-#   tan: sin/cos
-
+# x - 1/x = sinh(log(x))*2. However, this alone is a pessimal conversion.
+#cAdd  x  (cMul {-1 (cPow [       x   -1])})  : (cMul (cSinh [(cLog [x])]) 2)
+#cAdd <1> (cMul {-1 (cPow [(cAdd <1>) -1])})  : (cMul (cSinh [(cLog [(cAdd <1>)])]) 2)
+# So we add the requirement of cPow to it.
+# cLog(cPow()) reduces into optimal opcodes.
+#
 # sinh(x)*2 = (exp(x)-exp(-x))    -- note: exp(-x) = 1/exp(x)
 # cosh(x)*2 = (exp(x)+exp(-x))	
-cAdd (cPow [&  x]) (cMul { -1 (cPow [/& x]) }) : (cMul (cSinh [(cMul x LOG(&))]) 2)
-#cAdd (cMul { -1 (cPow [& x]) }) (cPow [/&  x]) : (cMul (cSinh [(cMul x LOG(/&))]) 2)
-cAdd (cPow [&  x])            (cPow [/& x])    : (cMul (cCosh [(cMul x LOG(&))]) 2)
+cAdd (cPow [& x]) (cMul { -1 (cPow [/& x]) }) : (cMul (cSinh [(cLog [(cPow [& x])])]) 2)
+cAdd (cPow [& x])            (cPow [/& x])    : (cMul (cCosh [(cLog [(cPow [& x])])]) 2)
+#cAdd (cPow [y x]) (cMul { -1 (cPow [y (cMul {x -1})]) }) : (cMul (cSinh [(cLog [(cPow [y x])])]) 2)
+#cAdd (cPow [y x])            (cPow [y (cMul {x -1})])    : (cMul (cCosh [(cLog [(cPow [y x])])]) 2)
+#cAdd (cPow [y %]) (cMul { -1 (cPow [y -%]) }) : (cMul (cSinh [(cLog [(cPow [y %])])]) 2)
+#cAdd (cPow [y %])            (cPow [y -%])    : (cMul (cCosh [(cLog [(cPow [y %])])]) 2)
+
+# Because sinh(-x) = -sinh(x),
+# sinh(x)*-2 = (exp(-x)-exp(x))
+cAdd (cMul {-1 (cPow [& x])})            (cPow [/& x])   : (cMul (cSinh [(cMul x LOG(&))]) -2)
+cAdd (cMul {% (cPow [& x])})  (cMul { -% (cPow [/& x])}) : (cMul (cSinh [(cMul x LOG(&))]) 2 %)
+cAdd (cMul {% (cPow [& x])})  (cMul {  % (cPow [/& x])}) : (cMul (cCosh [(cMul x LOG(&))]) 2 %)
+
 
 # exp(x)  = cosh(x)+sinh(x)
 cAdd        (cCosh [x])             (cSinh [x])      :        (cPow [CONSTANT_E  x])
@@ -619,7 +652,6 @@ cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_EI x])      : (cMul -1 (cSin
 cAdd        (cSinh [x])             (cPow [CONSTANT_EI x])      :          (cCosh [x])
 
 
-
 # sinh(x)   = ((((E^2) ^ x) + -1) * ((E^-1) ^ x) * 0.5)
 # sinh(3*x) = ((((E^6) ^ x) + -1) * ((E^-3) ^ x) * 0.5)
 
@@ -633,18 +665,12 @@ cAdd        (cSinh [x])             (cPow [CONSTANT_EI x])      :          (cCos
 #cMul (cAdd {(cPow [% x]) -1}) (cPow [POW(% -0.5) x]) : (cSinh [(cMul x LOG(%) 0.5)]) 2
 #cMul (cPow [% x]) (cAdd {(cPow [POW(% -2) x]) -1})   : (cSinh [(cMul x LOG(%) 0.5)]) 2
 
-# Because sinh(-x) = -sinh(x),
-# sinh(x)*-2 = (exp(-x)-exp(x))
-cAdd (cMul {-1 (cPow [& x])})            (cPow [/& x])   : (cMul (cSinh [(cMul x LOG(&))]) -2)
-cAdd (cMul {% (cPow [& x])})  (cMul { -% (cPow [/& x])}) : (cMul (cSinh [(cMul x LOG(&))]) 2 %)
-cAdd (cMul {% (cPow [& x])})  (cMul {  % (cPow [/& x])}) : (cMul (cCosh [(cMul x LOG(&))]) 2 %)
-
 #   tanh(x) / cosh(x)
 # = sinh(x) / cosh(x)^2
-# = sinh(x) * exp(x) / ((exp(x) * cosh(x))^2 * exp((-x)))
-#
-# ((y / ((exp(x) * z)^2 * exp((-x)))) * exp(x))  = y / z^2
-# FIXME: Not detected yet
+cMul (cSinh[x]) (cPow[(cCosh[x]) %]) : (cTanh[x]) (cPow[(cCosh[x]) +(% 1)])
+
+# sinh(log(x)) = 0.5*(x - 1/x)   (valid only for x>0)
+#cSinh [(cLog [x])] -> cMul 0.5 (cAdd x (cMul -1 (cPow [x -1])))
 
 
 [ASINH_ACOSH_ATANH_TRANSFORMATIONS]
@@ -659,12 +685,16 @@ cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#
 # Disabled: On x86_64, "asinh(x)" is slower than "log(sqrt(x^2+1)+x)"
-#cAdd {(cPow [(cAdd {(cPow [x 2])  1}) 0.5]) x} -> cPow [CONSTANT_E (cAsinh [x])]
+cAdd (cPow [(cAdd {(cPow [         x 2])  1})  0.5]) x   :  (cPow [CONSTANT_E (cAsinh [x])])
+cAdd (cPow [(cAdd {(cPow [(cAdd <1>) 2])  1})  0.5]) <1> -> (cPow [CONSTANT_E (cAsinh [(cAdd <1>)])])
+cAdd (cPow [(cAdd {(cPow [         x 2])  1}) -0.5]) x   :  (cPow [CONSTANT_EI (cAsinh [x])])
+cAdd (cPow [(cAdd {(cPow [(cAdd <1>) 2])  1}) -0.5]) <1> -> (cPow [CONSTANT_EI (cAsinh [(cAdd <1>)])])
+
 
 #        acosh: log(x + sqrt(x*x - 1))
 #        exp(acosh): x + sqrt(x*x - 1)
 # Disabled: On x86_64, "acosh(x)" is slower than "log(sqrt(x^2-1)+x)"
-#cLog  [(cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x})] -> cAcosh [x]
+cLog  [(cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x})] -> cAcosh [x]
 #cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x} -> cPow [CONSTANT_E (cAcosh [x])]
 
 #        atanh(x):   log( (1+x) / (1-x)) / 2
@@ -745,5 +775,8 @@ ASINH_ACOSH_ATANH_TRANSFORMATIONS
 
 $optimize_round3:
 SIMPLIFY_EQUATION
-REGENERATE_TAN_AND_TANH
+REGENERATE_TAN
+REGENERATE_TANH
+
+$optimize_round4:
 REGENERATE_HIGHLEVEL_OPCODES

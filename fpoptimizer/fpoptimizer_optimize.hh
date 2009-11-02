@@ -19,19 +19,41 @@ namespace FPoptimizer_Optimize
     class MatchInfo
     {
     public:
-        std::multimap<unsigned, CodeTree> restholder_matches;
+        std::map<unsigned, std::vector<CodeTree> > restholder_matches;
         std::map<unsigned, CodeTree> paramholder_matches;
         std::vector<unsigned> matched_params;
     public:
         /* These functions save data from matching */
-        void SaveRestHolderMatch(unsigned restholder_index, const CodeTree& treeptr)
+        bool SaveOrTestRestHolder(
+            unsigned restholder_index,
+            const std::vector<CodeTree>& treelist)
         {
-            restholder_matches.insert( std::make_pair(restholder_index, treeptr) );
+            std::map<unsigned, std::vector<CodeTree> >::iterator
+                i = restholder_matches.lower_bound(restholder_index);
+            if(i == restholder_matches.end() || i->first != restholder_index)
+                { restholder_matches.insert(i, std::make_pair(restholder_index, treelist) );
+                  return true; }
+            if(treelist.size() != i->second.size())
+                return false;
+            for(size_t a=0; a<treelist.size(); ++a)
+                if(!treelist[a].IsIdenticalTo(i->second[a]))
+                    return false;
+            return true;
         }
 
-        bool SaveOrTestParamHolder(unsigned paramholder_index, const CodeTree& treeptr)
+        void SaveRestHolder(
+            unsigned restholder_index,
+            std::vector<CodeTree>& treelist)
         {
-            std::map<unsigned, CodeTree>::iterator i = paramholder_matches.lower_bound(paramholder_index);
+            restholder_matches[restholder_index].swap(treelist);
+        }
+
+        bool SaveOrTestParamHolder(
+            unsigned paramholder_index,
+            const CodeTree& treeptr)
+        {
+            std::map<unsigned, CodeTree>::iterator
+                i = paramholder_matches.lower_bound(paramholder_index);
             if(i == paramholder_matches.end() || i->first != paramholder_index)
                 { paramholder_matches.insert(i, std::make_pair(paramholder_index, treeptr));
                   return true; }
@@ -60,15 +82,18 @@ namespace FPoptimizer_Optimize
         const CodeTree& GetParamHolderValue( unsigned paramholder_index ) const
             { return paramholder_matches.find(paramholder_index)->second; }
 
-        std::vector<CodeTree> GetRestHolderValues( unsigned restholder_index ) const
+        bool HasRestHolder(unsigned restholder_index) const
+            { return restholder_matches.find(restholder_index)
+                     != restholder_matches.end(); }
+
+        const std::vector<CodeTree>& GetRestHolderValues( unsigned restholder_index ) const
         {
-            std::vector<CodeTree> result;
-            for(std::multimap<unsigned, CodeTree>::const_iterator
-                i = restholder_matches.lower_bound(restholder_index);
-                i != restholder_matches.end() && i->first == restholder_index;
-                ++i)
-                result.push_back(i->second);
-            return result;
+            static const std::vector<CodeTree> empty_result;
+            std::map<unsigned, std::vector<CodeTree> >::const_iterator
+                i = restholder_matches.find(restholder_index);
+            if(i != restholder_matches.end())
+                return i->second;
+            return empty_result;
         }
 
         const std::vector<unsigned>& GetMatchedParamIndexes() const
@@ -138,6 +163,10 @@ namespace FPoptimizer_Optimize
                       FPoptimizer_CodeTree::CodeTree& tree,
                       bool from_logical_context = false);
     void ApplyGrammars(FPoptimizer_CodeTree::CodeTree& tree);
+
+    bool IsLogisticallyPlausibleParamsMatch(
+        const ParamSpec_SubFunctionData& params,
+        const CodeTree& tree);
 }
 
 namespace FPoptimizer_Grammar
@@ -146,6 +175,11 @@ namespace FPoptimizer_Grammar
                    const FPoptimizer_CodeTree::CodeTree& tree,
                    const FPoptimizer_Optimize::MatchInfo& info,
                    bool DidMatch,
+                   std::ostream& o = std::cout);
+    void DumpMatch(const Rule& rule,
+                   const FPoptimizer_CodeTree::CodeTree& tree,
+                   const FPoptimizer_Optimize::MatchInfo& info,
+                   const char* whydump,
                    std::ostream& o = std::cout);
 }
 

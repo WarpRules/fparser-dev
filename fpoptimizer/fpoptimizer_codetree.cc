@@ -310,7 +310,7 @@ namespace FPoptimizer_CodeTree
 
     bool CodeTree::IsIdenticalTo(const CodeTree& b) const
     {
-        if((!&*data) != (!&*b.data)) return false;
+        //if((!&*data) != (!&*b.data)) return false;
         if(&*data == &*b.data) return true;
         return data->IsIdenticalTo(*b.data);
     }

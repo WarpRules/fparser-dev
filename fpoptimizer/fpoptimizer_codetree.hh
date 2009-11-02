@@ -106,7 +106,7 @@ namespace FPoptimizer_CodeTree
         inline const std::vector<CodeTree>& GetParams() const;
         inline std::vector<CodeTree>& GetParams();
         inline size_t GetDepth() const;
-        inline double GetImmed() const;
+        inline const double& GetImmed() const;
         inline unsigned GetVar() const;
         inline unsigned GetFuncNo() const;
         inline bool IsDefined() const { return GetOpcode() != FUNCTIONPARSERTYPES::cNop; }
@@ -221,7 +221,7 @@ namespace FPoptimizer_CodeTree
     inline const std::vector<CodeTree>& CodeTree::GetParams() const { return data->Params; }
     inline std::vector<CodeTree>& CodeTree::GetParams() { return data->Params; }
     inline size_t CodeTree::GetDepth() const { return data->Depth; }
-    inline double CodeTree::GetImmed() const { return data->Value; }
+    inline const double& CodeTree::GetImmed() const { return data->Value; }
     inline unsigned CodeTree::GetVar() const { return data->Var; }
     inline unsigned CodeTree::GetFuncNo() const { return data->Funcno; }
 

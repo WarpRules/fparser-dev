@@ -420,9 +420,10 @@ namespace FPoptimizer_ByteCode
             synth.PushImmed(sequencing.basevalue);
         else
         {
+            bool needs_flip = false;
             if(count < 0)
             {
-                synth.AddOperation(sequencing.op_flip, 1);
+                needs_flip = true;
                 count = -count;
             }
 
@@ -449,6 +450,9 @@ namespace FPoptimizer_ByteCode
                     synth.DoPopNMov(stacktop_desired-1, res_stackpos);
                 }
             }
+
+            if(needs_flip)
+                synth.AddOperation(sequencing.op_flip, 1);
         }
     }
 }

@@ -1688,7 +1688,40 @@ namespace FPoptimizer_CodeTree
                     { const_value = funcname(GetParam(0).GetImmed()); \
                       goto ReplaceTreeWithConstValue; }
 
-            case cLog:   HANDLE_UNARY_CONST_FUNC(log); break;
+            case cLog:
+                HANDLE_UNARY_CONST_FUNC(log);
+                if(GetParam(0).GetOpcode() == cPow)
+                {
+                    CodeTree pow = GetParam(0);
+                    if(pow.GetParam(0).IsAlwaysSigned(true))  // log(posi ^ y) = y*log(posi)
+                    {
+                        pow.CopyOnWrite();
+                        pow.SetOpcode(cLog);
+                        SetOpcode(cMul);
+                        AddParamMove(pow.GetParam(1));
+                        pow.DelParam(1);
+                        pow.Rehash();
+                        SetParamMove(0, pow);
+                        goto NowWeAreMulGroup;
+                    }
+                    if(pow.GetParam(1).IsAlwaysParity(false)) // log(x ^ even) = even*log(abs(x))
+                    {
+                        CodeTree abs;
+                        abs.SetOpcode(cAbs);
+                        abs.AddParamMove(pow.GetParam(0));
+                        abs.Rehash();
+                        pow.CopyOnWrite();
+                        pow.SetOpcode(cLog);
+                        SetOpcode(cMul);
+                        pow.SetParamMove(0, abs);
+                        AddParamMove(pow.GetParam(1));
+                        pow.DelParam(1);
+                        pow.Rehash();
+                        SetParamMove(0, pow);
+                        goto NowWeAreMulGroup;
+                    }
+                }
+                break;
             case cAcosh: HANDLE_UNARY_CONST_FUNC(fp_acosh); break;
             case cAsinh: HANDLE_UNARY_CONST_FUNC(fp_asinh); break;
             case cAtanh: HANDLE_UNARY_CONST_FUNC(fp_atanh); break;
