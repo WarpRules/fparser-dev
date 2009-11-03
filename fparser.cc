@@ -2081,16 +2081,15 @@ double FunctionParser::Eval(const double* Vars)
           case cFloor: Stack[SP] = floor(Stack[SP]); break;
 
           case    cIf:
-              {
-                  unsigned jumpAddr = ByteCode[++IP];
-                  unsigned immedAddr = ByteCode[++IP];
-                  if(!truthValue(Stack[SP]))
+                  if(truthValue(Stack[SP--]))
+                      IP += 2;
+                  else
                   {
-                      IP = jumpAddr;
-                      DP = immedAddr;
+                      const unsigned* buf = &ByteCode[IP+1];
+                      IP = buf[0];
+                      DP = buf[1];
                   }
-                  --SP; break;
-              }
+                  break;
 
           case   cInt: Stack[SP] = floor(Stack[SP]+.5); break;
 
@@ -2159,9 +2158,13 @@ double FunctionParser::Eval(const double* Vars)
 // Misc:
           case cImmed: Stack[++SP] = Immed[DP++]; break;
 
-          case  cJump: DP = ByteCode[IP+2];
-                       IP = ByteCode[IP+1];
-                       break;
+          case  cJump:
+              {
+                  const unsigned* buf = &ByteCode[IP+1];
+                  IP = buf[0];
+                  DP = buf[1];
+                  break;
+              }
 
 // Operators:
           case   cNeg: Stack[SP] = -Stack[SP]; break;
@@ -2313,16 +2316,15 @@ double FunctionParser::Eval(const double* Vars)
                                    || truthValue_abs(Stack[SP]);
                         --SP; break;
           case cAbsIf:
-              {
-                  unsigned jumpAddr = ByteCode[++IP];
-                  unsigned immedAddr = ByteCode[++IP];
-                  if(!truthValue_abs(Stack[SP]))
+                  if(truthValue_abs(Stack[SP--]))
+                      IP += 2;
+                  else
                   {
-                      IP = jumpAddr;
-                      DP = immedAddr;
+                      const unsigned* buf = &ByteCode[IP+1];
+                      IP = buf[0];
+                      DP = buf[1];
                   }
-                  --SP; break;
-              }
+                  break;
 
           case   cDup: Stack[SP+1] = Stack[SP]; ++SP; break;
 
