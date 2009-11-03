@@ -389,7 +389,13 @@ namespace FPoptimizer_CodeTree
         for(size_t IP=0, DP=0; ; ++IP)
         {
         after_powi:
-            while(!if_stack.empty() && if_stack.back().endif_location == IP)
+            while(!if_stack.empty() &&
+              (   // Normal If termination rule:
+                  if_stack.back().endif_location == IP
+                  // This rule matches when cJumps are threaded:
+               || (IP < ByteCode.size() && ByteCode[IP] == cJump
+                   && if_stack.back().thenbranch.IsDefined())
+              ))
             {
                 // The "else" of an "if" ends here
                 CodeTree elsebranch = sim.PullResult();

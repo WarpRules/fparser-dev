@@ -193,20 +193,26 @@ namespace FPoptimizer_CodeTree
             case cIf:
             case cAbsIf:
             {
-                size_t ofs;
-                // If the parameter amount is != 3, we're screwed.
+                // Assume that the parameter count is 3 as it should.
+                FPoptimizer_ByteCode::ByteCodeSynth::IfData ifdata;
+
                 GetParam(0).SynthesizeByteCode(synth); // expression
-                synth.SynthIfStep1(ofs, GetOpcode());
+
+                synth.SynthIfStep1(ifdata, GetOpcode());
+
                 GetParam(1).SynthesizeByteCode(synth); // true branch
-                synth.SynthIfStep2(ofs);
+
+                synth.SynthIfStep2(ifdata);
+
                 GetParam(2).SynthesizeByteCode(synth); // false branch
-                synth.SynthIfStep3(ofs);
+
+                synth.SynthIfStep3(ifdata);
                 break;
             }
             case cFCall:
             case cPCall:
             {
-                // If the parameter count is invalid, we're screwed.
+                // Assume that the parameter count is as it should.
                 for(size_t a=0; a<GetParamCount(); ++a)
                     GetParam(a).SynthesizeByteCode(synth);
                 synth.AddOperation(GetOpcode(), (unsigned) GetParamCount());
@@ -215,13 +221,15 @@ namespace FPoptimizer_CodeTree
             }
             default:
             {
-                // If the parameter count is invalid, we're screwed.
+                // Assume that the parameter count is as it should.
                 for(size_t a=0; a<GetParamCount(); ++a)
                     GetParam(a).SynthesizeByteCode(synth);
                 synth.AddOperation(GetOpcode(), (unsigned) GetParamCount());
                 break;
             }
         }
+
+        // Tell the synthesizer which tree was just produced in the stack
         synth.StackTopIs(*this);
     }
 }

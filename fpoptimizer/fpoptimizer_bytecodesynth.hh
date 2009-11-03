@@ -27,7 +27,7 @@ namespace FPoptimizer_ByteCode
             /* estimate the initial requirements as such */
             ByteCode.reserve(64);
             Immed.reserve(8);
-            StackHash.reserve(16);
+            StackState.reserve(16);
         }
 
         void Pull(std::vector<unsigned>& bc,
@@ -56,12 +56,12 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1);
         }
 
-        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& hash)
+        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& tree)
         {
             if(StackTop > 0)
             {
-                StackHash[StackTop-1].first = true;
-                StackHash[StackTop-1].second = hash;
+                StackState[StackTop-1].first = true;
+                StackState[StackTop-1].second = tree;
             }
         }
 
@@ -97,7 +97,7 @@ namespace FPoptimizer_ByteCode
             ByteCode.push_back( (unsigned) srcpos);
 
             SetStackTop(srcpos+1);
-            StackHash[targetpos] = StackHash[srcpos];
+            StackState[targetpos] = StackState[srcpos];
             SetStackTop(targetpos+1);
         }
 
@@ -114,53 +114,97 @@ namespace FPoptimizer_ByteCode
                 ByteCode.push_back( (unsigned) src_pos);
             }
             SetStackTop(StackTop + 1);
-            StackHash[StackTop-1] = StackHash[src_pos];
+            StackState[StackTop-1] = StackState[src_pos];
         }
 
-        bool FindAndDup(const FPoptimizer_CodeTree::CodeTree& hash)
+        size_t FindPos(const FPoptimizer_CodeTree::CodeTree& tree)
         {
             for(size_t a=StackTop; a-->0; )
+                if(StackState[a].first && StackState[a].second.IsIdenticalTo(tree))
+                    return a;
+            return ~size_t(0);
+        }
+
+        bool Find(const FPoptimizer_CodeTree::CodeTree& tree)
+        {
+            return FindPos(tree) != ~size_t(0);
+        }
+
+        bool FindAndDup(const FPoptimizer_CodeTree::CodeTree& tree)
+        {
+            size_t pos = FindPos(tree);
+            if(pos != ~size_t(0))
             {
-                if(StackHash[a].first && StackHash[a].second.IsIdenticalTo(hash))
-                {
-                    DoDup(a);
-                    return true;
-                }
+                DoDup(pos);
+                return true;
             }
             return false;
         }
 
-        void SynthIfStep1(size_t& ofs, FUNCTIONPARSERTYPES::OPCODE op)
+        struct IfData
+        {
+            size_t ofs;
+        };
+
+        void SynthIfStep1(IfData& ifdata, FUNCTIONPARSERTYPES::OPCODE op)
         {
             using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // the If condition was popped.
 
-            ofs = ByteCode.size();
+            ifdata.ofs = ByteCode.size();
             ByteCode.push_back(op);
             ByteCode.push_back(0); // code index
             ByteCode.push_back(0); // Immed index
         }
-        void SynthIfStep2(size_t& ofs)
+        void SynthIfStep2(IfData& ifdata)
         {
             using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // ignore the pushed then-branch result.
 
-            ByteCode[ofs+1] = unsigned( ByteCode.size()+2 );
-            ByteCode[ofs+2] = unsigned( Immed.size()      );
+            ByteCode[ifdata.ofs+1] = unsigned( ByteCode.size()+2 );
+            ByteCode[ifdata.ofs+2] = unsigned( Immed.size()      );
 
-            ofs = ByteCode.size();
+            ifdata.ofs = ByteCode.size();
             ByteCode.push_back(cJump);
             ByteCode.push_back(0); // code index
             ByteCode.push_back(0); // Immed index
         }
-        void SynthIfStep3(size_t& ofs)
+        void SynthIfStep3(IfData& ifdata)
         {
+            using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // ignore the pushed else-branch result.
 
-            ByteCode[ofs+1] = unsigned( ByteCode.size()-1 );
-            ByteCode[ofs+2] = unsigned( Immed.size()      );
+            ByteCode[ifdata.ofs+1] = unsigned( ByteCode.size()-1 );
+            ByteCode[ifdata.ofs+2] = unsigned( Immed.size()      );
 
             SetStackTop(StackTop+1); // one or the other was pushed.
+
+            /* Threading jumps:
+             * If there are any cJumps that point
+             * to the cJump instruction we just changed,
+             * change them to point to this target as well.
+             * This screws up PrintByteCode() majorly.
+             */
+            for(size_t a=0; a<ifdata.ofs; ++a)
+            {
+                if(ByteCode[a]   == cJump
+                && ByteCode[a+1] == ifdata.ofs-1)
+                {
+                    ByteCode[a+1] = unsigned( ByteCode.size()-1 );
+                    ByteCode[a+2] = unsigned( Immed.size()      );
+                }
+                switch(ByteCode[a])
+                {
+                    case cAbsIf:
+                    case cIf:
+                    case cJump:
+                    case cPopNMov: a += 2; break;
+                    case cFCall:
+                    case cPCall:
+                    case cFetch: a += 1; break;
+                    default: break;
+                }
+            }
         }
 
     protected:
@@ -170,7 +214,7 @@ namespace FPoptimizer_ByteCode
             if(StackTop > StackMax)
             {
                 StackMax = StackTop;
-                StackHash.resize(StackMax);
+                StackState.resize(StackMax);
             }
         }
 
@@ -179,8 +223,8 @@ namespace FPoptimizer_ByteCode
         std::vector<double>   Immed;
 
         std::vector<
-            std::pair<bool/*known*/, FPoptimizer_CodeTree::CodeTree/*hash*/>
-                   > StackHash;
+            std::pair<bool/*known*/, FPoptimizer_CodeTree::CodeTree/*tree*/>
+                   > StackState;
         size_t StackTop;
         size_t StackMax;
     };

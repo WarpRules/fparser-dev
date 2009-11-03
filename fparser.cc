@@ -2650,10 +2650,19 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
         unsigned params = 2, produces = 1, opcode = 0;
 
         if(showExpression && !if_stack.empty() &&
-           if_stack.back().endif_location == IP)
+          (   // Normal If termination rule:
+              if_stack.back().endif_location == IP
+              // This rule matches when cJumps are threaded:
+           || (IP < ByteCode.size() && ByteCode[IP] == cJump
+               && !if_stack.back().thenbranch.second.empty())
+          ))
         {
             printHex(output, IP);
-            output << ": (phi)";
+            if(if_stack.back().endif_location == IP)
+                output << ": (phi)";
+            else
+                output << ": (phi_threaded)";
+
             stack.resize(stack.size()+2);
             std::swap(stack[stack.size()-3], stack[stack.size()-1]);
             std::swap(if_stack.back().condition,  stack[stack.size()-3]);
@@ -2781,8 +2790,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
               }
               case cAbsIf:
               {
+                  unsigned dp    = ByteCode[IP+2];
                   unsigned label = ByteCode[IP+1]+1;
-                  output << "jz_abs ";
+                  output << "jz_abs " << dp << ",";
                   printHex(output, label);
                   params = 1;
                   produces = 0;
@@ -2797,13 +2807,17 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
 
               case cJump:
               {
+                  unsigned dp    = ByteCode[IP+2];
                   unsigned label = ByteCode[IP+1]+1;
 
-                  std::swap(if_stack.back().thenbranch, stack.back());
-                  if_stack.back().endif_location = label;
-                  stack.pop_back();
+                  if(!if_stack.empty() && !stack.empty())
+                  {
+                      std::swap(if_stack.back().thenbranch, stack.back());
+                      if_stack.back().endif_location = label;
+                      stack.pop_back();
+                  }
 
-                  output << "jump ";
+                  output << "jump " << dp << ",";
                   printHex(output, label);
                   params = 0;
                   produces = 0;
