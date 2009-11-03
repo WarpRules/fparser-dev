@@ -71,7 +71,13 @@ namespace FPoptimizer_CodeTree
             std::vector<unsigned>& byteCode,
             std::vector<double>&   immed,
             size_t& stacktop_max);
-        void SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth) const;
+
+        void SynthesizeByteCode(
+            FPoptimizer_ByteCode::ByteCodeSynth& synth,
+            bool MustPopTemps=true) const;
+
+        size_t SynthCommonSubExpressions(
+            FPoptimizer_ByteCode::ByteCodeSynth& synth) const;
 
         void SetParams(const std::vector<CodeTree>& RefParams);
         void SetParamsMove(std::vector<CodeTree>& RefParams);
@@ -151,7 +157,6 @@ namespace FPoptimizer_CodeTree
         inline void SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g);
 
         bool RecreateInversionsAndNegations(bool prefer_base2 = false);
-        std::vector<CodeTree> FindCommonSubExpressions();
         void FixIncompleteHashes();
 
         void swap(CodeTree& b) { data.swap(b.data); }

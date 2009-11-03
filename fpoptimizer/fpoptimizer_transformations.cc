@@ -14,32 +14,95 @@ namespace
     typedef
         std::multimap<fphash_t,  std::pair<size_t, CodeTree> >
         TreeCountType;
-    typedef
-        std::multimap<fphash_t, CodeTree>
-        DoneTreesType;
 
     void FindTreeCounts(TreeCountType& TreeCounts, const CodeTree& tree)
     {
         TreeCountType::iterator i = TreeCounts.lower_bound(tree.GetHash());
+        bool found = false;
         for(; i != TreeCounts.end() && i->first == tree.GetHash(); ++i)
         {
             if(tree.IsIdenticalTo( i->second.second ) )
             {
                 i->second.first += 1;
-                goto found;
-        }   }
-        TreeCounts.insert(i, std::make_pair(tree.GetHash(), std::make_pair(size_t(1), tree)));
-    found:
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+        {
+            TreeCounts.insert(i, std::make_pair(tree.GetHash(), std::make_pair(size_t(1), tree)));
+        }
+
         for(size_t a=0; a<tree.GetParamCount(); ++a)
             FindTreeCounts(TreeCounts, tree.GetParam(a));
     }
 
-    void RememberRecursivelyHashList(DoneTreesType& hashlist,
-                                     const CodeTree& tree)
+    struct BalanceResultType
     {
-        hashlist.insert( std::make_pair(tree.GetHash(), tree) );
-        for(size_t a=0; a<tree.GetParamCount(); ++a)
-            RememberRecursivelyHashList(hashlist, tree.GetParam(a));
+        bool BalanceGood;
+        bool FoundChild;
+    };
+    BalanceResultType IfBalanceGood(const CodeTree& root, const CodeTree& child)
+    {
+        if(root.IsIdenticalTo(child))
+        {
+            BalanceResultType result = {true,true};
+            return result;
+        }
+
+        BalanceResultType result = {true,false};
+
+        if(root.GetOpcode() == cIf
+        || root.GetOpcode() == cAbsIf)
+        {
+            BalanceResultType cond    = IfBalanceGood(root.GetParam(0), child);
+            BalanceResultType branch1 = IfBalanceGood(root.GetParam(1), child);
+            BalanceResultType branch2 = IfBalanceGood(root.GetParam(2), child);
+
+            if(cond.FoundChild || branch1.FoundChild || branch2.FoundChild)
+                { result.FoundChild = true; }
+
+            // balance is good if:
+            //      branch1.found = branch2.found OR (cond.found AND cond.goodbalance)
+            // AND  cond.goodbalance OR (branch1.found AND branch2.found)
+            // AND  branch1.goodbalance OR (cond.found AND cond.goodbalance)
+            // AND  branch2.goodbalance OR (cond.found AND cond.goodbalance)
+
+            result.BalanceGood =
+                (   (branch1.FoundChild == branch2.FoundChild)
+                 || (cond.FoundChild && cond.BalanceGood) )
+             && (cond.BalanceGood || (branch1.FoundChild && branch2.FoundChild))
+             && (branch1.BalanceGood || (cond.FoundChild && cond.BalanceGood))
+             && (branch2.BalanceGood || (cond.FoundChild && cond.BalanceGood));
+        }
+        else
+        {
+            bool has_bad_balance        = false;
+            bool has_good_balance_found = false;
+
+            // Balance is bad if one of the children has bad balance
+            // Unless one of the children has good balance & found
+
+            for(size_t b=root.GetParamCount(), a=0; a<b; ++a)
+            {
+                BalanceResultType tmp = IfBalanceGood(root.GetParam(a), child);
+                if(tmp.FoundChild)
+                    result.FoundChild = true;
+
+                if(tmp.BalanceGood == false)
+                    has_bad_balance = true;
+                else if(tmp.FoundChild)
+                    has_good_balance_found = true;
+
+                // if the expression is
+                //   if(x, sin(x), 0) + sin(x)
+                // then sin(x) is a good subexpression
+                // even though it occurs in unbalance.
+            }
+            if(has_bad_balance && !has_good_balance_found)
+                result.BalanceGood = false;
+        }
+        return result;
     }
 
     bool IsOptimizableUsingPowi(long immed, long penalty = 0)
@@ -790,58 +853,78 @@ namespace FPoptimizer_CodeTree
         return changed;
     }
 
-    std::vector<CodeTree> CodeTree::FindCommonSubExpressions()
+    size_t CodeTree::SynthCommonSubExpressions(
+        FPoptimizer_ByteCode::ByteCodeSynth& synth) const
     {
-        std::vector<CodeTree> result;
+        size_t stacktop_before = synth.GetStackTop();
 
         /* Find common subtrees */
         TreeCountType TreeCounts;
         FindTreeCounts(TreeCounts, *this);
 
         /* Synthesize some of the most common ones */
-        DoneTreesType AlreadyDoneTrees;
-    FindMore: ;
-        size_t best_score = 0;
-        TreeCountType::const_iterator synth_it;
-        for(TreeCountType::const_iterator
-            i = TreeCounts.begin();
-            i != TreeCounts.end();
-            ++i)
+        for(;;)
         {
-            const fphash_t& hash = i->first;
-            size_t         score = i->second.first;
-            const CodeTree& tree = i->second.second;
-            // It must always occur at least twice
-            if(score < 2) continue;
-            // And it must not be a simple expression
-            if(tree.GetDepth() < 2) CandSkip: continue;
-            // And it must not yet have been synthesized
-            DoneTreesType::const_iterator j = AlreadyDoneTrees.lower_bound(hash);
-            for(; j != AlreadyDoneTrees.end() && j->first == hash; ++j)
+            size_t best_score = 0;
+            TreeCountType::iterator synth_it;
+            for(TreeCountType::iterator
+                j,i = TreeCounts.begin();
+                i != TreeCounts.end();
+                i=j)
             {
-                if(j->second.IsIdenticalTo(tree))
-                    goto CandSkip;
+                j=i; ++j;
+
+                size_t         score = i->second.first;
+                const CodeTree& tree = i->second.second;
+
+                // It must not yet have been synthesized
+                if(synth.Find(tree))
+                {
+                    TreeCounts.erase(i);
+                    continue;
+                }
+
+                // And it must not be a simple expression
+                // Because cImmed, cVar are faster than cFetch
+                if(tree.GetDepth() <= 1)
+                {
+                    TreeCounts.erase(i);
+                    continue;
+                }
+
+                // It must always occur at least twice
+                if(score < 2)
+                {
+                    TreeCounts.erase(i);
+                    continue;
+                }
+
+                // And it must either appear on both sides
+                // of a cIf, or neither
+                if(IfBalanceGood(*this, tree).BalanceGood == false)
+                {
+                    TreeCounts.erase(i);
+                    continue;
+                }
+
+                // Is a candidate.
+                score *= tree.GetDepth();
+                if(score > best_score)
+                    { best_score = score; synth_it = i; }
             }
-            // Is a candidate.
-            score *= tree.GetDepth();
-            if(score > best_score)
-                { best_score = score; synth_it = i; }
-        }
-        if(best_score > 0)
-        {
+
+            if(best_score <= 0) break; // Didn't find anything.
+
+            const CodeTree& tree = synth_it->second.second;
     #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Found Common Subexpression:"; DumpTree(synth_it->second.second); std::cout << "\n";
+            std::cout << "Found Common Subexpression:"; DumpTree(tree); std::cout << "\n";
     #endif
             /* Synthesize the selected tree */
-            result.push_back(synth_it->second.second);
-            /* Add the tree and all its children to the AlreadyDoneTrees list,
-             * to prevent it from being re-synthesized
-             */
-            RememberRecursivelyHashList(AlreadyDoneTrees, synth_it->second.second);
-            goto FindMore;
+            tree.SynthesizeByteCode(synth, false);
+            TreeCounts.erase(synth_it);
         }
 
-        return result;
+        return synth.GetStackTop() - stacktop_before;
     }
 }
 

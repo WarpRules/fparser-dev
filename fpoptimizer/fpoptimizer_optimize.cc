@@ -145,7 +145,7 @@ namespace
         for(;;)
         {
         #ifdef DEBUG_SUBSTITUTIONS
-            DumpMatch(rule, tree, info, "Testing");
+            //DumpMatch(rule, tree, info, "Testing");
         #endif
             found = TestParams(rule.match_tree, tree, found.specs, info, true);
             if(found.found) break;

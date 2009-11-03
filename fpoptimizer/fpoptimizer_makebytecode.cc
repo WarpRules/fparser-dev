@@ -44,36 +44,24 @@ namespace FPoptimizer_CodeTree
             FixIncompleteHashes();
         }
     #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "After recreating inv/neg:  "; DumpTree(*this); std::cout << "\n";
-    #endif
-
-        std::vector<CodeTree> subexpressions ( FindCommonSubExpressions() );
-        FPoptimizer_ByteCode::ByteCodeSynth synth;
-
-        for(size_t a=0; a<subexpressions.size(); ++a)
-        {
-            subexpressions[a].SynthesizeByteCode(synth);
-        }
-
-    #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Actually synthesizing:\n";
+        std::cout << "Actually synthesizing, after recreating inv/neg:\n";
         DumpTreeWithIndent(*this);
     #endif
+
+        FPoptimizer_ByteCode::ByteCodeSynth synth;
+
         /* Then synthesize the actual expression */
-        SynthesizeByteCode(synth);
-      #if 0
-        /* Ensure that the expression result is
-         * the only thing that remains in the stack
+        SynthesizeByteCode(synth, false);
+        /* The "false" parameters tells SynthesizeByteCode
+         * that at the outermost synthesizing level, it does
+         * not matter if leftover temps are left in the stack.
          */
-        /* Removed: Fparser does not seem to care! */
-        /* Seems that it is not required even when cEval is supported. */
-        if(synth.GetStackTop() > 1)
-            synth.DoPopNMov(0, synth.GetStackTop()-1);
-      #endif
         synth.Pull(ByteCode, Immed, stacktop_max);
     }
 
-    void CodeTree::SynthesizeByteCode(FPoptimizer_ByteCode::ByteCodeSynth& synth) const
+    void CodeTree::SynthesizeByteCode(
+        FPoptimizer_ByteCode::ByteCodeSynth& synth,
+        bool MustPopTemps) const
     {
         // If the synth can already locate our operand in the stack,
         // never mind synthesizing it again, just dup it.
@@ -81,6 +69,8 @@ namespace FPoptimizer_CodeTree
         {
             return;
         }
+
+        size_t n_subexpressions_synthesized = SynthCommonSubExpressions(synth);
 
         switch(GetOpcode())
         {
@@ -104,6 +94,7 @@ namespace FPoptimizer_CodeTree
                     // If the paramlist contains an Immed, and that Immed
                     // fits in a long-integer, try to synthesize it
                     // as add-sequences instead.
+                    bool did_muli = false;
                     for(size_t a=0; a<GetParamCount(); ++a)
                     {
                         if(GetParam(a).IsLongIntegerImmed())
@@ -113,19 +104,18 @@ namespace FPoptimizer_CodeTree
                             CodeTree tmp(*this, CodeTree::CloneTag());
                             tmp.DelParam(a);
                             tmp.Rehash();
-                            bool success = AssembleSequence(
+                            if(AssembleSequence(
                                 tmp, value, FPoptimizer_ByteCode::AddSequence,
                                 synth,
-                                MAX_MULI_BYTECODE_LENGTH);
-
-                            if(success)
+                                MAX_MULI_BYTECODE_LENGTH))
                             {
-                                // this tree was treated just fine
-                                synth.StackTopIs(*this);
-                                return;
+                                did_muli = true;
+                                break;
                             }
                         }
                     }
+                    if(did_muli)
+                        break; // done
                 }
 
                 int n_stacked = 0;
@@ -231,6 +221,13 @@ namespace FPoptimizer_CodeTree
 
         // Tell the synthesizer which tree was just produced in the stack
         synth.StackTopIs(*this);
+
+        // If we added subexpressions, peel them off the stack now
+        if(MustPopTemps && n_subexpressions_synthesized > 0)
+        {
+            size_t top = synth.GetStackTop();
+            synth.DoPopNMov(top-1-n_subexpressions_synthesized, top-1);
+        }
     }
 }
 
