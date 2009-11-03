@@ -341,6 +341,16 @@ namespace FPoptimizer_Optimize
                 tree.FixIncompleteHashes();
             }
 
+        #ifndef FP_ENABLE_SHORTCUT_LOGICAL_EVALUATION
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_nonshortcut_logical_evaluation\n";
+        #endif
+        while(ApplyGrammar(C grammar_optimize_nonshortcut_logical_evaluation, tree))
+            { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
+        #endif
+
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_round4\n";
         #endif
@@ -368,6 +378,14 @@ namespace FPoptimizer_Optimize
                 tree.FixIncompleteHashes();
             }
         #endif
+
+        #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Applying grammar_optimize_abslogical\n";
+        #endif
+        while(ApplyGrammar(C grammar_optimize_abslogical, tree))
+            { //std::cout << "Rerunning 3\n";
+                tree.FixIncompleteHashes();
+            }
 
         #undef C
     }

@@ -1193,56 +1193,87 @@ namespace FPoptimizer_CodeTree
                 break;
 
             case cAnd:
+            case cAbsAnd:
             {
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
                 {
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                    if(p.has_min && p.has_max
-                    && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
+                    if(GetOpcode() == cAnd)
                     {
-                        goto ReplaceTreeWithZero;
+                        if(p.has_min && p.has_max
+                        && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
+                        {
+                            goto ReplaceTreeWithZero;
+                        }
+                        else if( (p.has_max && p.max <= -0.5)
+                              || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                        {
+                            DelParam(a); // x & y & 1 = x & y;  x & 1 = !!x
+                        }
                     }
-                    else if( (p.has_max && p.max <= -0.5)
-                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    else // cAbsAnd
                     {
-                        DelParam(a); // x & y & 1 = x & y;  x & 1 = !!x
+                        if(p.has_max && p.max < 0.5) // x < 0.5 = zero
+                        {
+                            goto ReplaceTreeWithZero;
+                        }
+                        else if(p.has_min && p.min >= 0.5) // x >= 0.5  = nonzero
+                        {
+                            DelParam(a); // x & y & 1 = x & y;  x & 1 = !!x
+                        }
                     }
                 }
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithOne;
-                    case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
-                    default: if(ConstantFolding_AndLogic()) goto redo;
+                    case 1: SetOpcode(GetOpcode() == cAnd ? cNotNot : cAbsNotNot); goto redo; // Replace self with the single operand
+                    default: if(GetOpcode() == cAnd) if(ConstantFolding_AndLogic()) goto redo;
                 }
                 break;
             }
             case cOr:
+            case cAbsOr:
             {
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
                 {
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                    if(p.has_min && p.has_max
-                    && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
+                    if(GetOpcode() == cOr)
                     {
-                        DelParam(a); // x | y | 0 = x | y;  x | 0 = !!x
+                        if(p.has_min && p.has_max
+                        && p.min > -0.5 && p.max < 0.5) // |x| < 0.5 = zero
+                        {
+                            DelParam(a); // x | y | 0 = x | y;  x | 0 = !!x
+                        }
+                        else if( (p.has_max && p.max <= -0.5)
+                              || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                        {
+                            goto ReplaceTreeWithOne;
+                        }
                     }
-                    else if( (p.has_max && p.max <= -0.5)
-                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    else // cAbsOr
                     {
-                        goto ReplaceTreeWithOne;
+                        if(p.has_max && p.max < 0.5) // x < 0.5 = zero
+                        {
+                            DelParam(a);
+                        }
+                        else if(p.has_min && p.min >= 0.5) // x >= 0.5  = nonzero
+                        {
+                            goto ReplaceTreeWithOne;
+                        }
                     }
                 }
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithZero;
-                    case 1: SetOpcode(cNotNot); goto redo; // Replace self with the single operand
-                    default: if(ConstantFolding_OrLogic()) goto redo;
+                    case 1: SetOpcode(GetOpcode() == cOr ? cNotNot : cAbsNotNot); goto redo; // Replace self with the single operand
+                    default: if(GetOpcode() == cOr) if(ConstantFolding_OrLogic()) goto redo;
                 }
                 break;
             }
             case cNot:
+            case cAbsNot:
             {
                 switch(GetParam(0).GetOpcode())
                 {
@@ -1254,6 +1285,8 @@ namespace FPoptimizer_CodeTree
                     case cGreaterOrEq: SetOpcode(cLess); goto cNot_moveparam;
                     //cNotNot already handled by grammar: @L cNotNot
                     case cNot:         SetOpcode(cNotNot); goto cNot_moveparam;
+                    case cAbsNot:      SetOpcode(cAbsNotNot); goto cNot_moveparam;
+                    case cAbsNotNot:   SetOpcode(cAbsNot); goto cNot_moveparam;
                          { cNot_moveparam:;
                                SetParamsMove(GetParam(0).GetUniqueRef().GetParams()); goto redo; }
                     default: break;
@@ -1261,15 +1294,26 @@ namespace FPoptimizer_CodeTree
 
                 // If the sub-expression evaluates to approx. zero, yield one.
                 // If the sub-expression evaluates to approx. nonzero, yield zero.
-                MinMaxTree p = GetParam(0).CalculateResultBoundaries();
-                if(p.has_min && p.has_max
-                && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                if(GetOpcode() == cNot)
                 {
-                    goto ReplaceTreeWithOne;
+                    MinMaxTree p = GetParam(0).CalculateResultBoundaries();
+                    if(p.has_min && p.has_max
+                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    {
+                        goto ReplaceTreeWithOne;
+                    }
+                    else if( (p.has_max && p.max <= -0.5)
+                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                        goto ReplaceTreeWithZero;
                 }
-                else if( (p.has_max && p.max <= -0.5)
-                      || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
-                    goto ReplaceTreeWithZero;
+                else // cAbsNot
+                {
+                    MinMaxTree p = GetParam(0).CalculateResultBoundaries();
+                    if(p.has_max && p.max < 0.5) // x < 0.5 = zero
+                        goto ReplaceTreeWithOne;
+                    else if(p.has_min && p.min >= 0.5) // x >= 0.5  = nonzero
+                        goto ReplaceTreeWithZero;
+                }
                 break;
             }
             case cNotNot:
@@ -1293,12 +1337,34 @@ namespace FPoptimizer_CodeTree
                     goto ReplaceTreeWithOne;
                 break;
             }
+            case cAbsNotNot:
+            {
+                if(GetParam(0).IsLogicalValue())
+                    goto ReplaceTreeWithParam0;
+
+                // If the sub-expression evaluates to approx. zero, yield zero.
+                // If the sub-expression evaluates to approx. nonzero, yield one.
+                MinMaxTree p = GetParam(0).CalculateResultBoundaries();
+                if(p.has_max && p.max < 0.5) // x < 0.5 = zero
+                {
+                    goto ReplaceTreeWithZero;
+                }
+                else if(p.has_min && p.min >= 0.5) // x >= 0.5  = nonzero
+                    goto ReplaceTreeWithOne;
+                break;
+            }
             case cIf:
+            case cAbsIf:
             {
                 // If the If() condition begins with a cNot,
                 // remove the cNot and swap the branches.
-                while(GetParam(0).GetOpcode() == cNot)
+                for(;;)
                 {
+                    if(GetParam(0).GetOpcode() == cNot)
+                        { SetOpcode(cIf); }
+                    else if(GetParam(0).GetOpcode() == cAbsNot)
+                        { SetOpcode(cAbsIf); }
+                    else break;
                     GetParam(0).Become( GetParam(0).GetParam(0) );
                     GetParam(1).swap(GetParam(2));
                 }
@@ -1306,17 +1372,194 @@ namespace FPoptimizer_CodeTree
                 // If the sub-expression evaluates to approx. zero, yield param3.
                 // If the sub-expression evaluates to approx. nonzero, yield param2.
                 MinMaxTree p = GetParam(0).CalculateResultBoundaries();
-                if(p.has_min && p.has_max
-                && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                if(GetOpcode() == cIf)
                 {
-                    which_param = 2;
-                    goto ReplaceTreeWithParam;
+                    if(p.has_min && p.has_max
+                    && p.min > -0.5 && p.max < 0.5) // -0.5 < x < 0.5 = zero
+                    {
+                        which_param = 2;
+                        goto ReplaceTreeWithParam;
+                    }
+                    else if( (p.has_max && p.max <= -0.5)
+                          || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                    {
+                        which_param = 1;
+                        goto ReplaceTreeWithParam;
+                    }
                 }
-                else if( (p.has_max && p.max <= -0.5)
-                      || (p.has_min && p.min >= 0.5)) // |x| >= 0.5  = nonzero
+                else // cAbsIf
                 {
+                    if(p.has_max && p.max < 0.5) // x < 0.5 = zero
+                    {
+                        which_param = 2;
+                        goto ReplaceTreeWithParam;
+                    }
+                    else if(p.has_min && p.min >= 0.5) // x >= 0.5  = nonzero
+                    {
+                        which_param = 1;
+                        goto ReplaceTreeWithParam;
+                    }
+                }
+
+                CodeTree& branch1 = GetParam(1);
+                CodeTree& branch2 = GetParam(2);
+
+                if(branch1.IsIdenticalTo(branch2))
+                {
+                    // If both branches of an If() are identical, the test becomes unnecessary
                     which_param = 1;
                     goto ReplaceTreeWithParam;
+                }
+
+                const OPCODE op1 = branch1.GetOpcode();
+                const OPCODE op2 = branch2.GetOpcode();
+                if(op1 == op2)
+                {
+                    // If both branches apply the same unary function to different values,
+                    // extract the function. E.g. if(x,sin(a),sin(b)) -> sin(if(x,a,b))
+                    if(branch1.GetParamCount() == 1)
+                    {
+                        CodeTree changed_if;
+                        changed_if.SetOpcode(GetOpcode());
+                        changed_if.AddParamMove(GetParam(0));
+                        changed_if.AddParam(branch1.GetParam(0));
+                        changed_if.AddParam(branch2.GetParam(0));
+                        changed_if.Rehash();
+                        SetOpcode(op1);
+                        DelParams();
+                        AddParamMove(changed_if);
+                        goto redo;
+                    }
+                    if(op1 == cAdd    || op1 == cMul
+                    || op1 == cAnd    || op1 == cOr
+                    || op1 == cAbsAnd || op1 == cAbsOr
+                    || op1 == cMin    || op1 == cMax)
+                    {
+                        // If the two groups contain one or more
+                        // identical values, extract them.
+                        std::vector<CodeTree> overlap;
+                        for(size_t a=branch1.GetParamCount(); a-- > 0; )
+                        {
+                            for(size_t b=branch2.GetParamCount(); b-- > 0; )
+                            {
+                                if(branch1.GetParam(a).IsIdenticalTo(branch2.GetParam(b)))
+                                {
+                                    if(overlap.empty()) { branch1.CopyOnWrite(); branch2.CopyOnWrite(); }
+                                    overlap.push_back(branch1.GetParam(a));
+                                    branch2.DelParam(b);
+                                    branch1.DelParam(a);
+                                    break;
+                                }
+                            }
+                        }
+                        if(!overlap.empty())
+                        {
+                            branch1.Rehash();
+                            branch2.Rehash();
+                            CodeTree changed_if;
+                            changed_if.SetOpcode(GetOpcode());
+                            changed_if.SetParamsMove(GetParams());
+                            changed_if.Rehash();
+                            SetOpcode(op1);
+                            SetParamsMove(overlap);
+                            AddParamMove(changed_if);
+                            goto redo;
+                        }
+                    }
+                }
+                // if(x, y+z, y) -> if(x, z,0)+y
+                if(op1 == cAdd
+                || op1 == cMul
+                || (op1 == cAnd && branch2.IsLogicalValue())
+                || (op1 == cOr  && branch2.IsLogicalValue())
+                  )
+                {
+                    for(size_t a=branch1.GetParamCount(); a-- > 0; )
+                        if(branch1.GetParam(a).IsIdenticalTo(branch2))
+                        {
+                            branch1.CopyOnWrite();
+                            branch1.DelParam(a);
+                            branch1.Rehash();
+                            CodeTree branch2_backup = branch2;
+                            branch2 = CodeTree( (op1==cAdd||op1==cOr) ? 0.0 : 1.0 );
+                            CodeTree changed_if;
+                            changed_if.SetOpcode(GetOpcode());
+                            changed_if.SetParamsMove(GetParams());
+                            changed_if.Rehash();
+                            SetOpcode(op1);
+                            AddParamMove(branch2_backup);
+                            AddParamMove(changed_if);
+                            goto redo;
+                        }
+                }
+                // if(x, y&z, !!y) -> if(x, z, 1) & y
+                if((op1 == cAnd || op1 == cOr) && op2 == cNotNot)
+                {
+                    CodeTree& branch2op = branch2.GetParam(0);
+                    for(size_t a=branch1.GetParamCount(); a-- > 0; )
+                        if(branch1.GetParam(a).IsIdenticalTo(branch2op))
+                        {
+                            branch1.CopyOnWrite();
+                            branch1.DelParam(a);
+                            branch1.Rehash();
+                            CodeTree branch2_backup = branch2op;
+                            branch2 = CodeTree( (op1==cOr) ? 0.0 : 1.0 );
+                            CodeTree changed_if;
+                            changed_if.SetOpcode(GetOpcode());
+                            changed_if.SetParamsMove(GetParams());
+                            changed_if.Rehash();
+                            SetOpcode(op1);
+                            AddParamMove(branch2_backup);
+                            AddParamMove(changed_if);
+                            goto redo;
+                        }
+                }
+                // if(x, y, y+z) -> if(x, 0,z)+y
+                if(op2 == cAdd
+                || op2 == cMul
+                || (op2 == cAnd && branch1.IsLogicalValue())
+                || (op2 == cOr  && branch1.IsLogicalValue())
+                  )
+                {
+                    for(size_t a=branch2.GetParamCount(); a-- > 0; )
+                        if(branch2.GetParam(a).IsIdenticalTo(branch1))
+                        {
+                            branch2.CopyOnWrite();
+                            branch2.DelParam(a);
+                            branch2.Rehash();
+                            CodeTree branch1_backup = branch1;
+                            branch1 = CodeTree( (op2==cAdd||op2==cOr) ? 0.0 : 1.0 );
+                            CodeTree changed_if;
+                            changed_if.SetOpcode(GetOpcode());
+                            changed_if.SetParamsMove(GetParams());
+                            changed_if.Rehash();
+                            SetOpcode(op2);
+                            AddParamMove(branch1_backup);
+                            AddParamMove(changed_if);
+                            goto redo;
+                        }
+                }
+                // if(x, !!y, y&z) -> if(x, 1, z) & y
+                if((op2 == cAnd || op2 == cOr) && op1 == cNotNot)
+                {
+                    CodeTree& branch1op = branch1.GetParam(0);
+                    for(size_t a=branch2.GetParamCount(); a-- > 0; )
+                        if(branch2.GetParam(a).IsIdenticalTo(branch1op))
+                        {
+                            branch2.CopyOnWrite();
+                            branch2.DelParam(a);
+                            branch2.Rehash();
+                            CodeTree branch1_backup = branch1op;
+                            branch1 = CodeTree( (op2==cOr) ? 0.0 : 1.0 );
+                            CodeTree changed_if;
+                            changed_if.SetOpcode(GetOpcode());
+                            changed_if.SetParamsMove(GetParams());
+                            changed_if.Rehash();
+                            SetOpcode(op2);
+                            AddParamMove(branch1_backup);
+                            AddParamMove(changed_if);
+                            goto redo;
+                        }
                 }
                 break;
             }
@@ -2041,17 +2284,6 @@ namespace FPoptimizer_CodeTree
                       { const_value = 1.0 / tmp;
                         goto ReplaceTreeWithConstValue; } }
                 break;
-
-            /* The following opcodes are processed by GenerateFrom()
-             * within fpoptimizer_bytecode_to_codetree.cc and thus
-             * they will never occur in the calling context:
-             */
-            case cAbsNot:
-            case cAbsNotNot:
-            case cAbsOr:
-            case cAbsAnd:
-            case cAbsIf:
-                break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */
             case cRDiv: // version of cDiv

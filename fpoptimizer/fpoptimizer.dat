@@ -110,32 +110,8 @@
 
 [LOGICAL]
 
-# If both branches of an If() are identical, the test becomes unnecessary
-cIf [y x x] -> x
-
-# There are more optimizations that could be done with If(),
-# but they are likely too specific.
-# For example:
-#  Move branch invariants. if(y, x+a, x+b) -> x+if(y, a, b)
-cIf [y (cAdd x <1>)       x     ] -> cAdd [x (cIf [y (cAdd <1>) 0         ])]
-cIf [y       x      (cAdd x <1>)] -> cAdd [x (cIf [y 0          (cAdd <1>)])]
-cIf [y (cAdd x <1>) (cAdd x <2>)] -> cAdd [x (cIf [y (cAdd <1>) (cAdd <2>)])]
-
-cIf [y (cMul x <1>)       x     ] -> cMul [x (cIf [y (cMul <1>) 1         ])]
-cIf [y       x      (cMul x <1>)] -> cMul [x (cIf [y 1          (cMul <1>)])]
-cIf [y (cMul x <1>) (cMul x <2>)] -> cMul [x (cIf [y (cMul <1>) (cMul <2>)])]
-
-cIf [y (cAnd x <1>) (cNotNot[x])] -> cAnd [x (cIf [y (cAnd <1>) 1         ])]
-cIf [y (cAnd x@L <1>) x@L       ] -> cAnd [x (cIf [y (cAnd <1>) 1         ])]
-cIf [y (cNotNot[x]) (cAnd x <1>)] -> cAnd [x (cIf [y 1          (cAnd <1>)])]
-cIf [y x@L        (cAnd x@L <1>)] -> cAnd [x (cIf [y 1          (cAnd <1>)])]
-cIf [y (cAnd x <1>) (cAnd x <2>)] -> cAnd [x (cIf [y (cAnd <1>) (cAnd <2>)])]
-
-cIf [y (cOr  x <1>) (cNotNot[x])] -> cOr  [x (cIf [y (cOr  <1>) 0         ])]
-cIf [y (cOr  x@L <1>) x@L       ] -> cOr  [x (cIf [y (cOr  <1>) 0         ])]
-cIf [y (cNotNot[x]) (cOr  x <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
-cIf [y x@L         (cOr x@L <1>)] -> cOr  [x (cIf [y 0          (cOr  <1>)])]
-cIf [y (cOr  x <1>) (cOr  x <2>)] -> cOr  [x (cIf [y (cOr  <1>) (cOr  <2>)])]
+cNot [(cIf [x (cNot[y]) z])] -> cIf [x (cNotNot[y]) (cNot[z])]
+cNot [(cIf [x y (cNot[z])])] -> cIf [x (cNot[y]) (cNotNot[z])]
 
 cIf [(cIf [x y 0]) z a] -> cIf [x (cIf [y z a]) a]
 cIf [(cIf [x 1 y]) z a] -> cIf [x z (cIf [y z a])]
@@ -165,6 +141,14 @@ cIf [(cLess[x y]) x y] -> cMin x y
 cIf [(cLess[x y]) y x] -> cMax x y
 cIf [(cLess[0 x]) (cFloor[x]) (cCeil[x])] -> cTrunc x
 
+cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr  x y)])
+cOr  (cNot[x]) (cNot[y]) : (cNot [(cAnd x y)])
+
+cAnd (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cOr  z (cIf[x y (cNot[%])]))])
+cOr  (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cAnd z (cIf[x y (cNot[%])]))])
+
+cAnd (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cOr  z (cIf[x (cNot[%]) y]))])
+cOr  (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cAnd z (cIf[x (cNot[%]) y]))])
 
 cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
 cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
@@ -760,8 +744,6 @@ cNotNot [x@P] -> cAbsNotNot [x]
 cAnd x@P y@P <1> -> cAbsAnd x y (cAnd <1>)
 cOr x@P y@P <1>  -> cAbsOr x y (cOr <1>)
 cIf [x@P y z]    -> cAbsIf x y z
-cAbsAnd 1 :
-cAbsOr  0 :
 
 @L cAbsNotNot [x]   -> x
 @L cIf [x (cAbsNotNot[y]) z] : x y z
@@ -804,6 +786,10 @@ cAbsOr  x y     -> cAbsIf [x 1 (cAbsNotNot[y])  ]
 
 [IGNORE_IF_SIDEEFFECTS]
 
+# These rules are the polar opposite of what
+# is done in SHORTCUT_LOGICAL_EVALUATION.
+# Do not include them in the same optimization set.
+
 cIf [x y@L 0] -> cAnd x y
 cIf [x 0 y@L] -> cAnd (cNot[x]) y
 cIf [x y 0] -> cMul (cNotNot[x]) y
@@ -820,7 +806,6 @@ cIf [x 0 y] -> cMul (cNot[x])    y
 ##### Now construct the rounds of optimization:
 
 $optimize_round1:
-NON_SHORTCUT_LOGICAL_EVALUATION
 LOGICAL
 REMOVE_REDUNDANT
 LOGARITHM
@@ -843,7 +828,6 @@ REGENERATE_TANH
 
 $optimize_round4:
 REGENERATE_HIGHLEVEL_OPCODES
-ABS_LOGICAL
 
 $optimize_ignore_if_sideeffects
 IGNORE_IF_SIDEEFFECTS
@@ -851,5 +835,11 @@ LOGICAL
 
 $optimize_shortcut_logical_evaluation
 SHORTCUT_LOGICAL_EVALUATION
-ABS_LOGICAL
 LOGICAL
+
+$optimize_nonshortcut_logical_evaluation
+NON_SHORTCUT_LOGICAL_EVALUATION
+LOGICAL
+
+$optimize_abslogical
+ABS_LOGICAL

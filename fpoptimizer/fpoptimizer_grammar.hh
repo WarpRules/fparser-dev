@@ -217,7 +217,9 @@ namespace FPoptimizer_Grammar
         extern const Grammar   grammar_optimize_round3;
         extern const Grammar   grammar_optimize_round4;
         extern const Grammar   grammar_optimize_shortcut_logical_evaluation;
+        extern const Grammar   grammar_optimize_nonshortcut_logical_evaluation;
         extern const Grammar   grammar_optimize_ignore_if_sideeffects;
+        extern const Grammar   grammar_optimize_abslogical;
     #endif
     }
 
