@@ -452,6 +452,30 @@ namespace FPoptimizer_CodeTree
                 {
                     return MinMaxTree(1.0, 1.0); // 1^x = 1
                 }
+                if(GetParam(1).IsImmed()
+                && GetParam(1).GetImmed() > 0
+                && GetParam(1).IsAlwaysParity(false))
+                {
+                    // x ^ even_int_const always produces a non-negative value.
+                    double exponent = GetParam(1).GetImmed();
+                    MinMaxTree tmp = GetParam(0).CalculateResultBoundaries();
+                    MinMaxTree result;
+                    result.has_min = true;
+                    result.min = 0;
+                    if(tmp.has_min && tmp.min >= 0)
+                        result.min = fp_pow(tmp.min, exponent);
+                    else if(tmp.has_max && tmp.max <= 0)
+                        result.min = fp_pow(tmp.max, exponent);
+
+                    result.has_max = false;
+                    if(tmp.has_min && tmp.has_max)
+                    {
+                        result.has_max = true;
+                        result.max     = std::max(fabs(tmp.min), fabs(tmp.max));
+                        result.max     = fp_pow(result.max, exponent);
+                    }
+                    return result;
+                }
 
                 MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
                 MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
@@ -582,10 +606,11 @@ namespace FPoptimizer_CodeTree
             case cSub: // converted into cMul y -1
             {
                 CodeTree tmp, tmp2;
-                tmp.SetOpcode(cAdd);
-                tmp.AddParam(GetParam(0));
                 tmp2.SetOpcode(cNeg);
                 tmp2.AddParam(GetParam(1));
+                tmp.SetOpcode(cAdd);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParamMove(tmp2);
                 return tmp.CalculateResultBoundaries();
             }
             case cInv: // converted into cPow x -1
@@ -622,12 +647,12 @@ namespace FPoptimizer_CodeTree
                 tmp.AddParam(CodeTree(CONSTANT_DR));
                 return tmp.CalculateResultBoundaries();
             }
-            case cSqr: // converted into cMul x x
+            case cSqr: // converted into cMul x x    or cPow x 2
             {
                 CodeTree tmp;
-                tmp.SetOpcode(cMul);
+                tmp.SetOpcode(cPow);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(2.0));
                 return tmp.CalculateResultBoundaries();
             }
             case cExp: // converted into cPow CONSTANT_E x

@@ -594,7 +594,7 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<comp.relationships.size(); ++a)
             {
                 CodeTree r;
-                r.SetOpcode(cAtan2);
+                r.SetOpcode(cNop); // dummy
                 switch(comp.relationships[a].relationship)
                 {
                     case ComparisonSet::Lt_Mask: r.SetOpcode( cLess ); break;
@@ -1802,12 +1802,12 @@ namespace FPoptimizer_CodeTree
                 {
                     CodeTree pow_tree;
                     pow_tree.SetOpcode(cPow);
-                    pow_tree.AddParam(GetParam(1));
+                    pow_tree.AddParamMove(GetParam(1));
                     pow_tree.AddParam(CodeTree(-1.0));
                     pow_tree.Rehash();
                     CodeTree div_tree;
                     div_tree.SetOpcode(cMul);
-                    div_tree.AddParam(GetParam(0));
+                    div_tree.AddParamMove(GetParam(0));
                     div_tree.AddParamMove(pow_tree);
                     div_tree.Rehash();
                     SetOpcode(cAtan);

@@ -687,7 +687,10 @@ int main(int argc, char* argv[])
               << ") (using " << varValueSetsAmount << " set"
               << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
 
-#if(0)
+    //std::vector<double> t(1, -99.9);
+    //gVarValues.insert(gVarValues.begin(), t);
+
+#if 0
     std::cout << SEPARATOR << "\nTesting with variable values:\n";
     for(size_t i = 0; i < gVarValues.size(); ++i)
     {
