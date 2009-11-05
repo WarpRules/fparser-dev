@@ -1356,6 +1356,7 @@ namespace FPoptimizer_CodeTree
             case cIf:
             case cAbsIf:
             {
+            redo_if:;
                 // If the If() condition begins with a cNot,
                 // remove the cNot and swap the branches.
                 for(;;)
@@ -1367,6 +1368,114 @@ namespace FPoptimizer_CodeTree
                     else break;
                     GetParam(0).Become( GetParam(0).GetParam(0) );
                     GetParam(1).swap(GetParam(2));
+                }
+                if(GetParam(0).GetOpcode() == cIf
+                || GetParam(0).GetOpcode() == cAbsIf)
+                {
+                    //     if(if(x, a,b), c,d)
+                    //  -> if(x, if(a, c,d), if(b, c,d))
+                    // when either a or b is constantly true/false
+                    CodeTree cond = GetParam(0);
+                    CodeTree truth_a;
+                    truth_a.SetOpcode(cond.GetOpcode() == cIf ? cNotNot : cAbsNotNot);
+                    truth_a.AddParam(cond.GetParam(1));
+                    truth_a.ConstantFolding();
+                    CodeTree truth_b;
+                    truth_b.SetOpcode(cond.GetOpcode() == cIf ? cNotNot : cAbsNotNot);
+                    truth_b.AddParam(cond.GetParam(2));
+                    truth_b.ConstantFolding();
+                    if(truth_a.IsImmed() || truth_b.IsImmed())
+                    {
+                        CodeTree then_tree;
+                        then_tree.SetOpcode(cond.GetOpcode());
+                        then_tree.AddParam(cond.GetParam(1));
+                        then_tree.AddParam(GetParam(1));
+                        then_tree.AddParam(GetParam(2));
+                        then_tree.Rehash();
+                        CodeTree else_tree;
+                        else_tree.SetOpcode(cond.GetOpcode());
+                        else_tree.AddParam(cond.GetParam(2));
+                        else_tree.AddParam(GetParam(1));
+                        else_tree.AddParam(GetParam(2));
+                        else_tree.Rehash();
+                        SetOpcode(cond.GetOpcode());
+                        SetParam(0, cond.GetParam(0));
+                        SetParamMove(1, then_tree);
+                        SetParamMove(2, else_tree);
+                        goto redo_if;
+                    }
+                }
+                if(GetParam(1).GetOpcode() == GetParam(2).GetOpcode()
+                && (GetParam(1).GetOpcode() == cIf
+                 || GetParam(1).GetOpcode() == cAbsIf))
+                {
+                    CodeTree& leaf1 = GetParam(1);
+                    CodeTree& leaf2 = GetParam(2);
+                    if(leaf1.GetParam(0).IsIdenticalTo(leaf2.GetParam(0))
+                    && (leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(1))
+                     || leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(2))))
+                    {
+                    //     if(x, if(y,a,b), if(y,c,d))
+                    // ->  if(y, if(x,a,c), if(x,b,d))
+                    // when either a,c are identical or b,d are identical
+                        CodeTree then_tree;
+                        then_tree.SetOpcode(GetOpcode());
+                        then_tree.AddParam(GetParam(0));
+                        then_tree.AddParam(leaf1.GetParam(1));
+                        then_tree.AddParam(leaf2.GetParam(1));
+                        then_tree.Rehash();
+                        CodeTree else_tree;
+                        else_tree.SetOpcode(GetOpcode());
+                        else_tree.AddParam(GetParam(0));
+                        else_tree.AddParam(leaf1.GetParam(2));
+                        else_tree.AddParam(leaf2.GetParam(2));
+                        else_tree.Rehash();
+                        SetOpcode(leaf1.GetOpcode());
+                        SetParam(0, leaf1.GetParam(0));
+                        SetParamMove(1, then_tree);
+                        SetParamMove(2, else_tree);
+                        goto redo_if;
+                    // cIf [x (cIf [y a z]) (cIf [y z b])] : (cXor x y) z (cIf[x a b])
+                    // ^ if only we had cXor opcode.
+                    }
+                    if(leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(1))
+                    && leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(2)))
+                    {
+                        //    if(x, if(y,a,b), if(z,a,b))
+                        // -> if( if(x, y,z), a,b)
+                        CodeTree cond_tree;
+                        cond_tree.SetOpcode(GetOpcode());
+                        cond_tree.AddParamMove(GetParam(0));
+                        cond_tree.AddParam(leaf1.GetParam(0));
+                        cond_tree.AddParam(leaf2.GetParam(0));
+                        cond_tree.Rehash();
+                        SetOpcode(leaf1.GetOpcode());
+                        SetParamMove(0, cond_tree);
+                        SetParam(2, leaf1.GetParam(2));
+                        SetParam(1, leaf1.GetParam(1));
+                        goto redo_if;
+                    }
+                    if(leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(2))
+                    && leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(1)))
+                    {
+                        //    if(x, if(y,a,b), if(z,b,a))
+                        // -> if( if(x, y,!z), a,b)
+                        CodeTree not_tree;
+                        not_tree.SetOpcode(leaf2.GetOpcode() == cIf ? cNot : cAbsNot);
+                        not_tree.AddParam(leaf2.GetParam(0));
+                        not_tree.Rehash();
+                        CodeTree cond_tree;
+                        cond_tree.SetOpcode(GetOpcode());
+                        cond_tree.AddParamMove(GetParam(0));
+                        cond_tree.AddParam(leaf1.GetParam(0));
+                        cond_tree.AddParamMove(not_tree);
+                        cond_tree.Rehash();
+                        SetOpcode(leaf1.GetOpcode());
+                        SetParamMove(0, cond_tree);
+                        SetParam(2, leaf1.GetParam(2));
+                        SetParam(1, leaf1.GetParam(1));
+                        goto redo_if;
+                    }
                 }
 
                 // If the sub-expression evaluates to approx. zero, yield param3.

@@ -113,23 +113,6 @@
 cNot [(cIf [x (cNot[y]) z])] -> cIf [x (cNotNot[y]) (cNot[z])]
 cNot [(cIf [x y (cNot[z])])] -> cIf [x (cNot[y]) (cNotNot[z])]
 
-cIf [(cIf [x y 0]) z a] -> cIf [x (cIf [y z a]) a]
-cIf [(cIf [x 1 y]) z a] -> cIf [x z (cIf [y z a])]
-
-cIf [x (cIf [y z a]) (cIf [y z b])] : y z (cIf [x a b])
-cIf [x (cIf [y a z]) (cIf [y b z])] : y (cIf [x a b]) z
-cIf [x (cIf [y a b]) (cIf [z a b])] : (cIf [x y z]) a b
-cIf [x (cIf [y a b]) (cIf [z b a])] : (cIf [x y (cNot[z])]) a b
-
-#cIf [x (cIf [y a z]) (cIf [y z b])] : (cXor x y) z (cIf[x a b])
-# cXor could be (cOr (cAnd x (cNot y))  (cAnd y (cNot x)))
-#         or    (cSub (cNotNot x) (cNotNot y))
-#  xy
-#  00 b
-#  01 z
-#  10 z
-#  11 a
-
 # Change cLessOrEq into cLess for less rules to check
 # This way, the only comparison opcodes appearing in cIf
 # are cEqual,cNEqual,cLess.
@@ -589,8 +572,8 @@ cMul -1 (cTanh [(cMul %@N <1>)]) : (cTanh [(cMul -% <1>)])
 #            exp(2*x) = exp(2)^x
 #            y^x = exp(log(y)*x)
 #        tanh(x*log(y)/2) = (y^x-1) / (y^x+1)
-cMul (cAdd {(cPow [% x]) -1}) (cPow [(cAdd {(cPow [% x])  1}) -1]) : (cTanh [(cMul x LOG(%) 0.5)])
-cMul (cAdd {(cPow [% x])  1}) (cPow [(cAdd {(cPow [% x]) -1}) -1]) : (cPow [(cTanh [(cMul x LOG(%) 0.5)]) -1])
+cMul (cAdd {-1 (cPow [% x])}) (cPow [(cAdd { 1 (cPow [% x])}) -1]) : (cTanh [(cMul x LOG(%) 0.5)])
+cMul (cAdd { 1 (cPow [% x])}) (cPow [(cAdd {-1 (cPow [% x])}) -1]) : (cPow [(cTanh [(cMul x LOG(%) 0.5)]) -1])
 
 
 [SINH_COSH_EXP_TRANSFORMATIONS]
@@ -653,11 +636,11 @@ cAdd        (cSinh [x])             (cPow [CONSTANT_EI x])      :          (cCos
 # sinh(3*x)*2 / (E^-3) ^x = (((E^6) ^ x) + -1)
 # sinh(3*x)*2 * (E^ 3) ^x = (((E^6) ^ x) + -1)
 
-#cAdd {(cPow [% x]) -1}  : (cMul (cSinh [(cMul x LOG(%) 0.5)]) 2 (cPow [% (cMul x 0.5)]))
-#cAdd {(cPow [% x])  1}  : (cMul (cCosh [(cMul x LOG(%) 0.5)]) 2 (cPow [% (cMul x 0.5)]))
+#cAdd {-1 (cPow [% x])}  : (cMul (cSinh [(cMul x LOG(%) 0.5)]) 2 (cPow [% (cMul x 0.5)]))
+#cAdd { 1 (cPow [% x])}  : (cMul (cCosh [(cMul x LOG(%) 0.5)]) 2 (cPow [% (cMul x 0.5)]))
 
-#cMul (cAdd {(cPow [% x]) -1}) (cPow [POW(% -0.5) x]) : (cSinh [(cMul x LOG(%) 0.5)]) 2
-#cMul (cPow [% x]) (cAdd {(cPow [POW(% -2) x]) -1})   : (cSinh [(cMul x LOG(%) 0.5)]) 2
+#cMul (cAdd {-1 (cPow [% x])}) (cPow [POW(% -0.5) x]) : (cSinh [(cMul x LOG(%) 0.5)]) 2
+#cMul (cPow [% x]) (cAdd {-1 (cPow [POW(% -2) x])})   : (cSinh [(cMul x LOG(%) 0.5)]) 2
 
 #   tanh(x) / cosh(x)
 # = sinh(x) / cosh(x)^2
@@ -679,16 +662,16 @@ cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#
 # Disabled: On x86_64, "asinh(x)" is slower than "log(sqrt(x^2+1)+x)"
-cAdd (cPow [(cAdd {(cPow [         x 2])  1})  0.5]) x   :  (cPow [CONSTANT_E (cAsinh [x])])
-cAdd (cPow [(cAdd {(cPow [(cAdd <1>) 2])  1})  0.5]) <1> -> (cPow [CONSTANT_E (cAsinh [(cAdd <1>)])])
-cAdd (cPow [(cAdd {(cPow [         x 2])  1}) -0.5]) x   :  (cPow [CONSTANT_EI (cAsinh [x])])
-cAdd (cPow [(cAdd {(cPow [(cAdd <1>) 2])  1}) -0.5]) <1> -> (cPow [CONSTANT_EI (cAsinh [(cAdd <1>)])])
+cAdd (cPow [(cAdd {1 (cPow [         x 2])})  0.5]) x   :  (cPow [CONSTANT_E (cAsinh [x])])
+cAdd (cPow [(cAdd {1 (cPow [(cAdd <1>) 2])})  0.5]) <1> -> (cPow [CONSTANT_E (cAsinh [(cAdd <1>)])])
+cAdd (cPow [(cAdd {1 (cPow [         x 2])}) -0.5]) x   :  (cPow [CONSTANT_EI (cAsinh [x])])
+cAdd (cPow [(cAdd {1 (cPow [(cAdd <1>) 2])}) -0.5]) <1> -> (cPow [CONSTANT_EI (cAsinh [(cAdd <1>)])])
 
 
 #        acosh: log(x + sqrt(x*x - 1))
 #        exp(acosh): x + sqrt(x*x - 1)
 # Disabled: On x86_64, "acosh(x)" is slower than "log(sqrt(x^2-1)+x)"
-cLog  [(cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x})] -> cAcosh [x]
+cLog  [(cAdd {(cPow [(cAdd {-1 (cPow [x 2])}) 0.5]) x})] -> cAcosh [x]
 #cAdd {(cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) x} -> cPow [CONSTANT_E (cAcosh [x])]
 
 #        atanh(x):   log( (1+x) / (1-x)) / 2
@@ -704,13 +687,13 @@ cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAt
 #        atanh(y+x):   log( (1+y+x) / (1+(-1*(y+x)))) / 2
 #        2*atanh(y+x): log( (1+y+x) / (1+(-1*(y+x))))
 
-#cLog [(cMul {(cAdd {(cMul {% x}) 1}) (cPow [(cAdd {(cMul {-% x}) 1}) -1])})] -> cMul [(cAtanh [(cMul % x)]) 2]
+#cLog [(cMul {(cAdd {1 (cMul {% x})}) (cPow [(cAdd {1 (cMul {-% x})}) -1])})] -> cMul [(cAtanh [(cMul % x)]) 2]
 
 # atanh(x)              = log2( ((x*-2)+1) / ((x*2)-1) ) * log(2)/2
 # atanh(x)*2/log(2)     = log2( ((x*-2)+1) / ((x*2)-1) )
 # y^(atanh(x)*2/log(y)) = ((x*-y)+1) / ((x*y)-1)
 
-#cMul (cAdd {(cMul {x %}) 1}) (cPow [(cAdd {(cMul {x -%}) -1}) -1]) : (cPow [% (cMul (cAtanh[x]) 2 /LOG(%))])
+#cMul (cAdd {1 (cMul {x %})}) (cPow [(cAdd {-1 (cMul {x -%})}) -1]) : (cPow [% (cMul (cAtanh[x]) 2 /LOG(%))])
 #cMul (cPow [(cAdd {(cMul {x %}) &}) -1]) (cAdd {(cMul {x -%}) 2 -&}) : (cPow [-% (cMul (cAtanh[(cAdd (cMul -% x) & -1)]) 2 /LOG(-%))])
 
 
@@ -748,19 +731,6 @@ cIf [x@P y z]    -> cAbsIf x y z
 @L cAbsNotNot [x]   -> x
 @L cIf [x (cAbsNotNot[y]) z] : x y z
 @L cIf [x y (cAbsNotNot[z])] : x y z
-
-cAbsIf [(cAbsIf [x y 0]) z a] -> cAbsIf [x (cAbsIf [y z a]) a]
-cAbsIf [(cAbsIf [x 0 y]) z a] -> cAbsIf [x a (cAbsIf [y z a])]
-cAbsIf [(cAbsIf [x 1 y]) z a] -> cAbsIf [x z (cAbsIf [y z a])]
-cAbsIf [(cAbsIf [x y 1]) z a] -> cAbsIf [x (cAbsIf [y z a]) z]
-cAbsIf [(cIf [x y 0]) z a] -> cIf [x (cAbsIf [y z a]) a]
-cAbsIf [(cIf [x 0 y]) z a] -> cIf [x a (cAbsIf [y z a])]
-cAbsIf [(cIf [x 1 y]) z a] -> cIf [x z (cAbsIf [y z a])]
-cAbsIf [(cIf [x y 1]) z a] -> cIf [x (cAbsIf [y z a]) z]
-cIf [(cAbsIf [x y 0]) z a] -> cAbsIf [x (cIf [y z a]) a]
-cIf [(cAbsIf [x 0 y]) z a] -> cAbsIf [x a (cIf [y z a])]
-cIf [(cAbsIf [x 1 y]) z a] -> cAbsIf [x z (cIf [y z a])]
-cIf [(cAbsIf [x y 1]) z a] -> cAbsIf [x (cIf [y z a]) z]
 
 cAbsIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
@@ -803,6 +773,25 @@ cIf [x 0 y] -> cMul (cNot[x])    y
 # These cannot be done because y may have side
 # effects or just be computation-heavy.
 
+[BASE2_EXPAND_COMPONENTS]
+
+cLog   [x] -> cMul (cLog2[x]) CONSTANT_L2
+cLog10 [x] -> cMul (cLog2[x]) CONSTANT_L10B
+#cExp   [x] -> cExp2 [(cMul CONSTANT_L2I x)]
+#cMul (cLog2by [x y]) <1>    ->  cLog2by [x (cMul y <1>)]
+cAsin  [x] -> cAtan2 x (cSqrt (cSub 1 (cSqr x)))
+cAcos  [x] -> cAtan2 (cSqrt (cSub 1 (cSqr x))) x
+cSinh  [x] -> cMul 0.5 (cSub (cExp[x]) (cInv (cExp[x])))
+cCosh  [x] -> cMul 0.5 (cSub (cExp[x]) (cInv (cExp[x])))
+cTanh  [x] -> cDiv (cAdd (cExp [(cMul x 2)]) -1) (cAdd (cExp [(cMul x 2)]) 1)
+cAtanh [x] -> cMul 0.5 (cLog (cDiv (cAdd 1 x) (cSub 1 x)))
+cAsinh [x] -> cLog (cAdd x (cSqrt (cAdd  1 (cSqr x))))
+cAcosh [x] -> cLog (cAdd x (cSqrt (cAdd -1 (cSqr x))))
+
+#cLog2  [x] -> cLog2by x 1
+#cMul (cPow[(cLog2[x])     %]) & : (cPow[(cLog2by[x POW(& /%)]) %])
+cMul (cPow[(cLog2by[x 1]) %]) & : (cPow[(cLog2by[x POW(& /%)]) %])
+
 ##### Now construct the rounds of optimization:
 
 $optimize_round1:
@@ -843,3 +832,8 @@ LOGICAL
 
 $optimize_abslogical
 ABS_LOGICAL
+
+#$optimize_base2_expand
+#BASE2_EXPAND_COMPONENTS
+#BINOMIAL
+#POW_TRICKS
