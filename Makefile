@@ -68,7 +68,7 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_hash.o
 
 RELEASE_PACK_FILES = example.cc fparser.cc fparser.hh fpoptimizer.cc \
-	fpconfig.hh fptypes.hh fparser.html style.css
+	fpconfig.hh fptypes.hh fp_opcode_add.inc fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^
@@ -204,7 +204,8 @@ fpoptimizer_tests.sh: create_testrules_for_optimization_rules
 
 set_version_string: VersionChanger
 	./VersionChanger $(RELEASE_VERSION) fparser.cc fparser.hh fpconfig.hh \
-	fpoptimizer.cc fptypes.hh fparser.html webpage/index.html
+	fpoptimizer.cc fptypes.hh fp_opcode_add.inc \
+	fpoptimizer/bytecoderules_parser.cc fparser.html webpage/index.html
 
 pack: $(RELEASE_PACK_FILES) set_version_string
 	zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES)
@@ -212,8 +213,11 @@ pack: $(RELEASE_PACK_FILES) set_version_string
 devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
 	Makefile example.cc fparser.cc fparser.hh fpconfig.hh \
-	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
-	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer_treerules.dat \
+	fptypes.hh fp_opcode_add.inc speedtest.cc testbed.cc \
+	fparser.html style.css \
+	fpoptimizer/*.hh fpoptimizer/*.cc \
+	fpoptimizer/fparser_bytecoderules.dat \
+	fpoptimizer/fpoptimizer_treerules.dat \
 	fpoptimizer/*.txt fpoptimizer/grammar_parser.y \
 	run_full_release_testing.sh VersionChanger.cc functioninfo.cc
 
