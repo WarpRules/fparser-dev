@@ -335,7 +335,7 @@ namespace
     {
         out << kOutputCommentBlock << "\n";
         out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
-        out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into\\\"\" to \"\\\"\\n\"\n";
+        out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
         out << "inline void FunctionParser::AddFunctionOpcode(unsigned opcode)\n"
                "{\n"
                "    size_t blen = data->ByteCode.size();\n"

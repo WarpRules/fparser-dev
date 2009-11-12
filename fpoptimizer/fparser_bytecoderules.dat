@@ -9,12 +9,11 @@
 # identifiers: lowercase=cImmeds, uppercase=opcodes
 # [bracketed expression in condition]: constraints to input immeds or opcodes
 # [bracketed expression in replacement]: function that produces an immed
-# {braceted expression in replacement}: function that produces an opcode
 
 y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
 y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
 y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
-cSqr x [!isEvenInteger(x*2)] cPow -> cAbs [x*2] cPow
+cSqr x [!isEvenInteger(x*2.0)] cPow -> cAbs [x*2.0] cPow
 cSqr cSqrt  -> cAbs
 #cSqr cRSqrt -> cAbs cInv
 
@@ -38,7 +37,7 @@ y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
 cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
 cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
 cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
-cSqr x cPow -> [x*2] cPow
+cSqr x cPow -> [x*2.0] cPow
 
 
 x cAbs	 		-> [fabs(x)]
@@ -67,9 +66,13 @@ x cDeg	 		-> [RadiansToDegrees(x)]
 x cRad	 		-> [DegreesToRadians(x)]
 x cNeg			-> [-x]
 x [x!=0.0] cInv 	-> [1.0/x]
+x [x==1.0] cMul		->
 y x cMul		-> [x*y]
+x [x==1.0] cDiv		->
 y x [x!=0.0] cDiv	-> [y/x]
+x [x==0.0] cAdd		->
 y x cAdd		-> [y+x]
+x [x==0.0] cSub		->
 y x cSub		-> [y-x]
 #y [y!=0.0] x cRDiv	-> [x/y]
 #y x cRSub		-> [x-y]
@@ -82,11 +85,8 @@ x cNot			-> [!truthValue(x)]
 cNeg x cMul		-> [-x] cMul
 cNeg x cDiv		-> [-x] cDiv
 x cMul cNeg		-> [-x] cMul
+x [x==-1.0] cMul	-> cNeg
 
-x [x==1] cMul		->
-x [x==1] cDiv		->
-x [x==0] cAdd		->
-x [x==0] cSub		->
 
 y cAdd x cAdd		-> [y+x] cAdd
 y cSub x cAdd		-> [y-x] cSub
@@ -107,12 +107,14 @@ x [x==0.5]  cPow -> cSqrt
 x [x==-0.5] cPow -> cRSqrt
 x [x==-1.0] cPow -> cInv
 
-cLog  cExp  -> 
+cLog  cExp  ->
 cLog2 cExp2 ->
 cExp  cLog  ->
 cExp2 cLog2 ->
 cAsin cSin ->
 cAcos cCos ->
+cAtan cTan ->
+cAtan2 cTan -> cDiv
 cNeg  cAbs -> cAbs
 cInv  cInv ->
 cNeg  cNeg ->
@@ -158,3 +160,31 @@ x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
 x cPow -> [DO_POWI]
+
+#cAbs x [x!=0.0] cLess         -> [0.5/x] cMul cNot
+#cAbs x [x!=0.0] cGreaterOrEq  -> [0.5/x] cMul cNotNot
+#A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess        -> A [x] cMul
+
+cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
+cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
+
+cNeg cCos  -> cCos
+cNeg cCosh -> cCosh
+cNeg cSin  -> cSin cNeg
+cNeg cSinh -> cSinh cNeg
+cNeg cTan  -> cTan cNeg
+cNeg cTanh -> cTanh cNeg
+x cMul cSin  cNeg -> [-x] cMul cSin
+x cMul cSinh cNeg -> [-x] cMul cSinh
+x cMul cTan  cNeg -> [-x] cMul cTan
+x cMul cTanh cNeg -> [-x] cMul cTanh
+
+cAcosh cSinh -> cSqr [-1.0] cAdd cSqrt
+cAsinh cCosh -> cSqr  [1.0] cAdd cSqrt
+cSin cInv -> cCsc
+cCos cInv -> cSec
+cTan cInv -> cCot
+cCsc cInv -> cSin
+cSec cInv -> cCos
+cCot cInv -> cTan
+

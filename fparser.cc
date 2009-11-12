@@ -1246,7 +1246,7 @@ const char* FunctionParser::CompileComparison(const char* function)
         while(isspace(*function)) ++function;
         function = CompileAddition(function);
         if(!function) return 0;
-        data->ByteCode.push_back(opCode);
+        AddFunctionOpcode(opCode);
         --StackPtr;
     }
     return function;
