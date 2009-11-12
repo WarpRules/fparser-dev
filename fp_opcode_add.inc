@@ -20,15 +20,15 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
     {
     case cPow:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(!isEvenInteger(x*2))
             {
-                unsigned op_2 = data->ByteCode[blen - 2];
+                const unsigned op_2 = data->ByteCode[blen - 2];
                 switch(op_2)
                 {
                 case cSqr:
@@ -47,77 +47,17 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             }
             if(IsIntegerConst(x))
             {
-                unsigned op_2 = data->ByteCode[blen - 2];
+                const unsigned op_2 = data->ByteCode[blen - 2];
                 switch(op_2)
                 {
-                case cExp:
-                  {
-                    unsigned op_3 = data->ByteCode[blen - 3];
-                    switch(op_3)
-                    {
-                    case cImmed:
-                      {
-                        double y = data->Immed[ilen - 2];
-                        if(!IsIntegerConst(y))
-                        {
-                            FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cExp x[IsIntegerConst(x)] cPow", "[y*x] cExp");
-                            data->Immed[ilen - 2] = y*x;
-                            /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
-                            /* data->ByteCode[blen - 2] = cExp; */ // redundant, matches cExp @ 2
-                            data->ByteCode.pop_back();
-                            data->Immed.pop_back();
-                            return;
-                        }
-                        break;
-                      }
-                    }
-                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp x[IsIntegerConst(x)] cPow", "[x] cMul cExp");
-                    data->Immed.back() = x;
-                    data->ByteCode[blen - 2] = cImmed;
-                    data->ByteCode.pop_back();
-                    AddFunctionOpcode(cMul);
-                    AddFunctionOpcode(cExp);
-                    return;
-                  }
-                  break;
-                case cExp2:
-                  {
-                    unsigned op_3 = data->ByteCode[blen - 3];
-                    switch(op_3)
-                    {
-                    case cImmed:
-                      {
-                        double y = data->Immed[ilen - 2];
-                        if(!IsIntegerConst(y))
-                        {
-                            FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cExp2 x[IsIntegerConst(x)] cPow", "[y*x] cExp2");
-                            data->Immed[ilen - 2] = y*x;
-                            /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
-                            /* data->ByteCode[blen - 2] = cExp2; */ // redundant, matches cExp2 @ 2
-                            data->ByteCode.pop_back();
-                            data->Immed.pop_back();
-                            return;
-                        }
-                        break;
-                      }
-                    }
-                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp2 x[IsIntegerConst(x)] cPow", "[x] cMul cExp2");
-                    data->Immed.back() = x;
-                    data->ByteCode[blen - 2] = cImmed;
-                    data->ByteCode.pop_back();
-                    AddFunctionOpcode(cMul);
-                    AddFunctionOpcode(cExp2);
-                    return;
-                  }
-                  break;
                 case cPow:
                   {
-                    unsigned op_3 = data->ByteCode[blen - 3];
+                    const unsigned op_3 = data->ByteCode[blen - 3];
                     switch(op_3)
                     {
                     case cImmed:
                       {
-                        double y = data->Immed[ilen - 2];
+                        const double y = data->Immed[ilen - 2];
                         if(!IsIntegerConst(y))
                         {
                             FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cPow x[IsIntegerConst(x)] cPow", "[y*x] cPow");
@@ -132,11 +72,33 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
                       }
                     }
                     FP_TRACE_BYTECODE_OPTIMIZATION("cPow x[IsIntegerConst(x)] cPow", "[x] cMul cPow");
-                    data->Immed.back() = x;
+                    /* data->Immed.back() = x; */ // redundant, matches x @ 1
                     data->ByteCode[blen - 2] = cImmed;
                     data->ByteCode.pop_back();
                     AddFunctionOpcode(cMul);
                     AddFunctionOpcode(cPow);
+                    return;
+                  }
+                  break;
+                case cExp:
+                  {
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp x[IsIntegerConst(x)] cPow", "[x] cMul cExp");
+                    /* data->Immed.back() = x; */ // redundant, matches x @ 1
+                    data->ByteCode[blen - 2] = cImmed;
+                    data->ByteCode.pop_back();
+                    AddFunctionOpcode(cMul);
+                    AddFunctionOpcode(cExp);
+                    return;
+                  }
+                  break;
+                case cExp2:
+                  {
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp2 x[IsIntegerConst(x)] cPow", "[x] cMul cExp2");
+                    /* data->Immed.back() = x; */ // redundant, matches x @ 1
+                    data->ByteCode[blen - 2] = cImmed;
+                    data->ByteCode.pop_back();
+                    AddFunctionOpcode(cMul);
+                    AddFunctionOpcode(cExp2);
                     return;
                   }
                   break;
@@ -174,7 +136,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cSqrt:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cSqr:
@@ -187,7 +149,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=0.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cSqrt", "[sqrt(x)]");
@@ -202,7 +164,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAbs:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cNeg:
@@ -215,7 +177,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cAbs", "[fabs(x)]");
             data->Immed.back() = fabs(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -223,11 +185,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsNeverNegativeValueOpcode(X))
+            const unsigned A = op_1;
+            if(IsNeverNegativeValueOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsNeverNegativeValueOpcode(X)] cAbs", "X");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsNeverNegativeValueOpcode(A)] cAbs", "A");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 return;
             }
         }
@@ -235,12 +197,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAcos:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cAcos", "[acos(x)]");
             data->Immed.back() = acos(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -252,12 +214,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAcosh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=-1.0&&x<=1.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=-1.0&&x<=1.0] cAcosh", "[fp_acosh(x)]");
@@ -272,12 +234,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAsinh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=-1.0&&x<=1.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=-1.0&&x<=1.0] cAsinh", "[fp_asinh(x)]");
@@ -292,12 +254,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAtan:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cAtan", "[atan(x)]");
             data->Immed.back() = atan(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -309,12 +271,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAtanh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cAtanh", "[fp_atanh(x)]");
             data->Immed.back() = fp_atanh(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -326,12 +288,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cCeil:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cCeil", "[ceil(x)]");
             data->Immed.back() = ceil(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -339,11 +301,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsAlwaysIntegerOpcode(X))
+            const unsigned A = op_1;
+            if(IsAlwaysIntegerOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cCeil", "X");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsAlwaysIntegerOpcode(A)] cCeil", "A");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 return;
             }
         }
@@ -351,7 +313,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cCos:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cAcos:
@@ -363,7 +325,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cCos", "[cos(x)]");
             data->Immed.back() = cos(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -375,12 +337,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cCosh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cCosh", "[cosh(x)]");
             data->Immed.back() = cosh(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -392,7 +354,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cExp:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cLog:
@@ -404,12 +366,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cAdd:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double x = data->Immed.back();
+                const double x = data->Immed.back();
                 FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp", "cExp [exp(x)] cMul");
                 data->ByteCode.resize(blen - 2);
                 data->Immed.pop_back();
@@ -425,7 +387,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cExp", "[exp(x)]");
             data->Immed.back() = exp(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -437,7 +399,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cExp2:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cLog2:
@@ -449,12 +411,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cAdd:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double x = data->Immed.back();
+                const double x = data->Immed.back();
                 FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp2", "cExp2 [fp_pow(2.0,x)] cMul");
                 data->ByteCode.resize(blen - 2);
                 data->Immed.pop_back();
@@ -470,7 +432,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cExp2", "[fp_pow(2.0,x)]");
             data->Immed.back() = fp_pow(2.0,x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -482,12 +444,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cFloor:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cFloor", "[floor(x)]");
             data->Immed.back() = floor(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -495,11 +457,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsAlwaysIntegerOpcode(X))
+            const unsigned A = op_1;
+            if(IsAlwaysIntegerOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cFloor", "X");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsAlwaysIntegerOpcode(A)] cFloor", "A");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 return;
             }
         }
@@ -507,12 +469,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cInt:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cInt", "[floor(x+0.5)]");
             data->Immed.back() = floor(x+0.5);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -520,11 +482,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsAlwaysIntegerOpcode(X))
+            const unsigned A = op_1;
+            if(IsAlwaysIntegerOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cInt", "X");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsAlwaysIntegerOpcode(A)] cInt", "A");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 return;
             }
         }
@@ -532,7 +494,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cLog:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cExp:
@@ -544,7 +506,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=0.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog", "[log(x)]");
@@ -559,12 +521,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cLog10:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=0.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog10", "[log10(x)]");
@@ -579,7 +541,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cLog2:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cExp2:
@@ -591,7 +553,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x>=0.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog2", "[log(x)*1.4426950408889634074]");
@@ -606,7 +568,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cSin:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cAsin:
@@ -618,7 +580,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cSin", "[sin(x)]");
             data->Immed.back() = sin(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -630,12 +592,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cSinh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cSinh", "[sinh(x)]");
             data->Immed.back() = sinh(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -647,12 +609,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cTan:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cTan", "[tan(x)]");
             data->Immed.back() = tan(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -664,12 +626,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cTanh:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cTanh", "[tanh(x)]");
             data->Immed.back() = tanh(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -681,12 +643,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cTrunc:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cTrunc", "[trunc(x)]");
             data->Immed.back() = trunc(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -694,11 +656,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsAlwaysIntegerOpcode(X))
+            const unsigned A = op_1;
+            if(IsAlwaysIntegerOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cTrunc", "X");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsAlwaysIntegerOpcode(A)] cTrunc", "A");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 return;
             }
         }
@@ -706,12 +668,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cDeg:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cDeg", "[RadiansToDegrees(x)]");
             data->Immed.back() = RadiansToDegrees(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -723,12 +685,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cRad:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cRad", "[DegreesToRadians(x)]");
             data->Immed.back() = DegreesToRadians(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -740,17 +702,17 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cNeg:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cMul:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double x = data->Immed.back();
+                const double x = data->Immed.back();
                 FP_TRACE_BYTECODE_OPTIMIZATION("x cMul cNeg", "[-x] cMul");
                 data->Immed.back() = -x;
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches x @ 2
@@ -788,7 +750,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cNeg", "[-x]");
             data->Immed.back() = -x;
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -800,7 +762,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cInv:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cInv:
@@ -821,7 +783,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             if(x!=0.0)
             {
                 FP_TRACE_BYTECODE_OPTIMIZATION("x[x!=0.0] cInv", "[1.0/x]");
@@ -836,7 +798,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cMul:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cInv:
@@ -849,12 +811,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cPow:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double x = data->Immed.back();
+                const double x = data->Immed.back();
                 if(x<0)
                 {
                     FP_TRACE_BYTECODE_OPTIMIZATION("x[x<0] cPow cMul", "[-x] cPow cDiv");
@@ -871,8 +833,8 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cNeg:
@@ -887,12 +849,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cMul:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double y = data->Immed[ilen - 2];
+                    const double y = data->Immed[ilen - 2];
                     FP_TRACE_BYTECODE_OPTIMIZATION("y cMul x cMul", "[y*x] cMul");
                     data->Immed[ilen - 2] = y*x;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
@@ -907,7 +869,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cMul", "[x*y]");
                 data->Immed[ilen - 2] = x*y;
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -931,7 +893,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cDiv:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cInv:
@@ -944,17 +906,17 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cExp:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cMul:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double x = data->Immed.back();
+                    const double x = data->Immed.back();
                     FP_TRACE_BYTECODE_OPTIMIZATION("x cMul cExp cDiv", "[-x] cMul cExp cMul");
                     data->Immed.back() = -x;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches x @ 3
@@ -970,10 +932,38 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             }
           }
           break;
+        case cExp2:
+          {
+            const unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cMul:
+              {
+                const unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    const double x = data->Immed.back();
+                    FP_TRACE_BYTECODE_OPTIMIZATION("x cMul cExp2 cDiv", "[-x] cMul cExp2 cMul");
+                    data->Immed.back() = -x;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches x @ 3
+                    /* data->ByteCode[blen - 2] = cMul; */ // redundant, matches cMul @ 2
+                    /* data->ByteCode.back() = cExp2; */ // redundant, matches cExp2 @ 1
+                    AddFunctionOpcode(cMul);
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+          break;
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cNeg:
@@ -1009,7 +999,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAdd:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cNeg:
@@ -1022,18 +1012,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cAdd:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double y = data->Immed[ilen - 2];
+                    const double y = data->Immed[ilen - 2];
                     FP_TRACE_BYTECODE_OPTIMIZATION("y cAdd x cAdd", "[y+x] cAdd");
                     data->Immed[ilen - 2] = y+x;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
@@ -1048,18 +1038,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cSub:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double y = data->Immed[ilen - 2];
-                    FP_TRACE_BYTECODE_OPTIMIZATION("y cSub x cAdd", "[x-y] cAdd");
-                    data->Immed[ilen - 2] = x-y;
+                    const double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cSub x cAdd", "[y-x] cSub");
+                    data->Immed[ilen - 2] = y-x;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
-                    data->ByteCode.resize(blen - 2);
+                    /* data->ByteCode[blen - 2] = cSub; */ // redundant, matches cSub @ 2
+                    data->ByteCode.pop_back();
                     data->Immed.pop_back();
-                    AddFunctionOpcode(cAdd);
                     return;
                     break;
                   }
@@ -1068,7 +1058,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cAdd", "[y+x]");
                 data->Immed[ilen - 2] = y+x;
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -1092,7 +1082,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cSub:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cNeg:
@@ -1105,18 +1095,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cSub:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double y = data->Immed[ilen - 2];
+                    const double y = data->Immed[ilen - 2];
                     FP_TRACE_BYTECODE_OPTIMIZATION("y cSub x cSub", "[x+y] cSub");
                     data->Immed[ilen - 2] = x+y;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
@@ -1131,12 +1121,12 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cAdd:
               {
-                unsigned op_3 = data->ByteCode[blen - 3];
+                const unsigned op_3 = data->ByteCode[blen - 3];
                 switch(op_3)
                 {
                 case cImmed:
                   {
-                    double y = data->Immed[ilen - 2];
+                    const double y = data->Immed[ilen - 2];
                     FP_TRACE_BYTECODE_OPTIMIZATION("y cAdd x cSub", "[y-x] cAdd");
                     data->Immed[ilen - 2] = y-x;
                     /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
@@ -1151,7 +1141,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
               break;
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cSub", "[y-x]");
                 data->Immed[ilen - 2] = y-x;
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -1175,18 +1165,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cMin:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cMin", "[Min(x,y)]");
                 data->Immed[ilen - 2] = Min(x,y);
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -1203,18 +1193,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cMax:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cMax", "[Max(x,y)]");
                 data->Immed[ilen - 2] = Max(x,y);
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -1231,18 +1221,18 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cAtan2:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cImmed:
           {
-            double x = data->Immed.back();
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const double x = data->Immed.back();
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed:
               {
-                double y = data->Immed[ilen - 2];
+                const double y = data->Immed[ilen - 2];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x cAtan2", "[atan2(y,x)]");
                 data->Immed[ilen - 2] = atan2(y,x);
                 /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
@@ -1259,7 +1249,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       break;
     case cNot:
       {
-        unsigned op_1 = data->ByteCode.back();
+        const unsigned op_1 = data->ByteCode.back();
         switch(op_1)
         {
         case cLess:
@@ -1344,21 +1334,21 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cAbsNot:
           {
-            unsigned op_2 = data->ByteCode[blen - 2];
+            const unsigned op_2 = data->ByteCode[blen - 2];
             switch(op_2)
             {
             case cImmed: break;
             default:
-                unsigned X = op_2; X=X;
-                if(IsLogicalOpcode(X))
+                const unsigned A = op_2;
+                if(IsLogicalOpcode(A))
                 {
-                    FP_TRACE_BYTECODE_OPTIMIZATION("X[IsLogicalOpcode(X)] cAbsNot cNot", "X");
-                    /* data->ByteCode[blen - 2] = X; */ // redundant, matches X @ 2
+                    FP_TRACE_BYTECODE_OPTIMIZATION("A[IsLogicalOpcode(A)] cAbsNot cNot", "A");
+                    /* data->ByteCode[blen - 2] = A; */ // redundant, matches A @ 2
                     data->ByteCode.pop_back();
                     return;
                 }
-                FP_TRACE_BYTECODE_OPTIMIZATION("X cAbsNot cNot", "X cAbsNotNot");
-                /* data->ByteCode[blen - 2] = X; */ // redundant, matches X @ 2
+                FP_TRACE_BYTECODE_OPTIMIZATION("A cAbsNot cNot", "A cAbsNotNot");
+                /* data->ByteCode[blen - 2] = A; */ // redundant, matches A @ 2
                 data->ByteCode.back() = cAbsNotNot;
                 return;
             }
@@ -1366,7 +1356,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           break;
         case cImmed:
           {
-            double x = data->Immed.back();
+            const double x = data->Immed.back();
             FP_TRACE_BYTECODE_OPTIMIZATION("x cNot", "[!truthValue(x)]");
             data->Immed.back() = !truthValue(x);
             /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
@@ -1374,11 +1364,11 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
             break;
           }
         default:
-            unsigned X = op_1; X=X;
-            if(IsNeverNegativeValueOpcode(X))
+            const unsigned A = op_1;
+            if(IsNeverNegativeValueOpcode(A))
             {
-                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsNeverNegativeValueOpcode(X)] cNot", "X cAbsNot");
-                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[IsNeverNegativeValueOpcode(A)] cNot", "A cAbsNot");
+                /* data->ByteCode.back() = A; */ // redundant, matches A @ 1
                 data->ByteCode.push_back(cAbsNot);
                 return;
             }

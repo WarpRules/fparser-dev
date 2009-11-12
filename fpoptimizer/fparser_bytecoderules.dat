@@ -31,8 +31,9 @@ cSqr cSqrt  -> cAbs
  #              f(-2) = nan  <- ok because of this
  #              f'(-2) = -8
  #
-y [!IsIntegerConst(y)] cExp  x	[IsIntegerConst(x)] cPow -> [y*x] cExp
-y [!IsIntegerConst(y)] cExp2 x	[IsIntegerConst(x)] cPow -> [y*x] cExp2
+#y [!IsIntegerConst(y)] cExp  x	[IsIntegerConst(x)] cPow -> [y*x] cExp
+#y [!IsIntegerConst(y)] cExp2 x	[IsIntegerConst(x)] cPow -> [y*x] cExp2
+#  ^ y cExp never occurs (already optimized to literal)
 y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
 cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
 cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
@@ -88,7 +89,7 @@ x [x==0] cAdd		->
 x [x==0] cSub		->
 
 y cAdd x cAdd		-> [y+x] cAdd
-y cSub x cAdd		-> [x-y] cAdd
+y cSub x cAdd		-> [y-x] cSub
 y cSub x cSub		-> [x+y] cSub
 y cAdd x cSub		-> [y-x] cAdd
 
@@ -97,8 +98,9 @@ y cMul x [x!=0.0] cDiv 	-> [y*x] cMul
 
 x [x!=0.0] cDiv		-> [1.0/x] cMul
 
-###y cExp  x cPow -> [y*x] cExp
-###y cExp2 x cPow -> [y*x] cExp2
+#y cExp  x cPow -> [y*x] cExp
+#y cExp2 x cPow -> [y*x] cExp2
+#  ^ y cExp never occurs (already optimized to literal)
 y cPow  x cPow -> [y*x] cPow
 
 x [x==0.5]  cPow -> cSqrt
@@ -136,15 +138,15 @@ cNot  cNot -> cNotNot
 cNotNot cNot    -> cNot
 cAbsNotNot cNot -> cAbsNot
 
-X [IsLogicalOpcode(X)]            cAbsNot cNot -> X
-X                                 cAbsNot cNot -> X cAbsNotNot
-X [IsNeverNegativeValueOpcode(X)] cNot -> X cAbsNot
+A [IsLogicalOpcode(A)]            cAbsNot cNot -> A
+A                                 cAbsNot cNot -> A cAbsNotNot
+A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot
 
-X [IsNeverNegativeValueOpcode(X)] cAbs   -> X
-X [IsAlwaysIntegerOpcode(X)]	  cTrunc-> X
-X [IsAlwaysIntegerOpcode(X)]	  cFloor-> X
-X [IsAlwaysIntegerOpcode(X)]	  cCeil -> X
-X [IsAlwaysIntegerOpcode(X)]	  cInt  -> X
+A [IsNeverNegativeValueOpcode(A)] cAbs   -> A
+A [IsAlwaysIntegerOpcode(A)]	  cTrunc-> A
+A [IsAlwaysIntegerOpcode(A)]	  cFloor-> A
+A [IsAlwaysIntegerOpcode(A)]	  cCeil -> A
+A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A
 
 cFloor cNeg -> cNeg cCeil
 cCeil  cNeg -> cNeg cFloor
@@ -152,6 +154,7 @@ cCeil  cNeg -> cNeg cFloor
 x cAdd cExp  -> cExp  [exp(x)]        cMul
 x cAdd cExp2 -> cExp2 [fp_pow(2.0,x)] cMul
 
-x cMul cExp cDiv -> [-x] cMul cExp cMul
+x cMul cExp  cDiv -> [-x] cMul cExp  cMul
+x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
 x cPow -> [DO_POWI]

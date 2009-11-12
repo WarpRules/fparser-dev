@@ -658,7 +658,7 @@ namespace
           case cEqual: case cNEqual:
           case cLess: case cLessOrEq:
           case cGreater: case cGreaterOrEq:
-          case cSqrt: case cRSqrt:
+          case cSqrt: case cRSqrt: case cSqr:
           case cAbs:
           case cAcos: case cCosh:
               return true;
