@@ -118,14 +118,10 @@ private:
     const char* SetErrorType(ParseErrorType, const char*);
 
     void AddFunctionOpcode_CheckDegreesConversion(unsigned);
-    void AddFunctionOpcode(unsigned);
-    inline void AddMultiplicationByConst(double value);
-    template<typename Operation>
-    inline void AddBinaryOperationByConst();
-    inline void AddNegOpcode();
-    inline void AddNotOpcode();
+    inline void AddFunctionOpcode(unsigned);
     inline void incStackPtr();
     bool CompilePowi(int);
+    inline bool TryCompilePowi(double);
 
     const char* CompileIf(const char*);
     const char* CompileFunctionParams(const char*, unsigned);

@@ -1,0 +1,157 @@
+# This documents all the optimizations that are done to bytecode
+# by fparser.cc directly while parsing the input function
+# (excluding powi).
+#
+# The idea is to generate automatically the optimizations from
+# this file, but we are not there yet.
+#
+
+# identifiers: lowercase=cImmeds, uppercase=opcodes
+# [bracketed expression in condition]: constraints to input immeds or opcodes
+# [bracketed expression in replacement]: function that produces an immed
+# {braceted expression in replacement}: function that produces an opcode
+
+y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
+y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
+y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
+cSqr x [!isEvenInteger(x*2)] cPow -> cAbs [x*2] cPow
+cSqr cSqrt  -> cAbs
+#cSqr cRSqrt -> cAbs cInv
+
+ # (x^y)^1.5  is unacceptable,
+ #            for y might be 2, resulting in x^3
+ #              f(-2)  = 8
+ #              f'(-2) = -8
+ # (x^y)^5    is okay
+ #            for y might be 1.2, reuslting in x^6
+ #              f(-2) = nan
+ #              f'(-2) = 64
+ # (x^y)^2    is okay,
+ #            for y might be 1.5, resulting in x^3
+ #              f(-2) = nan  <- ok because of this
+ #              f'(-2) = -8
+ #
+y [!IsIntegerConst(y)] cExp  x	[IsIntegerConst(x)] cPow -> [y*x] cExp
+y [!IsIntegerConst(y)] cExp2 x	[IsIntegerConst(x)] cPow -> [y*x] cExp2
+y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
+cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
+cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
+cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
+cSqr x cPow -> [x*2] cPow
+
+
+x cAbs	 		-> [fabs(x)]
+x cAcos	 		-> [acos(x)]
+x [x>=-1.0&&x<=1.0] cAcosh -> [fp_acosh(x)]
+x [x>=-1.0&&x<=1.0] cAsinh -> [fp_asinh(x)]
+x cAtan	 		-> [atan(x)]
+x cAtanh 		-> [fp_atanh(x)]
+x cCeil	 		-> [ceil(x)]
+x cCos	 		-> [cos(x)]
+x cCosh	 		-> [cosh(x)]
+x cExp	 		-> [exp(x)]
+x cExp2	 		-> [fp_pow(2.0,x)]
+x cFloor 		-> [floor(x)]
+x cInt	 		-> [floor(x+0.5)]
+x [x>=0.0] cLog		-> [log(x)]
+x [x>=0.0] cLog10	-> [log10(x)]
+x [x>=0.0] cLog2	-> [log(x)*1.4426950408889634074]
+x cSin	 		-> [sin(x)]
+x cSinh	 		-> [sinh(x)]
+x [x>=0.0] cSqrt	-> [sqrt(x)]
+x cTan	 		-> [tan(x)]
+x cTanh	 		-> [tanh(x)]
+x cTrunc 		-> [trunc(x)]
+x cDeg	 		-> [RadiansToDegrees(x)]
+x cRad	 		-> [DegreesToRadians(x)]
+x cNeg			-> [-x]
+x [x!=0.0] cInv 	-> [1.0/x]
+y x cMul		-> [x*y]
+y x [x!=0.0] cDiv	-> [y/x]
+y x cAdd		-> [y+x]
+y x cSub		-> [y-x]
+#y [y!=0.0] x cRDiv	-> [x/y]
+#y x cRSub		-> [x-y]
+y x cMin		-> [Min(x,y)]
+y x cMax		-> [Max(x,y)]
+y x cAtan2		-> [atan2(y,x)]
+y x cPow 	-> [fp_pow(y,x)]
+x cNot			-> [!truthValue(x)]
+
+cNeg x cMul		-> [-x] cMul
+cNeg x cDiv		-> [-x] cDiv
+x cMul cNeg		-> [-x] cMul
+
+x [x==1] cMul		->
+x [x==1] cDiv		->
+x [x==0] cAdd		->
+x [x==0] cSub		->
+
+y cAdd x cAdd		-> [y+x] cAdd
+y cSub x cAdd		-> [x-y] cAdd
+y cSub x cSub		-> [x+y] cSub
+y cAdd x cSub		-> [y-x] cAdd
+
+y cMul x cMul		-> [y*x] cMul
+y cMul x [x!=0.0] cDiv 	-> [y*x] cMul
+
+x [x!=0.0] cDiv		-> [1.0/x] cMul
+
+###y cExp  x cPow -> [y*x] cExp
+###y cExp2 x cPow -> [y*x] cExp2
+y cPow  x cPow -> [y*x] cPow
+
+x [x==0.5]  cPow -> cSqrt
+x [x==-0.5] cPow -> cRSqrt
+x [x==-1.0] cPow -> cInv
+
+cLog  cExp  -> 
+cLog2 cExp2 ->
+cExp  cLog  ->
+cExp2 cLog2 ->
+cAsin cSin ->
+cAcos cCos ->
+cNeg  cAbs -> cAbs
+cInv  cInv ->
+cNeg  cNeg ->
+cPow  cInv -> cNeg cPow
+
+cInv cDiv -> cMul
+cInv cMul -> cDiv
+cNeg cAdd -> cSub
+cNeg cSub -> cAdd
+
+x [x<0] cPow cMul -> [-x] cPow cDiv
+
+cLess        cNot -> cGreaterOrEq
+cLessOrEq    cNot -> cGreater
+cGreater     cNot -> cLessOrEq
+cGreaterOrEq cNot -> cLess
+cEqual       cNot -> cNEqual
+cNEqual      cNot -> cEqual
+
+cNeg  cNot -> cNot
+cAbs  cNot -> cNot
+cNot  cNot -> cNotNot
+cNotNot cNot    -> cNot
+cAbsNotNot cNot -> cAbsNot
+
+X [IsLogicalOpcode(X)]            cAbsNot cNot -> X
+X                                 cAbsNot cNot -> X cAbsNotNot
+X [IsNeverNegativeValueOpcode(X)] cNot -> X cAbsNot
+
+X [IsNeverNegativeValueOpcode(X)] cAbs   -> X
+X [IsAlwaysIntegerOpcode(X)]	  cTrunc-> X
+X [IsAlwaysIntegerOpcode(X)]	  cFloor-> X
+X [IsAlwaysIntegerOpcode(X)]	  cCeil -> X
+X [IsAlwaysIntegerOpcode(X)]	  cInt  -> X
+
+cFloor cNeg -> cNeg cCeil
+cCeil  cNeg -> cNeg cFloor
+
+x cAdd cExp  -> cExp  [exp(x)]        cMul
+x cAdd cExp2 -> cExp2 [fp_pow(2.0,x)] cMul
+
+x cMul cExp cDiv -> [-x] cMul cExp cMul
+
+x cPow -> [DO_POWI]

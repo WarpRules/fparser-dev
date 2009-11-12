@@ -112,8 +112,15 @@ fpoptimizer/grammar_parser.cc: \
 fpoptimizer/fpoptimizer_grammar_data.cc: \
 		fpoptimizer/grammar_parser \
 		fpoptimizer/grammar_parser.y \
-		fpoptimizer/fpoptimizer.dat
-	fpoptimizer/grammar_parser < fpoptimizer/fpoptimizer.dat > $@
+		fpoptimizer/fpoptimizer_treerules.dat
+	fpoptimizer/grammar_parser < fpoptimizer/fpoptimizer_treerules.dat > $@
+
+fpoptimizer/bytecoderules_parser: \
+		fpoptimizer/bytecoderules_parser.o
+	$(LD) -o $@ $^
+
+fp_opcode_add.inc: fpoptimizer/bytecoderules_parser fpoptimizer/fparser_bytecoderules.dat
+	fpoptimizer/bytecoderules_parser < fpoptimizer/fparser_bytecoderules.dat > $@
 
 fpoptimizer.cc: \
 		fpoptimizer/grammar_parser.y \
@@ -206,7 +213,7 @@ devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
 	Makefile example.cc fparser.cc fparser.hh fpconfig.hh \
 	fptypes.hh speedtest.cc testbed.cc fparser.html style.css \
-	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer.dat \
+	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/fpoptimizer_treerules.dat \
 	fpoptimizer/*.txt fpoptimizer/grammar_parser.y \
 	run_full_release_testing.sh VersionChanger.cc functioninfo.cc
 

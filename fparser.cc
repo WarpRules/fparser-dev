@@ -620,67 +620,6 @@ inline bool FunctionParser::CompilePowi(int int_exponent)
 
 namespace
 {
-    struct MulOp
-    {
-        enum { opcode = cMul, opposite = cDiv, combined = cMul, defval=1 };
-        static inline void action(double& target, double value)
-        { target *= value; }
-        static inline void combine_action(double& target, double value)
-        { target=value/target; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
-        static inline bool is_redundant(double v) { return v==1.0; }
-        static inline bool opposite_is_preferred() { return false; }
-    };
-    struct DivOp
-    {
-        enum { opcode = cDiv, opposite = cMul, combined = cMul, defval=1 };
-        static inline void action(double& target, double value)
-        { target /= value; }
-        static inline void combine_action(double& target, double value)
-        { target=target/value; }
-        static inline bool valid_rvalue(double v) { return v != 0.0; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==1.0; }
-        static inline bool opposite_is_preferred() { return true; }
-    };
-    struct AddOp
-    {
-        enum { opcode = cAdd, opposite = cSub, combined = cAdd, defval=0 };
-        static inline void action(double& target, double value)
-        { target += value; }
-        static inline void combine_action(double& target, double value)
-        { target=value-target; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==0.0; }
-        static inline bool opposite_is_preferred() { return false; }
-    };
-    struct SubOp
-    {
-        enum { opcode = cSub, opposite = cAdd, combined = cAdd, defval=0 };
-        static inline void action(double& target, double value)
-        { target -= value; }
-        static inline void combine_action(double& target, double value)
-        { target=target-value; }
-        static inline bool valid_rvalue(double) { return true; }
-        static inline bool valid_opposite_rvalue(double) { return true; }
-        static inline bool is_redundant(double v) { return v==0.0; }
-        static inline bool opposite_is_preferred() { return true; }
-    };
-    struct ModOp
-    {
-        enum { opcode = cMod, opposite = cMod, combined = cMod, defval=1 };
-        static inline void action(double& target, double value)
-        { target = fmod(target, value); }
-        static inline void combine_action(double& target, double value)
-        { target = fmod(target, value); }
-        static inline bool valid_rvalue(double v) { return v != 0.0; }
-        static inline bool valid_opposite_rvalue(double v) { return v != 0.0; }
-        static inline bool is_redundant(double) { return false; }
-        static inline bool opposite_is_preferred() { return false; }
-    };
-
     bool IsEligibleIntPowiExponent(int int_exponent)
     {
         int abs_int_exponent = int_exponent;
@@ -692,6 +631,22 @@ namespace
               (abs_int_exponent & (abs_int_exponent - 1)) == 0));
     }
 
+    bool IsLogicalOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cAnd: case cAbsAnd:
+          case cOr:  case cAbsOr:
+          case cNot: case cAbsNot:
+          case cNotNot: case cAbsNotNot:
+          case cEqual: case cNEqual:
+          case cLess: case cLessOrEq:
+          case cGreater: case cGreaterOrEq:
+              return true;
+          default: break;
+        }
+        return false;
+    }
     bool IsNeverNegativeValueOpcode(unsigned op)
     {
         switch(op)
@@ -730,329 +685,1460 @@ namespace
     }
 }
 
-inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
+inline bool FunctionParser::TryCompilePowi(double original_immed)
 {
-    if(data->ByteCode.back() == cImmed)
+    int int_exponent = (int)original_immed;
+
+    if(original_immed != (double)int_exponent)
     {
-        switch(opcode)
+        for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
         {
-          case cAbs:
-              data->Immed.back() = fabs(data->Immed.back());
-              return;
-          case cAcos:
-              if(data->Immed.back() < -1 || data->Immed.back() > 1) break;
-              data->Immed.back() = acos(data->Immed.back());
-              return;
-          case cAcosh:
-              data->Immed.back() = fp_acosh(data->Immed.back());
-              return;
-          case cAsin:
-              if(data->Immed.back() < -1 || data->Immed.back() > 1) break;
-              data->Immed.back() = asin(data->Immed.back());
-              return;
-          case cAsinh:
-              data->Immed.back() = fp_asinh(data->Immed.back());
-              return;
-          case cAtan:
-              data->Immed.back() = atan(data->Immed.back());
-              return;
-          case cAtanh:
-              data->Immed.back() = fp_atanh(data->Immed.back());
-              return;
-          case cCeil:
-              data->Immed.back() = ceil(data->Immed.back());
-              return;
-          case cCos:
-              data->Immed.back() = cos(data->Immed.back());
-              return;
-          case cCosh:
-              data->Immed.back() = cosh(data->Immed.back());
-              return;
-          case cExp:
-              data->Immed.back() = exp(data->Immed.back());
-              return;
-          case cExp2:
-              data->Immed.back() = fp_pow(2.0, data->Immed.back());
-              return;
-          case cFloor:
-              data->Immed.back() = floor(data->Immed.back());
-              return;
-          case cInt:
-              data->Immed.back() = floor(data->Immed.back() + 0.5);
-              return;
-          case cLog:
-              if(data->Immed.back() <= 0.0) break;
-              data->Immed.back() = log(data->Immed.back());
-              return;
-          case cLog10:
-              if(data->Immed.back() <= 0.0) break;
-              data->Immed.back() = log10(data->Immed.back());
-              return;
-          case cLog2:
-              if(data->Immed.back() <= 0.0) break;
-              data->Immed.back() =
-                  log(data->Immed.back()) * 1.4426950408889634074;
-              return;
-          case cSin:
-              data->Immed.back() = sin(data->Immed.back());
-              return;
-          case cSinh:
-              data->Immed.back() = sinh(data->Immed.back());
-              return;
-          case cSqrt:
-              if(data->Immed.back() < 0.0) break;
-              data->Immed.back() = sqrt(data->Immed.back());
-              return;
-          case cTan:
-              data->Immed.back() = tan(data->Immed.back());
-              return;
-          case cTanh:
-              data->Immed.back() = tanh(data->Immed.back());
-              return;
-          case cTrunc:
-              data->Immed.back() = fp_trunc(data->Immed.back());
-              return;
-          case cDeg:
-              data->Immed.back() = RadiansToDegrees(data->Immed.back());
-              return;
-          case cRad:
-              data->Immed.back() = DegreesToRadians(data->Immed.back());
-              return;
-          case cPow:
-          {
-              double original_immed = data->Immed.back();
-              unsigned before_immed_opcode = data->ByteCode[data->ByteCode.size()-2];
-              if(before_immed_opcode == cExp
-              || before_immed_opcode == cExp2
-              || before_immed_opcode == cPow)
-              {
-                  /* Change  ... Exp immed (Pow)
-                   *      to ... immed mul Exp
-                   * Similarly with Exp, Exp2 and Pow
-                   *
-                   * This helps change exp(x*3)^5 into exp(x*15)
-                   *
-                   * Special attention must be taken to
-                   * not convert (x^2)^1.5 into x^3
-                   * - it must be abs(x)^3 instead.
-                   *
-                   */
-                  if(data->ByteCode[data->ByteCode.size()-3] == cImmed)
-                  {
-                      data->ByteCode.pop_back();
-                      data->ByteCode.back() = cImmed;
-                      if(isEvenInteger(data->Immed[data->Immed.size()-2])
-                      && !isEvenInteger(data->Immed[data->Immed.size()-2]
-                                      * original_immed))
-                      {
-                          data->ByteCode.insert(data->ByteCode.end()-2, cAbs);
-                      }
-                      AddBinaryOperationByConst<MulOp> ();
-                      data->ByteCode.push_back(before_immed_opcode);
-                      return;
-                  }
-                  /* (x^y)^1.5  is unacceptable,
-                   *            for y might be 2, resulting in x^3
-                   *              f(-2)  = 8
-                   *              f'(-2) = -8
-                   * (x^y)^5    is okay
-                   *            for y might be 1.2, reuslting in x^6
-                   *              f(-2) = nan
-                   *              f'(-2) = 64
-                   * (x^y)^2    is okay,
-                   *            for y might be 1.5, resulting in x^3
-                   *              f(-2) = nan  <- ok because of this
-                   *              f'(-2) = -8
-                   */
-                  if(IsIntegerConst(original_immed))
-                  {
-                      data->ByteCode.pop_back();
-                      data->ByteCode.back() = cImmed;
-                      AddBinaryOperationByConst<MulOp> ();
-                      data->ByteCode.push_back(before_immed_opcode);
-                      return;
-                  }
-              }
-              /*if(before_immed_opcode == cImmed)
-              {
-                  data->Immed[data->Immed.size()-2] = fp_pow(data->Immed[data->Immed.size()-2, data->Immed.back());
-                  data->Immed.pop_back();
-                  return;
-              }*/
-              // if the exponent is a special constant value
-              if(original_immed == 0.5)
-              {
-                  data->Immed.pop_back(); data->ByteCode.pop_back();
-                  opcode = cSqrt;
-              }
-              else if(original_immed == -0.5)
-              {
-                  data->Immed.pop_back(); data->ByteCode.pop_back();
-                  opcode = (cRSqrt);
-              }
-              else if(original_immed == -1.0)
-              {
-                  data->Immed.pop_back(); data->ByteCode.pop_back();
-                  opcode = (cInv);
-              }
-              else
-              {
-                  int int_exponent = (int)original_immed;
-
-                  if(original_immed != (double)int_exponent)
-                  {
-                      for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
-                      {
-                          int factor = 1 << sqrt_count;
-                          double changed_exponent =
-                              original_immed * (double)factor;
-                          if(IsIntegerConst(changed_exponent) &&
-                             IsEligibleIntPowiExponent
-                             ( (int)changed_exponent ) )
-                          {
-                              while(sqrt_count > 0)
-                              {
-                                  data->ByteCode.insert(data->ByteCode.end()-1,
-                                                        cSqrt);
-                                  --sqrt_count;
-                              }
-                              original_immed = changed_exponent;
-                              int_exponent   = (int)changed_exponent;
-                              goto do_powi;
-                          }
-                      }
-                  }
-                  else if(IsEligibleIntPowiExponent(int_exponent))
-                  {
-                  do_powi:;
-                      int abs_int_exponent = int_exponent;
-                      if(abs_int_exponent < 0)
-                          abs_int_exponent = -abs_int_exponent;
-
-                      data->Immed.pop_back(); data->ByteCode.pop_back();
-                      /*size_t bytecode_size = data->ByteCode.size();*/
-                      if(CompilePowi(abs_int_exponent))
-                      {
-                          if(int_exponent < 0) AddFunctionOpcode(cInv);
-                          return;
-                      }
-                      /*powi_failed:;
-                      data->ByteCode.resize(bytecode_size);
-                      data->Immed.push_back(original_immed);
-                      data->ByteCode.push_back(cImmed);*/
-                  }
-                  // When we don't know whether x >= 0, we still know that
-                  // x^y can be safely converted into exp(y * log(x))
-                  // when y is _not_ integer, because we know that x >= 0.
-                  // Otherwise either expression will give a NaN.
-                  if(original_immed != (double)int_exponent
-                  || IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2])
-                    )
-                  {
-                      data->Immed.pop_back(); data->ByteCode.pop_back();
-                      AddFunctionOpcode(cLog);
-                      AddMultiplicationByConst(original_immed);
-                      opcode = cExp;
-                  }
-              }
-          } // pow
+            int factor = 1 << sqrt_count;
+            double changed_exponent =
+                original_immed * (double)factor;
+            if(IsIntegerConst(changed_exponent) &&
+               IsEligibleIntPowiExponent
+               ( (int)changed_exponent ) )
+            {
+                while(sqrt_count > 0)
+                {
+                    data->ByteCode.insert(data->ByteCode.end()-1, cSqrt);
+                    --sqrt_count;
+                }
+                original_immed = changed_exponent;
+                int_exponent   = (int)changed_exponent;
+                goto do_powi;
+            }
         }
     }
-    switch(opcode)
+    else if(IsEligibleIntPowiExponent(int_exponent))
     {
-        #define eliminate_redundant_sequence(first, then) \
-            case then: \
-                if(data->ByteCode.back() == first) \
-                { \
-                    data->ByteCode.pop_back(); \
-                    return; \
-                } \
-                break
-        eliminate_redundant_sequence(cLog, cExp);
-        eliminate_redundant_sequence(cLog2, cExp2);
-        eliminate_redundant_sequence(cExp, cLog);
-        eliminate_redundant_sequence(cExp2, cLog2);
-        eliminate_redundant_sequence(cAsin, cSin);
-        eliminate_redundant_sequence(cAcos, cCos);
-        #undef eliminate_redundant_sequence
-        case cAbs:
-            // abs(-x) = abs(x). Don't test cAbs here, it is done by IsNeverNegativeValueOpcode().
-            if(data->ByteCode.back() == cNeg) data->ByteCode.pop_back();
-            // cAbs is redundant after any opcode that never
-            // returns a negative value
-            if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
-                return;
-        case cFloor:
-            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
-            if(data->ByteCode.back() == cNeg)
-            {
-                if(!IsAlwaysIntegerOpcode(data->ByteCode[data->ByteCode.size()-2]))
-                {
-                    data->ByteCode.back() = cCeil;
-                    data->ByteCode.push_back(cNeg);
-                }
-                return;
-            }
-            break;
-        case cCeil:
-            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
-            if(data->ByteCode.back() == cNeg)
-            {
-                if(!IsAlwaysIntegerOpcode(data->ByteCode[data->ByteCode.size()-2]))
-                {
-                    data->ByteCode.back() = cFloor;
-                    data->ByteCode.push_back(cNeg);
-                }
-                return;
-            }
-            break;
-        case cInt:
-            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
-            break;
-        case cTrunc:
-            if(IsAlwaysIntegerOpcode(data->ByteCode.back())) return;
-            break;
-        case cInv:
-            if(data->ByteCode.back() == cInv) // 1/1/x = x
-            {
-                data->ByteCode.pop_back();
-                return;
-            }
-            if(data->ByteCode.back() == cPow) // 1/x^y = x^-y
-            {
-                data->ByteCode.pop_back();
-                AddNegOpcode();
-                data->ByteCode.push_back(cPow);
-                return;
-            }
+    do_powi:;
+        int abs_int_exponent = int_exponent;
+        if(abs_int_exponent < 0)
+            abs_int_exponent = -abs_int_exponent;
+
+        data->Immed.pop_back(); data->ByteCode.pop_back();
+        /*size_t bytecode_size = data->ByteCode.size();*/
+        if(CompilePowi(abs_int_exponent))
+        {
+            if(int_exponent < 0) AddFunctionOpcode(cInv);
+            return true;
+        }
+        /*powi_failed:;
+        data->ByteCode.resize(bytecode_size);
+        data->Immed.push_back(original_immed);
+        data->ByteCode.push_back(cImmed);*/
+        return false;
     }
+    // When we don't know whether x >= 0, we still know that
+    // x^y can be safely converted into exp(y * log(x))
+    // when y is _not_ integer, because we know that x >= 0.
+    // Otherwise either expression will give a NaN.
+    if(original_immed != (double)int_exponent
+    || IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2])
+      )
+    {
+        data->Immed.pop_back();
+        data->ByteCode.pop_back();
+        AddFunctionOpcode(cLog);
+        data->Immed.push_back(original_immed);
+        data->ByteCode.push_back(cImmed);
+        AddFunctionOpcode(cMul);
+        AddFunctionOpcode(cExp);
+        return true;
+    }
+    return false;
+}
+
+// #include "fp_opcode_add.inc"
+/** BEGIN AUTOGENERATED CODE (from fp_opcode_add.inc) **/
+#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)
+//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << "Changing \"" from "\"\n    into\"" to "\"\n"
+#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)
+//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << "Changing \"" from "\"\n    into\"" to "\"\n"
+#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)
+//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << "Changing \"" from "\"\n    into\"" to "\"\n"
+#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)
+//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << "Changing \"" from "\"\n    into\"" to "\"\n"
+inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
+{
+    size_t blen = data->ByteCode.size();
+    size_t ilen = data->Immed.size();
     switch(opcode)
     {
+    case cPow:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(!isEvenInteger(x*2))
+            {
+                unsigned op_2 = data->ByteCode[blen - 2];
+                switch(op_2)
+                {
+                case cSqr:
+                  {
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cSqr x[!isEvenInteger(x*2)] cPow", "cAbs [x*2] cPow");
+                    data->ByteCode.resize(blen - 2);
+                    data->Immed.pop_back();
+                    AddFunctionOpcode(cAbs);
+                    data->Immed.push_back(x*2);
+                    data->ByteCode.push_back(cImmed);
+                    AddFunctionOpcode(cPow);
+                    return;
+                  }
+                  break;
+                }
+            }
+            if(IsIntegerConst(x))
+            {
+                unsigned op_2 = data->ByteCode[blen - 2];
+                switch(op_2)
+                {
+                case cExp:
+                  {
+                    unsigned op_3 = data->ByteCode[blen - 3];
+                    switch(op_3)
+                    {
+                    case cImmed:
+                      {
+                        double y = data->Immed[ilen - 2];
+                        if(!IsIntegerConst(y))
+                        {
+                            FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cExp x[IsIntegerConst(x)] cPow", "[y*x] cExp");
+                            data->Immed[ilen - 2] = y*x;
+                            /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                            /* data->ByteCode[blen - 2] = cExp; */ // redundant, matches cExp @ 2
+                            data->ByteCode.pop_back();
+                            data->Immed.pop_back();
+                            return;
+                        }
+                        break;
+                      }
+                    }
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp x[IsIntegerConst(x)] cPow", "[x] cMul cExp");
+                    data->Immed.back() = x;
+                    data->ByteCode[blen - 2] = cImmed;
+                    data->ByteCode.pop_back();
+                    AddFunctionOpcode(cMul);
+                    AddFunctionOpcode(cExp);
+                    return;
+                  }
+                  break;
+                case cExp2:
+                  {
+                    unsigned op_3 = data->ByteCode[blen - 3];
+                    switch(op_3)
+                    {
+                    case cImmed:
+                      {
+                        double y = data->Immed[ilen - 2];
+                        if(!IsIntegerConst(y))
+                        {
+                            FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cExp2 x[IsIntegerConst(x)] cPow", "[y*x] cExp2");
+                            data->Immed[ilen - 2] = y*x;
+                            /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                            /* data->ByteCode[blen - 2] = cExp2; */ // redundant, matches cExp2 @ 2
+                            data->ByteCode.pop_back();
+                            data->Immed.pop_back();
+                            return;
+                        }
+                        break;
+                      }
+                    }
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cExp2 x[IsIntegerConst(x)] cPow", "[x] cMul cExp2");
+                    data->Immed.back() = x;
+                    data->ByteCode[blen - 2] = cImmed;
+                    data->ByteCode.pop_back();
+                    AddFunctionOpcode(cMul);
+                    AddFunctionOpcode(cExp2);
+                    return;
+                  }
+                  break;
+                case cPow:
+                  {
+                    unsigned op_3 = data->ByteCode[blen - 3];
+                    switch(op_3)
+                    {
+                    case cImmed:
+                      {
+                        double y = data->Immed[ilen - 2];
+                        if(!IsIntegerConst(y))
+                        {
+                            FP_TRACE_BYTECODE_OPTIMIZATION("y[!IsIntegerConst(y)] cPow x[IsIntegerConst(x)] cPow", "[y*x] cPow");
+                            data->Immed[ilen - 2] = y*x;
+                            /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                            /* data->ByteCode[blen - 2] = cPow; */ // redundant, matches cPow @ 2
+                            data->ByteCode.pop_back();
+                            data->Immed.pop_back();
+                            return;
+                        }
+                        break;
+                      }
+                    }
+                    FP_TRACE_BYTECODE_OPTIMIZATION("cPow x[IsIntegerConst(x)] cPow", "[x] cMul cPow");
+                    data->Immed.back() = x;
+                    data->ByteCode[blen - 2] = cImmed;
+                    data->ByteCode.pop_back();
+                    AddFunctionOpcode(cMul);
+                    AddFunctionOpcode(cPow);
+                    return;
+                  }
+                  break;
+                }
+            }
+            if(x==0.5)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==0.5] cPow", "cSqrt");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                AddFunctionOpcode(cSqrt);
+                return;
+            }
+            if(x==-0.5)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==-0.5] cPow", "cRSqrt");
+                data->ByteCode.back() = cRSqrt;
+                data->Immed.pop_back();
+                return;
+            }
+            if(x==-1.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==-1.0] cPow", "cInv");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                AddFunctionOpcode(cInv);
+                return;
+            }
+            if(TryCompilePowi(x))
+                return;
+            break;
+          }
+        }
+      }
+      break;
+    case cSqrt:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cSqr:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cSqr cSqrt", "cAbs");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cAbs);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=0.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cSqrt", "[sqrt(x)]");
+                data->Immed.back() = sqrt(x);
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cAbs:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cNeg:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cAbs", "cAbs");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cAbs);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cAbs", "[fabs(x)]");
+            data->Immed.back() = fabs(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsNeverNegativeValueOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsNeverNegativeValueOpcode(X)] cAbs", "X");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                return;
+            }
+        }
+      }
+      break;
+    case cAcos:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cAcos", "[acos(x)]");
+            data->Immed.back() = acos(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cAcosh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=-1.0&&x<=1.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=-1.0&&x<=1.0] cAcosh", "[fp_acosh(x)]");
+                data->Immed.back() = fp_acosh(x);
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cAsinh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=-1.0&&x<=1.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=-1.0&&x<=1.0] cAsinh", "[fp_asinh(x)]");
+                data->Immed.back() = fp_asinh(x);
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cAtan:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cAtan", "[atan(x)]");
+            data->Immed.back() = atan(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cAtanh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cAtanh", "[fp_atanh(x)]");
+            data->Immed.back() = fp_atanh(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cCeil:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cCeil", "[ceil(x)]");
+            data->Immed.back() = ceil(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsAlwaysIntegerOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cCeil", "X");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                return;
+            }
+        }
+      }
+      break;
+    case cCos:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cAcos:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cAcos cCos", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cCos", "[cos(x)]");
+            data->Immed.back() = cos(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cCosh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cCosh", "[cosh(x)]");
+            data->Immed.back() = cosh(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cExp:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cLog:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cLog cExp", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cAdd:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double x = data->Immed.back();
+                FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp", "cExp [exp(x)] cMul");
+                data->ByteCode.resize(blen - 2);
+                data->Immed.pop_back();
+                AddFunctionOpcode(cExp);
+                data->Immed.push_back(exp(x));
+                data->ByteCode.push_back(cImmed);
+                AddFunctionOpcode(cMul);
+                return;
+                break;
+              }
+            }
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cExp", "[exp(x)]");
+            data->Immed.back() = exp(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cExp2:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cLog2:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cLog2 cExp2", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cAdd:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double x = data->Immed.back();
+                FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp2", "cExp2 [fp_pow(2.0,x)] cMul");
+                data->ByteCode.resize(blen - 2);
+                data->Immed.pop_back();
+                AddFunctionOpcode(cExp2);
+                data->Immed.push_back(fp_pow(2.0,x));
+                data->ByteCode.push_back(cImmed);
+                AddFunctionOpcode(cMul);
+                return;
+                break;
+              }
+            }
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cExp2", "[fp_pow(2.0,x)]");
+            data->Immed.back() = fp_pow(2.0,x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cFloor:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cFloor", "[floor(x)]");
+            data->Immed.back() = floor(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsAlwaysIntegerOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cFloor", "X");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                return;
+            }
+        }
+      }
+      break;
+    case cInt:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cInt", "[floor(x+0.5)]");
+            data->Immed.back() = floor(x+0.5);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsAlwaysIntegerOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cInt", "X");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                return;
+            }
+        }
+      }
+      break;
+    case cLog:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
         case cExp:
-            /* Change "immed Add Exp" to "Exp exp(immed) Mul" */
-            if(data->ByteCode.back() == cAdd
-            && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cExp cLog", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=0.0)
             {
-                data->ByteCode[data->ByteCode.size()-2] = cExp;
-                data->ByteCode.back() = cImmed;
-                data->Immed.back() = exp(data->Immed.back());
-                opcode = cMul;
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog", "[log(x)]");
+                data->Immed.back() = log(x);
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
             }
             break;
+          }
+        }
+      }
+      break;
+    case cLog10:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=0.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog10", "[log10(x)]");
+                data->Immed.back() = log10(x);
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cLog2:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
         case cExp2:
-            /* Change "immed Add Exp2" to "Exp2 exp2(immed) Mul" */
-            if(data->ByteCode.back() == cAdd
-            && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cExp2 cLog2", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x>=0.0)
             {
-                data->ByteCode[data->ByteCode.size()-2] = cExp2;
-                data->ByteCode.back() = cImmed;
-                data->Immed.back() = fp_pow(2.0, data->Immed.back());
-                opcode = cMul;
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog2", "[log(x)*1.4426950408889634074]");
+                data->Immed.back() = log(x)*1.4426950408889634074;
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
             }
             break;
+          }
+        }
+      }
+      break;
+    case cSin:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cAsin:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cAsin cSin", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cSin", "[sin(x)]");
+            data->Immed.back() = sin(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cSinh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cSinh", "[sinh(x)]");
+            data->Immed.back() = sinh(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cTan:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cTan", "[tan(x)]");
+            data->Immed.back() = tan(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cTanh:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cTanh", "[tanh(x)]");
+            data->Immed.back() = tanh(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cTrunc:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cTrunc", "[trunc(x)]");
+            data->Immed.back() = trunc(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsAlwaysIntegerOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsAlwaysIntegerOpcode(X)] cTrunc", "X");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                return;
+            }
+        }
+      }
+      break;
+    case cDeg:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cDeg", "[RadiansToDegrees(x)]");
+            data->Immed.back() = RadiansToDegrees(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cRad:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cRad", "[DegreesToRadians(x)]");
+            data->Immed.back() = DegreesToRadians(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cNeg:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cMul:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double x = data->Immed.back();
+                FP_TRACE_BYTECODE_OPTIMIZATION("x cMul cNeg", "[-x] cMul");
+                data->Immed.back() = -x;
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches x @ 2
+                /* data->ByteCode.back() = cMul; */ // redundant, matches cMul @ 1
+                return;
+                break;
+              }
+            }
+          }
+          break;
+        case cNeg:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cNeg", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cFloor:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cFloor cNeg", "cNeg cCeil");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNeg);
+            AddFunctionOpcode(cCeil);
+            return;
+          }
+          break;
+        case cCeil:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cCeil cNeg", "cNeg cFloor");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNeg);
+            AddFunctionOpcode(cFloor);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cNeg", "[-x]");
+            data->Immed.back() = -x;
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        }
+      }
+      break;
+    case cInv:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cInv:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cInv cInv", "");
+            data->ByteCode.pop_back();
+            return;
+          }
+          break;
+        case cPow:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cPow cInv", "cNeg cPow");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNeg);
+            AddFunctionOpcode(cPow);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            if(x!=0.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x!=0.0] cInv", "[1.0/x]");
+                data->Immed.back() = 1.0/x;
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cMul:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cInv:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cInv cMul", "cDiv");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cDiv);
+            return;
+          }
+          break;
+        case cPow:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double x = data->Immed.back();
+                if(x<0)
+                {
+                    FP_TRACE_BYTECODE_OPTIMIZATION("x[x<0] cPow cMul", "[-x] cPow cDiv");
+                    data->Immed.back() = -x;
+                    /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches x @ 2
+                    /* data->ByteCode.back() = cPow; */ // redundant, matches cPow @ 1
+                    AddFunctionOpcode(cDiv);
+                    return;
+                }
+                break;
+              }
+            }
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cNeg:
+              {
+                FP_TRACE_BYTECODE_OPTIMIZATION("cNeg x cMul", "[-x] cMul");
+                data->Immed.back() = -x;
+                data->ByteCode[blen - 2] = cImmed;
+                data->ByteCode.pop_back();
+                AddFunctionOpcode(cMul);
+                return;
+              }
+              break;
+            case cMul:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cMul x cMul", "[y*x] cMul");
+                    data->Immed[ilen - 2] = y*x;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                    /* data->ByteCode[blen - 2] = cMul; */ // redundant, matches cMul @ 2
+                    data->ByteCode.pop_back();
+                    data->Immed.pop_back();
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cMul", "[x*y]");
+                data->Immed[ilen - 2] = x*y;
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            if(x==1)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==1] cMul", "");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cDiv:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cInv:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cInv cDiv", "cMul");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cMul);
+            return;
+          }
+          break;
+        case cExp:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cMul:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double x = data->Immed.back();
+                    FP_TRACE_BYTECODE_OPTIMIZATION("x cMul cExp cDiv", "[-x] cMul cExp cMul");
+                    data->Immed.back() = -x;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches x @ 3
+                    /* data->ByteCode[blen - 2] = cMul; */ // redundant, matches cMul @ 2
+                    /* data->ByteCode.back() = cExp; */ // redundant, matches cExp @ 1
+                    AddFunctionOpcode(cMul);
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            }
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cNeg:
+              {
+                FP_TRACE_BYTECODE_OPTIMIZATION("cNeg x cDiv", "[-x] cDiv");
+                data->Immed.back() = -x;
+                data->ByteCode[blen - 2] = cImmed;
+                data->ByteCode.pop_back();
+                AddFunctionOpcode(cDiv);
+                return;
+              }
+              break;
+            }
+            if(x!=0.0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x!=0.0] cDiv", "[1.0/x] cMul");
+                data->Immed.back() = 1.0/x;
+                /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+                AddFunctionOpcode(cMul);
+                return;
+            }
+            if(x==1)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==1] cDiv", "");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cAdd:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cNeg:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cAdd", "cSub");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cSub);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cAdd:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cAdd x cAdd", "[y+x] cAdd");
+                    data->Immed[ilen - 2] = y+x;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                    /* data->ByteCode[blen - 2] = cAdd; */ // redundant, matches cAdd @ 2
+                    data->ByteCode.pop_back();
+                    data->Immed.pop_back();
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            case cSub:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cSub x cAdd", "[x-y] cAdd");
+                    data->Immed[ilen - 2] = x-y;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                    data->ByteCode.resize(blen - 2);
+                    data->Immed.pop_back();
+                    AddFunctionOpcode(cAdd);
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cAdd", "[y+x]");
+                data->Immed[ilen - 2] = y+x;
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            if(x==0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==0] cAdd", "");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cSub:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cNeg:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cSub", "cAdd");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cAdd);
+            return;
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cSub:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cSub x cSub", "[x+y] cSub");
+                    data->Immed[ilen - 2] = x+y;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                    /* data->ByteCode[blen - 2] = cSub; */ // redundant, matches cSub @ 2
+                    data->ByteCode.pop_back();
+                    data->Immed.pop_back();
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            case cAdd:
+              {
+                unsigned op_3 = data->ByteCode[blen - 3];
+                switch(op_3)
+                {
+                case cImmed:
+                  {
+                    double y = data->Immed[ilen - 2];
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cAdd x cSub", "[y-x] cAdd");
+                    data->Immed[ilen - 2] = y-x;
+                    /* data->ByteCode[blen - 3] = cImmed; */ // redundant, matches y @ 3
+                    /* data->ByteCode[blen - 2] = cAdd; */ // redundant, matches cAdd @ 2
+                    data->ByteCode.pop_back();
+                    data->Immed.pop_back();
+                    return;
+                    break;
+                  }
+                }
+              }
+              break;
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cSub", "[y-x]");
+                data->Immed[ilen - 2] = y-x;
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            if(x==0)
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("x[x==0] cSub", "");
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cMin:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cMin", "[Min(x,y)]");
+                data->Immed[ilen - 2] = Min(x,y);
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cMax:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cMax", "[Max(x,y)]");
+                data->Immed[ilen - 2] = Max(x,y);
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cAtan2:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed:
+              {
+                double y = data->Immed[ilen - 2];
+                FP_TRACE_BYTECODE_OPTIMIZATION("y x cAtan2", "[atan2(y,x)]");
+                data->Immed[ilen - 2] = atan2(y,x);
+                /* data->ByteCode[blen - 2] = cImmed; */ // redundant, matches y @ 2
+                data->ByteCode.pop_back();
+                data->Immed.pop_back();
+                return;
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      break;
+    case cNot:
+      {
+        unsigned op_1 = data->ByteCode.back();
+        switch(op_1)
+        {
+        case cLess:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cLess cNot", "cGreaterOrEq");
+            data->ByteCode.back() = cGreaterOrEq;
+            return;
+          }
+          break;
+        case cLessOrEq:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cLessOrEq cNot", "cGreater");
+            data->ByteCode.back() = cGreater;
+            return;
+          }
+          break;
+        case cGreater:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cGreater cNot", "cLessOrEq");
+            data->ByteCode.back() = cLessOrEq;
+            return;
+          }
+          break;
+        case cGreaterOrEq:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cGreaterOrEq cNot", "cLess");
+            data->ByteCode.back() = cLess;
+            return;
+          }
+          break;
+        case cEqual:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cEqual cNot", "cNEqual");
+            data->ByteCode.back() = cNEqual;
+            return;
+          }
+          break;
+        case cNEqual:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNEqual cNot", "cEqual");
+            data->ByteCode.back() = cEqual;
+            return;
+          }
+          break;
+        case cNeg:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cNot", "cNot");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNot);
+            return;
+          }
+          break;
+        case cAbs:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cAbs cNot", "cNot");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNot);
+            return;
+          }
+          break;
+        case cNot:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNot cNot", "cNotNot");
+            data->ByteCode.back() = cNotNot;
+            return;
+          }
+          break;
+        case cNotNot:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cNotNot cNot", "cNot");
+            data->ByteCode.pop_back();
+            AddFunctionOpcode(cNot);
+            return;
+          }
+          break;
+        case cAbsNotNot:
+          {
+            FP_TRACE_BYTECODE_OPTIMIZATION("cAbsNotNot cNot", "cAbsNot");
+            data->ByteCode.back() = cAbsNot;
+            return;
+          }
+          break;
+        case cAbsNot:
+          {
+            unsigned op_2 = data->ByteCode[blen - 2];
+            switch(op_2)
+            {
+            case cImmed: break;
+            default:
+                unsigned X = op_2; X=X;
+                if(IsLogicalOpcode(X))
+                {
+                    FP_TRACE_BYTECODE_OPTIMIZATION("X[IsLogicalOpcode(X)] cAbsNot cNot", "X");
+                    /* data->ByteCode[blen - 2] = X; */ // redundant, matches X @ 2
+                    data->ByteCode.pop_back();
+                    return;
+                }
+                FP_TRACE_BYTECODE_OPTIMIZATION("X cAbsNot cNot", "X cAbsNotNot");
+                /* data->ByteCode[blen - 2] = X; */ // redundant, matches X @ 2
+                data->ByteCode.back() = cAbsNotNot;
+                return;
+            }
+          }
+          break;
+        case cImmed:
+          {
+            double x = data->Immed.back();
+            FP_TRACE_BYTECODE_OPTIMIZATION("x cNot", "[!truthValue(x)]");
+            data->Immed.back() = !truthValue(x);
+            /* data->ByteCode.back() = cImmed; */ // redundant, matches x @ 1
+            return;
+            break;
+          }
+        default:
+            unsigned X = op_1; X=X;
+            if(IsNeverNegativeValueOpcode(X))
+            {
+                FP_TRACE_BYTECODE_OPTIMIZATION("X[IsNeverNegativeValueOpcode(X)] cNot", "X cAbsNot");
+                /* data->ByteCode.back() = X; */ // redundant, matches X @ 1
+                data->ByteCode.push_back(cAbsNot);
+                return;
+            }
+        }
+      }
+      break;
     }
     data->ByteCode.push_back(opcode);
 }
+/** END AUTOGENERATED CODE **/
+
 
 inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
 (unsigned opcode)
@@ -1072,55 +2158,7 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
               AddFunctionOpcode(cRad);
         }
 
-    switch(opcode)
-    {
-      case cMin:
-          if(data->ByteCode.back() == cImmed
-          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
-          {
-              data->Immed[data->Immed.size()-2] =
-                Min(data->Immed[data->Immed.size()-2], data->Immed.back());
-              data->ByteCode.pop_back();
-              data->Immed.pop_back();
-              goto skip_op;
-          }
-          break;
-      case cMax:
-          if(data->ByteCode.back() == cImmed
-          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
-          {
-              data->Immed[data->Immed.size()-2] =
-                Max(data->Immed[data->Immed.size()-2], data->Immed.back());
-              data->ByteCode.pop_back();
-              data->Immed.pop_back();
-              goto skip_op;
-          }
-          break;
-      case cAtan2:
-          if(data->ByteCode.back() == cImmed
-          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
-          {
-              data->Immed[data->Immed.size()-2] =
-                atan2(data->Immed[data->Immed.size()-2], data->Immed.back());
-              data->ByteCode.pop_back();
-              data->Immed.pop_back();
-              goto skip_op;
-          }
-          break;
-      case cPow:
-          if(data->ByteCode.back() == cImmed
-          && data->ByteCode[data->ByteCode.size()-2] == cImmed)
-          {
-              data->Immed[data->Immed.size()-2] =
-                fp_pow(data->Immed[data->Immed.size()-2], data->Immed.back());
-              data->ByteCode.pop_back();
-              data->Immed.pop_back();
-              goto skip_op;
-          }
-          break;
-    }
     AddFunctionOpcode(opcode);
- skip_op:;
 
     if(useDegreeConversion)
         switch(opcode)
@@ -1134,210 +2172,6 @@ inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
           case cAtan2:
               AddFunctionOpcode(cDeg);
         }
-}
-
-inline void FunctionParser::AddMultiplicationByConst(double value)
-{
-    if(data->ByteCode.back() == cImmed)
-    {
-        data->Immed.back() *= value;
-    }
-    else if(data->ByteCode.back() == cMul &&
-            data->ByteCode[data->ByteCode.size()-2] == cImmed)
-    {
-        data->Immed.back() *= value;
-        if(data->Immed.back() == 1.0)
-            { data->Immed.pop_back();
-              data->ByteCode.pop_back();
-              data->ByteCode.pop_back(); }
-    }
-    else
-    {
-        data->Immed.push_back(value);
-        data->ByteCode.push_back(cImmed);
-        incStackPtr();
-        AddBinaryOperationByConst<MulOp> ();
-        --StackPtr;
-    }
-}
-
-template<typename Operation>
-inline void FunctionParser::AddBinaryOperationByConst()
-{
-    if(data->ByteCode[data->ByteCode.size()-2] == cNeg
-        && (Operation::opcode == (int)cMul || Operation::opcode == (int)cDiv))
-    {
-        data->Immed.back() *= -1;
-        data->ByteCode.erase(data->ByteCode.end()-2);
-    }
-    // data->ByteCode.back() is assumed to be cImmed here
-    // that is, data->ByteCode[data->ByteCode.size()-1]
-    if(!Operation::valid_rvalue(data->Immed.back()))
-    {
-        /* If the function has something like x/0, don't try optimizing it. */
-        data->ByteCode.push_back( unsigned(Operation::opcode) );
-    }
-    else if(Operation::is_redundant(data->Immed.back()))
-    {
-        /* If the function has x*1 or x/1, just keep x. */
-        data->Immed.pop_back();
-        data->ByteCode.pop_back();
-    }
-    else if(data->ByteCode[data->ByteCode.size()-2] == cImmed)
-    {
-        // bytecode top:       ... immed immed <to be cMul>
-        Operation::action(data->Immed[data->Immed.size()-2],
-                          data->Immed.back());
-        data->Immed.pop_back();
-        data->ByteCode.pop_back();
-    }
-    else if(data->ByteCode[data->ByteCode.size()-2] == Operation::opcode
-         && data->ByteCode[data->ByteCode.size()-3] == cImmed)
-    {
-        // bytecode top:  ... immed cMul immed <to be cMul>
-        Operation::action(data->Immed[data->Immed.size()-2],
-                          data->Immed.back());
-        data->Immed.pop_back();
-        data->ByteCode.pop_back();
-        // bytecode top:  ... immed cMul
-        if(Operation::is_redundant(data->Immed.back()))
-        {
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
-            // bytecode top:  ...
-        }
-    }
-    /* x*2/4 = x*(2/4)
-     * x/2*4 = x*(4/2)
-     * x+2-4 = x+(2-4)
-     * x-2+4 = x+(4-2)
-     */
-    else if(data->ByteCode[data->ByteCode.size()-2] == Operation::opposite
-         && data->ByteCode[data->ByteCode.size()-3] == cImmed
-         && Operation::valid_opposite_rvalue(data->Immed[data->Immed.size()-2]))
-    {
-        // bytecode top:  ... immed cDiv immed <to be cMul>
-        data->ByteCode[data->ByteCode.size()-2] = Operation::combined;
-        Operation::combine_action(data->Immed[data->Immed.size()-2],
-                                  data->Immed.back());
-        data->Immed.pop_back();
-        data->ByteCode.pop_back();
-        // bytecode top:  ... immed cMul
-        if(Operation::is_redundant(data->Immed.back()))
-        {
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
-            // bytecode top:  ...
-        }
-    }
-    else if(Operation::opposite_is_preferred())
-    {
-        double p = (double) Operation::defval;
-        Operation::combine_action(p, data->Immed.back());
-        data->Immed.back() = p;
-        data->ByteCode.push_back(unsigned(Operation::opposite));
-    }
-    else
-    {
-        /* Possibilities:
-         *  Change "Exp immed Mul" into "log(immed) Add Exp"
-         *         "Exp2 immed Mul" into "log2(immed) Add Exp2"
-         * Or the opposite:
-         *         "immed Add Exp" to "Exp exp(immed) Mul"
-         * this is now actually done in AddFunctionOpcode(),
-         * because it allows optimizing exp(y+1)*2 into exp(y)*5.437.
-         */
-        data->ByteCode.push_back(unsigned(Operation::opcode));
-    }
-}
-
-inline void FunctionParser::AddNegOpcode()
-{
-    // if we are negating a negation, we can remove both:
-    if((data->ByteCode.back() == cNeg))
-        data->ByteCode.pop_back();
-
-    // if we are negating a constant, negate the constant itself:
-    else if(data->ByteCode.back() == cImmed)
-        data->Immed.back() = -data->Immed.back();
-
-    else data->ByteCode.push_back(cNeg);
-}
-
-inline void FunctionParser::AddNotOpcode()
-{
-    // !-x = !x  , !-abs(x) = !x
-    if(data->ByteCode.back() == cNeg)
-        data->ByteCode.pop_back();
-    // !abs(x) = !x   (note: abs(-x) is already optimized to abs(x))
-    if(data->ByteCode.back() == cAbs)
-        data->ByteCode.pop_back();
-    switch(data->ByteCode.back())
-    {
-      case cImmed:
-          // if notting a constant, change the constant itself:
-          data->Immed.back() = !truthValue(data->Immed.back());
-          break;
-      case cNot:
-          // !!x is a common paradigm: instead of x cNot cNot,
-          // we produce x cNotNot.
-          data->ByteCode.back() = cNotNot;
-          break;
-      case cAbsNot:
-          // However, if the preceding opcode is a logical opcode
-          // such as cAnd, the cNotNot is completely redundant.
-          // Chances for that are high after cAbsNot (and non-existing
-          // after cNot), so we test it here and not in cNot.
-          switch(data->ByteCode[data->ByteCode.size()-2])
-          {
-              case cLess: case cLessOrEq:
-              case cEqual: case cNEqual:
-              case cGreater: case cGreaterOrEq:
-              case cAnd: case cAbsAnd:
-              case cOr: case cAbsOr:
-                  data->ByteCode.pop_back();
-                  break;
-              default:
-                  data->ByteCode.back() = cAbsNotNot;
-          }
-          break;
-
-      // !!!x is simply x cNot. The cNotNot in the middle is redundant.
-      case cNotNot:
-          data->ByteCode.back() = cNot;
-          break;
-      case cAbsNotNot:
-          data->ByteCode.back() = cAbsNot;
-          break;
-
-      case cEqual: // !(x==y)  -> x!=y
-          data->ByteCode.back() = cNEqual;
-          break;
-      case cNEqual: // !(x!=y)  -> x==y
-          data->ByteCode.back() = cEqual;
-          break;
-      case cLess: // !(x<y)  -> x>=y
-          data->ByteCode.back() = cGreaterOrEq;
-          break;
-      case cLessOrEq: // !(x<=y)  -> x>y
-          data->ByteCode.back() = cGreater;
-          break;
-      case cGreater: // !(x>y)  -> x<=y
-          data->ByteCode.back() = cLessOrEq;
-          break;
-      case cGreaterOrEq: // !(x>=y)  -> x<y
-          data->ByteCode.back() = cLess;
-          break;
-
-      default:
-          // !(x&y) = AbsNot(x&y)
-          if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
-              data->ByteCode.push_back(cAbsNot);
-          else
-              data->ByteCode.push_back(cNot);
-    }
 }
 
 namespace
@@ -1588,7 +2422,11 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
             const NameData* nameData = nameIter->second;
             if(nameData->type == NameData::UNIT)
             {
-                AddMultiplicationByConst(nameData->value);
+                data->Immed.push_back(nameData->value);
+                data->ByteCode.push_back(cImmed);
+                incStackPtr();
+                AddFunctionOpcode(cMul);
+                --StackPtr;
                 return endPtr;
             }
         }
@@ -1635,8 +2473,11 @@ const char* FunctionParser::CompilePow(const char* function)
             if(base_immed > 0.0)
             {
                 double mulvalue = std::log(base_immed);
-                if(mulvalue != 1.0)
-                    AddMultiplicationByConst(mulvalue);
+                data->Immed.push_back(mulvalue);
+                data->ByteCode.push_back(cImmed);
+                incStackPtr();
+                AddFunctionOpcode(cMul);
+                --StackPtr;
                 AddFunctionOpcode(cExp);
             }
             else /* uh-oh, we've got e.g. (-5)^x, and we already deleted
@@ -1666,14 +2507,7 @@ const char* FunctionParser::CompileUnaryMinus(const char* function)
         function = CompileUnaryMinus(function);
         if(!function) return 0;
 
-        if(op == '-')
-        {
-            AddNegOpcode();
-        }
-        else
-        {
-            AddNotOpcode();
-        }
+        AddFunctionOpcode(op == '-' ? cNeg : cNot);
     }
     else
         function = CompilePow(function);
@@ -1705,95 +2539,19 @@ inline const char* FunctionParser::CompileMult(const char* function)
         function = CompileUnaryMinus(function);
         if(!function) return 0;
 
-    op_changed:
-        switch(data->ByteCode.back())
+        // add opcode
+        switch(op)
         {
-          case cImmed:
-              // If operator is applied to two literals, calculate it now:
-              switch(op)
-              {
-                case '%':
-                    AddBinaryOperationByConst<ModOp>();
-                    break;
-                default:
-                case '*':
-                    if(is_unary) break;
-                    AddBinaryOperationByConst<MulOp>();
-                    break;
-                case '/':
-                    if(is_unary)
-                    {
-                        if(data->Immed.back() == 0.0)
-                            // avoid dividing by zero.
-                            data->ByteCode.push_back(cInv);
-                        else
-                            data->Immed.back() = 1.0 / data->Immed.back();
-                        break;
-                    }
-                    AddBinaryOperationByConst<DivOp>();
-                    break;
-              }
+          case '%':
+              AddFunctionOpcode(cMod);
               break;
-          case cInv: // x * y^-1 = x * (1/y) = x/y
-              switch(op)
-              {
-                case '*':
-                    data->ByteCode.pop_back(); op = '/'; goto op_changed;
-                case '/':
-                    data->ByteCode.pop_back(); op = '*'; goto op_changed;
-                default: break;
-              }
-              // passthru
+          case '/':
+              AddFunctionOpcode(is_unary ? cInv : cDiv);
+              break;
           default:
-              // add opcode
-              switch(op)
-              {
-                case '%':
-                    data->ByteCode.push_back(cMod);
-                    break;
-                case '/':
-                    if(is_unary)
-                        AddFunctionOpcode(cInv);
-                    else
-                    {
-                    /* Change x / exp(log(y)*1.1)   -  x y Log  1.1 Mul Exp Div
-                     *   into x * exp(log(y)*-1.1)  -  x y Log -1.1 Mul Exp Mul
-                     *
-                     * Changing x / y^9000          -  x y  9000 Pow Div
-                     *    into  x * y^-9000         -  x y -9000 Pow Mul
-                     * is also possible, but at least on x86_64
-                     * it is detrimental for performance.
-                     * In fact, the opposite seems favorable.
-                     */
-                        if(data->ByteCode.back() == cExp
-                           && data->ByteCode[data->ByteCode.size()-2] == cMul
-                           && data->ByteCode[data->ByteCode.size()-3] == cImmed)
-                        {
-                            data->Immed.back() = -data->Immed.back();
-                            data->ByteCode.push_back(cMul);
-                        }
-                        else
-                            data->ByteCode.push_back(cDiv);
-                    }
-                    break;
-                default:
-                case '*':
-                    if(is_unary)
-                    { }
-                    else
-                    {
-                        if(data->ByteCode.back() == cPow
-                           && data->ByteCode[data->ByteCode.size()-2] == cImmed
-                           && data->Immed.back() < 0)
-                        {
-                            data->Immed.back() = -data->Immed.back();
-                            data->ByteCode.push_back(cDiv);
-                        }
-                        else
-                            data->ByteCode.push_back(cMul);
-                    }
-                    break;
-              }
+          case '*':
+              if(!is_unary) AddFunctionOpcode(cMul);
+              break;
         }
         --StackPtr;
     }
@@ -1823,44 +2581,15 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         function = CompileMult(function);
         if(!function) return 0;
 
-    op_changed:
-        switch(data->ByteCode.back())
+        // add opcode
+        switch(op)
         {
-          case cImmed:
-              // If operator is applied to two literals, calculate it now:
-              switch(op)
-              {
-                default:
-                case '+':
-                    if(is_unary) break;
-                    AddBinaryOperationByConst<AddOp>();
-                    break;
-                case '-':
-                    if(is_unary)
-                    { data->Immed.back() = -data->Immed.back(); break; }
-                    AddBinaryOperationByConst<SubOp>();
-              }
-              break;
-          case cNeg: // x + (-y) = x-y
-              switch(op)
-              {
-                default:
-                case '+':
-                    data->ByteCode.pop_back(); op = '-'; goto op_changed;
-                case '-':
-                    data->ByteCode.pop_back(); op = '+'; goto op_changed;
-              }
-              // passthru (not reached)
           default:
-              // add opcode
-              switch(op)
-              {
-                default:
-                case '+':
-                    if(!is_unary) data->ByteCode.push_back(cAdd); break;
-                case '-':
-                    data->ByteCode.push_back(is_unary ? cNeg : cSub); break;
-              }
+          case '+':
+              if(!is_unary) AddFunctionOpcode(cAdd);
+              break;
+          case '-':
+              AddFunctionOpcode(is_unary ? cNeg : cSub); break;
         }
         --StackPtr;
     }
@@ -2897,7 +3626,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
-                        case cEval: n = "eval"; params = data->variableRefs.size(); break;
+                        case cEval: n = "eval"; params = (unsigned)data->variableRefs.size(); break;
     #endif
 
     #ifdef FP_SUPPORT_OPTIMIZER
