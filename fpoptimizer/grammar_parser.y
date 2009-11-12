@@ -1493,7 +1493,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE; }
             if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE; }
             if(IdBuf == "cRSqrt") { lval->opcode = cRSqrt; return OPCODE; }
+#ifdef FP_SUPPORT_OPTIMIZER
             if(IdBuf == "cLog2by") { lval->opcode = cLog2by; return OPCODE; }
+#else
+            if(IdBuf == "cLog2by") { lval->opcode = cNop; return OPCODE; }
+#endif
 
             /* Detect other function opcodes */
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
