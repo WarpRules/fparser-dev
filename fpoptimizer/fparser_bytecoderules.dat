@@ -70,6 +70,7 @@ x [x==1.0] cMul		->
 y x cMul		-> [x*y]
 x [x==1.0] cDiv		->
 y x [x!=0.0] cDiv	-> [y/x]
+y x [x!=0.0] cMod	-> [fmod(y,x)]
 x [x==0.0] cAdd		->
 y x cAdd		-> [y+x]
 x [x==0.0] cSub		->
@@ -79,8 +80,19 @@ y x cSub		-> [y-x]
 y x cMin		-> [Min(x,y)]
 y x cMax		-> [Max(x,y)]
 y x cAtan2		-> [atan2(y,x)]
-y x cPow 	-> [fp_pow(y,x)]
+y x cPow 		-> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
+
+y x cLess		-> [y <  (x-EpsilonOrZero)]
+y x cLessOrEq		-> [y <= (x+EpsilonOrZero)]
+y x cGreater		-> [(y-EpsilonOrZero) >  x]
+y x cGreaterOrEq	-> [(y+EpsilonOrZero) >= x]
+y x cEqual		-> [fabs(y-x) <= EpsilonOrZero]
+y x cNEqual		-> [fabs(y-x) >= EpsilonOrZero]
+y x cAnd		-> [truthValue(x)&&truthValue(y)]
+y x cOr			-> [truthValue(x)||truthValue(y)]
+#y x cAbsAnd		-> [truthValue_abs(x)&&truthValue_abs(y)]
+#y x cAbsOr		-> [truthValue_abs(x)||truthValue_abs(y)]
 
 cNeg x cMul		-> [-x] cMul
 cNeg x cDiv		-> [-x] cDiv
@@ -168,6 +180,8 @@ x cPow -> [DO_POWI]
 cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
 
+cAbs cCos  -> cCos
+cAbs cCosh -> cCosh
 cNeg cCos  -> cCos
 cNeg cCosh -> cCosh
 cNeg cSin  -> cSin cNeg

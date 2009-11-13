@@ -35,6 +35,7 @@ LD=g++
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
+#CXXFLAGS += -Wunreachable-code
 
 #CXXFLAGS += -std=c++0x
 

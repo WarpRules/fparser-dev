@@ -40,7 +40,7 @@ namespace
         const FuncDefinition* funcDef =
             findFunction(NamePtr(&(newData.name[0]),
                                  unsigned(newData.name.size())));
-        if(funcDef && funcDef->enabled)
+        if(funcDef && funcDef->enabled())
             return false;
 
         std::set<NameData>::iterator dataIter = nameData.find(newData);
@@ -472,7 +472,7 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
         NamePtr namePtr(beginPtr, unsigned(endPtr - beginPtr));
 
         const FuncDefinition* funcDef = findFunction(namePtr);
-        if(funcDef && funcDef->enabled) return false;
+        if(funcDef && funcDef->enabled()) return false;
 
         std::map<NamePtr, const NameData*>::iterator nameIter =
             data->namePtrs.find(namePtr);
@@ -563,61 +563,6 @@ inline void FunctionParser::incStackPtr()
     if(++StackPtr > data->StackSize) ++(data->StackSize);
 }
 
-#ifdef FP_SUPPORT_OPTIMIZER
-namespace FPoptimizer_ByteCode
-{
-    extern signed char powi_table[256];
-}
-#endif
-inline bool FunctionParser::CompilePowi(int int_exponent)
-{
-    int num_muls=0;
-    while(int_exponent > 1)
-    {
-#ifdef FP_SUPPORT_OPTIMIZER
-        if(int_exponent < 256)
-        {
-            int half = FPoptimizer_ByteCode::powi_table[int_exponent];
-            if(half != 1 && !(int_exponent % half))
-            {
-                if(!CompilePowi(half)) return false;
-                int_exponent /= half;
-                continue;
-            }
-            else if(half >= 3)
-            {
-                data->ByteCode.push_back(cDup);
-                incStackPtr();
-                if(!CompilePowi(half)) return false;
-                data->ByteCode.push_back(cMul);
-                --StackPtr;
-                int_exponent -= half+1;
-                continue;
-            }
-        }
-#endif
-        if(!(int_exponent & 1))
-        {
-            int_exponent /= 2;
-            data->ByteCode.push_back(cSqr);
-        }
-        else
-        {
-            data->ByteCode.push_back(cDup);
-            incStackPtr();
-            int_exponent -= 1;
-            ++num_muls;
-        }
-    }
-    if(num_muls > 0)
-    {
-        data->ByteCode.resize(data->ByteCode.size()+num_muls,
-                              cMul);
-        StackPtr -= num_muls;
-    }
-    return true;
-}
-
 namespace
 {
     bool IsEligibleIntPowiExponent(int int_exponent)
@@ -683,67 +628,121 @@ namespace
         }
         return false;
     }
+
+#ifdef FP_EPSILON
+    static const double EpsilonOrZero = FP_EPSILON;
+#else
+    static const double EpsilonOrZero = 0.0;
+#endif
+
+}
+
+#ifdef FP_SUPPORT_OPTIMIZER
+namespace FPoptimizer_ByteCode
+{
+    extern signed char powi_table[256];
+}
+#endif
+
+inline void FunctionParser::AddImmedOpcode(double value)
+{
+    data->Immed.push_back(value);
+    data->ByteCode.push_back(cImmed);
+}
+
+inline void FunctionParser::CompilePowi(int int_exponent)
+{
+    int num_muls=0;
+    while(int_exponent > 1)
+    {
+#ifdef FP_SUPPORT_OPTIMIZER
+        if(int_exponent < 256)
+        {
+            int half = FPoptimizer_ByteCode::powi_table[int_exponent];
+            if(half != 1 && !(int_exponent % half))
+            {
+                CompilePowi(half);
+                int_exponent /= half;
+                continue;
+            }
+            else if(half >= 3)
+            {
+                data->ByteCode.push_back(cDup);
+                incStackPtr();
+                CompilePowi(half);
+                data->ByteCode.push_back(cMul);
+                --StackPtr;
+                int_exponent -= half+1;
+                continue;
+            }
+        }
+#endif
+        if(!(int_exponent & 1))
+        {
+            int_exponent /= 2;
+            data->ByteCode.push_back(cSqr);
+        }
+        else
+        {
+            data->ByteCode.push_back(cDup);
+            incStackPtr();
+            int_exponent -= 1;
+            ++num_muls;
+        }
+    }
+    if(num_muls > 0)
+    {
+        data->ByteCode.resize(data->ByteCode.size()+num_muls,
+                              cMul);
+        StackPtr -= num_muls;
+    }
 }
 
 inline bool FunctionParser::TryCompilePowi(double original_immed)
 {
-    int int_exponent = (int)original_immed;
-
-    if(original_immed != (double)int_exponent)
+    double changed_immed = original_immed;
+    for(int sqrt_count=0; /**/; ++sqrt_count)
     {
-        for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
+        int int_exponent = (int)changed_immed;
+        if(changed_immed == (double)int_exponent
+        && IsEligibleIntPowiExponent(int_exponent))
         {
-            int factor = 1 << sqrt_count;
-            double changed_exponent =
-                original_immed * (double)factor;
-            if(IsIntegerConst(changed_exponent) &&
-               IsEligibleIntPowiExponent
-               ( (int)changed_exponent ) )
+            int abs_int_exponent = int_exponent;
+            if(abs_int_exponent < 0)
+                abs_int_exponent = -abs_int_exponent;
+
+            data->Immed.pop_back(); data->ByteCode.pop_back();
+            while(sqrt_count > 0)
             {
-                while(sqrt_count > 0)
+                int opcode = cSqrt;
+                if(sqrt_count == 1 && int_exponent < 0)
                 {
-                    data->ByteCode.insert(data->ByteCode.end()-1, cSqrt);
-                    --sqrt_count;
+                    opcode = cRSqrt;
+                    int_exponent = -int_exponent;
                 }
-                original_immed = changed_exponent;
-                int_exponent   = (int)changed_exponent;
-                goto do_powi;
+                data->ByteCode.push_back(opcode);
+                --sqrt_count;
             }
-        }
-    }
-    else if(IsEligibleIntPowiExponent(int_exponent))
-    {
-    do_powi:;
-        int abs_int_exponent = int_exponent;
-        if(abs_int_exponent < 0)
-            abs_int_exponent = -abs_int_exponent;
-
-        data->Immed.pop_back(); data->ByteCode.pop_back();
-        /*size_t bytecode_size = data->ByteCode.size();*/
-        if(CompilePowi(abs_int_exponent))
-        {
-            if(int_exponent < 0) AddFunctionOpcode(cInv);
+            CompilePowi(abs_int_exponent);
+            if(int_exponent < 0) data->ByteCode.push_back(cInv);
             return true;
         }
-        /*powi_failed:;
-        data->ByteCode.resize(bytecode_size);
-        data->Immed.push_back(original_immed);
-        data->ByteCode.push_back(cImmed);*/
-        return false;
+        if(sqrt_count >= 4) break;
+        changed_immed += changed_immed;
     }
+
     // When we don't know whether x >= 0, we still know that
     // x^y can be safely converted into exp(y * log(x))
     // when y is _not_ integer, because we know that x >= 0.
     // Otherwise either expression will give a NaN.
-    if(original_immed != (double)int_exponent
+    if(!IsIntegerConst(original_immed)
     || IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2])
       )
     {
         data->Immed.pop_back();
         data->ByteCode.pop_back();
         AddFunctionOpcode(cLog);
-        data->Immed.push_back(original_immed);
-        data->ByteCode.push_back(cImmed);
+        AddImmedOpcode(original_immed);
         AddFunctionOpcode(cMul);
         AddFunctionOpcode(cExp);
         return true;
@@ -752,40 +751,6 @@ inline bool FunctionParser::TryCompilePowi(double original_immed)
 }
 
 #include "fp_opcode_add.inc"
-
-inline void FunctionParser::AddFunctionOpcode_CheckDegreesConversion
-(unsigned opcode)
-{
-    if(useDegreeConversion)
-        switch(opcode)
-        {
-          case cCos:
-          case cCosh:
-          case cCot:
-          case cCsc:
-          case cSec:
-          case cSin:
-          case cSinh:
-          case cTan:
-          case cTanh:
-              AddFunctionOpcode(cRad);
-        }
-
-    AddFunctionOpcode(opcode);
-
-    if(useDegreeConversion)
-        switch(opcode)
-        {
-          case cAcos:
-          case cAcosh:
-          case cAsinh:
-          case cAtanh:
-          case cAsin:
-          case cAtan:
-          case cAtan2:
-              AddFunctionOpcode(cDeg);
-        }
-}
 
 namespace
 {
@@ -924,8 +889,7 @@ const char* FunctionParser::CompileElement(const char* function)
         const double val = strtod(function, &endPtr);
         if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
 
-        data->Immed.push_back(val);
-        data->ByteCode.push_back(cImmed);
+        AddImmedOpcode(val);
         incStackPtr();
 
         while(isspace(*endPtr)) ++endPtr;
@@ -939,7 +903,7 @@ const char* FunctionParser::CompileElement(const char* function)
         while(isspace(*endPtr)) ++endPtr;
 
         const FuncDefinition* funcDef = findFunction(name);
-        if(funcDef && funcDef->enabled) // is function
+        if(funcDef && funcDef->enabled()) // is function
         {
             if(funcDef->opcode == cIf) // "if" is a special case
                 return CompileIf(endPtr);
@@ -955,7 +919,21 @@ const char* FunctionParser::CompileElement(const char* function)
 
             function = CompileFunctionParams(endPtr, requiredParams);
             if(!function) return 0;
-            AddFunctionOpcode_CheckDegreesConversion(funcDef->opcode);
+
+            if(useDegreeConversion)
+            {
+                if(funcDef->flags & FuncDefinition::AngleIn)
+                    AddFunctionOpcode(cRad);
+
+                AddFunctionOpcode(funcDef->opcode);
+
+                if(funcDef->flags & FuncDefinition::AngleOut)
+                    AddFunctionOpcode(cDeg);
+            }
+            else
+            {
+                AddFunctionOpcode(funcDef->opcode);
+            }
             return function;
         }
 
@@ -976,8 +954,7 @@ const char* FunctionParser::CompileElement(const char* function)
             switch(nameData->type)
             {
               case NameData::CONSTANT:
-                  data->Immed.push_back(nameData->value);
-                  data->ByteCode.push_back(cImmed);
+                  AddImmedOpcode(nameData->value);
                   incStackPtr();
                   return endPtr;
 
@@ -1035,8 +1012,7 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
             const NameData* nameData = nameIter->second;
             if(nameData->type == NameData::UNIT)
             {
-                data->Immed.push_back(nameData->value);
-                data->ByteCode.push_back(cImmed);
+                AddImmedOpcode(nameData->value);
                 incStackPtr();
                 AddFunctionOpcode(cMul);
                 --StackPtr;
@@ -1086,8 +1062,7 @@ const char* FunctionParser::CompilePow(const char* function)
             if(base_immed > 0.0)
             {
                 double mulvalue = std::log(base_immed);
-                data->Immed.push_back(mulvalue);
-                data->ByteCode.push_back(cImmed);
+                AddImmedOpcode(mulvalue);
                 incStackPtr();
                 AddFunctionOpcode(cMul);
                 --StackPtr;
@@ -1096,8 +1071,7 @@ const char* FunctionParser::CompilePow(const char* function)
             else /* uh-oh, we've got e.g. (-5)^x, and we already deleted
                     -5 from the stack */
             {
-                data->Immed.push_back(base_immed);
-                data->ByteCode.push_back(cImmed);
+                AddImmedOpcode(base_immed);
                 incStackPtr();
                 AddFunctionOpcode(cRPow);
             }
@@ -1265,12 +1239,12 @@ inline const char* FunctionParser::CompileAnd(const char* function)
         while(isspace(*function)) ++function;
         function = CompileComparison(function);
         if(!function) return 0;
-
+        
         if(IsNeverNegativeValueOpcode(data->ByteCode.back())
         && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-            data->ByteCode.push_back(cAbsAnd);
+            AddFunctionOpcode(cAbsAnd);
         else
-            data->ByteCode.push_back(cAnd);
+            AddFunctionOpcode(cAnd);
         --StackPtr;
     }
     return function;
@@ -1293,9 +1267,9 @@ const char* FunctionParser::CompileExpression(const char* function)
 
         if(IsNeverNegativeValueOpcode(data->ByteCode.back())
         && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-            data->ByteCode.push_back(cAbsOr);
+            AddFunctionOpcode(cAbsOr);
         else
-            data->ByteCode.push_back(cOr);
+            AddFunctionOpcode(cOr);
         --StackPtr;
     }
     return function;
@@ -2347,7 +2321,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                       break;
                   case cSqr: prio = 2; suff = "^2";
                       break;
-                  case cNeg: buf << "(-"; suff = ")";
+                  case cNeg: buf << "(-("; suff = "))";
                       break;
                   default: buf << n << '('; suff = ")";
                 }

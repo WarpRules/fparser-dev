@@ -117,10 +117,10 @@ private:
     int ParseFunction(const char*, bool);
     const char* SetErrorType(ParseErrorType, const char*);
 
-    void AddFunctionOpcode_CheckDegreesConversion(unsigned);
     inline void AddFunctionOpcode(unsigned);
+    inline void AddImmedOpcode(double v);
     inline void incStackPtr();
-    bool CompilePowi(int);
+    void CompilePowi(int);
     inline bool TryCompilePowi(double);
 
     const char* CompileIf(const char*);

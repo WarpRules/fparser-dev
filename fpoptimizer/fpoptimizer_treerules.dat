@@ -435,6 +435,7 @@ cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])
 cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
 # cos(-x) = cos(x)
 cCos [(cMul -1 <1>)] : (cMul <1>)
+cCos [(cAbs [x])] : x
 
 
 # cos(pi/2 - x) = sin(x)
@@ -584,6 +585,7 @@ cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
 cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
 # cosh(-x) = cosh(x)
 cCosh [(cMul -1 <1>)] : (cMul <1>)
+cCosh [(cAbs [x])] : x
 
 # x - 1/x = sinh(log(x))*2. However, this alone is a pessimal conversion.
 #cAdd  x  (cMul {-1 (cPow [       x   -1])})  : (cMul (cSinh [(cLog [x])]) 2)

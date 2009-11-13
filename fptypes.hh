@@ -72,11 +72,18 @@ namespace FUNCTIONPARSERTYPES
 #ifdef ONCE_FPARSER_H_
     struct FuncDefinition
     {
+        enum FunctionFlags
+        {
+            Enabled  = 0x01,
+            AngleIn  = 0x02,
+            AngleOut = 0x04
+        };
+
         const char* name;
         unsigned nameLength;
         OPCODE   opcode;
         unsigned params;
-        bool enabled;
+        unsigned flags;
 
         // This is basically strcmp(), but taking 'nameLength' as string
         // length (not ending '\0'):
@@ -91,49 +98,51 @@ namespace FUNCTIONPARSERTYPES
             }
             return nameLength < rhs.nameLength;
         }
+
+        inline bool enabled() const { return flags != 0; }
     };
 
 #ifndef FP_DISABLE_EVAL
-#define FP_EVAL_FUNCTION_ENABLED true
+#define FP_EVAL_FUNCTION_ENABLED FuncDefinition::Enabled
 #else
-#define FP_EVAL_FUNCTION_ENABLED false
+#define FP_EVAL_FUNCTION_ENABLED 0
 #endif
 
 // This list must be in alphabetical order:
     const FuncDefinition Functions[]=
     {
-        { "abs", 3, cAbs, 1, true },
-        { "acos", 4, cAcos, 1, true },
-        { "acosh", 5, cAcosh, 1, true },
-        { "asin", 4, cAsin, 1, true },
-        { "asinh", 5, cAsinh, 1, true },
-        { "atan", 4, cAtan, 1, true },
-        { "atan2", 5, cAtan2, 2, true },
-        { "atanh", 5, cAtanh, 1, true },
-        { "ceil", 4, cCeil, 1, true },
-        { "cos", 3, cCos, 1, true },
-        { "cosh", 4, cCosh, 1, true },
-        { "cot", 3, cCot, 1, true },
-        { "csc", 3, cCsc, 1, true },
-        { "eval", 4, cEval, 0, FP_EVAL_FUNCTION_ENABLED },
-        { "exp", 3, cExp, 1, true },
-        { "exp2", 4, cExp2, 1, true },
-        { "floor", 5, cFloor, 1, true },
-        { "if", 2, cIf, 0, true },
-        { "int", 3, cInt, 1, true },
-        { "log", 3, cLog, 1, true },
-        { "log10", 5, cLog10, 1, true },
-        { "log2", 4, cLog2, 1, true },
-        { "max", 3, cMax, 2, true },
-        { "min", 3, cMin, 2, true },
-        { "pow", 3, cPow, 2, true },
-        { "sec", 3, cSec, 1, true },
-        { "sin", 3, cSin, 1, true },
-        { "sinh", 4, cSinh, 1, true },
-        { "sqrt", 4, cSqrt, 1, true },
-        { "tan", 3, cTan, 1, true },
-        { "tanh", 4, cTanh, 1, true },
-        { "trunc", 5, cTrunc, 1, true }
+        { "abs",   3, cAbs,   1, FuncDefinition::Enabled },
+        { "acos",  4, cAcos,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "acosh", 5, cAcosh, 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "asin",  4, cAsin,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "asinh", 5, cAsinh, 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "atan",  4, cAtan,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "atan2", 5, cAtan2, 2, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        { "atanh", 5, cAtanh, 1, FuncDefinition::Enabled },
+        { "ceil",  4, cCeil,  1, FuncDefinition::Enabled },
+        { "cos",   3, cCos,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "cosh",  4, cCosh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "cot",   3, cCot,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "csc",   3, cCsc,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "eval",  4, cEval,  0, FP_EVAL_FUNCTION_ENABLED },
+        { "exp",   3, cExp,   1, FuncDefinition::Enabled },
+        { "exp2",  4, cExp2,  1, FuncDefinition::Enabled },
+        { "floor", 5, cFloor, 1, FuncDefinition::Enabled },
+        { "if",    2, cIf,    0, FuncDefinition::Enabled },
+        { "int",   3, cInt,   1, FuncDefinition::Enabled },
+        { "log",   3, cLog,   1, FuncDefinition::Enabled },
+        { "log10", 5, cLog10, 1, FuncDefinition::Enabled },
+        { "log2",  4, cLog2,  1, FuncDefinition::Enabled },
+        { "max",   3, cMax,   2, FuncDefinition::Enabled },
+        { "min",   3, cMin,   2, FuncDefinition::Enabled },
+        { "pow",   3, cPow,   2, FuncDefinition::Enabled },
+        { "sec",   3, cSec,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "sin",   3, cSin,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "sinh",  4, cSinh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "sqrt",  4, cSqrt,  1, FuncDefinition::Enabled },
+        { "tan",   3, cTan,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "tanh",  4, cTanh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        { "trunc", 5, cTrunc, 1, FuncDefinition::Enabled }
     };
 
     struct NamePtr
