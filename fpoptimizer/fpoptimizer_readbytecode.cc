@@ -662,7 +662,7 @@ namespace FPoptimizer_CodeTree
 #ifndef FP_DISABLE_EVAL
                     case cEval:
                     {
-                        size_t paramcount = fpdata.variableRefs.size();
+                        size_t paramcount = fpdata.numVariables;
                         sim.Eat(paramcount, OPCODE(opcode));
                         break;
                     }

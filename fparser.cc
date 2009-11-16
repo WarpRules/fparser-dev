@@ -33,29 +33,44 @@ using namespace std;
 //=========================================================================
 namespace
 {
-    bool addNewNameData(std::set<NameData>& nameData,
-                        std::map<NamePtr, const NameData*>& namePtrs,
-                        const NameData& newData)
+    template<bool IsVar>
+    inline bool addNewNameData
+        (std::map<NamePtr, NameData>& namePtrs,
+         std::pair<NamePtr,NameData>& newPair)
     {
-        const FuncDefinition* funcDef =
-            findFunction(NamePtr(&(newData.name[0]),
-                                 unsigned(newData.name.size())));
+        const FuncDefinition* funcDef = findFunction(newPair.first);
         if(funcDef && funcDef->enabled())
             return false;
 
-        std::set<NameData>::iterator dataIter = nameData.find(newData);
+        std::map<NamePtr, NameData>::iterator nameIter =
+            namePtrs.lower_bound(newPair.first);
 
-        if(dataIter != nameData.end())
+        if(nameIter != namePtrs.end() && newPair.first == nameIter->first)
         {
-            if(dataIter->type != newData.type) return false;
-            namePtrs.erase(NamePtr(&(dataIter->name[0]),
-                                   unsigned(dataIter->name.size())));
-            nameData.erase(dataIter);
+            // redefining a var is not allowed.
+            if(IsVar)
+                return false;
+
+            // redefining other tokens is allowed, if the type stays the same.
+            if(nameIter->second.type != newPair.second.type)
+                return false;
+
+            // update the data
+            nameIter->second = newPair.second;
+            return true;
         }
 
-        dataIter = nameData.insert(newData).first;
-        namePtrs[NamePtr(&(dataIter->name[0]),
-                         unsigned(dataIter->name.size()))] = &(*dataIter);
+        if(!IsVar)
+        {
+            // Allocate a copy of the name (pointer stored in the map key)
+            // However, for VARIABLEs, the pointer points to VariableString,
+            // which is managed separately. Thusly, only done when !IsVar.
+            char* namebuf = new char[ newPair.first.nameLength ];
+            memcpy(namebuf, newPair.first.name, newPair.first.nameLength);
+            newPair.first.name = namebuf;
+        }
+
+        namePtrs.insert(nameIter, newPair);
         return true;
     }
     unsigned readIdentifier(const char* ptr)
@@ -230,9 +245,8 @@ namespace
 //=========================================================================
 FunctionParser::Data::Data(const Data& rhs):
     referenceCounter(0),
-    variablesString(),
-    variableRefs(),
-    nameData(rhs.nameData),
+    numVariables(rhs.numVariables),
+    variablesString(rhs.variablesString),
     namePtrs(),
     FuncPtrs(rhs.FuncPtrs),
     FuncParsers(rhs.FuncParsers),
@@ -243,11 +257,41 @@ FunctionParser::Data::Data(const Data& rhs):
 {
     Stack.resize(rhs.Stack.size());
 
-    for(std::set<NameData>::const_iterator iter = nameData.begin();
-        iter != nameData.end(); ++iter)
+    for(std::map<NamePtr,NameData>::const_iterator
+        i = rhs.namePtrs.begin();
+        i != rhs.namePtrs.end();
+        ++i)
     {
-        namePtrs[NamePtr(&(iter->name[0]), unsigned(iter->name.size()))] =
-            &(*iter);
+        if(i->second.type == NameData::VARIABLE)
+        {
+            const size_t variableStringOffset =
+                i->first.name - rhs.variablesString.c_str();
+            std::pair<NamePtr,NameData> tmp
+                ( NamePtr(&variablesString[ variableStringOffset ],
+                          i->first.nameLength),
+                  i->second );
+            namePtrs.insert(namePtrs.end(), tmp);
+        }
+        else
+        {
+            std::pair<NamePtr,NameData> tmp
+                ( NamePtr(new char[i->first.nameLength], i->first.nameLength),
+                  i->second );
+            memcpy(const_cast<char*>(tmp.first.name), i->first.name, tmp.first.nameLength);
+            namePtrs.insert(namePtrs.end(), tmp);
+        }
+    }
+}
+
+FunctionParser::Data::~Data()
+{
+    for(std::map<NamePtr,NameData>::iterator
+        i = namePtrs.begin();
+        i != namePtrs.end();
+        ++i)
+    {
+        if(i->second.type != NameData::VARIABLE)
+            delete[] i->first.name;
     }
 }
 
@@ -336,9 +380,11 @@ bool FunctionParser::AddConstant(const std::string& name, double value)
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    NameData newData(NameData::CONSTANT, name);
-    newData.value = value;
-    return addNewNameData(data->nameData, data->namePtrs, newData);
+    std::pair<NamePtr,NameData> newPair
+        ( NamePtr(name.data(), unsigned(name.size())),
+          NameData(NameData::CONSTANT, value) );
+
+    return addNewNameData<false>(data->namePtrs, newPair);
 }
 
 bool FunctionParser::AddUnit(const std::string& name, double value)
@@ -346,9 +392,10 @@ bool FunctionParser::AddUnit(const std::string& name, double value)
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    NameData newData(NameData::UNIT, name);
-    newData.value = value;
-    return addNewNameData(data->nameData, data->namePtrs, newData);
+    std::pair<NamePtr,NameData> newPair
+        ( NamePtr(name.data(), unsigned(name.size())),
+          NameData(NameData::UNIT, value) );
+    return addNewNameData<false>(data->namePtrs, newPair);
 }
 
 bool FunctionParser::AddFunction(const std::string& name,
@@ -357,16 +404,17 @@ bool FunctionParser::AddFunction(const std::string& name,
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    NameData newData(NameData::FUNC_PTR, name);
-    newData.index = unsigned(data->FuncPtrs.size());
+    std::pair<NamePtr,NameData> newPair
+        ( NamePtr(name.data(), unsigned(name.size())),
+          NameData(NameData::FUNC_PTR, unsigned(data->FuncPtrs.size())) );
 
     data->FuncPtrs.push_back(Data::FuncPtrData());
     data->FuncPtrs.back().funcPtr = ptr;
     data->FuncPtrs.back().params = paramsAmount;
 
-    const bool retval = addNewNameData(data->nameData, data->namePtrs, newData);
-    if(!retval) data->FuncPtrs.pop_back();
-    return retval;
+    const bool success = addNewNameData<false>(data->namePtrs, newPair);
+    if(!success) data->FuncPtrs.pop_back();
+    return success;
 }
 
 bool FunctionParser::CheckRecursiveLinking(const FunctionParser* fp) const
@@ -384,30 +432,35 @@ bool FunctionParser::AddFunction(const std::string& name, FunctionParser& fp)
         return false;
 
     CopyOnWrite();
-    NameData newData(NameData::PARSER_PTR, name);
-    newData.index = unsigned(data->FuncParsers.size());
+    std::pair<NamePtr,NameData> newPair
+        ( NamePtr(name.data(), unsigned(name.size())),
+          NameData(NameData::PARSER_PTR, unsigned(data->FuncParsers.size())) );
 
     data->FuncParsers.push_back(Data::FuncPtrData());
     data->FuncParsers.back().parserPtr = &fp;
-    data->FuncParsers.back().params = unsigned(fp.data->variableRefs.size());
+    data->FuncParsers.back().params = fp.data->numVariables;
 
-    const bool retval = addNewNameData(data->nameData, data->namePtrs, newData);
-    if(!retval) data->FuncParsers.pop_back();
-    return retval;
+    const bool success = addNewNameData<false>(data->namePtrs, newPair);
+    if(!success) data->FuncParsers.pop_back();
+    return success;
 }
 
 bool FunctionParser::RemoveIdentifier(const std::string& name)
 {
     CopyOnWrite();
 
-    const NameData dataToRemove(NameData::CONSTANT, name);
-    std::set<NameData>::iterator dataIter = data->nameData.find(dataToRemove);
+    NamePtr namePtr(name.data(), unsigned(name.size()));
 
-    if(dataIter != data->nameData.end())
+    std::map<NamePtr, NameData>::iterator
+        nameIter = data->namePtrs.find(namePtr);
+
+    if(nameIter != data->namePtrs.end())
     {
-        data->namePtrs.erase(NamePtr(&(dataIter->name[0]),
-                                     unsigned(dataIter->name.size())));
-        data->nameData.erase(dataIter);
+        if(nameIter->second.type != NameData::VARIABLE)
+        {
+            delete[] nameIter->first.name;
+        }
+        data->namePtrs.erase(nameIter);
         return true;
     }
     return false;
@@ -454,7 +507,18 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 {
     if(data->variablesString == inputVarString) return true;
 
-    data->variableRefs.clear();
+    /* Delete existing variables from namePtrs */
+    for(std::map<NamePtr,NameData>::iterator
+        i = data->namePtrs.begin();
+        i != data->namePtrs.end();
+        )
+    {
+        if(i->second.type == NameData::VARIABLE)
+            { std::map<NamePtr,NameData>::iterator j (i); ++i;
+              data->namePtrs.erase(j); }
+        else
+            ++i;
+    }
     data->variablesString = inputVarString;
 
     const std::string& vars = data->variablesString;
@@ -474,18 +538,19 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 
         NamePtr namePtr(beginPtr, nameLength);
 
-        const FuncDefinition* funcDef = findFunction(namePtr);
-        if(funcDef && funcDef->enabled()) return false;
+        std::pair<NamePtr,NameData> newPair(
+            namePtr,
+            NameData(NameData::VARIABLE, varNumber++) );
 
-        std::map<NamePtr, const NameData*>::iterator nameIter =
-            data->namePtrs.find(namePtr);
-        if(nameIter != data->namePtrs.end()) return false;
-
-        if(!(data->variableRefs.insert(make_pair(namePtr, varNumber++)).second))
+        if(!addNewNameData<true>(data->namePtrs, newPair))
+        {
             return false;
+        }
 
         beginPtr = endPtr + 1;
     }
+
+    data->numVariables = varNumber - VarBegin;
     return true;
 }
 
@@ -1065,7 +1130,7 @@ const char* FunctionParser::CompileElement(const char* function)
             unsigned requiredParams = funcDef->params;
 #ifndef FP_DISABLE_EVAL
             if(func_opcode == cEval)
-                requiredParams = unsigned(data->variableRefs.size());
+                requiredParams = data->numVariables;
 #endif
 
             function = CompileFunctionParams(endPtr, requiredParams);
@@ -1088,22 +1153,18 @@ const char* FunctionParser::CompileElement(const char* function)
             return function;
         }
 
-        std::map<NamePtr, unsigned>::iterator varIter =
-            data->variableRefs.find(name);
-        if(varIter != data->variableRefs.end()) // is variable
-        {
-            data->ByteCode.push_back(varIter->second);
-            incStackPtr();
-            return endPtr;
-        }
-
-        std::map<NamePtr, const NameData*>::iterator nameIter =
+        std::map<NamePtr, NameData>::iterator nameIter =
             data->namePtrs.find(name);
         if(nameIter != data->namePtrs.end())
         {
-            const NameData* nameData = nameIter->second;
+            const NameData* nameData = &nameIter->second;
             switch(nameData->type)
             {
+              case NameData::VARIABLE: // is variable
+                  data->ByteCode.push_back(nameData->index);
+                  incStackPtr();
+                  return endPtr;
+
               case NameData::CONSTANT:
                   AddImmedOpcode(nameData->value);
                   incStackPtr();
@@ -1153,11 +1214,11 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
     {
         NamePtr name(function, nameLength);
 
-        std::map<NamePtr, const NameData*>::iterator nameIter =
+        std::map<NamePtr, NameData>::iterator nameIter =
             data->namePtrs.find(name);
         if(nameIter != data->namePtrs.end())
         {
-            const NameData* nameData = nameIter->second;
+            const NameData* nameData = &nameIter->second;
             if(nameData->type == NameData::UNIT)
             {
                 AddImmedOpcode(nameData->value);
@@ -1541,8 +1602,7 @@ double FunctionParser::Eval(const double* Vars)
 #       ifndef FP_DISABLE_EVAL
           case  cEval:
               {
-                  const unsigned varAmount =
-                      unsigned(data->variableRefs.size());
+                  const unsigned varAmount = data->numVariables;
                   double retVal = 0;
                   if(evalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
                   {
@@ -1988,14 +2048,15 @@ namespace
         }
     }
 
-    typedef std::map<FUNCTIONPARSERTYPES::NamePtr, unsigned> VariablesMap;
-    std::string findVariableName(const VariablesMap& varMap, unsigned index)
+    typedef std::map<FUNCTIONPARSERTYPES::NamePtr, NameData> NamesMap;
+    std::string findName(const NamesMap& nameMap, unsigned index, NameData::DataType type)
     {
-        for(VariablesMap::const_iterator iter = varMap.begin();
-            iter != varMap.end();
+        for(NamesMap::const_iterator iter = nameMap.begin();
+            iter != nameMap.end();
             ++iter)
         {
-            if(iter->second == index)
+            if(iter->second.type != type) continue;
+            if(iter->second.index == index)
                 return std::string(iter->first.name,
                                    iter->first.name + iter->first.nameLength);
         }
@@ -2353,12 +2414,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                   {
                       const unsigned index = ByteCode[++IP];
                       params = data->FuncPtrs[index].params;
-                      std::set<NameData>::const_iterator iter =
-                          data->nameData.begin();
-                      while(iter->type != NameData::FUNC_PTR ||
-                            iter->index != index)
-                          ++iter;
-                      output << "fcall " << iter->name;
+                      static std::string name;
+                      name = "f:" + findName(data->namePtrs, index, NameData::FUNC_PTR);
+                      n = name.c_str();
                       out_params = true;
                       break;
                   }
@@ -2367,12 +2425,9 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                   {
                       const unsigned index = ByteCode[++IP];
                       params = data->FuncParsers[index].params;
-                      std::set<NameData>::const_iterator iter =
-                          data->nameData.begin();
-                      while(iter->type != NameData::PARSER_PTR ||
-                            iter->index != index)
-                          ++iter;
-                      output << "pcall " << iter->name;
+                      static std::string name;
+                      name = "p:" + findName(data->namePtrs, index, NameData::PARSER_PTR);
+                      n = name.c_str();
                       out_params = true;
                       break;
                   }
@@ -2404,7 +2459,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
-                        case cEval: n = "eval"; params = (unsigned)data->variableRefs.size(); break;
+                        case cEval: n = "eval"; params = data->numVariables;
     #endif
 
     #ifdef FP_SUPPORT_OPTIMIZER
@@ -2468,7 +2523,7 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                       if(showExpression)
                       {
                           stack.push_back(std::make_pair(0,
-                              (findVariableName(data->variableRefs, opcode))));
+                              (findName(data->namePtrs, opcode, NameData::VARIABLE))));
                       }
                       output << "push Var" << opcode-VarBegin;
                       produces = 0;

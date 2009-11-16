@@ -153,6 +153,11 @@ namespace FUNCTIONPARSERTYPES
 
         NamePtr(const char* n, unsigned l): name(n), nameLength(l) {}
 
+        inline bool operator==(const NamePtr& rhs) const
+        {
+            return nameLength == rhs.nameLength
+                && std::memcmp(name, rhs.name, nameLength) == 0;
+        }
         inline bool operator<(const NamePtr& rhs) const
         {
             for(unsigned i = 0; i < nameLength; ++i)
@@ -168,23 +173,17 @@ namespace FUNCTIONPARSERTYPES
 
     struct NameData
     {
-        enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR };
-
-        DataType type;
-        std::string name;
-
+        enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR, VARIABLE };
+        DataType    type;
         union
         {
             unsigned index;
             double value;
         };
 
-        NameData(DataType t, const std::string& n): type(t), name(n) {}
-
-        inline bool operator<(const NameData& rhs) const
-        {
-            return name < rhs.name;
-        }
+        NameData(DataType t, unsigned v) : type(t), index(v) { }
+        NameData(DataType t, double v) : type(t), value(v) { }
+        NameData() { }
     };
 
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
@@ -406,12 +405,10 @@ struct FunctionParser::Data
 {
     unsigned referenceCounter;
 
+    unsigned numVariables;
     std::string variablesString;
-    std::map<FUNCTIONPARSERTYPES::NamePtr, unsigned> variableRefs;
-
-    std::set<FUNCTIONPARSERTYPES::NameData> nameData;
     std::map<FUNCTIONPARSERTYPES::NamePtr,
-             const FUNCTIONPARSERTYPES::NameData*> namePtrs;
+             FUNCTIONPARSERTYPES::NameData> namePtrs;
 
     struct FuncPtrData
     {
@@ -428,9 +425,8 @@ struct FunctionParser::Data
     unsigned StackSize;
 
     Data(): referenceCounter(1),
+            numVariables(0),
             variablesString(),
-            variableRefs(),
-            nameData(),
             namePtrs(),
             FuncPtrs(),
             FuncParsers(),
@@ -438,6 +434,7 @@ struct FunctionParser::Data
             Immed(), Stack(), StackSize(0) {}
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
+    ~Data();
 };
 #endif
 
