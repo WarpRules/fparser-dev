@@ -1509,7 +1509,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 const FuncDefinition* func = findFunction(nameptr);
                 if(func)
                 {
-                    lval->opcode = func->opcode;
+                    //lval->opcode = func->opcode;
+                    lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
                     return OPCODE;
                 }
                 std::cerr <<
@@ -1534,7 +1535,8 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                     const FuncDefinition* func = findFunction(nameptr);
                     if(func)
                     {
-                        lval->opcode = func->opcode;
+                        //lval->opcode = func->opcode;
+                        lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
                         return BUILTIN_FUNC_NAME;
                     }
                     if(IdBuf == "MOD")

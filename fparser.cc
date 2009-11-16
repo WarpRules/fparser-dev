@@ -919,13 +919,15 @@ const char* FunctionParser::CompileElement(const char* function)
         const FuncDefinition* funcDef = findFunction(name);
         if(funcDef && funcDef->enabled()) // is function
         {
-            if(funcDef->opcode == cIf) // "if" is a special case
+            OPCODE func_opcode = OPCODE(funcDef - Functions);
+
+            if(func_opcode == cIf) // "if" is a special case
                 return CompileIf(endPtr);
 
             unsigned requiredParams = funcDef->params;
 #ifndef FP_DISABLE_EVAL
-            if(funcDef->opcode == cEval)
-                requiredParams = unsigned(data->variableRefs.size();
+            if(func_opcode == cEval)
+                requiredParams = unsigned(data->variableRefs.size());
 #endif
 
             function = CompileFunctionParams(endPtr, requiredParams);
@@ -936,14 +938,14 @@ const char* FunctionParser::CompileElement(const char* function)
                 if(funcDef->flags & FuncDefinition::AngleIn)
                     AddFunctionOpcode(cRad);
 
-                AddFunctionOpcode(funcDef->opcode);
+                AddFunctionOpcode(func_opcode);
 
                 if(funcDef->flags & FuncDefinition::AngleOut)
                     AddFunctionOpcode(cDeg);
             }
             else
             {
-                AddFunctionOpcode(funcDef->opcode);
+                AddFunctionOpcode(func_opcode);
             }
             return function;
         }

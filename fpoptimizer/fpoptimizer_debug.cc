@@ -10,6 +10,7 @@
 
 using namespace FUNCTIONPARSERTYPES;
 
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 namespace
 {
     void DumpHashesFrom(
@@ -25,9 +26,11 @@ namespace
         done[tree.GetHash()].insert(buf.str());
     }
 }
+#endif
 
 namespace FPoptimizer_CodeTree
 {
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
     void DumpHashes(const CodeTree& tree, std::ostream& o)
     {
         std::map<fphash_t, std::set<std::string> > done;
@@ -126,6 +129,7 @@ namespace FPoptimizer_CodeTree
         }
         o << std::flush;
     }
+#endif
 }
 
 #endif

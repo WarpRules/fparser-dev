@@ -239,9 +239,11 @@ namespace FPoptimizer_CodeTree
     inline void CodeTree::Mark_Incompletely_Hashed() { data->Depth = 0; }
     inline bool CodeTree::Is_Incompletely_Hashed() const { return data->Depth == 0; }
 
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
     void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
     void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
     void DumpTreeWithIndent(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
+#endif
 }
 
 #endif

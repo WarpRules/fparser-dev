@@ -17,9 +17,10 @@
 
 namespace FUNCTIONPARSERTYPES
 {
-// The functions must be in alphabetical order:
     enum OPCODE
     {
+// The order of opcodes in the function list must
+// match that which is in the Functions[] array.
         cAbs,
         cAcos, cAcosh,
         cAsin, cAsinh,
@@ -79,71 +80,66 @@ namespace FUNCTIONPARSERTYPES
             AngleOut = 0x04
         };
 
-        const char* name;
-        unsigned nameLength;
-        OPCODE   opcode;
-        unsigned params;
-        unsigned flags;
-
-        // This is basically strcmp(), but taking 'nameLength' as string
-        // length (not ending '\0'):
-        bool operator<(const FuncDefinition& rhs) const
-        {
-            for(unsigned i = 0; i < nameLength; ++i)
-            {
-                if(i == rhs.nameLength) return false;
-                const char c1 = name[i], c2 = rhs.name[i];
-                if(c1 < c2) return true;
-                if(c2 < c1) return false;
-            }
-            return nameLength < rhs.nameLength;
-        }
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+        const char name[8];
+#else
+        struct name { } name;
+#endif
+        unsigned params : 8;
+        unsigned flags  : 8;
 
         inline bool enabled() const { return flags != 0; }
     };
 
 #ifndef FP_DISABLE_EVAL
-#define FP_EVAL_FUNCTION_ENABLED FuncDefinition::Enabled
+# define FP_EVAL_FUNCTION_ENABLED FuncDefinition::Enabled
 #else
-#define FP_EVAL_FUNCTION_ENABLED 0
+# define FP_EVAL_FUNCTION_ENABLED 0
 #endif
-
-// This list must be in alphabetical order:
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+# define FP_FNAME(n) n
+#else
+# define FP_FNAME(n) {}
+#endif
+// This list must be in the same order as that in OPCODE enum,
+// because the opcode value is used to index this array, and
+// the pointer to array element is used for generating the opcode.
     const FuncDefinition Functions[]=
     {
-        { "abs",   3, cAbs,   1, FuncDefinition::Enabled },
-        { "acos",  4, cAcos,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "acosh", 5, cAcosh, 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "asin",  4, cAsin,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "asinh", 5, cAsinh, 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "atan",  4, cAtan,  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "atan2", 5, cAtan2, 2, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        { "atanh", 5, cAtanh, 1, FuncDefinition::Enabled },
-        { "ceil",  4, cCeil,  1, FuncDefinition::Enabled },
-        { "cos",   3, cCos,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "cosh",  4, cCosh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "cot",   3, cCot,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "csc",   3, cCsc,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "eval",  4, cEval,  0, FP_EVAL_FUNCTION_ENABLED },
-        { "exp",   3, cExp,   1, FuncDefinition::Enabled },
-        { "exp2",  4, cExp2,  1, FuncDefinition::Enabled },
-        { "floor", 5, cFloor, 1, FuncDefinition::Enabled },
-        { "if",    2, cIf,    0, FuncDefinition::Enabled },
-        { "int",   3, cInt,   1, FuncDefinition::Enabled },
-        { "log",   3, cLog,   1, FuncDefinition::Enabled },
-        { "log10", 5, cLog10, 1, FuncDefinition::Enabled },
-        { "log2",  4, cLog2,  1, FuncDefinition::Enabled },
-        { "max",   3, cMax,   2, FuncDefinition::Enabled },
-        { "min",   3, cMin,   2, FuncDefinition::Enabled },
-        { "pow",   3, cPow,   2, FuncDefinition::Enabled },
-        { "sec",   3, cSec,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "sin",   3, cSin,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "sinh",  4, cSinh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "sqrt",  4, cSqrt,  1, FuncDefinition::Enabled },
-        { "tan",   3, cTan,   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "tanh",  4, cTanh,  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        { "trunc", 5, cTrunc, 1, FuncDefinition::Enabled }
+        /*cAbs  */ { FP_FNAME("abs"),   1, FuncDefinition::Enabled },
+        /*cAcos */ { FP_FNAME("acos"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAcosh*/ { FP_FNAME("acosh"), 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAsin */ { FP_FNAME("asin"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAsinh*/ { FP_FNAME("asinh"), 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAtan */ { FP_FNAME("atan"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAtan2*/ { FP_FNAME("atan2"), 2, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAtanh*/ { FP_FNAME("atanh"), 1, FuncDefinition::Enabled },
+        /*cCeil */ { FP_FNAME("ceil"),  1, FuncDefinition::Enabled },
+        /*cCos  */ { FP_FNAME("cos"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCosh */ { FP_FNAME("cosh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCot  */ { FP_FNAME("cot"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCsc  */ { FP_FNAME("csc"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cEval */ { FP_FNAME("eval"),  0, FP_EVAL_FUNCTION_ENABLED },
+        /*cExp  */ { FP_FNAME("exp"),   1, FuncDefinition::Enabled },
+        /*cExp2 */ { FP_FNAME("exp2"),  1, FuncDefinition::Enabled },
+        /*cFloor*/ { FP_FNAME("floor"), 1, FuncDefinition::Enabled },
+        /*cIf   */ { FP_FNAME("if"),    0, FuncDefinition::Enabled },
+        /*cInt  */ { FP_FNAME("int"),   1, FuncDefinition::Enabled },
+        /*cLog  */ { FP_FNAME("log"),   1, FuncDefinition::Enabled },
+        /*cLog10*/ { FP_FNAME("log10"), 1, FuncDefinition::Enabled },
+        /*cLog2 */ { FP_FNAME("log2"),  1, FuncDefinition::Enabled },
+        /*cMax  */ { FP_FNAME("max"),   2, FuncDefinition::Enabled },
+        /*cMin  */ { FP_FNAME("min"),   2, FuncDefinition::Enabled },
+        /*cPow  */ { FP_FNAME("pow"),   2, FuncDefinition::Enabled },
+        /*cSec  */ { FP_FNAME("sec"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSin  */ { FP_FNAME("sin"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSinh */ { FP_FNAME("sinh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSqrt */ { FP_FNAME("sqrt"),  1, FuncDefinition::Enabled },
+        /*cTan  */ { FP_FNAME("tan"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cTanh */ { FP_FNAME("tanh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cTrunc*/ { FP_FNAME("trunc"), 1, FuncDefinition::Enabled }
     };
+#undef FP_FNAME
 
     struct NamePtr
     {
@@ -188,33 +184,185 @@ namespace FUNCTIONPARSERTYPES
 
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
 
-    // -1 = (lhs < rhs); 0 = (lhs == rhs); 1 = (lhs > rhs)
-    inline int compare(const FuncDefinition& lhs, const NamePtr& rhs)
-    {
-        for(unsigned i = 0; i < lhs.nameLength; ++i)
-        {
-            if(i == rhs.nameLength) return 1;
-            const char c1 = lhs.name[i], c2 = rhs.name[i];
-            if(c1 < c2) return -1;
-            if(c2 < c1) return 1;
-        }
-        return lhs.nameLength < rhs.nameLength ? -1 : 0;
-    }
-
+    /* This function generated with make_function_name_parser.cc */
     inline const FuncDefinition* findFunction(const NamePtr& functionName)
     {
-        const FuncDefinition* first = Functions;
-        const FuncDefinition* last = Functions + FUNC_AMOUNT;
-
-        while(first < last)
-        {
-            const FuncDefinition* middle = first+(last-first)/2;
-            const int comp = compare(*middle, functionName);
-            if(comp == 0) return middle;
-            if(comp < 0) first = middle+1;
-            else last = middle;
-        }
-        return 0;
+    /* prefix  */if(functionName.nameLength == 0) return 0;
+    if(functionName.nameLength > 5) return 0;
+    switch(functionName.name[0]) {
+    case 'a':
+    /* prefix a */if(functionName.nameLength == 1) return 0;
+    switch(functionName.name[1]) {
+    case 'b':
+    /* prefix ab */if(functionName.nameLength == 3
+    && 's' == functionName.name[2]
+    ) return Functions+cAbs;/*abs*/
+    else return 0;
+    case 'c':
+    /* prefix ac */if(functionName.nameLength == 2) return 0;
+    if('o' == functionName.name[2]) {
+    /* prefix aco */if(functionName.nameLength == 3) return 0;
+    if('s' == functionName.name[3]) {
+    /* prefix acos */if(functionName.nameLength == 4) return Functions+cAcos;/*acos*/
+    if('h' == functionName.name[4]) {
+    /* prefix acosh */return Functions+cAcosh;/*acosh*/
+    }else return 0;}else return 0;}else return 0;case 's':
+    /* prefix as */if(functionName.nameLength == 2) return 0;
+    if('i' == functionName.name[2]) {
+    /* prefix asi */if(functionName.nameLength == 3) return 0;
+    if('n' == functionName.name[3]) {
+    /* prefix asin */if(functionName.nameLength == 4) return Functions+cAsin;/*asin*/
+    if('h' == functionName.name[4]) {
+    /* prefix asinh */return Functions+cAsinh;/*asinh*/
+    }else return 0;}else return 0;}else return 0;case 't':
+    /* prefix at */if(functionName.nameLength == 2) return 0;
+    if('a' == functionName.name[2]) {
+    /* prefix ata */if(functionName.nameLength == 3) return 0;
+    if('n' == functionName.name[3]) {
+    /* prefix atan */if(functionName.nameLength == 4) return Functions+cAtan;/*atan*/
+    switch(functionName.name[4]) {
+    case '2':
+    /* prefix atan2 */return Functions+cAtan2;/*atan2*/
+    case 'h':
+    /* prefix atanh */return Functions+cAtanh;/*atanh*/
+    default: return 0; }}else return 0;}else return 0;default: return 0; }case 'c':
+    /* prefix c */if(functionName.nameLength == 1) return 0;
+    if(functionName.nameLength > 4) return 0;
+    switch(functionName.name[1]) {
+    case 'e':
+    /* prefix ce */if(functionName.nameLength == 4
+    && 'i' == functionName.name[2]
+    && 'l' == functionName.name[3]
+    ) return Functions+cCeil;/*ceil*/
+    else return 0;
+    case 'o':
+    /* prefix co */if(functionName.nameLength == 2) return 0;
+    switch(functionName.name[2]) {
+    case 's':
+    /* prefix cos */if(functionName.nameLength == 3) return Functions+cCos;/*cos*/
+    if('h' == functionName.name[3]) {
+    /* prefix cosh */return Functions+cCosh;/*cosh*/
+    }else return 0;case 't':
+    /* prefix cot */if(functionName.nameLength == 3
+    ) return Functions+cCot;/*cot*/
+    else return 0;
+    default: return 0; }case 's':
+    /* prefix cs */if(functionName.nameLength == 3
+    && 'c' == functionName.name[2]
+    ) return Functions+cCsc;/*csc*/
+    else return 0;
+    default: return 0; }case 'e':
+    /* prefix e */if(functionName.nameLength == 1) return 0;
+    if(functionName.nameLength > 4) return 0;
+    switch(functionName.name[1]) {
+    case 'v':
+    /* prefix ev */if(functionName.nameLength == 4
+    && 'a' == functionName.name[2]
+    && 'l' == functionName.name[3]
+    ) return Functions+cEval;/*eval*/
+    else return 0;
+    case 'x':
+    /* prefix ex */if(functionName.nameLength == 2) return 0;
+    if('p' == functionName.name[2]) {
+    /* prefix exp */if(functionName.nameLength == 3) return Functions+cExp;/*exp*/
+    if('2' == functionName.name[3]) {
+    /* prefix exp2 */return Functions+cExp2;/*exp2*/
+    }else return 0;}else return 0;default: return 0; }case 'f':
+    /* prefix f */if(functionName.nameLength == 5
+    && 'l' == functionName.name[1]
+    && 'o' == functionName.name[2]
+    && 'o' == functionName.name[3]
+    && 'r' == functionName.name[4]
+    ) return Functions+cFloor;/*floor*/
+    else return 0;
+    case 'i':
+    /* prefix i */if(functionName.nameLength == 1) return 0;
+    if(functionName.nameLength > 3) return 0;
+    switch(functionName.name[1]) {
+    case 'f':
+    /* prefix if */if(functionName.nameLength == 2
+    ) return Functions+cIf;/*if*/
+    else return 0;
+    case 'n':
+    /* prefix in */if(functionName.nameLength == 3
+    && 't' == functionName.name[2]
+    ) return Functions+cInt;/*int*/
+    else return 0;
+    default: return 0; }case 'l':
+    /* prefix l */if(functionName.nameLength == 1) return 0;
+    if('o' == functionName.name[1]) {
+    /* prefix lo */if(functionName.nameLength == 2) return 0;
+    if('g' == functionName.name[2]) {
+    /* prefix log */if(functionName.nameLength == 3) return Functions+cLog;/*log*/
+    switch(functionName.name[3]) {
+    case '1':
+    /* prefix log1 */if(functionName.nameLength == 5
+    && '0' == functionName.name[4]
+    ) return Functions+cLog10;/*log10*/
+    else return 0;
+    case '2':
+    /* prefix log2 */if(functionName.nameLength == 4
+    ) return Functions+cLog2;/*log2*/
+    else return 0;
+    default: return 0; }}else return 0;}else return 0;case 'm':
+    /* prefix m */if(functionName.nameLength == 1) return 0;
+    if(functionName.nameLength > 3) return 0;
+    switch(functionName.name[1]) {
+    case 'a':
+    /* prefix ma */if(functionName.nameLength == 3
+    && 'x' == functionName.name[2]
+    ) return Functions+cMax;/*max*/
+    else return 0;
+    case 'i':
+    /* prefix mi */if(functionName.nameLength == 3
+    && 'n' == functionName.name[2]
+    ) return Functions+cMin;/*min*/
+    else return 0;
+    default: return 0; }case 'p':
+    /* prefix p */if(functionName.nameLength == 3
+    && 'o' == functionName.name[1]
+    && 'w' == functionName.name[2]
+    ) return Functions+cPow;/*pow*/
+    else return 0;
+    case 's':
+    /* prefix s */if(functionName.nameLength == 1) return 0;
+    if(functionName.nameLength > 4) return 0;
+    switch(functionName.name[1]) {
+    case 'e':
+    /* prefix se */if(functionName.nameLength == 3
+    && 'c' == functionName.name[2]
+    ) return Functions+cSec;/*sec*/
+    else return 0;
+    case 'i':
+    /* prefix si */if(functionName.nameLength == 2) return 0;
+    if('n' == functionName.name[2]) {
+    /* prefix sin */if(functionName.nameLength == 3) return Functions+cSin;/*sin*/
+    if('h' == functionName.name[3]) {
+    /* prefix sinh */return Functions+cSinh;/*sinh*/
+    }else return 0;}else return 0;case 'q':
+    /* prefix sq */if(functionName.nameLength == 4
+    && 'r' == functionName.name[2]
+    && 't' == functionName.name[3]
+    ) return Functions+cSqrt;/*sqrt*/
+    else return 0;
+    default: return 0; }case 't':
+    /* prefix t */if(functionName.nameLength == 1) return 0;
+    switch(functionName.name[1]) {
+    case 'a':
+    /* prefix ta */if(functionName.nameLength == 2) return 0;
+    if(functionName.nameLength > 4) return 0;
+    if('n' == functionName.name[2]) {
+    /* prefix tan */if(functionName.nameLength == 3) return Functions+cTan;/*tan*/
+    if('h' == functionName.name[3]) {
+    /* prefix tanh */return Functions+cTanh;/*tanh*/
+    }else return 0;}else return 0;case 'r':
+    /* prefix tr */if(functionName.nameLength == 5
+    && 'u' == functionName.name[2]
+    && 'n' == functionName.name[3]
+    && 'c' == functionName.name[4]
+    ) return Functions+cTrunc;/*trunc*/
+    else return 0;
+    default: return 0; }default: return 0; }
     }
 
 #ifndef FP_SUPPORT_ASINH
