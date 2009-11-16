@@ -1239,7 +1239,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
         while(isspace(*function)) ++function;
         function = CompileComparison(function);
         if(!function) return 0;
-        
+
         if(IsNeverNegativeValueOpcode(data->ByteCode.back())
         && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
             AddFunctionOpcode(cAbsAnd);
