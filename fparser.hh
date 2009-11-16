@@ -127,12 +127,12 @@ private:
     const char* CompileFunctionParams(const char*, unsigned);
     const char* CompileElement(const char*);
     const char* CompilePossibleUnit(const char*);
-    const char* CompilePow(const char*);
-    const char* CompileUnaryMinus(const char*);
-    const char* CompileMult(const char*);
-    const char* CompileAddition(const char*);
-    const char* CompileComparison(const char*);
-    const char* CompileAnd(const char*);
+    inline const char* CompilePow(const char*);
+    inline const char* CompileUnaryMinus(const char*);
+    inline const char* CompileMult(const char*);
+    inline const char* CompileAddition(const char*);
+    inline const char* CompileComparison(const char*);
+    inline const char* CompileAnd(const char*);
     const char* CompileExpression(const char*);
 };
 
