@@ -34,18 +34,37 @@ static void Compile(const std::string& prefix, size_t parent_maxlen)
                 if(prefix != Functions[a].name
                 || prefix.size() != parent_maxlen)
                 {
+                    size_t tmpbytes = strlen(Functions[a].name) - prefix.size();
+                    if(tmpbytes > 2)
+                    {
+                        std::cout << "{";
+                        std::cout << "static const char tmp[" << tmpbytes << "] = {";
+                        for(size_t b=prefix.size(); b<strlen(Functions[a].name); ++b)
+                        {
+                            if(b > prefix.size()) std::cout << ',';
+                            std::cout << "'" << Functions[a].name[b] << "'";
+                        }
+                        std::cout << "};\n    ";
+                    }
                     if(strlen(Functions[a].name) != parent_maxlen
                     || strlen(Functions[a].name) > prefix.size())
                         std::cout << "if(functionName.nameLength == " << strlen(Functions[a].name) << "\n    ";
                     else
                         std::cout << "if(true\n    ";
-
-                    for(size_t b=prefix.size(); b<strlen(Functions[a].name); ++b)
-                        std::cout << "&& '" << Functions[a].name[b] << "' == functionName.name[" << b << "]\n    ";
-                    std::cout << ") ";
+                    
+                    if(tmpbytes > 2)
+                        std::cout << "&& std::memcmp(functionName.name+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
+                    else
+                    {
+                        for(size_t b=prefix.size(); b<strlen(Functions[a].name); ++b)
+                            std::cout << "&& '" << Functions[a].name[b] << "' == functionName.name[" << b << "]\n    ";
+                        std::cout << ") ";
+                    }
                     std::cout << "return Functions+" << FP_GetOpcodeName(OPCODE(a)) << ";/*"
                               << Functions[a].name
-                              << "*/\n    else return 0;\n    ";
+                              << "*/\n    else return 0;";
+                    if(tmpbytes > 2) std::cout << " }";
+                    std::cout << "\n    ";
                 }
                 else
                 {

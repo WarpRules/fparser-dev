@@ -1121,7 +1121,7 @@ inline const char* FunctionParser::CompileUnaryMinus(const char* function)
 inline const char* FunctionParser::CompileMult(const char* function)
 {
     unsigned op=0;
-    for(; ; )
+    while(true)
     {
         function = CompileUnaryMinus(function);
         if(!function) return 0;
@@ -1159,7 +1159,7 @@ inline const char* FunctionParser::CompileMult(const char* function)
 inline const char* FunctionParser::CompileAddition(const char* function)
 {
     unsigned op=0;
-    for(; ; )
+    while(true)
     {
         function = CompileMult(function);
         if(!function) return 0;
@@ -1195,7 +1195,7 @@ inline const char* FunctionParser::CompileAddition(const char* function)
 inline const char* FunctionParser::CompileComparison(const char* function)
 {
     unsigned op=0;
-    for(;;)
+    while(true)
     {
         function = CompileAddition(function);
         if(!function) return 0;
@@ -1230,7 +1230,7 @@ inline const char* FunctionParser::CompileComparison(const char* function)
 inline const char* FunctionParser::CompileAnd(const char* function)
 {
     size_t param0end=0;
-    for(;;)
+    while(true)
     {
         function = CompileComparison(function);
         if(!function) return 0;
@@ -1255,7 +1255,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 const char* FunctionParser::CompileExpression(const char* function)
 {
     size_t param0end=0;
-    for(;;)
+    while(true)
     {
         while(isspace(*function)) ++function;
         function = CompileAnd(function);

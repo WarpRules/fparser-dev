@@ -14,6 +14,9 @@
 
 #include "fpconfig.hh"
 #include <cmath>
+#ifdef ONCE_FPARSER_H_
+#include <cstring>
+#endif
 
 namespace FUNCTIONPARSERTYPES
 {
@@ -268,13 +271,10 @@ namespace FUNCTIONPARSERTYPES
     if('2' == functionName.name[3]) {
     /* prefix exp2 */return Functions+cExp2;/*exp2*/
     }else return 0;}else return 0;default: return 0; }case 'f':
-    /* prefix f */if(functionName.nameLength == 5
-    && 'l' == functionName.name[1]
-    && 'o' == functionName.name[2]
-    && 'o' == functionName.name[3]
-    && 'r' == functionName.name[4]
-    ) return Functions+cFloor;/*floor*/
-    else return 0;
+    /* prefix f */{static const char tmp[4] = {'l','o','o','r'};
+    if(functionName.nameLength == 5
+    && std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cFloor;/*floor*/
+    else return 0; }
     case 'i':
     /* prefix i */if(functionName.nameLength == 1) return 0;
     if(functionName.nameLength > 3) return 0;
@@ -356,12 +356,10 @@ namespace FUNCTIONPARSERTYPES
     if('h' == functionName.name[3]) {
     /* prefix tanh */return Functions+cTanh;/*tanh*/
     }else return 0;}else return 0;case 'r':
-    /* prefix tr */if(functionName.nameLength == 5
-    && 'u' == functionName.name[2]
-    && 'n' == functionName.name[3]
-    && 'c' == functionName.name[4]
-    ) return Functions+cTrunc;/*trunc*/
-    else return 0;
+    /* prefix tr */{static const char tmp[3] = {'u','n','c'};
+    if(functionName.nameLength == 5
+    && std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cTrunc;/*trunc*/
+    else return 0; }
     default: return 0; }default: return 0; }
     }
 
