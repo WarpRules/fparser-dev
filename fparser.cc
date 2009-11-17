@@ -129,54 +129,91 @@ namespace
             {
                 if(byte < 0x80) // 0x40..0x7F - most common case
                 {
-                    unsigned masklow5bits = 1 << (byte & 0x1F);
-                    if((masklow5bits & ~(1 | (0x1F << 0x1B))) || byte == '_') // A-Za-z_
-                        { ++n_eaten; continue; }
+                    // Valid characters in 40..7F: A-Za-z_
+                    // Valid bitmask for 40..5F: 01111111111111111111111111100001
+                    // Valid bitmask for 60..7F: 01111111111111111111111111100000
+                    if(sizeof(unsigned long) == 8)
+                    {
+                        const unsigned n = sizeof(unsigned long)*8-32;
+                        // ^ avoids compiler warning when not 64-bit
+                        unsigned long masklow6bits = 1UL << (byte & 0x3F);
+                        if(masklow6bits & ~((1UL << 0) | (0x0FUL << (0x1B  ))
+                                          | (1UL << n) | (0x1FUL << (0x1B+n))))
+                            { ++n_eaten; continue; }
+                    }
+                    else
+                    {
+                        unsigned masklow5bits = 1 << (byte & 0x1F);
+                        if((masklow5bits & ~(1 | (0x1F << 0x1B))) || byte == '_')
+                            { ++n_eaten; continue; }
+                    }
                     break;
                 }
-                if(byte < 0xC2) break; // 0x80..0xC1
-                if(byte < 0xE0) // C2-DF - next common case when >= 0x40
+                if(byte < 0xE0)
                 {
-                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
+                    if(byte < 0xC2) break; // 0x80..0xC1
+                    // C2-DF - next common case when >= 0x40
+                    // Valid sequence: C2-DF 80-BF
+                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
                     n_eaten += 2;
                     continue;
                 }
                 if(byte == 0xE0) // E0
                 {
-                    if(uptr[n_eaten+1] < 0xA0 || uptr[n_eaten+1] > 0xBF) break;
+                    // Valid sequence: E0 A0-BF 80-BF
+                    if((unsigned char)(uptr[n_eaten+1] - 0xA0) > (0xBF-0xA0)) break;
                     goto len3pos2;
                 }
-                if(byte == 0xF4) // F4
-                {
-                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0x8F) break;
-                    goto len4pos2;
-                }
-                if(byte > 0xF4 || byte == 0xED) break; // F4-FF, ED
                 if(byte < 0xF0) // E1-EC, EE-EF
                 {
-                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
-                len3pos2:
-                    if(uptr[n_eaten+2] < 0x80 || uptr[n_eaten+2] > 0xBF) break;
+                    if(byte == 0xED) break; // ED is invalid
+                    // Valid sequence: E1-EC 80-BF 80-BF
+                    //            And: EE-EF 80-BF 80-BF
+                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                len3pos2:;
+                    if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
                     n_eaten += 3;
                     continue;
                 }
                 if(byte == 0xF0) // F0
                 {
-                    if(uptr[n_eaten+1] < 0x90 || uptr[n_eaten+1] > 0xBF) break;
+                    // Valid sequence: F0 90-BF 80-BF 80-BF
+                    if((unsigned char)(uptr[n_eaten+1] - 0x90) > (0xBF-0x90)) break;
+                    goto len4pos2;
+                }
+                if(byte > 0xF4) break; // F5-FF are invalid
+                if(byte == 0xF4) // F4
+                {
+                    // Valid sequence: F4 80-8F
+                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0x8F-0x80)) break;
                     goto len4pos2;
                 }
                 // F1-F3
-                if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
+                // Valid sequence: F1-F3 80-BF 80-BF 80-BF
+                if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
             len4pos2:
-                if(uptr[n_eaten+2] < 0x80 || uptr[n_eaten+2] > 0xBF) break;
-                if(uptr[n_eaten+3] < 0x80 || uptr[n_eaten+3] > 0xBF) break;
+                if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
+                if((unsigned char)(uptr[n_eaten+3] - 0x80) > (0xBF-0x80)) break;
                 n_eaten += 4;
                 continue;
             }
-            if(n_eaten > 0 && byte >= '0' && byte <= '9')
+            if(n_eaten > 0)
             {
-                ++n_eaten;
-                continue;
+                if(sizeof(unsigned long) == 8)
+                {
+                    // Valid bitmask for 00..1F: 00000000000000000000000000000000
+                    // Valid bitmask for 20..3F: 00000000000000001111111111000000
+                    const unsigned n = sizeof(unsigned long)*8-32;
+                    // ^ avoids compiler warning when not 64-bit
+                    unsigned long masklow6bits = 1UL << byte;
+                    if(masklow6bits & (((1UL << 10)-1UL) << (16+n)))
+                        { ++n_eaten; continue; }
+                }
+                else
+                {
+                    if(byte >= '0' && byte <= '9')
+                        { ++n_eaten; continue; }
+                }
             }
             break;
         }
@@ -783,15 +820,34 @@ namespace
         while(true)
         {
         #if(' ' == 32) /* ASCII */
-            unsigned char byte = (unsigned char) (0x20 - *function);
-            if(byte > 0x17) break;
-            const unsigned mask =
-                (1U << (0x20 - '\r'))
-              | (1U << (0x20 - ' '))
-              | (1U << (0x20 - '\n'))
-              | (1U << (0x20 - '\v'))
-              | (1U << (0x20 - '\t'));
-            if(mask & (1 << byte)) { ++function; continue; }
+            if(sizeof(unsigned long) == 8)
+            {
+                const unsigned n = sizeof(unsigned long)*8-1;
+                // ^ avoids compiler warning when not 64-bit
+                unsigned char byte = (unsigned char)*function;
+                if(byte > ' ') break;
+                unsigned long shifted = 1UL << byte;
+                const unsigned long mask =
+                    (1UL << ('\r'&n))
+                  | (1UL << ('\n'&n))
+                  | (1UL << ('\v'&n))
+                  | (1UL << ('\t'&n))
+                  | (1UL << (' ' &n));
+                if(mask & shifted) { ++function; continue; }
+            }
+            else
+            {
+                unsigned char byte = (unsigned char) (0x20 - *function);
+                if(byte > 0x17) break;
+                unsigned shifted = 1U << byte;
+                const unsigned mask =
+                    (1U << (0x20 - '\r'))
+                  | (1U << (0x20 - '\n'))
+                  | (1U << (0x20 - '\v'))
+                  | (1U << (0x20 - '\t'))
+                  | (1U << (0x20 - ' '));
+                if(mask & shifted) { ++function; continue; }
+            }
             break;
         #else
             switch(*function)
