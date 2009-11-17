@@ -58,65 +58,6 @@ namespace
                          unsigned(dataIter->name.size()))] = &(*dataIter);
         return true;
     }
-#if 0
-    inline unsigned unicodeclass(unsigned char byte)
-    {
-        static const char A=10, B=11;
-        /*  ^ define numeric constants for two-digit numbers
-         *    so as not to disturb the layout of this neat table
-         */
-        static const char tab[0x100] =
-        {
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //00-0F
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //10-1F
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //20-2F
-            9,9,9,9, 9,9,9,9, 9,9,0,0, 0,0,0,0, //30-3F
-            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //40-4F
-            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,2, //50-5F
-            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //60-6F
-            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,0, //70-7F
-            8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8, //80-8F
-            A,A,A,A, A,A,A,A, A,A,A,A, A,A,A,A, //90-9F
-            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //A0-AF
-            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //B0-BF
-            0,0,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //C0-CF
-            4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //D0-DF
-            5,3,3,3, 3,3,3,3, 3,3,3,3, 3,0,3,3, //E0-EC, EE-EF
-            6,1,1,1, 7,0,0,0, 0,0,0,0, 0,0,0,0  //F0-FF
-        };
-        /* Classes:
-         *   9 = digits    (30-39)
-         *   2 = A-Z_a-z   (41-5A, 5F, 61-7A)
-         *   8 = 80-8F
-         *   A = 90-9F
-         *   B = A0-BF
-         *   4 = C2-DF
-         *   5 = E0
-         *   3 = E1-EC, EE-EF
-         *   6 = F0
-         *   1 = F1-F3
-         *   7 = F4
-         *
-         * Allowed multibyte utf8 sequences consist of these class options:
-         *   [4]             [8AB]
-         *   [5]         [B] [8AB]
-         *   [3]       [8AB] [8AB]
-         *   [6] [AB]  [8AB] [8AB]
-         *   [1] [8AB] [8AB] [8AB]
-         *   [7] [8]   [8AB] [8AB]
-         * In addition, the first characters may be
-         *   [2]
-         * And the following characters may be
-         *   [92]
-         * These may never begin the character:
-         *   [08AB]
-         *
-         * The numberings are such chosen to optimize the
-         * following switch-statements for code generation.
-         */
-        return tab[byte];
-    }
-#endif
     unsigned readIdentifier(const char* ptr)
     {
         unsigned n_eaten = 0;
@@ -154,6 +95,7 @@ namespace
                     if(byte < 0xE0)
                     {
                         if(byte < 0xC2) break; // 0x80..0xC1
+                        if(byte == 0xC2 && uptr[n_eaten+1]==0xA0) break; // skip nbsp
                         // C2-DF - next common case when >= 0x40
                         // Valid sequence: C2-DF 80-BF
                         if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
@@ -170,6 +112,15 @@ namespace
                         if(byte == 0xED) break; // ED is invalid
                         // Valid sequence: E1-EC 80-BF 80-BF
                         //            And: EE-EF 80-BF 80-BF
+                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x80
+                        && ((uptr[n_eaten+2] >= 0x80
+                          && uptr[n_eaten+2] <= 0x8B)
+                         || (uptr[n_eaten+2] == 0xAF))) break; // break on various space characters
+                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x81
+                        && uptr[n_eaten+2] == 0x9F) break; // this too
+                        if(byte == 0xE3 && uptr[n_eaten+1] == 0x80
+                        && uptr[n_eaten+2] == 0x80) break; // this too
+
                         if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
                     }
                     if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
@@ -821,15 +772,51 @@ namespace
     template<typename CharPtr>
     inline void SkipSpace(CharPtr& function)
     {
+        /*
+        Space characters in unicode:
+U+0020  SPACE                      Depends on font, often adjusted (see below)
+U+00A0  NO-BREAK SPACE             As a space, but often not adjusted
+U+2000  EN QUAD                    1 en (= 1/2 em)
+U+2001  EM QUAD                    1 em (nominally, the height of the font)
+U+2002  EN SPACE                   1 en (= 1/2 em)
+U+2003  EM SPACE                   1 em
+U+2004  THREE-PER-EM SPACE         1/3 em
+U+2005  FOUR-PER-EM SPACE          1/4 em
+U+2006  SIX-PER-EM SPACE           1/6 em
+U+2007  FIGURE SPACE               Tabular width, the width of digits
+U+2008  PUNCTUATION SPACE          The width of a period .
+U+2009  THIN SPACE                 1/5 em (or sometimes 1/6 em)
+U+200A  HAIR SPACE                 Narrower than THIN SPACE
+U+200B  ZERO WIDTH SPACE           Nominally no width, but may expand
+U+202F  NARROW NO-BREAK SPACE      Narrower than NO-BREAK SPACE (or SPACE)
+U+205F  MEDIUM MATHEMATICAL SPACE  4/18 em
+U+3000  IDEOGRAPHIC SPACE          The width of ideographic (CJK) characters.
+        Also:
+U+000A  \n
+U+000D  \r
+U+0009  \t
+U+000B  \v
+        As UTF-8 sequences:
+            09
+            0A
+            0B
+            0D
+            20
+            C2 A0
+            E2 80 80-8B
+            E2 80 AF
+            E2 81 9F
+            E3 80 80
+        */
         while(true)
         {
+            unsigned char byte = (unsigned char)*function;
         #if(' ' == 32) /* ASCII */
             if(sizeof(unsigned long) == 8)
             {
                 const unsigned n = sizeof(unsigned long)*8-1;
                 // ^ avoids compiler warning when not 64-bit
-                unsigned char byte = (unsigned char)*function;
-                if(byte > ' ') break;
+                if(byte > ' ') goto check_unicode;
                 unsigned long shifted = 1UL << byte;
                 const unsigned long mask =
                     (1UL << ('\r'&n))
@@ -841,9 +828,9 @@ namespace
             }
             else
             {
-                unsigned char byte = (unsigned char) (0x20 - *function);
-                if(byte > 0x17) break;
-                unsigned shifted = 1U << byte;
+                unsigned char cbyte = (unsigned char)(0x20 - *function);
+                if(cbyte > 0x17) goto check_unicode;
+                unsigned shifted = 1U << cbyte;
                 const unsigned mask =
                     (1U << (0x20 - '\r'))
                   | (1U << (0x20 - '\n'))
@@ -853,9 +840,14 @@ namespace
                 if(mask & shifted) { ++function; continue; }
             }
             break;
-        #else
-            switch(*function)
+        #endif
+          check_unicode:
+            #if(' ' == 32)
+            if(byte < 0xC2) break;
+            #endif
+            switch(byte)
             {
+            #if(' ' != 32)
               case ' ':
               case '\r':
               case '\n':
@@ -863,10 +855,33 @@ namespace
               case '\t':
                   ++function;
                   break;
-              default:
-                  return;
+            #endif
+              case 0xC2:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0xA0) { function += 2; continue; }
+                break;
+              }
+              case 0xE2:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0x81
+                && (unsigned char)(function[2]) == 0x9F) { function += 3; continue; }
+                if(byte2 == 0x80 &&
+                    ((unsigned char)(function[2]) == 0xAF
+                 || ((unsigned char)(function[2]) >= 0x80
+                  && (unsigned char)(function[2]) <= 0x8B))) { function += 3; continue; }
+                break;
+              }
+              case 0xE3:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0x80
+                && (unsigned char)(function[2]) == 0x80) { function += 3; continue; }
+                break;
+              }
             }
-        #endif
+            break;
         }
     }
 }
