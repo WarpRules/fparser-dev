@@ -67,7 +67,7 @@ x cRad	 		-> [DegreesToRadians(x)]
 x cNeg			-> [-x]
 x [x!=0.0] cInv 	-> [1.0/x]
 x [x==1.0] cMul		->
-y x cMul		-> [x*y]
+y x cMul		-> [y*x]
 x [x==1.0] cDiv		->
 y x [x!=0.0] cDiv	-> [y/x]
 y x [x!=0.0] cMod	-> [fmod(y,x)]
@@ -102,7 +102,7 @@ x [x==-1.0] cMul	-> cNeg
 
 y cAdd x cAdd		-> [y+x] cAdd
 y cSub x cAdd		-> [y-x] cSub
-y cSub x cSub		-> [x+y] cSub
+y cSub x cSub		-> [y+x] cSub
 y cAdd x cSub		-> [y-x] cAdd
 
 y cMul x cMul		-> [y*x] cMul
@@ -126,6 +126,9 @@ cExp2 cLog2 ->
 cAsin cSin ->
 cAcos cCos ->
 cAtan cTan ->
+cAsinh cSinh ->
+cAcosh cCosh ->
+cAtanh cTanh ->
 cAtan2 cTan -> cDiv
 cNeg  cAbs -> cAbs
 cInv  cInv ->
@@ -202,3 +205,4 @@ cCsc cInv -> cSin
 cSec cInv -> cCos
 cCot cInv -> cTan
 
+A cMul -> [DO_MAYBE_SQR]

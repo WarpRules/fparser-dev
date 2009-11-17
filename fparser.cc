@@ -865,35 +865,49 @@ const char* FunctionParser::CompileFunctionParams(const char* function,
 
 const char* FunctionParser::CompileElement(const char* function)
 {
-    const char c = *function;
-
-    if(c == '(') // Expression in parentheses
+    switch( (unsigned char) *function)
     {
-        ++function;
-        while(isspace(*function)) ++function;
-        if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
+      case '(': // Expression in parentheses
+      {
+          ++function;
+          while(isspace(*function)) ++function;
+          if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
 
-        function = CompileExpression(function);
-        if(!function) return 0;
+          function = CompileExpression(function);
+          if(!function) return 0;
 
-        if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
+          if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
 
-        ++function;
-        while(isspace(*function)) ++function;
-        return function;
-    }
+          ++function;
+          while(isspace(*function)) ++function;
+          return function;
+      }
 
-    if(isdigit(c) || c=='.') // Number
-    {
-        char* endPtr;
-        const double val = strtod(function, &endPtr);
-        if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+      case '.': case '0': case '1': case '2':
+      case '3': case '4': case '5': case '6':
+      case '7': case '8': case '9': // Number
+      {
+          char* endPtr;
+          const double val = strtod(function, &endPtr);
+          if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
 
-        AddImmedOpcode(val);
-        incStackPtr();
+          AddImmedOpcode(val);
+          incStackPtr();
 
-        while(isspace(*endPtr)) ++endPtr;
-        return endPtr;
+          while(isspace(*endPtr)) ++endPtr;
+          return endPtr;
+      }
+
+      case ')': return SetErrorType(MISM_PARENTH, function);
+
+      /* The switch-case here covers the ascii range
+       * from 40 to 57 almost completely. A few characters
+       * however are missing, but they are not part of
+       * valid identifiers. Include them here to reduce
+       * the number of jumps in the compiled program.
+       */
+      case '*': case '+': case ',': case '-': case '/':
+          return SetErrorType(SYNTAX_ERROR, function);
     }
 
     const char* endPtr = readIdentifier(function);
@@ -905,16 +919,15 @@ const char* FunctionParser::CompileElement(const char* function)
         const FuncDefinition* funcDef = findFunction(name);
         if(funcDef && funcDef->enabled()) // is function
         {
-            if(funcDef->opcode == cIf) // "if" is a special case
+            OPCODE func_opcode = OPCODE(funcDef - Functions);
+
+            if(func_opcode == cIf) // "if" is a special case
                 return CompileIf(endPtr);
 
+            unsigned requiredParams = funcDef->params;
 #ifndef FP_DISABLE_EVAL
-            const unsigned requiredParams =
-                funcDef->opcode == cEval ?
-                unsigned(data->variableRefs.size()) :
-                funcDef->params;
-#else
-            const unsigned requiredParams = funcDef->params;
+            if(func_opcode == cEval)
+                requiredParams = unsigned(data->variableRefs.size());
 #endif
 
             function = CompileFunctionParams(endPtr, requiredParams);
@@ -925,14 +938,14 @@ const char* FunctionParser::CompileElement(const char* function)
                 if(funcDef->flags & FuncDefinition::AngleIn)
                     AddFunctionOpcode(cRad);
 
-                AddFunctionOpcode(funcDef->opcode);
+                AddFunctionOpcode(func_opcode);
 
                 if(funcDef->flags & FuncDefinition::AngleOut)
                     AddFunctionOpcode(cDeg);
             }
             else
             {
-                AddFunctionOpcode(funcDef->opcode);
+                AddFunctionOpcode(func_opcode);
             }
             return function;
         }
@@ -992,7 +1005,6 @@ const char* FunctionParser::CompileElement(const char* function)
         }
     }
 
-    if(c == ')') return SetErrorType(MISM_PARENTH, function);
     return SetErrorType(SYNTAX_ERROR, function);
 }
 
@@ -1024,7 +1036,7 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
     return function;
 }
 
-const char* FunctionParser::CompilePow(const char* function)
+inline const char* FunctionParser::CompilePow(const char* function)
 {
     function = CompileElement(function);
     if(!function) return 0;
@@ -1084,193 +1096,183 @@ const char* FunctionParser::CompilePow(const char* function)
     return function;
 }
 
-const char* FunctionParser::CompileUnaryMinus(const char* function)
+inline const char* FunctionParser::CompileUnaryMinus(const char* function)
 {
-    const char op = *function;
-    if(op == '-' || op == '!')
+    char op = *function;
+    switch(op)
     {
-        ++function;
-        while(isspace(*function)) ++function;
-        function = CompileUnaryMinus(function);
-        if(!function) return 0;
+        case '-':
+        case '!':
+            ++function;
+            while(isspace(*function)) ++function;
 
-        AddFunctionOpcode(op == '-' ? cNeg : cNot);
+            function = CompileUnaryMinus(function);
+            if(!function) return 0;
+
+            AddFunctionOpcode(op=='-' ? cNeg : cNot);
+
+            return function;
+
+        default:
+            return CompilePow(function);
     }
-    else
-        function = CompilePow(function);
-
-    return function;
 }
 
 inline const char* FunctionParser::CompileMult(const char* function)
 {
-    function = CompileUnaryMinus(function);
-    if(!function) return 0;
-
-    char op;
-    while((op = *function) == '*' || op == '/' || op == '%')
+    unsigned op=0;
+    for(; ; )
     {
-        ++function;
-        while(isspace(*function)) ++function;
-
-        bool is_unary = false;
-        if(op != '%'
-        && data->ByteCode.back() == cImmed
-        && data->Immed.back() == 1.0)
-        {
-            is_unary = true;
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-        }
-
         function = CompileUnaryMinus(function);
         if(!function) return 0;
 
         // add opcode
-        switch(op)
+        if(op)
         {
-          case '%':
-              AddFunctionOpcode(cMod);
-              break;
-          case '/':
-              AddFunctionOpcode(is_unary ? cInv : cDiv);
-              break;
-          default:
-          case '*':
-              if(!is_unary) AddFunctionOpcode(cMul);
-              break;
+            AddFunctionOpcode(op);
+            --StackPtr;
         }
-        --StackPtr;
+        switch(*function)
+        {
+            case '*': op = cMul; break;
+            case '/': op = cDiv; break;
+            case '%': op = cMod; break;
+            default: return function;
+        }
+
+        ++function;
+        while(isspace(*function)) ++function;
+
+        if(op == cDiv
+        && data->ByteCode.back() == cImmed
+        && data->Immed.back() == 1.0)
+        {
+            op = cInv;
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
     }
     return function;
+
 }
 
 inline const char* FunctionParser::CompileAddition(const char* function)
 {
-    function = CompileMult(function);
-    if(!function) return 0;
-
-    char op;
-    while((op = *function) == '+' || op == '-')
+    unsigned op=0;
+    for(; ; )
     {
-        ++function;
-        while(isspace(*function)) ++function;
-
-        bool is_unary = false;
-        if(data->ByteCode.back() == cImmed
-        && data->Immed.back() == 0.0)
-        {
-            is_unary = true;
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-        }
-
         function = CompileMult(function);
         if(!function) return 0;
 
         // add opcode
-        switch(op)
+        if(op)
         {
-          default:
-          case '+':
-              if(!is_unary) AddFunctionOpcode(cAdd);
-              break;
-          case '-':
-              AddFunctionOpcode(is_unary ? cNeg : cSub); break;
+            AddFunctionOpcode(op);
+            --StackPtr;
         }
-        --StackPtr;
+        switch(*function)
+        {
+            case '+': op = cAdd; break;
+            case '-': op = cSub; break;
+            default: return function;
+        }
+
+        ++function;
+        while(isspace(*function)) ++function;
+
+        if(op == cSub
+        && data->ByteCode.back() == cImmed
+        && data->Immed.back() == 0.0)
+        {
+            op = cNeg;
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+        }
     }
     return function;
 }
 
-namespace
+inline const char* FunctionParser::CompileComparison(const char* function)
 {
-    inline int getComparisonOpcode(const char*& f)
+    unsigned op=0;
+    for(;;)
     {
-        switch(*f)
-        {
-          case '=':
-              ++f; return cEqual;
-
-          case '!':
-              if(f[1] == '=') { f += 2; return cNEqual; }
-              return -1; // If '=' does not follow '!', a syntax error will
-                         // be generated at the outermost parsing level
-
-          case '<':
-              if(f[1] == '=') { f += 2; return cLessOrEq; }
-              ++f; return cLess;
-
-          case '>':
-              if(f[1] == '=') { f += 2; return cGreaterOrEq; }
-              ++f; return cGreater;
-        }
-        return -1;
-    }
-}
-
-const char* FunctionParser::CompileComparison(const char* function)
-{
-    function = CompileAddition(function);
-    if(!function) return 0;
-
-    int opCode;
-    while((opCode = getComparisonOpcode(function)) >= 0)
-    {
-        while(isspace(*function)) ++function;
         function = CompileAddition(function);
         if(!function) return 0;
-        AddFunctionOpcode(opCode);
-        --StackPtr;
+
+        if(op)
+        {
+            AddFunctionOpcode(op);
+            --StackPtr;
+        }
+        switch(*function)
+        {
+          case '=':
+              ++function; op = cEqual; break;
+          case '!':
+              if(function[1] == '=') { function += 2; op = cNEqual; break; }
+              // If '=' does not follow '!', a syntax error will
+              // be generated at the outermost parsing level
+              return function;
+          case '<':
+              if(function[1] == '=') { function += 2; op = cLessOrEq; break; }
+              ++function; op = cLess; break;
+          case '>':
+              if(function[1] == '=') { function += 2; op = cGreaterOrEq; break; }
+              ++function; op = cGreater; break;
+          default: return function;
+        }
+        while(isspace(*function)) ++function;
     }
     return function;
 }
 
 inline const char* FunctionParser::CompileAnd(const char* function)
 {
-    function = CompileComparison(function);
-    if(!function) return 0;
-
-    while(*function == '&')
+    size_t param0end=0;
+    for(;;)
     {
-        size_t param0end = data->ByteCode.size();
-
-        ++function;
-        while(isspace(*function)) ++function;
         function = CompileComparison(function);
         if(!function) return 0;
-        
-        if(IsNeverNegativeValueOpcode(data->ByteCode.back())
-        && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-            AddFunctionOpcode(cAbsAnd);
-        else
-            AddFunctionOpcode(cAnd);
-        --StackPtr;
+
+        if(param0end)
+        {
+            if(IsNeverNegativeValueOpcode(data->ByteCode.back())
+            && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
+                AddFunctionOpcode(cAbsAnd);
+            else
+                AddFunctionOpcode(cAnd);
+            --StackPtr;
+        }
+        if(*function != '&') break;
+        ++function;
+        while(isspace(*function)) ++function;
+        param0end = data->ByteCode.size();
     }
     return function;
 }
 
 const char* FunctionParser::CompileExpression(const char* function)
 {
-    while(isspace(*function)) ++function;
-    function = CompileAnd(function);
-    if(!function) return 0;
-
-    while(*function == '|')
+    size_t param0end=0;
+    for(;;)
     {
-        size_t param0end = data->ByteCode.size();
-
-        ++function;
         while(isspace(*function)) ++function;
         function = CompileAnd(function);
         if(!function) return 0;
 
-        if(IsNeverNegativeValueOpcode(data->ByteCode.back())
-        && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-            AddFunctionOpcode(cAbsOr);
-        else
-            AddFunctionOpcode(cOr);
-        --StackPtr;
+        if(param0end)
+        {
+            if(IsNeverNegativeValueOpcode(data->ByteCode.back())
+            && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
+                AddFunctionOpcode(cAbsOr);
+            else
+                AddFunctionOpcode(cOr);
+            --StackPtr;
+        }
+        if(*function != '|') break;
+        ++function;
+        param0end = data->ByteCode.size();
     }
     return function;
 }
