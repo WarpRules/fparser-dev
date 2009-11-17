@@ -896,15 +896,38 @@ bool WhiteSpaceTest()
 
     if(!testWsFunc(fp, function)) return false;
 
+    static const unsigned char WhiteSpaceTables[][4] =
+    {
+        { 1, 0x09, 0,0 }, // tab
+        { 1, 0x0A, 0,0 }, // linefeed
+        { 1, 0x0B, 0,0 }, // vertical tab
+        { 1, 0x0D, 0,0 }, // carriage return
+        { 1, 0x20, 0,0 }, // space
+        { 2, 0xC2,0xA0, 0 }, // U+00A0 (nbsp)
+        { 3, 0xE2,0x80,0x80 }, { 3, 0xE2,0x80,0x81 }, // U+2000 to...
+        { 3, 0xE2,0x80,0x82 }, { 3, 0xE2,0x80,0x83 }, { 3, 0xE2,0x80,0x84 },
+        { 3, 0xE2,0x80,0x85 }, { 3, 0xE2,0x80,0x86 }, { 3, 0xE2,0x80,0x87 },
+        { 3, 0xE2,0x80,0x88 }, { 3, 0xE2,0x80,0x89 },
+        { 3, 0xE2,0x80,0x8A }, { 3, 0xE2,0x80,0x8B }, // ... U+200B
+        { 3, 0xE2,0x80,0xAF }, { 3, 0xE2,0x81,0x9F }, // U+202F and U+205F
+        { 3, 0xE3,0x80,0x80 } // U+3000
+    };
+    const unsigned n_whitespaces = sizeof(WhiteSpaceTables)/sizeof(*WhiteSpaceTables);
+
     for(unsigned i = 0; i < function.size(); ++i)
     {
         if(function[i] == ' ')
         {
             function.erase(i, 1);
-            if(!testWsFunc(fp, function)) return false;
-            function.insert(i, "  ");
-            if(!testWsFunc(fp, function)) return false;
-            function.erase(i, 1);
+            for(size_t a = 0; a < n_whitespaces; ++a)
+            {
+                if(!testWsFunc(fp, function)) return false;
+                int length = (int)WhiteSpaceTables[a][0];
+                const char* sequence = (const char*)&WhiteSpaceTables[a][1];
+                function.insert(i, sequence, length);
+                if(!testWsFunc(fp, function)) return false;
+                function.erase(i, length);
+            }
         }
     }
     return true;
@@ -955,7 +978,7 @@ bool TestIntPow()
 
     FunctionParser fp;
 
-    for(int exponent = -300; exponent <= 300; ++exponent)
+    for(int exponent = -1300; exponent <= 1300; ++exponent)
     {
         std::ostringstream os;
         os << "x^" << exponent;
@@ -986,16 +1009,37 @@ namespace
 
     const CharValueRange validValueRanges[][4] =
     {
-        { { 0x30, 0x39 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
-        { { 0x41, 0x5A }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
-        { { 0x5F, 0x5F }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
-        { { 0x61, 0x7A }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
-        { { 0xC2, 0xDF }, { 0x80, 0xBF }, { 0, 0 }, { 0, 0 } },
+        { { 0x30, 0x39 }, { 0, 0 }, { 0, 0 }, { 0, 0 } }, // digits
+        { { 0x41, 0x5A }, { 0, 0 }, { 0, 0 }, { 0, 0 } }, // uppercase ascii
+        { { 0x5F, 0x5F }, { 0, 0 }, { 0, 0 }, { 0, 0 } }, // underscore
+        { { 0x61, 0x7A }, { 0, 0 }, { 0, 0 }, { 0, 0 } }, // lowercase ascii
+        // U+0080 through U+009F
+        { { 0xC2, 0xC2 }, { 0x80, 0x9F }, { 0, 0 }, { 0, 0 } },
+        // U+00A1 through U+00BF
+        { { 0xC2, 0xC2 }, { 0xA1, 0xBF }, { 0, 0 }, { 0, 0 } },
+        // U+00C0 through U+07FF
+        { { 0xC3, 0xDF }, { 0x80, 0xBF }, { 0, 0 }, { 0, 0 } },
+        // U+0800 through U+1FFF (skip U+2000..U+200bB, which are whitespaces)
         { { 0xE0, 0xE0 }, { 0xA0, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
-        { { 0xE1, 0xEC }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        { { 0xE1, 0xE1 }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        // U+200C through U+202E (skip U+202F, which is a whitespace)
+        { { 0xE2, 0xE2 }, { 0x80, 0x80 }, { 0x8C, 0xAE }, { 0, 0 } },
+        // U+2030 through U+205E (skip U+205F, which is a whitespace)
+        { { 0xE2, 0xE2 }, { 0x80, 0x80 }, { 0xB0, 0xBF }, { 0, 0 } },
+        { { 0xE2, 0xE2 }, { 0x81, 0x81 }, { 0x80, 0x9E }, { 0, 0 } },
+        // U+2060 through U+20FF (skip U+3000, which is a whitespace)
+        { { 0xE2, 0xE2 }, { 0x81, 0x81 }, { 0xA0, 0xBF }, { 0, 0 } },
+        { { 0xE2, 0xE2 }, { 0x82, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        // U+3001 through U+CFFF
+        { { 0xE3, 0xE3 }, { 0x80, 0x80 }, { 0x81, 0xBF }, { 0, 0 } },
+        { { 0xE3, 0xE3 }, { 0x81, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        { { 0xE4, 0xEC }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        // U+E000 through U+FFFF
         { { 0xEE, 0xEF }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0, 0 } },
+        // U+10000 through U+FFFFF
         { { 0xF0, 0xF0 }, { 0x90, 0xBF }, { 0x80, 0xBF }, { 0x80, 0xBF } },
         { { 0xF1, 0xF3 }, { 0x80, 0xBF }, { 0x80, 0xBF }, { 0x80, 0xBF } },
+        // U+100000 through U+10FFFF
         { { 0xF4, 0xF4 }, { 0x80, 0x8F }, { 0x80, 0xBF }, { 0x80, 0xBF } }
     };
     const unsigned validValueRangesAmount =
@@ -1003,6 +1047,18 @@ namespace
 
     const CharValueRange invalidValueRanges[][4] =
     {
+        // spaces:
+        { { 0x09, 0x09 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x0A, 0x0A }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x0B, 0x0B }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x0D, 0x0D }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0x20, 0x20 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xC2, 0xC2 }, { 0xA0, 0xA0 }, { 0, 0 }, { 0, 0 } },
+        { { 0xE2, 0xE2 }, { 0x80, 0x80 }, { 0x80, 0x8B }, { 0, 0 } },
+        { { 0xE2, 0xE2 }, { 0x80, 0x80 }, { 0xAF, 0xAF }, { 0, 0 } },
+        { { 0xE2, 0xE2 }, { 0x81, 0x81 }, { 0x9F, 0x9F }, { 0, 0 } },
+        { { 0xE3, 0xE3 }, { 0x80, 0x80 }, { 0x80, 0x80 }, { 0, 0 } },
+        // others:
         { { 0xC0, 0xC1 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
         { { 0xED, 0xED }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
         { { 0xF5, 0xFF }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
@@ -1055,7 +1111,6 @@ namespace
     };
     const unsigned invalidValueRangesAmount =
         sizeof(invalidValueRanges)/sizeof(invalidValueRanges[0]);
-
 
     class CharIter
     {
@@ -1158,7 +1213,9 @@ bool UTF8Test()
     std::cout << "- Testing UTF8..." << std::flush;
 
     CharIter iters[4] =
-        { CharIter(true, false), CharIter(false, true), CharIter(false, false),
+        { CharIter(true, false),
+          CharIter(false, true),
+          CharIter(false, false),
           CharIter(false, false) };
     std::string identifier;
     FunctionParser fp;

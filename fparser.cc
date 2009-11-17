@@ -58,126 +58,128 @@ namespace
                          unsigned(dataIter->name.size()))] = &(*dataIter);
         return true;
     }
-
-    const char* readIdentifier(const char* ptr)
+    unsigned readIdentifier(const char* ptr)
     {
-        static const char A=10, B=11;
-        /*  ^ define numeric constants for two-digit numbers
-         *    so as not to disturb the layout of this neat table
-         */
-        static const char tab[0x100] =
-        {
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //00-0F
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //10-1F
-            0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0, //20-2F
-            9,9,9,9, 9,9,9,9, 9,9,0,0, 0,0,0,0, //30-3F
-            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //40-4F
-            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,2, //50-5F
-            0,2,2,2, 2,2,2,2, 2,2,2,2, 2,2,2,2, //60-6F
-            2,2,2,2, 2,2,2,2, 2,2,2,0, 0,0,0,0, //70-7F
-            8,8,8,8, 8,8,8,8, 8,8,8,8, 8,8,8,8, //80-8F
-            A,A,A,A, A,A,A,A, A,A,A,A, A,A,A,A, //90-9F
-            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //A0-AF
-            B,B,B,B, B,B,B,B, B,B,B,B, B,B,B,B, //B0-BF
-            0,0,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //C0-CF
-            4,4,4,4, 4,4,4,4, 4,4,4,4, 4,4,4,4, //D0-DF
-            5,3,3,3, 3,3,3,3, 3,3,3,3, 3,0,3,3, //E0-EC, EE-EF
-            6,1,1,1, 7,0,0,0, 0,0,0,0, 0,0,0,0  //F0-FF
-        };
-        /* Classes:
-         *   9 = digits    (30-39)
-         *   2 = A-Z_a-z   (41-5A, 5F, 61-7A)
-         *   8 = 80-8F
-         *   A = 90-9F
-         *   B = A0-BF
-         *   4 = C2-DF
-         *   5 = E0
-         *   3 = E1-EC, EE-EF
-         *   6 = F0
-         *   1 = F1-F3
-         *   7 = F4
-         *
-         * Allowed multibyte utf8 sequences consist of these class options:
-         *   [4]             [8AB]
-         *   [5]         [B] [8AB]
-         *   [3]       [8AB] [8AB]
-         *   [6] [AB]  [8AB] [8AB]
-         *   [1] [8AB] [8AB] [8AB]
-         *   [7] [8]   [8AB] [8AB]
-         * In addition, the first characters may be
-         *   [2]
-         * And the following characters may be
-         *   [92]
-         * These may never begin the character:
-         *   [08AB]
-         *
-         * The numberings are such chosen to optimize the
-         * following switch-statements for code generation.
-         */
-
+        unsigned n_eaten = 0;
         const unsigned char* uptr = (const unsigned char*) ptr;
-        switch(tab[uptr[0]])
+        while(true)
         {
-            case 2: goto loop_2; // A-Z_a-z
-            case 5: goto loop_5; // E0
-            case 3: goto loop_3; // E1-EC, EE-EF
-            case 4: goto loop_4; // C2-DF
+            unsigned char byte = uptr[n_eaten+0];
+            /* Handle the common case of A-Za-z first */
+            if(byte >= 0x40)
+            {
+                if(byte < 0x80) // 0x40..0x7F - most common case
+                {
+                    // Valid characters in 40..7F: A-Za-z_
+                    // Valid bitmask for 40..5F: 01111111111111111111111111100001
+                    // Valid bitmask for 60..7F: 01111111111111111111111111100000
+                    if(sizeof(unsigned long) == 8)
+                    {
+                        const unsigned n = sizeof(unsigned long)*8-32;
+                        // ^ avoids compiler warning when not 64-bit
+                        unsigned long masklow6bits = 1UL << (byte & 0x3F);
+                        if(masklow6bits & ~((1UL << 0) | (0x0FUL << (0x1B  ))
+                                          | (1UL << n) | (0x1FUL << (0x1B+n))))
+                            { ++n_eaten; continue; }
+                    }
+                    else
+                    {
+                        unsigned masklow5bits = 1 << (byte & 0x1F);
+                        if((masklow5bits & ~(1 | (0x1F << 0x1B))) || byte == '_')
+                            { ++n_eaten; continue; }
+                    }
+                    break;
+                }
+                if(byte < 0xF0)
+                {
+                    if(byte < 0xE0)
+                    {
+                        if(byte < 0xC2) break; // 0x80..0xC1
+                        if(byte == 0xC2 && uptr[n_eaten+1]==0xA0) break; // skip nbsp
+                        // C2-DF - next common case when >= 0x40
+                        // Valid sequence: C2-DF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                        n_eaten += 2;
+                        continue;
+                    }
+                    if(byte == 0xE0) // E0
+                    {
+                        // Valid sequence: E0 A0-BF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0xA0) > (0xBF-0xA0)) break;
+                    }
+                    else
+                    {
+                        if(byte == 0xED) break; // ED is invalid
+                        // Valid sequence: E1-EC 80-BF 80-BF
+                        //            And: EE-EF 80-BF 80-BF
+                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x80
+                        && ((uptr[n_eaten+2] >= 0x80
+                          && uptr[n_eaten+2] <= 0x8B)
+                         || (uptr[n_eaten+2] == 0xAF))) break; // break on various space characters
+                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x81
+                        && uptr[n_eaten+2] == 0x9F) break; // this too
+                        if(byte == 0xE3 && uptr[n_eaten+1] == 0x80
+                        && uptr[n_eaten+2] == 0x80) break; // this too
 
-            case 1: goto loop_1; // F0-F4 XXX F1-F3
-            case 6: goto loop_6; //       XXX F0
-            case 7: goto loop_7; //       XXX F4
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                    }
+                    if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
+                    n_eaten += 3;
+                    continue;
+                }
+                if(byte == 0xF0) // F0
+                {
+                    // Valid sequence: F0 90-BF 80-BF 80-BF
+                    if((unsigned char)(uptr[n_eaten+1] - 0x90) > (0xBF-0x90)) break;
+                }
+                else
+                {
+                    if(byte > 0xF4) break; // F5-FF are invalid
+                    if(byte == 0xF4) // F4
+                    {
+                        // Valid sequence: F4 80-8F
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0x8F-0x80)) break;
+                    }
+                    else
+                    {
+                        // F1-F3
+                        // Valid sequence: F1-F3 80-BF 80-BF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                    }
+                }
+                if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
+                if((unsigned char)(uptr[n_eaten+3] - 0x80) > (0xBF-0x80)) break;
+                n_eaten += 4;
+                continue;
+            }
+            if(n_eaten > 0)
+            {
+                if(sizeof(unsigned long) == 8)
+                {
+                    // Valid bitmask for 00..1F: 00000000000000000000000000000000
+                    // Valid bitmask for 20..3F: 00000000000000001111111111000000
+                    const unsigned n = sizeof(unsigned long)*8-32;
+                    // ^ avoids compiler warning when not 64-bit
+                    unsigned long masklow6bits = 1UL << byte;
+                    if(masklow6bits & (((1UL << 10)-1UL) << (16+n)))
+                        { ++n_eaten; continue; }
+                }
+                else
+                {
+                    if(byte >= '0' && byte <= '9')
+                        { ++n_eaten; continue; }
+                }
+            }
+            break;
         }
-        return (const char*) uptr;
-
-    loop:
-        switch(tab[uptr[0]])
-        {
-            case 9: // 0-9
-            case 2: // A-Z_a-z
-            loop_2:
-                uptr += 1;
-                goto loop;
-            case 6: // F0:
-            loop_6:
-                if(uptr[1] < 0x90 || uptr[1] > 0xBF) break;
-                goto len4pos2;
-            case 1: // F1-F3:
-            loop_1:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
-            len4pos2:
-                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
-                if(uptr[3] < 0x80 || uptr[3] > 0xBF) break;
-                uptr += 4;
-                goto loop;
-            case 7: // F4:
-            loop_7:
-                if(tab[uptr[1]] != 8) break;
-                goto len4pos2;
-            case 5: // E0
-            loop_5:
-                if(tab[uptr[1]] != B) break;
-                goto len3pos2;
-            case 3: // E1-EC, EE-EF
-            loop_3:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
-            len3pos2:
-                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
-                uptr += 3;
-                goto loop;
-            case 4: // C2-DF
-            loop_4:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
-                uptr += 2;
-                goto loop;
-        }
-        return (const char*) uptr;
+        return n_eaten;
     }
 
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        const char* endPtr = readIdentifier(name.c_str());
-        return *endPtr == '\0';
+        size_t name_length = readIdentifier(name.c_str());
+        return name_length == name.size();
     }
 
     inline bool truthValue(double d)
@@ -465,11 +467,12 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 
     while(beginPtr < finalPtr)
     {
-        const char* endPtr = readIdentifier(beginPtr);
-        if(endPtr == beginPtr) return false;
+        unsigned nameLength = readIdentifier(beginPtr);
+        if(nameLength == 0) return false;
+        const char* endPtr = beginPtr + nameLength;
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        NamePtr namePtr(beginPtr, unsigned(endPtr - beginPtr));
+        NamePtr namePtr(beginPtr, nameLength);
 
         const FuncDefinition* funcDef = findFunction(namePtr);
         if(funcDef && funcDef->enabled()) return false;
@@ -765,6 +768,122 @@ namespace
         return c == ',' ?
             FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::MISSING_PARENTH;
     }
+
+    template<typename CharPtr>
+    inline void SkipSpace(CharPtr& function)
+    {
+        /*
+        Space characters in unicode:
+U+0020  SPACE                      Depends on font, often adjusted (see below)
+U+00A0  NO-BREAK SPACE             As a space, but often not adjusted
+U+2000  EN QUAD                    1 en (= 1/2 em)
+U+2001  EM QUAD                    1 em (nominally, the height of the font)
+U+2002  EN SPACE                   1 en (= 1/2 em)
+U+2003  EM SPACE                   1 em
+U+2004  THREE-PER-EM SPACE         1/3 em
+U+2005  FOUR-PER-EM SPACE          1/4 em
+U+2006  SIX-PER-EM SPACE           1/6 em
+U+2007  FIGURE SPACE               Tabular width, the width of digits
+U+2008  PUNCTUATION SPACE          The width of a period .
+U+2009  THIN SPACE                 1/5 em (or sometimes 1/6 em)
+U+200A  HAIR SPACE                 Narrower than THIN SPACE
+U+200B  ZERO WIDTH SPACE           Nominally no width, but may expand
+U+202F  NARROW NO-BREAK SPACE      Narrower than NO-BREAK SPACE (or SPACE)
+U+205F  MEDIUM MATHEMATICAL SPACE  4/18 em
+U+3000  IDEOGRAPHIC SPACE          The width of ideographic (CJK) characters.
+        Also:
+U+000A  \n
+U+000D  \r
+U+0009  \t
+U+000B  \v
+        As UTF-8 sequences:
+            09
+            0A
+            0B
+            0D
+            20
+            C2 A0
+            E2 80 80-8B
+            E2 80 AF
+            E2 81 9F
+            E3 80 80
+        */
+        while(true)
+        {
+            unsigned char byte = (unsigned char)*function;
+        #if(' ' == 32) /* ASCII */
+            if(sizeof(unsigned long) == 8)
+            {
+                const unsigned n = sizeof(unsigned long)*8-1;
+                // ^ avoids compiler warning when not 64-bit
+                if(byte > ' ') goto check_unicode;
+                unsigned long shifted = 1UL << byte;
+                const unsigned long mask =
+                    (1UL << ('\r'&n))
+                  | (1UL << ('\n'&n))
+                  | (1UL << ('\v'&n))
+                  | (1UL << ('\t'&n))
+                  | (1UL << (' ' &n));
+                if(mask & shifted) { ++function; continue; }
+            }
+            else
+            {
+                unsigned char cbyte = (unsigned char)(0x20 - *function);
+                if(cbyte > 0x17) goto check_unicode;
+                unsigned shifted = 1U << cbyte;
+                const unsigned mask =
+                    (1U << (0x20 - '\r'))
+                  | (1U << (0x20 - '\n'))
+                  | (1U << (0x20 - '\v'))
+                  | (1U << (0x20 - '\t'))
+                  | (1U << (0x20 - ' '));
+                if(mask & shifted) { ++function; continue; }
+            }
+            break;
+        #endif
+          check_unicode:
+            #if(' ' == 32)
+            if(byte < 0xC2) break;
+            #endif
+            switch(byte)
+            {
+            #if(' ' != 32)
+              case ' ':
+              case '\r':
+              case '\n':
+              case '\v':
+              case '\t':
+                  ++function;
+                  break;
+            #endif
+              case 0xC2:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0xA0) { function += 2; continue; }
+                break;
+              }
+              case 0xE2:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0x81
+                && (unsigned char)(function[2]) == 0x9F) { function += 3; continue; }
+                if(byte2 == 0x80 &&
+                    ((unsigned char)(function[2]) == 0xAF
+                 || ((unsigned char)(function[2]) >= 0x80
+                  && (unsigned char)(function[2]) <= 0x8B))) { function += 3; continue; }
+                break;
+              }
+              case 0xE3:
+              {
+                unsigned char byte2 = function[1];
+                if(byte2 == 0x80
+                && (unsigned char)(function[2]) == 0x80) { function += 3; continue; }
+                break;
+              }
+            }
+            break;
+        }
+    }
 }
 
 const char* FunctionParser::CompileIf(const char* function)
@@ -824,7 +943,7 @@ const char* FunctionParser::CompileIf(const char* function)
     data->ByteCode[curByteCodeSize2+1] = unsigned(data->Immed.size());
 
     ++function;
-    while(isspace(*function)) ++function;
+    SkipSpace(function);
     return function;
 }
 
@@ -853,13 +972,13 @@ const char* FunctionParser::CompileFunctionParams(const char* function,
     {
         incStackPtr(); // return value of function is pushed onto the stack
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
     }
 
     if(*function != ')')
         return SetErrorType(noParenthError(*function), function);
     ++function;
-    while(isspace(*function)) ++function;
+    SkipSpace(function);
     return function;
 }
 
@@ -870,7 +989,7 @@ const char* FunctionParser::CompileElement(const char* function)
       case '(': // Expression in parentheses
       {
           ++function;
-          while(isspace(*function)) ++function;
+          SkipSpace(function);
           if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
 
           function = CompileExpression(function);
@@ -879,7 +998,7 @@ const char* FunctionParser::CompileElement(const char* function)
           if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
 
           ++function;
-          while(isspace(*function)) ++function;
+          SkipSpace(function);
           return function;
       }
 
@@ -894,7 +1013,7 @@ const char* FunctionParser::CompileElement(const char* function)
           AddImmedOpcode(val);
           incStackPtr();
 
-          while(isspace(*endPtr)) ++endPtr;
+          SkipSpace(endPtr);
           return endPtr;
       }
 
@@ -910,11 +1029,12 @@ const char* FunctionParser::CompileElement(const char* function)
           return SetErrorType(SYNTAX_ERROR, function);
     }
 
-    const char* endPtr = readIdentifier(function);
-    if(endPtr != function) // Function, variable or constant
+    unsigned nameLength = readIdentifier(function);
+    if(nameLength != 0) // Function, variable or constant
     {
-        NamePtr name(function, unsigned(endPtr - function));
-        while(isspace(*endPtr)) ++endPtr;
+        NamePtr name(function, nameLength);
+        const char* endPtr = function + nameLength;
+        SkipSpace(endPtr);
 
         const FuncDefinition* funcDef = findFunction(name);
         if(funcDef && funcDef->enabled()) // is function
@@ -1010,12 +1130,10 @@ const char* FunctionParser::CompileElement(const char* function)
 
 const char* FunctionParser::CompilePossibleUnit(const char* function)
 {
-    const char* endPtr = readIdentifier(function);
-
-    if(endPtr != function)
+    unsigned nameLength = readIdentifier(function);
+    if(nameLength != 0)
     {
-        NamePtr name(function, unsigned(endPtr - function));
-        while(isspace(*endPtr)) ++endPtr;
+        NamePtr name(function, nameLength);
 
         std::map<NamePtr, const NameData*>::iterator nameIter =
             data->namePtrs.find(name);
@@ -1028,6 +1146,9 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
                 incStackPtr();
                 AddFunctionOpcode(cMul);
                 --StackPtr;
+
+                const char* endPtr = function + nameLength;
+                SkipSpace(endPtr);
                 return endPtr;
             }
         }
@@ -1045,7 +1166,7 @@ inline const char* FunctionParser::CompilePow(const char* function)
     if(*function == '^')
     {
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         bool base_is_immed = false;
         double base_immed = 0;
@@ -1071,22 +1192,14 @@ inline const char* FunctionParser::CompilePow(const char* function)
         }
         else if(base_is_immed)
         {
-            if(base_immed > 0.0)
-            {
-                double mulvalue = std::log(base_immed);
-                AddImmedOpcode(mulvalue);
-                incStackPtr();
-                AddFunctionOpcode(cMul);
-                --StackPtr;
-                AddFunctionOpcode(cExp);
-            }
-            else /* uh-oh, we've got e.g. (-5)^x, and we already deleted
-                    -5 from the stack */
-            {
-                AddImmedOpcode(base_immed);
-                incStackPtr();
-                AddFunctionOpcode(cRPow);
-            }
+            /* We've got e.g. (-5)^x, and already deleted -5 from the stack.
+             * Must readd the constant, but because the order changed, the
+             * opcode is now cRPow.
+             * Note: AddFunctionOpcode will now optimize 4^x to exp(log(4)*x).
+             */
+            AddImmedOpcode(base_immed);
+            incStackPtr();
+            AddFunctionOpcode(cRPow);
         }
         else // add opcode
             AddFunctionOpcode(cPow);
@@ -1104,7 +1217,7 @@ inline const char* FunctionParser::CompileUnaryMinus(const char* function)
         case '-':
         case '!':
             ++function;
-            while(isspace(*function)) ++function;
+            SkipSpace(function);
 
             function = CompileUnaryMinus(function);
             if(!function) return 0;
@@ -1112,16 +1225,15 @@ inline const char* FunctionParser::CompileUnaryMinus(const char* function)
             AddFunctionOpcode(op=='-' ? cNeg : cNot);
 
             return function;
-
-        default:
-            return CompilePow(function);
+        default: break;
     }
+    return CompilePow(function);
 }
 
 inline const char* FunctionParser::CompileMult(const char* function)
 {
     unsigned op=0;
-    for(; ; )
+    while(true)
     {
         function = CompileUnaryMinus(function);
         if(!function) return 0;
@@ -1141,7 +1253,7 @@ inline const char* FunctionParser::CompileMult(const char* function)
         }
 
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         if(op == cDiv
         && data->ByteCode.back() == cImmed
@@ -1153,13 +1265,12 @@ inline const char* FunctionParser::CompileMult(const char* function)
         }
     }
     return function;
-
 }
 
 inline const char* FunctionParser::CompileAddition(const char* function)
 {
     unsigned op=0;
-    for(; ; )
+    while(true)
     {
         function = CompileMult(function);
         if(!function) return 0;
@@ -1178,7 +1289,7 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         }
 
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         if(op == cSub
         && data->ByteCode.back() == cImmed
@@ -1195,7 +1306,7 @@ inline const char* FunctionParser::CompileAddition(const char* function)
 inline const char* FunctionParser::CompileComparison(const char* function)
 {
     unsigned op=0;
-    for(;;)
+    while(true)
     {
         function = CompileAddition(function);
         if(!function) return 0;
@@ -1222,7 +1333,7 @@ inline const char* FunctionParser::CompileComparison(const char* function)
               ++function; op = cGreater; break;
           default: return function;
         }
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
     }
     return function;
 }
@@ -1230,7 +1341,7 @@ inline const char* FunctionParser::CompileComparison(const char* function)
 inline const char* FunctionParser::CompileAnd(const char* function)
 {
     size_t param0end=0;
-    for(;;)
+    while(true)
     {
         function = CompileComparison(function);
         if(!function) return 0;
@@ -1246,7 +1357,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
         }
         if(*function != '&') break;
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
         param0end = data->ByteCode.size();
     }
     return function;
@@ -1255,9 +1366,9 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 const char* FunctionParser::CompileExpression(const char* function)
 {
     size_t param0end=0;
-    for(;;)
+    while(true)
     {
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
         function = CompileAnd(function);
         if(!function) return 0;
 
@@ -1717,10 +1828,10 @@ namespace
             if(index < 0) break;
             if(index == oldIndex) return index;
 
-            const char* endPtr = readIdentifier(funcStr + index);
-            if(endPtr == funcStr + index) return index;
+            unsigned nameLength = readIdentifier(funcStr + index);
+            if(nameLength == 0) return index;
 
-            varNames.insert(std::string(funcStr + index, endPtr));
+            varNames.insert(std::string(funcStr + index, nameLength));
             oldIndex = index;
         }
 

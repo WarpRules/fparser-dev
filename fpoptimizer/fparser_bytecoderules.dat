@@ -83,6 +83,11 @@ y x cAtan2		-> [atan2(y,x)]
 y x cPow 		-> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
+x [x>0.0] cRPow -> [log(x)] cMul cExp
+
+A [A >= VarBegin] x [x==0.0] cMul -> [x]
+
+
 y x cLess		-> [y <  (x-EpsilonOrZero)]
 y x cLessOrEq		-> [y <= (x+EpsilonOrZero)]
 y x cGreater		-> [(y-EpsilonOrZero) >  x]
