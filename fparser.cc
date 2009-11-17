@@ -1272,11 +1272,11 @@ inline const char* FunctionParser::CompileMult(const char* function)
         ++function;
         SkipSpace(function);
 
-        if(op == cDiv
+        if((op != cMod)
         && data->ByteCode.back() == cImmed
         && data->Immed.back() == 1.0)
         {
-            op = cInv;
+            op = (op == cDiv ? cInv : 0);
             data->Immed.pop_back();
             data->ByteCode.pop_back();
         }
@@ -1308,11 +1308,10 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         ++function;
         SkipSpace(function);
 
-        if(op == cSub
-        && data->ByteCode.back() == cImmed
+        if(data->ByteCode.back() == cImmed
         && data->Immed.back() == 0.0)
         {
-            op = cNeg;
+            op = (op == cSub ? cNeg : 0);
             data->Immed.pop_back();
             data->ByteCode.pop_back();
         }
