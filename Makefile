@@ -43,7 +43,7 @@ CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 # For compilation with ICC:
 #OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3
 #CXX=icc
-#LD=icc  -L/opt/intel/Compiler/11.0/074/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
+#LD=icc  -L/opt/intel/Compiler/11.1/059/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
 #CXXFLAGS=-Wall $(OPTIMIZATION) $(FEATURE_FLAGS)
 
 CPPFLAGS += -I"`pwd`"
