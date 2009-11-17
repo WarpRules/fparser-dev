@@ -190,177 +190,158 @@ namespace FUNCTIONPARSERTYPES
     /* This function generated with make_function_name_parser.cc */
     inline const FuncDefinition* findFunction(const NamePtr& functionName)
     {
-    /* prefix  */if(functionName.nameLength == 0) return 0;
-    if(functionName.nameLength > 5) return 0;
-    switch(functionName.name[0]) {
+        switch(functionName.nameLength)
+        {
+             case 2:
+    /* prefix  */if('i' == functionName.name[0]
+    && 'f' == functionName.name[1]) return Functions+cIf;/*if*/
+    return 0;
+    
+             case 3:
+    /* prefix  */switch(functionName.name[0]) {
     case 'a':
-    /* prefix a */if(functionName.nameLength == 1) return 0;
-    switch(functionName.name[1]) {
-    case 'b':
-    /* prefix ab */if(functionName.nameLength == 3
-    && 's' == functionName.name[2]
-    ) return Functions+cAbs;/*abs*/
-    else return 0;
+    /* prefix a */if('b' == functionName.name[1]
+    && 's' == functionName.name[2]) return Functions+cAbs;/*abs*/
+    return 0;
     case 'c':
-    /* prefix ac */if(functionName.nameLength == 2) return 0;
-    if('o' == functionName.name[2]) {
-    /* prefix aco */if(functionName.nameLength == 3) return 0;
-    if('s' == functionName.name[3]) {
-    /* prefix acos */if(functionName.nameLength == 4) return Functions+cAcos;/*acos*/
-    if('h' == functionName.name[4]) {
-    /* prefix acosh */return Functions+cAcosh;/*acosh*/
-    }else return 0;}else return 0;}else return 0;case 's':
-    /* prefix as */if(functionName.nameLength == 2) return 0;
-    if('i' == functionName.name[2]) {
-    /* prefix asi */if(functionName.nameLength == 3) return 0;
-    if('n' == functionName.name[3]) {
-    /* prefix asin */if(functionName.nameLength == 4) return Functions+cAsin;/*asin*/
-    if('h' == functionName.name[4]) {
-    /* prefix asinh */return Functions+cAsinh;/*asinh*/
-    }else return 0;}else return 0;}else return 0;case 't':
-    /* prefix at */if(functionName.nameLength == 2) return 0;
-    if('a' == functionName.name[2]) {
-    /* prefix ata */if(functionName.nameLength == 3) return 0;
-    if('n' == functionName.name[3]) {
-    /* prefix atan */if(functionName.nameLength == 4) return Functions+cAtan;/*atan*/
-    switch(functionName.name[4]) {
+    /* prefix c */switch(functionName.name[1]) {
+    case 'o':
+    /* prefix co */switch(functionName.name[2]) {
+    case 's':
+    /* prefix cos */return Functions+cCos;/*cos*/
+    case 't':
+    /* prefix cot */return Functions+cCot;/*cot*/
+    default: return 0; }case 's':
+    /* prefix cs */if('c' == functionName.name[2]) return Functions+cCsc;/*csc*/
+    return 0;
+    default: return 0; }case 'e':
+    /* prefix e */if('x' == functionName.name[1]
+    && 'p' == functionName.name[2]) return Functions+cExp;/*exp*/
+    return 0;
+    case 'i':
+    /* prefix i */if('n' == functionName.name[1]
+    && 't' == functionName.name[2]) return Functions+cInt;/*int*/
+    return 0;
+    case 'l':
+    /* prefix l */if('o' == functionName.name[1]
+    && 'g' == functionName.name[2]) return Functions+cLog;/*log*/
+    return 0;
+    case 'm':
+    /* prefix m */switch(functionName.name[1]) {
+    case 'a':
+    /* prefix ma */if('x' == functionName.name[2]) return Functions+cMax;/*max*/
+    return 0;
+    case 'i':
+    /* prefix mi */if('n' == functionName.name[2]) return Functions+cMin;/*min*/
+    return 0;
+    default: return 0; }case 'p':
+    /* prefix p */if('o' == functionName.name[1]
+    && 'w' == functionName.name[2]) return Functions+cPow;/*pow*/
+    return 0;
+    case 's':
+    /* prefix s */switch(functionName.name[1]) {
+    case 'e':
+    /* prefix se */if('c' == functionName.name[2]) return Functions+cSec;/*sec*/
+    return 0;
+    case 'i':
+    /* prefix si */if('n' == functionName.name[2]) return Functions+cSin;/*sin*/
+    return 0;
+    default: return 0; }case 't':
+    /* prefix t */if('a' == functionName.name[1]
+    && 'n' == functionName.name[2]) return Functions+cTan;/*tan*/
+    return 0;
+    default: return 0; }
+             case 4:
+    /* prefix  */switch(functionName.name[0]) {
+    case 'a':
+    /* prefix a */switch(functionName.name[1]) {
+    case 'c':
+    /* prefix ac */if('o' == functionName.name[2]
+    && 's' == functionName.name[3]) return Functions+cAcos;/*acos*/
+    return 0;
+    case 's':
+    /* prefix as */if('i' == functionName.name[2]
+    && 'n' == functionName.name[3]) return Functions+cAsin;/*asin*/
+    return 0;
+    case 't':
+    /* prefix at */if('a' == functionName.name[2]
+    && 'n' == functionName.name[3]) return Functions+cAtan;/*atan*/
+    return 0;
+    default: return 0; }case 'c':
+    /* prefix c */switch(functionName.name[1]) {
+    case 'e':
+    /* prefix ce */if('i' == functionName.name[2]
+    && 'l' == functionName.name[3]) return Functions+cCeil;/*ceil*/
+    return 0;
+    case 'o':
+    /* prefix co */if('s' == functionName.name[2]
+    && 'h' == functionName.name[3]) return Functions+cCosh;/*cosh*/
+    return 0;
+    default: return 0; }case 'e':
+    /* prefix e */switch(functionName.name[1]) {
+    case 'v':
+    /* prefix ev */if('a' == functionName.name[2]
+    && 'l' == functionName.name[3]) return Functions+cEval;/*eval*/
+    return 0;
+    case 'x':
+    /* prefix ex */if('p' == functionName.name[2]
+    && '2' == functionName.name[3]) return Functions+cExp2;/*exp2*/
+    return 0;
+    default: return 0; }case 'l':
+    /* prefix l */{static const char tmp[3] = {'o','g','2'};
+    if(std::memcmp(functionName.name+1, tmp, 3) == 0) return Functions+cLog2;/*log2*/
+    return 0; }
+    case 's':
+    /* prefix s */switch(functionName.name[1]) {
+    case 'i':
+    /* prefix si */if('n' == functionName.name[2]
+    && 'h' == functionName.name[3]) return Functions+cSinh;/*sinh*/
+    return 0;
+    case 'q':
+    /* prefix sq */if('r' == functionName.name[2]
+    && 't' == functionName.name[3]) return Functions+cSqrt;/*sqrt*/
+    return 0;
+    default: return 0; }case 't':
+    /* prefix t */{static const char tmp[3] = {'a','n','h'};
+    if(std::memcmp(functionName.name+1, tmp, 3) == 0) return Functions+cTanh;/*tanh*/
+    return 0; }
+    default: return 0; }
+             case 5:
+    /* prefix  */switch(functionName.name[0]) {
+    case 'a':
+    /* prefix a */switch(functionName.name[1]) {
+    case 'c':
+    /* prefix ac */{static const char tmp[3] = {'o','s','h'};
+    if(std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cAcosh;/*acosh*/
+    return 0; }
+    case 's':
+    /* prefix as */{static const char tmp[3] = {'i','n','h'};
+    if(std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cAsinh;/*asinh*/
+    return 0; }
+    case 't':
+    /* prefix at */if('a' == functionName.name[2]) {
+    /* prefix ata */if('n' == functionName.name[3]) {
+    /* prefix atan */switch(functionName.name[4]) {
     case '2':
     /* prefix atan2 */return Functions+cAtan2;/*atan2*/
     case 'h':
     /* prefix atanh */return Functions+cAtanh;/*atanh*/
-    default: return 0; }}else return 0;}else return 0;default: return 0; }case 'c':
-    /* prefix c */if(functionName.nameLength == 1) return 0;
-    if(functionName.nameLength > 4) return 0;
-    switch(functionName.name[1]) {
-    case 'e':
-    /* prefix ce */if(functionName.nameLength == 4
-    && 'i' == functionName.name[2]
-    && 'l' == functionName.name[3]
-    ) return Functions+cCeil;/*ceil*/
-    else return 0;
-    case 'o':
-    /* prefix co */if(functionName.nameLength == 2) return 0;
-    switch(functionName.name[2]) {
-    case 's':
-    /* prefix cos */if(functionName.nameLength == 3) return Functions+cCos;/*cos*/
-    if('h' == functionName.name[3]) {
-    /* prefix cosh */return Functions+cCosh;/*cosh*/
-    }else return 0;case 't':
-    /* prefix cot */if(functionName.nameLength == 3
-    ) return Functions+cCot;/*cot*/
-    else return 0;
-    default: return 0; }case 's':
-    /* prefix cs */if(functionName.nameLength == 3
-    && 'c' == functionName.name[2]
-    ) return Functions+cCsc;/*csc*/
-    else return 0;
-    default: return 0; }case 'e':
-    /* prefix e */if(functionName.nameLength == 1) return 0;
-    if(functionName.nameLength > 4) return 0;
-    switch(functionName.name[1]) {
-    case 'v':
-    /* prefix ev */if(functionName.nameLength == 4
-    && 'a' == functionName.name[2]
-    && 'l' == functionName.name[3]
-    ) return Functions+cEval;/*eval*/
-    else return 0;
-    case 'x':
-    /* prefix ex */if(functionName.nameLength == 2) return 0;
-    if('p' == functionName.name[2]) {
-    /* prefix exp */if(functionName.nameLength == 3) return Functions+cExp;/*exp*/
-    if('2' == functionName.name[3]) {
-    /* prefix exp2 */return Functions+cExp2;/*exp2*/
-    }else return 0;}else return 0;default: return 0; }case 'f':
+    default: return 0; }}return 0;}return 0;default: return 0; }case 'f':
     /* prefix f */{static const char tmp[4] = {'l','o','o','r'};
-    if(functionName.nameLength == 5
-    && std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cFloor;/*floor*/
-    else return 0; }
-    case 'i':
-    /* prefix i */if(functionName.nameLength == 1) return 0;
-    if(functionName.nameLength > 3) return 0;
-    switch(functionName.name[1]) {
-    case 'f':
-    /* prefix if */if(functionName.nameLength == 2
-    ) return Functions+cIf;/*if*/
-    else return 0;
-    case 'n':
-    /* prefix in */if(functionName.nameLength == 3
-    && 't' == functionName.name[2]
-    ) return Functions+cInt;/*int*/
-    else return 0;
-    default: return 0; }case 'l':
-    /* prefix l */if(functionName.nameLength == 1) return 0;
-    if('o' == functionName.name[1]) {
-    /* prefix lo */if(functionName.nameLength == 2) return 0;
-    if('g' == functionName.name[2]) {
-    /* prefix log */if(functionName.nameLength == 3) return Functions+cLog;/*log*/
-    switch(functionName.name[3]) {
-    case '1':
-    /* prefix log1 */if(functionName.nameLength == 5
-    && '0' == functionName.name[4]
-    ) return Functions+cLog10;/*log10*/
-    else return 0;
-    case '2':
-    /* prefix log2 */if(functionName.nameLength == 4
-    ) return Functions+cLog2;/*log2*/
-    else return 0;
-    default: return 0; }}else return 0;}else return 0;case 'm':
-    /* prefix m */if(functionName.nameLength == 1) return 0;
-    if(functionName.nameLength > 3) return 0;
-    switch(functionName.name[1]) {
-    case 'a':
-    /* prefix ma */if(functionName.nameLength == 3
-    && 'x' == functionName.name[2]
-    ) return Functions+cMax;/*max*/
-    else return 0;
-    case 'i':
-    /* prefix mi */if(functionName.nameLength == 3
-    && 'n' == functionName.name[2]
-    ) return Functions+cMin;/*min*/
-    else return 0;
-    default: return 0; }case 'p':
-    /* prefix p */if(functionName.nameLength == 3
-    && 'o' == functionName.name[1]
-    && 'w' == functionName.name[2]
-    ) return Functions+cPow;/*pow*/
-    else return 0;
-    case 's':
-    /* prefix s */if(functionName.nameLength == 1) return 0;
-    if(functionName.nameLength > 4) return 0;
-    switch(functionName.name[1]) {
-    case 'e':
-    /* prefix se */if(functionName.nameLength == 3
-    && 'c' == functionName.name[2]
-    ) return Functions+cSec;/*sec*/
-    else return 0;
-    case 'i':
-    /* prefix si */if(functionName.nameLength == 2) return 0;
-    if('n' == functionName.name[2]) {
-    /* prefix sin */if(functionName.nameLength == 3) return Functions+cSin;/*sin*/
-    if('h' == functionName.name[3]) {
-    /* prefix sinh */return Functions+cSinh;/*sinh*/
-    }else return 0;}else return 0;case 'q':
-    /* prefix sq */if(functionName.nameLength == 4
-    && 'r' == functionName.name[2]
-    && 't' == functionName.name[3]
-    ) return Functions+cSqrt;/*sqrt*/
-    else return 0;
-    default: return 0; }case 't':
-    /* prefix t */if(functionName.nameLength == 1) return 0;
-    switch(functionName.name[1]) {
-    case 'a':
-    /* prefix ta */if(functionName.nameLength == 2) return 0;
-    if(functionName.nameLength > 4) return 0;
-    if('n' == functionName.name[2]) {
-    /* prefix tan */if(functionName.nameLength == 3) return Functions+cTan;/*tan*/
-    if('h' == functionName.name[3]) {
-    /* prefix tanh */return Functions+cTanh;/*tanh*/
-    }else return 0;}else return 0;case 'r':
-    /* prefix tr */{static const char tmp[3] = {'u','n','c'};
-    if(functionName.nameLength == 5
-    && std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cTrunc;/*trunc*/
-    else return 0; }
-    default: return 0; }default: return 0; }
+    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cFloor;/*floor*/
+    return 0; }
+    case 'l':
+    /* prefix l */{static const char tmp[4] = {'o','g','1','0'};
+    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cLog10;/*log10*/
+    return 0; }
+    case 't':
+    /* prefix t */{static const char tmp[4] = {'r','u','n','c'};
+    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cTrunc;/*trunc*/
+    return 0; }
+    default: return 0; }
+            default: break;
+        }
+        return 0;
     }
 
 #ifndef FP_SUPPORT_ASINH
