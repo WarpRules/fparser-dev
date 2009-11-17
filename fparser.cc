@@ -149,28 +149,29 @@ namespace
                     }
                     break;
                 }
-                if(byte < 0xE0)
+                if(byte < 0xF0)
                 {
-                    if(byte < 0xC2) break; // 0x80..0xC1
-                    // C2-DF - next common case when >= 0x40
-                    // Valid sequence: C2-DF 80-BF
-                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-                    n_eaten += 2;
-                    continue;
-                }
-                if(byte == 0xE0) // E0
-                {
-                    // Valid sequence: E0 A0-BF 80-BF
-                    if((unsigned char)(uptr[n_eaten+1] - 0xA0) > (0xBF-0xA0)) break;
-                    goto len3pos2;
-                }
-                if(byte < 0xF0) // E1-EC, EE-EF
-                {
-                    if(byte == 0xED) break; // ED is invalid
-                    // Valid sequence: E1-EC 80-BF 80-BF
-                    //            And: EE-EF 80-BF 80-BF
-                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-                len3pos2:;
+                    if(byte < 0xE0)
+                    {
+                        if(byte < 0xC2) break; // 0x80..0xC1
+                        // C2-DF - next common case when >= 0x40
+                        // Valid sequence: C2-DF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                        n_eaten += 2;
+                        continue;
+                    }
+                    if(byte == 0xE0) // E0
+                    {
+                        // Valid sequence: E0 A0-BF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0xA0) > (0xBF-0xA0)) break;
+                    }
+                    else
+                    {
+                        if(byte == 0xED) break; // ED is invalid
+                        // Valid sequence: E1-EC 80-BF 80-BF
+                        //            And: EE-EF 80-BF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                    }
                     if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
                     n_eaten += 3;
                     continue;
@@ -179,19 +180,22 @@ namespace
                 {
                     // Valid sequence: F0 90-BF 80-BF 80-BF
                     if((unsigned char)(uptr[n_eaten+1] - 0x90) > (0xBF-0x90)) break;
-                    goto len4pos2;
                 }
-                if(byte > 0xF4) break; // F5-FF are invalid
-                if(byte == 0xF4) // F4
+                else
                 {
-                    // Valid sequence: F4 80-8F
-                    if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0x8F-0x80)) break;
-                    goto len4pos2;
+                    if(byte > 0xF4) break; // F5-FF are invalid
+                    if(byte == 0xF4) // F4
+                    {
+                        // Valid sequence: F4 80-8F
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0x8F-0x80)) break;
+                    }
+                    else
+                    {
+                        // F1-F3
+                        // Valid sequence: F1-F3 80-BF 80-BF 80-BF
+                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
+                    }
                 }
-                // F1-F3
-                // Valid sequence: F1-F3 80-BF 80-BF 80-BF
-                if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-            len4pos2:
                 if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
                 if((unsigned char)(uptr[n_eaten+3] - 0x80) > (0xBF-0x80)) break;
                 n_eaten += 4;
