@@ -58,8 +58,8 @@ namespace
                          unsigned(dataIter->name.size()))] = &(*dataIter);
         return true;
     }
-
-    const char* readIdentifier(const char* ptr)
+#if 0
+    inline unsigned unicodeclass(unsigned char byte)
     {
         static const char A=10, B=11;
         /*  ^ define numeric constants for two-digit numbers
@@ -114,70 +114,80 @@ namespace
          * The numberings are such chosen to optimize the
          * following switch-statements for code generation.
          */
-
+        return tab[byte];
+    }
+#endif
+    unsigned readIdentifier(const char* ptr)
+    {
+        unsigned n_eaten = 0;
         const unsigned char* uptr = (const unsigned char*) ptr;
-        switch(tab[uptr[0]])
+        while(true)
         {
-            case 2: goto loop_2; // A-Z_a-z
-            case 5: goto loop_5; // E0
-            case 3: goto loop_3; // E1-EC, EE-EF
-            case 4: goto loop_4; // C2-DF
-
-            case 1: goto loop_1; // F0-F4 XXX F1-F3
-            case 6: goto loop_6; //       XXX F0
-            case 7: goto loop_7; //       XXX F4
-        }
-        return (const char*) uptr;
-
-    loop:
-        switch(tab[uptr[0]])
-        {
-            case 9: // 0-9
-            case 2: // A-Z_a-z
-            loop_2:
-                uptr += 1;
-                goto loop;
-            case 6: // F0:
-            loop_6:
-                if(uptr[1] < 0x90 || uptr[1] > 0xBF) break;
-                goto len4pos2;
-            case 1: // F1-F3:
-            loop_1:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
+            unsigned char byte = uptr[n_eaten+0];
+            /* Handle the common case of A-Za-z first */
+            if(byte >= 0x40)
+            {
+                if(byte < 0x80) // 0x40..0x7F - most common case
+                {
+                    unsigned masklow5bits = 1 << (byte & 0x1F);
+                    if((masklow5bits & ~(1 | (0x1F << 0x1B))) || byte == '_') // A-Za-z_
+                        { ++n_eaten; continue; }
+                    break;
+                }
+                if(byte < 0xC2) break; // 0x80..0xC1
+                if(byte < 0xE0) // C2-DF - next common case when >= 0x40
+                {
+                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
+                    n_eaten += 2;
+                    continue;
+                }
+                if(byte == 0xE0) // E0
+                {
+                    if(uptr[n_eaten+1] < 0xA0 || uptr[n_eaten+1] > 0xBF) break;
+                    goto len3pos2;
+                }
+                if(byte == 0xF4) // F4
+                {
+                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0x8F) break;
+                    goto len4pos2;
+                }
+                if(byte > 0xF4 || byte == 0xED) break; // F4-FF, ED
+                if(byte < 0xF0) // E1-EC, EE-EF
+                {
+                    if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
+                len3pos2:
+                    if(uptr[n_eaten+2] < 0x80 || uptr[n_eaten+2] > 0xBF) break;
+                    n_eaten += 3;
+                    continue;
+                }
+                if(byte == 0xF0) // F0
+                {
+                    if(uptr[n_eaten+1] < 0x90 || uptr[n_eaten+1] > 0xBF) break;
+                    goto len4pos2;
+                }
+                // F1-F3
+                if(uptr[n_eaten+1] < 0x80 || uptr[n_eaten+1] > 0xBF) break;
             len4pos2:
-                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
-                if(uptr[3] < 0x80 || uptr[3] > 0xBF) break;
-                uptr += 4;
-                goto loop;
-            case 7: // F4:
-            loop_7:
-                if(tab[uptr[1]] != 8) break;
-                goto len4pos2;
-            case 5: // E0
-            loop_5:
-                if(tab[uptr[1]] != B) break;
-                goto len3pos2;
-            case 3: // E1-EC, EE-EF
-            loop_3:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
-            len3pos2:
-                if(uptr[2] < 0x80 || uptr[2] > 0xBF) break;
-                uptr += 3;
-                goto loop;
-            case 4: // C2-DF
-            loop_4:
-                if(uptr[1] < 0x80 || uptr[1] > 0xBF) break;
-                uptr += 2;
-                goto loop;
+                if(uptr[n_eaten+2] < 0x80 || uptr[n_eaten+2] > 0xBF) break;
+                if(uptr[n_eaten+3] < 0x80 || uptr[n_eaten+3] > 0xBF) break;
+                n_eaten += 4;
+                continue;
+            }
+            if(n_eaten > 0 && byte >= '0' && byte <= '9')
+            {
+                ++n_eaten;
+                continue;
+            }
+            break;
         }
-        return (const char*) uptr;
+        return n_eaten;
     }
 
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        const char* endPtr = readIdentifier(name.c_str());
-        return *endPtr == '\0';
+        size_t name_length = readIdentifier(name.c_str());
+        return name_length == name.size();
     }
 
     inline bool truthValue(double d)
@@ -465,11 +475,12 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 
     while(beginPtr < finalPtr)
     {
-        const char* endPtr = readIdentifier(beginPtr);
-        if(endPtr == beginPtr) return false;
+        unsigned nameLength = readIdentifier(beginPtr);
+        if(nameLength == 0) return false;
+        const char* endPtr = beginPtr + nameLength;
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        NamePtr namePtr(beginPtr, unsigned(endPtr - beginPtr));
+        NamePtr namePtr(beginPtr, nameLength);
 
         const FuncDefinition* funcDef = findFunction(namePtr);
         if(funcDef && funcDef->enabled()) return false;
@@ -765,6 +776,39 @@ namespace
         return c == ',' ?
             FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::MISSING_PARENTH;
     }
+
+    template<typename CharPtr>
+    inline void SkipSpace(CharPtr& function)
+    {
+        while(true)
+        {
+        #if(' ' == 32) /* ASCII */
+            unsigned char byte = (unsigned char) (0x20 - *function);
+            if(byte > 0x17) break;
+            const unsigned mask =
+                (1U << (0x20 - '\r'))
+              | (1U << (0x20 - ' '))
+              | (1U << (0x20 - '\n'))
+              | (1U << (0x20 - '\v'))
+              | (1U << (0x20 - '\t'));
+            if(mask & (1 << byte)) { ++function; continue; }
+            break;
+        #else
+            switch(*function)
+            {
+              case ' ':
+              case '\r':
+              case '\n':
+              case '\v':
+              case '\t':
+                  ++function;
+                  break;
+              default:
+                  return;
+            }
+        #endif
+        }
+    }
 }
 
 const char* FunctionParser::CompileIf(const char* function)
@@ -824,7 +868,7 @@ const char* FunctionParser::CompileIf(const char* function)
     data->ByteCode[curByteCodeSize2+1] = unsigned(data->Immed.size());
 
     ++function;
-    while(isspace(*function)) ++function;
+    SkipSpace(function);
     return function;
 }
 
@@ -853,13 +897,13 @@ const char* FunctionParser::CompileFunctionParams(const char* function,
     {
         incStackPtr(); // return value of function is pushed onto the stack
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
     }
 
     if(*function != ')')
         return SetErrorType(noParenthError(*function), function);
     ++function;
-    while(isspace(*function)) ++function;
+    SkipSpace(function);
     return function;
 }
 
@@ -870,7 +914,7 @@ const char* FunctionParser::CompileElement(const char* function)
       case '(': // Expression in parentheses
       {
           ++function;
-          while(isspace(*function)) ++function;
+          SkipSpace(function);
           if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
 
           function = CompileExpression(function);
@@ -879,7 +923,7 @@ const char* FunctionParser::CompileElement(const char* function)
           if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
 
           ++function;
-          while(isspace(*function)) ++function;
+          SkipSpace(function);
           return function;
       }
 
@@ -894,7 +938,7 @@ const char* FunctionParser::CompileElement(const char* function)
           AddImmedOpcode(val);
           incStackPtr();
 
-          while(isspace(*endPtr)) ++endPtr;
+          SkipSpace(endPtr);
           return endPtr;
       }
 
@@ -910,11 +954,12 @@ const char* FunctionParser::CompileElement(const char* function)
           return SetErrorType(SYNTAX_ERROR, function);
     }
 
-    const char* endPtr = readIdentifier(function);
-    if(endPtr != function) // Function, variable or constant
+    unsigned nameLength = readIdentifier(function);
+    if(nameLength != 0) // Function, variable or constant
     {
-        NamePtr name(function, unsigned(endPtr - function));
-        while(isspace(*endPtr)) ++endPtr;
+        NamePtr name(function, nameLength);
+        const char* endPtr = function + nameLength;
+        SkipSpace(endPtr);
 
         const FuncDefinition* funcDef = findFunction(name);
         if(funcDef && funcDef->enabled()) // is function
@@ -1010,12 +1055,10 @@ const char* FunctionParser::CompileElement(const char* function)
 
 const char* FunctionParser::CompilePossibleUnit(const char* function)
 {
-    const char* endPtr = readIdentifier(function);
-
-    if(endPtr != function)
+    unsigned nameLength = readIdentifier(function);
+    if(nameLength != 0)
     {
-        NamePtr name(function, unsigned(endPtr - function));
-        while(isspace(*endPtr)) ++endPtr;
+        NamePtr name(function, nameLength);
 
         std::map<NamePtr, const NameData*>::iterator nameIter =
             data->namePtrs.find(name);
@@ -1028,6 +1071,9 @@ const char* FunctionParser::CompilePossibleUnit(const char* function)
                 incStackPtr();
                 AddFunctionOpcode(cMul);
                 --StackPtr;
+
+                const char* endPtr = function + nameLength;
+                SkipSpace(endPtr);
                 return endPtr;
             }
         }
@@ -1045,7 +1091,7 @@ inline const char* FunctionParser::CompilePow(const char* function)
     if(*function == '^')
     {
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         bool base_is_immed = false;
         double base_immed = 0;
@@ -1071,22 +1117,14 @@ inline const char* FunctionParser::CompilePow(const char* function)
         }
         else if(base_is_immed)
         {
-            if(base_immed > 0.0)
-            {
-                double mulvalue = std::log(base_immed);
-                AddImmedOpcode(mulvalue);
-                incStackPtr();
-                AddFunctionOpcode(cMul);
-                --StackPtr;
-                AddFunctionOpcode(cExp);
-            }
-            else /* uh-oh, we've got e.g. (-5)^x, and we already deleted
-                    -5 from the stack */
-            {
-                AddImmedOpcode(base_immed);
-                incStackPtr();
-                AddFunctionOpcode(cRPow);
-            }
+            /* We've got e.g. (-5)^x, and already deleted -5 from the stack.
+             * Must readd the constant, but because the order changed, the
+             * opcode is now cRPow.
+             * Note: AddFunctionOpcode will now optimize 4^x to exp(log(4)*x).
+             */
+            AddImmedOpcode(base_immed);
+            incStackPtr();
+            AddFunctionOpcode(cRPow);
         }
         else // add opcode
             AddFunctionOpcode(cPow);
@@ -1104,7 +1142,7 @@ inline const char* FunctionParser::CompileUnaryMinus(const char* function)
         case '-':
         case '!':
             ++function;
-            while(isspace(*function)) ++function;
+            SkipSpace(function);
 
             function = CompileUnaryMinus(function);
             if(!function) return 0;
@@ -1112,10 +1150,9 @@ inline const char* FunctionParser::CompileUnaryMinus(const char* function)
             AddFunctionOpcode(op=='-' ? cNeg : cNot);
 
             return function;
-
-        default:
-            return CompilePow(function);
+        default: break;
     }
+    return CompilePow(function);
 }
 
 inline const char* FunctionParser::CompileMult(const char* function)
@@ -1141,7 +1178,7 @@ inline const char* FunctionParser::CompileMult(const char* function)
         }
 
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         if(op == cDiv
         && data->ByteCode.back() == cImmed
@@ -1153,7 +1190,6 @@ inline const char* FunctionParser::CompileMult(const char* function)
         }
     }
     return function;
-
 }
 
 inline const char* FunctionParser::CompileAddition(const char* function)
@@ -1178,7 +1214,7 @@ inline const char* FunctionParser::CompileAddition(const char* function)
         }
 
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
 
         if(op == cSub
         && data->ByteCode.back() == cImmed
@@ -1222,7 +1258,7 @@ inline const char* FunctionParser::CompileComparison(const char* function)
               ++function; op = cGreater; break;
           default: return function;
         }
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
     }
     return function;
 }
@@ -1246,7 +1282,7 @@ inline const char* FunctionParser::CompileAnd(const char* function)
         }
         if(*function != '&') break;
         ++function;
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
         param0end = data->ByteCode.size();
     }
     return function;
@@ -1257,7 +1293,7 @@ const char* FunctionParser::CompileExpression(const char* function)
     size_t param0end=0;
     while(true)
     {
-        while(isspace(*function)) ++function;
+        SkipSpace(function);
         function = CompileAnd(function);
         if(!function) return 0;
 
@@ -1717,10 +1753,10 @@ namespace
             if(index < 0) break;
             if(index == oldIndex) return index;
 
-            const char* endPtr = readIdentifier(funcStr + index);
-            if(endPtr == funcStr + index) return index;
+            unsigned nameLength = readIdentifier(funcStr + index);
+            if(nameLength == 0) return index;
 
-            varNames.insert(std::string(funcStr + index, endPtr));
+            varNames.insert(std::string(funcStr + index, nameLength));
             oldIndex = index;
         }
 
