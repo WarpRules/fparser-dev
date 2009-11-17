@@ -1365,9 +1365,26 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 
         if(param0end)
         {
-            if(IsNeverNegativeValueOpcode(data->ByteCode.back())
-            && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-                AddFunctionOpcode(cAbsAnd);
+            unsigned& param0last = data->ByteCode[param0end-1];
+            unsigned& param1last = data->ByteCode.back();
+            if(IsNeverNegativeValueOpcode(param1last)
+            && IsNeverNegativeValueOpcode(param0last))
+            {
+                /* Change !x & !y into !(x | y). Because y might
+                 * contain an cIf, we replace the first cNot/cAbsNot
+                 * with cNop to avoid jump indices being broken.
+                 */
+                if((param0last == cNot || param0last == cAbsNot)
+                && (param1last == cNot || param1last == cAbsNot))
+                {
+                    param1last = (param0last==cAbsNot && param1last==cAbsNot)
+                                    ? cAbsOr : cOr;
+                    param0last = cNop;
+                    AddFunctionOpcode(cAbsNot);
+                }
+                else
+                    AddFunctionOpcode(cAbsAnd);
+            }
             else
                 AddFunctionOpcode(cAnd);
             --StackPtr;
@@ -1391,9 +1408,26 @@ const char* FunctionParser::CompileExpression(const char* function)
 
         if(param0end)
         {
-            if(IsNeverNegativeValueOpcode(data->ByteCode.back())
-            && IsNeverNegativeValueOpcode(data->ByteCode[param0end-1]))
-                AddFunctionOpcode(cAbsOr);
+            unsigned& param0last = data->ByteCode[param0end-1];
+            unsigned& param1last = data->ByteCode.back();
+            if(IsNeverNegativeValueOpcode(param1last)
+            && IsNeverNegativeValueOpcode(param0last))
+            {
+                /* Change !x | !y into !(x & y). Because y might
+                 * contain an cIf, we replace the first cNot/cAbsNot
+                 * with cNop to avoid jump indices being broken.
+                 */
+                if((param0last == cNot || param0last == cAbsNot)
+                && (param1last == cNot || param1last == cAbsNot))
+                {
+                    param1last = (param0last==cAbsNot && param1last==cAbsNot)
+                                    ? cAbsAnd : cAnd;
+                    param0last = cNop;
+                    AddFunctionOpcode(cAbsNot);
+                }
+                else
+                    AddFunctionOpcode(cAbsOr);
+            }
             else
                 AddFunctionOpcode(cOr);
             --StackPtr;
