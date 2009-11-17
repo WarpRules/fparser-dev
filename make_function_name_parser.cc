@@ -51,7 +51,7 @@ static void Compile(const std::string& prefix, size_t parent_maxlen)
                         std::cout << "if(functionName.nameLength == " << strlen(Functions[a].name) << "\n    ";
                     else
                         std::cout << "if(true\n    ";
-                    
+
                     if(tmpbytes > 2)
                         std::cout << "&& std::memcmp(functionName.name+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
                     else
