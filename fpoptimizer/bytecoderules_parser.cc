@@ -141,37 +141,10 @@ namespace
                 out << Indent(indent) << "goto " << ChangeLabel(prevlabel) << ";\n";
             }
         }
-        std::string AddContinuation(const std::string& label)
-        {
-            unsigned result = 0;
-            std::map<std::string, unsigned>::iterator i = continuations.find(label);
-            if(i != continuations.end())
-                result = i->second;
-            else
-            {
-                result = continuations.size();
-                continuations.insert(std::make_pair(label, result));
-            }
-            std::ostringstream tmp;
-            tmp << result;
-            return tmp.str();
-        }
         void Flush(std::ostream& out)
         {
             std::set<std::string> done;
             std::vector<std::string> remain;
-        #ifdef USE_CONTINUATIONS
-            out <<
-                "PickContinuation:\n"
-                "    switch(continuation)\n"
-                "    {\n";
-            for(std::map<std::string, unsigned>::const_iterator
-                i = continuations.begin(); i != continuations.end(); ++i)
-                out << "    case " << i->second << ": goto " << i->first << "\n";
-            out <<
-                "    }\n"
-                "    return;\n";
-        #endif
             for(size_t a=0; a<heads.size(); ++a)
             {
                 if(done.find(heads[a]) != done.end())
@@ -248,7 +221,6 @@ namespace
         typedef std::map<std::string/*label*/, ChainItem> Chains;
         std::vector<std::string> heads;
         std::map<std::string, unsigned> label_trans;
-        std::map<std::string, unsigned> continuations;
         Chains code;
     } CodeSeq;
 
@@ -292,13 +264,14 @@ namespace
                         break;
                     }
                 }
-                if(seq.size() > skip+2)
+                if(seq.size() > skip+1)
                 {
-                    std::string tail_label = seq.back().substr(5);
-                    std::string continuation_line =
-                        "continuation = " + CodeSeq.AddContinuation(tail_label)
-                        + "; /""* " + tail_label + " *""/";
-                    seq.insert(seq.begin()+skip, continuation_line);
+                    //const std::string tail_label = seq.back().substr(5);
+                    //const std::string tail_opcode = tail_label.substr(9, tail_label.size()-10);
+                    //CodeSeq.AddContinuation(tail_label, tail_opcode);
+                    //std::string continuation_line =
+                    //    "/""* Will tailcall " + tail_opcode + " *""/";
+                    //seq.insert(seq.begin()+skip, continuation_line);
                     seq.back() = "goto PickContinuation;";
                 }
             }
@@ -626,6 +599,12 @@ namespace
                 code << Indent(indent) << "const unsigned " << last_op_name << " = " << Bexpr(b_used) << ";\n";
             code << Indent(indent) << "switch(" << last_op_name << ")\n";
             */
+        #ifdef USE_CONTINUATIONS
+            if(b_used == 0)
+            {
+                code << Indent(indent-2) << "PickContinuation:\n";
+            }
+        #endif
             code << Indent(indent) << "switch(" << Bexpr(b_used) << ")\n";
             code << Indent(indent) << "{\n";
             for(size_t a=0; a<head.predecessors.size(); ++a)
@@ -633,10 +612,12 @@ namespace
                 const Node& n = *head.predecessors[a];
                 if(n.opcode.type == Match::FixedOpcode)
                 {
+                #ifndef USE_CONTINUATIONS
                     if(b_used == 0)
                     {
                         code << Indent(indent) << "TailCall_" << n.opcode.name << ":\n";
                     }
+                #endif
                     code << Indent(indent) << "  case " << n.opcode.name << ":\n";
                     //code << Indent(indent) << "  {\n";
                     std::vector<Match> ref(so_far);
@@ -645,11 +626,13 @@ namespace
                     //code << Indent(indent) << "  }\n";
                     if(!returned)
                         code << Indent(indent) << "    break;\n";
+                #ifndef USE_CONTINUATIONS
                     if(b_used == 0)
                     {
                         // Add dummy gotos to the labels to prevent gcc warnings
                         code << Indent(indent) << "    goto TailCall_" << n.opcode.name << "; /* Dummy gotos to inhibit gcc warnings */\n";
                     }
+                #endif
                 }
             }
             bool first_immed = true;
@@ -771,9 +754,6 @@ namespace
         out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
         out << "inline void FunctionParser::AddFunctionOpcode(unsigned opcode)\n"
                "{\n";
-        #ifdef USE_CONTINUATIONS
-        out <<  "  unsigned continuation = 0;\n";
-        #endif
         out <<  "  unsigned* ByteCodePtr;\n"
                 "  double*   ImmedPtr;\n"
                 "#ifdef _GLIBCXX_DEBUG\n"

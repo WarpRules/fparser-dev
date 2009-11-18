@@ -1452,12 +1452,27 @@ double FunctionParser::Eval(const double* Vars)
     int SP=-1;
 
 #ifdef FP_USE_THREAD_SAFE_EVAL
+    /* If Eval() may be called by multiple threads simultaneously,
+     * then Eval() must allocate its own stack.
+     */
 #ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
+    /* alloca() allocates room from the hardware stack.
+     * It is automatically freed when the function returns.
+     */
     double* const Stack = (double*)alloca(data->StackSize*sizeof(double));
 #else
-    std::vector<double> Stack(data->StackSize);
+    /* Allocate from the heap. Ensure that it is freed
+     * automatically no matter which exit path is taken.
+     */
+    struct AutoDealloc
+    {
+        double* ptr;
+        ~AutoDealloc() { delete[] ptr; }
+    } AutoDeallocStack = { new double[data->StackSize] };
+    double*& Stack = AutoDeallocStack.ptr;
 #endif
 #else
+    /* No thread safety, so use a global stack. */
     std::vector<double>& Stack = data->Stack;
 #endif
 
@@ -1532,11 +1547,20 @@ double FunctionParser::Eval(const double* Vars)
                   {
                       ++evalRecursionLevel;
 #                   ifndef FP_USE_THREAD_SAFE_EVAL
+                      /* Eval() will use data->Stack for its storage.
+                       * Swap the current stack with an empty one.
+                       * This is the not-thread-safe method.
+                       */
                       std::vector<double> tmpStack(Stack.size());
                       data->Stack.swap(tmpStack);
                       retVal = Eval(&tmpStack[SP - varAmount + 1]);
                       data->Stack.swap(tmpStack);
 #                   else
+                      /* Thread safety mode. We don't need to
+                       * worry about stack reusing here, because
+                       * each instance of Eval() will allocate
+                       * their own stack.
+                       */
                       retVal = Eval(&Stack[SP - varAmount + 1]);
 #                   endif
                       --evalRecursionLevel;

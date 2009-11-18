@@ -25,14 +25,17 @@ else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
-OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations
+OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations -fvpt -fomit-frame-pointer
 #OPTIMIZATION=-g
-#OPTIMIZATION=-g -pg
+
+#OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 
 CXX=g++
 LD=g++
 
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+
+#LD +=  -fprofile -fprofile-values -fprofile-generate -ftest-coverage 
 
 CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)

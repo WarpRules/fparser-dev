@@ -570,18 +570,8 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=GetParamCount(); a-- > 0; )
                 {
                     const CodeTree& atree = GetParam(a);
-                    switch(atree.GetOpcode())
-                    {
-                        case cEqual: case cNEqual:
-                        case cLess: case cLessOrEq:
-                        case cGreater: case cGreaterOrEq:
-                        case cNot: case cNotNot:
-                            DelParam(a);
-                            break;
-                        default:
-                            if(atree.IsLogicalValue())
-                                DelParam(a);
-                    }
+                    if(atree.IsLogicalValue())
+                        DelParam(a);
                 }
             }
 
@@ -1691,21 +1681,26 @@ namespace FPoptimizer_CodeTree
             case cNot:
             case cAbsNot:
             {
+                unsigned opposite = 0;
                 switch(GetParam(0).GetOpcode())
                 {
-                    case cEqual:       SetOpcode(cNEqual); goto cNot_moveparam;
-                    case cNEqual:      SetOpcode(cEqual); goto cNot_moveparam;
-                    case cLess:        SetOpcode(cGreaterOrEq); goto cNot_moveparam;
-                    case cGreater:     SetOpcode(cLessOrEq); goto cNot_moveparam;
-                    case cLessOrEq:    SetOpcode(cGreater); goto cNot_moveparam;
-                    case cGreaterOrEq: SetOpcode(cLess); goto cNot_moveparam;
+                    case cEqual:       opposite = cNEqual; break;
+                    case cNEqual:      opposite = cEqual; break;
+                    case cLess:        opposite = cGreaterOrEq; break;
+                    case cGreater:     opposite = cLessOrEq; break;
+                    case cLessOrEq:    opposite = cGreater; break;
+                    case cGreaterOrEq: opposite = cLess; break;
                     //cNotNot already handled by grammar: @L cNotNot
-                    case cNot:         SetOpcode(cNotNot); goto cNot_moveparam;
-                    case cAbsNot:      SetOpcode(cAbsNotNot); goto cNot_moveparam;
-                    case cAbsNotNot:   SetOpcode(cAbsNot); goto cNot_moveparam;
-                     { cNot_moveparam:;
-                       SetParamsMove(GetParam(0).GetUniqueRef().GetParams()); goto redo; }
+                    case cNot:         opposite = cNotNot; break;
+                    case cAbsNot:      opposite = cAbsNotNot; break;
+                    case cAbsNotNot:   opposite = cAbsNot; break;
                     default: break;
+                }
+                if(opposite)
+                {
+                    SetOpcode(OPCODE(opposite));
+                    SetParamsMove(GetParam(0).GetUniqueRef().GetParams());
+                    goto redo;
                 }
 
                 // If the sub-expression evaluates to approx. zero, yield one.

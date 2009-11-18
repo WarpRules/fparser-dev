@@ -15,7 +15,7 @@
 #include "fpconfig.hh"
 #include <cmath>
 #ifdef ONCE_FPARSER_H_
-#include <cstring>
+# include <cstring> /* for memcmp */
 #endif
 
 namespace FUNCTIONPARSERTYPES
@@ -196,7 +196,6 @@ namespace FUNCTIONPARSERTYPES
     /* prefix  */if('i' == functionName.name[0]
     && 'f' == functionName.name[1]) return Functions+cIf;/*if*/
     return 0;
-    
              case 3:
     /* prefix  */switch(functionName.name[0]) {
     case 'a':
