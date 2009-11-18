@@ -179,9 +179,9 @@ x cAdd cExp2 -> cExp2 [fp_pow(2.0,x)] cMul
 x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
-#cAbs x [x!=0.0] cLess         -> [0.5/x] cMul cNot
-#cAbs x [x!=0.0] cGreaterOrEq  -> [0.5/x] cMul cNotNot
-#A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess        -> A [x] cMul
+cAbs x [x!=0.0] cLess         -> [0.5/x] cMul cNot
+cAbs x [x!=0.0] cGreaterOrEq  -> [0.5/x] cMul cNotNot
+A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess        -> A [x] cMul
 
 cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow

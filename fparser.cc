@@ -912,6 +912,7 @@ const char* FunctionParser::CompileIf(const char* function)
     if(*function != ',') return SetErrorType(noCommaError(*function), function);
 
     OPCODE opcode = cIf;
+    if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
     if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
     {
         // If we know that the condition to be tested is always
@@ -1364,6 +1365,8 @@ inline const char* FunctionParser::CompileAnd(const char* function)
 
         if(param0end)
         {
+            if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
+
             unsigned& param0last = data->ByteCode[param0end-1];
             unsigned& param1last = data->ByteCode.back();
             if(IsNeverNegativeValueOpcode(param1last)
@@ -1407,6 +1410,8 @@ const char* FunctionParser::CompileExpression(const char* function)
 
         if(param0end)
         {
+            if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
+
             unsigned& param0last = data->ByteCode[param0end-1];
             unsigned& param1last = data->ByteCode.back();
             if(IsNeverNegativeValueOpcode(param1last)
