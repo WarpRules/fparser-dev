@@ -37,6 +37,12 @@ namespace
             return p.has_min && p.has_max
                && p.min > -0.5 && p.max < 0.5;
     }
+    int GetLogicalValue(const MinMaxTree& p, bool abs)
+    {
+        if(IsLogicalTrueValue(p, abs)) return 1;
+        if(IsLogicalFalseValue(p, abs)) return 0;
+        return -1;
+    }
 
     struct ComparisonSet /* For optimizing And, Or */
     {
@@ -1214,15 +1220,15 @@ namespace FPoptimizer_CodeTree
         // If the sub-expression evaluates to approx. zero, yield param3.
         // If the sub-expression evaluates to approx. nonzero, yield param2.
         MinMaxTree p = GetParam(0).CalculateResultBoundaries();
-        if(IsLogicalTrueValue(p,GetOpcode()==cAbsIf))
+        switch(GetLogicalValue(p, GetOpcode()==cAbsIf))
         {
-            Become(GetParam(1));
-            return true; // rerun optimization (opcode changed)
-        }
-        if(IsLogicalFalseValue(p,GetOpcode()==cAbsIf))
-        {
-            Become(GetParam(2));
-            return true; // rerun optimization (opcode changed)
+            case 1: // true
+                Become(GetParam(1));
+                return true; // rerun optimization (opcode changed)
+            case 0: // false
+                Become(GetParam(2));
+                return true; // rerun optimization (opcode changed)
+            default: ;
         }
 
         CodeTree& branch1 = GetParam(1);
@@ -1529,6 +1535,77 @@ namespace FPoptimizer_CodeTree
         return false; // No changes that require a rerun
     }
 
+    void CodeTree::ConstantFolding_ComparisonOperations()
+    {
+        static const RangeComparisonData Data[6] =
+        {
+            // cEqual:
+            // Case:      p0 == p1  Antonym: p0 != p1
+            // Synonym:   p1 == p0  Antonym: p1 != p0
+            { RangeComparisonData::MakeTrue,  // If identical: always true
+              {RangeComparisonData::MakeFalse,  // If Always p0 < p1: always false
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeFalse,  // If Always p0 > p1: always false
+               RangeComparisonData::Unchanged}
+            },
+            // cNEqual:
+            // Case:      p0 != p1  Antonym: p0 == p1
+            // Synonym:   p1 != p0  Antonym: p1 == p0
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::MakeTrue,  // If Always p0 < p1: always true
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeTrue,  // If Always p0 > p1: always true
+               RangeComparisonData::Unchanged}
+            },
+            // cLess:
+            // Case:      p0 < p1   Antonym: p0 >= p1
+            // Synonym:   p1 > p0   Antonym: p1 <= p0
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
+               RangeComparisonData::MakeNEqual,
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeFalse} // If Always p0 >= p1: always false
+            },
+            // cLessOrEq:
+            // Case:      p0 <= p1  Antonym: p0 > p1
+            // Synonym:   p1 >= p0  Antonym: p1 < p0
+            { RangeComparisonData::MakeTrue,   // If identical: always true
+              {RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
+               RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
+               RangeComparisonData::MakeEqual} // If Never  p0  < p1:  use cEqual
+            },
+            // cGreater:
+            // Case:      p0 >  p1  Antonym: p0 <= p1
+            // Synonym:   p1 <  p0  Antonym: p1 >= p0
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
+               RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
+               RangeComparisonData::MakeNEqual}
+            },
+            // cGreaterOrEq:
+            // Case:      p0 >= p1  Antonym: p0 < p1
+            // Synonym:   p1 <= p0  Antonym: p1 > p0
+            { RangeComparisonData::MakeTrue,   // If identical: always true
+              {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
+               RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeTrue}  // If Never  p0  > p1:  use cEqual
+            }
+        };
+        switch(Data[GetOpcode()-cEqual].Analyze(GetParam(0), GetParam(1)))
+        {
+            case RangeComparisonData::MakeFalse:
+                data = new CodeTreeData(0.0); break;
+            case RangeComparisonData::MakeTrue:
+                data = new CodeTreeData(1.0); break;
+            case RangeComparisonData::MakeEqual:  SetOpcode(cEqual); break;
+            case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); break;
+            case RangeComparisonData::Unchanged:;
+        }
+    }
+
     bool CodeTree::ConstantFolding_Assimilate()
     {
         /* If the list contains another list of the same kind, assimilate it */
@@ -1571,9 +1648,6 @@ namespace FPoptimizer_CodeTree
         /* Not recursive. */
 
         double const_value = 1.0;
-        RangeComparisonData::Decision range_decision =
-            RangeComparisonData::Unchanged;
-
         if(GetOpcode() != cImmed)
         {
             MinMaxTree p = CalculateResultBoundaries();
@@ -1618,16 +1692,6 @@ namespace FPoptimizer_CodeTree
                 std::cout << "\n";
               #endif
                 goto redo;
-            ApplyRangeDecision:
-                switch(range_decision)
-                {
-                    case RangeComparisonData::MakeFalse: goto ReplaceTreeWithZero;
-                    case RangeComparisonData::MakeTrue: goto ReplaceTreeWithOne;
-                    case RangeComparisonData::MakeEqual: SetOpcode(cEqual); break;
-                    case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); break;
-                    case RangeComparisonData::Unchanged:;
-                }
-                return;
         }
 
         /* Constant folding */
@@ -1643,13 +1707,13 @@ namespace FPoptimizer_CodeTree
             {
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
-                {
-                    MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                    if(IsLogicalFalseValue(p,GetOpcode()==cAbsAnd))
-                        goto ReplaceTreeWithZero;
-                    else if(IsLogicalTrueValue(p,GetOpcode()==cAbsAnd))
-                        DelParam(a); // x & y & 1 = x & y;  x & 1 = !!x
-                }
+                    switch(GetLogicalValue(GetParam(a).CalculateResultBoundaries(),
+                                           GetOpcode()==cAbsAnd))
+                    {
+                        case 0: goto ReplaceTreeWithZero;
+                        case 1: DelParam(a); break; // x & y & 1 = x & y;  x & 1 = !!x
+                        default: ;
+                    }
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithOne;
@@ -1663,13 +1727,13 @@ namespace FPoptimizer_CodeTree
             {
                 ConstantFolding_Assimilate();
                 for(size_t a=GetParamCount(); a-- > 0; )
-                {
-                    MinMaxTree p = GetParam(a).CalculateResultBoundaries();
-                    if(IsLogicalFalseValue(p,GetOpcode()==cAbsOr))
-                        DelParam(a);
-                    else if(IsLogicalTrueValue(p,GetOpcode()==cAbsOr))
-                        goto ReplaceTreeWithOne;
-                }
+                    switch(GetLogicalValue(GetParam(a).CalculateResultBoundaries(),
+                                           GetOpcode()==cAbsOr))
+                    {
+                        case 1: goto ReplaceTreeWithOne;
+                        case 0: DelParam(a); break;
+                        default: ;
+                    }
                 switch(GetParamCount())
                 {
                     case 0: goto ReplaceTreeWithZero;
@@ -1705,9 +1769,13 @@ namespace FPoptimizer_CodeTree
 
                 // If the sub-expression evaluates to approx. zero, yield one.
                 // If the sub-expression evaluates to approx. nonzero, yield zero.
-                MinMaxTree p = GetParam(0).CalculateResultBoundaries();
-                if(IsLogicalFalseValue(p, GetOpcode()==cAbsNot)) goto ReplaceTreeWithOne;
-                if(IsLogicalTrueValue(p, GetOpcode()==cAbsNot)) goto ReplaceTreeWithZero;
+                switch(GetLogicalValue(GetParam(0).CalculateResultBoundaries(),
+                                       GetOpcode()==cAbsNot))
+                {
+                    case 1: goto ReplaceTreeWithZero;
+                    case 0: goto ReplaceTreeWithOne;
+                    default: ;
+                }
                 break;
             }
             case cNotNot:
@@ -1721,9 +1789,13 @@ namespace FPoptimizer_CodeTree
 
                 // If the sub-expression evaluates to approx. zero, yield zero.
                 // If the sub-expression evaluates to approx. nonzero, yield one.
-                MinMaxTree p = GetParam(0).CalculateResultBoundaries();
-                if(IsLogicalFalseValue(p, GetOpcode()==cAbsNotNot)) goto ReplaceTreeWithZero;
-                if(IsLogicalTrueValue(p, GetOpcode()==cAbsNotNot)) goto ReplaceTreeWithOne;
+                switch(GetLogicalValue(GetParam(0).CalculateResultBoundaries(),
+                                       GetOpcode()==cAbsNotNot))
+                {
+                    case 0: goto ReplaceTreeWithZero;
+                    case 1: goto ReplaceTreeWithOne;
+                    default: ;
+                }
                 break;
             }
             case cIf:
@@ -1910,92 +1982,13 @@ namespace FPoptimizer_CodeTree
             }
 
             case cEqual:
-            {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithOne;
-                /* If we know the two operands' ranges don't overlap, we get zero.
-                 * The opposite is more complex and is done in .dat code.
-                 */
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if((p0.has_max && p1.has_min && p1.min > p0.max)
-                || (p1.has_max && p0.has_min && p0.min > p1.max))
-                    goto ReplaceTreeWithZero;
-                break;
-            }
-
             case cNEqual:
-            {
-                if(GetParam(0).IsIdenticalTo(GetParam(1))) goto ReplaceTreeWithZero;
-                /* If we know the two operands' ranges don't overlap, we get one.
-                 * The opposite is more complex and is done in .dat code.
-                 */
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if((p0.has_max && p1.has_min && p1.min > p0.max)
-                || (p1.has_max && p0.has_min && p0.min > p1.max))
-                    goto ReplaceTreeWithOne;
-                break;
-            }
-
             case cLess:
-            {
-                // Case:      p0 < p1   Antonym: p0 >= p1
-                // Synonym:   p1 > p0   Antonym: p1 <= p0
-                static const RangeComparisonData data =
-                { RangeComparisonData::MakeFalse,  // If identical: always false
-                  {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
-                   RangeComparisonData::MakeNEqual,
-                   RangeComparisonData::Unchanged,
-                   RangeComparisonData::MakeFalse} // If Always p0 >= p1: always false
-                };
-                range_decision = data.Analyze(GetParam(0), GetParam(1));
-                goto ApplyRangeDecision;
-            }
-
-            case cLessOrEq:
-            {
-                // Case:      p0 <= p1  Antonym: p0 > p1
-                // Synonym:   p1 >= p0  Antonym: p1 < p0
-                static const RangeComparisonData data =
-                { RangeComparisonData::MakeTrue,   // If identical: always true
-                  {RangeComparisonData::Unchanged,
-                   RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
-                   RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
-                   RangeComparisonData::MakeEqual} // If Never  p0  < p1:  use cEqual
-                };
-                range_decision = data.Analyze(GetParam(0), GetParam(1));
-                goto ApplyRangeDecision;
-            }
-
             case cGreater:
-            {
-                // Case:      p0 >  p1  Antonym: p0 <= p1
-                // Synonym:   p1 <  p0  Antonym: p1 >= p0
-                static const RangeComparisonData data =
-                { RangeComparisonData::MakeFalse,  // If identical: always false
-                  {RangeComparisonData::Unchanged,
-                   RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
-                   RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
-                   RangeComparisonData::MakeNEqual}
-                };
-                range_decision = data.Analyze(GetParam(0), GetParam(1));
-                goto ApplyRangeDecision;
-            }
-
+            case cLessOrEq:
             case cGreaterOrEq:
-            {
-                // Case:      p0 >= p1  Antonym: p0 < p1
-                // Synonym:   p1 <= p0  Antonym: p1 > p0
-                static const RangeComparisonData data =
-                { RangeComparisonData::MakeTrue,   // If identical: always true
-                  {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
-                   RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
-                   RangeComparisonData::Unchanged,
-                   RangeComparisonData::MakeTrue}  // If Never  p0  > p1:  use cEqual
-                };
-                range_decision = data.Analyze(GetParam(0), GetParam(1));
-                goto ApplyRangeDecision;
-            }
+                ConstantFolding_ComparisonOperations();
+                break;
 
             case cAbs:
             {
@@ -2150,25 +2143,21 @@ namespace FPoptimizer_CodeTree
             case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
             case cSqrt: HANDLE_UNARY_CONST_FUNC(sqrt); break; // converted into cPow x 0.5
             case cExp: HANDLE_UNARY_CONST_FUNC(exp); break; // convered into cPow CONSTANT_E x
-            case cInt:
-                if(GetParam(0).IsImmed())
-                    { const_value = floor(GetParam(0).GetImmed() + 0.5);
-                      goto ReplaceTreeWithConstValue; }
-                break;
-            case cLog2:
-                if(GetParam(0).IsImmed())
-                    { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L2I;
-                      goto ReplaceTreeWithConstValue; }
-                break;
+            case cInt: HANDLE_UNARY_CONST_FUNC(fp_int); break;
+            case cLog2: HANDLE_UNARY_CONST_FUNC(fp_log2); break;
+            case cLog10: HANDLE_UNARY_CONST_FUNC(fp_log10); break;
+
             case cLog2by:
                 if(GetParam(0).IsImmed()
                 && GetParam(1).IsImmed())
-                    { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L2I * GetParam(1).GetImmed();
+                    { const_value = fp_log2(GetParam(0).GetImmed()) * GetParam(1).GetImmed();
                       goto ReplaceTreeWithConstValue; }
                 break;
-            case cLog10:
-                if(GetParam(0).IsImmed())
-                    { const_value = log(GetParam(0).GetImmed()) * CONSTANT_L10I;
+
+            case cMod: /* Can more be done than this? */
+                if(GetParam(0).IsImmed()
+                && GetParam(1).IsImmed())
+                    { const_value = fmod(GetParam(0).GetImmed(), GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 break;
 
@@ -2234,17 +2223,6 @@ namespace FPoptimizer_CodeTree
                 break;
             }
 
-            case cMod:
-            {
-                /* Can more be done than this? */
-                if(GetParam(0).IsImmed()
-                && GetParam(1).IsImmed())
-                    { const_value = fmod(GetParam(0).GetImmed(),
-                                         GetParam(1).GetImmed());
-                      goto ReplaceTreeWithConstValue; }
-                break;
-            }
-
             /* The following opcodes are processed by GenerateFrom()
              * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context for the
@@ -2292,10 +2270,7 @@ namespace FPoptimizer_CodeTree
                       goto ReplaceTreeWithConstValue; }
                 break;
             case cExp2: // converted into cPow 2.0 x
-                if(GetParam(0).IsImmed())
-                    { const_value = fp_pow(2.0, GetParam(0).GetImmed());
-                      goto ReplaceTreeWithConstValue; }
-                break;
+                HANDLE_UNARY_CONST_FUNC(fp_exp2); break;
             case cRSqrt: // converted into cPow x -0.5
                 if(GetParam(0).IsImmed())
                     { const_value = 1.0 / sqrt(GetParam(0).GetImmed());

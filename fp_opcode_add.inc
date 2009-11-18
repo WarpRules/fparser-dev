@@ -339,13 +339,13 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           {
             case cImmed:
               x = ImmedPtr[0];
-              FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp2", "cExp2 [fp_pow(2.0,x)] cMul");
+              FP_TRACE_BYTECODE_OPTIMIZATION("x cAdd cExp2", "cExp2 [fp_exp2(x)] cMul");
               goto Lca;
           }
           break;
         case cImmed:
           x = ImmedPtr[0];
-          FP_TRACE_BYTECODE_OPTIMIZATION("x cExp2", "[fp_pow(2.0,x)]");
+          FP_TRACE_BYTECODE_OPTIMIZATION("x cExp2", "[fp_exp2(x)]");
           /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
           goto Lcb;
       }
@@ -377,7 +377,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
       {
         case cImmed:
           x = ImmedPtr[0];
-          FP_TRACE_BYTECODE_OPTIMIZATION("x cInt", "[floor(x+0.5)]");
+          FP_TRACE_BYTECODE_OPTIMIZATION("x cInt", "[fp_int(x)]");
           /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
           goto Lcd;
         default:
@@ -418,7 +418,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           x = ImmedPtr[0];
           if(x>=0.0)
           {
-            FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog10", "[log10(x)]");
+            FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog10", "[fp_log10(x)]");
             /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
             goto Lcf;
           }
@@ -437,7 +437,7 @@ inline void FunctionParser::AddFunctionOpcode(unsigned opcode)
           x = ImmedPtr[0];
           if(x>=0.0)
           {
-            FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog2", "[log(x)*1.4426950408889634074]");
+            FP_TRACE_BYTECODE_OPTIMIZATION("x[x>=0.0] cLog2", "[fp_log2(x)]");
             /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
             goto Lcg;
           }
@@ -1386,13 +1386,13 @@ Lca: data->Immed.pop_back();
      data->ByteCode.pop_back();
      data->ByteCode.pop_back();
      AddFunctionOpcode(cExp2);
-     data->Immed.push_back(fp_pow(2.0,x)); goto Lhl;
-Lcb: ImmedPtr[0] = fp_pow(2.0,x); return;
+     data->Immed.push_back(fp_exp2(x)); goto Lhl;
+Lcb: ImmedPtr[0] = fp_exp2(x); return;
 Lcc: ImmedPtr[0] = floor(x); return;
-Lcd: ImmedPtr[0] = floor(x+0.5); return;
+Lcd: ImmedPtr[0] = fp_int(x); return;
 Lce: ImmedPtr[0] = log(x); return;
-Lcf: ImmedPtr[0] = log10(x); return;
-Lcg: ImmedPtr[0] = log(x)*1.4426950408889634074; return;
+Lcf: ImmedPtr[0] = fp_log10(x); return;
+Lcg: ImmedPtr[0] = fp_log2(x); return;
 Lch: data->ByteCode.pop_back();
      AddFunctionOpcode(cSin);
 Lhn: opcode = cNeg;

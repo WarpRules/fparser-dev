@@ -1578,13 +1578,7 @@ double FunctionParser::Eval(const double* Vars)
 
           case   cExp: Stack[SP] = exp(Stack[SP]); break;
 
-          case   cExp2:
-            //#ifdef FP_SUPPORT_EXP2
-            //  Stack[SP] = exp2(Stack[SP]);
-            //#else
-              Stack[SP] = fp_pow(2.0, Stack[SP]);
-            //#endif
-              break;
+          case   cExp2: Stack[SP] = fp_exp2(Stack[SP]); break;
 
           case cFloor: Stack[SP] = floor(Stack[SP]); break;
 
@@ -1599,7 +1593,7 @@ double FunctionParser::Eval(const double* Vars)
                   }
                   break;
 
-          case   cInt: Stack[SP] = floor(Stack[SP]+.5); break;
+          case   cInt: Stack[SP] = fp_int(Stack[SP]); break;
 
           case   cLog:
 #                    ifndef FP_NO_EVALUATION_CHECKS
@@ -1611,19 +1605,14 @@ double FunctionParser::Eval(const double* Vars)
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
 #                    endif
-                       //Stack[SP] = log10(Stack[SP]);
-                       Stack[SP] = log(Stack[SP]) * 0.43429448190325176116;
+                       Stack[SP] = fp_log10(Stack[SP]);
                        break;
 
           case  cLog2:
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
 #                    endif
-                     #ifdef FP_SUPPORT_LOG2
-                       Stack[SP] = log2(Stack[SP]);
-                     #else
-                       Stack[SP] = log(Stack[SP]) * 1.4426950408889634074;
-                     #endif
+                       Stack[SP] = fp_log2(Stack[SP]);
                        break;
 
           case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);
@@ -1807,11 +1796,7 @@ double FunctionParser::Eval(const double* Vars)
 #                    ifndef FP_NO_EVALUATION_CHECKS
                        if(Stack[SP-1] <= 0) { evalErrorType=3; return 0; }
 #                    endif
-                     #ifdef FP_SUPPORT_LOG2
-                       Stack[SP-1] = log2(Stack[SP-1]) * Stack[SP];
-                     #else
-                       Stack[SP-1] = log(Stack[SP-1]) * Stack[SP] * 1.4426950408889634074;
-                     #endif
+                       Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
                        --SP;
                        break;
 #endif // FP_SUPPORT_OPTIMIZER

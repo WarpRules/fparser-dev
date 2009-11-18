@@ -529,7 +529,7 @@ namespace FPoptimizer_CodeTree
                         //    Can only be done when x is positive, though.
                         if(prefer_base2)
                         {
-                            double mulvalue = std::log( p0.GetImmed() ) * CONSTANT_L2I;
+                            double mulvalue = fp_log2( p0.GetImmed() );
                             if(mulvalue == 1.0)
                             {
                                 // exp2(1)^x becomes exp2(x)

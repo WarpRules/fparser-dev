@@ -50,12 +50,12 @@ x cCeil	 		-> [ceil(x)]
 x cCos	 		-> [cos(x)]
 x cCosh	 		-> [cosh(x)]
 x cExp	 		-> [exp(x)]
-x cExp2	 		-> [fp_pow(2.0,x)]
+x cExp2	 		-> [fp_exp2(x)]
 x cFloor 		-> [floor(x)]
-x cInt	 		-> [floor(x+0.5)]
+x cInt	 		-> [fp_int(x)]
 x [x>=0.0] cLog		-> [log(x)]
-x [x>=0.0] cLog10	-> [log10(x)]
-x [x>=0.0] cLog2	-> [log(x)*1.4426950408889634074]
+x [x>=0.0] cLog10	-> [fp_log10(x)]
+x [x>=0.0] cLog2	-> [fp_log2(x)]
 x cSin	 		-> [sin(x)]
 x cSinh	 		-> [sinh(x)]
 x [x>=0.0] cSqrt	-> [sqrt(x)]
@@ -173,8 +173,8 @@ A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A
 cFloor cNeg -> cNeg cCeil
 cCeil  cNeg -> cNeg cFloor
 
-x cAdd cExp  -> cExp  [exp(x)]        cMul
-x cAdd cExp2 -> cExp2 [fp_pow(2.0,x)] cMul
+x cAdd cExp  -> cExp  [exp(x)]     cMul
+x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 
 x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul

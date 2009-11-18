@@ -90,16 +90,16 @@ namespace FPoptimizer_CodeTree
             case cLog2: /* Defined for 0.0 < x <= inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L2I; } // No boundaries
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L2I; }
+                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log2(m.min); } // No boundaries
+                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log2(m.max); }
                 return m;
             }
 
             case cLog10: /* Defined for 0.0 < x <= inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min)*CONSTANT_L10I; } // No boundaries
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max)*CONSTANT_L10I; }
+                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log10(m.min); }
+                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log10(m.max); }
                 return m;
             }
 

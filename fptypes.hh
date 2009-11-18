@@ -36,6 +36,8 @@ namespace FUNCTIONPARSERTYPES
         cTrunc,
 
 // These do not need any ordering:
+// Except that if you change the order of eq,neq,lt,le,gt,gt, you
+// must also change the order in ConstantFolding_ComparisonOperations().
         cImmed, cJump,
         cNeg, cAdd, cSub, cMul, cDiv, cMod,
         cEqual, cNEqual, cLess, cLessOrEq, cGreater, cGreaterOrEq,
@@ -352,7 +354,9 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_acosh(double x) { return acosh(x); }
     inline double fp_atanh(double x) { return atanh(x); }
 #endif // FP_SUPPORT_ASINH
+
     inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
+    inline double fp_int(double x) { return floor(x + .5); }
 
     /* fp_pow() is a wrapper for std::pow()
      * that produces an identical value for
@@ -369,6 +373,15 @@ namespace FUNCTIONPARSERTYPES
         if(y < 0) return 1.0 / fp_pow(x, -y);
         return std::pow(x, y);
     }
+
+#ifndef FP_SUPPORT_LOG2
+    inline double fp_log2(double x) { return log(x) * 1.4426950408889634074; }
+#else
+    inline double fp_log2(double x) { return log2(x); }
+#endif // FP_SUPPORT_LOG2
+    inline double fp_log10(double x) { return log(x) * 0.43429448190325176116; }
+    //inline double fp_log10(double x) { return log10(x); }
+    inline double fp_exp2(double x) { return fp_pow(2.0, x); }
 
 #ifdef FP_EPSILON
     inline bool FloatEqual(double a, double b)
