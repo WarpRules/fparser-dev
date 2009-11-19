@@ -721,10 +721,9 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 
     const char* beginPtr = vars.c_str();
     const char* finalPtr = beginPtr + len;
-    SkipSpace(beginPtr);
-
     while(beginPtr < finalPtr)
     {
+        SkipSpace(beginPtr);
         unsigned nameLength = readIdentifier(beginPtr);
         if(nameLength == 0) return false;
         const char* endPtr = beginPtr + nameLength;
