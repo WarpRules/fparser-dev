@@ -3,8 +3,8 @@
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
-#include <map>
 #include <vector>
+#include <utility>
 #include <iostream>
 
 //#define DEBUG_SUBSTITUTIONS
@@ -19,8 +19,9 @@ namespace FPoptimizer_Optimize
     class MatchInfo
     {
     public:
-        std::map<unsigned, std::vector<CodeTree> > restholder_matches;
-        std::map<unsigned, CodeTree> paramholder_matches;
+        std::vector<std::pair<bool,std::vector<CodeTree>
+                             > > restholder_matches;
+        std::vector<CodeTree> paramholder_matches;
         std::vector<unsigned> matched_params;
     public:
         /* These functions save data from matching */
@@ -28,15 +29,25 @@ namespace FPoptimizer_Optimize
             unsigned restholder_index,
             const std::vector<CodeTree>& treelist)
         {
-            std::map<unsigned, std::vector<CodeTree> >::iterator
-                i = restholder_matches.lower_bound(restholder_index);
-            if(i == restholder_matches.end() || i->first != restholder_index)
-                { restholder_matches.insert(i, std::make_pair(restholder_index, treelist) );
-                  return true; }
-            if(treelist.size() != i->second.size())
+            if(restholder_matches.size() <= restholder_index)
+            {
+                restholder_matches.resize(restholder_index+1);
+                restholder_matches[restholder_index].first  = true;
+                restholder_matches[restholder_index].second = treelist;
+                return true;
+            }
+            if(restholder_matches[restholder_index].first == false)
+            {
+                restholder_matches[restholder_index].first  = true;
+                restholder_matches[restholder_index].second = treelist;
+                return true;
+            }
+            const std::vector<CodeTree>& found =
+                restholder_matches[restholder_index].second;
+            if(treelist.size() != found.size())
                 return false;
             for(size_t a=0; a<treelist.size(); ++a)
-                if(!treelist[a].IsIdenticalTo(i->second[a]))
+                if(!treelist[a].IsIdenticalTo(found[a]))
                     return false;
             return true;
         }
@@ -45,19 +56,29 @@ namespace FPoptimizer_Optimize
             unsigned restholder_index,
             std::vector<CodeTree>& treelist)
         {
-            restholder_matches[restholder_index].swap(treelist);
+            if(restholder_matches.size() <= restholder_index)
+                restholder_matches.resize(restholder_index+1);
+            restholder_matches[restholder_index].first = true;
+            restholder_matches[restholder_index].second.swap(treelist);
         }
 
         bool SaveOrTestParamHolder(
             unsigned paramholder_index,
             const CodeTree& treeptr)
         {
-            std::map<unsigned, CodeTree>::iterator
-                i = paramholder_matches.lower_bound(paramholder_index);
-            if(i == paramholder_matches.end() || i->first != paramholder_index)
-                { paramholder_matches.insert(i, std::make_pair(paramholder_index, treeptr));
-                  return true; }
-            return treeptr.IsIdenticalTo(i->second);
+            if(paramholder_matches.size() <= paramholder_index)
+            {
+                paramholder_matches.reserve(paramholder_index+1);
+                paramholder_matches.resize(paramholder_index);
+                paramholder_matches.push_back(treeptr);
+                return true;
+            }
+            if(!paramholder_matches[paramholder_index].IsDefined())
+            {
+                paramholder_matches[paramholder_index] = treeptr;
+                return true;
+            }
+            return treeptr.IsIdenticalTo(paramholder_matches[paramholder_index]);
         }
 
         void SaveMatchedParamIndex(unsigned index)
@@ -70,30 +91,25 @@ namespace FPoptimizer_Optimize
          */
         const CodeTree& GetParamHolderValueIfFound( unsigned paramholder_index ) const
         {
-            std::map<unsigned, CodeTree>::const_iterator i = paramholder_matches.find(paramholder_index);
-            if(i == paramholder_matches.end() || i->first != paramholder_index)
-            {
-                static const CodeTree dummytree;
+            static const CodeTree dummytree;
+            if(paramholder_matches.size() <= paramholder_index)
                 return dummytree;
-            }
-            return i->second;
+            return paramholder_matches[paramholder_index];
         }
 
         const CodeTree& GetParamHolderValue( unsigned paramholder_index ) const
-            { return paramholder_matches.find(paramholder_index)->second; }
+            { return paramholder_matches[paramholder_index]; }
 
         bool HasRestHolder(unsigned restholder_index) const
-            { return restholder_matches.find(restholder_index)
-                     != restholder_matches.end(); }
+            { return restholder_matches.size() > restholder_index
+                  && restholder_matches[restholder_index].first == true; }
 
         const std::vector<CodeTree>& GetRestHolderValues( unsigned restholder_index ) const
         {
             static const std::vector<CodeTree> empty_result;
-            std::map<unsigned, std::vector<CodeTree> >::const_iterator
-                i = restholder_matches.find(restholder_index);
-            if(i != restholder_matches.end())
-                return i->second;
-            return empty_result;
+            if(restholder_matches.size() <= restholder_index)
+                return empty_result;
+            return restholder_matches[restholder_index].second;
         }
 
         const std::vector<unsigned>& GetMatchedParamIndexes() const
