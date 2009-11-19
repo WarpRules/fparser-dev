@@ -539,6 +539,151 @@ namespace
         "(No function has been parsed yet)",
         ""
     };
+
+    inline FunctionParser::ParseErrorType noCommaError(char c)
+    {
+        return c == ')' ?
+            FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::SYNTAX_ERROR;
+    }
+
+    inline FunctionParser::ParseErrorType noParenthError(char c)
+    {
+        return c == ',' ?
+            FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::MISSING_PARENTH;
+    }
+
+    template<typename CharPtr>
+    inline void SkipSpace(CharPtr& function)
+    {
+/*
+        Space characters in unicode:
+U+0020  SPACE                      Depends on font, often adjusted (see below)
+U+00A0  NO-BREAK SPACE             As a space, but often not adjusted
+U+2000  EN QUAD                    1 en (= 1/2 em)
+U+2001  EM QUAD                    1 em (nominally, the height of the font)
+U+2002  EN SPACE                   1 en (= 1/2 em)
+U+2003  EM SPACE                   1 em
+U+2004  THREE-PER-EM SPACE         1/3 em
+U+2005  FOUR-PER-EM SPACE          1/4 em
+U+2006  SIX-PER-EM SPACE           1/6 em
+U+2007  FIGURE SPACE               Tabular width, the width of digits
+U+2008  PUNCTUATION SPACE          The width of a period .
+U+2009  THIN SPACE                 1/5 em (or sometimes 1/6 em)
+U+200A  HAIR SPACE                 Narrower than THIN SPACE
+U+200B  ZERO WIDTH SPACE           Nominally no width, but may expand
+U+202F  NARROW NO-BREAK SPACE      Narrower than NO-BREAK SPACE (or SPACE)
+U+205F  MEDIUM MATHEMATICAL SPACE  4/18 em
+U+3000  IDEOGRAPHIC SPACE          The width of ideographic (CJK) characters.
+        Also:
+U+000A  \n
+U+000D  \r
+U+0009  \t
+U+000B  \v
+        As UTF-8 sequences:
+            09
+            0A
+            0B
+            0D
+            20
+            C2 A0
+            E2 80 80-8B
+            E2 80 AF
+            E2 81 9F
+            E3 80 80
+*/
+        while(true)
+        {
+            const unsigned char byte = (unsigned char)*function;
+
+#if(' ' == 32) /* ASCII */
+            if(sizeof(unsigned long) == 8)
+            {
+                const unsigned n = sizeof(unsigned long)*8-1;
+                // ^ avoids compiler warning when not 64-bit
+                if(byte <= ' ')
+                {
+                    unsigned long shifted = 1UL << byte;
+                    const unsigned long mask =
+                        (1UL << ('\r'&n)) |
+                        (1UL << ('\n'&n)) |
+                        (1UL << ('\v'&n)) |
+                        (1UL << ('\t'&n)) |
+                        (1UL << (' ' &n));
+                    if(mask & shifted) { ++function; continue; }
+                    return;
+                }
+            }
+            else
+            {
+                unsigned char cbyte = (unsigned char)(0x20 - *function);
+                if(cbyte <= 0x17)
+                {
+                    unsigned shifted = 1U << cbyte;
+                    const unsigned mask =
+                        (1U << (0x20 - '\r')) |
+                        (1U << (0x20 - '\n')) |
+                        (1U << (0x20 - '\v')) |
+                        (1U << (0x20 - '\t')) |
+                        (1U << (0x20 - ' '));
+                    if(mask & shifted) { ++function; continue; }
+                    return;
+                }
+            }
+#endif // #if(' ' == 32)
+
+#if(' ' == 32)
+            if(byte < 0xC2) return;
+#endif
+
+            switch(byte)
+            {
+#if(' ' != 32)
+              case ' ':
+              case '\r':
+              case '\n':
+              case '\v':
+              case '\t':
+                  ++function;
+                  break;
+#endif
+              case 0xC2:
+              {
+                  unsigned char byte2 = function[1];
+                  if(byte2 == 0xA0) { function += 2; continue; }
+                  break;
+              }
+              case 0xE2:
+              {
+                  unsigned char byte2 = function[1];
+                  if(byte2 == 0x81 && (unsigned char)(function[2]) == 0x9F)
+                  {
+                      function += 3;
+                      continue;
+                  }
+                  if(byte2 == 0x80 &&
+                     ((unsigned char)(function[2]) == 0xAF ||
+                      ((unsigned char)(function[2]) >= 0x80 &&
+                       (unsigned char)(function[2]) <= 0x8B)))
+                  {
+                      function += 3;
+                      continue;
+                  }
+                  break;
+              }
+              case 0xE3:
+              {
+                  unsigned char byte2 = function[1];
+                  if(byte2 == 0x80 && (unsigned char)(function[2]) == 0x80)
+                  {
+                      function += 3;
+                      continue;
+                  }
+                  break;
+              }
+            }
+            break;
+        } // while(true)
+    } // SkipSpace(CharPtr& function)
 }
 
 // Return parse error message
@@ -576,12 +721,14 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
 
     const char* beginPtr = vars.c_str();
     const char* finalPtr = beginPtr + len;
+    SkipSpace(beginPtr);
 
     while(beginPtr < finalPtr)
     {
         unsigned nameLength = readIdentifier(beginPtr);
         if(nameLength == 0) return false;
         const char* endPtr = beginPtr + nameLength;
+        SkipSpace(endPtr);
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
         NamePtr namePtr(beginPtr, nameLength);
@@ -867,154 +1014,6 @@ inline bool FunctionParser::TryCompilePowi(double original_immed)
 }
 
 #include "fp_opcode_add.inc"
-
-namespace
-{
-    inline FunctionParser::ParseErrorType noCommaError(char c)
-    {
-        return c == ')' ?
-            FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::SYNTAX_ERROR;
-    }
-
-    inline FunctionParser::ParseErrorType noParenthError(char c)
-    {
-        return c == ',' ?
-            FunctionParser::ILL_PARAMS_AMOUNT : FunctionParser::MISSING_PARENTH;
-    }
-
-    template<typename CharPtr>
-    inline void SkipSpace(CharPtr& function)
-    {
-/*
-        Space characters in unicode:
-U+0020  SPACE                      Depends on font, often adjusted (see below)
-U+00A0  NO-BREAK SPACE             As a space, but often not adjusted
-U+2000  EN QUAD                    1 en (= 1/2 em)
-U+2001  EM QUAD                    1 em (nominally, the height of the font)
-U+2002  EN SPACE                   1 en (= 1/2 em)
-U+2003  EM SPACE                   1 em
-U+2004  THREE-PER-EM SPACE         1/3 em
-U+2005  FOUR-PER-EM SPACE          1/4 em
-U+2006  SIX-PER-EM SPACE           1/6 em
-U+2007  FIGURE SPACE               Tabular width, the width of digits
-U+2008  PUNCTUATION SPACE          The width of a period .
-U+2009  THIN SPACE                 1/5 em (or sometimes 1/6 em)
-U+200A  HAIR SPACE                 Narrower than THIN SPACE
-U+200B  ZERO WIDTH SPACE           Nominally no width, but may expand
-U+202F  NARROW NO-BREAK SPACE      Narrower than NO-BREAK SPACE (or SPACE)
-U+205F  MEDIUM MATHEMATICAL SPACE  4/18 em
-U+3000  IDEOGRAPHIC SPACE          The width of ideographic (CJK) characters.
-        Also:
-U+000A  \n
-U+000D  \r
-U+0009  \t
-U+000B  \v
-        As UTF-8 sequences:
-            09
-            0A
-            0B
-            0D
-            20
-            C2 A0
-            E2 80 80-8B
-            E2 80 AF
-            E2 81 9F
-            E3 80 80
-*/
-        while(true)
-        {
-            const unsigned char byte = (unsigned char)*function;
-
-#if(' ' == 32) /* ASCII */
-            if(sizeof(unsigned long) == 8)
-            {
-                const unsigned n = sizeof(unsigned long)*8-1;
-                // ^ avoids compiler warning when not 64-bit
-                if(byte <= ' ')
-                {
-                    unsigned long shifted = 1UL << byte;
-                    const unsigned long mask =
-                        (1UL << ('\r'&n)) |
-                        (1UL << ('\n'&n)) |
-                        (1UL << ('\v'&n)) |
-                        (1UL << ('\t'&n)) |
-                        (1UL << (' ' &n));
-                    if(mask & shifted) { ++function; continue; }
-                    return;
-                }
-            }
-            else
-            {
-                unsigned char cbyte = (unsigned char)(0x20 - *function);
-                if(cbyte <= 0x17)
-                {
-                    unsigned shifted = 1U << cbyte;
-                    const unsigned mask =
-                        (1U << (0x20 - '\r')) |
-                        (1U << (0x20 - '\n')) |
-                        (1U << (0x20 - '\v')) |
-                        (1U << (0x20 - '\t')) |
-                        (1U << (0x20 - ' '));
-                    if(mask & shifted) { ++function; continue; }
-                    return;
-                }
-            }
-#endif // #if(' ' == 32)
-
-#if(' ' == 32)
-            if(byte < 0xC2) return;
-#endif
-
-            switch(byte)
-            {
-#if(' ' != 32)
-              case ' ':
-              case '\r':
-              case '\n':
-              case '\v':
-              case '\t':
-                  ++function;
-                  break;
-#endif
-              case 0xC2:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0xA0) { function += 2; continue; }
-                  break;
-              }
-              case 0xE2:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0x81 && (unsigned char)(function[2]) == 0x9F)
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  if(byte2 == 0x80 &&
-                     ((unsigned char)(function[2]) == 0xAF ||
-                      ((unsigned char)(function[2]) >= 0x80 &&
-                       (unsigned char)(function[2]) <= 0x8B)))
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  break;
-              }
-              case 0xE3:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0x80 && (unsigned char)(function[2]) == 0x80)
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  break;
-              }
-            }
-            break;
-        } // while(true)
-    } // SkipSpace(CharPtr& function)
-}
 
 const char* FunctionParser::CompileIf(const char* function)
 {

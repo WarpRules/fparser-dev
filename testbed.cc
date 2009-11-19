@@ -1249,24 +1249,31 @@ bool UTF8Test()
         }
     }
 
-    CharIter invalidIters[2] = { CharIter(), CharIter(true, false) };
+    CharIter invalidIters[3] = { CharIter(), CharIter(true, false), CharIter() };
+    // test 5: inv
+    // test 6: inv + normal
+    // test 7: normal + inv
 
-    for(unsigned length = 1; length <= 2; ++length)
+    for(unsigned length = 1; length <= 3; ++length)
     {
         std::cout << " " << 4+length << std::flush;
+        unsigned numchars = length < 3 ? length : 2;
+        unsigned firstchar = length < 3 ? 0 : 1;
         bool cont = true;
         while(cont)
         {
             identifier.clear();
-            for(unsigned i = 0; i < length; ++i)
-                invalidIters[(length-1)-i].appendChar(identifier);
+            identifier += 'a';
+            for(unsigned i = 0; i < numchars; ++i)
+                invalidIters[firstchar+i].appendChar(identifier);
+            identifier += 'a';
 
             if(fp.Parse(identifier, identifier) < 0)
                 return printUTF8TestError2(invalidIters, length);
 
             cont = false;
-            for(unsigned i = 0; i < length; ++i)
-                if(invalidIters[i].next())
+            for(unsigned i = 0; i < numchars; ++i)
+                if(invalidIters[firstchar+i].next())
                 {
                     cont = true;
                     break;
