@@ -273,6 +273,13 @@ namespace
             const double diff = sv2-sv1;
             if(std::fabs(diff) > kEpsilon)
             {
+                if(parser1.EvalError() && parser1Type[0] == 'n')
+                {
+                    // If the source expression returns an error,
+                    // ignore this "failure"
+                    continue;
+                }
+
                 std::cout << SEPARATOR << "\n******* For variable values (";
                 for(size_t i = 0; i < varsAmount; ++i)
                 {
@@ -281,12 +288,19 @@ namespace
                 }
                 std::cout << ")\n";
                 std::cout << "******* function " << function1Index+1
-                          << " (" << parser1Type << ") returned "
-                          << std::setprecision(18) << v1 << "\n";
+                          << " (" << parser1Type << ") returned ";
+                if(parser1.EvalError())
+                    std::cout << "error " << parser1.EvalError();
+                else
+                    std::cout << std::setprecision(18) << v1;
+                std::cout << "\n";
                 std::cout << "******* function " << function2Index+1
-                          << " (" << parser2Type << ") returned "
-                          << std::setprecision(18) << v2
-                          << "\n******* (Difference: " << (v2-v1)
+                          << " (" << parser2Type << ") returned ";
+                if(parser2.EvalError())
+                    std::cout << "error " << parser2.EvalError();
+                else
+                    std::cout << std::setprecision(18) << v2;
+                std::cout << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
                           << std::setprecision(18) << diff << ")"
                           << std::endl;
