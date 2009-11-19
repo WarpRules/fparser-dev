@@ -39,7 +39,6 @@ cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
 cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
 cSqr x cPow -> [x*2.0] cPow
 
-
 x cAbs	 		-> [fabs(x)]
 x cAcos	 		-> [acos(x)]
 x [x>=-1.0&&x<=1.0] cAcosh -> [fp_acosh(x)]
@@ -86,6 +85,12 @@ x cNot			-> [!truthValue(x)]
 x [x>0.0] cRPow -> [log(x)] cMul cExp
 
 A [A >= VarBegin] x [x==0.0] cMul -> [x]
+
+x [x==2.0] cMul -> cDup cAdd
+cSqr cLog   -> cAbs cLog   cDup cAdd
+cSqr cLog2  -> cAbs cLog2  cDup cAdd
+cSqr cLog10 -> cAbs cLog10 cDup cAdd
+cDup cAdd cDup cAdd -> [4] cMul
 
 
 y x cLess		-> [y <  (x-EpsilonOrZero)]

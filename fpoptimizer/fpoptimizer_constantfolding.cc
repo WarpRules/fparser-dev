@@ -2110,11 +2110,32 @@ namespace FPoptimizer_CodeTree
                     }
                     if(pow.GetParam(1).IsAlwaysParity(false)) // log(x ^ even) = even*log(abs(x))
                     {
+                        pow.CopyOnWrite();
                         CodeTree abs;
                         abs.SetOpcode(cAbs);
                         abs.AddParamMove(pow.GetParam(0));
                         abs.Rehash();
+                        pow.SetOpcode(cLog);
+                        SetOpcode(cMul);
+                        pow.SetParamMove(0, abs);
+                        AddParamMove(pow.GetParam(1));
+                        pow.DelParam(1);
+                        pow.Rehash();
+                        SetParamMove(0, pow);
+                        goto NowWeAreMulGroup;
+                    }
+                }
+                else if(GetParam(0).GetOpcode() == cAbs)
+                {
+                    // log(abs(x^y)) = y*log(abs(x))
+                    CodeTree pow = GetParam(0).GetParam(0);
+                    if(pow.GetOpcode() == cPow)
+                    {
                         pow.CopyOnWrite();
+                        CodeTree abs;
+                        abs.SetOpcode(cAbs);
+                        abs.AddParamMove(pow.GetParam(0));
+                        abs.Rehash();
                         pow.SetOpcode(cLog);
                         SetOpcode(cMul);
                         pow.SetParamMove(0, abs);
