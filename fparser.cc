@@ -452,12 +452,13 @@ bool FunctionParser::AddFunction(const std::string& name,
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::FUNC_PTR, unsigned(data->FuncPtrs.size())) );
 
-    data->FuncPtrs.push_back(Data::FuncPtrData());
-    data->FuncPtrs.back().funcPtr = ptr;
-    data->FuncPtrs.back().params = paramsAmount;
-
     const bool success = addNewNameData<false>(data->namePtrs, newPair);
-    if(!success) data->FuncPtrs.pop_back();
+    if(success)
+    {
+        data->FuncPtrs.push_back(Data::FuncPtrData());
+        data->FuncPtrs.back().funcPtr = ptr;
+        data->FuncPtrs.back().params = paramsAmount;
+    }
     return success;
 }
 
@@ -480,12 +481,13 @@ bool FunctionParser::AddFunction(const std::string& name, FunctionParser& fp)
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::PARSER_PTR, unsigned(data->FuncParsers.size())) );
 
-    data->FuncParsers.push_back(Data::FuncPtrData());
-    data->FuncParsers.back().parserPtr = &fp;
-    data->FuncParsers.back().params = fp.data->numVariables;
-
     const bool success = addNewNameData<false>(data->namePtrs, newPair);
-    if(!success) data->FuncParsers.pop_back();
+    if(success)
+    {
+        data->FuncParsers.push_back(Data::FuncPtrData());
+        data->FuncParsers.back().parserPtr = &fp;
+        data->FuncParsers.back().params = fp.data->numVariables;
+    }
     return success;
 }
 
@@ -500,10 +502,12 @@ bool FunctionParser::RemoveIdentifier(const std::string& name)
 
     if(nameIter != data->namePtrs.end())
     {
-        if(nameIter->second.type != NameData::VARIABLE)
+        if(nameIter->second.type == NameData::VARIABLE)
         {
-            delete[] nameIter->first.name;
+            // Illegal attempt to delete variables
+            return false;
         }
+        delete[] nameIter->first.name;
         data->namePtrs.erase(nameIter);
         return true;
     }
