@@ -1597,20 +1597,20 @@ double FunctionParser::Eval(const double* Vars)
 
           case   cLog:
 #                    ifndef FP_NO_EVALUATION_CHECKS
-                       if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       if(!(Stack[SP] > 0.0)) { evalErrorType=3; return 0; }
 #                    endif
                        Stack[SP] = log(Stack[SP]); break;
 
           case cLog10:
 #                    ifndef FP_NO_EVALUATION_CHECKS
-                       if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       if(!(Stack[SP] > 0.0)) { evalErrorType=3; return 0; }
 #                    endif
                        Stack[SP] = fp_log10(Stack[SP]);
                        break;
 
           case  cLog2:
 #                    ifndef FP_NO_EVALUATION_CHECKS
-                       if(Stack[SP] <= 0) { evalErrorType=3; return 0; }
+                       if(!(Stack[SP] > 0.0)) { evalErrorType=3; return 0; }
 #                    endif
                        Stack[SP] = fp_log2(Stack[SP]);
                        break;
@@ -1621,9 +1621,23 @@ double FunctionParser::Eval(const double* Vars)
           case   cMin: Stack[SP-1] = Min(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-          case   cPow: Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
+          case   cPow:
+#                    ifndef FP_NO_EVALUATION_CHECKS
+                       if(Stack[SP-1] < 0
+                       && !IsIntegerConst(Stack[SP])) { evalErrorType=3; return 0; }
+                       if(Stack[SP-1] == 0.0
+                       && Stack[SP] < 0) { evalErrorType=3; return 0; }
+#                    endif
+                       Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
                        --SP; break;
-          case   cRPow: Stack[SP-1] = fp_pow(Stack[SP], Stack[SP-1]);
+          case   cRPow:
+#                    ifndef FP_NO_EVALUATION_CHECKS
+                       if(Stack[SP] < 0
+                       && !IsIntegerConst(Stack[SP-1])) { evalErrorType=3; return 0; }
+                       if(Stack[SP] == 0.0
+                       && Stack[SP-1] < 0) { evalErrorType=3; return 0; }
+#                    endif
+                       Stack[SP-1] = fp_pow(Stack[SP], Stack[SP-1]);
                         --SP; break;
 
           case  cTrunc: Stack[SP] = fp_trunc(Stack[SP]); break;
