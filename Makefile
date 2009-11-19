@@ -41,7 +41,7 @@ CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 
-#CXXFLAGS += -std=c++0x
+CXXFLAGS += -std=c++0x
 
 # For compilation with ICC:
 #OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3

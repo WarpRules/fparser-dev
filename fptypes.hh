@@ -434,6 +434,9 @@ struct FunctionParser::Data
             Immed(), Stack(), StackSize(0) {}
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    Data(Data&&); // not implemented on purpose
+#endif
     ~Data();
 };
 #endif

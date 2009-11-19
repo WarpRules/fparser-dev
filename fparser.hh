@@ -75,6 +75,10 @@ public:
     // copy-on-write technique for efficiency):
     FunctionParser(const FunctionParser&);
     FunctionParser& operator=(const FunctionParser&);
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    FunctionParser(FunctionParser&&);
+    FunctionParser& operator=(FunctionParser&&);
+#endif
 
 
     void ForceDeepCopy();

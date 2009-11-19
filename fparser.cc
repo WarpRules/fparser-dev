@@ -311,6 +311,9 @@ FunctionParser::FunctionParser():
 
 FunctionParser::~FunctionParser()
 {
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    if(data != 0)
+#endif
     if(--(data->referenceCounter) == 0)
         delete data;
 }
@@ -345,6 +348,47 @@ FunctionParser& FunctionParser::operator=(const FunctionParser& cpy)
 
     return *this;
 }
+
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+FunctionParser::FunctionParser(FunctionParser&& orig):
+    delimiterChar(orig.delimiterChar),
+    parseErrorType(orig.parseErrorType),
+    evalErrorType(orig.evalErrorType),
+    data(orig.data),
+    useDegreeConversion(orig.useDegreeConversion),
+    evalRecursionLevel(0),
+    StackPtr(0), errorLocation(0)
+{
+    /* This is a move constructor. The original's possessionship
+     * of data ends. Change the original to point to something
+     * else so that
+     *  1) when we change data, we don't need to copy
+     *  2) when orig is destructed, it won't try to
+     *     deallocate our data
+     */
+    orig.data = 0;
+}
+
+FunctionParser& FunctionParser::operator=(FunctionParser&& orig)
+{
+    if(data != orig.data)
+    {
+        if(--(data->referenceCounter) == 0) delete data;
+
+        delimiterChar = orig.delimiterChar;
+        parseErrorType = orig.parseErrorType;
+        evalErrorType = orig.evalErrorType;
+        data = orig.data;
+        useDegreeConversion = orig.useDegreeConversion;
+        evalRecursionLevel = orig.evalRecursionLevel;
+
+        /* Same explanation as in the move constructor */
+        orig.data = 0;
+    }
+    return *this;
+}
+#endif
+
 
 void FunctionParser::setDelimiterChar(char c)
 {
