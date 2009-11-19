@@ -480,7 +480,10 @@ cCos [(cAcos [x])] -> x
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
 
-cAtan [(cMul {x (cPow [y %@N])})] -> cAtan2 [x (cPow [y -%])]
+# atan(x/y) = atan2(x,y) -- do this only when we don't know whether y is zero.
+#                           If we know that y is nonzero, ConstantFolding
+#                           will revert this optimization.
+cAtan [(cMul {x (cPow [y@Q %@N])})] -> cAtan2 [x (cPow [y -%])]
 
 cAtan2 [(cMul  x <1>) (cMul  x <2>)]   : (cMul <1>) (cMul <2>)
 # ^ Note: This fails when x=0

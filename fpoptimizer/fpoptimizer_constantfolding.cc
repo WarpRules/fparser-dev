@@ -2199,18 +2199,20 @@ namespace FPoptimizer_CodeTree
                  */
                 MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
                 MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
-                if(p0.has_min && p0.has_max && p0.min == 0.0)
+                if(GetParam(0).IsImmed()
+                && FloatEqual(GetParam(0).GetImmed(), 0.0))   // y == 0
                 {
-                    if(p1.has_max && p1.max < 0)
+                    if(p1.has_max && p1.max < 0)              // y == 0 && x < 0
                         { const_value = CONSTANT_PI; goto ReplaceTreeWithConstValue; }
-                    if(p1.has_max && p1.max >= 0.0)
-                        { const_value = p0.min; goto ReplaceTreeWithConstValue; }
+                    if(p1.has_min && p1.min >= 0.0)           // y == 0 && x >= 0.0
+                        { const_value = 0.0; goto ReplaceTreeWithConstValue; }
                 }
-                if(p1.has_min && p1.has_max && p1.min == 0.0)
+                if(GetParam(1).IsImmed()
+                && FloatEqual(GetParam(1).GetImmed(), 0.0))   // x == 0
                 {
-                    if(p0.has_max && p0.max < 0)
+                    if(p0.has_max && p0.max < 0)              // y < 0 && x == 0
                         { const_value = -CONSTANT_PIHALF; goto ReplaceTreeWithConstValue; }
-                    if(p0.has_min && p0.min > 0)
+                    if(p0.has_min && p0.min > 0)              // y > 0 && x == 0
                         { const_value =  CONSTANT_PIHALF; goto ReplaceTreeWithConstValue; }
                 }
                 if(GetParam(0).IsImmed()
@@ -2218,7 +2220,7 @@ namespace FPoptimizer_CodeTree
                     { const_value = atan2(GetParam(0).GetImmed(),
                                           GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
-                if((p1.has_min && p1.min > 0.0)
+                if((p1.has_min && p1.min > 0.0)               // p1 != 0.0
                 || (p1.has_max && p1.max < NEGATIVE_MAXIMUM)) // become atan(p0 / p1)
                 {
                     CodeTree pow_tree;

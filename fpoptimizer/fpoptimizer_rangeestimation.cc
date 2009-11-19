@@ -145,6 +145,21 @@ namespace FPoptimizer_CodeTree
             }
             case cAtan2: /* too complicated to estimate */
             {
+                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
+                if(GetParam(0).IsImmed()
+                && FloatEqual(GetParam(0).GetImmed(), 0.0))   // y == 0
+                {
+                    // Either 0.0 or CONSTANT_PI
+                    return MinMaxTree(0.0, CONSTANT_PI);
+                }
+                if(GetParam(1).IsImmed()
+                && FloatEqual(GetParam(1).GetImmed(), 0.0))   // x == 0
+                {
+                    // EIther -CONSTANT_PIHALF or +CONSTANT_PIHALF
+                    return MinMaxTree(-CONSTANT_PIHALF, CONSTANT_PIHALF);
+                }
+                // Anything else
                 /* Somewhat complicated to narrow down from this */
                 /* TODO: A resourceful programmer may add it later. */
                 return MinMaxTree(-CONSTANT_PI, CONSTANT_PI);
