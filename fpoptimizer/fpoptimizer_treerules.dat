@@ -124,6 +124,13 @@ cIf [(cLess[x y]) x y] -> cMin x y
 cIf [(cLess[x y]) y x] -> cMax x y
 cIf [(cLess[0 x]) (cFloor[x]) (cCeil[x])] -> cTrunc x
 
+cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)])
+cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)])
+cAnd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAnd y a) (cAnd z b)])
+cOr  (cIf[x y z]) (cIf[x a b]) : (cIf [x (cOr  y a) (cOr  z b)])
+cMin (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMin y a) (cMin z b)])
+cMax (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMax y a) (cMax z b)])
+
 cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr  x y)])
 cOr  (cNot[x]) (cNot[y]) : (cNot [(cAnd x y)])
 
