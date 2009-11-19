@@ -10,7 +10,7 @@
 #include "fpoptimizer_codetree.hh"
 
 #ifndef FP_GENERATING_POWI_TABLE
-enum { MAX_POWI_BYTECODE_LENGTH = 15 };
+enum { MAX_POWI_BYTECODE_LENGTH = 20 };
 #else
 enum { MAX_POWI_BYTECODE_LENGTH = 999 };
 #endif

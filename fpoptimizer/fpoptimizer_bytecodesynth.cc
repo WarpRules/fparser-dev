@@ -24,43 +24,43 @@ namespace FPoptimizer_ByteCode
 {
     #ifndef FP_GENERATING_POWI_TABLE
     extern const
-    signed char powi_table[POWI_TABLE_SIZE];
+    unsigned char powi_table[POWI_TABLE_SIZE];
     const
     #endif
-    signed char powi_table[POWI_TABLE_SIZE] =
+    unsigned char powi_table[POWI_TABLE_SIZE] =
     {
-          0,   1,   1,   1,   2,   1,   3,   1, /*   0 -   7 */
-          4,   1,   5,   1,   6,   1,   7,   5, /*   8 -  15 */
-          8,   1,   9,   1,  10,   1,  11,   1, /*  16 -  23 */
-         12,   5,  13,   9,  14,   1,  15,   1, /*  24 -  31 */
-         16,   1,  17,   1,  18,   1,  19,  13, /*  32 -  39 */
-         20,   1,  21,   1,  22,   9,   1,   2, /*  40 -  47 */
-         24,   1,  25,  17,  26,   1,  27,  11, /*  48 -  55 */
-         28,  19,  29,   8,  30,   1,  31,  21, /*  56 -  63 */
-         32,   1,  33,   1,  34,   1,  35,   1, /*  64 -  71 */
-         36,   1,  37,  25,  38,   1,  39,   1, /*  72 -  79 */
-         40,   9,  41,   1,  42,  17,   1,  29, /*  80 -  87 */
-         44,   1,  45,   1,  46,  31,  47,  19, /*  88 -  95 */
-         48,   1,  49,  33,  50,   1,  51,   1, /*  96 - 103 */
-         52,  35,  53,   8,  54,   1,  55,  37, /* 104 - 111 */
-         56,   1,  57,  16,  58,  13,  59,  17, /* 112 - 119 */
-         60,   1,  61,  41,  62,  25,  63,   1, /* 120 - 127 */
-         64,   1,  65,   1,  66,   1,  67,  45, /* 128 - 135 */
-         68,   1,  69,   1,  70,   1,  71,   8, /* 136 - 143 */
-         72,   1,  73,  49,  74,   1,  75,   1, /* 144 - 151 */
-         76,  17,   1,  31,  78,   1,  79,  53, /* 152 - 159 */
-         80,   1,  81,   1,  82,  33,   1,   2, /* 160 - 167 */
-         84,   1,  85,  19,  86,   8,  87,  35, /* 168 - 175 */
-         88,   1,  89,   1,  90,   1,  91,  61, /* 176 - 183 */
-         92,  37,  93,  17,  94,  21,  95,   1, /* 184 - 191 */
-         96,   1,  97,  65,  98,   1,  99,   1, /* 192 - 199 */
-        100,  67, 101,   8, 102,  41, 103,  69, /* 200 - 207 */
-        104,   1, 105,  16, 106,  71, 107,   1, /* 208 - 215 */
-        108,   1, 109,  73, 110,  17, 111,   1, /* 216 - 223 */
-        112,  45, 113,  32, 114,   1, 115,  33, /* 224 - 231 */
-        116,   1, 117,   1, 118,   1, 119,   1, /* 232 - 239 */
-        120,   1, 121,  81, 122,  49, 123,  19, /* 240 - 247 */
-        124,   1, 125,   1, 126,   1, 127,  85  /* 248 - 255 */
+          0,   1,   1,   1,   2,   1,   2,   1, /*   0 -   7 */
+        130,   1,   2,   1, 130,   1,   2, 131, /*   8 -  15 */
+        130,   1,   2,   1, 130,   1,   2,   1, /*  16 -  23 */
+        130, 133,   2, 131, 130,   1, 130,   1, /*  24 -  31 */
+        130,   1,   2,   1, 130,   1,   2, 131, /*  32 -  39 */
+        130,   1,   2,   1, 130, 133,   2,   2, /*  40 -  47 */
+        130,   1, 130, 131, 130,   1, 130,   1, /*  48 -  55 */
+        130, 131,   2,   1, 130,   1,   2, 131, /*  56 -  63 */
+        130,   1,   2,   1, 130,   1,   2,   1, /*  64 -  71 */
+        130,   1,   2, 131, 130,   1, 130,   1, /*  72 -  79 */
+        130, 137,   2,   1, 130, 133,   2, 131, /*  80 -  87 */
+        130,   1, 130,   1,   2, 131, 130, 133, /*  88 -  95 */
+        130,   1,   2, 131, 130,   1, 130,   1, /*  96 - 103 */
+        130, 131,   2,   1, 130,   1,   2, 131, /* 104 - 111 */
+        130,   1, 130,   1, 130, 137,   2, 135, /* 112 - 119 */
+        130,   1,   2, 131, 130, 133, 130,   1, /* 120 - 127 */
+        130,   1,   2,   1, 130,   1,   2, 131, /* 128 - 135 */
+        130,   1,   2,   1, 130,   1,   2, 139, /* 136 - 143 */
+        130,   1,   2, 131, 130,   1, 130,   1, /* 144 - 151 */
+        130, 137,   2, 133, 130,   1,   2, 131, /* 152 - 159 */
+        130,   1, 130,   1, 130, 133,   2,   2, /* 160 - 167 */
+        130,   1, 130,   1,   2,   1, 130, 133, /* 168 - 175 */
+        130,   1,   2,   1, 130,   1,   2, 131, /* 176 - 183 */
+        130, 133, 130, 139, 130, 137, 130,   1, /* 184 - 191 */
+        130,   1,   2, 131, 130,   1, 130,   1, /* 192 - 199 */
+        130,   1,   2,   1, 130,   1,   2, 131, /* 200 - 207 */
+        130,   1, 130,   1, 130, 131,   2, 133, /* 208 - 215 */
+        130,   1,   2, 131, 130, 141, 130,   1, /* 216 - 223 */
+        130, 133,   2,   1, 130,   1,   5, 135, /* 224 - 231 */
+        130,   1, 130,   1,   2, 131, 130,   1, /* 232 - 239 */
+        130,   1,   2, 131, 130, 133, 130, 141, /* 240 - 247 */
+        130,   1, 130,   1, 130,   1,   2, 131  /* 248 - 255 */
     }; /* as in gcc, but custom-optimized for stack calculation */
 }
 static const int POWI_CACHE_SIZE = 256;
@@ -188,7 +188,19 @@ namespace
 
         long half = 1;
         if(value < POWI_TABLE_SIZE)
+        {
             half = powi_table[value];
+            if(half & 128)
+            {
+                half &= 127;
+
+                FPO(fprintf(stderr, "value=%ld, half=%ld, otherhalf=%ld\n", value,half,value/half));
+
+                PlanNtimesCache(half,      cache, 1, recursioncount+1);
+                cache.Plan_Has(half);
+                return;
+            }
+        }
         else if(value & 1)
             half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
         else
@@ -209,7 +221,6 @@ namespace
             PlanNtimesCache(otherhalf>0?otherhalf:-otherhalf,
                                        cache, 1, recursioncount+1);
         }
-
         cache.Plan_Has(value);
     }
 
@@ -228,11 +239,31 @@ namespace
 
         long half = 1;
         if(value < POWI_TABLE_SIZE)
+        {
             half = powi_table[value];
+            if(half & 128)
+            {
+                half &= 127;
+                FPO(fprintf(stderr, "* I want %ld, my plan is %ld * %ld\n", value, half, value/half));
+                size_t half_pos = AssembleSequence_Subdivide(half, cache, sequencing, synth);
+                if(cache.UseGetNeeded(half) > 0
+                || half_pos != synth.GetStackTop()-1)
+                {
+                    synth.DoDup(half_pos);
+                    cache.Remember(half, synth.GetStackTop()-1);
+                }
+                AssembleSequence(value/half, sequencing, synth);
+                size_t stackpos = synth.GetStackTop()-1;
+                cache.Remember(value, stackpos);
+                cache.DumpContents();
+                return stackpos;
+            }
+        }
         else if(value & 1)
             half = value & ((1 << POWI_WINDOW_SIZE) - 1); // that is, value & 7
         else
             half = value / 2;
+
         long otherhalf = value-half;
         if(half > otherhalf || half<0) std::swap(half,otherhalf);
 
@@ -262,6 +293,7 @@ namespace
                 otherhalf>0 ? sequencing.op_normal_flip : sequencing.op_inverse_flip,
                 synth);
         }
+
         size_t stackpos = synth.GetStackTop()-1;
         cache.Remember(value, stackpos);
         cache.DumpContents();
@@ -407,6 +439,36 @@ namespace
         // Add them together.
         synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
     }
+
+    void LightWeight(
+        long count,
+        const SequenceOpCode& sequencing,
+        ByteCodeSynth& synth)
+    {
+        while(count < 256)
+        {
+            int half = FPoptimizer_ByteCode::powi_table[count];
+            if(half & 128)
+            {
+                half &= 127;
+                LightWeight(half,       sequencing, synth);
+                count /= half;
+            }
+            else break;
+        }
+        if(count == 1) return;
+        if(!(count & 1))
+        {
+            synth.AddOperation(cSqr, 1);
+            LightWeight(count/2, sequencing, synth);
+        }
+        else
+        {
+            synth.DoDup(synth.GetStackTop()-1);
+            LightWeight(count-1, sequencing, synth);
+            synth.AddOperation(cMul, 2);
+        }
+    }
 }
 
 namespace FPoptimizer_ByteCode
@@ -427,7 +489,9 @@ namespace FPoptimizer_ByteCode
                 count = -count;
             }
 
-            if(count > 1)
+            if(false)
+                LightWeight(count,sequencing,synth);
+            else if(count > 1)
             {
                 /* To prevent calculating the same factors over and over again,
                  * we use a cache. */

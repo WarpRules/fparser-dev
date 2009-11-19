@@ -196,6 +196,14 @@ fpoptimizer.cc: \
 VersionChanger: VersionChanger.cc
 	g++ -O3 $^ -s -o $@
 
+fpoptimizer/powi_opt: \
+		fpoptimizer/powi_opt.o \
+		fpoptimizer/fpoptimizer_hash.o \
+		fpoptimizer/fpoptimizer_constantfolding.o \
+		fpoptimizer/fpoptimizer_codetree.o \
+		fpoptimizer/fpoptimizer_rangeestimation.o
+	g++ -O3 $^ -s -o $@
+
 create_testrules_for_optimization_rules: \
 		create_testrules_for_optimization_rules.cc \
 		fpoptimizer/fpoptimizer_grammar_data.o \

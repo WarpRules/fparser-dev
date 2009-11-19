@@ -99,7 +99,7 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
 #endif
 
                     default:
-                        n = Functions[opcode-cAbs].name;
+                        n      = Functions[opcode-cAbs].name;
                         params = Functions[opcode-cAbs].params;
                   }
                   dest << n;
@@ -114,6 +114,8 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
     }
 }
 
+static long min(long a,long b) { return a<b?a:b;}
+
 int main()
 {
     for(long exponent = 2; exponent < 256; ++exponent)
@@ -124,16 +126,24 @@ int main()
         long bestp = -1;
 
         /* x^40 / x^5 (rdiv) cannot be used when x=0 */
-        for(long p=1/*-128*/; p<=exponent/2; ++p)
+        for(long p=min(127,exponent-1); p>=1; --p)
+        for(int signbit=128; signbit>=0; signbit-=128)
         {
             if(!p) continue;
 
-            powi_table[exponent] = p;
+            if(signbit)
+            {
+                if(p==1 || exponent % p != 0) continue;
+            }
 
-            fprintf(stderr, "For %ld, trying %ld... ", exponent, p);
+            if(p+signbit != powi_table[exponent]) continue;
+
+            powi_table[exponent] = p+signbit;
+
+            fprintf(stderr, "For %ld, trying %ld... ", exponent, p+signbit);
 
             ByteCodeSynth synth;
-            synth.PushVar(0);
+            synth.PushVar(VarBegin);
             AssembleSequence(exponent, MulSequence, synth);
 
             std::vector<unsigned> byteCode;
@@ -145,30 +155,36 @@ int main()
             for(size_t a=0; a<byteCode.size(); ++a)
             {
                 if(byteCode[a] == cMul)
-                    res += 5;
+                    res += 7;
                 else if(byteCode[a] == cDiv || byteCode[a] == cRDiv)
-                    res += 5 * 1.25;
+                    res += 11;
                 else if(byteCode[a] == cSqr)
-                    res += 5;
+                    res += 6.5;
                 else if(byteCode[a] == cDup)
                     res += 1;
                 else if(byteCode[a] == cPopNMov)
                     { res += 3.5; a += 2; }
                 else if(byteCode[a] == cFetch)
-                    { res += 2.5; a += 1; }
+                    { res += 2; a += 1; }
             }
 
-            fprintf(stderr, "gets %g", res);
-            if(res <= bestres || bestp == -1)
+            res += stacktop_max*0.3;
+
+            fprintf(stderr, "gets %g, stackmax %u", res, (unsigned)stacktop_max);
+            if(res <= bestres
+            || bestp == -1
+              )
             {
                 fprintf(stderr, " -- beats %g (%ld)\n", bestres, bestp);
-                bestp   = p;
+                bestp   = p+signbit;
                 bestres = res;
             }
-            fprintf(stderr, "\n");
+            else
+                fprintf(stderr, "\n");
             fflush(stderr);
 
-            //PrintByteCode(byteCode, immed, std::cout);
+            PrintByteCode(byteCode, immed, std::cerr);
+            std::cerr << std::endl;
         }
         powi_table[exponent] = bestp;
     }

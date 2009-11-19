@@ -500,6 +500,12 @@ namespace FPoptimizer_CodeTree
                                 long int_sqrt_exponent = (long)with_sqrt_exponent;
                                 if(int_sqrt_exponent < 0)
                                     int_sqrt_exponent = -int_sqrt_exponent;
+                                    
+                                // TODO:
+                                // x^2.125 may be better
+                                //         as x^0.125 * x^2
+                                //    than as (x^17) ^ 0.125
+                                
                                 if(IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count))
                                 {
                                     long sqrt_chain = 1 << sqrt_count;

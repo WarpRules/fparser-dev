@@ -828,15 +828,69 @@ inline void FunctionParser::incStackPtr()
 
 namespace
 {
+    static const unsigned char powi_factor_table[128] =
+    {
+        0,1,0,0,0,0,0,0, 0, 0,0,0,0,0,0,3,/*   0 -  15 */
+        0,0,0,0,0,0,0,0, 0, 5,0,3,0,0,3,0,/*  16 -  31 */
+        0,0,0,0,0,0,0,3, 0, 0,0,0,0,5,0,0,/*  32 -  47 */
+        0,0,5,3,0,0,3,5, 0, 3,0,0,3,0,0,3,/*  48 -  63 */
+        0,0,0,0,0,0,0,0, 0, 0,0,3,0,0,3,0,/*  64 -  79 */
+        0,9,0,0,0,5,0,3, 0, 0,5,7,0,0,0,5,/*  80 -  95 */
+        0,0,0,3,5,0,3,0, 0, 3,0,0,3,0,5,3,/*  96 - 111 */
+        0,0,3,5,0,9,0,7, 3,11,0,3,0,5,3,0,/* 112 - 127 */
+    };
+    inline int get_powi_factor(int abs_int_exponent)
+    {
+        if(abs_int_exponent >= sizeof(powi_factor_table)) return 0;
+        return powi_factor_table[abs_int_exponent];
+    }
+#if 0
+    int EstimatePowiComplexity(int abs_int_exponent)
+    {
+        int cost = 0;
+        while(abs_int_exponent > 1)
+        {
+            int factor = get_powi_factor(abs_int_exponent);
+            if(factor)
+            {
+                cost += EstimatePowiComplexity(factor);
+                abs_int_exponent /= factor;
+                continue;
+            }
+            if(!(abs_int_exponent & 1))
+            {
+                abs_int_exponent /= 2;
+                cost += 3; // sqr
+            }
+            else
+            {
+                cost += 4; // dup+mul
+                abs_int_exponent -= 1;
+            }
+        }
+        return cost;
+    }
+#endif
     bool IsEligibleIntPowiExponent(int int_exponent)
     {
+        if(int_exponent == 0) return false;
         int abs_int_exponent = int_exponent;
+    #if 0
+        int cost = 0;
+
+        if(abs_int_exponent < 0) { cost += 11; abs_int_exponent = -abs_int_exponent; }
+
+        cost += EstimatePowiComplexity(abs_int_exponent);
+
+        return cost < (10*3 + 4*4);
+    #else
         if(abs_int_exponent < 0) abs_int_exponent = -abs_int_exponent;
 
         return (abs_int_exponent >= 1)
             && (abs_int_exponent <= 46 ||
               (abs_int_exponent <= 1024 &&
               (abs_int_exponent & (abs_int_exponent - 1)) == 0));
+    #endif
     }
 
     bool IsLogicalOpcode(unsigned op)
@@ -900,56 +954,34 @@ namespace
 
 }
 
-#ifdef FP_SUPPORT_OPTIMIZER
-namespace FPoptimizer_ByteCode
-{
-    extern signed char powi_table[256];
-}
-#endif
-
 inline void FunctionParser::AddImmedOpcode(double value)
 {
     data->Immed.push_back(value);
     data->ByteCode.push_back(cImmed);
 }
 
-inline void FunctionParser::CompilePowi(int int_exponent)
+inline void FunctionParser::CompilePowi(int abs_int_exponent)
 {
     int num_muls=0;
-    while(int_exponent > 1)
+    while(abs_int_exponent > 1)
     {
-#ifdef FP_SUPPORT_OPTIMIZER
-        if(int_exponent < 256)
+        int factor = get_powi_factor(abs_int_exponent);
+        if(factor)
         {
-            int half = FPoptimizer_ByteCode::powi_table[int_exponent];
-            if(half != 1 && !(int_exponent % half))
-            {
-                CompilePowi(half);
-                int_exponent /= half;
-                continue;
-            }
-            else if(half >= 3)
-            {
-                data->ByteCode.push_back(cDup);
-                incStackPtr();
-                CompilePowi(half);
-                data->ByteCode.push_back(cMul);
-                --StackPtr;
-                int_exponent -= half+1;
-                continue;
-            }
+            CompilePowi(factor);
+            abs_int_exponent /= factor;
+            continue;
         }
-#endif
-        if(!(int_exponent & 1))
+        if(!(abs_int_exponent & 1))
         {
-            int_exponent /= 2;
+            abs_int_exponent /= 2;
             data->ByteCode.push_back(cSqr);
         }
         else
         {
             data->ByteCode.push_back(cDup);
             incStackPtr();
-            int_exponent -= 1;
+            abs_int_exponent -= 1;
             ++num_muls;
         }
     }
@@ -2127,7 +2159,8 @@ namespace
         const std::vector<unsigned>& ByteCode, unsigned& IP,
         unsigned limit,
         size_t factor_stack_base,
-        FactorStack& stack)
+        FactorStack& stack,
+        bool IgnoreExcess)
     {
         double result = 1.0;
         while(IP < limit)
@@ -2198,7 +2231,10 @@ namespace
                 double subexponent = ParsePowiMuli
                     (opcodes,
                      ByteCode, IP, limit,
-                     factor_stack_base, stack);
+                     factor_stack_base, stack,
+                     IgnoreExcess);
+                if(IP >= limit && IgnoreExcess)
+                    return lhs*subexponent;
                 if(IP >= limit || ByteCode[IP] != opcodes.opcode_cumulate)
                 {
                     // It wasn't a powi-dup after all
@@ -2217,22 +2253,26 @@ namespace
 
     double ParsePowiSequence(const std::vector<unsigned>& ByteCode,
                              unsigned& IP, unsigned limit,
-                             size_t factor_stack_base)
+                             size_t factor_stack_base,
+                             bool IgnoreExcess = false)
     {
         FactorStack stack;
         stack.push_back(1.0);
         return ParsePowiMuli(iseq_powi, ByteCode, IP, limit,
-                             factor_stack_base, stack);
+                             factor_stack_base, stack,
+                             IgnoreExcess);
     }
 
     double ParseMuliSequence(const std::vector<unsigned>& ByteCode,
                              unsigned& IP, unsigned limit,
-                             size_t factor_stack_base)
+                             size_t factor_stack_base,
+                             bool IgnoreExcess = false)
     {
         FactorStack stack;
         stack.push_back(1.0);
         return ParsePowiMuli(iseq_muli, ByteCode, IP, limit,
-                             factor_stack_base, stack);
+                             factor_stack_base, stack,
+                             IgnoreExcess);
     }
 
     struct IfInfo
@@ -2310,7 +2350,8 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                                       ? (unsigned)ByteCode.size()
                                       : if_stack.back().endif_location,
                                       stack.size()-1);
-                std::ostringstream operation;
+                std::string        operation_prefix;
+                std::ostringstream operation_value;
                 int prio = 0;
                 if(exponent == 1.0)
                 {
@@ -2322,16 +2363,20 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                                           : if_stack.back().endif_location,
                                           stack.size()-1);
                     if(factor == 1.0 || factor == -1.0) goto not_powi_or_muli;
-                    operation << '*' << factor;
+                    operation_prefix = "*";
+                    operation_value << factor;
                     prio = 3;
                 }
                 else
                 {
                     prio = 2;
-                    operation << '^' << exponent;
+                    operation_prefix = "^";
+                    operation_value << exponent;
                 }
 
-                unsigned explanation_before = changed_ip-2;
+                //unsigned explanation_before = changed_ip-2;
+                unsigned explanation_before = changed_ip-1;
+
                 const char* explanation_prefix = "_";
                 for(const unsigned first_ip = IP; IP < changed_ip; ++IP)
                 {
@@ -2372,16 +2417,38 @@ void FunctionParser::PrintByteCode(std::ostream& dest,
                         explanation_before = (unsigned)ByteCode.size();
                         output << explanation_prefix
                                << '[' << (stack.size()-1) << ']';
-                        std::string& last = stack.back().second;
+                        std::string last = stack.back().second;
                         if(stack.back().first >= prio)
                             last = "(" + last + ")";
-                        last += operation.str();
                         output << last;
-                        stack.back().first = prio;
+                        output << operation_prefix;
+                        output << operation_value.str();
+                    }
+                    else
+                    {
+                        unsigned p = first_ip;
+                        double exp = (operation_prefix=="^"
+                                        ? ParsePowiSequence
+                                        : ParseMuliSequence)
+                            (ByteCode, p, IP+1, stack.size()-1, true);
+                        std::string last = stack.back().second;
+                        if(stack.back().first >= prio)
+                            last = "(" + last + ")";
+                        output << " ..." << last;
+                        output << operation_prefix;
+                        output << exp;
                     }
                     dest << outputBuffer.str() << std::endl;
                     outputBuffer.str("");
                 }
+
+                std::string& last = stack.back().second;
+                if(stack.back().first >= prio)
+                    last = "(" + last + ")";
+                last += operation_prefix;
+                last += operation_value.str();
+                stack.back().first = prio;
+
                 goto after_powi_or_muli;
             }
         not_powi_or_muli:;
