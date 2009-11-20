@@ -1,7 +1,7 @@
 /***************************************************************************\
 |* Function Parser for C++ v3.3.2                                          *|
 |*-------------------------------------------------------------------------*|
-|* Copyright: Juha Nieminen                                                *|
+|* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 \***************************************************************************/
 
 #include "fpconfig.hh"
@@ -33,46 +33,46 @@ using namespace std;
 //=========================================================================
 namespace
 {
-    template<bool IsVar>
-    inline bool addNewNameData
-        (std::map<NamePtr, NameData>& namePtrs,
-         std::pair<NamePtr,NameData>& newPair)
+    inline bool addNewNameData(std::map<NamePtr, NameData>& namePtrs,
+                               std::pair<NamePtr, NameData>& newName,
+                               bool isVar)
     {
-        const FuncDefinition* funcDef = findFunction(newPair.first);
+        const FuncDefinition* funcDef = findFunction(newName.first);
         if(funcDef && funcDef->enabled())
             return false;
 
         std::map<NamePtr, NameData>::iterator nameIter =
-            namePtrs.lower_bound(newPair.first);
+            namePtrs.lower_bound(newName.first);
 
-        if(nameIter != namePtrs.end() && newPair.first == nameIter->first)
+        if(nameIter != namePtrs.end() && newName.first == nameIter->first)
         {
             // redefining a var is not allowed.
-            if(IsVar)
+            if(isVar)
                 return false;
 
             // redefining other tokens is allowed, if the type stays the same.
-            if(nameIter->second.type != newPair.second.type)
+            if(nameIter->second.type != newName.second.type)
                 return false;
 
             // update the data
-            nameIter->second = newPair.second;
+            nameIter->second = newName.second;
             return true;
         }
 
-        if(!IsVar)
+        if(!isVar)
         {
             // Allocate a copy of the name (pointer stored in the map key)
             // However, for VARIABLEs, the pointer points to VariableString,
             // which is managed separately. Thusly, only done when !IsVar.
-            char* namebuf = new char[ newPair.first.nameLength ];
-            memcpy(namebuf, newPair.first.name, newPair.first.nameLength);
-            newPair.first.name = namebuf;
+            char* namebuf = new char[newName.first.nameLength];
+            memcpy(namebuf, newName.first.name, newName.first.nameLength);
+            newName.first.name = namebuf;
         }
 
-        namePtrs.insert(nameIter, newPair);
+        namePtrs.insert(nameIter, newName);
         return true;
     }
+
     unsigned readIdentifier(const char* ptr)
     {
         unsigned n_eaten = 0;
@@ -193,7 +193,7 @@ namespace
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        size_t name_length = readIdentifier(name.c_str());
+        const size_t name_length = readIdentifier(name.c_str());
         return name_length == name.size();
     }
 
@@ -243,6 +243,12 @@ namespace
 //=========================================================================
 // Data struct implementation
 //=========================================================================
+FunctionParser::Data::Data():
+    referenceCounter(1),
+    numVariables(0),
+    StackSize(0)
+{}
+
 FunctionParser::Data::Data(const Data& rhs):
     referenceCounter(0),
     numVariables(rhs.numVariables),
@@ -257,8 +263,7 @@ FunctionParser::Data::Data(const Data& rhs):
 {
     Stack.resize(rhs.Stack.size());
 
-    for(std::map<NamePtr,NameData>::const_iterator
-        i = rhs.namePtrs.begin();
+    for(std::map<NamePtr, NameData>::const_iterator i = rhs.namePtrs.begin();
         i != rhs.namePtrs.end();
         ++i)
     {
@@ -266,18 +271,19 @@ FunctionParser::Data::Data(const Data& rhs):
         {
             const size_t variableStringOffset =
                 i->first.name - rhs.variablesString.c_str();
-            std::pair<NamePtr,NameData> tmp
-                ( NamePtr(&variablesString[ variableStringOffset ],
-                          i->first.nameLength),
-                  i->second );
+            std::pair<NamePtr, NameData> tmp
+                (NamePtr(&variablesString[variableStringOffset],
+                         i->first.nameLength),
+                 i->second );
             namePtrs.insert(namePtrs.end(), tmp);
         }
         else
         {
-            std::pair<NamePtr,NameData> tmp
-                ( NamePtr(new char[i->first.nameLength], i->first.nameLength),
-                  i->second );
-            memcpy(const_cast<char*>(tmp.first.name), i->first.name, tmp.first.nameLength);
+            std::pair<NamePtr, NameData> tmp
+                (NamePtr(new char[i->first.nameLength], i->first.nameLength),
+                 i->second );
+            memcpy(const_cast<char*>(tmp.first.name), i->first.name,
+                   tmp.first.nameLength);
             namePtrs.insert(namePtrs.end(), tmp);
         }
     }
@@ -285,8 +291,7 @@ FunctionParser::Data::Data(const Data& rhs):
 
 FunctionParser::Data::~Data()
 {
-    for(std::map<NamePtr,NameData>::iterator
-        i = namePtrs.begin();
+    for(std::map<NamePtr,NameData>::iterator i = namePtrs.begin();
         i != namePtrs.end();
         ++i)
     {
@@ -424,11 +429,11 @@ bool FunctionParser::AddConstant(const std::string& name, double value)
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr,NameData> newPair
+    std::pair<NamePtr,NameData> newName
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::CONSTANT, value) );
 
-    return addNewNameData<false>(data->namePtrs, newPair);
+    return addNewNameData(data->namePtrs, newName, false);
 }
 
 bool FunctionParser::AddUnit(const std::string& name, double value)
@@ -436,10 +441,10 @@ bool FunctionParser::AddUnit(const std::string& name, double value)
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr,NameData> newPair
+    std::pair<NamePtr,NameData> newName
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::UNIT, value) );
-    return addNewNameData<false>(data->namePtrs, newPair);
+    return addNewNameData(data->namePtrs, newName, false);
 }
 
 bool FunctionParser::AddFunction(const std::string& name,
@@ -448,11 +453,11 @@ bool FunctionParser::AddFunction(const std::string& name,
     if(!containsOnlyValidNameChars(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr,NameData> newPair
+    std::pair<NamePtr,NameData> newName
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::FUNC_PTR, unsigned(data->FuncPtrs.size())) );
 
-    const bool success = addNewNameData<false>(data->namePtrs, newPair);
+    const bool success = addNewNameData(data->namePtrs, newName, false);
     if(success)
     {
         data->FuncPtrs.push_back(Data::FuncPtrData());
@@ -477,11 +482,11 @@ bool FunctionParser::AddFunction(const std::string& name, FunctionParser& fp)
         return false;
 
     CopyOnWrite();
-    std::pair<NamePtr,NameData> newPair
+    std::pair<NamePtr,NameData> newName
         ( NamePtr(name.data(), unsigned(name.size())),
           NameData(NameData::PARSER_PTR, unsigned(data->FuncParsers.size())) );
 
-    const bool success = addNewNameData<false>(data->namePtrs, newPair);
+    const bool success = addNewNameData(data->namePtrs, newName, false);
     if(success)
     {
         data->FuncParsers.push_back(Data::FuncPtrData());
@@ -701,16 +706,16 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
     if(data->variablesString == inputVarString) return true;
 
     /* Delete existing variables from namePtrs */
-    for(std::map<NamePtr,NameData>::iterator
-        i = data->namePtrs.begin();
-        i != data->namePtrs.end();
-        )
+    for(std::map<NamePtr,NameData>::iterator i = data->namePtrs.begin();
+        i != data->namePtrs.end(); )
     {
         if(i->second.type == NameData::VARIABLE)
-            { std::map<NamePtr,NameData>::iterator j (i); ++i;
-              data->namePtrs.erase(j); }
-        else
+        {
+            std::map<NamePtr,NameData>::iterator j (i);
             ++i;
+            data->namePtrs.erase(j);
+        }
+        else ++i;
     }
     data->variablesString = inputVarString;
 
@@ -731,13 +736,11 @@ bool FunctionParser::ParseVariables(const std::string& inputVarString)
         SkipSpace(endPtr);
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        NamePtr namePtr(beginPtr, nameLength);
+        std::pair<NamePtr,NameData> newName
+            (NamePtr(beginPtr, nameLength),
+             NameData(NameData::VARIABLE, varNumber++));
 
-        std::pair<NamePtr,NameData> newPair(
-            namePtr,
-            NameData(NameData::VARIABLE, varNumber++) );
-
-        if(!addNewNameData<true>(data->namePtrs, newPair))
+        if(!addNewNameData(data->namePtrs, newName, true))
         {
             return false;
         }
@@ -841,7 +844,7 @@ namespace
     };
     inline int get_powi_factor(int abs_int_exponent)
     {
-        if(abs_int_exponent >= sizeof(powi_factor_table)) return 0;
+        if(abs_int_exponent >= int(sizeof(powi_factor_table))) return 0;
         return powi_factor_table[abs_int_exponent];
     }
 #if 0

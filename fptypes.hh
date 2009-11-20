@@ -1,7 +1,7 @@
 /***************************************************************************\
 |* Function Parser for C++ v3.3.2                                          *|
 |*-------------------------------------------------------------------------*|
-|* Copyright: Juha Nieminen                                                *|
+|* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 \***************************************************************************/
 
 // NOTE:
@@ -174,7 +174,7 @@ namespace FUNCTIONPARSERTYPES
     struct NameData
     {
         enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR, VARIABLE };
-        DataType    type;
+        DataType type;
         union
         {
             unsigned index;
@@ -424,14 +424,7 @@ struct FunctionParser::Data
     std::vector<double> Stack;
     unsigned StackSize;
 
-    Data(): referenceCounter(1),
-            numVariables(0),
-            variablesString(),
-            namePtrs(),
-            FuncPtrs(),
-            FuncParsers(),
-            ByteCode(),
-            Immed(), Stack(), StackSize(0) {}
+    Data();
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
