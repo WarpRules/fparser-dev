@@ -126,21 +126,37 @@ int main()
         long bestp = -1;
 
         /* x^40 / x^5 (rdiv) cannot be used when x=0 */
-        for(long p=min(127,exponent-1); p>=1; --p)
-        for(int signbit=128; signbit>=0; signbit-=128)
+        for(long p=1; p<256; ++p)
         {
-            if(!p) continue;
-
-            if(signbit)
+            long factor = p&127;
+            if(factor & 64)
             {
-                if(p==1 || exponent % p != 0) continue;
+                factor = -(factor&63) - 1;
+                continue;
+            }
+            if(p & 128)
+            {
+                if(factor == 0) continue;
+                if(factor==1 || exponent % factor != 0) continue;
+                if(factor >= exponent) continue;
+            }
+            else
+            {
+                if(factor >= exponent) continue;
+                if(factor < 0
+                && ((  (-factor&(-factor-1)))
+                || -factor <= exponent)
+                  ) continue;
             }
 
-            if(p+signbit != powi_table[exponent]) continue;
+            //if(p != powi_table[exponent]) continue;
 
-            powi_table[exponent] = p+signbit;
+            powi_table[exponent] = p;
 
-            fprintf(stderr, "For %ld, trying %ld... ", exponent, p+signbit);
+            fprintf(stderr, "For %ld, trying %ld (%ld%s)... ",
+                exponent,
+                p, factor,
+                (p&128) ? ", factor": "");
 
             ByteCodeSynth synth;
             synth.PushVar(VarBegin);
@@ -163,20 +179,20 @@ int main()
                 else if(byteCode[a] == cDup)
                     res += 1;
                 else if(byteCode[a] == cPopNMov)
-                    { res += 3.5; a += 2; }
+                    { res += 5; a += 2; }
                 else if(byteCode[a] == cFetch)
-                    { res += 2; a += 1; }
+                    { res += 3.5; a += 1; }
             }
 
             res += stacktop_max*0.3;
 
             fprintf(stderr, "gets %g, stackmax %u", res, (unsigned)stacktop_max);
-            if(res <= bestres
+            if(res < bestres
             || bestp == -1
               )
             {
                 fprintf(stderr, " -- beats %g (%ld)\n", bestres, bestp);
-                bestp   = p+signbit;
+                bestp   = p;
                 bestres = res;
             }
             else

@@ -53,25 +53,21 @@ namespace FPoptimizer_Grammar
         o << "\n";
         if(!std::strcmp(whydump,"Found match")) DumpHashes(tree, o);
 
-        for(std::map<unsigned, CodeTree>::const_iterator
-            i = info.paramholder_matches.begin();
-            i != info.paramholder_matches.end();
-            ++i)
+        for(size_t a=0; a<info.paramholder_matches.size(); ++a)
         {
-            o << "           " << ParamHolderNames[i->first] << " = ";
-            DumpTree(i->second, o);
+            if(!info.paramholder_matches[a].IsDefined()) continue;
+            o << "           " << ParamHolderNames[a] << " = ";
+            DumpTree(info.paramholder_matches[a], o);
             o << "\n";
         }
 
-        for(std::map<unsigned, std::vector<CodeTree> >::const_iterator
-            i = info.restholder_matches.begin();
-            i != info.restholder_matches.end();
-            ++i)
+        for(size_t b=0; b<info.restholder_matches.size(); ++b)
         {
-            for(size_t a=0; a<i->second.size(); ++a)
+            if(!info.restholder_matches[b].first) continue;
+            for(size_t a=0; a<info.restholder_matches[b].second.size(); ++a)
             {
-                o << "         <" << i->first << "> = ";
-                DumpTree(i->second[a], o);
+                o << "         <" << b << "> = ";
+                DumpTree(info.restholder_matches[b].second[a], o);
                 o << std::endl;
             }
         }
