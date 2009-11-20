@@ -12,6 +12,14 @@
 // You don't need to include this file in your source files, just
 // include "fparser.hh".
 
+
+/* Uncomment any of these lines, or define them in your compiler settings
+   to enable the correspondent version of the parser.
+*/
+//#define FP_SUPPORT_FLOAT_TYPE
+//#define FP_SUPPORT_LONG_DOUBLE_TYPE
+
+
 /*
  Note that these do not change what FunctionParser supports, they only
  change how the function is evaluated, potentially making it faster when

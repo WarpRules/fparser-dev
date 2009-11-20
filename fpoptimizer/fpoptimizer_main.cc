@@ -10,7 +10,8 @@ using namespace FUNCTIONPARSERTYPES;
 #ifdef FP_SUPPORT_OPTIMIZER
 using namespace FPoptimizer_CodeTree;
 
-void FunctionParser::Optimize()
+template<>
+void FunctionParserBase<double>::Optimize()
 {
     CopyOnWrite();
 
@@ -42,5 +43,7 @@ void FunctionParser::Optimize()
 
     //PrintByteCode(std::cout);
 }
+
+FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif

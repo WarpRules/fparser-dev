@@ -659,7 +659,7 @@ namespace
                             if(declared.find(n.opcode.name) == declared.end())
                             {
                                 declared.insert(n.opcode.name);
-                                declarations << Indent(2) << "double " << n.opcode.name << ";\n";
+                                declarations << Indent(2) << "Value_t " << n.opcode.name << ";\n";
                             }
 
                             code << Indent(indent) << "    " << n.opcode.name << " = " << Iexpr(i_used) << ";\n";
@@ -752,10 +752,11 @@ namespace
         out << kOutputCommentBlock << "\n";
         out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
         out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
-        out << "inline void FunctionParser::AddFunctionOpcode(unsigned opcode)\n"
+        out << "template<typename Value_t>\n"
+               "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
                "{\n";
         out <<  "  unsigned* ByteCodePtr;\n"
-                "  double*   ImmedPtr;\n"
+                "  Value_t*   ImmedPtr;\n"
                 "#ifdef _GLIBCXX_DEBUG\n"
                 "  /* Shut up glibc warnings */\n"
                 "  #define FP_ReDefinePointers() \\\n"

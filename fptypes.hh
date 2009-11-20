@@ -13,10 +13,7 @@
 #define ONCE_FPARSER_TYPES_H_
 
 #include "fpconfig.hh"
-#include <cmath>
-#ifdef ONCE_FPARSER_H_
-# include <cstring> /* for memcmp */
-#endif
+#include <cstring>
 
 namespace FUNCTIONPARSERTYPES
 {
@@ -171,6 +168,7 @@ namespace FUNCTIONPARSERTYPES
         }
     };
 
+    template<typename Value_t>
     struct NameData
     {
         enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR, VARIABLE };
@@ -178,221 +176,15 @@ namespace FUNCTIONPARSERTYPES
         union
         {
             unsigned index;
-            double value;
+            Value_t value;
         };
 
         NameData(DataType t, unsigned v) : type(t), index(v) { }
-        NameData(DataType t, double v) : type(t), value(v) { }
+        NameData(DataType t, Value_t v) : type(t), value(v) { }
         NameData() { }
     };
 
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
-
-    /* This function generated with make_function_name_parser.cc */
-    inline const FuncDefinition* findFunction(const NamePtr& functionName)
-    {
-        switch(functionName.nameLength)
-        {
-             case 2:
-    /* prefix  */if('i' == functionName.name[0]
-    && 'f' == functionName.name[1]) return Functions+cIf;/*if*/
-    return 0;
-             case 3:
-    /* prefix  */switch(functionName.name[0]) {
-    case 'a':
-    /* prefix a */if('b' == functionName.name[1]
-    && 's' == functionName.name[2]) return Functions+cAbs;/*abs*/
-    return 0;
-    case 'c':
-    /* prefix c */switch(functionName.name[1]) {
-    case 'o':
-    /* prefix co */switch(functionName.name[2]) {
-    case 's':
-    /* prefix cos */return Functions+cCos;/*cos*/
-    case 't':
-    /* prefix cot */return Functions+cCot;/*cot*/
-    default: return 0; }case 's':
-    /* prefix cs */if('c' == functionName.name[2]) return Functions+cCsc;/*csc*/
-    return 0;
-    default: return 0; }case 'e':
-    /* prefix e */if('x' == functionName.name[1]
-    && 'p' == functionName.name[2]) return Functions+cExp;/*exp*/
-    return 0;
-    case 'i':
-    /* prefix i */if('n' == functionName.name[1]
-    && 't' == functionName.name[2]) return Functions+cInt;/*int*/
-    return 0;
-    case 'l':
-    /* prefix l */if('o' == functionName.name[1]
-    && 'g' == functionName.name[2]) return Functions+cLog;/*log*/
-    return 0;
-    case 'm':
-    /* prefix m */switch(functionName.name[1]) {
-    case 'a':
-    /* prefix ma */if('x' == functionName.name[2]) return Functions+cMax;/*max*/
-    return 0;
-    case 'i':
-    /* prefix mi */if('n' == functionName.name[2]) return Functions+cMin;/*min*/
-    return 0;
-    default: return 0; }case 'p':
-    /* prefix p */if('o' == functionName.name[1]
-    && 'w' == functionName.name[2]) return Functions+cPow;/*pow*/
-    return 0;
-    case 's':
-    /* prefix s */switch(functionName.name[1]) {
-    case 'e':
-    /* prefix se */if('c' == functionName.name[2]) return Functions+cSec;/*sec*/
-    return 0;
-    case 'i':
-    /* prefix si */if('n' == functionName.name[2]) return Functions+cSin;/*sin*/
-    return 0;
-    default: return 0; }case 't':
-    /* prefix t */if('a' == functionName.name[1]
-    && 'n' == functionName.name[2]) return Functions+cTan;/*tan*/
-    return 0;
-    default: return 0; }
-             case 4:
-    /* prefix  */switch(functionName.name[0]) {
-    case 'a':
-    /* prefix a */switch(functionName.name[1]) {
-    case 'c':
-    /* prefix ac */if('o' == functionName.name[2]
-    && 's' == functionName.name[3]) return Functions+cAcos;/*acos*/
-    return 0;
-    case 's':
-    /* prefix as */if('i' == functionName.name[2]
-    && 'n' == functionName.name[3]) return Functions+cAsin;/*asin*/
-    return 0;
-    case 't':
-    /* prefix at */if('a' == functionName.name[2]
-    && 'n' == functionName.name[3]) return Functions+cAtan;/*atan*/
-    return 0;
-    default: return 0; }case 'c':
-    /* prefix c */switch(functionName.name[1]) {
-    case 'e':
-    /* prefix ce */if('i' == functionName.name[2]
-    && 'l' == functionName.name[3]) return Functions+cCeil;/*ceil*/
-    return 0;
-    case 'o':
-    /* prefix co */if('s' == functionName.name[2]
-    && 'h' == functionName.name[3]) return Functions+cCosh;/*cosh*/
-    return 0;
-    default: return 0; }case 'e':
-    /* prefix e */switch(functionName.name[1]) {
-    case 'v':
-    /* prefix ev */if('a' == functionName.name[2]
-    && 'l' == functionName.name[3]) return Functions+cEval;/*eval*/
-    return 0;
-    case 'x':
-    /* prefix ex */if('p' == functionName.name[2]
-    && '2' == functionName.name[3]) return Functions+cExp2;/*exp2*/
-    return 0;
-    default: return 0; }case 'l':
-    /* prefix l */{static const char tmp[3] = {'o','g','2'};
-    if(std::memcmp(functionName.name+1, tmp, 3) == 0) return Functions+cLog2;/*log2*/
-    return 0; }
-    case 's':
-    /* prefix s */switch(functionName.name[1]) {
-    case 'i':
-    /* prefix si */if('n' == functionName.name[2]
-    && 'h' == functionName.name[3]) return Functions+cSinh;/*sinh*/
-    return 0;
-    case 'q':
-    /* prefix sq */if('r' == functionName.name[2]
-    && 't' == functionName.name[3]) return Functions+cSqrt;/*sqrt*/
-    return 0;
-    default: return 0; }case 't':
-    /* prefix t */{static const char tmp[3] = {'a','n','h'};
-    if(std::memcmp(functionName.name+1, tmp, 3) == 0) return Functions+cTanh;/*tanh*/
-    return 0; }
-    default: return 0; }
-             case 5:
-    /* prefix  */switch(functionName.name[0]) {
-    case 'a':
-    /* prefix a */switch(functionName.name[1]) {
-    case 'c':
-    /* prefix ac */{static const char tmp[3] = {'o','s','h'};
-    if(std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cAcosh;/*acosh*/
-    return 0; }
-    case 's':
-    /* prefix as */{static const char tmp[3] = {'i','n','h'};
-    if(std::memcmp(functionName.name+2, tmp, 3) == 0) return Functions+cAsinh;/*asinh*/
-    return 0; }
-    case 't':
-    /* prefix at */if('a' == functionName.name[2]) {
-    /* prefix ata */if('n' == functionName.name[3]) {
-    /* prefix atan */switch(functionName.name[4]) {
-    case '2':
-    /* prefix atan2 */return Functions+cAtan2;/*atan2*/
-    case 'h':
-    /* prefix atanh */return Functions+cAtanh;/*atanh*/
-    default: return 0; }}return 0;}return 0;default: return 0; }case 'f':
-    /* prefix f */{static const char tmp[4] = {'l','o','o','r'};
-    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cFloor;/*floor*/
-    return 0; }
-    case 'l':
-    /* prefix l */{static const char tmp[4] = {'o','g','1','0'};
-    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cLog10;/*log10*/
-    return 0; }
-    case 't':
-    /* prefix t */{static const char tmp[4] = {'r','u','n','c'};
-    if(std::memcmp(functionName.name+1, tmp, 4) == 0) return Functions+cTrunc;/*trunc*/
-    return 0; }
-    default: return 0; }
-            default: break;
-        }
-        return 0;
-    }
-
-#ifndef FP_SUPPORT_ASINH
-    inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
-    inline double fp_acosh(double x) { return log(x + sqrt(x*x - 1)); }
-    inline double fp_atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
-#else
-    inline double fp_asinh(double x) { return asinh(x); }
-    inline double fp_acosh(double x) { return acosh(x); }
-    inline double fp_atanh(double x) { return atanh(x); }
-#endif // FP_SUPPORT_ASINH
-
-    inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
-    inline double fp_int(double x) { return floor(x + .5); }
-
-    /* fp_pow() is a wrapper for std::pow()
-     * that produces an identical value for
-     * exp(1) ^ 2.0  (0x4000000000000000)
-     * as exp(2.0)   (0x4000000000000000)
-     * - std::pow() on x86_64
-     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
-     */
-    inline double fp_pow(double x,double y)
-    {
-        //if(x == 1.0) return 1.0;
-        if(x > 0) return std::exp(std::log(x) * y);
-        if(y == 0.0) return 1.0;
-        if(y < 0) return 1.0 / fp_pow(x, -y);
-        return std::pow(x, y);
-    }
-
-#ifndef FP_SUPPORT_LOG2
-    inline double fp_log2(double x) { return log(x) * 1.4426950408889634074; }
-#else
-    inline double fp_log2(double x) { return log2(x); }
-#endif // FP_SUPPORT_LOG2
-    inline double fp_log10(double x) { return log(x) * 0.43429448190325176116; }
-    //inline double fp_log10(double x) { return log10(x); }
-    inline double fp_exp2(double x) { return fp_pow(2.0, x); }
-
-#ifdef FP_EPSILON
-    inline bool FloatEqual(double a, double b)
-    { return fabs(a - b) <= FP_EPSILON; }
-#else
-    inline bool FloatEqual(double a, double b)
-    { return a == b; }
-#endif // FP_EPSILON
-
-    inline bool IsIntegerConst(double a)
-    { return FloatEqual(a, (double)(long)a); }
-
 #endif // ONCE_FPARSER_H_
 }
 
@@ -401,18 +193,23 @@ namespace FUNCTIONPARSERTYPES
 #include <set>
 #include <vector>
 
-struct FunctionParser::Data
+template<typename Value_t>
+struct FunctionParserBase<Value_t>::Data
 {
     unsigned referenceCounter;
 
     unsigned numVariables;
     std::string variablesString;
     std::map<FUNCTIONPARSERTYPES::NamePtr,
-             FUNCTIONPARSERTYPES::NameData> namePtrs;
+             FUNCTIONPARSERTYPES::NameData<Value_t> > namePtrs;
 
     struct FuncPtrData
     {
-        union { FunctionPtr funcPtr; FunctionParser* parserPtr; };
+        union
+        {
+            FunctionPtr funcPtr;
+            FunctionParserBase<Value_t>* parserPtr;
+        };
         unsigned params;
     };
 
@@ -420,18 +217,17 @@ struct FunctionParser::Data
     std::vector<FuncPtrData> FuncParsers;
 
     std::vector<unsigned> ByteCode;
-    std::vector<double> Immed;
-    std::vector<double> Stack;
+    std::vector<Value_t> Immed;
+    std::vector<Value_t> Stack;
     unsigned StackSize;
 
     Data();
     Data(const Data&);
     Data& operator=(const Data&); // not implemented on purpose
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-    Data(Data&&); // not implemented on purpose
-#endif
     ~Data();
 };
 #endif
+
+#include "fpaux.hh"
 
 #endif

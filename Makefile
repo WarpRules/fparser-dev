@@ -21,6 +21,8 @@ FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 #FEATURE_FLAGS += -DFP_NO_EVALUATION_CHECKS
 #FEATURE_FLAGS += -D_GLIBCXX_DEBUG
 #FEATURE_FLAGS += -DFP_DISABLE_SHORTCUT_LOGICAL_EVALUATION
+FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -51,7 +53,7 @@ CXXFLAGS += -std=c++0x
 
 CPPFLAGS += -I"`pwd`"
 
-all: testbed speedtest example functioninfo
+all: testbed speedtest functioninfo example example2
 
 FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_grammar_data.o \
@@ -72,8 +74,9 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_debug.o \
 		fpoptimizer/fpoptimizer_hash.o
 
-RELEASE_PACK_FILES = example.cc fparser.cc fparser.hh fpoptimizer.cc \
-	fpconfig.hh fptypes.hh fp_opcode_add.inc fparser.html style.css
+RELEASE_PACK_FILES = example.cc example2.cc fparser.cc fparser.hh \
+	fpoptimizer.cc fpconfig.hh fptypes.hh fp_opcode_add.inc \
+	fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^
@@ -90,6 +93,9 @@ speedtest_release: speedtest.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^
 
 example: example.o $(FP_MODULES)
+	$(LD) -o $@ $^
+
+example2: example2.o $(FP_MODULES)
 	$(LD) -o $@ $^
 
 ftest: ftest.o $(FP_MODULES)
@@ -179,13 +185,13 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_optimize_match.cc \
 	    fpoptimizer/fpoptimizer_optimize_synth.cc \
 	    fpoptimizer/fpoptimizer_optimize_debug.cc \
-	    fpoptimizer/fpoptimizer_main.cc \
 	    fpoptimizer/fpoptimizer_hash.cc \
 	    fpoptimizer/fpoptimizer_makebytecode.cc \
 	    fpoptimizer/fpoptimizer_readbytecode.cc \
 	    fpoptimizer/fpoptimizer_constantfolding.cc \
 	    fpoptimizer/fpoptimizer_rangeestimation.cc \
 	    fpoptimizer/fpoptimizer_transformations.cc \
+	    fpoptimizer/fpoptimizer_main.cc \
 	    fpoptimizer/fpoptimizer_footer.txt \
 	; do \
 		echo "#line 1 \"$$file\""; \
@@ -225,7 +231,7 @@ pack: $(RELEASE_PACK_FILES) set_version_string
 
 devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
-	Makefile example.cc fparser.cc fparser.hh fpconfig.hh \
+	Makefile example.cc example2.cc fparser.cc fparser.hh fpconfig.hh \
 	fptypes.hh fp_opcode_add.inc speedtest.cc testbed.cc \
 	fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc \
@@ -236,7 +242,7 @@ devel_pack: set_version_string
 
 clean:
 	rm -f	testbed testbed_release speedtest speedtest_release \
-		example ftest powi_speedtest \
+		example example2 ftest powi_speedtest \
 		fpoptimizer/grammar_parser \
 		*.o fpoptimizer/*.o .dep \
 		fpoptimizer/grammar_parser.output

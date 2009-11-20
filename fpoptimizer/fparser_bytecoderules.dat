@@ -39,37 +39,37 @@ cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
 cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
 cSqr x cPow -> [x*2.0] cPow
 
-x cAbs	 		-> [fabs(x)]
-x cAcos	 		-> [acos(x)]
+x cAbs	 		-> [fp_abs(x)]
+x cAcos	 		-> [fp_acos(x)]
 x [x>=-1.0&&x<=1.0] cAcosh -> [fp_acosh(x)]
 x [x>=-1.0&&x<=1.0] cAsinh -> [fp_asinh(x)]
-x cAtan	 		-> [atan(x)]
+x cAtan	 		-> [fp_atan(x)]
 x cAtanh 		-> [fp_atanh(x)]
-x cCeil	 		-> [ceil(x)]
-x cCos	 		-> [cos(x)]
-x cCosh	 		-> [cosh(x)]
-x cExp	 		-> [exp(x)]
+x cCeil	 		-> [fp_ceil(x)]
+x cCos	 		-> [fp_cos(x)]
+x cCosh	 		-> [fp_cosh(x)]
+x cExp	 		-> [fp_exp(x)]
 x cExp2	 		-> [fp_exp2(x)]
-x cFloor 		-> [floor(x)]
+x cFloor 		-> [fp_floor(x)]
 x cInt	 		-> [fp_int(x)]
-x [x>=0.0] cLog		-> [log(x)]
+x [x>=0.0] cLog		-> [fp_log(x)]
 x [x>=0.0] cLog10	-> [fp_log10(x)]
 x [x>=0.0] cLog2	-> [fp_log2(x)]
-x cSin	 		-> [sin(x)]
-x cSinh	 		-> [sinh(x)]
-x [x>=0.0] cSqrt	-> [sqrt(x)]
-x cTan	 		-> [tan(x)]
-x cTanh	 		-> [tanh(x)]
-x cTrunc 		-> [trunc(x)]
+x cSin	 		-> [fp_sin(x)]
+x cSinh	 		-> [fp_sinh(x)]
+x [x>=0.0] cSqrt	-> [fp_sqrt(x)]
+x cTan	 		-> [fp_tan(x)]
+x cTanh	 		-> [fp_tanh(x)]
+x cTrunc 		-> [fp_trunc(x)]
 x cDeg	 		-> [RadiansToDegrees(x)]
 x cRad	 		-> [DegreesToRadians(x)]
 x cNeg			-> [-x]
-x [x!=0.0] cInv 	-> [1.0/x]
+x [x!=0.0] cInv 	-> [Value_t(1)/x]
 x [x==1.0] cMul		->
 y x cMul		-> [y*x]
 x [x==1.0] cDiv		->
 y x [x!=0.0] cDiv	-> [y/x]
-y x [x!=0.0] cMod	-> [fmod(y,x)]
+y x [x!=0.0] cMod	-> [fp_mod(y,x)]
 x [x==0.0] cAdd		->
 y x cAdd		-> [y+x]
 x [x==0.0] cSub		->
@@ -78,7 +78,7 @@ y x cSub		-> [y-x]
 #y x cRSub		-> [x-y]
 y x cMin		-> [Min(x,y)]
 y x cMax		-> [Max(x,y)]
-y x cAtan2		-> [atan2(y,x)]
+y x cAtan2		-> [fp_atan2(y,x)]
 y x cPow 		-> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
@@ -93,12 +93,12 @@ cSqr cLog10 -> cAbs cLog10 cDup cAdd
 cDup cAdd cDup cAdd -> [4] cMul
 
 
-y x cLess		-> [y <  (x-EpsilonOrZero)]
-y x cLessOrEq		-> [y <= (x+EpsilonOrZero)]
-y x cGreater		-> [(y-EpsilonOrZero) >  x]
-y x cGreaterOrEq	-> [(y+EpsilonOrZero) >= x]
-y x cEqual		-> [fabs(y-x) <= EpsilonOrZero]
-y x cNEqual		-> [fabs(y-x) >= EpsilonOrZero]
+y x cLess		-> [y <  (x-fp_epsilon<Value_t>())]
+y x cLessOrEq		-> [y <= (x+fp_epsilon<Value_t>())]
+y x cGreater		-> [(y-fp_epsilon<Value_t>()) >  x]
+y x cGreaterOrEq	-> [(y+fp_epsilon<Value_t>()) >= x]
+y x cEqual		-> [fp_abs(y-x) <= fp_epsilon<Value_t>()]
+y x cNEqual		-> [fp_abs(y-x) >= fp_epsilon<Value_t>()]
 y x cAnd		-> [truthValue(x)&&truthValue(y)]
 y x cOr			-> [truthValue(x)||truthValue(y)]
 #y x cAbsAnd		-> [truthValue_abs(x)&&truthValue_abs(y)]
@@ -118,7 +118,7 @@ y cAdd x cSub		-> [y-x] cAdd
 y cMul x cMul		-> [y*x] cMul
 y cMul x [x!=0.0] cDiv 	-> [y*x] cMul
 
-x [x!=0.0] cDiv		-> [1.0/x] cMul
+x [x!=0.0] cDiv		-> [Value_t(1)/x] cMul
 
 #y cExp  x cPow -> [y*x] cExp
 #y cExp2 x cPow -> [y*x] cExp2
@@ -178,14 +178,14 @@ A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A
 cFloor cNeg -> cNeg cCeil
 cCeil  cNeg -> cNeg cFloor
 
-x cAdd cExp  -> cExp  [exp(x)]     cMul
+x cAdd cExp  -> cExp  [fp_exp(x)]     cMul
 x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 
 x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
-cAbs x [x!=0.0] cLess         -> [0.5/x] cMul cNot
-cAbs x [x!=0.0] cGreaterOrEq  -> [0.5/x] cMul cNotNot
+cAbs x [x!=0.0] cLess         -> [Value_t(0.5)/x] cMul cNot
+cAbs x [x!=0.0] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
 A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess        -> A [x] cMul
 
 cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
@@ -204,8 +204,8 @@ x cMul cSinh cNeg -> [-x] cMul cSinh
 x cMul cTan  cNeg -> [-x] cMul cTan
 x cMul cTanh cNeg -> [-x] cMul cTanh
 
-cAcosh cSinh -> cSqr [-1.0] cAdd cSqrt
-cAsinh cCosh -> cSqr  [1.0] cAdd cSqrt
+cAcosh cSinh -> cSqr [Value_t(-1)] cAdd cSqrt
+cAsinh cCosh -> cSqr  [Value_t(1)] cAdd cSqrt
 cSin cInv -> cCsc
 cCos cInv -> cSec
 cTan cInv -> cCot
