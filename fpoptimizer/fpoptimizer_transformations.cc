@@ -7,6 +7,9 @@
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
 
+//#define DEBUG_POWI
+//#define DEBUG_SUBSTITUTIONS_CSE
+
 namespace
 {
     using namespace FPoptimizer_CodeTree;
@@ -130,7 +133,8 @@ namespace
             tree.SetParamMove(0, tmp);
             abs_sqrt_chain /= 2;
         }
-        tree.DelParam(1);
+        if(tree.GetParamCount() >= 2)
+            tree.DelParam(1);
         tree.SetOpcode(sqrt_chain < 0 ? cRSqrt : cSqrt);
     }
 }
@@ -491,7 +495,7 @@ namespace FPoptimizer_CodeTree
                     }
                     if(!p1.IsLongIntegerImmed())
                     {
-                        // x^1.5 is sqrt(x^3)
+                        // x^1.5 is sqrt(x^3) or x*sqrt(x)
                         for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
                         {
                             double with_sqrt_exponent = p1.GetImmed() * (1 << sqrt_count);
@@ -500,24 +504,132 @@ namespace FPoptimizer_CodeTree
                                 long int_sqrt_exponent = (long)with_sqrt_exponent;
                                 if(int_sqrt_exponent < 0)
                                     int_sqrt_exponent = -int_sqrt_exponent;
-                                    
-                                // TODO:
+
                                 // x^2.125 may be better
                                 //         as x^0.125 * x^2
                                 //    than as (x^17) ^ 0.125
-                                
-                                if(IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count))
+
+                                int separate_sqrt_count = 0;
+
+                                if(true//(GetParam(0).GetDepth() <= 1
+                                || !IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count)
+                                  )
+                                {
+                                    separate_sqrt_count = 0;
+                                #ifdef DEBUG_POWI
+                                    printf("orig = %g, int_sqrt_exponent = %ld, sqrt_count=%d\n",
+                                        fabs(p1.GetImmed()),
+                                        int_sqrt_exponent, sqrt_count);
+                                #endif
+                                    /* The limit is set to 1 here, because if
+                                     * we make x^4 * sqrt(x), ConstantFolding
+                                     * will inconveniently revert it back
+                                     * to x^4.5. Oops.
+                                     */
+                                    for(int try_sep=1; try_sep<=4; ++try_sep)
+                                    {
+                                        double offset = fp_pow(0.5, try_sep);
+                                        double changed_int_exponent=0.0;
+                                        int try_sqrt=0;
+                                        while(try_sqrt <= 4)
+                                        {
+                                            changed_int_exponent =
+                                                (fabs(p1.GetImmed()) - offset)
+                                                * (1 << try_sqrt);
+                                #ifdef DEBUG_POWI
+                                            printf("-  (%d,%d) gives %g\n",
+                                                try_sqrt,try_sep, changed_int_exponent);
+                                #endif
+                                            if(IsIntegerConst(changed_int_exponent)
+                                            || (try_sqrt == 0
+                                            && IsIntegerConst(changed_int_exponent*(1 << try_sep))
+                                               )
+                                              )
+                                            {
+                                                if(changed_int_exponent < int_sqrt_exponent)
+                                                {
+                                                    int_sqrt_exponent = (long)changed_int_exponent;
+                                                    while(try_sqrt > 0 && int_sqrt_exponent % 2 == 0)
+                                                        { int_sqrt_exponent /= 2; --try_sqrt; }
+                                #ifdef DEBUG_POWI
+                                                    printf("Try(%d,%d) -> %ld\n", try_sqrt,try_sep, int_sqrt_exponent);
+                                #endif
+                                                    separate_sqrt_count = try_sep;
+                                                    sqrt_count = try_sqrt;
+                                                }
+                                            }
+                                            ++try_sqrt;
+                                        }
+                                    }
+                                }
+
+                                if(IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count+separate_sqrt_count))
                                 {
                                     long sqrt_chain = 1 << sqrt_count;
-                                    if(with_sqrt_exponent < 0) sqrt_chain = -sqrt_chain;
+                                    bool signed_chain = false;
+
+                                    if(with_sqrt_exponent < 0
+                                    && sqrt_count > 0 && separate_sqrt_count==0)
+                                    {
+                                        signed_chain = true;
+                                        sqrt_chain = -sqrt_chain;
+                                    }
+
+                                    CodeTree source_tree = GetParam(0);
 
                                     CodeTree tmp;
-                                    tmp.AddParamMove(GetParam(0));
-                                    tmp.AddParam(CodeTree());
-                                    ChangeIntoSqrtChain(tmp, sqrt_chain);
-                                    tmp.Rehash();
-                                    SetParamMove(0, tmp);
-                                    SetParam(1, CodeTree(p1.GetImmed() * (double)sqrt_chain));
+                                    if(separate_sqrt_count == 0)
+                                        tmp.SetImmed(1.0);
+                                    else
+                                    {
+                                        tmp.AddParam(source_tree);
+                                        ChangeIntoSqrtChain(tmp, 1 << separate_sqrt_count);
+                                        tmp.Rehash();
+                                    }
+
+                                    CodeTree pow_item;
+                                    if(sqrt_count == 0)
+                                        pow_item = source_tree;
+                                    else
+                                    {
+                                        pow_item.AddParam(source_tree);
+                                        ChangeIntoSqrtChain(pow_item, sqrt_chain);
+                                        pow_item.Rehash();
+                                    }
+
+                                    CodeTree pow;
+                                    pow.SetOpcode(cPow);
+                                    pow.AddParamMove(pow_item);
+                                    double e = (fabs(p1.GetImmed()) - (separate_sqrt_count > 0 ? fp_pow(0.5, separate_sqrt_count) : 0))
+                                        * (1 << sqrt_count);
+                                #ifdef DEBUG_POWI
+                                    printf("Will resolve powi %g as powi(chain(%d),%g)*sqrtchain(%d)\n",
+                                        fabs(p1.GetImmed()),
+                                        sqrt_count, e,
+                                        separate_sqrt_count);
+                                #endif
+                                    pow.AddParam(CodeTree(e));
+                                    pow.RecreateInversionsAndNegations(prefer_base2);
+                                    pow.Rehash();
+                                    if(with_sqrt_exponent < 0 && signed_chain)
+                                    {
+                                        CodeTree mul;
+                                        mul.SetOpcode(cMul);
+                                        mul.AddParamMove(pow);
+                                        mul.AddParamMove(tmp);
+                                        SetOpcode(cInv);
+                                        SetParamMove(0, mul);
+                                        DelParam(1);
+                                    }
+                                    else
+                                    {
+                                        SetOpcode(cMul);
+                                        SetParamMove(0, pow);
+                                        SetParamMove(1, tmp);
+                                    }
+                                #ifdef DEBUG_POWI
+                                    DumpTreeWithIndent(*this);
+                                #endif
                                     changed = true;
                                 }
                                 break;
@@ -525,8 +637,9 @@ namespace FPoptimizer_CodeTree
                         }
                     }
                 }
-                if(!p1.IsLongIntegerImmed()
-                || !IsOptimizableUsingPowi(p1.GetLongIntegerImmed()))
+                if(GetOpcode() == cPow
+                && (!p1.IsLongIntegerImmed()
+                 || !IsOptimizableUsingPowi(p1.GetLongIntegerImmed())))
                 {
                     if(p0.IsImmed() && p0.GetImmed() > 0.0)
                     {
@@ -629,6 +742,54 @@ namespace FPoptimizer_CodeTree
         return changed;
     }
 
+    bool ContainsOtherCandidates(
+        const CodeTree& within,
+        const CodeTree& tree,
+        const FPoptimizer_ByteCode::ByteCodeSynth& synth,
+        const TreeCountType& TreeCounts)
+    {
+        for(size_t b=tree.GetParamCount(), a=0; a<b; ++a)
+        {
+            const CodeTree& leaf = tree.GetParam(a);
+
+            TreeCountType::iterator synth_it;
+            for(TreeCountType::const_iterator
+                i = TreeCounts.begin();
+                i != TreeCounts.end();
+                ++i)
+            {
+                if(i->first != leaf.GetHash())
+                    continue;
+
+                size_t          score     = i->second.first;
+                const CodeTree& candidate = i->second.second;
+
+                // It must not yet have been synthesized
+                if(synth.Find(candidate))
+                    continue;
+
+                // And it must not be a simple expression
+                // Because cImmed, cVar are faster than cFetch
+                if(leaf.GetDepth() <= 1)
+                    continue;
+
+                // It must always occur at least twice
+                if(score < 2)
+                    continue;
+
+                // And it must either appear on both sides
+                // of a cIf, or neither
+                if(IfBalanceGood(within, leaf).BalanceGood == false)
+                    continue;
+
+                return true;
+            }
+            if(ContainsOtherCandidates(within, leaf, synth, TreeCounts))
+                return true;
+        }
+        return false;
+    }
+
     size_t CodeTree::SynthCommonSubExpressions(
         FPoptimizer_ByteCode::ByteCodeSynth& synth) const
     {
@@ -637,6 +798,10 @@ namespace FPoptimizer_CodeTree
         /* Find common subtrees */
         TreeCountType TreeCounts;
         FindTreeCounts(TreeCounts, *this);
+
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
+        DumpHashes(*this);
+    #endif
 
         /* Synthesize some of the most common ones */
         for(;;)
@@ -652,6 +817,11 @@ namespace FPoptimizer_CodeTree
 
                 size_t         score = i->second.first;
                 const CodeTree& tree = i->second.second;
+
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
+                std::cout << "Score " << score << ":\n";
+                DumpTreeWithIndent(tree);
+    #endif
 
                 // It must not yet have been synthesized
                 if(synth.Find(tree))
@@ -683,6 +853,13 @@ namespace FPoptimizer_CodeTree
                     continue;
                 }
 
+                // It must not contain other candidates
+                if(ContainsOtherCandidates(*this, tree, synth, TreeCounts))
+                {
+                    // Don't erase it; it may be a proper candidate later
+                    continue;
+                }
+
                 // Is a candidate.
                 score *= tree.GetDepth();
                 if(score > best_score)
@@ -692,12 +869,15 @@ namespace FPoptimizer_CodeTree
             if(best_score <= 0) break; // Didn't find anything.
 
             const CodeTree& tree = synth_it->second.second;
-    #ifdef DEBUG_SUBSTITUTIONS
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
             std::cout << "Found Common Subexpression:"; DumpTree(tree); std::cout << "\n";
     #endif
             /* Synthesize the selected tree */
             tree.SynthesizeByteCode(synth, false);
             TreeCounts.erase(synth_it);
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
+            std::cout << "Done with Common Subexpression:"; DumpTree(tree); std::cout << "\n";
+    #endif
         }
 
         return synth.GetStackTop() - stacktop_before;

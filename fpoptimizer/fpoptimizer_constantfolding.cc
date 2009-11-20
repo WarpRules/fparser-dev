@@ -665,10 +665,12 @@ namespace FPoptimizer_CodeTree
                 value.Become( value.GetParam(0) );
                 return exponent;
             }
+            /* - disabled to avoid clashes with powi
             case cSqrt:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
                 return CodeTree(0.5);
+            */
             case cRSqrt:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
