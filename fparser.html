@@ -78,26 +78,21 @@ Joel Yliluoma
 <a name="preface"></a>
 <h2>Preface</h2>
 
-<p>Often people need to ask some mathematical expression from the user and
-then evaluate values for that expression. The simplest example is a program
-which draws the graphic of a user-defined function on screen.
+<p>This C++ library offers a class which can be used to parse and evaluate a
+mathematical function from a string (which might be eg. requested from the
+user). The syntax of the function string is similar to mathematical expressions
+written in C/C++ (the exact syntax is specified later in this document).
+The function can then be evaluated with different values of variables.
 
-<p>This library adds C-style function string parsing to the program. This
-means that you can evaluate the string <code>"sqrt(1-x^2+y^2)"</code> with
-given values of '<code>x</code>' and '<code>y</code>'.
+<p>For example, a function like "<code>sin(sqrt(x*x+y*y))</code>" can be
+parsed from a string (either <code>std::string</code> or a C-style string)
+and then evaluated with different values of <code>x</code> and <code>y</code>.
+This library can be useful for evaluating user-inputted functions, or in
+some cases interpreting mathematical expressions in a scripting language.
 
-<p>The library is intended to be very fast. It byte-compiles the function
-string at parse time and interpretes this byte-code at evaluation time.
-The evaluation is straightforward and no recursions are done (uses stack
-arithmetic).
-
-<p>Empirical tests show that it indeed is very fast (specially compared to
-libraries which evaluate functions by just interpreting the raw function
-string).
-
-<p>The library is made in ISO C++ and requires a standard-conforming C++
-compiler.
-
+<p>This library aims for maximum speed in both parsing and evaluation, while
+keeping maximum portability. The library should compile and work with any
+standard-conforming C++ compiler.
 
 <a name="usage"></a>
 <h2>Usage</h2>
