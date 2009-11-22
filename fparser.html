@@ -1025,9 +1025,13 @@ Without epsilon this comparison probably returns the wrong value.
   <td><code>atanh(A)</code></td>
   <td>Same as atan() but for hyperbolic tangent.</td>
 </tr><tr>
+  <td><code>cbrt(A)</code></td>
+  <td>Cube root of A. Returns the value whose cube is A.</td>
+</tr><tr>
   <td><code>ceil(A)</code></td>
   <td>Ceiling of A. Returns the smallest integer greater than A.
-      Rounds up to the next higher integer.</td>
+      Rounds up to the next higher integer. E.g. -2.9, -2.5 and -2.1 are
+    rounded to -2.0, and 2.9, 2.5 and 2.1 are rounded to 3.0.</td>
 </tr><tr>
   <td><code>cos(A)</code></td>
   <td>Cosine of A. Returns the cosine of the angle A, where A is
@@ -1055,7 +1059,9 @@ Without epsilon this comparison probably returns the wrong value.
 </tr><tr>
   <td><code>floor(A)</code></td>
   <td>Floor of A. Returns the largest integer less than A. Rounds
-      down to the next lower integer.</td>
+      down to the next lower integer.
+      E.g. -2.9, -2.5 and -2.1 are rounded to -3.0,
+      and 2.9, 2.5 and 2.1 are rounded to 2.0.</td>
 </tr><tr>
   <td><code>if(A,B,C)</code></td>
   <td>If int(A) differs from 0, the return value of this function is B,
@@ -1064,7 +1070,9 @@ Without epsilon this comparison probably returns the wrong value.
       use <code>eval()</code> in them.</td>
 </tr><tr>
   <td><code>int(A)</code></td>
-  <td>Rounds A to the closest integer. 0.5 is rounded to 1.</td>
+  <td>Rounds A to the closest integer. Equidistant values are rounded up.
+    E.g. -2.9 is rounded to -3.0; -2.5 and -2.1 are rounded to -2.0,
+    and 2.9 and 2.5 are rounded to 3.0; 2.1 is rounded to 2.0.</td>
 </tr><tr>
   <td><code>log(A)</code></td>
   <td>Natural (base e) logarithm of A.</td>
@@ -1100,6 +1108,12 @@ Without epsilon this comparison probably returns the wrong value.
 </tr><tr>
   <td><code>tanh(A)</code></td>
   <td>Same as tan() but for hyperbolic tangent.</td>
+</tr><tr>
+  <td><code>trunc(A)</code></td>
+  <td>Truncated value of A. Returns an integer corresponding to the value
+    of A without its fractional part.
+    E.g. -2.9, -2.5 and -2.1 are rounded to -2.0,
+    and 2.9, 2.5 and 2.1 are rounded to 2.0.</td>
 </tr>
 </table>
 

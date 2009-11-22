@@ -937,6 +937,26 @@ bool WhiteSpaceTest()
 //=========================================================================
 // Test integer powers
 //=========================================================================
+bool compareExpValues(double value, double exponent,
+                      double v1, double v2, bool isOptimized)
+{
+    const double scale = pow(10.0, floor(log10(fabs(v1))));
+    const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
+    const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+    const double diff = sv2-sv1;
+    if(std::fabs(diff) > Epsilon)
+    {
+        std::cout << "For x^" << exponent << " with x=" << value
+                  << " the library (";
+        if(!isOptimized) std::cout << "not ";
+        std::cout << "optimized) returned\n"
+                  << std::setprecision(18) << v2
+                  << " instead of " << v1 << std::endl;
+        return false;
+    }
+    return true;
+}
+
 bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
 {
     const int absExponent = exponent < 0 ? -exponent : exponent;
@@ -953,20 +973,37 @@ bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
 
         const double v2 = fp.Eval(&value);
 
-        const double scale = pow(10.0, floor(log10(fabs(v1))));
-        const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
-        const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
-        const double diff = sv2-sv1;
-        if(std::fabs(diff) > Epsilon)
-        {
-            std::cout << "For x^" << exponent << " with x=" << value
-                      << " the library (";
-            if(!isOptimized) std::cout << "not ";
-            std::cout << std::setprecision(18);
-            std::cout << "optimized) returned\n" << v2 << " instead of "
-                      << v1 << std::endl;
+        if(!compareExpValues(value, exponent, v1, v2, isOptimized))
             return false;
+    }
+
+    return true;
+}
+
+bool runFractionalPowTest(const std::string& funcStr, double exponent)
+{
+    FunctionParser fp;
+    if(fp.Parse(funcStr, "x") != -1)
+    {
+        std::cout << "Parsing \"" << funcStr <<"\" failed: "
+                  << fp.ErrorMsg() << "\n";
+        return false;
+    }
+
+    for(int i = 0; i < 3; ++i)
+    {
+        for(int valueOffset = 0; valueOffset <= 10; ++valueOffset)
+        {
+            const double value =
+                (exponent >= 0 && valueOffset == 0) ? 0.0 :
+                1.0+(valueOffset-1)/2.0;
+            const double v1 = std::pow(value, exponent);
+            const double v2 = fp.Eval(&value);
+
+            if(!compareExpValues(value, exponent, v1, v2, i > 0))
+                return false;
         }
+        fp.Optimize();
     }
 
     return true;
@@ -993,6 +1030,30 @@ bool TestIntPow()
         if(!runIntPowTest(fp, exponent, false)) return false;
         fp.Optimize();
         if(!runIntPowTest(fp, exponent, true)) return false;
+    }
+
+    for(int m = 1; m <= 10; ++m)
+    {
+        for(int n = 1; n <= 5; ++n)
+        {
+            std::ostringstream os;
+            os << "x^(" << m << "/2^" << n << ")";
+            double exponent = double(m) / std::pow(2, n);
+            if(!runFractionalPowTest(os.str(), exponent)) return false;
+
+            os.str("");
+            os << "x^(" << m << "/3^" << n << ")";
+            exponent = double(m) / std::pow(3, n);
+            if(!runFractionalPowTest(os.str(), exponent)) return false;
+
+            for(int n2 = 1; n2 <= 5; ++n2)
+            {
+                os.str("");
+                os << "x^(" << m << "/(2^" << n << "*3^" << n2 << "))";
+                exponent = double(m) / (std::pow(2, n)*std::pow(3, n2));
+                if(!runFractionalPowTest(os.str(), exponent)) return false;
+            }
+        }
     }
 
     return true;
