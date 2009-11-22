@@ -10,6 +10,14 @@ using namespace FUNCTIONPARSERTYPES;
 //#define DEBUG_POWI
 //#define DEBUG_SUBSTITUTIONS_CSE
 
+#if defined(__x86_64) || !defined(FP_SUPPORT_CBRT)
+# define CBRT_IS_SLOW
+#endif
+
+namespace FPoptimizer_ByteCode
+{
+    extern const unsigned char powi_table[256];
+}
 namespace
 {
     using namespace FPoptimizer_CodeTree;
@@ -121,22 +129,274 @@ namespace
         return bytecode_grow_amount < size_t(MAX_POWI_BYTECODE_LENGTH - penalty);
     }
 
-    void ChangeIntoSqrtChain(CodeTree& tree, long sqrt_chain)
+    void ChangeIntoRootChain(
+        CodeTree& tree,
+        bool inverted,
+        long sqrt_count,
+        long cbrt_count)
     {
-        long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
-        while(abs_sqrt_chain > 2)
+        while(cbrt_count > 0)
+        {
+            CodeTree tmp;
+            tmp.SetOpcode(cCbrt);
+            tmp.AddParamMove(tree);
+            tmp.Rehash();
+            tree.swap(tmp);
+            --cbrt_count;
+        }
+        while(sqrt_count > 0)
         {
             CodeTree tmp;
             tmp.SetOpcode(cSqrt);
-            tmp.AddParamMove(tree.GetParam(0));
+            if(inverted)
+            {
+                tmp.SetOpcode(cRSqrt);
+                inverted = false;
+            }
+            tmp.AddParamMove(tree);
             tmp.Rehash();
-            tree.SetParamMove(0, tmp);
-            abs_sqrt_chain /= 2;
+            tree.swap(tmp);
+            --sqrt_count;
         }
-        if(tree.GetParamCount() >= 2)
-            tree.DelParam(1);
-        tree.SetOpcode(sqrt_chain < 0 ? cRSqrt : cSqrt);
+        if(inverted)
+        {
+            CodeTree tmp;
+            tmp.SetOpcode(cInv);
+            tmp.AddParamMove(tree);
+            tree.swap(tmp);
+        }
     }
+
+    double CalculatePowiFactorCost(long abs_int_exponent)
+    {
+        static std::map<long, double> cache;
+        std::map<long,double>::iterator i = cache.lower_bound(abs_int_exponent);
+        if(i != cache.end() && i->first == abs_int_exponent)
+            return i->second;
+        std::pair<long, double> result(abs_int_exponent, 0.0);
+        double& cost = result.second;
+
+        while(abs_int_exponent > 1)
+        {
+            int factor = 0;
+            if(abs_int_exponent < 256)
+            {
+                factor = FPoptimizer_ByteCode::powi_table[abs_int_exponent];
+                if(factor & 128) factor &= 127; else factor = 0;
+                if(factor & 64) factor = -(factor&63) - 1;
+            }
+            if(factor)
+            {
+                cost += CalculatePowiFactorCost(factor);
+                abs_int_exponent /= factor;
+                continue;
+            }
+            if(!(abs_int_exponent & 1))
+            {
+                abs_int_exponent /= 2;
+                cost += 3; // sqr
+            }
+            else
+            {
+                cost += 3.5; // dup+mul
+                abs_int_exponent -= 1;
+            }
+        }
+
+        cache.insert(i, result);
+        return cost;
+    }
+
+    struct PowiResolver
+    {
+        /* Any exponentiation can be turned into one of these:
+         *
+         *   x^y  -> sqrt(x)^(y*2)         = x Sqrt       y*2  Pow
+         *   x^y  -> cbrt(x)^(y*3)         = x Cbrt       y*3  Pow
+         *   x^y  -> rsqrt(x)^(y*-2)       = x RSqrt     y*-2  Pow
+         *   x^y  -> x^(y-1/2) * sqrt(x)   = x Sqrt   x y-0.5  Pow Mul
+         *   x^y  -> x^(y-1/3) * cbrt(x)   = x Cbrt   x y-0.33 Pow Mul
+         *   x^y  -> x^(y+1/2) * rsqrt(x)  = x Sqrt   x y+0.5  Pow Mul
+         *   x^y  -> inv(x)^(-y)           = x Inv      -y     Pow
+         *
+         * These rules can be applied recursively.
+         * The goal is to find the optimal chain of operations
+         * that results in the least number of sqrt,cbrt operations;
+         * an integer value of y, and that the integer is as close
+         * to zero as possible.
+         */
+        static const unsigned MaxSep = 4;
+
+        struct PowiResult
+        {
+            PowiResult() :
+                n_int_sqrt(0),
+                n_int_cbrt(0),
+                resulting_exponent(0),
+                sep_list() { }
+
+            int n_int_sqrt;
+            int n_int_cbrt;
+            long resulting_exponent;
+            int sep_list[MaxSep];
+        };
+
+        PowiResult CreatePowiResult(double exponent) const
+        {
+            static const double RootPowers[(1+4)*(1+3)] =
+            {
+                // (sqrt^n(x))
+                1.0,
+                1.0 / (2),
+                1.0 / (2*2),
+                1.0 / (2*2*2),
+                1.0 / (2*2*2*2),
+                // cbrt^1(sqrt^n(x))
+                1.0 / (3),
+                1.0 / (3*2),
+                1.0 / (3*2*2),
+                1.0 / (3*2*2*2),
+                1.0 / (3*2*2*2*2),
+                // cbrt^2(sqrt^n(x))
+                1.0 / (3*3),
+                1.0 / (3*3*2),
+                1.0 / (3*3*2*2),
+                1.0 / (3*3*2*2*2),
+                1.0 / (3*3*2*2*2*2),
+                // cbrt^3(sqrt^n(x))
+                1.0 / (3*3*3),
+                1.0 / (3*3*3*2),
+                1.0 / (3*3*3*2*2),
+                1.0 / (3*3*3*2*2*2),
+                1.0 / (3*3*3*2*2*2*2)
+            };
+
+            PowiResult result;
+
+            int best_factor = FindIntegerFactor(exponent);
+            if(best_factor == 0)
+            {
+        #ifdef DEBUG_POWI
+            printf("no factor found for %g\n", exponent);
+        #endif
+                return result; // Unoptimizable
+            }
+
+            double best_cost = EvaluateFactorCost(best_factor, 0, 0, 0)
+                             + CalculatePowiFactorCost(long(exponent*best_factor));
+            int s_count = 0;
+            int c_count = 0;
+            int mul_count = 0;
+
+        #ifdef DEBUG_POWI
+            printf("orig = %g\n", exponent);
+            printf("plain factor = %d, cost %g\n", best_factor, best_cost);
+        #endif
+
+            for(unsigned n_s=0; n_s<MaxSep; ++n_s)
+            {
+                int best_selected_sep = 0;
+                double best_sep_cost     = best_cost;
+                int best_sep_factor   = best_factor;
+                for(int s=1; s<5*4; ++s)
+                {
+#ifdef CBRT_IS_SLOW
+                    if(s >= 5) break;
+                    // When cbrt is implemented through exp and log,
+                    // there is no advantage over exp(log()), so don't support it.
+#endif
+                    int n_sqrt = s%5;
+                    int n_cbrt = s/5;
+                    if(n_sqrt + n_cbrt > 4) continue;
+
+                    double changed_exponent = exponent;
+                    changed_exponent -= RootPowers[s];
+
+                    int factor = FindIntegerFactor(changed_exponent);
+                    if(factor != 0)
+                    {
+                        double cost = EvaluateFactorCost
+                            (factor, s_count + n_sqrt, c_count + n_cbrt, mul_count + 1)
+                          + CalculatePowiFactorCost(long(changed_exponent*factor));
+
+        #ifdef DEBUG_POWI
+                        printf("%d sqrt %d cbrt factor = %d, cost %g\n",
+                            n_sqrt, n_cbrt, factor, cost);
+        #endif
+                        if(cost < best_sep_cost)
+                        {
+                            best_selected_sep = s;
+                            best_sep_factor   = factor;
+                            best_sep_cost     = cost;
+                        }
+                    }
+                }
+                if(!best_selected_sep) break;
+
+                result.sep_list[n_s] = best_selected_sep;
+                exponent -= RootPowers[best_selected_sep];
+                s_count += best_selected_sep % 5;
+                c_count += best_selected_sep / 5;
+                best_cost   = best_sep_cost;
+                best_factor = best_sep_factor;
+                mul_count += 1;
+            }
+
+            result.resulting_exponent = (long) (exponent * best_factor + 0.5);
+            while(best_factor % 2 == 0)
+            {
+                ++result.n_int_sqrt;
+                best_factor /= 2;
+            }
+            while(best_factor % 3 == 0)
+            {
+                ++result.n_int_cbrt;
+                best_factor /= 3;
+            }
+            return result;
+        }
+
+    private:
+        // Find the integer that "value" must be multiplied
+        // with to produce an integer...
+        // Consisting of factors 2 and 3 only.
+        bool MakesInteger(double value, int factor) const
+        {
+            double v = value * double(factor);
+            double diff = fabs(v - (double)(long)(v+0.5));
+            //printf("factor %d: v=%.20f, diff=%.20f\n", factor,v, diff);
+            return diff < 1e-9;
+        }
+        int FindIntegerFactor(double value) const
+        {
+            int factor = (2*2*2*2);
+#ifdef CBRT_IS_SLOW
+            // When cbrt is implemented through exp and log,
+            // there is no advantage over exp(log()), so don't support it.
+#else
+            factor *= (3*3*3);
+#endif
+            int result = 0;
+            if(MakesInteger(value, factor))
+            {
+                result = factor;
+                while((factor % 2) == 0 && MakesInteger(value, factor/2))
+                    result = factor /= 2;
+                while((factor % 3) == 0 && MakesInteger(value, factor/3))
+                    result = factor /= 3;
+            }
+            return result;
+        }
+
+        int EvaluateFactorCost(int factor, int s, int c, int nmuls) const
+        {
+            int result = s * 6 + c * 8;
+            while(factor % 2 == 0) { factor /= 2; result += 6; }
+            while(factor % 3 == 0) { factor /= 3; result += 8; }
+            result += nmuls;
+            return result;
+        }
+    };
 }
 
 namespace FPoptimizer_CodeTree
@@ -477,163 +737,102 @@ namespace FPoptimizer_CodeTree
                 {
                     if(p1.GetImmed() != 0.0 && !p1.IsLongIntegerImmed())
                     {
-                        double inverse_exponent = 1.0 / p1.GetImmed();
-                        if(inverse_exponent >= -16.0 && inverse_exponent <= 16.0
-                        && IsIntegerConst(inverse_exponent)
-                        && (int)inverse_exponent != 1
-                        && (int)inverse_exponent != -1)
+                        PowiResolver::PowiResult
+                            r = PowiResolver().CreatePowiResult(fabs(p1.GetImmed()));
+
+                        #ifdef CBRT_IS_SLOW
+                        if(fabs(p1.GetImmed()) == 1/3.0)
                         {
-                            long sqrt_chain = (long) inverse_exponent;
-                            long abs_sqrt_chain = sqrt_chain < 0 ? -sqrt_chain : sqrt_chain;
-                            if((abs_sqrt_chain & (abs_sqrt_chain-1)) == 0) // 2, 4, 8 or 16
-                            {
-                                ChangeIntoSqrtChain(*this, sqrt_chain);
-                                changed = true;
-                                break;
-                            }
+                            // When cbrt is implemented through exp and log,
+                            // there is no advantage over exp(log()), unless the
+                            // whole exponentiation can be implemented through it,
+                            // so don't support it otherwise.
+                            r.resulting_exponent = 1;
+                            r.n_int_cbrt = 1;
                         }
-                    }
-                    if(!p1.IsLongIntegerImmed())
-                    {
-                        // x^1.5 is sqrt(x^3) or x*sqrt(x)
-                        for(int sqrt_count=1; sqrt_count<=4; ++sqrt_count)
+                        #endif
+
+                        if(r.resulting_exponent != 0)
                         {
-                            double with_sqrt_exponent = p1.GetImmed() * (1 << sqrt_count);
-                            if(IsIntegerConst(with_sqrt_exponent))
+                            bool signed_chain = false;
+
+                            if(p1.GetImmed() < 0
+                            && r.sep_list[0] == 0
+                            && r.n_int_sqrt > 0)
                             {
-                                long int_sqrt_exponent = (long)with_sqrt_exponent;
-                                if(int_sqrt_exponent < 0)
-                                    int_sqrt_exponent = -int_sqrt_exponent;
-
-                                // x^2.125 may be better
-                                //         as x^0.125 * x^2
-                                //    than as (x^17) ^ 0.125
-
-                                int separate_sqrt_count = 0;
-
-                                if(true//(GetParam(0).GetDepth() <= 1
-                                || !IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count)
-                                  )
-                                {
-                                    separate_sqrt_count = 0;
-                                #ifdef DEBUG_POWI
-                                    printf("orig = %g, int_sqrt_exponent = %ld, sqrt_count=%d\n",
-                                        fabs(p1.GetImmed()),
-                                        int_sqrt_exponent, sqrt_count);
-                                #endif
-                                    /* The limit is set to 1 here, because if
-                                     * we make x^4 * sqrt(x), ConstantFolding
-                                     * will inconveniently revert it back
-                                     * to x^4.5. Oops.
-                                     */
-                                    for(int try_sep=1; try_sep<=4; ++try_sep)
-                                    {
-                                        double offset = fp_pow(0.5, try_sep);
-                                        double changed_int_exponent=0.0;
-                                        int try_sqrt=0;
-                                        while(try_sqrt <= 4)
-                                        {
-                                            changed_int_exponent =
-                                                (fabs(p1.GetImmed()) - offset)
-                                                * (1 << try_sqrt);
-                                #ifdef DEBUG_POWI
-                                            printf("-  (%d,%d) gives %g\n",
-                                                try_sqrt,try_sep, changed_int_exponent);
-                                #endif
-                                            if(IsIntegerConst(changed_int_exponent)
-                                            || (try_sqrt == 0
-                                            && IsIntegerConst(changed_int_exponent*(1 << try_sep))
-                                               )
-                                              )
-                                            {
-                                                if(changed_int_exponent < int_sqrt_exponent)
-                                                {
-                                                    int_sqrt_exponent = (long)changed_int_exponent;
-                                                    while(try_sqrt > 0 && int_sqrt_exponent % 2 == 0)
-                                                        { int_sqrt_exponent /= 2; --try_sqrt; }
-                                #ifdef DEBUG_POWI
-                                                    printf("Try(%d,%d) -> %ld\n", try_sqrt,try_sep, int_sqrt_exponent);
-                                #endif
-                                                    separate_sqrt_count = try_sep;
-                                                    sqrt_count = try_sqrt;
-                                                }
-                                            }
-                                            ++try_sqrt;
-                                        }
-                                    }
-                                }
-
-                                if(IsOptimizableUsingPowi(int_sqrt_exponent, sqrt_count+separate_sqrt_count))
-                                {
-                                    long sqrt_chain = 1 << sqrt_count;
-                                    bool signed_chain = false;
-
-                                    if(with_sqrt_exponent < 0
-                                    && sqrt_count > 0 && separate_sqrt_count==0)
-                                    {
-                                        signed_chain = true;
-                                        sqrt_chain = -sqrt_chain;
-                                    }
-
-                                    CodeTree source_tree = GetParam(0);
-
-                                    CodeTree tmp;
-                                    if(separate_sqrt_count == 0)
-                                        tmp.SetImmed(1.0);
-                                    else
-                                    {
-                                        tmp.AddParam(source_tree);
-                                        ChangeIntoSqrtChain(tmp, 1 << separate_sqrt_count);
-                                        tmp.Rehash();
-                                    }
-
-                                    CodeTree pow_item;
-                                    if(sqrt_count == 0)
-                                        pow_item = source_tree;
-                                    else
-                                    {
-                                        pow_item.AddParam(source_tree);
-                                        ChangeIntoSqrtChain(pow_item, sqrt_chain);
-                                        pow_item.Rehash();
-                                    }
-
-                                    CodeTree pow;
-                                    pow.SetOpcode(cPow);
-                                    pow.AddParamMove(pow_item);
-                                    double e = (fabs(p1.GetImmed()) - (separate_sqrt_count > 0 ? fp_pow(0.5, separate_sqrt_count) : 0))
-                                        * (1 << sqrt_count);
-                                #ifdef DEBUG_POWI
-                                    printf("Will resolve powi %g as powi(chain(%d),%g)*sqrtchain(%d)\n",
-                                        fabs(p1.GetImmed()),
-                                        sqrt_count, e,
-                                        separate_sqrt_count);
-                                #endif
-                                    pow.AddParam(CodeTree(e));
-                                    pow.RecreateInversionsAndNegations(prefer_base2);
-                                    pow.Rehash();
-                                    if(with_sqrt_exponent < 0 && signed_chain)
-                                    {
-                                        CodeTree mul;
-                                        mul.SetOpcode(cMul);
-                                        mul.AddParamMove(pow);
-                                        mul.AddParamMove(tmp);
-                                        SetOpcode(cInv);
-                                        SetParamMove(0, mul);
-                                        DelParam(1);
-                                    }
-                                    else
-                                    {
-                                        SetOpcode(cMul);
-                                        SetParamMove(0, pow);
-                                        SetParamMove(1, tmp);
-                                    }
-                                #ifdef DEBUG_POWI
-                                    DumpTreeWithIndent(*this);
-                                #endif
-                                    changed = true;
-                                }
-                                break;
+                                // If one of the internal sqrts can be changed into rsqrt
+                                signed_chain = true;
                             }
+
+                        #ifdef DEBUG_POWI
+                            printf("Will resolve powi %g as powi(chain(%d,%d),%ld)",
+                                fabs(p1.GetImmed()),
+                                r.n_int_sqrt,
+                                r.n_int_cbrt,
+                                r.resulting_exponent);
+                            for(unsigned n=0; n<PowiResolver::MaxSep; ++n)
+                            {
+                                if(r.sep_list[n] == 0) break;
+                                int n_sqrt = r.sep_list[n] % 5;
+                                int n_cbrt = r.sep_list[n] / 5;
+                                printf("*chain(%d,%d)", n_sqrt,n_cbrt);
+                            }
+                            printf("\n");
+                        #endif
+
+                            CodeTree source_tree = GetParam(0);
+
+                            CodeTree pow_item = source_tree;
+                            pow_item.CopyOnWrite();
+                            ChangeIntoRootChain(pow_item,
+                                signed_chain,
+                                r.n_int_sqrt,
+                                r.n_int_cbrt);
+                            pow_item.Rehash();
+
+                            CodeTree pow;
+                            if(r.resulting_exponent != 1)
+                            {
+                                pow.SetOpcode(cPow);
+                                pow.AddParamMove(pow_item);
+                                pow.AddParam(CodeTree( double(r.resulting_exponent) ));
+                            }
+                            else
+                                pow.swap(pow_item);
+
+                            CodeTree mul;
+                            mul.SetOpcode(cMul);
+                            mul.AddParamMove(pow);
+
+                            for(unsigned n=0; n<PowiResolver::MaxSep; ++n)
+                            {
+                                if(r.sep_list[n] == 0) break;
+                                int n_sqrt = r.sep_list[n] % 5;
+                                int n_cbrt = r.sep_list[n] / 5;
+
+                                CodeTree mul_item = source_tree;
+                                mul_item.CopyOnWrite();
+                                ChangeIntoRootChain(mul_item, false, n_sqrt, n_cbrt);
+                                mul_item.Rehash();
+                                mul.AddParamMove(mul_item);
+                            }
+
+                            if(p1.GetImmed() < 0 && !signed_chain)
+                            {
+                                SetOpcode(cInv);
+                                SetParamMove(0, mul);
+                                DelParam(1);
+                            }
+                            else
+                            {
+                                SetOpcode(cMul);
+                                SetParamsMove(mul.GetParams());
+                            }
+                        #ifdef DEBUG_POWI
+                            DumpTreeWithIndent(*this);
+                        #endif
+                            changed = true;
+                            break;
                         }
                     }
                 }

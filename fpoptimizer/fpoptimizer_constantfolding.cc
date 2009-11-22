@@ -666,6 +666,10 @@ namespace FPoptimizer_CodeTree
                 return exponent;
             }
             /* - disabled to avoid clashes with powi
+            case cCbrt:
+                value.Become( value.GetParam(0) );
+                has_highlevel_opcodes = true;
+                return CodeTree(1.0 / 3.0);
             case cSqrt:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
@@ -851,6 +855,15 @@ namespace FPoptimizer_CodeTree
 
                 if(has_highlevel_opcodes && list.first.IsImmed())
                 {
+                    if(list.first.GetImmed() == 1.0 / 3.0)
+                    {
+                        CodeTree cbrt;
+                        cbrt.SetOpcode(cCbrt);
+                        cbrt.AddParamMove(mul);
+                        cbrt.Rehash();
+                        AddParamMove(cbrt);
+                        continue;
+                    }
                     if(list.first.GetImmed() == 0.5)
                     {
                         CodeTree sqrt;
@@ -2152,20 +2165,21 @@ namespace FPoptimizer_CodeTree
             case cAcosh: HANDLE_UNARY_CONST_FUNC(fp_acosh); break;
             case cAsinh: HANDLE_UNARY_CONST_FUNC(fp_asinh); break;
             case cAtanh: HANDLE_UNARY_CONST_FUNC(fp_atanh); break;
-            case cAcos: HANDLE_UNARY_CONST_FUNC(acos); break;
-            case cAsin: HANDLE_UNARY_CONST_FUNC(asin); break;
-            case cAtan: HANDLE_UNARY_CONST_FUNC(atan); break;
-            case cCosh: HANDLE_UNARY_CONST_FUNC(cosh); break;
-            case cSinh: HANDLE_UNARY_CONST_FUNC(sinh); break;
-            case cTanh: HANDLE_UNARY_CONST_FUNC(tanh); break;
-            case cSin: HANDLE_UNARY_CONST_FUNC(sin); break;
-            case cCos: HANDLE_UNARY_CONST_FUNC(cos); break;
-            case cTan: HANDLE_UNARY_CONST_FUNC(tan); break;
-            case cCeil: HANDLE_UNARY_CONST_FUNC(ceil); break;
+            case cAcos: HANDLE_UNARY_CONST_FUNC(fp_acos); break;
+            case cAsin: HANDLE_UNARY_CONST_FUNC(fp_asin); break;
+            case cAtan: HANDLE_UNARY_CONST_FUNC(fp_atan); break;
+            case cCosh: HANDLE_UNARY_CONST_FUNC(fp_cosh); break;
+            case cSinh: HANDLE_UNARY_CONST_FUNC(fp_sinh); break;
+            case cTanh: HANDLE_UNARY_CONST_FUNC(fp_tanh); break;
+            case cSin: HANDLE_UNARY_CONST_FUNC(fp_sin); break;
+            case cCos: HANDLE_UNARY_CONST_FUNC(fp_cos); break;
+            case cTan: HANDLE_UNARY_CONST_FUNC(fp_tan); break;
+            case cCeil: HANDLE_UNARY_CONST_FUNC(fp_ceil); break;
             case cTrunc: HANDLE_UNARY_CONST_FUNC(fp_trunc); break;
-            case cFloor: HANDLE_UNARY_CONST_FUNC(floor); break;
-            case cSqrt: HANDLE_UNARY_CONST_FUNC(sqrt); break; // converted into cPow x 0.5
-            case cExp: HANDLE_UNARY_CONST_FUNC(exp); break; // convered into cPow CONSTANT_E x
+            case cFloor: HANDLE_UNARY_CONST_FUNC(fp_floor); break;
+            case cCbrt: HANDLE_UNARY_CONST_FUNC(fp_cbrt); break; // converted into cPow x 0.33333
+            case cSqrt: HANDLE_UNARY_CONST_FUNC(fp_sqrt); break; // converted into cPow x 0.5
+            case cExp: HANDLE_UNARY_CONST_FUNC(fp_exp); break; // convered into cPow CONSTANT_E x
             case cInt: HANDLE_UNARY_CONST_FUNC(fp_int); break;
             case cLog2: HANDLE_UNARY_CONST_FUNC(fp_log2); break;
             case cLog10: HANDLE_UNARY_CONST_FUNC(fp_log10); break;

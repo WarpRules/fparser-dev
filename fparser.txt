@@ -714,6 +714,7 @@ or functions using the following operators in this order of precedence:
               A and B (atan() can only return values betwen -pi/2 and pi/2),
               and that the return value of pi/2 and -pi/2 are possible.
   atanh(A)  : Same as atan() but for hyperbolic tangent.
+  cbrt(A)   : Cube root of A. Returns the value whose cube is A.
   ceil(A)   : Ceiling of A. Returns the smallest integer greater than A.
               Rounds up to the next higher integer.
               E.g. -2.9, -2.5 and -2.1 are rounded to -2.0,

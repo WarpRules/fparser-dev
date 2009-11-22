@@ -54,6 +54,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cAtan: p = "cAtan"; break;
         case cAtan2: p = "cAtan2"; break;
         case cAtanh: p = "cAtanh"; break;
+        case cCbrt: p = "cCbrt"; break;
         case cCeil: p = "cCeil"; break;
         case cCos: p = "cCos"; break;
         case cCosh: p = "cCosh"; break;

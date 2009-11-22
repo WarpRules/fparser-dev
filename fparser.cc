@@ -1713,6 +1713,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case cAtanh: Stack[SP] = fp_atanh(Stack[SP]); break;
 
+          case  cCbrt: Stack[SP] = fp_cbrt(Stack[SP]); break;
+
           case  cCeil: Stack[SP] = fp_ceil(Stack[SP]); break;
 
           case   cCos: Stack[SP] = fp_cos(Stack[SP]); break;
@@ -2477,6 +2479,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cSqr: output << "sqr"; break;
                         case cMul: output << "mul"; break;
                         case cAdd: output << "add"; break;
+                        case cCbrt: output << "cbrt"; break;
                         case cSqrt: output << "sqrt"; break;
                         case cRSqrt: output << "rsqrt"; break;
     #ifdef FP_SUPPORT_OPTIMIZER

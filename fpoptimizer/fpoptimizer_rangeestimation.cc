@@ -686,6 +686,14 @@ namespace FPoptimizer_CodeTree
                 tmp.AddParam(GetParam(0));
                 return tmp.CalculateResultBoundaries();
             }
+            case cCbrt: // converted into cPow x 0.33333333
+            {
+                CodeTree tmp;
+                tmp.SetOpcode(cPow);
+                tmp.AddParam(GetParam(0));
+                tmp.AddParam(CodeTree(1.0 / 3.0));
+                return tmp.CalculateResultBoundaries();
+            }
             case cSqrt: // converted into cPow x 0.5
             {
                 CodeTree tmp;

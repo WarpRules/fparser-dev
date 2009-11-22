@@ -522,6 +522,10 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(-0.5);
                         sim.Eat(2, cPow);
                         break;
+                    case cCbrt:
+                        sim.AddConst(1.0 / 3.0);
+                        sim.Eat(2, cPow);
+                        break;
                     case cDeg:
                         sim.AddConst(CONSTANT_DR);
                         sim.Eat(2, cMul);

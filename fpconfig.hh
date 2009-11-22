@@ -33,6 +33,7 @@
 #define FP_SUPPORT_ASINH
 #define FP_SUPPORT_EXP2
 #define FP_SUPPORT_LOG2
+#define FP_SUPPORT_CBRT
 #endif
 
 /*
