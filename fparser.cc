@@ -1069,7 +1069,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     // x^y can be safely converted into exp(y * log(x))
     // when y is _not_ integer, because we know that x >= 0.
     // Otherwise either expression will give a NaN.
-    if(!IsIntegerConst(original_immed) ||
+    if(/*!IsIntegerConst(original_immed) ||*/
        IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2]))
     {
         data->Immed.pop_back();
@@ -1373,41 +1373,20 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         ++function;
         SkipSpace(function);
 
-        bool base_is_immed = false;
-        Value_t base_immed = Value_t(0);
+        unsigned op = cPow;
         if(data->ByteCode.back() == cImmed)
         {
-            base_is_immed = true;
-            base_immed = data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
+            if(data->Immed.back() == Value_t(2.7182818284590452353602874713526624977572L))
+                { op = cExp;  data->ByteCode.pop_back(); data->Immed.pop_back(); --StackPtr; }
+            else if(data->Immed.back() == Value_t(2.0))
+                { op = cExp2; data->ByteCode.pop_back(); data->Immed.pop_back(); --StackPtr; }
         }
 
         function = CompileUnaryMinus(function);
         if(!function) return 0;
 
-        // Check if the exponent is a literal
-        if(data->ByteCode.back() == cImmed)
-        {
-            // If operator is applied to two literals, calculate it now:
-            if(base_is_immed)
-                data->Immed.back() = fp_pow(base_immed, data->Immed.back());
-            else
-                AddFunctionOpcode(cPow);
-        }
-        else if(base_is_immed)
-        {
-            /* We've got e.g. (-5)^x, and already deleted -5 from the stack.
-             * Must readd the constant, but because the order changed, the
-             * opcode is now cRPow.
-             * Note: AddFunctionOpcode will now optimize 4^x to exp(log(4)*x).
-             */
-            AddImmedOpcode(base_immed);
-            incStackPtr();
-            AddFunctionOpcode(cRPow);
-        }
-        else // add opcode
-            AddFunctionOpcode(cPow);
+        // add opcode
+        AddFunctionOpcode(op);
 
         --StackPtr;
     }
@@ -1827,26 +1806,18 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case   cPow:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP-1] < Value_t(0) &&
-                 !IsIntegerConst(Stack[SP]))
-              { evalErrorType=3; return Value_t(0); }
+              // x:Negative ^ y:NonInteger is failure,
+              // except when the reciprocal of y forms an integer
+              /*if(Stack[SP-1] < Value_t(0) &&
+                 !IsIntegerConst(Stack[SP]) &&
+                 !IsIntegerConst(1.0 / Stack[SP]))
+              { evalErrorType=3; return Value_t(0); }*/
+              // x:0 ^ y:negative is failure
               if(Stack[SP-1] == Value_t(0) &&
                  Stack[SP] < Value_t(0))
               { evalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
-              --SP; break;
-
-          case   cRPow:
-#           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(0) &&
-                 !IsIntegerConst(Stack[SP-1]))
-              { evalErrorType=3; return Value_t(0); }
-              if(Stack[SP] == Value_t(0) &&
-                 Stack[SP-1] < Value_t(0))
-              { evalErrorType=3; return Value_t(0); }
-#           endif
-              Stack[SP-1] = fp_pow(Stack[SP], Stack[SP-1]);
               --SP; break;
 
           case  cTrunc: Stack[SP] = fp_trunc(Stack[SP]); break;
@@ -2643,7 +2614,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cDiv: n = "div"; break;
                         case cMod: n = "mod"; break;
                         case cPow: n = "pow"; break;
-                        case cRPow: n = "rpow"; break;
                         case cEqual: n = "eq"; break;
                         case cNEqual: n = "neq"; break;
                         case cLess: n = "lt"; break;

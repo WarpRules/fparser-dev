@@ -181,6 +181,103 @@ namespace FUNCTIONPARSERTYPES
 //==========================================================================
 // Math funcs
 //==========================================================================
+    /* fp_pow() is a wrapper for std::pow()
+     * that produces an identical value for
+     * exp(1) ^ 2.0  (0x4000000000000000)
+     * as exp(2.0)   (0x4000000000000000)
+     * - std::pow() on x86_64
+     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
+     * See comments below for other special traits.
+     */
+    template<typename ValueT>
+    inline ValueT fp_pow_with_exp_log(const ValueT& x, const ValueT& y)
+    {
+        // Requirements: x > 0.
+        return fp_exp(fp_log(x) * y);
+    }
+
+    template<typename ValueT>
+    inline ValueT fp_powi(ValueT x, unsigned long y)
+    {
+        // Requirements: y is non-negative integer.
+        ValueT result(1.0);
+        while(y != 0)
+        {
+            if(y & 1) { result *= x; y -= 1; }
+            else      { x *= x;      y /= 2; }
+        }
+        return result;
+    }
+
+    template<typename ValueT>
+    ValueT fp_pow(const ValueT& x, const ValueT& y)
+    {
+        if(x == 1.0) return ValueT(1.0);
+        // y is now zero or positive
+        if(IsIntegerConst(y))
+        {
+            // Use fast binary exponentiation algorithm
+            // See http://en.wikipedia.org/wiki/Exponentiation_by_squaring
+            if(y >= 0.0)
+                return fp_powi(x,                (long)y);
+            else
+                return ValueT(1.0) / fp_powi(x, -(long)y);
+        }
+        if(y >= 0.0)
+        {
+            // y is now positive. Calculate using exp(log(x)*y).
+            // See http://en.wikipedia.org/wiki/Exponentiation#Real_powers
+            if(x > 0.0) return fp_pow_with_exp_log(x, y);
+            if(x == 0.0) return ValueT(0.0);
+            // At this point, y > 0.0 and x is known to be < 0.0,
+            // because positive and zero cases are already handled.
+            //
+            if(!IsIntegerConst(y*16.0))
+                return -fp_pow_with_exp_log(-x, y);
+            // ^This is not technically correct, but it allows
+            // functions such as cbrt(x^5), that is, x^(5/3),
+            // to be evaluated when x is negative.
+            // It is too complicated (and slow) to test whether y
+            // is a formed from a ratio of an integer to an odd integer.
+            // (And due to floating point inaccuracy, pointless too.)
+            // For example, x^1.30769230769... is
+            // actually x^(17/13), i.e. (x^17) ^ (1/13).
+            // (-5)^(17/13) gives us now -8.204227562330453.
+            // To see whether the result is right, we can test the given
+            // root: (-8.204227562330453)^13 gives us the value of (-5)^17,
+            // which proves that the expression was correct.
+            //
+            // The y*16 check prevents e.g. (-4)^(3/2) from being calculated,
+            // as it would confuse functioninfo when pow() returns no error
+            // but sqrt() does when the formula is converted into sqrt(x)*x.
+            //
+            // The errors in this approach are:
+            //     (-2)^sqrt(2) should produce NaN
+            //                  or actually sqrt(2)I + 2^sqrt(2),
+            //                  produces -(2^sqrt(2)) instead.
+            //                  (Impact: Neglible)
+            // Thus, at worst, we're changing a NaN (or complex)
+            // result into a negative real number result.
+        }
+        else
+        {
+            // y is negative. Utilize the x^y = 1/(x^-y) identity.
+            if(x > 0.0) return fp_pow_with_exp_log(ValueT(1.0) / x, -y);
+            if(x < 0.0)
+            {
+                if(!IsIntegerConst(y*-16.0))
+                    return -fp_pow_with_exp_log(ValueT(-1.0) / x, -y);
+                // ^ See comment above.
+            }
+            // Remaining case: 0.0 ^ negative number
+        }
+        // This is reached when:
+        //      x=0 and y<0
+        //      x<0 and y*16 is either positive or negative integer
+        // It is used for producing error values and as a safe fallback.
+        return fp_pow_base(x, y);
+    }
+
 // -------------------------------------------------------------------------
 // double
 // -------------------------------------------------------------------------
@@ -223,21 +320,7 @@ namespace FUNCTIONPARSERTYPES
 
     inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
 
-    /* fp_pow() is a wrapper for std::pow()
-     * that produces an identical value for
-     * exp(1) ^ 2.0  (0x4000000000000000)
-     * as exp(2.0)   (0x4000000000000000)
-     * - std::pow() on x86_64
-     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
-     */
-    inline double fp_pow(double x,double y)
-    {
-        //if(x == 1.0) return 1.0;
-        if(x > 0.0) return exp(log(x) * y);
-        if(y == 0.0) return 1.0;
-        if(y < 0.0) return 1.0 / fp_pow(x, -y);
-        return pow(x, y);
-    }
+    inline double fp_pow_base(double x, double y) { return pow(x, y); }
 
 #ifndef FP_SUPPORT_LOG2
     inline double fp_log2(double x)
@@ -312,14 +395,7 @@ namespace FUNCTIONPARSERTYPES
 
     inline float fp_trunc(float x) { return x<0.0F ? ceilf(x) : floorf(x); }
 
-    inline float fp_pow(float x,float y)
-    {
-        //if(x == 1.0) return 1.0;
-        if(x > 0.0F) return expf(logf(x) * y);
-        if(y == 0.0F) return 1.0F;
-        if(y < 0.0F) return 1.0F / fp_pow(x, -y);
-        return powf(x, y);
-    }
+    inline float fp_pow_base(float x, float y) { return powf(x, y); }
 
 #ifndef FP_SUPPORT_LOG2
     inline float fp_log2(float x)
@@ -395,14 +471,7 @@ namespace FUNCTIONPARSERTYPES
 
     inline long double fp_trunc(long double x) { return x<0.0L ? ceill(x) : floorl(x); }
 
-    inline long double fp_pow(long double x,long double y)
-    {
-        //if(x == 1.0) return 1.0;
-        if(x > 0.0L) return expl(logl(x) * y);
-        if(y == 0.0L) return 1.0L;
-        if(y < 0.0L) return 1.0L / fp_pow(x, -y);
-        return powl(x, y);
-    }
+    inline long double fp_pow_base(long double x, long double y) { return powl(x, y); }
 
 #ifndef FP_SUPPORT_LOG2
     inline long double fp_log2(long double x)

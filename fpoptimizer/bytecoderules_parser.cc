@@ -629,8 +629,8 @@ namespace
                 #ifndef USE_CONTINUATIONS
                     if(b_used == 0)
                     {
-                        // Add dummy gotos to the labels to prevent gcc warnings
-                        code << Indent(indent) << "    goto TailCall_" << n.opcode.name << "; /* Dummy gotos to inhibit gcc warnings */\n";
+                        // Add dummy goto to the labels to prevent gcc warnings
+                        code << Indent(indent) << "    goto TailCall_" << n.opcode.name << "; /* Dummy goto to inhibit gcc warnings */\n";
                     }
                 #endif
                 }
@@ -638,6 +638,12 @@ namespace
             bool first_immed = true;
             std::set<std::string> immed_labels;
             bool immed_returned = false;
+            /*
+              Round 0:  no-code, has condition,  mode_children
+              Round 1:  no-code, no condition,   mode_children
+              Round 2:  code, has condition,     mode_children | mode_operations
+              Round 3:  code, no condition,      mode_children | mode_operations
+            */
             for(int round=0; round<4; ++round)
                 for(size_t a=0; a<head.predecessors.size(); ++a)
                 {
@@ -647,6 +653,7 @@ namespace
                         if(round < 2  && n.opcode.has_operations) continue;
                         if(round >= 2 && !n.opcode.has_operations) continue;
                         if((round & 1) != !!n.opcode.condition.empty()) continue;
+                        
                         if(first_immed)
                         {
                             code << Indent(indent) << "  case cImmed:\n";
@@ -669,12 +676,12 @@ namespace
                         ref.push_back(n.opcode);
                         if(n.opcode.condition.empty())
                             immed_returned =
-                                Generate(n, ref, indent+4, declarations,code, b_used+1, i_used+1, round>=2?mode_operations:mode_children);
+                                Generate(n, ref, indent+4, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                         else
                         {
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
-                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used+1, round>=2?mode_operations:mode_children);
+                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
                         }
                     }
@@ -721,12 +728,12 @@ namespace
                         std::vector<Match> ref(so_far);
                         ref.push_back(n.opcode);
                         if(n.opcode.condition.empty())
-                            Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, round>=2?mode_operations:mode_children);
+                            Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                         else
                         {
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
-                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, round>=2?mode_operations:mode_children);
+                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
                         }
                     }

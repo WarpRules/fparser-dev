@@ -48,7 +48,6 @@ namespace FUNCTIONPARSERTYPES
         cDeg, cRad,
 
         cFCall, cPCall,
-        cRPow,
 
 #ifdef FP_SUPPORT_OPTIMIZER
         cVar,   /* Denotes a variable in CodeTree (not used by bytecode) */

@@ -385,14 +385,38 @@ namespace
                 while((factor % 3) == 0 && MakesInteger(value, factor/3))
                     result = factor /= 3;
             }
+#ifdef CBRT_IS_SLOW
+            if(result == 0)
+            {
+                /* Note: Even if we allow one cbrt,
+                 *        cbrt(cbrt(x)) still gets turned into
+                 *        exp(log(x)*0.111111)
+                 *        which gives an error when x < 0...
+                 *        should we use a special system here?
+                 *        i.e. exp(log(-5)*y)
+                 *      =      -exp(log(5)*y)
+                 *        except when y is an even integer,
+                 *      when  = exp(log(5)*y)
+                 * We use a custom fp_pow() function
+                 * in order to handle these situations.
+                 */
+                if(MakesInteger(value, 3)) return 3; // single cbrt opcode
+            }
+#endif
             return result;
         }
 
         int EvaluateFactorCost(int factor, int s, int c, int nmuls) const
         {
-            int result = s * 6 + c * 8;
-            while(factor % 2 == 0) { factor /= 2; result += 6; }
-            while(factor % 3 == 0) { factor /= 3; result += 8; }
+            const int sqrt_cost = 6;
+#ifdef CBRT_IS_SLOW
+            const int cbrt_cost = 25;
+#else
+            const int cbrt_cost = 8;
+#endif
+            int result = s * sqrt_cost + c * cbrt_cost;
+            while(factor % 2 == 0) { factor /= 2; result += sqrt_cost; }
+            while(factor % 3 == 0) { factor /= 3; result += cbrt_cost; }
             result += nmuls;
             return result;
         }
@@ -740,18 +764,6 @@ namespace FPoptimizer_CodeTree
                         PowiResolver::PowiResult
                             r = PowiResolver().CreatePowiResult(fabs(p1.GetImmed()));
 
-                        #ifdef CBRT_IS_SLOW
-                        if(fabs(p1.GetImmed()) == 1/3.0)
-                        {
-                            // When cbrt is implemented through exp and log,
-                            // there is no advantage over exp(log()), unless the
-                            // whole exponentiation can be implemented through it,
-                            // so don't support it otherwise.
-                            r.resulting_exponent = 1;
-                            r.n_int_cbrt = 1;
-                        }
-                        #endif
-
                         if(r.resulting_exponent != 0)
                         {
                             bool signed_chain = false;
@@ -865,6 +877,7 @@ namespace FPoptimizer_CodeTree
                                 DelParam(1);
                             }
                             SetOpcode(cExp2);
+                            changed = true;
                         }
                         else
                         {
@@ -886,16 +899,11 @@ namespace FPoptimizer_CodeTree
                                 DelParam(1);
                             }
                             SetOpcode(cExp);
+                            changed = true;
                         }
-                        changed = true;
                     }
-                    else if(p0.IsAlwaysSigned(true)
-                         || (p1.IsImmed() && !p1.IsLongIntegerImmed()))
+                    else if(p0.IsAlwaysSigned(true))
                     {
-                        // When we don't know whether x >= 0, we still know that
-                        // x^y can be safely converted into exp(y * log(x))
-                        // when y is _not_ integer, because we know that x >= 0.
-                        // Otherwise either expression will give a NaN or inf.
                         if(prefer_base2)
                         {
                             CodeTree log;
@@ -910,6 +918,7 @@ namespace FPoptimizer_CodeTree
                             SetOpcode(cExp2);
                             SetParamMove(0, exponent);
                             DelParam(1);
+                            changed = true;
                         }
                         else
                         {
@@ -925,8 +934,8 @@ namespace FPoptimizer_CodeTree
                             SetOpcode(cExp);
                             SetParamMove(0, exponent);
                             DelParam(1);
+                            changed = true;
                         }
-                        changed = true;
                     }
                 }
                 break;

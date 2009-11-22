@@ -2340,7 +2340,6 @@ namespace FPoptimizer_CodeTree
             /* Opcodes that do not occur in the tree for other reasons */
             case cRDiv: // version of cDiv
             case cRSub: // version of cSub
-            case cRPow: // version of cPow
             case cDup:
             case cFetch:
             case cPopNMov:

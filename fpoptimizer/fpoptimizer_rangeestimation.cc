@@ -688,19 +688,20 @@ namespace FPoptimizer_CodeTree
             }
             case cCbrt: // converted into cPow x 0.33333333
             {
-                CodeTree tmp;
-                tmp.SetOpcode(cPow);
-                tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(1.0 / 3.0));
-                return tmp.CalculateResultBoundaries();
+                // However, contrary to x^(1/3), this allows
+                // negative values for x, and produces those
+                // as well.
+                MinMaxTree result = GetParam(0).CalculateResultBoundaries();
+                if(result.has_min) result.min = fp_cbrt(result.min);
+                if(result.has_max) result.max = fp_cbrt(result.max);
+                return result;
             }
             case cSqrt: // converted into cPow x 0.5
             {
-                CodeTree tmp;
-                tmp.SetOpcode(cPow);
-                tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(0.5));
-                return tmp.CalculateResultBoundaries();
+                MinMaxTree result = GetParam(0).CalculateResultBoundaries();
+                if(result.has_min) result.min = result.min < 0 ? 0 : fp_sqrt(result.min);
+                if(result.has_max) result.max = result.max < 0 ? 0 : fp_sqrt(result.max);
+                return result;
             }
             case cRSqrt: // converted into cPow x -0.5
             {
@@ -761,7 +762,6 @@ namespace FPoptimizer_CodeTree
             /* Opcodes that do not occur in the tree for other reasons */
             case cRDiv: // version of cDiv
             case cRSub: // version of cSub
-            case cRPow: // version of cPow
             case cDup:
             case cFetch:
             case cPopNMov:

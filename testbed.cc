@@ -1032,27 +1032,22 @@ bool TestIntPow()
         if(!runIntPowTest(fp, exponent, true)) return false;
     }
 
-    for(int m = 1; m <= 10; ++m)
+    for(int m = -27; m <= 27; ++m)
     {
-        for(int n = 1; n <= 5; ++n)
+        for(int n_sqrt=0; n_sqrt<=4; ++n_sqrt)
+        for(int n_cbrt=0; n_cbrt<=4; ++n_cbrt)
         {
+            if(n_sqrt+n_cbrt == 0) continue;
+
             std::ostringstream os;
-            os << "x^(" << m << "/2^" << n << ")";
-            double exponent = double(m) / std::pow(2, n);
+            os << "x^(" << m << "/(1";
+            for(int n=0; n<n_sqrt; ++n) os << "*2";
+            for(int n=0; n<n_cbrt; ++n) os << "*3";
+            os << "))";
+            double exponent = double(m);
+            if(n_sqrt > 0) exponent /= std::pow(2, n_sqrt);
+            if(n_cbrt > 0) exponent /= std::pow(3, n_cbrt);
             if(!runFractionalPowTest(os.str(), exponent)) return false;
-
-            os.str("");
-            os << "x^(" << m << "/3^" << n << ")";
-            exponent = double(m) / std::pow(3, n);
-            if(!runFractionalPowTest(os.str(), exponent)) return false;
-
-            for(int n2 = 1; n2 <= 5; ++n2)
-            {
-                os.str("");
-                os << "x^(" << m << "/(2^" << n << "*3^" << n2 << "))";
-                exponent = double(m) / (std::pow(2, n)*std::pow(3, n2));
-                if(!runFractionalPowTest(os.str(), exponent)) return false;
-            }
         }
     }
 

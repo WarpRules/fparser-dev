@@ -620,11 +620,6 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow); // 1/x is x^-1
                         sim.Eat(2, cMul); // Divide is inverse multiply
                         break;
-                    case cRPow:
-                        sim.SwapLastTwoInStack();
-                        if(keep_powi) { opcode = cPow; goto default_function_handling; }
-                        sim.Eat(2, cPow);
-                        break;
                     case cAbsOr: // from optimizer
                         sim.Eat(2, cOr); // downgrade the opcode for simplicity
                         break;

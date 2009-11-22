@@ -10,8 +10,9 @@
 # [bracketed expression in condition]: constraints to input immeds or opcodes
 # [bracketed expression in replacement]: function that produces an immed
 
-y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
-y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
+#y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
+#y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
+#  ^ y cExp never occurs (already optimized to literal)
 y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
 cSqr x [!isEvenInteger(x*2.0)] cPow -> cAbs [x*2.0] cPow
 cSqr cSqrt  -> cAbs
@@ -45,6 +46,7 @@ x [x>=-1.0&&x<=1.0] cAcosh -> [fp_acosh(x)]
 x [x>=-1.0&&x<=1.0] cAsinh -> [fp_asinh(x)]
 x cAtan	 		-> [fp_atan(x)]
 x cAtanh 		-> [fp_atanh(x)]
+x cCbrt	 		-> [fp_cbrt(x)]
 x cCeil	 		-> [fp_ceil(x)]
 x cCos	 		-> [fp_cos(x)]
 x cCosh	 		-> [fp_cosh(x)]
@@ -79,10 +81,9 @@ y x cSub		-> [y-x]
 y x cMin		-> [Min(x,y)]
 y x cMax		-> [Max(x,y)]
 y x cAtan2		-> [fp_atan2(y,x)]
-y x cPow 		-> [fp_pow(y,x)]
+y [ y!=0.0 || x>=0.0] x cPow -> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
-x [x>0.0] cRPow -> [log(x)] cMul cExp
 
 A [A >= VarBegin] x [x==0.0] cMul -> [x]
 
@@ -125,9 +126,11 @@ x [x!=0.0] cDiv		-> [Value_t(1)/x] cMul
 #  ^ y cExp never occurs (already optimized to literal)
 y cPow  x cPow -> [y*x] cPow
 
-x [x==0.5]  cPow -> cSqrt
-x [x==-0.5] cPow -> cRSqrt
-x [x==-1.0] cPow -> cInv
+x [x==0.5]      cPow -> cSqrt
+x [x==1.0/3.0]  cPow -> cCbrt
+x [x==1.0/-3.0] cPow -> cCbrt cInv
+x [x==-0.5]     cPow -> cRSqrt
+x [x==-1.0]     cPow -> cInv
 
 cLog  cExp  ->
 cLog2 cExp2 ->
