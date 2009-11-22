@@ -208,7 +208,8 @@ namespace
             for(size_t i = 0; i < functions.size(); ++i)
             {
                 double value = functions[i].mParser.Eval(&varValues[0]);
-                if(!(value < -1e14 || value > 1e14))
+                if(functions[i].mParser.EvalError() == 0 &&
+                   !(value < -1e14 || value > 1e14))
                 {
                     functions[i].mValidVarValues = varValues;
                     wasOk = true;
