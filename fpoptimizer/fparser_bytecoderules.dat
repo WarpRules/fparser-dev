@@ -14,7 +14,7 @@
 #y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
 y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
-cSqr x [!isEvenInteger(x*2.0)] cPow -> cAbs [x*2.0] cPow
+cSqr x [!isEvenInteger(x*Value_t(2))] cPow -> cAbs [x*Value_t(2)] cPow
 cSqr cSqrt  -> cAbs
 #cSqr cRSqrt -> cAbs cInv
 
@@ -38,12 +38,12 @@ y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
 cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
 cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
 cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
-cSqr x cPow -> [x*2.0] cPow
+cSqr x cPow -> [x*Value_t(2)] cPow
 
 x cAbs	 		-> [fp_abs(x)]
 x cAcos	 		-> [fp_acos(x)]
-x [x>=-1.0&&x<=1.0] cAcosh -> [fp_acosh(x)]
-x [x>=-1.0&&x<=1.0] cAsinh -> [fp_asinh(x)]
+x [x>=Value_t(-1)&&x<=Value_t(1)] cAcosh -> [fp_acosh(x)]
+x [x>=Value_t(-1)&&x<=Value_t(1)] cAsinh -> [fp_asinh(x)]
 x cAtan	 		-> [fp_atan(x)]
 x cAtanh 		-> [fp_atanh(x)]
 x cCbrt	 		-> [fp_cbrt(x)]
@@ -54,40 +54,40 @@ x cExp	 		-> [fp_exp(x)]
 x cExp2	 		-> [fp_exp2(x)]
 x cFloor 		-> [fp_floor(x)]
 x cInt	 		-> [fp_int(x)]
-x [x>=0.0] cLog		-> [fp_log(x)]
-x [x>=0.0] cLog10	-> [fp_log10(x)]
-x [x>=0.0] cLog2	-> [fp_log2(x)]
+x [x>=Value_t(0)] cLog	-> [fp_log(x)]
+x [x>=Value_t(0)] cLog10 -> [fp_log10(x)]
+x [x>=Value_t(0)] cLog2	-> [fp_log2(x)]
 x cSin	 		-> [fp_sin(x)]
 x cSinh	 		-> [fp_sinh(x)]
-x [x>=0.0] cSqrt	-> [fp_sqrt(x)]
+x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]
 x cTan	 		-> [fp_tan(x)]
 x cTanh	 		-> [fp_tanh(x)]
 x cTrunc 		-> [fp_trunc(x)]
 x cDeg	 		-> [RadiansToDegrees(x)]
 x cRad	 		-> [DegreesToRadians(x)]
 x cNeg			-> [-x]
-x [x!=0.0] cInv 	-> [Value_t(1)/x]
-x [x==1.0] cMul		->
+x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
+x [x==Value_t(1)] cMul	->
 y x cMul		-> [y*x]
-x [x==1.0] cDiv		->
-y x [x!=0.0] cDiv	-> [y/x]
-y x [x!=0.0] cMod	-> [fp_mod(y,x)]
-x [x==0.0] cAdd		->
+x [x==Value_t(1)] cDiv	->
+y x [x!=Value_t(0)] cDiv -> [y/x]
+y x [x!=Value_t(0)] cMod -> [fp_mod(y,x)]
+x [x==Value_t(0)] cAdd	->
 y x cAdd		-> [y+x]
-x [x==0.0] cSub		->
+x [x==Value_t(0)] cSub	->
 y x cSub		-> [y-x]
-#y [y!=0.0] x cRDiv	-> [x/y]
+#y [y!=Value_t(0)] x cRDiv -> [x/y]
 #y x cRSub		-> [x-y]
 y x cMin		-> [Min(x,y)]
 y x cMax		-> [Max(x,y)]
 y x cAtan2		-> [fp_atan2(y,x)]
-y [ y!=0.0 || x>=0.0] x cPow -> [fp_pow(y,x)]
+y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
 
-A [A >= VarBegin] x [x==0.0] cMul -> [x]
+A [A >= VarBegin] x [x==Value_t(0)] cMul -> [x]
 
-x [x==2.0] cMul -> cDup cAdd
+x [x==Value_t(2)] cMul -> cDup cAdd
 cSqr cLog   -> cAbs cLog   cDup cAdd
 cSqr cLog2  -> cAbs cLog2  cDup cAdd
 cSqr cLog10 -> cAbs cLog10 cDup cAdd
@@ -108,7 +108,7 @@ y x cOr			-> [truthValue(x)||truthValue(y)]
 cNeg x cMul		-> [-x] cMul
 cNeg x cDiv		-> [-x] cDiv
 x cMul cNeg		-> [-x] cMul
-x [x==-1.0] cMul	-> cNeg
+x [x==Value_t(-1)] cMul	-> cNeg
 
 
 y cAdd x cAdd		-> [y+x] cAdd
@@ -117,20 +117,20 @@ y cSub x cSub		-> [y+x] cSub
 y cAdd x cSub		-> [y-x] cAdd
 
 y cMul x cMul		-> [y*x] cMul
-y cMul x [x!=0.0] cDiv 	-> [y*x] cMul
+y cMul x [x!=Value_t(0)] cDiv 	-> [y*x] cMul
 
-x [x!=0.0] cDiv		-> [Value_t(1)/x] cMul
+x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul
 
 #y cExp  x cPow -> [y*x] cExp
 #y cExp2 x cPow -> [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
 y cPow  x cPow -> [y*x] cPow
 
-x [x==0.5]      cPow -> cSqrt
-x [x==1.0/3.0]  cPow -> cCbrt
-x [x==1.0/-3.0] cPow -> cCbrt cInv
-x [x==-0.5]     cPow -> cRSqrt
-x [x==-1.0]     cPow -> cInv
+x [x==Value_t(0.5)]      cPow -> cSqrt
+x [x==Value_t(1)/Value_t(3)]  cPow -> cCbrt
+x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv
+x [x==Value_t(-0.5)]     cPow -> cRSqrt
+x [x==Value_t(-1)]     cPow -> cInv
 
 cLog  cExp  ->
 cLog2 cExp2 ->
@@ -187,8 +187,8 @@ x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
-cAbs x [x!=0.0] cLess         -> [Value_t(0.5)/x] cMul cNot
-cAbs x [x!=0.0] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
+cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
+cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
 A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess        -> A [x] cMul
 
 cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow

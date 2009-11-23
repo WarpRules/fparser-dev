@@ -937,7 +937,7 @@ bool WhiteSpaceTest()
 //=========================================================================
 // Test integer powers
 //=========================================================================
-bool compareExpValues(double value, double exponent,
+bool compareExpValues(double value, const std::string& funcStr,
                       double v1, double v2, bool isOptimized)
 {
     const double scale = pow(10.0, floor(log10(fabs(v1))));
@@ -946,7 +946,7 @@ bool compareExpValues(double value, double exponent,
     const double diff = sv2-sv1;
     if(std::fabs(diff) > Epsilon)
     {
-        std::cout << "For x^" << exponent << " with x=" << value
+        std::cout << "For \"" << funcStr << "\" with x=" << value
                   << " the library (";
         if(!isOptimized) std::cout << "not ";
         std::cout << "optimized) returned\n"
@@ -957,7 +957,8 @@ bool compareExpValues(double value, double exponent,
     return true;
 }
 
-bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
+bool runIntPowTest(FunctionParser& fp, const std::string& funcStr,
+                   int exponent, bool isOptimized)
 {
     const int absExponent = exponent < 0 ? -exponent : exponent;
 
@@ -973,7 +974,7 @@ bool runIntPowTest(FunctionParser& fp, int exponent, bool isOptimized)
 
         const double v2 = fp.Eval(&value);
 
-        if(!compareExpValues(value, exponent, v1, v2, isOptimized))
+        if(!compareExpValues(value, funcStr, v1, v2, isOptimized))
             return false;
     }
 
@@ -1000,7 +1001,7 @@ bool runFractionalPowTest(const std::string& funcStr, double exponent)
             const double v1 = std::pow(value, exponent);
             const double v2 = fp.Eval(&value);
 
-            if(!compareExpValues(value, exponent, v1, v2, i > 0))
+            if(!compareExpValues(value, funcStr, v1, v2, i > 0))
                 return false;
         }
         fp.Optimize();
@@ -1027,9 +1028,9 @@ bool TestIntPow()
             return false;
         }
 
-        if(!runIntPowTest(fp, exponent, false)) return false;
+        if(!runIntPowTest(fp, func, exponent, false)) return false;
         fp.Optimize();
-        if(!runIntPowTest(fp, exponent, true)) return false;
+        if(!runIntPowTest(fp, func, exponent, true)) return false;
     }
 
     for(int m = -27; m <= 27; ++m)
