@@ -831,6 +831,7 @@ namespace FPoptimizer_CodeTree
 
                             if(p1.GetImmed() < 0 && !signed_chain)
                             {
+                                mul.Rehash();
                                 SetOpcode(cInv);
                                 SetParamMove(0, mul);
                                 DelParam(1);
