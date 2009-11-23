@@ -202,7 +202,8 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_floor(double x) { return floor(x); }
     inline double fp_int(double x) { return floor(x + .5); }
     inline double fp_log(double x) { return log(x); }
-    inline double fp_log10(double x) { return log(x) * 0.43429448190325176116; }
+    inline double fp_log10(double x)
+        { return log(x) * 0.434294481903251827651128918916605082294397005803666566; }
     inline double fp_mod(double x, double y) { return fmod(x, y); }
     inline double fp_sin(double x) { return sin(x); }
     inline double fp_sinh(double x) { return sinh(x); }
@@ -239,7 +240,8 @@ namespace FUNCTIONPARSERTYPES
     }
 
 #ifndef FP_SUPPORT_LOG2
-    inline double fp_log2(double x) { return log(x) * 1.4426950408889634074; }
+    inline double fp_log2(double x)
+        { return log(x) * 1.4426950408889634073599246810018921374266459541529859; }
 #else
     inline double fp_log2(double x) { return log2(x); }
 #endif // FP_SUPPORT_LOG2
@@ -289,7 +291,8 @@ namespace FUNCTIONPARSERTYPES
     inline float fp_floor(float x) { return floorf(x); }
     inline float fp_int(float x) { return floorf(x + .5F); }
     inline float fp_log(float x) { return logf(x); }
-    inline float fp_log10(float x) { return logf(x) * 0.43429448190325176116F; }
+    inline float fp_log10(float x)
+        { return logf(x) * 0.434294481903251827651128918916605082294397005803666566F; }
     inline float fp_mod(float x, float y) { return fmodf(x, y); }
     inline float fp_sin(float x) { return sinf(x); }
     inline float fp_sinh(float x) { return sinhf(x); }
@@ -319,7 +322,8 @@ namespace FUNCTIONPARSERTYPES
     }
 
 #ifndef FP_SUPPORT_LOG2
-    inline float fp_log2(float x) { return logf(x) * 1.4426950408889634074F; }
+    inline float fp_log2(float x)
+        { return logf(x) * 1.4426950408889634073599246810018921374266459541529859F; }
 #else
     inline float fp_log2(float x) { return log2f(x); }
 #endif // FP_SUPPORT_LOG2
@@ -370,7 +374,8 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_floor(long double x) { return floorl(x); }
     inline long double fp_int(long double x) { return floorl(x + .5L); }
     inline long double fp_log(long double x) { return logl(x); }
-    inline long double fp_log10(long double x) { return logl(x) * 0.43429448190325176116L; }
+    inline long double fp_log10(long double x)
+        { return logl(x) * 0.434294481903251827651128918916605082294397005803666566L; }
     inline long double fp_mod(long double x, long double y) { return fmodl(x, y); }
     inline long double fp_sin(long double x) { return sinl(x); }
     inline long double fp_sinh(long double x) { return sinhl(x); }
@@ -400,7 +405,8 @@ namespace FUNCTIONPARSERTYPES
     }
 
 #ifndef FP_SUPPORT_LOG2
-    inline long double fp_log2(long double x) { return log(x) * 1.4426950408889634074L; }
+    inline long double fp_log2(long double x)
+        { return log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
 #else
     inline long double fp_log2(long double x) { return log2l(x); }
 #endif // FP_SUPPORT_LOG2
