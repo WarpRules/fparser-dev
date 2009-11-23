@@ -1131,45 +1131,45 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 
     unsigned nameLength = readOpcode(function);
 
-    if(nameLength & 0x80000000U) // Function
-    {
-        OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
-        const char* endPtr = function + (nameLength & 0xFFFF);
-        SkipSpace(endPtr);
-
-        const FuncDefinition& funcDef = Functions[func_opcode];
-
-        if(func_opcode == cIf) // "if" is a special case
-            return CompileIf(endPtr);
-
-        unsigned requiredParams = funcDef.params;
-#ifndef FP_DISABLE_EVAL
-        if(func_opcode == cEval)
-            requiredParams = data->numVariables;
-#endif
-
-        function = CompileFunctionParams(endPtr, requiredParams);
-        if(!function) return 0;
-
-        if(useDegreeConversion)
-        {
-            if(funcDef.flags & FuncDefinition::AngleIn)
-                AddFunctionOpcode(cRad);
-
-            AddFunctionOpcode(func_opcode);
-
-            if(funcDef.flags & FuncDefinition::AngleOut)
-                AddFunctionOpcode(cDeg);
-        }
-        else
-        {
-            AddFunctionOpcode(func_opcode);
-        }
-        return function;
-    }
-
     if(nameLength != 0) // Function, variable or constant
     {
+        if(nameLength & 0x80000000U) // Function
+        {
+            OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
+            const char* endPtr = function + (nameLength & 0xFFFF);
+            SkipSpace(endPtr);
+
+            const FuncDefinition& funcDef = Functions[func_opcode];
+
+            if(func_opcode == cIf) // "if" is a special case
+                return CompileIf(endPtr);
+
+            unsigned requiredParams = funcDef.params;
+    #ifndef FP_DISABLE_EVAL
+            if(func_opcode == cEval)
+                requiredParams = data->numVariables;
+    #endif
+
+            function = CompileFunctionParams(endPtr, requiredParams);
+            if(!function) return 0;
+
+            if(useDegreeConversion)
+            {
+                if(funcDef.flags & FuncDefinition::AngleIn)
+                    AddFunctionOpcode(cRad);
+
+                AddFunctionOpcode(func_opcode);
+
+                if(funcDef.flags & FuncDefinition::AngleOut)
+                    AddFunctionOpcode(cDeg);
+            }
+            else
+            {
+                AddFunctionOpcode(func_opcode);
+            }
+            return function;
+        }
+
         NamePtr name(function, nameLength);
         const char* endPtr = function + nameLength;
         SkipSpace(endPtr);
