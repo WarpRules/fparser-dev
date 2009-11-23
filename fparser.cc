@@ -35,7 +35,7 @@ using namespace FUNCTIONPARSERTYPES;
 namespace
 {
     template<typename Value_t>
-    bool addNewNameData(std::map<NamePtr, NameData<Value_t> >& namePtrs,
+    bool addNewNameData(namePtrsType<Value_t>& namePtrs,
                         std::pair<NamePtr, NameData<Value_t> >& newName,
                         bool isVar)
     {
@@ -43,7 +43,7 @@ namespace
         if(funcDef && funcDef->enabled())
             return false;
 
-        typename std::map<NamePtr, NameData<Value_t> >::iterator nameIter =
+        typename namePtrsType<Value_t>::iterator nameIter =
             namePtrs.lower_bound(newName.first);
 
         if(nameIter != namePtrs.end() && newName.first == nameIter->first)
@@ -291,7 +291,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 {
     Stack.resize(rhs.Stack.size());
 
-    for(typename std::map<NamePtr, NameData<Value_t> >::const_iterator i =
+    for(typename namePtrsType<Value_t>::const_iterator i =
             rhs.namePtrs.begin();
         i != rhs.namePtrs.end();
         ++i)
@@ -321,7 +321,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::~Data()
 {
-    for(typename std::map<NamePtr, NameData<Value_t> >::iterator i =
+    for(typename namePtrsType<Value_t>::iterator i =
             namePtrs.begin();
         i != namePtrs.end();
         ++i)
@@ -510,7 +510,7 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
 
     NamePtr namePtr(name.data(), unsigned(name.size()));
 
-    typename std::map<NamePtr, NameData<Value_t> >::iterator
+    typename namePtrsType<Value_t>::iterator
         nameIter = data->namePtrs.find(namePtr);
 
     if(nameIter != data->namePtrs.end())
@@ -723,13 +723,13 @@ bool FunctionParserBase<Value_t>::ParseVariables
     if(data->variablesString == inputVarString) return true;
 
     /* Delete existing variables from namePtrs */
-    for(typename std::map<NamePtr, NameData<Value_t> >::iterator i =
+    for(typename namePtrsType<Value_t>::iterator i =
             data->namePtrs.begin();
         i != data->namePtrs.end(); )
     {
         if(i->second.type == NameData<Value_t>::VARIABLE)
         {
-            typename std::map<NamePtr, NameData<Value_t> >::iterator j (i);
+            typename namePtrsType<Value_t>::iterator j (i);
             ++i;
             data->namePtrs.erase(j);
         }
@@ -1275,7 +1275,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
             return function;
         }
 
-        typename std::map<NamePtr, NameData<Value_t> >::iterator nameIter =
+        typename namePtrsType<Value_t>::iterator nameIter =
             data->namePtrs.find(name);
         if(nameIter != data->namePtrs.end())
         {
@@ -1338,7 +1338,7 @@ FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
     {
         NamePtr name(function, nameLength);
 
-        typename std::map<NamePtr, NameData<Value_t> >::iterator nameIter =
+        typename namePtrsType<Value_t>::iterator nameIter =
             data->namePtrs.find(name);
         if(nameIter != data->namePtrs.end())
         {
@@ -2201,11 +2201,11 @@ namespace
     }
 
     template<typename Value_t>
-    std::string findName(const std::map<NamePtr, NameData<Value_t> >& nameMap,
+    std::string findName(const namePtrsType<Value_t>& nameMap,
                          unsigned index,
                          typename NameData<Value_t>::DataType type)
     {
-        for(typename std::map<NamePtr, NameData<Value_t> >::const_iterator
+        for(typename namePtrsType<Value_t>::const_iterator
                 iter = nameMap.begin();
             iter != nameMap.end();
             ++iter)

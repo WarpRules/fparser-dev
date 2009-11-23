@@ -15,6 +15,10 @@
 #include "fpconfig.hh"
 #include <cstring>
 
+#ifdef ONCE_FPARSER_H_
+# include <map>
+#endif
+
 namespace FUNCTIONPARSERTYPES
 {
     enum OPCODE
@@ -185,13 +189,20 @@ namespace FUNCTIONPARSERTYPES
         NameData() { }
     };
 
+    template<typename Value_t>
+    class namePtrsType: public
+    std::map<
+        FUNCTIONPARSERTYPES::NamePtr,
+        FUNCTIONPARSERTYPES::NameData<Value_t>
+    >
+    {
+    };
+
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
 #endif // ONCE_FPARSER_H_
 }
 
 #ifdef ONCE_FPARSER_H_
-#include <map>
-#include <set>
 #include <vector>
 
 template<typename Value_t>
@@ -201,8 +212,7 @@ struct FunctionParserBase<Value_t>::Data
 
     unsigned numVariables;
     std::string variablesString;
-    std::map<FUNCTIONPARSERTYPES::NamePtr,
-             FUNCTIONPARSERTYPES::NameData<Value_t> > namePtrs;
+    FUNCTIONPARSERTYPES::namePtrsType<Value_t> namePtrs;
 
     struct FuncPtrData
     {
