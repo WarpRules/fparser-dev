@@ -27,10 +27,13 @@ else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
-OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations -fvpt -fomit-frame-pointer
-#OPTIMIZATION=-g
+OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
+	-fvpt -fomit-frame-pointer -ffunction-cse
+#       -ffunction-sections -fdata-sections 
 
+#OPTIMIZATION=-g
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
+#OPTIMIZATION=-g -pg
 
 CXX=g++
 LD=g++
@@ -44,6 +47,11 @@ CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 
 CXXFLAGS += -std=c++0x
+
+LD += -Xlinker --gc-sections
+#LD += -Xlinker --print-gc-sections
+# ^Use this option to list everything that GC removed.
+
 
 # For compilation with ICC:
 #OPTIMIZATION=-O3 -xT -inline-level=2 -w1 -openmp -mssse3
