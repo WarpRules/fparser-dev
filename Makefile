@@ -83,7 +83,9 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_hash.o
 
 RELEASE_PACK_FILES = example.cc example2.cc fparser.cc fparser.hh \
-	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh fp_opcode_add.inc \
+	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
+	fp_opcode_add.inc \
+	fp_identifier_parser.inc \
 	fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)

@@ -29,6 +29,17 @@ using namespace FUNCTIONPARSERTYPES;
 
 class GrammarDumper;
 
+namespace
+{
+    /* This function generated with make_identifier_parser.cc */
+    unsigned readOpcode(const char* input)
+    {
+#include "fp_identifier_parser.inc"
+        return 0;
+    }
+
+}
+
 namespace GrammarData
 {
     class ParamSpec;
@@ -1505,12 +1516,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 // This has a chance of being an opcode token
                 std::string opcodetoken = IdBuf.substr(1);
                 opcodetoken[0] = std::tolower(opcodetoken[0]);
-                NamePtr nameptr(opcodetoken.c_str(), (unsigned)opcodetoken.size());
-                const FuncDefinition* func = findFunction(nameptr);
-                if(func)
+                
+                unsigned nameLength = readOpcode(opcodetoken.c_str());
+                if(nameLength & 0x80000000U)
                 {
-                    //lval->opcode = func->opcode;
-                    lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
+                    lval->opcode = FUNCTIONPARSERTYPES::OPCODE(
+                        (nameLength >> 16) & 0x7FFF );
                     return OPCODE;
                 }
                 std::cerr <<
@@ -1531,12 +1542,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 }
                 if(1) // scope
                 {
-                    NamePtr nameptr(grouptoken.c_str(), (unsigned)grouptoken.size());
-                    const FuncDefinition* func = findFunction(nameptr);
-                    if(func)
+                    unsigned nameLength = readOpcode(grouptoken.c_str());
+                    if(nameLength & 0x80000000U)
                     {
-                        //lval->opcode = func->opcode;
-                        lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
+                        lval->opcode = FUNCTIONPARSERTYPES::OPCODE(
+                            (nameLength >> 16) & 0x7FFF );
                         return BUILTIN_FUNC_NAME;
                     }
                     if(IdBuf == "MOD")

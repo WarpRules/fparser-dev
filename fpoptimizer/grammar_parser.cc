@@ -131,6 +131,17 @@ using namespace FUNCTIONPARSERTYPES;
 
 class GrammarDumper;
 
+namespace
+{
+    /* This function generated with make_identifier_parser.cc */
+    unsigned readOpcode(const char* input)
+    {
+#include "fp_identifier_parser.inc"
+        return 0;
+    }
+
+}
+
 namespace GrammarData
 {
     class ParamSpec;
@@ -1157,7 +1168,7 @@ private:
 static GrammarDumper dumper;
 
 
-#line 1062 "fpoptimizer/grammar_parser.y"
+#line 1073 "fpoptimizer/grammar_parser.y"
 typedef union {
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1582,9 +1593,9 @@ static const short yyrhs[] = {    20,
 
 #if (YY_FPoptimizerGrammarParser_DEBUG != 0) || defined(YY_FPoptimizerGrammarParser_ERROR_VERBOSE) 
 static const short yyrline[] = { 0,
-  1098,  1104,  1116,  1117,  1120,  1130,  1148,  1169,  1181,  1190,
-  1198,  1207,  1212,  1222,  1228,  1233,  1238,  1249,  1254,  1259,
-  1273,  1278
+  1109,  1115,  1127,  1128,  1131,  1141,  1159,  1180,  1192,  1201,
+  1209,  1218,  1223,  1233,  1239,  1244,  1249,  1260,  1265,  1270,
+  1284,  1289
 };
 
 static const char * const yytname[] = {   "$","error","$illegal.","NUMERIC_CONSTANT",
@@ -2153,14 +2164,14 @@ YYLABEL(yyreduce)
   switch (yyn) {
 
 case 1:
-#line 1100 "fpoptimizer/grammar_parser.y"
+#line 1111 "fpoptimizer/grammar_parser.y"
 {
         this->grammar.AddRule(*yyvsp[0].r);
         delete yyvsp[0].r;
       ;
     break;}
 case 2:
-#line 1105 "fpoptimizer/grammar_parser.y"
+#line 1116 "fpoptimizer/grammar_parser.y"
 {
         if(yyvsp[-1].index != Value_Logical)
         {
@@ -2174,7 +2185,7 @@ case 2:
       ;
     break;}
 case 5:
-#line 1123 "fpoptimizer/grammar_parser.y"
+#line 1134 "fpoptimizer/grammar_parser.y"
 {
         yyvsp[-1].a->RecursivelySetDefaultParamMatchingType();
 
@@ -2183,7 +2194,7 @@ case 5:
       ;
     break;}
 case 6:
-#line 1133 "fpoptimizer/grammar_parser.y"
+#line 1144 "fpoptimizer/grammar_parser.y"
 {
         GrammarData::ParamSpec* p = new GrammarData::ParamSpec(yyvsp[-1].f);
         p->RecursivelySetDefaultParamMatchingType();
@@ -2200,7 +2211,7 @@ case 6:
       ;
     break;}
 case 7:
-#line 1150 "fpoptimizer/grammar_parser.y"
+#line 1161 "fpoptimizer/grammar_parser.y"
 {
         /*if($1->Params.RestHolderIndex != 0)
         {
@@ -2220,7 +2231,7 @@ case 7:
       ;
     break;}
 case 8:
-#line 1171 "fpoptimizer/grammar_parser.y"
+#line 1182 "fpoptimizer/grammar_parser.y"
 {
            if(!yyvsp[0].f->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2231,34 +2242,34 @@ case 8:
        ;
     break;}
 case 9:
-#line 1186 "fpoptimizer/grammar_parser.y"
+#line 1197 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p);
          delete yyvsp[-1].p;
        ;
     break;}
 case 10:
-#line 1194 "fpoptimizer/grammar_parser.y"
+#line 1205 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-3].opcode, *yyvsp[-1].p->SetType(SelectedParams));
          delete yyvsp[-1].p;
        ;
     break;}
 case 11:
-#line 1201 "fpoptimizer/grammar_parser.y"
+#line 1212 "fpoptimizer/grammar_parser.y"
 {
          yyval.f = new GrammarData::FunctionType(yyvsp[-1].opcode, *yyvsp[0].p->SetType(AnyParams));
          delete yyvsp[0].p;
        ;
     break;}
 case 12:
-#line 1209 "fpoptimizer/grammar_parser.y"
+#line 1220 "fpoptimizer/grammar_parser.y"
 {
           yyval.p = yyvsp[-1].p->AddParam(yyvsp[0].a);
         ;
     break;}
 case 13:
-#line 1213 "fpoptimizer/grammar_parser.y"
+#line 1224 "fpoptimizer/grammar_parser.y"
 {
           if(yyvsp[-1].p->RestHolderIndex != 0)
           {
@@ -2270,26 +2281,26 @@ case 13:
         ;
     break;}
 case 14:
-#line 1223 "fpoptimizer/grammar_parser.y"
+#line 1234 "fpoptimizer/grammar_parser.y"
 {
           yyval.p = new GrammarData::MatchedParams;
         ;
     break;}
 case 15:
-#line 1230 "fpoptimizer/grammar_parser.y"
+#line 1241 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[0].num);
        ;
     break;}
 case 16:
-#line 1234 "fpoptimizer/grammar_parser.y"
+#line 1245 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index, GrammarData::ParamSpec::ParamHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index | Constness_Const);
        ;
     break;}
 case 17:
-#line 1239 "fpoptimizer/grammar_parser.y"
+#line 1250 "fpoptimizer/grammar_parser.y"
 {
          /* Verify that $3 consists of constants */
          yyval.a = new GrammarData::ParamSpec(yyvsp[-3].opcode, yyvsp[-1].p->GetParams() );
@@ -2302,21 +2313,21 @@ case 17:
        ;
     break;}
 case 18:
-#line 1250 "fpoptimizer/grammar_parser.y"
+#line 1261 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-1].index + 2, GrammarData::ParamSpec::ParamHolderTag());
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 19:
-#line 1255 "fpoptimizer/grammar_parser.y"
+#line 1266 "fpoptimizer/grammar_parser.y"
 {
          yyval.a = new GrammarData::ParamSpec(yyvsp[-2].f);
          yyval.a->SetConstraint(yyvsp[0].index);
        ;
     break;}
 case 20:
-#line 1260 "fpoptimizer/grammar_parser.y"
+#line 1271 "fpoptimizer/grammar_parser.y"
 {
          /* Verify that $2 is constant */
          if(!yyvsp[0].a->VerifyIsConstant())
@@ -2330,13 +2341,13 @@ case 20:
        ;
     break;}
 case 21:
-#line 1275 "fpoptimizer/grammar_parser.y"
+#line 1286 "fpoptimizer/grammar_parser.y"
 {
          yyval.index = yyvsp[-1].index | yyvsp[0].index;
        ;
     break;}
 case 22:
-#line 1279 "fpoptimizer/grammar_parser.y"
+#line 1290 "fpoptimizer/grammar_parser.y"
 {
          yyval.index = 0;
        ;
@@ -2545,7 +2556,7 @@ YYLABEL(yyerrhandle)
 /* END */
 
  #line 1038 "/usr/share/bison++/bison.cc"
-#line 1283 "fpoptimizer/grammar_parser.y"
+#line 1294 "fpoptimizer/grammar_parser.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
@@ -2771,12 +2782,12 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 // This has a chance of being an opcode token
                 std::string opcodetoken = IdBuf.substr(1);
                 opcodetoken[0] = std::tolower(opcodetoken[0]);
-                NamePtr nameptr(opcodetoken.c_str(), (unsigned)opcodetoken.size());
-                const FuncDefinition* func = findFunction(nameptr);
-                if(func)
+                
+                unsigned nameLength = readOpcode(opcodetoken.c_str());
+                if(nameLength & 0x80000000U)
                 {
-                    //lval->opcode = func->opcode;
-                    lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
+                    lval->opcode = FUNCTIONPARSERTYPES::OPCODE(
+                        (nameLength >> 16) & 0x7FFF );
                     return OPCODE;
                 }
                 std::cerr <<
@@ -2797,12 +2808,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 }
                 if(1) // scope
                 {
-                    NamePtr nameptr(grouptoken.c_str(), (unsigned)grouptoken.size());
-                    const FuncDefinition* func = findFunction(nameptr);
-                    if(func)
+                    unsigned nameLength = readOpcode(grouptoken.c_str());
+                    if(nameLength & 0x80000000U)
                     {
-                        //lval->opcode = func->opcode;
-                        lval->opcode = FUNCTIONPARSERTYPES::OPCODE(func - Functions);
+                        lval->opcode = FUNCTIONPARSERTYPES::OPCODE(
+                            (nameLength >> 16) & 0x7FFF );
                         return BUILTIN_FUNC_NAME;
                     }
                     if(IdBuf == "MOD")

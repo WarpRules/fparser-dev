@@ -1,3 +1,5 @@
+#define __STDC_CONSTANT_MACROS
+#include <stdint.h>
 /***************************************************************************\
 |* Function Parser for C++ v3.3.2                                          *|
 |*-------------------------------------------------------------------------*|
@@ -39,10 +41,6 @@ namespace
                         std::pair<NamePtr, NameData<Value_t> >& newName,
                         bool isVar)
     {
-        const FuncDefinition* funcDef = findFunction(newName.first);
-        if(funcDef && funcDef->enabled())
-            return false;
-
         typename namePtrsType<Value_t>::iterator nameIter =
             namePtrs.lower_bound(newName.first);
 
@@ -75,128 +73,25 @@ namespace
         return true;
     }
 
-    unsigned readIdentifier(const char* ptr)
+    unsigned readOpcode(const char* input)
     {
-        unsigned n_eaten = 0;
-        const unsigned char* uptr = (const unsigned char*) ptr;
-        while(true)
-        {
-            unsigned char byte = uptr[n_eaten+0];
-            /* Handle the common case of A-Za-z first */
-            if(byte >= 0x40)
-            {
-                if(byte < 0x80) // 0x40..0x7F - most common case
-                {
-                    // Valid characters in 40..7F: A-Za-z_
-                    // Valid bitmask for 40..5F: 01111111111111111111111111100001
-                    // Valid bitmask for 60..7F: 01111111111111111111111111100000
-                    if(sizeof(unsigned long) == 8)
-                    {
-                        const unsigned n = sizeof(unsigned long)*8-32;
-                        // ^ avoids compiler warning when not 64-bit
-                        unsigned long masklow6bits = 1UL << (byte & 0x3F);
-                        if(masklow6bits & ~((1UL << 0) | (0x0FUL << (0x1B  ))
-                                          | (1UL << n) | (0x1FUL << (0x1B+n))))
-                            { ++n_eaten; continue; }
-                    }
-                    else
-                    {
-                        unsigned masklow5bits = 1 << (byte & 0x1F);
-                        if((masklow5bits & ~(1 | (0x1F << 0x1B))) || byte == '_')
-                            { ++n_eaten; continue; }
-                    }
-                    break;
-                }
-                if(byte < 0xF0)
-                {
-                    if(byte < 0xE0)
-                    {
-                        if(byte < 0xC2) break; // 0x80..0xC1
-                        if(byte == 0xC2 && uptr[n_eaten+1]==0xA0) break; // skip nbsp
-                        // C2-DF - next common case when >= 0x40
-                        // Valid sequence: C2-DF 80-BF
-                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-                        n_eaten += 2;
-                        continue;
-                    }
-                    if(byte == 0xE0) // E0
-                    {
-                        // Valid sequence: E0 A0-BF 80-BF
-                        if((unsigned char)(uptr[n_eaten+1] - 0xA0) > (0xBF-0xA0)) break;
-                    }
-                    else
-                    {
-                        if(byte == 0xED) break; // ED is invalid
-                        // Valid sequence: E1-EC 80-BF 80-BF
-                        //            And: EE-EF 80-BF 80-BF
-                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x80
-                        && ((uptr[n_eaten+2] >= 0x80
-                          && uptr[n_eaten+2] <= 0x8B)
-                         || (uptr[n_eaten+2] == 0xAF))) break; // break on various space characters
-                        if(byte == 0xE2 && uptr[n_eaten+1] == 0x81
-                        && uptr[n_eaten+2] == 0x9F) break; // this too
-                        if(byte == 0xE3 && uptr[n_eaten+1] == 0x80
-                        && uptr[n_eaten+2] == 0x80) break; // this too
-
-                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-                    }
-                    if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
-                    n_eaten += 3;
-                    continue;
-                }
-                if(byte == 0xF0) // F0
-                {
-                    // Valid sequence: F0 90-BF 80-BF 80-BF
-                    if((unsigned char)(uptr[n_eaten+1] - 0x90) > (0xBF-0x90)) break;
-                }
-                else
-                {
-                    if(byte > 0xF4) break; // F5-FF are invalid
-                    if(byte == 0xF4) // F4
-                    {
-                        // Valid sequence: F4 80-8F
-                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0x8F-0x80)) break;
-                    }
-                    else
-                    {
-                        // F1-F3
-                        // Valid sequence: F1-F3 80-BF 80-BF 80-BF
-                        if((unsigned char)(uptr[n_eaten+1] - 0x80) > (0xBF-0x80)) break;
-                    }
-                }
-                if((unsigned char)(uptr[n_eaten+2] - 0x80) > (0xBF-0x80)) break;
-                if((unsigned char)(uptr[n_eaten+3] - 0x80) > (0xBF-0x80)) break;
-                n_eaten += 4;
-                continue;
-            }
-            if(n_eaten > 0)
-            {
-                if(sizeof(unsigned long) == 8)
-                {
-                    // Valid bitmask for 00..1F: 00000000000000000000000000000000
-                    // Valid bitmask for 20..3F: 00000000000000001111111111000000
-                    const unsigned n = sizeof(unsigned long)*8-32;
-                    // ^ avoids compiler warning when not 64-bit
-                    unsigned long masklow6bits = 1UL << byte;
-                    if(masklow6bits & (((1UL << 10)-1UL) << (16+n)))
-                        { ++n_eaten; continue; }
-                }
-                else
-                {
-                    if(byte >= '0' && byte <= '9')
-                        { ++n_eaten; continue; }
-                }
-            }
-            break;
-        }
-        return n_eaten;
+    /*
+     Return value if built-in function:
+              16 lowest bits = function name length
+              15 next bits   = function opcode
+              1 bit (&0x80000000U) = indicates function
+     Return value if not built-in function:
+              31 lowest bits = function name length
+              other bits zero
+    */
+#include "fp_identifier_parser.inc"
+        return 0;
     }
 
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        const size_t name_length = readIdentifier(name.c_str());
-        return name_length == name.size();
+        return readOpcode(name.c_str()) == (unsigned) name.size();
     }
 
     template<typename Value_t>
@@ -747,8 +642,8 @@ bool FunctionParserBase<Value_t>::ParseVariables
     while(beginPtr < finalPtr)
     {
         SkipSpace(beginPtr);
-        unsigned nameLength = readIdentifier(beginPtr);
-        if(nameLength == 0) return false;
+        unsigned nameLength = readOpcode(beginPtr);
+        if(nameLength == 0 || (nameLength & 0x80000000U)) return false;
         const char* endPtr = beginPtr + nameLength;
         SkipSpace(endPtr);
         if(endPtr != finalPtr && *endPtr != ',') return false;
@@ -1234,46 +1129,50 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
           return SetErrorType(SYNTAX_ERROR, function);
     }
 
-    unsigned nameLength = readIdentifier(function);
+    unsigned nameLength = readOpcode(function);
+
+    if(nameLength & 0x80000000U) // Function
+    {
+        OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
+        const char* endPtr = function + (nameLength & 0xFFFF);
+        SkipSpace(endPtr);
+
+        const FuncDefinition& funcDef = Functions[func_opcode];
+
+        if(func_opcode == cIf) // "if" is a special case
+            return CompileIf(endPtr);
+
+        unsigned requiredParams = funcDef.params;
+#ifndef FP_DISABLE_EVAL
+        if(func_opcode == cEval)
+            requiredParams = data->numVariables;
+#endif
+
+        function = CompileFunctionParams(endPtr, requiredParams);
+        if(!function) return 0;
+
+        if(useDegreeConversion)
+        {
+            if(funcDef.flags & FuncDefinition::AngleIn)
+                AddFunctionOpcode(cRad);
+
+            AddFunctionOpcode(func_opcode);
+
+            if(funcDef.flags & FuncDefinition::AngleOut)
+                AddFunctionOpcode(cDeg);
+        }
+        else
+        {
+            AddFunctionOpcode(func_opcode);
+        }
+        return function;
+    }
+
     if(nameLength != 0) // Function, variable or constant
     {
         NamePtr name(function, nameLength);
         const char* endPtr = function + nameLength;
         SkipSpace(endPtr);
-
-        const FuncDefinition* funcDef = findFunction(name);
-        if(funcDef && funcDef->enabled()) // is function
-        {
-            OPCODE func_opcode = OPCODE(funcDef - Functions);
-
-            if(func_opcode == cIf) // "if" is a special case
-                return CompileIf(endPtr);
-
-            unsigned requiredParams = funcDef->params;
-#ifndef FP_DISABLE_EVAL
-            if(func_opcode == cEval)
-                requiredParams = data->numVariables;
-#endif
-
-            function = CompileFunctionParams(endPtr, requiredParams);
-            if(!function) return 0;
-
-            if(useDegreeConversion)
-            {
-                if(funcDef->flags & FuncDefinition::AngleIn)
-                    AddFunctionOpcode(cRad);
-
-                AddFunctionOpcode(func_opcode);
-
-                if(funcDef->flags & FuncDefinition::AngleOut)
-                    AddFunctionOpcode(cDeg);
-            }
-            else
-            {
-                AddFunctionOpcode(func_opcode);
-            }
-            return function;
-        }
 
         typename namePtrsType<Value_t>::iterator nameIter =
             data->namePtrs.find(name);
@@ -1333,7 +1232,8 @@ template<typename Value_t>
 const char*
 FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
 {
-    unsigned nameLength = readIdentifier(function);
+    unsigned nameLength = readOpcode(function);
+    if(nameLength & 0x80000000U) return function; // built-in function name
     if(nameLength != 0)
     {
         NamePtr name(function, nameLength);
@@ -2086,7 +1986,8 @@ namespace
             if(index < 0) break;
             if(index == oldIndex) return index;
 
-            unsigned nameLength = readIdentifier(funcStr + index);
+            unsigned nameLength = readOpcode(funcStr + index);
+            if(nameLength & 0x80000000U) return index;
             if(nameLength == 0) return index;
 
             varNames.insert(std::string(funcStr + index, nameLength));

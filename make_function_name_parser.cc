@@ -20,7 +20,11 @@ static void Compile(const std::string& prefix, size_t length)
         if(prefix == Functions[a].name
         && length == strlen(Functions[a].name))
         {
-            std::cout << "return Functions+" << FP_GetOpcodeName(OPCODE(a)) << ";/*" << prefix << "*/\n    ";
+            std::string o = FP_GetOpcodeName(OPCODE(a));
+            std::cout << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+            std::cout << std::hex << (0x80000000U | length);
+            std::cout << std::dec << "U : " << length << ";";
+            std::cout << "\n    ";
             return;
         }
 
@@ -43,12 +47,12 @@ static void Compile(const std::string& prefix, size_t length)
             {
                 if(prefix != Functions[a].name)
                 {
-                    size_t tmpbytes = strlen(Functions[a].name) - prefix.size();
+                    size_t tmpbytes = length - prefix.size();
                     if(tmpbytes > 2)
                     {
                         std::cout << "{";
                         std::cout << "static const char tmp[" << tmpbytes << "] = {";
-                        for(size_t b=prefix.size(); b<strlen(Functions[a].name); ++b)
+                        for(size_t b=prefix.size(); b<length; ++b)
                         {
                             if(b > prefix.size()) std::cout << ',';
                             std::cout << "'" << Functions[a].name[b] << "'";
@@ -57,20 +61,23 @@ static void Compile(const std::string& prefix, size_t length)
                     }
 
                     if(tmpbytes > 2)
-                        std::cout << "if(std::memcmp(functionName.name+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
+                        std::cout << "if(std::memcmp(uptr+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
                     else
                     {
                         std::cout << "if(";
-                        for(size_t b=prefix.size(); b<strlen(Functions[a].name); ++b)
+                        for(size_t b=prefix.size(); b<length; ++b)
                         {
                             if(b != prefix.size()) std::cout << "\n    && ";
-                            std::cout << "'" << Functions[a].name[b] << "' == functionName.name[" << b << "]";
+                            std::cout << "'" << Functions[a].name[b] << "' == uptr[" << b << "]";
                         }
                         std::cout << ") ";
                     }
-                    std::cout << "return Functions+" << FP_GetOpcodeName(OPCODE(a)) << ";/*"
-                              << Functions[a].name
-                              << "*/\n    return 0;";
+
+                    std::string o = FP_GetOpcodeName(OPCODE(a));
+                    std::cout << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+                    std::cout << std::hex << (0x80000000U | length);
+                    std::cout << std::dec << "U : " << length << ";";
+                    std::cout << "\n    return " << length << ";";
                     if(tmpbytes > 2) std::cout << " }";
                     std::cout << "\n    ";
                 }
@@ -93,7 +100,7 @@ static void Compile(const std::string& prefix, size_t length)
 
     if(possible_children.empty())
     {
-        std::cout << "return 0;\n    ";
+        std::cout << "return " << length << ";\n    ";
     }
     else
     {
@@ -104,17 +111,17 @@ static void Compile(const std::string& prefix, size_t length)
                 i != possible_children.end();
                 ++i)
             {
-                std::cout << "if('" << *i << "' == functionName.name[" << prefix.size() << "]) {\n    ";
+                std::cout << "if('" << *i << "' == uptr[" << prefix.size() << "]) {\n    ";
                 std::string tmp(prefix);
                 tmp += *i;
                 Compile(tmp, length);
                 std::cout << "}";
             }
-            std::cout << "return 0;";
+            std::cout << "return " << length << ";";
         }
         else
         {
-            std::cout << "switch(functionName.name[" << prefix.size() << "]) {\n    ";
+            std::cout << "switch(uptr[" << prefix.size() << "]) {\n    ";
             for(std::set<char>::const_iterator
                 i = possible_children.begin();
                 i != possible_children.end();
@@ -125,7 +132,7 @@ static void Compile(const std::string& prefix, size_t length)
                 tmp += *i;
                 Compile(tmp, length);
             }
-            std::cout << "default: return 0; }";
+            std::cout << "default: return " << length << "; }\n    ";
         }
     }
 }
@@ -133,9 +140,7 @@ static void Compile(const std::string& prefix, size_t length)
 int main()
 {
     std::cout <<
-"    inline const FuncDefinition* findFunction(const NamePtr& functionName)\n"
-"    {\n"
-"        switch(functionName.nameLength)\n"
+"        switch(nameLength)\n"
 "        {\n    ";
     std::set<unsigned> lengthSet;
     for(size_t a=0; a<FUNC_AMOUNT; ++a)
@@ -150,6 +155,5 @@ int main()
     std::cout <<
 "        default: break;\n"
 "        }\n"
-"        return 0;\n"
-"    }\n";
+"        return nameLength;\n";
 }

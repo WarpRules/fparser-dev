@@ -653,7 +653,7 @@ namespace
                         if(round < 2  && n.opcode.has_operations) continue;
                         if(round >= 2 && !n.opcode.has_operations) continue;
                         if((round & 1) != !!n.opcode.condition.empty()) continue;
-                        
+
                         if(first_immed)
                         {
                             code << Indent(indent) << "  case cImmed:\n";
