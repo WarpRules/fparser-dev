@@ -2699,12 +2699,4 @@ void FunctionParserBase<Value_t>::Optimize()
 }
 #endif
 
-template<>
-void FunctionParserBase<float>::Optimize()
-{}
-
-template<>
-void FunctionParserBase<long double>::Optimize()
-{}
-
 FUNCTIONPARSER_INSTANTIATE_TYPES

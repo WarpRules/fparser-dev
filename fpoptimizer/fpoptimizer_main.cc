@@ -44,6 +44,14 @@ void FunctionParserBase<double>::Optimize()
     //PrintByteCode(std::cout);
 }
 
+template<>
+void FunctionParserBase<float>::Optimize()
+{}
+
+template<>
+void FunctionParserBase<long double>::Optimize()
+{}
+
 FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif
