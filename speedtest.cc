@@ -22,10 +22,10 @@
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
 
-#define CreateFunction(funcName, funcBody) \
-double funcName(const double* vars) \
+#define CreateFunction(funcName, Value_t, funcBody) \
+Value_t funcName(const Value_t* vars) \
 { \
-    const double x = vars[0], y = vars[1]; \
+    const Value_t x = vars[0], y = vars[1]; \
     return funcBody; \
 }
 
@@ -37,25 +37,74 @@ namespace
     {
         const char* const funcStr;
         const std::string paramStr;
-        double (*const function)(const double*);
+        double (*const function_d)(const double*);
+        float (*const function_f)(const float*);
+        long double (*const function_ld)(const long double*);
     };
 
-    CreateFunction(func0, FUNC0)
-    CreateFunction(func1, FUNC1)
-    CreateFunction(func2, FUNC2)
-    CreateFunction(func3, FUNC3)
-    CreateFunction(func4, FUNC4)
+    CreateFunction(func0_d, double, FUNC0)
+    CreateFunction(func1_d, double, FUNC1)
+    CreateFunction(func2_d, double, FUNC2)
+    CreateFunction(func3_d, double, FUNC3)
+    CreateFunction(func4_d, double, FUNC4)
+
+#define exp expf
+#define pow powf
+#define sin sinf
+#define cos cosf
+#define sqrt sqrtf
+    CreateFunction(func0_f, float, FUNC0)
+    CreateFunction(func1_f, float, FUNC1)
+    CreateFunction(func2_f, float, FUNC2)
+    CreateFunction(func3_f, float, FUNC3)
+    CreateFunction(func4_f, float, FUNC4)
+#undef exp
+#undef pow
+#undef sin
+#undef cos
+#undef sqrt
+
+#define exp expl
+#define pow powl
+#define sin sinl
+#define cos cosl
+#define sqrt sqrtl
+    CreateFunction(func0_ld, long double, FUNC0)
+    CreateFunction(func1_ld, long double, FUNC1)
+    CreateFunction(func2_ld, long double, FUNC2)
+    CreateFunction(func3_ld, long double, FUNC3)
+    CreateFunction(func4_ld, long double, FUNC4)
+#undef exp
+#undef pow
+#undef sin
+#undef cos
+#undef sqrt
 
     const FuncData funcData[] =
     {
-        { Stringify(FUNC0), "x,y", func0 },
-        { Stringify(FUNC1), "x,y", func1 },
-        { Stringify(FUNC2), "x,y", func2 },
-        { Stringify(FUNC3), "x,y", func3 },
-        { Stringify(FUNC4), "x,y", func4 }
+        { Stringify(FUNC0), "x,y", func0_d, func0_f, func0_ld },
+        { Stringify(FUNC1), "x,y", func1_d, func1_f, func1_ld },
+        { Stringify(FUNC2), "x,y", func2_d, func2_f, func2_ld },
+        { Stringify(FUNC3), "x,y", func3_d, func3_f, func3_ld },
+        { Stringify(FUNC4), "x,y", func4_d, func4_f, func4_ld }
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
+
+    inline double callFunc(const FuncData& data, const double* values)
+    {
+        return data.function_d(values);
+    }
+
+    inline float callFunc(const FuncData& data, const float* values)
+    {
+        return data.function_f(values);
+    }
+
+    inline long double callFunc(const FuncData& data, const long double* values)
+    {
+        return data.function_ld(values);
+    }
 
     std::string beautify(int value)
     {
@@ -127,12 +176,11 @@ private:
     double result;
 };
 
-int main(int argc, char* argv[])
+template<typename Parser_t>
+int run()
 {
-    gPrintHTML = argc > 1 && std::strcmp(argv[1], "-html") == 0;
-
-    FunctionParser fp, fp2;
-    double values[3] = { 1, 2, 3 };
+    Parser_t fp, fp2;
+    typename Parser_t::value_type values[3] = { 1, 2, 3 };
 
     for(unsigned i = 0; i < FunctionsAmount; ++i)
     {
@@ -155,7 +203,7 @@ int main(int argc, char* argv[])
         const unsigned ParseLoops = 2000000;
         const unsigned EvalLoops = 20000000;
         const unsigned OptimizationLoops = 20000;
-        const unsigned FuncLoops = 100000000;
+        const unsigned FuncLoops = 50000000;
 
         Test tester;
 
@@ -221,13 +269,35 @@ int main(int argc, char* argv[])
         {
             tester.Start(FuncLoops);
             while(tester.Loop())
-                funcData[i].function(values);
+                callFunc(funcData[i], values);
 
             tester.Report("C++ function time", "evals");
         }
 #endif
 
         if(gPrintHTML) std::cout << "</ul>\n";
+    }
+
+    return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    enum ParserType { FP_D, FP_F, FP_LD };
+    ParserType parserType = FP_D;
+
+    for(int i = 1; i < argc; ++i)
+    {
+        if(std::strcmp(argv[1], "-html") == 0) gPrintHTML = true;
+        else if(std::strcmp(argv[1], "-f") == 0) parserType = FP_F;
+        else if(std::strcmp(argv[1], "-ld") == 0) parserType = FP_LD;
+    }
+
+    switch(parserType)
+    {
+      case FP_D: return run<FunctionParser>();
+      case FP_F: return run<FunctionParser_f>();
+      case FP_LD: return run<FunctionParser_ld>();
     }
 
     return 0;
