@@ -82,7 +82,8 @@ namespace FUNCTIONPARSERTYPES
         {
             Enabled  = 0x01,
             AngleIn  = 0x02,
-            AngleOut = 0x04
+            AngleOut = 0x04,
+            OkForInt = 0x08
         };
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
@@ -94,10 +95,12 @@ namespace FUNCTIONPARSERTYPES
         unsigned flags  : 8;
 
         inline bool enabled() const { return flags != 0; }
+        inline bool okForInt() const { return (flags & OkForInt) != 0; }
     };
 
 #ifndef FP_DISABLE_EVAL
-# define FP_EVAL_FUNCTION_ENABLED FuncDefinition::Enabled
+# define FP_EVAL_FUNCTION_ENABLED \
+    FuncDefinition::Enabled | FuncDefinition::OkForInt
 #else
 # define FP_EVAL_FUNCTION_ENABLED 0
 #endif
@@ -111,39 +114,60 @@ namespace FUNCTIONPARSERTYPES
 // the pointer to array element is used for generating the opcode.
     const FuncDefinition Functions[]=
     {
-        /*cAbs  */ { FP_FNAME("abs"),   1, FuncDefinition::Enabled },
-        /*cAcos */ { FP_FNAME("acos"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        /*cAcosh*/ { FP_FNAME("acosh"), 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        /*cAsin */ { FP_FNAME("asin"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        /*cAsinh*/ { FP_FNAME("asinh"), 1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        /*cAtan */ { FP_FNAME("atan"),  1, FuncDefinition::Enabled | FuncDefinition::AngleOut },
-        /*cAtan2*/ { FP_FNAME("atan2"), 2, FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAbs  */ { FP_FNAME("abs"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::OkForInt },
+        /*cAcos */ { FP_FNAME("acos"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAcosh*/ { FP_FNAME("acosh"), 1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAsin */ { FP_FNAME("asin"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAsinh*/ { FP_FNAME("asinh"), 1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAtan */ { FP_FNAME("atan"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cAtan2*/ { FP_FNAME("atan2"), 2,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut },
         /*cAtanh*/ { FP_FNAME("atanh"), 1, FuncDefinition::Enabled },
         /*cCbrt */ { FP_FNAME("cbrt"),  1, FuncDefinition::Enabled },
         /*cCeil */ { FP_FNAME("ceil"),  1, FuncDefinition::Enabled },
-        /*cCos  */ { FP_FNAME("cos"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cCosh */ { FP_FNAME("cosh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cCot  */ { FP_FNAME("cot"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cCsc  */ { FP_FNAME("csc"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCos  */ { FP_FNAME("cos"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCosh */ { FP_FNAME("cosh"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCot  */ { FP_FNAME("cot"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cCsc  */ { FP_FNAME("csc"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
         /*cEval */ { FP_FNAME("eval"),  0, FP_EVAL_FUNCTION_ENABLED },
         /*cExp  */ { FP_FNAME("exp"),   1, FuncDefinition::Enabled },
         /*cExp2 */ { FP_FNAME("exp2"),  1, FuncDefinition::Enabled },
         /*cFloor*/ { FP_FNAME("floor"), 1, FuncDefinition::Enabled },
-        /*cIf   */ { FP_FNAME("if"),    0, FuncDefinition::Enabled },
+        /*cIf   */ { FP_FNAME("if"),    0,
+                     FuncDefinition::Enabled | FuncDefinition::OkForInt },
         /*cInt  */ { FP_FNAME("int"),   1, FuncDefinition::Enabled },
         /*cLog  */ { FP_FNAME("log"),   1, FuncDefinition::Enabled },
         /*cLog10*/ { FP_FNAME("log10"), 1, FuncDefinition::Enabled },
         /*cLog2 */ { FP_FNAME("log2"),  1, FuncDefinition::Enabled },
-        /*cMax  */ { FP_FNAME("max"),   2, FuncDefinition::Enabled },
-        /*cMin  */ { FP_FNAME("min"),   2, FuncDefinition::Enabled },
+        /*cMax  */ { FP_FNAME("max"),   2,
+                     FuncDefinition::Enabled | FuncDefinition::OkForInt },
+        /*cMin  */ { FP_FNAME("min"),   2,
+                     FuncDefinition::Enabled | FuncDefinition::OkForInt },
         /*cPow  */ { FP_FNAME("pow"),   2, FuncDefinition::Enabled },
-        /*cSec  */ { FP_FNAME("sec"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cSin  */ { FP_FNAME("sin"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cSinh */ { FP_FNAME("sinh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cSqrt */ { FP_FNAME("sqrt"),  1, FuncDefinition::Enabled },
-        /*cTan  */ { FP_FNAME("tan"),   1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cTanh */ { FP_FNAME("tanh"),  1, FuncDefinition::Enabled | FuncDefinition::AngleIn },
-        /*cTrunc*/ { FP_FNAME("trunc"), 1, FuncDefinition::Enabled }
+        /*cSec  */ { FP_FNAME("sec"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSin  */ { FP_FNAME("sin"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSinh */ { FP_FNAME("sinh"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cSqrt */ { FP_FNAME("sqrt"),  1,
+                     FuncDefinition::Enabled },
+        /*cTan  */ { FP_FNAME("tan"),   1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cTanh */ { FP_FNAME("tanh"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleIn },
+        /*cTrunc*/ { FP_FNAME("trunc"), 1,
+                     FuncDefinition::Enabled }
     };
 #undef FP_FNAME
 

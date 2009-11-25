@@ -71,7 +71,7 @@ namespace
         return true;
     }
 
-    unsigned readOpcode(const char* input)
+    unsigned readOpcodeNoIntCheck(const char* input)
     {
     /*
      Return value if built-in function:
@@ -86,10 +86,27 @@ namespace
         return 0;
     }
 
+    template<typename Value_t>
+    inline unsigned readOpcode(const char* input)
+    {
+        return readOpcodeNoIntCheck(input);
+    }
+
+    template<>
+    inline unsigned readOpcode<long>(const char* input)
+    {
+        const unsigned value = readOpcodeNoIntCheck(input);
+        if((value & 0x80000000U) != 0 &&
+           !Functions[(value >> 16) & 0x7FFF].okForInt())
+            return value & 0xFFFF;
+        return value;
+    }
+
+    template<typename Value_t>
     bool containsOnlyValidNameChars(const std::string& name)
     {
         if(name.empty()) return false;
-        return readOpcode(name.c_str()) == (unsigned) name.size();
+        return readOpcode<Value_t>(name.c_str()) == (unsigned) name.size();
     }
 
     template<typename Value_t>
@@ -317,7 +334,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddConstant(const std::string& name,
                                               Value_t value)
 {
-    if(!containsOnlyValidNameChars(name)) return false;
+    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -331,7 +348,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddUnit(const std::string& name,
                                           Value_t value)
 {
-    if(!containsOnlyValidNameChars(name)) return false;
+    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -344,7 +361,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddFunction
 (const std::string& name, FunctionPtr ptr, unsigned paramsAmount)
 {
-    if(!containsOnlyValidNameChars(name)) return false;
+    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -377,7 +394,8 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
                                               FunctionParserBase& fp)
 {
-    if(!containsOnlyValidNameChars(name) || CheckRecursiveLinking(&fp))
+    if(!containsOnlyValidNameChars<Value_t>(name) ||
+       CheckRecursiveLinking(&fp))
         return false;
 
     CopyOnWrite();
@@ -640,7 +658,7 @@ bool FunctionParserBase<Value_t>::ParseVariables
     while(beginPtr < finalPtr)
     {
         SkipSpace(beginPtr);
-        unsigned nameLength = readOpcode(beginPtr);
+        unsigned nameLength = readOpcode<Value_t>(beginPtr);
         if(nameLength == 0 || (nameLength & 0x80000000U)) return false;
         const char* endPtr = beginPtr + nameLength;
         SkipSpace(endPtr);
@@ -1127,7 +1145,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
           return SetErrorType(SYNTAX_ERROR, function);
     }
 
-    unsigned nameLength = readOpcode(function);
+    unsigned nameLength = readOpcode<Value_t>(function);
 
     if(nameLength != 0) // Function, variable or constant
     {
@@ -1230,7 +1248,7 @@ template<typename Value_t>
 const char*
 FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
 {
-    unsigned nameLength = readOpcode(function);
+    unsigned nameLength = readOpcode<Value_t>(function);
     if(nameLength & 0x80000000U) return function; // built-in function name
     if(nameLength != 0)
     {
@@ -1984,7 +2002,7 @@ namespace
             if(index < 0) break;
             if(index == oldIndex) return index;
 
-            unsigned nameLength = readOpcode(funcStr + index);
+            unsigned nameLength = readOpcode<Value_t>(funcStr + index);
             if(nameLength & 0x80000000U) return index;
             if(nameLength == 0) return index;
 
