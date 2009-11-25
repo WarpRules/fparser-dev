@@ -4,8 +4,8 @@
    FP_SUPPORT_FLOAT_TYPE and FP_SUPPORT_LONG_DOUBLE_TYPE
    preprocessor macros defined for this example to work.
 
-   Try with these input values with the different parser types to see
-   the difference in accuracy:
+   Try with these input values with the different floating point parser
+   types to see the difference in accuracy:
 
 f(x) = x + 1.234567890123456789
 min x: 0
@@ -32,10 +32,10 @@ void runExample(const char* valueTypeName)
 
     fparser.AddConstant("pi", Value_t(3.1415926535897932));
 
+    std::cin.ignore();
     while(true)
     {
         std::cout << "f(x) = ";
-        std::cin.ignore();
         std::getline(std::cin, function);
         if(std::cin.fail()) return;
 
@@ -68,15 +68,16 @@ int main()
     int choice = 0;
     do
     {
-        std::cout << "1 = double, 2 = float, 3 = long double: ";
+        std::cout << "1 = double, 2 = float, 3 = long double, 4 = long int: ";
         std::cin >> choice;
-    } while(choice < 1 || choice > 3);
+    } while(choice < 1 || choice > 4);
 
     switch(choice)
     {
       case 1: runExample<FunctionParser>("double"); break;
       case 2: runExample<FunctionParser_f>("float"); break;
       case 3: runExample<FunctionParser_ld>("long double"); break;
+      case 4: runExample<FunctionParser_li>("long int"); break;
     }
 
     return 0;

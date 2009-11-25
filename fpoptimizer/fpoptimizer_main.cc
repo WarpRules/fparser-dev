@@ -52,6 +52,10 @@ template<>
 void FunctionParserBase<long double>::Optimize()
 {}
 
+template<>
+void FunctionParserBase<long>::Optimize()
+{}
+
 FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif

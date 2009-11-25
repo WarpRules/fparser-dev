@@ -140,7 +140,8 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_int(double x) { return floor(x + .5); }
     inline double fp_log(double x) { return log(x); }
     inline double fp_log10(double x)
-        { return log(x) * 0.434294481903251827651128918916605082294397005803666566; }
+    { return log(x) *
+            0.434294481903251827651128918916605082294397005803666566; }
     inline double fp_mod(double x, double y) { return fmod(x, y); }
     inline double fp_sin(double x) { return sin(x); }
     inline double fp_sinh(double x) { return sinh(x); }
@@ -164,7 +165,7 @@ namespace FUNCTIONPARSERTYPES
 
 #ifndef FP_SUPPORT_LOG2
     inline double fp_log2(double x)
-        { return log(x) * 1.4426950408889634073599246810018921374266459541529859; }
+    { return log(x) * 1.4426950408889634073599246810018921374266459541529859; }
 #else
     inline double fp_log2(double x) { return log2(x); }
 #endif // FP_SUPPORT_LOG2
@@ -191,7 +192,6 @@ namespace FUNCTIONPARSERTYPES
     { return FloatEqual(a, (double)(long)a); }
 
 
-
 // -------------------------------------------------------------------------
 // float
 // -------------------------------------------------------------------------
@@ -215,7 +215,8 @@ namespace FUNCTIONPARSERTYPES
     inline float fp_int(float x) { return floorf(x + .5F); }
     inline float fp_log(float x) { return logf(x); }
     inline float fp_log10(float x)
-        { return logf(x) * 0.434294481903251827651128918916605082294397005803666566F; }
+    { return logf(x) *
+            0.434294481903251827651128918916605082294397005803666566F; }
     inline float fp_mod(float x, float y) { return fmodf(x, y); }
     inline float fp_sin(float x) { return sinf(x); }
     inline float fp_sinh(float x) { return sinhf(x); }
@@ -239,7 +240,8 @@ namespace FUNCTIONPARSERTYPES
 
 #ifndef FP_SUPPORT_LOG2
     inline float fp_log2(float x)
-        { return logf(x) * 1.4426950408889634073599246810018921374266459541529859F; }
+    { return logf(x) *
+            1.4426950408889634073599246810018921374266459541529859F; }
 #else
     inline float fp_log2(float x) { return log2f(x); }
 #endif // FP_SUPPORT_LOG2
@@ -248,7 +250,7 @@ namespace FUNCTIONPARSERTYPES
 
 #ifdef FP_EPSILON
     template<>
-    inline float fp_epsilon<float>() { return 1e-8F; }
+    inline float fp_epsilon<float>() { return 1e-6F; }
 #else
     template<>
     inline float fp_epsilon<float>() { return 0.0F; }
@@ -276,12 +278,14 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_acos(long double x) { return acosl(x); }
     inline long double fp_asin(long double x) { return asinl(x); }
     inline long double fp_atan(long double x) { return atanl(x); }
-    inline long double fp_atan2(long double x, long double y) { return atan2l(x, y); }
+    inline long double fp_atan2(long double x, long double y)
+    { return atan2l(x, y); }
 #ifdef FP_SUPPORT_CBRT
     inline long double fp_cbrt(long double x) { return cbrtl(x); }
 #else
-    inline long double fp_cbrt(long double x) { return x<0 ? -expl(logl(-x)/3.0L)
-                                                           :  expl(logl( x)/3.0L); }
+    inline long double fp_cbrt(long double x)
+    { return x<0 ? -expl(logl(-x)/3.0L)
+            :  expl(logl( x)/3.0L); }
 #endif
     inline long double fp_ceil(long double x) { return ceill(x); }
     inline long double fp_cos(long double x) { return cosl(x); }
@@ -291,8 +295,10 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_int(long double x) { return floorl(x + .5L); }
     inline long double fp_log(long double x) { return logl(x); }
     inline long double fp_log10(long double x)
-        { return logl(x) * 0.434294481903251827651128918916605082294397005803666566L; }
-    inline long double fp_mod(long double x, long double y) { return fmodl(x, y); }
+    { return logl(x) *
+            0.434294481903251827651128918916605082294397005803666566L; }
+    inline long double fp_mod(long double x, long double y)
+    { return fmodl(x, y); }
     inline long double fp_sin(long double x) { return sinl(x); }
     inline long double fp_sinh(long double x) { return sinhl(x); }
     inline long double fp_sqrt(long double x) { return sqrtl(x); }
@@ -300,22 +306,27 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_tanh(long double x) { return tanhl(x); }
 
 #ifndef FP_SUPPORT_ASINH
-    inline long double fp_asinh(long double x) { return logl(x + sqrt(x*x + 1.0L)); }
-    inline long double fp_acosh(long double x) { return logl(x + sqrt(x*x - 1.0L)); }
-    inline long double fp_atanh(long double x) { return logl((1.0L+x) / (1.0L-x)) * 0.5L; }
+    inline long double fp_asinh(long double x)
+    { return logl(x + sqrt(x*x + 1.0L)); }
+    inline long double fp_acosh(long double x)
+    { return logl(x + sqrt(x*x - 1.0L)); }
+    inline long double fp_atanh(long double x)
+    { return logl((1.0L+x) / (1.0L-x)) * 0.5L; }
 #else
     inline long double fp_asinh(long double x) { return asinhl(x); }
     inline long double fp_acosh(long double x) { return acoshl(x); }
     inline long double fp_atanh(long double x) { return atanhl(x); }
 #endif // FP_SUPPORT_ASINH
 
-    inline long double fp_trunc(long double x) { return x<0.0L ? ceill(x) : floorl(x); }
+    inline long double fp_trunc(long double x)
+    { return x<0.0L ? ceill(x) : floorl(x); }
 
-    inline long double fp_pow_base(long double x, long double y) { return powl(x, y); }
+    inline long double fp_pow_base(long double x, long double y)
+    { return powl(x, y); }
 
 #ifndef FP_SUPPORT_LOG2
     inline long double fp_log2(long double x)
-        { return log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
+    { return log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
 #else
     inline long double fp_log2(long double x) { return log2l(x); }
 #endif // FP_SUPPORT_LOG2
@@ -333,9 +344,93 @@ namespace FUNCTIONPARSERTYPES
     inline bool IsIntegerConst(long double a)
     { return FloatEqual(a, (long double)(long)a); }
 #endif // FP_SUPPORT_LONG_DOUBLE_TYPE
+
+
+// -------------------------------------------------------------------------
+// Long int
+// -------------------------------------------------------------------------
+    inline long fp_abs(long x) { return x < 0 ? -x : x; }
+    inline long fp_acos(long) { return 0; }
+    inline long fp_asin(long) { return 0; }
+    inline long fp_atan(long) { return 0; }
+    inline long fp_atan2(long, long) { return 0; }
+    inline long fp_cbrt(long) { return 0; }
+    inline long fp_ceil(long x) { return x; }
+    inline long fp_cos(long) { return 0; }
+    inline long fp_cosh(long) { return 0; }
+    inline long fp_exp(long) { return 0; }
+    inline long fp_floor(long x) { return x; }
+    inline long fp_int(long x) { return x; }
+    inline long fp_log(long) { return 0; }
+    inline long fp_log10(long) { return 0; }
+    inline long fp_mod(long x, long y) { return x % y; }
+    inline long fp_sin(long) { return 0; }
+    inline long fp_sinh(long) { return 0; }
+    inline long fp_sqrt(long) { return 0; }
+    inline long fp_tan(long) { return 0; }
+    inline long fp_tanh(long) { return 0; }
+    inline long fp_asinh(long) { return 0; }
+    inline long fp_acosh(long) { return 0; }
+    inline long fp_atanh(long) { return 0; }
+    inline long fp_trunc(long x) { return x; }
+    inline long fp_pow_base(long, long) { return 0; }
+    inline long fp_log2(long) { return 0; }
+    inline long fp_exp2(long) { return 0; }
+
+    template<>
+    inline long fp_epsilon<long>() { return 0; }
+
+    inline bool IsIntegerConst(long) { return true; }
+
+
+// -------------------------------------------------------------------------
+// Comparison
+// -------------------------------------------------------------------------
+#ifdef FP_EPSILON
+    template<typename Value_t>
+    inline bool fp_equal(Value_t x, Value_t y)
+    { return fp_abs(x - y) <= fp_epsilon<Value_t>(); }
+
+    template<typename Value_t>
+    inline bool fp_nequal(Value_t x, Value_t y)
+    { return fp_abs(x - y) > fp_epsilon<Value_t>(); }
+
+    template<typename Value_t>
+    inline bool fp_less(Value_t x, Value_t y)
+    { return x < y - fp_epsilon<Value_t>(); }
+
+    template<typename Value_t>
+    inline bool fp_lessOrEq(Value_t x, Value_t y)
+    { return x <= y + fp_epsilon<Value_t>(); }
+#else // FP_EPSILON
+    template<typename Value_t>
+    inline bool fp_equal(Value_t x, Value_t y) { return x == y; }
+
+    template<typename Value_t>
+    inline bool fp_nequal(Value_t x, Value_t y) { return x != y; }
+
+    template<typename Value_t>
+    inline bool fp_less(Value_t x, Value_t y) { return x < y; }
+
+    template<typename Value_t>
+    inline bool fp_lessOrEq(Value_t x, Value_t y) { return x <= y; }
+#endif // FP_EPSILON
+
+    template<>
+    inline bool fp_equal<long>(long x, long y) { return x == y; }
+
+    template<>
+    inline bool fp_nequal<long>(long x, long y) { return x != y; }
+
+    template<>
+    inline bool fp_less<long>(long x, long y) { return x < y; }
+
+    template<>
+    inline bool fp_lessOrEq<long>(long x, long y) { return x <= y; }
 }
 
 #endif // ONCE_FPARSER_H_
+
 
 #ifdef FP_SUPPORT_FLOAT_TYPE
 #define FUNCTIONPARSER_INSTANTIATE_FLOAT \
@@ -351,12 +446,20 @@ namespace FUNCTIONPARSERTYPES
 #define FUNCTIONPARSER_INSTANTIATE_LONG_DOUBLE
 #endif
 
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+#define FUNCTIONPARSER_INSTANTIATE_LONG_INT \
+    template class FunctionParserBase<long>;
+#else
+#define FUNCTIONPARSER_INSTANTIATE_LONG_INT
+#endif
+
 /* Add 'FUNCTIONPARSER_INSTANTIATE_TYPES' at the end of all .cc files
    containing FunctionParserBase implementations.
  */
 #define FUNCTIONPARSER_INSTANTIATE_TYPES \
     template class FunctionParserBase<double>; \
     FUNCTIONPARSER_INSTANTIATE_FLOAT \
-    FUNCTIONPARSER_INSTANTIATE_LONG_DOUBLE
+    FUNCTIONPARSER_INSTANTIATE_LONG_DOUBLE \
+    FUNCTIONPARSER_INSTANTIATE_LONG_INT
 
 #endif

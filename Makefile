@@ -23,13 +23,14 @@ FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 #FEATURE_FLAGS += -DFP_DISABLE_SHORTCUT_LOGICAL_EVALUATION
 FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
 OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 	-fvpt -fomit-frame-pointer -ffunction-cse
-#       -ffunction-sections -fdata-sections 
+#       -ffunction-sections -fdata-sections
 
 #OPTIMIZATION=-g
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage

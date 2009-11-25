@@ -71,7 +71,7 @@ namespace
         return true;
     }
 
-    unsigned readOpcodeNoIntCheck(const char* input)
+    unsigned readOpcodeForFloatType(const char* input)
     {
     /*
      Return value if built-in function:
@@ -86,21 +86,28 @@ namespace
         return 0;
     }
 
-    template<typename Value_t>
-    inline unsigned readOpcode(const char* input)
+    inline unsigned readOpcodeForIntType(const char* input)
     {
-        return readOpcodeNoIntCheck(input);
-    }
-
-    template<>
-    inline unsigned readOpcode<long>(const char* input)
-    {
-        const unsigned value = readOpcodeNoIntCheck(input);
+        const unsigned value = readOpcodeForFloatType(input);
         if((value & 0x80000000U) != 0 &&
            !Functions[(value >> 16) & 0x7FFF].okForInt())
             return value & 0xFFFF;
         return value;
     }
+
+    template<typename Value_t>
+    inline unsigned readOpcode(const char* input)
+    {
+        return readOpcodeForFloatType(input);
+    }
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    inline unsigned readOpcode<long>(const char* input)
+    {
+        return readOpcodeForIntType(input);
+    }
+#endif
 
     template<typename Value_t>
     bool containsOnlyValidNameChars(const std::string& name)
@@ -110,16 +117,16 @@ namespace
     }
 
     template<typename Value_t>
-    inline bool truthValue(Value_t d)
-    {
-        return fp_abs(d) >= Value_t(0.5);
-    }
+    inline bool truthValue(Value_t d) { return fp_abs(d) >= Value_t(0.5); }
+
+    template<>
+    inline bool truthValue<long>(long l) { return l != 0; }
 
     template<typename Value_t>
-    inline bool truthValue_abs(Value_t abs_d)
-    {
-        return abs_d >= Value_t(0.5);
-    }
+    inline bool truthValue_abs(Value_t abs_d) { return abs_d >= Value_t(0.5); }
+
+    template<>
+    inline bool truthValue_abs<long>(long l) { return l != 0; }
 
     template<typename Value_t>
     inline Value_t Min(Value_t d1, Value_t d2) { return d1<d2 ? d1 : d2; }
@@ -143,16 +150,14 @@ namespace
     inline bool isEvenInteger(Value_t value)
     {
         long longval = (long)value;
-        return FloatEqual(value, Value_t(longval)) &&
-            (longval%2) == 0;
+        return fp_equal(value, Value_t(longval)) && (longval%2) == 0;
     }
 
     template<typename Value_t>
     inline bool isOddInteger(Value_t value)
     {
         long longval = (long)value;
-        return FloatEqual(value, Value_t(longval)) &&
-            (longval%2) != 0;
+        return fp_equal(value, Value_t(longval)) && (longval%2) != 0;
     }
 
     template<typename Value_t>
@@ -161,18 +166,30 @@ namespace
         return strtod(nptr, endptr);
     }
 
+#ifdef FP_SUPPORT_FLOAT_TYPE
     template<>
     inline float parseLiteral<float>(const char* nptr, char** endptr)
     {
         return strtof(nptr, endptr);
     }
+#endif
 
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     template<>
     inline long double parseLiteral<long double>(const char* nptr,
                                                  char** endptr)
     {
         return strtold(nptr, endptr);
     }
+#endif
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    inline long parseLiteral<long>(const char* nptr, char** endptr)
+    {
+        return strtol(nptr, endptr, 10);
+    }
+#endif
 }
 
 
@@ -1292,10 +1309,13 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         unsigned op = cPow;
         if(data->ByteCode.back() == cImmed)
         {
-            if(data->Immed.back() == Value_t(2.7182818284590452353602874713526624977572L))
-                { op = cExp;  data->ByteCode.pop_back(); data->Immed.pop_back(); --StackPtr; }
+            if(data->Immed.back() ==
+               Value_t(2.7182818284590452353602874713526624977572L))
+                { op = cExp;  data->ByteCode.pop_back();
+                    data->Immed.pop_back(); --StackPtr; }
             else if(data->Immed.back() == Value_t(2.0))
-                { op = cExp2; data->ByteCode.pop_back(); data->Immed.pop_back(); --StackPtr; }
+                { op = cExp2; data->ByteCode.pop_back();
+                    data->Immed.pop_back(); --StackPtr; }
         }
 
         function = CompileUnaryMinus(function);
@@ -1308,6 +1328,17 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
     }
     return function;
 }
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+template<>
+inline const char*
+FunctionParserBase<long>::CompilePow(const char* function)
+{
+    function = CompileElement(function);
+    if(!function) return 0;
+    return CompilePossibleUnit(function);
+}
+#endif
 
 template<typename Value_t>
 inline const char*
@@ -1428,15 +1459,18 @@ FunctionParserBase<Value_t>::CompileComparison(const char* function)
           case '=':
               ++function; op = cEqual; break;
           case '!':
-              if(function[1] == '=') { function += 2; op = cNEqual; break; }
+              if(function[1] == '=')
+              { function += 2; op = cNEqual; break; }
               // If '=' does not follow '!', a syntax error will
               // be generated at the outermost parsing level
               return function;
           case '<':
-              if(function[1] == '=') { function += 2; op = cLessOrEq; break; }
+              if(function[1] == '=')
+              { function += 2; op = cLessOrEq; break; }
               ++function; op = cLess; break;
           case '>':
-              if(function[1] == '=') { function += 2; op = cGreaterOrEq; break; }
+              if(function[1] == '=')
+              { function += 2; op = cGreaterOrEq; break; }
               ++function; op = cGreater; break;
           default: return function;
         }
@@ -1795,33 +1829,27 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               --SP; break;
 
           case cEqual:
-              Stack[SP-1] = Value_t
-                  (fp_abs(Stack[SP-1] - Stack[SP]) <= fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_equal(Stack[SP-1], Stack[SP]);
               --SP; break;
 
           case cNEqual:
-              Stack[SP-1] = Value_t
-                  (fp_abs(Stack[SP-1] - Stack[SP]) >= fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_nequal(Stack[SP-1], Stack[SP]);
               --SP; break;
 
           case  cLess:
-              Stack[SP-1] = Value_t
-                  (Stack[SP-1] < Stack[SP] - fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_less(Stack[SP-1], Stack[SP]);
               --SP; break;
 
           case  cLessOrEq:
-              Stack[SP-1] = Value_t
-                  (Stack[SP-1] <= Stack[SP] + fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_lessOrEq(Stack[SP-1], Stack[SP]);
               --SP; break;
 
           case cGreater:
-              Stack[SP-1] = Value_t
-                  (Stack[SP] < Stack[SP-1] - fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_less(Stack[SP], Stack[SP-1]);
               --SP; break;
 
           case cGreaterOrEq:
-              Stack[SP-1] = Value_t
-                  (Stack[SP] <= Stack[SP-1] + fp_epsilon<Value_t>());
+              Stack[SP-1] = fp_lessOrEq(Stack[SP], Stack[SP-1]);
               --SP; break;
 
           case   cNot: Stack[SP] = Value_t(!truthValue(Stack[SP])); break;
@@ -1953,7 +1981,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(Stack[SP] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
 #           endif
-              Stack[SP] = Value_t(1) / sqrt(Stack[SP]); break;
+              Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
 
           case cNop: break;
 

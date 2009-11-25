@@ -18,6 +18,7 @@
 */
 //#define FP_SUPPORT_FLOAT_TYPE
 //#define FP_SUPPORT_LONG_DOUBLE_TYPE
+//#define FP_SUPPORT_LONG_INT_TYPE
 
 
 /*

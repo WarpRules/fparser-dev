@@ -142,5 +142,6 @@ private:
 class FunctionParser: public FunctionParserBase<double> {};
 class FunctionParser_f: public FunctionParserBase<float> {};
 class FunctionParser_ld: public FunctionParserBase<long double> {};
+class FunctionParser_li: public FunctionParserBase<long> {};
 
 #endif
