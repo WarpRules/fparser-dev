@@ -592,7 +592,15 @@ double f55(const double* p)
 
 double f56(const double* p)
 {
-#define P56 "1.6646342e+21%x", "x", f56, 1, .25, 100, .25, false
+//#define P56 "1.6646342e+21%x", "x", f56, 1, .25, 100, .25, false
+/* There's some kind of complicated oddity or bug in gcc which makes
+   "1.6646342e+21" to parse slightly differently from "0x1.68f5c2c528fa3p+70"
+   when dealign with long doubles, even though they should be the exact same
+   thing. This causes "1.6646342e+21%x" to produce completely different
+   results for doubles than for long doubles. (This doesn't happen only when
+   using strtod()/strtold(), but it happens with C++ literals as well.)
+*/
+#define P56 "0x1.68f5c2c528fa3p+70%x", "x", f56, 1, .25, 100, .25, false
     const double x = p[0];
     // 1.6646342e+21 chosen as such to be larger than 2^64,
     // which is the limit where repeated runs of fprem opcode
