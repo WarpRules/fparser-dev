@@ -62,20 +62,13 @@ namespace
         return d<0 ? -int((-d)+.5) : int(d+.5);
     }
 
-    double Sqr(const double* p)
-    {
-        return p[0]*p[0];
-    }
+    double Sqr(const double* p) { return p[0]*p[0]; }
+    double Sub(const double* p) { return p[0]-p[1]; }
+    double Value(const double*) { return 10; }
 
-    double Sub(const double* p)
-    {
-        return p[0]-p[1];
-    }
-
-    double Value(const double*)
-    {
-        return 10;
-    }
+    long double Sqr_ld(const long double* p) { return p[0]*p[0]; }
+    long double Sub_ld(const long double* p) { return p[0]-p[1]; }
+    long double Value_ld(const long double*) { return 10; }
 }
 
 
@@ -1646,9 +1639,11 @@ bool testUserDefinedFunctions()
 //=========================================================================
 // Main test function
 //=========================================================================
-bool runTest(unsigned testIndex, FunctionParser& fp, const char* type)
+template<typename Parser_t>
+bool runTest(unsigned testIndex, Parser_t& fp, const char* type)
 {
     double vars[10];
+    typename Parser_t::value_type fp_vars[10];
 
     for(unsigned i = 0; i < tests[testIndex].paramAmount; ++i)
         vars[i] = tests[testIndex].paramMin;
@@ -1665,8 +1660,11 @@ bool runTest(unsigned testIndex, FunctionParser& fp, const char* type)
 
         if(i == tests[testIndex].paramAmount) break;
 
+        for(unsigned i = 0; i < tests[testIndex].paramAmount; ++i)
+            fp_vars[i] = vars[i];
+
         double v1 = tests[testIndex].funcPtr(vars);
-        double v2 = fp.Eval(vars);
+        double v2 = double(fp.Eval(fp_vars));
 
         const double scale = pow(10.0, floor(log10(fabs(v1))));
         double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
@@ -1807,9 +1805,12 @@ int main()
     // Setup the function parser for testing
     // -------------------------------------
     FunctionParser fp;
+    FunctionParser_ld fp_ld;
 
     bool ret = fp.AddConstant("pi", M_PI);
-    ret &= fp.AddConstant("CONST", CONST);
+    ret = ret && fp.AddConstant("CONST", CONST);
+    ret = ret && fp_ld.AddConstant("pi", M_PI);
+    ret = ret && fp_ld.AddConstant("CONST", CONST);
     if(!ret)
     {
         std::cout << "Ooops! AddConstant() didn't work" << std::endl;
@@ -1817,7 +1818,9 @@ int main()
     }
 
     ret = fp.AddUnit("doubled", 2);
-    ret &= fp.AddUnit("tripled", 3);
+    ret = ret && fp.AddUnit("tripled", 3);
+    ret = ret && fp_ld.AddUnit("doubled", 2);
+    ret = ret && fp_ld.AddUnit("tripled", 3);
     if(!ret)
     {
         std::cout << "Ooops! AddUnit() didn't work" << std::endl;
@@ -1825,8 +1828,11 @@ int main()
     }
 
     ret = fp.AddFunction("sub", Sub, 2);
-    ret &= fp.AddFunction("sqr", Sqr, 1);
-    ret &= fp.AddFunction("value", Value, 0);
+    ret = ret && fp.AddFunction("sqr", Sqr, 1);
+    ret = ret && fp.AddFunction("value", Value, 0);
+    ret = ret && fp_ld.AddFunction("sub", Sub_ld, 2);
+    ret = ret && fp_ld.AddFunction("sqr", Sqr_ld, 1);
+    ret = ret && fp_ld.AddFunction("value", Value_ld, 0);
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
@@ -1834,16 +1840,23 @@ int main()
     }
 
     FunctionParser SqrFun, SubFun, ValueFun;
-    if(verbose) std::cout << "Parsing SqrFun... "; SqrFun.Parse("x*x", "x");
+    FunctionParser_ld SqrFun_ld, SubFun_ld, ValueFun_ld;
+    if(verbose) std::cout << "Parsing SqrFun... ";
+    SqrFun.Parse("x*x", "x"); SqrFun_ld.Parse("x*x", "x");
     if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing SubFun... "; SubFun.Parse("x-y", "x,y");
+    if(verbose) std::cout << "Parsing SubFun... ";
+    SubFun.Parse("x-y", "x,y"); SubFun_ld.Parse("x-y", "x,y");
     if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing ValueFun... "; ValueFun.Parse("5", "");
+    if(verbose) std::cout << "Parsing ValueFun... ";
+    ValueFun.Parse("5", ""); ValueFun_ld.Parse("5", "");
     if(verbose) std::cout << std::endl;
 
     ret = fp.AddFunction("psqr", SqrFun);
-    ret &= fp.AddFunction("psub", SubFun);
-    ret &= fp.AddFunction("pvalue", ValueFun);
+    ret = ret && fp.AddFunction("psub", SubFun);
+    ret = ret && fp.AddFunction("pvalue", ValueFun);
+    ret = ret && fp_ld.AddFunction("psqr", SqrFun_ld);
+    ret = ret && fp_ld.AddFunction("psub", SubFun_ld);
+    ret = ret && fp_ld.AddFunction("pvalue", ValueFun_ld);
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(parser) didn't work" << std::endl;
@@ -1887,6 +1900,17 @@ int main()
             return 1;
         }
 
+        retval = fp_ld.Parse(tests[i].funcString, tests[i].paramString,
+                             tests[i].useDegrees);
+        if(retval >= 0)
+        {
+            std::cout << "\nWith FunctionParser_ld,\n"
+                      << "in \"" << tests[i].funcString << "\" (\""
+                      << tests[i].paramString << "\"), col " << retval
+                      << ":\n" << fp_ld.ErrorMsg() << std::endl;
+            return 1;
+        }
+
         //fp.PrintByteCode(std::cout);
         if(verbose)
             std::cout << /*std::right <<*/ std::setw(2) << i+1 << ": \""
@@ -1898,6 +1922,7 @@ int main()
             std::cout << i+1 << std::flush << " ";
 
         if(!runTest(i, fp, "Not optimized")) return 1;
+        if(!runTest(i, fp_ld, "long double, not optimized")) return 1;
         if(verbose) std::cout << "Ok." << std::endl;
 
         fp.Optimize();
