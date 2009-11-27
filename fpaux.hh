@@ -364,6 +364,7 @@ namespace FUNCTIONPARSERTYPES
     inline long fp_log(long) { return 0; }
     inline long fp_log10(long) { return 0; }
     inline long fp_mod(long x, long y) { return x % y; }
+    inline long fp_pow(long, long) { return 0; }
     inline long fp_sin(long) { return 0; }
     inline long fp_sinh(long) { return 0; }
     inline long fp_sqrt(long) { return 0; }

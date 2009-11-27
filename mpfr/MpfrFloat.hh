@@ -30,13 +30,12 @@ class MpfrFloat
 
 
     /* This function can be used to retrieve the raw mpfr_t data structure
-       used by this object. A pointer to the destination mpfr_t object should
-       be given as parameter (the function does not return it directly in
-       order to avoid a dependency of this header file with <mpfr.h>.)
+       used by this object. (The template trick is used to avoid a dependency
+       of this header file with <mpfr.h>.)
        In other words, it can be called like:
 
          mpfr_t raw_mpfr_data;
-         floatValue.get_raw_mpfr_data(&raw_mpfr_data);
+         floatValue.get_raw_mpfr_data(raw_mpfr_data);
 
        Note that the returned mpf_t should be considered as read-only and
        not be modified from the outside because it may be shared among
@@ -44,14 +43,17 @@ class MpfrFloat
        should copy it for itself first with the appropriate GMP library
        functions.
      */
-    void get_raw_mpfr_data(void* dest_mpfr_t);
+    template<typename Mpfr_t>
+    void get_raw_mpfr_data(Mpfr_t& dest_mpfr_t);
 
 
     /* Note that the returned char* points to an internal (shared) buffer
        which will be valid until the next time this function is called
        (by any object).
     */
-    const char* getAsString() const;
+    const char* getAsString(unsigned precision) const;
+
+    bool isInteger() const;
 
 
     MpfrFloat& operator+=(const MpfrFloat&);
@@ -92,6 +94,44 @@ class MpfrFloat
     bool operator!=(const MpfrFloat&) const;
     bool operator!=(double) const;
 
+    static MpfrFloat log(const MpfrFloat&);
+    static MpfrFloat log2(const MpfrFloat&);
+    static MpfrFloat log10(const MpfrFloat&);
+    static MpfrFloat exp(const MpfrFloat&);
+    static MpfrFloat exp2(const MpfrFloat&);
+    static MpfrFloat exp10(const MpfrFloat&);
+    static MpfrFloat cos(const MpfrFloat&);
+    static MpfrFloat sin(const MpfrFloat&);
+    static MpfrFloat tan(const MpfrFloat&);
+    static MpfrFloat sec(const MpfrFloat&);
+    static MpfrFloat csc(const MpfrFloat&);
+    static MpfrFloat cot(const MpfrFloat&);
+    static MpfrFloat acos(const MpfrFloat&);
+    static MpfrFloat asin(const MpfrFloat&);
+    static MpfrFloat atan(const MpfrFloat&);
+    static MpfrFloat atan2(const MpfrFloat&, const MpfrFloat&);
+    static MpfrFloat cosh(const MpfrFloat&);
+    static MpfrFloat sinh(const MpfrFloat&);
+    static MpfrFloat tanh(const MpfrFloat&);
+    static MpfrFloat acosh(const MpfrFloat&);
+    static MpfrFloat asinh(const MpfrFloat&);
+    static MpfrFloat atanh(const MpfrFloat&);
+    static MpfrFloat sqrt(const MpfrFloat&);
+    static MpfrFloat cbrt(const MpfrFloat&);
+    static MpfrFloat root(const MpfrFloat&, unsigned long root);
+    static MpfrFloat pow(const MpfrFloat&, const MpfrFloat&);
+    static MpfrFloat pow(const MpfrFloat&, long exponent);
+    static MpfrFloat abs(const MpfrFloat&);
+    static MpfrFloat dim(const MpfrFloat&, const MpfrFloat&);
+    static MpfrFloat round(const MpfrFloat&);
+    static MpfrFloat ceil(const MpfrFloat&);
+    static MpfrFloat floor(const MpfrFloat&);
+    static MpfrFloat trunc(const MpfrFloat&);
+
+    static MpfrFloat const_pi();
+    static MpfrFloat const_e();
+    static MpfrFloat const_log2();
+
 
  private:
     struct MpfrFloatData;
@@ -122,10 +162,6 @@ inline bool operator>=(double lhs, const MpfrFloat& rhs) { return rhs <= lhs; }
 inline bool operator==(double lhs, const MpfrFloat& rhs) { return rhs == lhs; }
 inline bool operator!=(double lhs, const MpfrFloat& rhs) { return rhs != lhs; }
 
-inline std::ostream& operator<<(std::ostream& os, const MpfrFloat& value)
-{
-    os << value.getAsString();
-    return os;
-}
+std::ostream& operator<<(std::ostream& os, const MpfrFloat& value);
 
 #endif
