@@ -56,6 +56,18 @@ template<>
 void FunctionParserBase<long>::Optimize()
 {}
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+template<>
+void FunctionParserBase<MpfrFloat>::Optimize()
+{}
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+void FunctionParserBase<GmpInt>::Optimize()
+{}
+#endif
+
 FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif

@@ -15,6 +15,14 @@
 #include <cmath>
 #include <cstring>
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+#include "mpfr/MpfrFloat.hh"
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+#include "mpfr/GmpInt.hh"
+#endif
+
 #ifdef ONCE_FPARSER_H_
 namespace FUNCTIONPARSERTYPES
 {
@@ -385,6 +393,48 @@ namespace FUNCTIONPARSERTYPES
 
 
 // -------------------------------------------------------------------------
+// MpfrFloat
+// -------------------------------------------------------------------------
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_abs(const MpfrFloat& x) { return MpfrFloat::abs(x); }
+    inline MpfrFloat fp_acos(const MpfrFloat& x) { return MpfrFloat::acos(x); }
+    inline MpfrFloat fp_asin(const MpfrFloat& x) { return MpfrFloat::asin(x); }
+    inline MpfrFloat fp_atan(const MpfrFloat& x) { return MpfrFloat::atan(x); }
+    inline MpfrFloat fp_atan2(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::atan2(x, y); }
+    inline MpfrFloat fp_cbrt(const MpfrFloat& x) { return MpfrFloat::cbrt(x); }
+    inline MpfrFloat fp_ceil(const MpfrFloat& x) { return MpfrFloat::ceil(x); }
+    inline MpfrFloat fp_cos(const MpfrFloat& x) { return MpfrFloat::cos(x); }
+    inline MpfrFloat fp_cosh(const MpfrFloat& x) { return MpfrFloat::cosh(x); }
+    inline MpfrFloat fp_exp(const MpfrFloat& x) { return MpfrFloat::exp(x); }
+    inline MpfrFloat fp_floor(const MpfrFloat& x) { return MpfrFloat::floor(x); }
+    inline MpfrFloat fp_int(const MpfrFloat& x) { return MpfrFloat::round(x); }
+    inline MpfrFloat fp_log(const MpfrFloat& x) { return MpfrFloat::log(x); }
+    inline MpfrFloat fp_log10(const MpfrFloat& x) { return MpfrFloat::log10(x); }
+    inline MpfrFloat fp_mod(const MpfrFloat& x, const MpfrFloat& y) { return x % y; }
+    inline MpfrFloat fp_sin(const MpfrFloat& x) { return MpfrFloat::sin(x); }
+    inline MpfrFloat fp_sinh(const MpfrFloat& x) { return MpfrFloat::sinh(x); }
+    inline MpfrFloat fp_sqrt(const MpfrFloat& x) { return MpfrFloat::sqrt(x); }
+    inline MpfrFloat fp_tan(const MpfrFloat& x) { return MpfrFloat::tan(x); }
+    inline MpfrFloat fp_tanh(const MpfrFloat& x) { return MpfrFloat::tanh(x); }
+    inline MpfrFloat fp_asinh(const MpfrFloat& x) { return MpfrFloat::asinh(x); }
+    inline MpfrFloat fp_acosh(const MpfrFloat& x) { return MpfrFloat::acosh(x); }
+    inline MpfrFloat fp_atanh(const MpfrFloat& x) { return MpfrFloat::atanh(x); }
+    inline MpfrFloat fp_trunc(const MpfrFloat& x) { return MpfrFloat::trunc(x); }
+
+    inline MpfrFloat fp_pow(const MpfrFloat& x, MpfrFloat& y) { return MpfrFloat::pow(x, y); }
+    inline MpfrFloat fp_pow_base(const MpfrFloat& x, MpfrFloat& y) { return MpfrFloat::pow(x, y); }
+
+    inline MpfrFloat fp_log2(const MpfrFloat& x) { return MpfrFloat::log2(x); }
+    inline MpfrFloat fp_exp2(const MpfrFloat& x) { return MpfrFloat::exp2(x); }
+
+    inline bool IsIntegerConst(const MpfrFloat& a) { return a.isInteger(); }
+
+    template<>
+    inline MpfrFloat fp_epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
+#endif // FP_SUPPORT_MPFR_FLOAT_TYPE
+
+
+// -------------------------------------------------------------------------
 // Comparison
 // -------------------------------------------------------------------------
 #ifdef FP_EPSILON
@@ -454,6 +504,20 @@ namespace FUNCTIONPARSERTYPES
 #define FUNCTIONPARSER_INSTANTIATE_LONG_INT
 #endif
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+#define FUNCTIONPARSER_INSTANTIATE_MPFR_FLOAT \
+    template class FunctionParserBase<MpfrFloat>;
+#else
+#define FUNCTIONPARSER_INSTANTIATE_MPFR_FLOAT
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+#define FUNCTIONPARSER_INSTANTIATE_GMP_INT \
+    template class FunctionParserBase<GmpInt>;
+#else
+#define FUNCTIONPARSER_INSTANTIATE_GMP_INT
+#endif
+
 /* Add 'FUNCTIONPARSER_INSTANTIATE_TYPES' at the end of all .cc files
    containing FunctionParserBase implementations.
  */
@@ -461,6 +525,8 @@ namespace FUNCTIONPARSERTYPES
     template class FunctionParserBase<double>; \
     FUNCTIONPARSER_INSTANTIATE_FLOAT \
     FUNCTIONPARSER_INSTANTIATE_LONG_DOUBLE \
-    FUNCTIONPARSER_INSTANTIATE_LONG_INT
+    FUNCTIONPARSER_INSTANTIATE_LONG_INT \
+    FUNCTIONPARSER_INSTANTIATE_MPFR_FLOAT \
+    FUNCTIONPARSER_INSTANTIATE_GMP_INT
 
-#endif
+#endif // ONCE_FPARSER_AUX_H_

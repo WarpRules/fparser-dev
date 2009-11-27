@@ -201,14 +201,11 @@ namespace FUNCTIONPARSERTYPES
     {
         enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR, VARIABLE };
         DataType type;
-        union
-        {
-            unsigned index;
-            Value_t value;
-        };
+        unsigned index;
+        Value_t value;
 
-        NameData(DataType t, unsigned v) : type(t), index(v) { }
-        NameData(DataType t, Value_t v) : type(t), value(v) { }
+        NameData(DataType t, unsigned v) : type(t), index(v), value() { }
+        NameData(DataType t, Value_t v) : type(t), index(), value(v) { }
         NameData() { }
     };
 

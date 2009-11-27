@@ -24,16 +24,35 @@ using namespace FUNCTIONPARSERTYPES;
 #endif
 #endif
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
-
 
 //=========================================================================
 // Name handling functions
 //=========================================================================
 namespace
 {
+    template<typename Value_t>
+    inline Value_t const_pi()
+    {
+        return Value_t(3.1415926535897932384626433832795L);
+    }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline MpfrFloat const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
+#endif
+
+    template<typename Value_t>
+    inline Value_t const_e()
+    {
+        return Value_t(2.7182818284590452353602874713526624977572L);
+    }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline MpfrFloat const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
+#endif
+
+
     template<typename Value_t>
     bool addNewNameData(namePtrsType<Value_t>& namePtrs,
                         std::pair<NamePtr, NameData<Value_t> >& newName,
@@ -109,6 +128,14 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline unsigned readOpcode<GmpInt>(const char* input)
+    {
+        return readOpcodeForIntType(input);
+    }
+#endif
+
     template<typename Value_t>
     bool containsOnlyValidNameChars(const std::string& name)
     {
@@ -122,11 +149,21 @@ namespace
     template<>
     inline bool truthValue<long>(long l) { return l != 0; }
 
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool truthValue<GmpInt>(const GmpInt& l) { return l != 0; }
+#endif
+
     template<typename Value_t>
     inline bool truthValue_abs(Value_t abs_d) { return abs_d >= Value_t(0.5); }
 
     template<>
     inline bool truthValue_abs<long>(long l) { return l != 0; }
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool truthValue_abs<GmpInt>(const GmpInt& l) { return l != 0; }
+#endif
 
     template<typename Value_t>
     inline Value_t Min(Value_t d1, Value_t d2) { return d1<d2 ? d1 : d2; }
@@ -137,13 +174,15 @@ namespace
     template<typename Value_t>
     inline Value_t DegreesToRadians(Value_t degrees)
     {
-        return degrees*(Value_t(M_PI) / Value_t(180.0));
+        static const Value_t factor = const_pi<Value_t>() / Value_t(180.0);
+        return degrees * factor;
     }
 
     template<typename Value_t>
     inline Value_t RadiansToDegrees(Value_t radians)
     {
-        return radians*(Value_t(180.0) / Value_t(M_PI));
+        static const Value_t factor = Value_t(180.0) / const_pi<Value_t>();
+        return radians * factor;
     }
 
     template<typename Value_t>
@@ -153,12 +192,28 @@ namespace
         return fp_equal(value, Value_t(longval)) && (longval%2) == 0;
     }
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline bool isEvenInteger(MpfrFloat value)
+    {
+        return value.isInteger() && value%2 == 0;
+    }
+#endif
+
     template<typename Value_t>
     inline bool isOddInteger(Value_t value)
     {
         long longval = (long)value;
         return fp_equal(value, Value_t(longval)) && (longval%2) != 0;
     }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline bool isOddInteger(MpfrFloat value)
+    {
+        return value.isInteger() && value%2 != 0;
+    }
+#endif
 
     template<typename Value_t>
     inline Value_t parseLiteral(const char* nptr, char** endptr)
@@ -189,6 +244,30 @@ namespace
     {
         return strtol(nptr, endptr, 10);
     }
+#endif
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline MpfrFloat parseLiteral<MpfrFloat>(const char* nptr, char** endptr)
+    {
+        return MpfrFloat::parseString(nptr, endptr);
+    }
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline GmpInt parseLiteral<GmpInt>(const char* nptr, char** endptr)
+    {
+        return GmpInt::parseString(nptr, endptr, 10);
+    }
+#endif
+
+    template<typename Value_t>
+    inline int valueToInt(Value_t value) { return int(value); }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline int valueToInt(MpfrFloat value) { return value.toInt(); }
 #endif
 }
 
@@ -965,7 +1044,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     Value_t changed_immed = original_immed;
     for(int sqrt_count=0; /**/; ++sqrt_count)
     {
-        int int_exponent = (int)changed_immed;
+        int int_exponent = valueToInt(changed_immed);
         if(changed_immed == Value_t(int_exponent) &&
            IsEligibleIntPowiExponent(int_exponent))
         {
@@ -1309,8 +1388,7 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         unsigned op = cPow;
         if(data->ByteCode.back() == cImmed)
         {
-            if(data->Immed.back() ==
-               Value_t(2.7182818284590452353602874713526624977572L))
+            if(data->Immed.back() == const_e<Value_t>())
                 { op = cExp;  data->ByteCode.pop_back();
                     data->Immed.pop_back(); --StackPtr; }
             else if(data->Immed.back() == Value_t(2.0))
@@ -1333,6 +1411,17 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
 template<>
 inline const char*
 FunctionParserBase<long>::CompilePow(const char* function)
+{
+    function = CompileElement(function);
+    if(!function) return 0;
+    return CompilePossibleUnit(function);
+}
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+inline const char*
+FunctionParserBase<GmpInt>::CompilePow(const char* function)
 {
     function = CompileElement(function);
     if(!function) return 0;
@@ -2173,7 +2262,7 @@ namespace
             if(ByteCode[IP] == opcodes.opcode_half)
             {
                 if(IsIntegerConst(result) && result > Value_t(0) &&
-                   ((long)result) % 2 == 0)
+                   (valueToInt(result)) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * Value_t(0.5))) break;
                 result *= Value_t(0.5);
@@ -2183,7 +2272,7 @@ namespace
             if(ByteCode[IP] == opcodes.opcode_invhalf)
             {
                 if(IsIntegerConst(result) && result > Value_t(0) &&
-                   ((long)result) % 2 == 0)
+                   (valueToInt(result)) % 2 == 0)
                     break;
                 if(IsIntegerConst(result * Value_t(-0.5))) break;
                 result *= Value_t(-0.5);

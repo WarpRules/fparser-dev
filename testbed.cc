@@ -66,9 +66,11 @@ namespace
     double Sub(const double* p) { return p[0]-p[1]; }
     double Value(const double*) { return 10; }
 
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     long double Sqr_ld(const long double* p) { return p[0]*p[0]; }
     long double Sub_ld(const long double* p) { return p[0]-p[1]; }
     long double Value_ld(const long double*) { return 10; }
+#endif
 }
 
 
@@ -1813,12 +1815,16 @@ int main()
     // Setup the function parser for testing
     // -------------------------------------
     FunctionParser fp;
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     FunctionParser_ld fp_ld;
+#endif
 
     bool ret = fp.AddConstant("pi", M_PI);
     ret = ret && fp.AddConstant("CONST", CONST);
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddConstant("pi", M_PI);
     ret = ret && fp_ld.AddConstant("CONST", CONST);
+#endif
     if(!ret)
     {
         std::cout << "Ooops! AddConstant() didn't work" << std::endl;
@@ -1827,8 +1833,10 @@ int main()
 
     ret = fp.AddUnit("doubled", 2);
     ret = ret && fp.AddUnit("tripled", 3);
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddUnit("doubled", 2);
     ret = ret && fp_ld.AddUnit("tripled", 3);
+#endif
     if(!ret)
     {
         std::cout << "Ooops! AddUnit() didn't work" << std::endl;
@@ -1838,9 +1846,11 @@ int main()
     ret = fp.AddFunction("sub", Sub, 2);
     ret = ret && fp.AddFunction("sqr", Sqr, 1);
     ret = ret && fp.AddFunction("value", Value, 0);
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddFunction("sub", Sub_ld, 2);
     ret = ret && fp_ld.AddFunction("sqr", Sqr_ld, 1);
     ret = ret && fp_ld.AddFunction("value", Value_ld, 0);
+#endif
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
@@ -1848,23 +1858,31 @@ int main()
     }
 
     FunctionParser SqrFun, SubFun, ValueFun;
-    FunctionParser_ld SqrFun_ld, SubFun_ld, ValueFun_ld;
     if(verbose) std::cout << "Parsing SqrFun... ";
-    SqrFun.Parse("x*x", "x"); SqrFun_ld.Parse("x*x", "x");
+    SqrFun.Parse("x*x", "x");
     if(verbose) std::cout << std::endl;
     if(verbose) std::cout << "Parsing SubFun... ";
-    SubFun.Parse("x-y", "x,y"); SubFun_ld.Parse("x-y", "x,y");
+    SubFun.Parse("x-y", "x,y");
     if(verbose) std::cout << std::endl;
     if(verbose) std::cout << "Parsing ValueFun... ";
-    ValueFun.Parse("5", ""); ValueFun_ld.Parse("5", "");
+    ValueFun.Parse("5", "");
     if(verbose) std::cout << std::endl;
+
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    FunctionParser_ld SqrFun_ld, SubFun_ld, ValueFun_ld;
+    SqrFun.Parse("x*x", "x"); SqrFun_ld.Parse("x*x", "x");
+    SubFun.Parse("x-y", "x,y"); SubFun_ld.Parse("x-y", "x,y");
+    ValueFun.Parse("5", ""); ValueFun_ld.Parse("5", "");
+#endif
 
     ret = fp.AddFunction("psqr", SqrFun);
     ret = ret && fp.AddFunction("psub", SubFun);
     ret = ret && fp.AddFunction("pvalue", ValueFun);
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddFunction("psqr", SqrFun_ld);
     ret = ret && fp_ld.AddFunction("psub", SubFun_ld);
     ret = ret && fp_ld.AddFunction("pvalue", ValueFun_ld);
+#endif
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(parser) didn't work" << std::endl;
@@ -1908,6 +1926,7 @@ int main()
             return 1;
         }
 
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
         retval = fp_ld.Parse(tests[i].funcString, tests[i].paramString,
                              tests[i].useDegrees);
         if(retval >= 0)
@@ -1918,6 +1937,7 @@ int main()
                       << ":\n" << fp_ld.ErrorMsg() << std::endl;
             return 1;
         }
+#endif
 
         //fp.PrintByteCode(std::cout);
         if(verbose)
@@ -1930,7 +1950,9 @@ int main()
             std::cout << i+1 << std::flush << " ";
 
         if(!runTest(i, fp, "Not optimized")) return 1;
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
         if(!runTest(i, fp_ld, "long double, not optimized")) return 1;
+#endif
         if(verbose) std::cout << "Ok." << std::endl;
 
         fp.Optimize();

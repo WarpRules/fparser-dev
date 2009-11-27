@@ -13,12 +13,14 @@
 // include "fparser.hh".
 
 
-/* Uncomment any of these lines, or define them in your compiler settings
+/* Uncomment any of these lines or define them in your compiler settings
    to enable the correspondent version of the parser.
 */
 //#define FP_SUPPORT_FLOAT_TYPE
 //#define FP_SUPPORT_LONG_DOUBLE_TYPE
 //#define FP_SUPPORT_LONG_INT_TYPE
+//#define FP_SUPPORT_MPFR_FLOAT_TYPE
+//#define FP_SUPPORT_GMP_INT_TYPE
 
 
 /*

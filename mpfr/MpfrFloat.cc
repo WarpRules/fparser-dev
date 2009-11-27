@@ -4,6 +4,7 @@
 #include <deque>
 #include <vector>
 #include <cstring>
+#include <cassert>
 
 //===========================================================================
 // Shared data
@@ -28,11 +29,23 @@ struct MpfrFloat::MpfrFloatData
 class MpfrFloat::MpfrFloatDataContainer
 {
     unsigned long mDefaultPrecision;
-    std::deque<MpfrFloat::MpfrFloatData> mData;
-    MpfrFloat::MpfrFloatData* mFirstFreeNode;
+    std::deque<MpfrFloatData> mData;
+    MpfrFloatData* mFirstFreeNode;
+
+    MpfrFloatData
+    *mConst_0, *mConst_pi, *mConst_e, *mConst_log2, *mConst_epsilon;
+
+    void recalculateEpsilon()
+    {
+        mpfr_set_si(mConst_epsilon->mFloat, 0, GMP_RNDN);
+        for(int i = 0; i < 1000; ++i)
+            mpfr_nextabove(mConst_epsilon->mFloat);
+    }
 
  public:
-    MpfrFloatDataContainer(): mDefaultPrecision(256), mFirstFreeNode(0)
+    MpfrFloatDataContainer():
+        mDefaultPrecision(256), mFirstFreeNode(0),
+        mConst_pi(0), mConst_e(0), mConst_log2(0), mConst_epsilon(0)
     {}
 
     ~MpfrFloatDataContainer()
@@ -41,24 +54,24 @@ class MpfrFloat::MpfrFloatDataContainer
             mpfr_clear(mData[i].mFloat);
     }
 
-    MpfrFloat::MpfrFloatData* allocateMpfrFloatData(bool initToZero)
+    MpfrFloatData* allocateMpfrFloatData(bool initToZero)
     {
         if(mFirstFreeNode)
         {
-            MpfrFloat::MpfrFloatData* node = mFirstFreeNode;
+            MpfrFloatData* node = mFirstFreeNode;
             mFirstFreeNode = node->nextFreeNode;
             if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
             ++(node->mRefCount);
             return node;
         }
 
-        mData.push_back(MpfrFloat::MpfrFloatData());
+        mData.push_back(MpfrFloatData());
         mpfr_init2(mData.back().mFloat, mDefaultPrecision);
         if(initToZero) mpfr_set_si(mData.back().mFloat, 0, GMP_RNDN);
         return &mData.back();
     }
 
-    void releaseMpfrFloatData(MpfrFloat::MpfrFloatData* data)
+    void releaseMpfrFloatData(MpfrFloatData* data)
     {
         if(--(data->mRefCount) == 0)
         {
@@ -74,12 +87,63 @@ class MpfrFloat::MpfrFloatDataContainer
             mDefaultPrecision = bits;
             for(size_t i = 0; i < mData.size(); ++i)
                 mpfr_set_prec(mData[i].mFloat, bits);
+
+            if(mConst_pi) mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
+            if(mConst_e) mpfr_const_euler(mConst_e->mFloat, GMP_RNDN);
+            if(mConst_log2) mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
+            if(mConst_epsilon) recalculateEpsilon();
         }
     }
 
     unsigned long getDefaultPrecision() const
     {
         return mDefaultPrecision;
+    }
+
+    MpfrFloatData* const_0()
+    {
+        if(!mConst_0) mConst_0 = allocateMpfrFloatData(true);
+        return mConst_0;
+    }
+
+    MpfrFloat const_pi()
+    {
+        if(!mConst_pi)
+        {
+            mConst_pi = allocateMpfrFloatData(false);
+            mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
+        }
+        return MpfrFloat(mConst_pi);
+    }
+
+    MpfrFloat const_e()
+    {
+        if(!mConst_e)
+        {
+            mConst_e = allocateMpfrFloatData(false);
+            mpfr_const_euler(mConst_e->mFloat, GMP_RNDN);
+        }
+        return MpfrFloat(mConst_e);
+    }
+
+    MpfrFloat const_log2()
+    {
+        if(!mConst_log2)
+        {
+            mConst_log2 = allocateMpfrFloatData(false);
+            mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
+        }
+        return MpfrFloat(mConst_log2);
+    }
+
+    MpfrFloat const_epsilon()
+    {
+        if(!mConst_epsilon)
+        {
+            mConst_epsilon = allocateMpfrFloatData(false);
+            recalculateEpsilon();
+        }
+        return MpfrFloat(mConst_epsilon);
     }
 };
 
@@ -118,21 +182,82 @@ MpfrFloat::MpfrFloat(DummyType):
     mData(gMpfrFloatDataContainer.allocateMpfrFloatData(false))
 {}
 
-MpfrFloat::MpfrFloat():
-    mData(gMpfrFloatDataContainer.allocateMpfrFloatData(true))
-{}
-
-MpfrFloat::MpfrFloat(double value):
-    mData(gMpfrFloatDataContainer.allocateMpfrFloatData(false))
+MpfrFloat::MpfrFloat(MpfrFloatData* data):
+    mData(data)
 {
-    mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+    assert(data != 0);
+    ++(mData->mRefCount);
 }
 
+MpfrFloat::MpfrFloat():
+    mData(gMpfrFloatDataContainer.const_0())
+{
+    ++(mData->mRefCount);
+}
+
+MpfrFloat::MpfrFloat(double value)
+{
+    if(value == 0.0)
+    {
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+    }
+}
+
+MpfrFloat::MpfrFloat(long double value)
+{
+    if(value == 0.0L)
+    {
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
+    }
+}
+
+MpfrFloat::MpfrFloat(long value)
+{
+    if(value == 0)
+    {
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+    }
+}
+
+MpfrFloat::MpfrFloat(int value)
+{
+    if(value == 0)
+    {
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+    }
+}
+
+/*
 MpfrFloat::MpfrFloat(const char* value):
     mData(gMpfrFloatDataContainer.allocateMpfrFloatData(false))
 {
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
 }
+*/
 
 MpfrFloat::~MpfrFloat()
 {
@@ -158,16 +283,85 @@ MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
 
 MpfrFloat& MpfrFloat::operator=(double value)
 {
-    if(mData->mRefCount > 1)
+    if(value == 0.0)
     {
-        --(mData->mRefCount);
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
     }
-
-    mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+    else
+    {
+        if(mData->mRefCount > 1)
+        {
+            --(mData->mRefCount);
+            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        }
+        mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+    }
     return *this;
 }
 
+MpfrFloat& MpfrFloat::operator=(long double value)
+{
+    if(value == 0.0L)
+    {
+        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        if(mData->mRefCount > 1)
+        {
+            --(mData->mRefCount);
+            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        }
+        mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
+    }
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator=(long value)
+{
+    if(value == 0)
+    {
+        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        if(mData->mRefCount > 1)
+        {
+            --(mData->mRefCount);
+            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        }
+        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+    }
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator=(int value)
+{
+    if(value == 0)
+    {
+        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+        mData = gMpfrFloatDataContainer.const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        if(mData->mRefCount > 1)
+        {
+            --(mData->mRefCount);
+            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        }
+        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+    }
+    return *this;
+}
+
+/*
 MpfrFloat& MpfrFloat::operator=(const char* value)
 {
     if(mData->mRefCount > 1)
@@ -178,6 +372,17 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
 
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
     return *this;
+}
+*/
+
+void MpfrFloat::parseValue(const char* value)
+{
+    mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
+}
+
+void MpfrFloat::parseValue(const char* value, char** endptr)
+{
+    mpfr_strtofr(mData->mFloat, value, endptr, 10, GMP_RNDN);
 }
 
 
@@ -192,15 +397,26 @@ void MpfrFloat::get_raw_mpfr_data<mpfr_t>(mpfr_t& dest_mpfr_t)
 
 const char* MpfrFloat::getAsString(unsigned precision) const
 {
+#if(MPFR_VERSION_MAJOR < 2 || (MPFR_VERSION_MAJOR == 2 && MPFR_VERSION_MINOR < 4))
+    static const char* retval =
+        "[mpfr_snprintf() is not supported in mpfr versions prior to 2.4]";
+    return retval;
+#else
     gMpfrFloatString.resize(precision+30);
     mpfr_snprintf(&gMpfrFloatString[0], precision+30, "%.*RNg", precision,
                   mData->mFloat);
     return &gMpfrFloatString[0];
+#endif
 }
 
 bool MpfrFloat::isInteger() const
 {
     return mpfr_integer_p(mData->mFloat) != 0;
+}
+
+int MpfrFloat::toInt() const
+{
+    return int(mpfr_get_si(mData->mFloat, GMP_RNDN));
 }
 
 
@@ -701,23 +917,29 @@ MpfrFloat MpfrFloat::trunc(const MpfrFloat& value)
     return retval;
 }
 
-MpfrFloat MpfrFloat::const_pi()
+MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_const_pi(retval.mData->mFloat, GMP_RNDN);
+    mpfr_strtofr(retval.mData->mFloat, str, endptr, 10, GMP_RNDN);
     return retval;
+}
+
+MpfrFloat MpfrFloat::const_pi()
+{
+    return gMpfrFloatDataContainer.const_pi();
 }
 
 MpfrFloat MpfrFloat::const_e()
 {
-    MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_const_euler(retval.mData->mFloat, GMP_RNDN);
-    return retval;
+    return gMpfrFloatDataContainer.const_e();
 }
 
 MpfrFloat MpfrFloat::const_log2()
 {
-    MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_const_log2(retval.mData->mFloat, GMP_RNDN);
-    return retval;
+    return gMpfrFloatDataContainer.const_log2();
+}
+
+MpfrFloat MpfrFloat::someEpsilon()
+{
+    return gMpfrFloatDataContainer.const_epsilon();
 }

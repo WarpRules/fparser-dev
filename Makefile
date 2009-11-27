@@ -24,6 +24,7 @@ FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -46,8 +47,9 @@ FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
+#CXXFLAGS += -std=c++0x
 
-CXXFLAGS += -std=c++0x
+LDFLAGS = -lgmp -lmpfr
 
 LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections
@@ -81,51 +83,55 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_bytecodesynth.o \
 		fpoptimizer/fpoptimizer_transformations.o \
 		fpoptimizer/fpoptimizer_debug.o \
-		fpoptimizer/fpoptimizer_hash.o
+		fpoptimizer/fpoptimizer_hash.o \
+		mpfr/MpfrFloat.o \
+		mpfr/GmpInt.o
 
-RELEASE_PACK_FILES = example.cc example2.cc fparser.cc fparser.hh \
+RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
+	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
+	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
 	fp_opcode_add.inc \
 	fp_identifier_parser.inc \
 	fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 fpoptimizer.o: fpoptimizer.cc
 
 testbed_release: testbed.o fparser.o fpoptimizer.o
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 speedtest: speedtest.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 speedtest_release: speedtest.o fparser.o fpoptimizer.o
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 example: example.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 example2: example2.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 ftest: ftest.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 powi_speedtest: powi_speedtest.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 koe: koe.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 functioninfo: functioninfo.o $(FP_MODULES)
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 fpoptimizer/grammar_parser: \
 		fpoptimizer/grammar_parser.o \
 		fpoptimizer/fpoptimizer_grammar.o \
 		fpoptimizer/fpoptimizer_opcodename.o
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 fpoptimizer/grammar_parser.cc: \
 		fpoptimizer/grammar_parser.y
@@ -139,7 +145,7 @@ fpoptimizer/fpoptimizer_grammar_data.cc: \
 
 fpoptimizer/bytecoderules_parser: \
 		fpoptimizer/bytecoderules_parser.o
-	$(LD) -o $@ $^
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 fp_opcode_add.inc: fpoptimizer/bytecoderules_parser fpoptimizer/fparser_bytecoderules.dat
 	fpoptimizer/bytecoderules_parser < fpoptimizer/fparser_bytecoderules.dat > $@
@@ -233,7 +239,8 @@ fpoptimizer_tests.sh: create_testrules_for_optimization_rules
 	chmod +x $@
 
 set_version_string: VersionChanger
-	./VersionChanger $(RELEASE_VERSION) fparser.cc fparser.hh fpconfig.hh \
+	./VersionChanger $(RELEASE_VERSION) fparser.cc \
+	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
 	fpoptimizer.cc fptypes.hh fpaux.hh fp_opcode_add.inc \
 	fpoptimizer/bytecoderules_parser.cc fparser.html webpage/index.html
 
@@ -242,13 +249,15 @@ pack: $(RELEASE_PACK_FILES) set_version_string
 
 devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
-	Makefile example.cc example2.cc fparser.cc fparser.hh fpconfig.hh \
+	Makefile example.cc example2.cc fparser.cc \
+	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
 	fptypes.hh fpaux.hh fp_opcode_add.inc speedtest.cc testbed.cc \
 	fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc \
 	fpoptimizer/fparser_bytecoderules.dat \
 	fpoptimizer/fpoptimizer_treerules.dat \
 	fpoptimizer/*.txt fpoptimizer/grammar_parser.y \
+	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
 	run_full_release_testing.sh VersionChanger.cc functioninfo.cc
 
 clean:
@@ -268,5 +277,6 @@ distclean: clean
 .dep:
 	g++ -MM $(CPPFLAGS) $(wildcard *.cc) > .dep
 	g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
+	g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
 
 -include .dep

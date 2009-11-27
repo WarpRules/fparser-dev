@@ -16,7 +16,10 @@ class MpfrFloat
 
     MpfrFloat();
     MpfrFloat(double value);
-    MpfrFloat(const char* value);
+    MpfrFloat(long double value);
+    MpfrFloat(long value);
+    MpfrFloat(int value);
+    //MpfrFloat(const char* value);
 
     ~MpfrFloat();
 
@@ -24,8 +27,12 @@ class MpfrFloat
 
     MpfrFloat& operator=(const MpfrFloat&);
     MpfrFloat& operator=(double value);
-    MpfrFloat& operator=(const char* value);
+    MpfrFloat& operator=(long double value);
+    MpfrFloat& operator=(long value);
+    MpfrFloat& operator=(int value);
+    //MpfrFloat& operator=(const char* value);
 
+    void parseValue(const char* value);
     void parseValue(const char* value, char** endptr);
 
 
@@ -37,10 +44,10 @@ class MpfrFloat
          mpfr_t raw_mpfr_data;
          floatValue.get_raw_mpfr_data(raw_mpfr_data);
 
-       Note that the returned mpf_t should be considered as read-only and
+       Note that the returned mpfr_t should be considered as read-only and
        not be modified from the outside because it may be shared among
        several objects. If the calling code needs to modify the data, it
-       should copy it for itself first with the appropriate GMP library
+       should copy it for itself first with the appropriate MPFR library
        functions.
      */
     template<typename Mpfr_t>
@@ -54,7 +61,7 @@ class MpfrFloat
     const char* getAsString(unsigned precision) const;
 
     bool isInteger() const;
-
+    int toInt() const;
 
     MpfrFloat& operator+=(const MpfrFloat&);
     MpfrFloat& operator+=(double);
@@ -128,9 +135,14 @@ class MpfrFloat
     static MpfrFloat floor(const MpfrFloat&);
     static MpfrFloat trunc(const MpfrFloat&);
 
+    static MpfrFloat parseString(const char* str, char** endptr);
+
+    // These values are cached (and recalculated every time the mantissa bits
+    // change), so it's efficient to call these repeatedly:
     static MpfrFloat const_pi();
     static MpfrFloat const_e();
     static MpfrFloat const_log2();
+    static MpfrFloat someEpsilon();
 
 
  private:
@@ -142,6 +154,7 @@ class MpfrFloat
 
     enum DummyType { kNoInitialization };
     MpfrFloat(DummyType);
+    MpfrFloat(MpfrFloatData*);
 
     void copyIfShared();
 
@@ -162,6 +175,7 @@ inline bool operator>=(double lhs, const MpfrFloat& rhs) { return rhs <= lhs; }
 inline bool operator==(double lhs, const MpfrFloat& rhs) { return rhs == lhs; }
 inline bool operator!=(double lhs, const MpfrFloat& rhs) { return rhs != lhs; }
 
+// This function takes into account the value of os.precision()
 std::ostream& operator<<(std::ostream& os, const MpfrFloat& value);
 
 #endif
