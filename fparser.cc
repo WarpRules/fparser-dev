@@ -1111,7 +1111,12 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     return false;
 }
 
+template<typename Value_t>
+inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
+{
+#define FP_INT_VERSION 0
 #include "fp_opcode_add.inc"
+}
 
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
