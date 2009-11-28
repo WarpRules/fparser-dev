@@ -1,5 +1,6 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
+#include "fparser_mpfr.hh"
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -70,6 +71,12 @@ namespace
     long double Sqr_ld(const long double* p) { return p[0]*p[0]; }
     long double Sub_ld(const long double* p) { return p[0]-p[1]; }
     long double Value_ld(const long double*) { return 10; }
+#endif
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    MpfrFloat Sqr_mpfr(const MpfrFloat* p) { return p[0]*p[0]; }
+    MpfrFloat Sub_mpfr(const MpfrFloat* p) { return p[0]-p[1]; }
+    MpfrFloat Value_mpfr(const MpfrFloat*) { return 10; }
 #endif
 }
 
@@ -595,19 +602,13 @@ double f55(const double* p)
 double f56(const double* p)
 {
 //#define P56 "1.6646342e+21%x", "x", f56, 1, .25, 100, .25, false
-/* There's some kind of complicated oddity or bug in gcc which makes
-   "1.6646342e+21" to parse slightly differently from "0x1.68f5c2c528fa3p+70"
-   when dealign with long doubles, even though they should be the exact same
-   thing. This causes "1.6646342e+21%x" to produce completely different
-   results for doubles than for long doubles. (This doesn't happen only when
-   using strtod()/strtold(), but it happens with C++ literals as well.)
-*/
-#define P56 "0x1.68f5c2c528fa3p+70%x", "x", f56, 1, .25, 100, .25, false
+#define P56 "1.75e21%x", "x", f56, 1, .25, 100, .25, false
     const double x = p[0];
     // 1.6646342e+21 chosen as such to be larger than 2^64,
     // which is the limit where repeated runs of fprem opcode
     // on 387 is required.
-    return fmod(1.6646342e+21, x);
+    //return fmod(1.6646342e+21, x);
+    return fmod(1.75e21, x);
 }
 
 
@@ -1649,6 +1650,16 @@ bool testUserDefinedFunctions()
 //=========================================================================
 // Main test function
 //=========================================================================
+template<typename Value_t>
+inline double toDouble(const Value_t& value)
+{ return double(value); }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+template<>
+inline double toDouble<MpfrFloat>(const MpfrFloat& value)
+{ return value.toDouble(); }
+#endif
+
 template<typename Parser_t>
 bool runTest(unsigned testIndex, Parser_t& fp, const char* type)
 {
@@ -1674,7 +1685,7 @@ bool runTest(unsigned testIndex, Parser_t& fp, const char* type)
             fp_vars[i] = vars[i];
 
         double v1 = tests[testIndex].funcPtr(vars);
-        double v2 = double(fp.Eval(fp_vars));
+        double v2 = toDouble(fp.Eval(fp_vars));
 
         const double scale = pow(10.0, floor(log10(fabs(v1))));
         double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
@@ -1790,8 +1801,31 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
 //=========================================================================
 // Main
 //=========================================================================
+template<typename Parser_t>
+bool parseRegressionTestFunction(Parser_t& parser, unsigned funcIndex,
+                                 const char* parserTypeStr)
+{
+    const int retval =
+        parser.Parse(tests[funcIndex].funcString,
+                     tests[funcIndex].paramString,
+                     tests[funcIndex].useDegrees);
+    if(retval >= 0)
+    {
+        std::cout << "With FunctionParser" << parserTypeStr
+                  << "\nin \"" << tests[funcIndex].funcString << "\" (\""
+                  << tests[funcIndex].paramString << "\"), col " << retval
+                  << ":\n" << parser.ErrorMsg() << std::endl;
+        return false;
+    }
+    return true;
+}
+
 int main()
 {
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    MpfrFloat::setDefaultMantissaBits(80);
+#endif
+
     FunctionParser fp0;
 
     // Test that the parser doesn't crash if Eval() is called before Parse():
@@ -1818,12 +1852,19 @@ int main()
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     FunctionParser_ld fp_ld;
 #endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    FunctionParser_mpfr fp_mpfr;
+#endif
 
     bool ret = fp.AddConstant("pi", M_PI);
     ret = ret && fp.AddConstant("CONST", CONST);
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddConstant("pi", M_PI);
     ret = ret && fp_ld.AddConstant("CONST", CONST);
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    ret = ret && fp_mpfr.AddConstant("pi", M_PI);
+    ret = ret && fp_mpfr.AddConstant("CONST", CONST);
 #endif
     if(!ret)
     {
@@ -1836,6 +1877,10 @@ int main()
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_ld.AddUnit("doubled", 2);
     ret = ret && fp_ld.AddUnit("tripled", 3);
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    ret = ret && fp_mpfr.AddUnit("doubled", 2);
+    ret = ret && fp_mpfr.AddUnit("tripled", 3);
 #endif
     if(!ret)
     {
@@ -1850,6 +1895,11 @@ int main()
     ret = ret && fp_ld.AddFunction("sub", Sub_ld, 2);
     ret = ret && fp_ld.AddFunction("sqr", Sqr_ld, 1);
     ret = ret && fp_ld.AddFunction("value", Value_ld, 0);
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    ret = ret && fp_mpfr.AddFunction("sub", Sub_mpfr, 2);
+    ret = ret && fp_mpfr.AddFunction("sqr", Sqr_mpfr, 1);
+    ret = ret && fp_mpfr.AddFunction("value", Value_mpfr, 0);
 #endif
     if(!ret)
     {
@@ -1870,9 +1920,15 @@ int main()
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     FunctionParser_ld SqrFun_ld, SubFun_ld, ValueFun_ld;
-    SqrFun.Parse("x*x", "x"); SqrFun_ld.Parse("x*x", "x");
-    SubFun.Parse("x-y", "x,y"); SubFun_ld.Parse("x-y", "x,y");
-    ValueFun.Parse("5", ""); ValueFun_ld.Parse("5", "");
+    SqrFun_ld.Parse("x*x", "x");
+    SubFun_ld.Parse("x-y", "x,y");
+    ValueFun_ld.Parse("5", "");
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    FunctionParser_mpfr SqrFun_mpfr, SubFun_mpfr, ValueFun_mpfr;
+    SqrFun_mpfr.Parse("x*x", "x");
+    SubFun_mpfr.Parse("x-y", "x,y");
+    ValueFun_mpfr.Parse("5", "");
 #endif
 
     ret = fp.AddFunction("psqr", SqrFun);
@@ -1882,6 +1938,11 @@ int main()
     ret = ret && fp_ld.AddFunction("psqr", SqrFun_ld);
     ret = ret && fp_ld.AddFunction("psub", SubFun_ld);
     ret = ret && fp_ld.AddFunction("pvalue", ValueFun_ld);
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    ret = ret && fp_mpfr.AddFunction("psqr", SqrFun_mpfr);
+    ret = ret && fp_mpfr.AddFunction("psub", SubFun_mpfr);
+    ret = ret && fp_mpfr.AddFunction("pvalue", ValueFun_mpfr);
 #endif
     if(!ret)
     {
@@ -1916,27 +1977,16 @@ int main()
 
     for(unsigned i = FIRST_TEST; i < testsAmount; ++i)
     {
-        int retval = fp.Parse(tests[i].funcString, tests[i].paramString,
-                              tests[i].useDegrees);
-        if(retval >= 0)
-        {
-            std::cout << "\nIn \"" << tests[i].funcString << "\" (\""
-                      << tests[i].paramString << "\"), col " << retval
-                      << ":\n" << fp.ErrorMsg() << std::endl;
+        if(!parseRegressionTestFunction(fp, i, ""))
             return 1;
-        }
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        retval = fp_ld.Parse(tests[i].funcString, tests[i].paramString,
-                             tests[i].useDegrees);
-        if(retval >= 0)
-        {
-            std::cout << "\nWith FunctionParser_ld,\n"
-                      << "in \"" << tests[i].funcString << "\" (\""
-                      << tests[i].paramString << "\"), col " << retval
-                      << ":\n" << fp_ld.ErrorMsg() << std::endl;
+        if(!parseRegressionTestFunction(fp_ld, i, "_ld"))
             return 1;
-        }
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+        if(!parseRegressionTestFunction(fp_mpfr, i, "_mpfr"))
+            return 1;
 #endif
 
         //fp.PrintByteCode(std::cout);
@@ -1953,6 +2003,10 @@ int main()
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
         if(!runTest(i, fp_ld, "long double, not optimized")) return 1;
 #endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+        if(!runTest(i, fp_mpfr, "mpfr, not optimized")) return 1;
+#endif
+
         if(verbose) std::cout << "Ok." << std::endl;
 
         fp.Optimize();
@@ -1960,6 +2014,15 @@ int main()
 
         if(verbose) std::cout << "    Optimized: " << std::flush;
         if(!runTest(i, fp, "After optimization")) return 1;
+
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+        fp_ld.Optimize();
+        //if(!runTest(i, fp_ld, "long double, optimized")) return 1;
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+        fp_mpfr.Optimize();
+        //if(!runTest(i, fp_mpfr, "mpfr, optimized")) return 1;
+#endif
 
         if(verbose)
             std::cout << "(Calling Optimize() several times) " << std::flush;

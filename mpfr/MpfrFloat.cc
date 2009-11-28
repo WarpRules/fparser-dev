@@ -419,6 +419,11 @@ int MpfrFloat::toInt() const
     return int(mpfr_get_si(mData->mFloat, GMP_RNDN));
 }
 
+double MpfrFloat::toDouble() const
+{
+    return mpfr_get_d(mData->mFloat, GMP_RNDN);
+}
+
 
 //===========================================================================
 // Modifying operators

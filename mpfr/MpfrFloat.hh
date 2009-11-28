@@ -14,6 +14,14 @@ class MpfrFloat
 
     static unsigned long getCurrentDefaultMantissaBits();
 
+    /* The default constructor initializes the object to the value 0.
+       It's efficient to instantiate such zero-initialized objects because
+       all of them will share the same mpfr data. (Also any object initialized
+       with or assigned the explicit value of zero will also share that one
+       mpfr data.) Thus multiple zero-initialized MpfrFloat instances won't
+       consume significant amounts of memory (until they are modified to
+       contain some other value, of course).
+     */
     MpfrFloat();
     MpfrFloat(double value);
     MpfrFloat(long double value);
@@ -62,6 +70,7 @@ class MpfrFloat
 
     bool isInteger() const;
     int toInt() const;
+    double toDouble() const;
 
     MpfrFloat& operator+=(const MpfrFloat&);
     MpfrFloat& operator+=(double);
