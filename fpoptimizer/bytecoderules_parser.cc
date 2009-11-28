@@ -43,6 +43,8 @@ namespace
                 && name==b.name
                 && condition==b.condition;
         }
+
+        std::string            precondition;
         std::vector<Operation> operations;
         bool has_operations;
     };
@@ -53,6 +55,7 @@ namespace
     };
 
     Node global_head;
+    std::vector<std::string> PossiblyUnusedLabelList;
 
     std::string Indent(size_t n)
     {
@@ -161,7 +164,11 @@ namespace
                     done.insert(i->first);
 
                     if(item.n_uses > mini)
-                        out << ChangeLabel(i->first) << ": ";
+                    {
+                        std::string l = ChangeLabel(i->first);
+                        PossiblyUnusedLabelList.push_back(l);
+                        out << l << ": ";
+                    }
                     else
                         out << std::string(5, ' ');
                     //out << " /*" << item.n_uses << "*/ ";
@@ -591,6 +598,11 @@ namespace
         size_t i_used,
         int mode = mode_children+mode_operations)
     {
+        if(!head.opcode.precondition.empty())
+        {
+            code << "#if(" << head.opcode.precondition << ")\n";
+        }
+
         if(!head.predecessors.empty() && (mode & mode_children))
         {
             std::string last_op_name = BexprName(b_used);
@@ -616,8 +628,11 @@ namespace
                     if(b_used == 0)
                     {
                         code << Indent(indent) << "TailCall_" << n.opcode.name << ":\n";
+                        PossiblyUnusedLabelList.push_back("TailCall_" + n.opcode.name);
                     }
                 #endif
+                    if(!n.opcode.precondition.empty())
+                        code << "#if(" << n.opcode.precondition << ")\n";
                     code << Indent(indent) << "  case " << n.opcode.name << ":\n";
                     //code << Indent(indent) << "  {\n";
                     std::vector<Match> ref(so_far);
@@ -626,13 +641,8 @@ namespace
                     //code << Indent(indent) << "  }\n";
                     if(!returned)
                         code << Indent(indent) << "    break;\n";
-                #ifndef USE_CONTINUATIONS
-                    if(b_used == 0)
-                    {
-                        // Add dummy goto to the labels to prevent gcc warnings
-                        code << Indent(indent) << "    goto TailCall_" << n.opcode.name << "; /* Dummy goto to inhibit gcc warnings */\n";
-                    }
-                #endif
+                    if(!n.opcode.precondition.empty())
+                        code << "#endif\n";
                 }
             }
             bool first_immed = true;
@@ -679,10 +689,14 @@ namespace
                                 Generate(n, ref, indent+4, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                         else
                         {
+                            if(!n.opcode.precondition.empty())
+                                code << "#if(" << n.opcode.precondition << ")\n";
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
                             Generate(n, ref, indent+6, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
+                            if(!n.opcode.precondition.empty())
+                                code << "#endif\n";
                         }
                     }
                 }
@@ -731,10 +745,14 @@ namespace
                             Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                         else
                         {
+                            if(!n.opcode.precondition.empty())
+                                code << "#if(" << n.opcode.precondition << ")\n";
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
                             Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
+                            if(!n.opcode.precondition.empty())
+                                code << "#endif\n";
                         }
                     }
                 }
@@ -748,8 +766,17 @@ namespace
             {
                 //out << Indent(indent) << "return;\n";
                 // ^ now redundant, as it is done by SynthOperations()
+                if(!head.opcode.precondition.empty())
+                {
+                    code << "#endif\n";
+                    return false; // did not necessarily return
+                }
                 return true;
             }
+        }
+        if(!head.opcode.precondition.empty())
+        {
+            code << "#endif\n";
         }
         return false;
     }
@@ -759,9 +786,9 @@ namespace
         out << kOutputCommentBlock << "\n";
         out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
         out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
-        out << "template<typename Value_t>\n"
-               "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
-               "{\n";
+        //out << "template<typename Value_t>\n"
+        //       "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
+        //       "{\n";
         out <<  "  unsigned* ByteCodePtr;\n"
                 "  Value_t*   ImmedPtr;\n"
                 "#ifdef _GLIBCXX_DEBUG\n"
@@ -786,9 +813,19 @@ namespace
           OutLine(Out) << "data->ByteCode.push_back(opcode);";
         }
         CodeSeq.Flush(out);
-
-        out << "#undef FP_ReDefinePointers\n"
-               "}\n";
+        
+        out << "return;\n";
+        out << "// This list of dummy gotos is here to inhibit\n"
+               "// compiler warnings on possibly unused labels\n";
+        for(size_t a=0; a<PossiblyUnusedLabelList.size(); ++a)
+        {
+            out << "goto " << PossiblyUnusedLabelList[a] << ";";
+            if(a+1 == PossiblyUnusedLabelList.size()
+            || a%3 == 2) out << "\n";
+        }
+        out << "#undef FP_ReDefinePointers\n";
+        //out << "}\n";
+        out << "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
     }
 
     void Parse()
@@ -859,6 +896,24 @@ namespace
             {
                 head->opcode.has_operations = true;
                 bufptr += 2;
+                while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
+
+                if(*bufptr == 'I' && bufptr[1] == 'F'
+                && bufptr[2] == '(')
+                {
+                    head->opcode.precondition = "";
+                    bufptr += 3;
+                    size_t balance = 0;
+                    while(*bufptr != ')' || balance != 0)
+                    {
+                        if(*bufptr == '\r' || *bufptr == '\n') break;
+                        if(*bufptr == '(') ++balance;
+                        if(*bufptr == ')') --balance;
+                        head->opcode.precondition += *bufptr++;
+                    }
+                    if(*bufptr == ')') ++bufptr;
+                }
+
                 for(;;)
                 {
                     while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
@@ -888,11 +943,73 @@ namespace
             }
         }
     }
+
+    void AddPreconditionsFrom(const Node& head, std::set<std::string>& preconditions)
+    {
+        const std::string& input = head.opcode.precondition;
+        size_t begin=0, balance=0;
+        for(size_t pos=0; pos<input.size(); ++pos)
+        {
+            if(input[pos] == '(') { ++balance; continue; }
+            if(input[pos] == ')') { --balance; continue; }
+            if(pos == begin && input[pos] == ' ') { begin=pos+1; continue; }
+            if(balance == 0
+            && input[pos] == '|' && input[pos+1] == '|')
+            {
+                size_t end = pos;
+                while(end > 0 && input[end-1] == ' ') --end;
+                if(end > begin)
+                    preconditions.insert(std::string(input, begin, end-begin));
+                begin = pos+2;
+                pos += 1;
+            }
+        }
+        size_t end = input.size();
+        while(end > 0 && input[end-1] == ' ') --end;
+        if(end > begin)
+            preconditions.insert(std::string(input, begin, end-begin));
+    }
+
+    void BackPropagatePreconditions(Node& head)
+    {
+        std::set<std::string> preconditions;
+        bool any_precondition = false;
+        for(size_t a=0; a<head.predecessors.size(); ++a)
+        {
+            BackPropagatePreconditions(*head.predecessors[a]);
+            if(head.predecessors[a]->opcode.precondition.empty())
+                any_precondition = true;
+            else
+                AddPreconditionsFrom(*head.predecessors[a], preconditions);
+        }
+        if(!preconditions.empty() && !any_precondition)
+        {
+            for(std::set<std::string>::const_iterator
+                i = preconditions.begin();
+                i != preconditions.end();
+                ++i)
+            {
+                if(head.opcode.precondition.empty())
+                    head.opcode.precondition = *i;
+                else
+                {
+                    head.opcode.precondition += " || ";
+                    head.opcode.precondition += *i;
+                }
+            }
+        }
+    }
+
+    void BackPropagatePreconditions()
+    {
+        BackPropagatePreconditions(global_head);
+    }
 }
 
 int main()
 {
     Parse();
+    BackPropagatePreconditions();
     Generate(std::cout);
     return 0;
 }
