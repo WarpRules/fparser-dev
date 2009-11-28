@@ -435,6 +435,46 @@ namespace FUNCTIONPARSERTYPES
 
 
 // -------------------------------------------------------------------------
+// GMP int
+// -------------------------------------------------------------------------
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    inline GmpInt fp_abs(GmpInt x) { return GmpInt::abs(x); }
+    inline GmpInt fp_acos(GmpInt) { return 0; }
+    inline GmpInt fp_asin(GmpInt) { return 0; }
+    inline GmpInt fp_atan(GmpInt) { return 0; }
+    inline GmpInt fp_atan2(GmpInt, GmpInt) { return 0; }
+    inline GmpInt fp_cbrt(GmpInt) { return 0; }
+    inline GmpInt fp_ceil(GmpInt x) { return x; }
+    inline GmpInt fp_cos(GmpInt) { return 0; }
+    inline GmpInt fp_cosh(GmpInt) { return 0; }
+    inline GmpInt fp_exp(GmpInt) { return 0; }
+    inline GmpInt fp_floor(GmpInt x) { return x; }
+    inline GmpInt fp_int(GmpInt x) { return x; }
+    inline GmpInt fp_log(GmpInt) { return 0; }
+    inline GmpInt fp_log10(GmpInt) { return 0; }
+    inline GmpInt fp_mod(GmpInt x, GmpInt y) { return x % y; }
+    inline GmpInt fp_pow(GmpInt, GmpInt) { return 0; }
+    inline GmpInt fp_sin(GmpInt) { return 0; }
+    inline GmpInt fp_sinh(GmpInt) { return 0; }
+    inline GmpInt fp_sqrt(GmpInt) { return 0; }
+    inline GmpInt fp_tan(GmpInt) { return 0; }
+    inline GmpInt fp_tanh(GmpInt) { return 0; }
+    inline GmpInt fp_asinh(GmpInt) { return 0; }
+    inline GmpInt fp_acosh(GmpInt) { return 0; }
+    inline GmpInt fp_atanh(GmpInt) { return 0; }
+    inline GmpInt fp_trunc(GmpInt x) { return x; }
+    inline GmpInt fp_pow_base(GmpInt, GmpInt) { return 0; }
+    inline GmpInt fp_log2(GmpInt) { return 0; }
+    inline GmpInt fp_exp2(GmpInt) { return 0; }
+
+    template<>
+    inline GmpInt fp_epsilon<GmpInt>() { return 0; }
+
+    inline bool IsIntegerConst(GmpInt) { return true; }
+#endif // FP_SUPPORT_GMP_INT_TYPE
+
+
+// -------------------------------------------------------------------------
 // Comparison
 // -------------------------------------------------------------------------
 #ifdef FP_EPSILON
@@ -478,10 +518,31 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline bool fp_lessOrEq<long>(long x, long y) { return x <= y; }
-}
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool fp_equal<GmpInt>(GmpInt x, GmpInt y) { return x == y; }
+
+    template<>
+    inline bool fp_nequal<GmpInt>(GmpInt x, GmpInt y) { return x != y; }
+
+    template<>
+    inline bool fp_less<GmpInt>(GmpInt x, GmpInt y) { return x < y; }
+
+    template<>
+    inline bool fp_lessOrEq<GmpInt>(GmpInt x, GmpInt y) { return x <= y; }
+#endif
+} // namespace FUNCTIONPARSERTYPES
 
 #endif // ONCE_FPARSER_H_
 
+
+#ifndef FP_DISABLE_DOUBLE_TYPE
+#define FUNCTIONPARSER_INSTANTIATE_DOUBLE \
+    template class FunctionParserBase<double>;
+#else
+#define FUNCTIONPARSER_INSTANTIATE_DOUBLE
+#endif
 
 #ifdef FP_SUPPORT_FLOAT_TYPE
 #define FUNCTIONPARSER_INSTANTIATE_FLOAT \
@@ -522,7 +583,7 @@ namespace FUNCTIONPARSERTYPES
    containing FunctionParserBase implementations.
  */
 #define FUNCTIONPARSER_INSTANTIATE_TYPES \
-    template class FunctionParserBase<double>; \
+    FUNCTIONPARSER_INSTANTIATE_DOUBLE \
     FUNCTIONPARSER_INSTANTIATE_FLOAT \
     FUNCTIONPARSER_INSTANTIATE_LONG_DOUBLE \
     FUNCTIONPARSER_INSTANTIATE_LONG_INT \

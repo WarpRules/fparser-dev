@@ -3,6 +3,7 @@
 #include <deque>
 #include <vector>
 #include <cstring>
+#include <cctype>
 
 //===========================================================================
 // Shared data
@@ -10,7 +11,12 @@
 namespace
 {
     unsigned long gIntDefaultNumberOfBits = 256;
-    std::vector<char> gIntString;
+
+    std::vector<char>& intString()
+    {
+        static std::vector<char> str;
+        return str;
+    }
 }
 
 //===========================================================================
@@ -29,9 +35,10 @@ class GmpInt::GmpIntDataContainer
 {
     std::deque<GmpInt::GmpIntData> mData;
     GmpInt::GmpIntData* mFirstFreeNode;
+    GmpInt::GmpIntData* mConst_0;
 
  public:
-    GmpIntDataContainer(): mFirstFreeNode(0) {}
+    GmpIntDataContainer(): mFirstFreeNode(0), mConst_0(0) {}
 
     ~GmpIntDataContainer()
     {
@@ -67,10 +74,21 @@ class GmpInt::GmpIntDataContainer
             mFirstFreeNode = data;
         }
     }
+
+    GmpInt::GmpIntData* const_0()
+    {
+        if(!mConst_0)
+            mConst_0 = allocateGmpIntData(gIntDefaultNumberOfBits, true);
+        return mConst_0;
+    }
 };
 
-GmpInt::GmpIntDataContainer GmpInt::gGmpIntDataContainer;
 
+GmpInt::GmpIntDataContainer& GmpInt::gmpIntDataContainer()
+{
+    static GmpIntDataContainer container;
+    return container;
+}
 
 //===========================================================================
 // Auxiliary functions
@@ -91,7 +109,7 @@ inline void GmpInt::copyIfShared()
     {
         --(mData->mRefCount);
         GmpIntData* oldData = mData;
-        mData = gGmpIntDataContainer.allocateGmpIntData(0, false);
+        mData = gmpIntDataContainer().allocateGmpIntData(0, false);
         mpz_set(mData->mInteger, oldData->mInteger);
     }
 }
@@ -101,38 +119,75 @@ inline void GmpInt::copyIfShared()
 // Constructors, destructor, assignment
 //===========================================================================
 GmpInt::GmpInt(DummyType):
-    mData(gGmpIntDataContainer.allocateGmpIntData(0, false))
+    mData(gmpIntDataContainer().allocateGmpIntData(0, false))
 {}
 
-GmpInt::GmpInt():
-    mData(gGmpIntDataContainer.allocateGmpIntData(gIntDefaultNumberOfBits,
-                                                  true))
-{}
-
-GmpInt::GmpInt(signed long value):
-    mData(gGmpIntDataContainer.allocateGmpIntData(gIntDefaultNumberOfBits,
-                                                  false))
+GmpInt::GmpInt()
 {
-    mpz_set_si(mData->mInteger, value);
+    mData = gmpIntDataContainer().const_0();
+    ++(mData->mRefCount);
 }
 
-GmpInt::GmpInt(signed long value, unsigned long minBits):
-    mData(gGmpIntDataContainer.allocateGmpIntData(minBits, false))
+GmpInt::GmpInt(long value)
 {
-    mpz_set_si(mData->mInteger, value);
+    if(value == 0)
+    {
+        mData = gmpIntDataContainer().const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gmpIntDataContainer().allocateGmpIntData
+            (gIntDefaultNumberOfBits, false);
+        mpz_set_si(mData->mInteger, value);
+    }
 }
 
-GmpInt::GmpInt(const char* value):
-    mData(gGmpIntDataContainer.allocateGmpIntData(gIntDefaultNumberOfBits,
-                                                  false))
+GmpInt::GmpInt(int value)
 {
-    mpz_set_str(mData->mInteger, value, 0);
+    if(value == 0)
+    {
+        mData = gmpIntDataContainer().const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gmpIntDataContainer().allocateGmpIntData
+            (gIntDefaultNumberOfBits, false);
+        mpz_set_si(mData->mInteger, value);
+    }
 }
 
-GmpInt::GmpInt(const char* value, unsigned long minBits):
-    mData(gGmpIntDataContainer.allocateGmpIntData(minBits, false))
+GmpInt::GmpInt(double value)
 {
-    mpz_set_str(mData->mInteger, value, 0);
+    const double absValue = value >= 0.0 ? value : -value;
+    if(absValue < 1.0)
+    {
+        mData = gmpIntDataContainer().const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gmpIntDataContainer().allocateGmpIntData
+            (gIntDefaultNumberOfBits, false);
+        mpz_set_d(mData->mInteger, value);
+    }
+}
+
+GmpInt::GmpInt(long double value)
+{
+    const long double absValue = value >= 0.0L ? value : -value;
+    if(absValue < 1.0L)
+    {
+        mData = gmpIntDataContainer().const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        mData = gmpIntDataContainer().allocateGmpIntData
+            (gIntDefaultNumberOfBits, false);
+        mpz_set_d(mData->mInteger, double(value));
+    }
 }
 
 GmpInt::GmpInt(const GmpInt& rhs):
@@ -145,16 +200,37 @@ GmpInt& GmpInt::operator=(const GmpInt& rhs)
 {
     if(mData != rhs.mData)
     {
-        gGmpIntDataContainer.releaseGmpIntData(mData);
+        gmpIntDataContainer().releaseGmpIntData(mData);
         mData = rhs.mData;
         ++(mData->mRefCount);
     }
     return *this;
 }
 
+GmpInt& GmpInt::operator=(signed long value)
+{
+    if(value == 0)
+    {
+        gmpIntDataContainer().releaseGmpIntData(mData);
+        mData = gmpIntDataContainer().const_0();
+        ++(mData->mRefCount);
+    }
+    else
+    {
+        if(mData->mRefCount > 1)
+        {
+            --(mData->mRefCount);
+            mData = gmpIntDataContainer().allocateGmpIntData
+                (gIntDefaultNumberOfBits, false);
+        }
+        mpz_set_si(mData->mInteger, value);
+    }
+    return *this;
+}
+
 GmpInt::~GmpInt()
 {
-    gGmpIntDataContainer.releaseGmpIntData(mData);
+    gmpIntDataContainer().releaseGmpIntData(mData);
 }
 
 
@@ -169,8 +245,13 @@ void GmpInt::get_raw_mpfr_data<mpz_t>(mpz_t& dest_mpz_t)
 
 const char* GmpInt::getAsString(int base) const
 {
-    gIntString.resize(mpz_sizeinbase(mData->mInteger, base) + 2);
-    return mpz_get_str(&gIntString[0], base, mData->mInteger);
+    intString().resize(mpz_sizeinbase(mData->mInteger, base) + 2);
+    return mpz_get_str(&intString()[0], base, mData->mInteger);
+}
+
+long GmpInt::toInt() const
+{
+    return mpz_get_si(mData->mInteger);
 }
 
 
@@ -493,6 +574,39 @@ bool GmpInt::operator!=(long value) const
     return mpz_cmp_si(mData->mInteger, value) != 0;
 }
 
+void GmpInt::parseValue(const char* value)
+{
+    mpz_set_str(mData->mInteger, value, 10);
+}
+
+void GmpInt::parseValue(const char* value, char** endptr)
+{
+    static std::vector<char> str;
+
+    unsigned startIndex = 0;
+    while(value[startIndex] && std::isspace(value[startIndex])) ++startIndex;
+    if(!value[startIndex]) { *endptr = const_cast<char*>(value); return; }
+
+    unsigned endIndex = startIndex;
+    if(value[endIndex] == '-') ++endIndex;
+    if(!std::isdigit(value[endIndex]))
+    { *endptr = const_cast<char*>(value); return; }
+    while(std::isdigit(value[++endIndex])) {}
+
+    str.reserve(endIndex - startIndex + 1);
+    str.assign(value + startIndex, value + endIndex);
+    str.push_back(0);
+
+    mpz_set_str(mData->mInteger, &str[0], 10);
+    *endptr = const_cast<char*>(value + endIndex);
+}
+
+GmpInt GmpInt::parseString(const char* str, char** endptr)
+{
+    GmpInt retval(kNoInitialization);
+    retval.parseValue(str, endptr);
+    return retval;
+}
 
 //===========================================================================
 // Operator functions

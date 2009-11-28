@@ -25,6 +25,7 @@ FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
 #FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -91,8 +92,7 @@ RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
 	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
-	fp_opcode_add.inc \
-	fp_identifier_parser.inc \
+	fp_opcode_add.inc fp_identifier_parser.inc \
 	fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
@@ -241,7 +241,8 @@ fpoptimizer_tests.sh: create_testrules_for_optimization_rules
 set_version_string: VersionChanger
 	./VersionChanger $(RELEASE_VERSION) fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
-	fpoptimizer.cc fptypes.hh fpaux.hh fp_opcode_add.inc \
+	fpoptimizer.cc fptypes.hh fpaux.hh \
+	fp_opcode_add.inc \
 	fpoptimizer/bytecoderules_parser.cc fparser.html webpage/index.html
 
 pack: $(RELEASE_PACK_FILES) set_version_string
@@ -251,7 +252,8 @@ devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
 	Makefile example.cc example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
-	fptypes.hh fpaux.hh fp_opcode_add.inc speedtest.cc testbed.cc \
+	fptypes.hh fpaux.hh fp_opcode_add.inc fp_identifier_parser.inc \
+	speedtest.cc testbed.cc \
 	fparser.html style.css \
 	fpoptimizer/*.hh fpoptimizer/*.cc \
 	fpoptimizer/fparser_bytecoderules.dat \

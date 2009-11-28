@@ -7,14 +7,6 @@
 #include <cassert>
 
 //===========================================================================
-// Shared data
-//===========================================================================
-namespace
-{
-    std::vector<char> gMpfrFloatString;
-}
-
-//===========================================================================
 // Auxiliary structs
 //===========================================================================
 struct MpfrFloat::MpfrFloatData
@@ -147,7 +139,27 @@ class MpfrFloat::MpfrFloatDataContainer
     }
 };
 
-MpfrFloat::MpfrFloatDataContainer MpfrFloat::gMpfrFloatDataContainer;
+
+//===========================================================================
+// Shared data
+//===========================================================================
+namespace
+{
+    std::vector<char>& mpfrFloatString()
+    {
+        static std::vector<char> str;
+        return str;
+    }
+}
+
+// This should ensure that the container is not accessed by any MpfrFloat
+// instance before it has been constructed or after it has been destroyed
+// (which might otherwise happen if MpfrFloat is instantiated globally.)
+MpfrFloat::MpfrFloatDataContainer& MpfrFloat::mpfrFloatDataContainer()
+{
+    static MpfrFloat::MpfrFloatDataContainer container;
+    return container;
+}
 
 
 //===========================================================================
@@ -155,12 +167,12 @@ MpfrFloat::MpfrFloatDataContainer MpfrFloat::gMpfrFloatDataContainer;
 //===========================================================================
 void MpfrFloat::setDefaultMantissaBits(unsigned long bits)
 {
-    gMpfrFloatDataContainer.setDefaultPrecision(bits);
+    mpfrFloatDataContainer().setDefaultPrecision(bits);
 }
 
 unsigned long MpfrFloat::getCurrentDefaultMantissaBits()
 {
-    return gMpfrFloatDataContainer.getDefaultPrecision();
+    return mpfrFloatDataContainer().getDefaultPrecision();
 }
 
 inline void MpfrFloat::copyIfShared()
@@ -169,7 +181,7 @@ inline void MpfrFloat::copyIfShared()
     {
         --(mData->mRefCount);
         MpfrFloatData* oldData = mData;
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set(mData->mFloat, oldData->mFloat, GMP_RNDN);
     }
 }
@@ -179,7 +191,7 @@ inline void MpfrFloat::copyIfShared()
 // Constructors, destructor, assignment
 //===========================================================================
 MpfrFloat::MpfrFloat(DummyType):
-    mData(gMpfrFloatDataContainer.allocateMpfrFloatData(false))
+    mData(mpfrFloatDataContainer().allocateMpfrFloatData(false))
 {}
 
 MpfrFloat::MpfrFloat(MpfrFloatData* data):
@@ -190,7 +202,7 @@ MpfrFloat::MpfrFloat(MpfrFloatData* data):
 }
 
 MpfrFloat::MpfrFloat():
-    mData(gMpfrFloatDataContainer.const_0())
+    mData(mpfrFloatDataContainer().const_0())
 {
     ++(mData->mRefCount);
 }
@@ -199,12 +211,12 @@ MpfrFloat::MpfrFloat(double value)
 {
     if(value == 0.0)
     {
-        mData = gMpfrFloatDataContainer.const_0();
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
     {
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set_d(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -213,12 +225,12 @@ MpfrFloat::MpfrFloat(long double value)
 {
     if(value == 0.0L)
     {
-        mData = gMpfrFloatDataContainer.const_0();
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
     {
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -227,12 +239,12 @@ MpfrFloat::MpfrFloat(long value)
 {
     if(value == 0)
     {
-        mData = gMpfrFloatDataContainer.const_0();
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
     {
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -241,19 +253,19 @@ MpfrFloat::MpfrFloat(int value)
 {
     if(value == 0)
     {
-        mData = gMpfrFloatDataContainer.const_0();
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
     {
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
 }
 
 /*
 MpfrFloat::MpfrFloat(const char* value):
-    mData(gMpfrFloatDataContainer.allocateMpfrFloatData(false))
+    mData(mpfrFloatDataContainer().allocateMpfrFloatData(false))
 {
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
 }
@@ -261,7 +273,7 @@ MpfrFloat::MpfrFloat(const char* value):
 
 MpfrFloat::~MpfrFloat()
 {
-    gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+    mpfrFloatDataContainer().releaseMpfrFloatData(mData);
 }
 
 MpfrFloat::MpfrFloat(const MpfrFloat& rhs):
@@ -274,7 +286,7 @@ MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
 {
     if(mData != rhs.mData)
     {
-        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
         mData = rhs.mData;
         ++(mData->mRefCount);
     }
@@ -285,8 +297,8 @@ MpfrFloat& MpfrFloat::operator=(double value)
 {
     if(value == 0.0)
     {
-        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
-        mData = gMpfrFloatDataContainer.const_0();
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
@@ -294,7 +306,7 @@ MpfrFloat& MpfrFloat::operator=(double value)
         if(mData->mRefCount > 1)
         {
             --(mData->mRefCount);
-            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         }
         mpfr_set_d(mData->mFloat, value, GMP_RNDN);
     }
@@ -305,8 +317,8 @@ MpfrFloat& MpfrFloat::operator=(long double value)
 {
     if(value == 0.0L)
     {
-        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
-        mData = gMpfrFloatDataContainer.const_0();
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
@@ -314,7 +326,7 @@ MpfrFloat& MpfrFloat::operator=(long double value)
         if(mData->mRefCount > 1)
         {
             --(mData->mRefCount);
-            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         }
         mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
     }
@@ -325,8 +337,8 @@ MpfrFloat& MpfrFloat::operator=(long value)
 {
     if(value == 0)
     {
-        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
-        mData = gMpfrFloatDataContainer.const_0();
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
@@ -334,7 +346,7 @@ MpfrFloat& MpfrFloat::operator=(long value)
         if(mData->mRefCount > 1)
         {
             --(mData->mRefCount);
-            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         }
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
@@ -345,8 +357,8 @@ MpfrFloat& MpfrFloat::operator=(int value)
 {
     if(value == 0)
     {
-        gMpfrFloatDataContainer.releaseMpfrFloatData(mData);
-        mData = gMpfrFloatDataContainer.const_0();
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+        mData = mpfrFloatDataContainer().const_0();
         ++(mData->mRefCount);
     }
     else
@@ -354,7 +366,7 @@ MpfrFloat& MpfrFloat::operator=(int value)
         if(mData->mRefCount > 1)
         {
             --(mData->mRefCount);
-            mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         }
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
@@ -367,7 +379,7 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
     if(mData->mRefCount > 1)
     {
         --(mData->mRefCount);
-        mData = gMpfrFloatDataContainer.allocateMpfrFloatData(false);
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
     }
 
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
@@ -402,10 +414,10 @@ const char* MpfrFloat::getAsString(unsigned precision) const
         "[mpfr_snprintf() is not supported in mpfr versions prior to 2.4]";
     return retval;
 #else
-    gMpfrFloatString.resize(precision+30);
-    mpfr_snprintf(&gMpfrFloatString[0], precision+30, "%.*RNg", precision,
+    mpfrFloatString().resize(precision+30);
+    mpfr_snprintf(&(mpfrFloatString()[0]), precision+30, "%.*RNg", precision,
                   mData->mFloat);
-    return &gMpfrFloatString[0];
+    return &(mpfrFloatString()[0]);
 #endif
 }
 
@@ -414,9 +426,9 @@ bool MpfrFloat::isInteger() const
     return mpfr_integer_p(mData->mFloat) != 0;
 }
 
-int MpfrFloat::toInt() const
+long MpfrFloat::toInt() const
 {
-    return int(mpfr_get_si(mData->mFloat, GMP_RNDN));
+    return mpfr_get_si(mData->mFloat, GMP_RNDN);
 }
 
 double MpfrFloat::toDouble() const
@@ -931,20 +943,20 @@ MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 
 MpfrFloat MpfrFloat::const_pi()
 {
-    return gMpfrFloatDataContainer.const_pi();
+    return mpfrFloatDataContainer().const_pi();
 }
 
 MpfrFloat MpfrFloat::const_e()
 {
-    return gMpfrFloatDataContainer.const_e();
+    return mpfrFloatDataContainer().const_e();
 }
 
 MpfrFloat MpfrFloat::const_log2()
 {
-    return gMpfrFloatDataContainer.const_log2();
+    return mpfrFloatDataContainer().const_log2();
 }
 
 MpfrFloat MpfrFloat::someEpsilon()
 {
-    return gMpfrFloatDataContainer.const_epsilon();
+    return mpfrFloatDataContainer().const_epsilon();
 }

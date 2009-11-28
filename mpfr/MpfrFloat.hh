@@ -69,7 +69,7 @@ class MpfrFloat
     const char* getAsString(unsigned precision) const;
 
     bool isInteger() const;
-    int toInt() const;
+    long toInt() const;
     double toDouble() const;
 
     MpfrFloat& operator+=(const MpfrFloat&);
@@ -158,7 +158,6 @@ class MpfrFloat
     struct MpfrFloatData;
     class MpfrFloatDataContainer;
 
-    static MpfrFloatDataContainer gMpfrFloatDataContainer;
     MpfrFloatData* mData;
 
     enum DummyType { kNoInitialization };
@@ -166,6 +165,7 @@ class MpfrFloat
     MpfrFloat(MpfrFloatData*);
 
     void copyIfShared();
+    static MpfrFloatDataContainer& mpfrFloatDataContainer();
 
     friend MpfrFloat operator+(double lhs, const MpfrFloat& rhs);
     friend MpfrFloat operator-(double lhs, const MpfrFloat& rhs);

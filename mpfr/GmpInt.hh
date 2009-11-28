@@ -6,17 +6,21 @@
 class GmpInt
 {
  public:
+    /* A default of 256 bits will be used for all newly-instantiated GmpInt
+       objects. This default can be changed with the function below.
+    */
     static void setDefaultNumberOfBits(unsigned long);
     static unsigned long getDefaultNumberOfBits();
 
     GmpInt();
-    GmpInt(signed long value);
-    GmpInt(signed long value, unsigned long minBits);
-    GmpInt(const char* value);
-    GmpInt(const char* value, unsigned long minBits);
+    GmpInt(long value);
+    GmpInt(int value);
+    GmpInt(double value);
+    GmpInt(long double value);
 
     GmpInt(const GmpInt&);
     GmpInt& operator=(const GmpInt&);
+    GmpInt& operator=(signed long value);
 
     ~GmpInt();
 
@@ -43,6 +47,7 @@ class GmpInt
     // which will be valid until the next time this function is called
     // (by any object).
     const char* getAsString(int base = 10) const;
+    long toInt() const;
 
     GmpInt& operator+=(const GmpInt&);
     GmpInt& operator+=(long);
@@ -99,18 +104,22 @@ class GmpInt
     bool operator!=(const GmpInt&) const;
     bool operator!=(long) const;
 
+    void parseValue(const char* value);
+    void parseValue(const char* value, char** endptr);
+    static GmpInt parseString(const char* str, char** endptr);
+
 
  private:
     struct GmpIntData;
     class GmpIntDataContainer;
 
-    static GmpIntDataContainer gGmpIntDataContainer;
     GmpIntData* mData;
 
     enum DummyType { kNoInitialization };
     GmpInt(DummyType);
 
     void copyIfShared();
+    static GmpIntDataContainer& gmpIntDataContainer();
 
     friend GmpInt operator+(long lhs, const GmpInt& rhs);
     friend GmpInt operator-(long lhs, const GmpInt& rhs);

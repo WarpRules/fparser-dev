@@ -151,7 +151,7 @@ namespace
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
-    inline bool truthValue<GmpInt>(const GmpInt& l) { return l != 0; }
+    inline bool truthValue<GmpInt>(GmpInt l) { return l != 0; }
 #endif
 
     template<typename Value_t>
@@ -162,7 +162,7 @@ namespace
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
-    inline bool truthValue_abs<GmpInt>(const GmpInt& l) { return l != 0; }
+    inline bool truthValue_abs<GmpInt>(GmpInt l) { return l != 0; }
 #endif
 
     template<typename Value_t>
@@ -200,6 +200,14 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool isEvenInteger(GmpInt value)
+    {
+        return value%2 == 0;
+    }
+#endif
+
     template<typename Value_t>
     inline bool isOddInteger(Value_t value)
     {
@@ -212,6 +220,14 @@ namespace
     inline bool isOddInteger(MpfrFloat value)
     {
         return value.isInteger() && value%2 != 0;
+    }
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool isOddInteger(GmpInt value)
+    {
+        return value%2 != 0;
     }
 #endif
 
@@ -258,7 +274,7 @@ namespace
     template<>
     inline GmpInt parseLiteral<GmpInt>(const char* nptr, char** endptr)
     {
-        return GmpInt::parseString(nptr, endptr, 10);
+        return GmpInt::parseString(nptr, endptr);
     }
 #endif
 
@@ -267,7 +283,12 @@ namespace
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    inline int valueToInt(MpfrFloat value) { return value.toInt(); }
+    inline int valueToInt(MpfrFloat value) { return int(value.toInt()); }
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline int valueToInt(GmpInt value) { return int(value.toInt()); }
 #endif
 }
 
