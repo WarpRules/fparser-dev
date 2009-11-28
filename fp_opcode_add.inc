@@ -118,16 +118,24 @@
 #endif
           }
 #endif
+#if(!FP_INT_VERSION)
           if(x==Value_t(1)/Value_t(3))
           {
+#if(!FP_INT_VERSION)
             FP_TRACE_BYTECODE_OPTIMIZATION("x[x==Value_t(1)/Value_t(3)] cPow", "cCbrt");
             goto Lai;
+#endif
           }
+#endif
+#if(!FP_INT_VERSION)
           if(x==Value_t(1)/Value_t(-3))
           {
+#if(!FP_INT_VERSION)
             FP_TRACE_BYTECODE_OPTIMIZATION("x[x==Value_t(1)/Value_t(-3)] cPow", "cCbrt cInv");
             goto Laj;
+#endif
           }
+#endif
 #if(!FP_INT_VERSION)
           if(x==Value_t(-0.5))
           {
@@ -1269,9 +1277,14 @@
     case cDiv:
       switch(ByteCodePtr[0])
       {
+#if(!FP_INT_VERSION)
         case cInv:
+#if(!FP_INT_VERSION)
           FP_TRACE_BYTECODE_OPTIMIZATION("cInv cDiv", "cMul");
           goto Lfe;
+#endif
+          break;
+#endif
 #if(!FP_INT_VERSION)
         case cExp:
 #if(!FP_INT_VERSION)
@@ -1657,7 +1670,7 @@
 #endif
           }
 #endif
-          if(x==0)
+          if(x==Value_t(0))
           {
             switch(ByteCodePtr[-1])
             {
@@ -1666,7 +1679,7 @@
                 A = ByteCodePtr[-1];
                 if(IsNeverNegativeValueOpcode(A))
                 {
-                  FP_TRACE_BYTECODE_OPTIMIZATION("A[IsNeverNegativeValueOpcode(A)] x[x==0] cLess", "A [x] cMul");
+                  FP_TRACE_BYTECODE_OPTIMIZATION("A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLess", "A [x] cMul");
                   /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
                   /* ImmedPtr[0] = x; */ // redundant, matches x @ 1
                   /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1

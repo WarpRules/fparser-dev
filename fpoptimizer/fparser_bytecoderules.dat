@@ -127,8 +127,8 @@ x [x!=Value_t(0)] cDiv		-> IF(!FP_INT_VERSION) [Value_t(1)/x] cMul
 y cPow  x cPow -> [y*x] cPow
 
 x [x==Value_t(0.5)]      cPow -> IF(!FP_INT_VERSION) cSqrt
-x [x==Value_t(1)/Value_t(3)]  cPow -> cCbrt
-x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv
+x [x==Value_t(1)/Value_t(3)]  cPow -> IF(!FP_INT_VERSION) cCbrt
+x [x==Value_t(1)/Value_t(-3)] cPow -> IF(!FP_INT_VERSION) cCbrt cInv
 x [x==Value_t(-0.5)]     cPow -> IF(!FP_INT_VERSION) cRSqrt
 x [x==Value_t(-1)]     cPow -> cInv
 
@@ -148,7 +148,7 @@ cInv  cInv ->
 cNeg  cNeg ->
 cPow  cInv -> cNeg cPow
 
-cInv cDiv -> cMul
+cInv cDiv -> IF(!FP_INT_VERSION) cMul
 cInv cMul -> cDiv
 cNeg cAdd -> cSub
 cNeg cSub -> cAdd
@@ -189,7 +189,7 @@ x cMul cExp2 cDiv -> IF(!FP_INT_VERSION) [-x] cMul cExp2 cMul
 
 cAbs x [x!=Value_t(0)] cLess         -> IF(!FP_INT_VERSION) [Value_t(0.5)/x] cMul cNot
 cAbs x [x!=Value_t(0)] cGreaterOrEq  -> IF(!FP_INT_VERSION) [Value_t(0.5)/x] cMul cNotNot
-A [IsNeverNegativeValueOpcode(A)] x [x==0] cLess -> A [x] cMul
+A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul
 
 cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
