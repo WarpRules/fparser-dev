@@ -137,8 +137,9 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_CBRT
     inline double fp_cbrt(double x) { return cbrt(x); }
 #else
-    inline double fp_cbrt(double x) { return x<0 ? -exp(log(-x)/3.0)
-                                                 :  exp(log( x)/3.0); }
+    inline double fp_cbrt(double x) { return x>0 ?  exp(log( x)/3.0)
+                                           : x<0 ? -exp(log(-x)/3.0)
+                                           : 0.0; }
 #endif
     inline double fp_ceil(double x) { return ceil(x); }
     inline double fp_cos(double x) { return cos(x); }
@@ -212,8 +213,9 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_CBRT
     inline float fp_cbrt(float x) { return cbrtf(x); }
 #else
-    inline float fp_cbrt(float x) { return x<0 ? -expf(logf(-x)/3.0F)
-                                               :  expf(logf( x)/3.0F); }
+    inline float fp_cbrt(float x) { return x>0 ?  expf(logf( x)/3.0f)
+                                         : x<0 ? -expf(logf(-x)/3.0f)
+                                         : 0.0f; }
 #endif
     inline float fp_ceil(float x) { return ceilf(x); }
     inline float fp_cos(float x) { return cosf(x); }
@@ -292,8 +294,9 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_cbrt(long double x) { return cbrtl(x); }
 #else
     inline long double fp_cbrt(long double x)
-    { return x<0 ? -expl(logl(-x)/3.0L)
-            :  expl(logl( x)/3.0L); }
+        { return x>0 ?  expl(logl( x)/3.0l)
+               : x<0 ? -expl(logl(-x)/3.0l)
+               : 0.0l; }
 #endif
     inline long double fp_ceil(long double x) { return ceill(x); }
     inline long double fp_cos(long double x) { return cosl(x); }
