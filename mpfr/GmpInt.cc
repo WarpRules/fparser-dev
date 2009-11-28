@@ -309,7 +309,7 @@ GmpInt& GmpInt::operator*=(long value)
 GmpInt& GmpInt::operator/=(const GmpInt& rhs)
 {
     copyIfShared();
-    mpz_fdiv_q(mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    mpz_tdiv_q(mData->mInteger, mData->mInteger, rhs.mData->mInteger);
     return *this;
 }
 
@@ -317,11 +317,11 @@ GmpInt& GmpInt::operator/=(long value)
 {
     copyIfShared();
     if(value >= 0)
-        mpz_fdiv_q_ui(mData->mInteger, mData->mInteger, value);
+        mpz_tdiv_q_ui(mData->mInteger, mData->mInteger, value);
     else
     {
         mpz_neg(mData->mInteger, mData->mInteger);
-        mpz_fdiv_q_ui(mData->mInteger, mData->mInteger, -value);
+        mpz_tdiv_q_ui(mData->mInteger, mData->mInteger, -value);
     }
     return *this;
 }
@@ -351,7 +351,7 @@ GmpInt& GmpInt::operator<<=(unsigned long bits)
 GmpInt& GmpInt::operator>>=(unsigned long bits)
 {
     copyIfShared();
-    mpz_fdiv_q_2exp(mData->mInteger, mData->mInteger, bits);
+    mpz_tdiv_q_2exp(mData->mInteger, mData->mInteger, bits);
     return *this;
 }
 
@@ -457,7 +457,7 @@ GmpInt GmpInt::operator*(long value) const
 GmpInt GmpInt::operator/(const GmpInt& rhs) const
 {
     GmpInt retval(kNoInitialization);
-    mpz_fdiv_q(retval.mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    mpz_tdiv_q(retval.mData->mInteger, mData->mInteger, rhs.mData->mInteger);
     return retval;
 }
 
@@ -465,11 +465,11 @@ GmpInt GmpInt::operator/(long value) const
 {
     GmpInt retval(kNoInitialization);
     if(value >= 0)
-        mpz_fdiv_q_ui(retval.mData->mInteger, mData->mInteger, value);
+        mpz_tdiv_q_ui(retval.mData->mInteger, mData->mInteger, value);
     else
     {
         mpz_neg(retval.mData->mInteger, mData->mInteger);
-        mpz_fdiv_q_ui(retval.mData->mInteger, retval.mData->mInteger, -value);
+        mpz_tdiv_q_ui(retval.mData->mInteger, retval.mData->mInteger, -value);
     }
     return retval;
 }
@@ -506,7 +506,7 @@ GmpInt GmpInt::operator<<(unsigned long bits) const
 GmpInt GmpInt::operator>>(unsigned long bits) const
 {
     GmpInt retval(kNoInitialization);
-    mpz_fdiv_q_2exp(retval.mData->mInteger, mData->mInteger, bits);
+    mpz_tdiv_q_2exp(retval.mData->mInteger, mData->mInteger, bits);
     return retval;
 }
 

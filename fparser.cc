@@ -174,14 +174,14 @@ namespace
     template<typename Value_t>
     inline Value_t DegreesToRadians(Value_t degrees)
     {
-        static const Value_t factor = const_pi<Value_t>() / Value_t(180.0);
+        static const Value_t factor = const_pi<Value_t>() / Value_t(180);
         return degrees * factor;
     }
 
     template<typename Value_t>
     inline Value_t RadiansToDegrees(Value_t radians)
     {
-        static const Value_t factor = Value_t(180.0) / const_pi<Value_t>();
+        static const Value_t factor = Value_t(180) / const_pi<Value_t>();
         return radians * factor;
     }
 
@@ -1113,6 +1113,22 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
 
 #include "fp_opcode_add.inc"
 
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+template<>
+inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
+{
+    data->ByteCode.push_back(opcode);
+}
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
+{
+    data->ByteCode.push_back(opcode);
+}
+#endif
+
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
 {
@@ -1412,7 +1428,7 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
             if(data->Immed.back() == const_e<Value_t>())
                 { op = cExp;  data->ByteCode.pop_back();
                     data->Immed.pop_back(); --StackPtr; }
-            else if(data->Immed.back() == Value_t(2.0))
+            else if(data->Immed.back() == Value_t(2))
                 { op = cExp2; data->ByteCode.pop_back();
                     data->Immed.pop_back(); --StackPtr; }
         }
@@ -1502,7 +1518,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
 
         if(op != cMod &&
            data->ByteCode.back() == cImmed &&
-           data->Immed.back() == 1.0)
+           data->Immed.back() == Value_t(1))
         {
             op = (op == cDiv ? cInv : 0);
             data->Immed.pop_back();
@@ -1924,17 +1940,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cMul: Stack[SP-1] *= Stack[SP]; --SP; break;
 
           case   cDiv:
-#           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
-#           endif
               Stack[SP-1] /= Stack[SP]; --SP; break;
 
           case   cMod:
-#           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
-#           endif
               Stack[SP-1] = fp_mod(Stack[SP-1], Stack[SP]);
               --SP; break;
 

@@ -1,6 +1,7 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
+#include "fparser_gmpint.hh"
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -31,8 +32,11 @@ namespace
 #ifndef _MSC_VER /* workaround for compiler bug? MSC 15.0 */
     inline double abs(double d) { return fabs(d); }
 #endif
-    inline double min(double x, double y) { return x<y ? x : y; }
-    inline double max(double x, double y) { return x>y ? x : y; }
+    template<typename T>
+    inline T min(T x, T y) { return x<y ? x : y; }
+    template<typename T>
+    inline T max(T x, T y) { return x>y ? x : y; }
+    inline long max(long x, long y) { return x>y ? x : y; }
     inline double r2d(double x) { return x*180.0/M_PI; }
     inline double d2r(double x) { return x*M_PI/180.0; }
 #ifndef __ICC /* workaround for compiler bug? (ICC 11.0) */
@@ -84,13 +88,23 @@ namespace
 //============================================================================
 // Test function definitions
 //============================================================================
-struct Test
+struct FloatingPointTest
 {
     const char* funcString;
     const char* paramString;
     double (*funcPtr)(const double*);
     unsigned paramAmount;
     double paramMin, paramMax, paramStep;
+    bool useDegrees;
+};
+
+struct IntTest
+{
+    const char* funcString;
+    const char* paramString;
+    long (*funcPtr)(const long*);
+    unsigned paramAmount;
+    long paramMin, paramMax, paramStep;
     bool useDegrees;
 };
 
@@ -510,7 +524,8 @@ double f46(const double* p)
         "x,y", f46, 2, -.9, .9, .015, false
     const double x = p[0], y = p[1];
     return abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) +
-        (acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9);
+        (acos(x) < (acos(y)-10)) + 1.2*max(-4.0, acos(x)) +
+        1.3*min(9.0, acos(x)-9);
 }
 
 double f47(const double* p)
@@ -614,7 +629,7 @@ double f56(const double* p)
 
 namespace
 {
-    Test tests[] =
+    FloatingPointTest floatingPointTests[] =
     {
         { P1 }, { P2 }, { P3 }, { P4 }, { P5 },
 #ifndef FP_DISABLE_EVAL
@@ -629,7 +644,36 @@ namespace
         { P55 }, { P56 }
     };
 
-    const unsigned testsAmount = sizeof(tests)/sizeof(tests[0]);
+    const unsigned floatingPointTestsAmount =
+        sizeof(floatingPointTests)/sizeof(floatingPointTests[0]);
+}
+
+
+long fi1(const long* p)
+{
+#define PI1Code 1+2+3-4*5*6/3+10/2-9%2 + (x+y - 11*x + z/10 + x/(z+31))
+#define PI1 Stringify(PI1Code), "x,y,z", fi1, 3, -30, 30, 1, false
+    const long x = p[0], y = p[1], z = p[2];
+    return PI1Code;
+}
+
+long fi2(const long* p)
+{
+#define PI2 "if(abs(x*y) < 20 | x+y > 30 & z > 5, min(x,2*y), max(y,z*2))", \
+        "x,y,z", fi2, 3, -30, 30, 1, false
+    const long x = p[0], y = p[1], z = p[2];
+    return (std::abs(x*y) < 20 || (x+y > 30 && z > 5)) ?
+        min(x, 2*y) : max(y, z*2);
+}
+
+namespace
+{
+    IntTest intTests[] =
+    {
+        { PI1 }, { PI2 }
+    };
+
+    const unsigned intTestsAmount = sizeof(intTests)/sizeof(intTests[0]);
 }
 
 
@@ -1661,46 +1705,45 @@ inline double toDouble<MpfrFloat>(const MpfrFloat& value)
 #endif
 
 template<typename Parser_t>
-bool runTest(unsigned testIndex, Parser_t& fp, const char* type)
+bool runTest(Parser_t& fp, const FloatingPointTest& testData,
+             const char* const parserType)
 {
     double vars[10];
     typename Parser_t::value_type fp_vars[10];
 
-    for(unsigned i = 0; i < tests[testIndex].paramAmount; ++i)
-        vars[i] = tests[testIndex].paramMin;
+    for(unsigned i = 0; i < testData.paramAmount; ++i)
+        vars[i] = testData.paramMin;
 
     while(true)
     {
         unsigned i = 0;
-        while(i < tests[testIndex].paramAmount &&
-              (vars[i] += tests[testIndex].paramStep) >
-              tests[testIndex].paramMax)
+        while(i < testData.paramAmount &&
+              (vars[i] += testData.paramStep) > testData.paramMax)
         {
-            vars[i++] = tests[testIndex].paramMin;
+            vars[i++] = testData.paramMin;
         }
 
-        if(i == tests[testIndex].paramAmount) break;
+        if(i == testData.paramAmount) break;
 
-        for(unsigned i = 0; i < tests[testIndex].paramAmount; ++i)
+        for(unsigned i = 0; i < testData.paramAmount; ++i)
             fp_vars[i] = vars[i];
 
-        double v1 = tests[testIndex].funcPtr(vars);
-        double v2 = toDouble(fp.Eval(fp_vars));
+        const double v1 = testData.funcPtr(vars);
+        const double v2 = toDouble(fp.Eval(fp_vars));
 
         const double scale = pow(10.0, floor(log10(fabs(v1))));
-        double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
-        double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
-        double diff = sv2-sv1;
+        const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
+        const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+        const double diff = sv2-sv1;
 
         if(fabs(diff) > Epsilon)
         {
             if(!verbose)
-                std::cout << "\nFunction:\n\"" << tests[testIndex].funcString
-                          << "\"\n("
-                          << type << ")";
+                std::cout << "\nFunction:\n\"" << testData.funcString
+                          << "\"\n(" << parserType << ")";
 
             std::cout << std::endl << "Error: For (";
-            for(unsigned ind = 0; ind < tests[testIndex].paramAmount; ++ind)
+            for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
                 std::cout << (ind>0 ? ", " : "") << vars[ind];
             std::cout << ")\nthe library returned "
                       << std::setprecision(18) << v2 << " instead of "
@@ -1719,6 +1762,55 @@ bool runTest(unsigned testIndex, Parser_t& fp, const char* type)
     return true;
 }
 
+template<typename Parser_t>
+bool runTest(Parser_t& fp, const IntTest& testData,
+             const char* const parserType)
+{
+    long vars[10];
+    typename Parser_t::value_type fp_vars[10];
+
+    for(unsigned i = 0; i < testData.paramAmount; ++i)
+        vars[i] = testData.paramMin;
+
+    while(true)
+    {
+        unsigned i = 0;
+        while(i < testData.paramAmount &&
+              (vars[i] += testData.paramStep) > testData.paramMax)
+        {
+            vars[i++] = testData.paramMin;
+        }
+
+        if(i == testData.paramAmount) break;
+
+        for(unsigned i = 0; i < testData.paramAmount; ++i)
+            fp_vars[i] = vars[i];
+
+        const long v1 = testData.funcPtr(vars);
+        const typename Parser_t::value_type v2 = fp.Eval(fp_vars);
+
+        if(v1 != v2)
+        {
+            if(!verbose)
+                std::cout << "\nFunction:\n\"" << testData.funcString
+                          << "\"\n(" << parserType << ")";
+
+            std::cout << std::endl << "Error: For (";
+            for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                std::cout << (ind>0 ? ", " : "") << vars[ind];
+            std::cout << ")\nthe library returned "
+                      << v2 << " instead of "
+                      << v1 << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+            fp.PrintByteCode(std::cout);
+#endif
+            return false;
+        }
+    }
+
+    return true;
+}
+
 //=========================================================================
 // Test variable deduction
 //=========================================================================
@@ -1726,25 +1818,28 @@ bool checkVarString(const char* idString,
                     FunctionParser& fp, unsigned funcInd, int errorIndex,
                     int variablesAmount, const std::string& variablesString)
 {
-    const bool stringsMatch = (variablesString == tests[funcInd].paramString);
+    const bool stringsMatch =
+        (variablesString == floatingPointTests[funcInd].paramString);
     if(errorIndex >= 0 ||
-       variablesAmount != int(tests[funcInd].paramAmount) ||
+       variablesAmount != int(floatingPointTests[funcInd].paramAmount) ||
        !stringsMatch)
     {
         std::cout << "\n" << idString
                   << " ParseAndDeduceVariables() failed with function:\n\""
-                  << tests[funcInd].funcString << "\"\n";
+                  << floatingPointTests[funcInd].funcString << "\"\n";
         if(errorIndex >= 0)
             std::cout << "Error index: " << errorIndex
                       << ": " << fp.ErrorMsg() << std::endl;
         else if(!stringsMatch)
             std::cout << "Deduced var string was \"" << variablesString
-                      << "\" instead of \"" << tests[funcInd].paramString
+                      << "\" instead of \""
+                      << floatingPointTests[funcInd].paramString
                       << "\"." << std::endl;
         else
             std::cout << "Deduced variables amount was "
                       << variablesAmount << " instead of "
-                      << tests[funcInd].paramAmount << "." << std::endl;
+                      << floatingPointTests[funcInd].paramAmount << "."
+                      << std::endl;
         return false;
     }
     return true;
@@ -1756,36 +1851,39 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
     static std::vector<std::string> variables;
 
     int variablesAmount = -1;
-    int retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
-                                            &variablesAmount,
-                                            tests[funcInd].useDegrees);
-    if(retval >= 0 || variablesAmount != int(tests[funcInd].paramAmount))
+    int retval = fp.ParseAndDeduceVariables
+        (floatingPointTests[funcInd].funcString,
+         &variablesAmount, floatingPointTests[funcInd].useDegrees);
+    if(retval >= 0 || variablesAmount !=
+       int(floatingPointTests[funcInd].paramAmount))
     {
         std::cout <<
             "\nFirst ParseAndDeduceVariables() failed with function:\n\""
-                  << tests[funcInd].funcString << "\"\n";
+                  << floatingPointTests[funcInd].funcString << "\"\n";
         if(retval >= 0)
             std::cout << "Error index: " << retval
                       << ": " << fp.ErrorMsg() << std::endl;
         else
             std::cout << "Deduced variables amount was "
                       << variablesAmount << " instead of "
-                      << tests[funcInd].paramAmount << "." << std::endl;
+                      << floatingPointTests[funcInd].paramAmount << "."
+                      << std::endl;
         return false;
     }
 
     variablesAmount = -1;
-    retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
-                                        variablesString,
-                                        &variablesAmount,
-                                        tests[funcInd].useDegrees);
+    retval = fp.ParseAndDeduceVariables
+        (floatingPointTests[funcInd].funcString,
+         variablesString,
+         &variablesAmount,
+         floatingPointTests[funcInd].useDegrees);
     if(!checkVarString("Second", fp, funcInd, retval, variablesAmount,
                        variablesString))
         return false;
 
-    retval = fp.ParseAndDeduceVariables(tests[funcInd].funcString,
+    retval = fp.ParseAndDeduceVariables(floatingPointTests[funcInd].funcString,
                                         variables,
-                                        tests[funcInd].useDegrees);
+                                        floatingPointTests[funcInd].useDegrees);
     variablesAmount = int(variables.size());
     variablesString.clear();
     for(unsigned i = 0; i < variables.size(); ++i)
@@ -1801,19 +1899,19 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
 //=========================================================================
 // Main
 //=========================================================================
-template<typename Parser_t>
-bool parseRegressionTestFunction(Parser_t& parser, unsigned funcIndex,
+template<typename Parser_t, typename TestData_t>
+bool parseRegressionTestFunction(Parser_t& parser, const TestData_t& testData,
                                  const char* parserTypeStr)
 {
     const int retval =
-        parser.Parse(tests[funcIndex].funcString,
-                     tests[funcIndex].paramString,
-                     tests[funcIndex].useDegrees);
+        parser.Parse(testData.funcString, testData.paramString,
+                     testData.useDegrees);
     if(retval >= 0)
     {
         std::cout << "With FunctionParser" << parserTypeStr
-                  << "\nin \"" << tests[funcIndex].funcString << "\" (\""
-                  << tests[funcIndex].paramString << "\"), col " << retval
+                  << "\nin \"" << testData.funcString
+                  << "\" (\"" << testData.paramString
+                  << "\"), col " << retval
                   << ":\n" << parser.ErrorMsg() << std::endl;
         return false;
     }
@@ -1824,6 +1922,9 @@ int main()
 {
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     MpfrFloat::setDefaultMantissaBits(80);
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    GmpInt::setDefaultNumberOfBits(80);
 #endif
 
     FunctionParser fp0;
@@ -1974,37 +2075,57 @@ int main()
     // Main testing loop
     // -----------------
     std::cout << "- Performing regression tests..." << std::endl;
+    std::cout << "Tested parser types: double";
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    std::cout << ", long double";
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    std::cout << ", MpfrFloat";
+#endif
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    std::cout << ", long";
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    std::cout << ", GmpInt";
+#endif
+    std::cout << std::endl;
 
-    for(unsigned i = FIRST_TEST; i < testsAmount; ++i)
+    for(unsigned i = FIRST_TEST; i < floatingPointTestsAmount; ++i)
     {
-        if(!parseRegressionTestFunction(fp, i, ""))
+        if(!parseRegressionTestFunction(fp, floatingPointTests[i], ""))
             return 1;
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        if(!parseRegressionTestFunction(fp_ld, i, "_ld"))
+        if(!parseRegressionTestFunction(fp_ld, floatingPointTests[i], "_ld"))
             return 1;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        if(!parseRegressionTestFunction(fp_mpfr, i, "_mpfr"))
+        if(!parseRegressionTestFunction
+           (fp_mpfr, floatingPointTests[i], "_mpfr"))
             return 1;
 #endif
 
         //fp.PrintByteCode(std::cout);
         if(verbose)
             std::cout << /*std::right <<*/ std::setw(2) << i+1 << ": \""
-                      << tests[i].funcString << "\" (" <<
-                pow((tests[i].paramMax-tests[i].paramMin)/tests[i].paramStep,
-                    static_cast<double>(tests[i].paramAmount))
+                      << floatingPointTests[i].funcString << "\" (" <<
+                pow((floatingPointTests[i].paramMax -
+                     floatingPointTests[i].paramMin) /
+                    floatingPointTests[i].paramStep,
+                    static_cast<double>(floatingPointTests[i].paramAmount))
                       << " param. combinations): " << std::flush;
         else
             std::cout << i+1 << std::flush << " ";
 
-        if(!runTest(i, fp, "Not optimized")) return 1;
+        if(!runTest(fp, floatingPointTests[i], "Not optimized"))
+            return 1;
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        if(!runTest(i, fp_ld, "long double, not optimized")) return 1;
+        if(!runTest(fp_ld, floatingPointTests[i], "long double, not optimized"))
+            return 1;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        if(!runTest(i, fp_mpfr, "mpfr, not optimized")) return 1;
+        if(!runTest(fp_mpfr, floatingPointTests[i], "MpfrFloat, not optimized"))
+            return 1;
 #endif
 
         if(verbose) std::cout << "Ok." << std::endl;
@@ -2013,15 +2134,18 @@ int main()
         //fp.PrintByteCode(std::cout);
 
         if(verbose) std::cout << "    Optimized: " << std::flush;
-        if(!runTest(i, fp, "After optimization")) return 1;
+        if(!runTest(fp, floatingPointTests[i], "After optimization"))
+            return 1;
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
         fp_ld.Optimize();
-        //if(!runTest(i, fp_ld, "long double, optimized")) return 1;
+        //if(!runTest(fp_ld, floatingPointTests[i], "long double, optimized"))
+        //    return 1;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
         fp_mpfr.Optimize();
-        //if(!runTest(i, fp_mpfr, "mpfr, optimized")) return 1;
+        //if(!runTest(fp_mpfr, floatingPointTests[i], "mpfr, optimized"))
+        //    return 1;
 #endif
 
         if(verbose)
@@ -2029,12 +2153,43 @@ int main()
 
         for(int j = 0; j < 20; ++j)
             fp.Optimize();
-        if(!runTest(i, fp, "After several optimization runs")) return 1;
+        if(!runTest(fp, floatingPointTests[i],
+                    "After several optimization runs"))
+            return 1;
 
         if(!testVariableDeduction(fp, i)) return 1;
 
         if(verbose) std::cout << "Ok." << std::endl;
     }
+
+#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
+    if(!verbose) std::cout << std::endl;
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    FunctionParser_li fp_li;
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    FunctionParser_gmpint fp_gmpint;
+#endif
+
+    for(unsigned i = 0; i < intTestsAmount; ++i)
+    {
+        std::cout << i+1 << std::flush << " ";
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+        if(!parseRegressionTestFunction(fp_li, intTests[i], "_li"))
+            return 1;
+        if(!runTest(fp_li, intTests[i], "long int, not optimized"))
+            return 1;
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+        if(!parseRegressionTestFunction(fp_gmpint, intTests[i], "_gmpint"))
+            return 1;
+        if(!runTest(fp_gmpint, intTests[i], "GmpInt, not optimized"))
+            return 1;
+#endif
+    }
+#endif
 
     if(!verbose) std::cout << "Ok." << std::endl;
 #endif

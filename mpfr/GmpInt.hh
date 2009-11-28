@@ -31,7 +31,7 @@ class GmpInt
        In other words, it can be called like:
 
          mpz_t raw_mpz_data;
-         floatValue.get_raw_mpz_data(raw_mpz_data);
+         intValue.get_raw_mpz_data(raw_mpz_data);
 
        Note that the returned mpz_t should be considered as read-only and
        not be modified from the outside because it may be shared among
