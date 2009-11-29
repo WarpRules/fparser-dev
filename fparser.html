@@ -3,11 +3,11 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
- <title>Function Parser for C++ v3.3.2  : Documentation</title>
+ <title>Function Parser for C++ v4.0    : Documentation</title>
 </head>
 
 <body>
-<h1>Function Parser for C++ v3.3.2  </h1>
+<h1>Function Parser for C++ v4.0    </h1>
 
 <p>Authors: Juha Nieminen
 (<a href="http://iki.fi/warp/">http://iki.fi/warp/</a>),
@@ -261,7 +261,10 @@ you also need to include <code>mpfr/MpfrFloat.cc</code> or
 <p>The rest of the documentation assumes that <code>FunctionParser</code>
   (which uses the <code>double</code> type) is used. The usage of the other
   classes is identical except that <code>double</code> is replaced with the
-  correspondent type used by that class.
+  correspondent type used by that class. (In other words, whenever the
+  rest of this documentation uses the type keyword '<code>double</code>',
+  the correspondent type should be used instead, when using another version
+  of the class.)
 
 <!-- -------------------------------------------------------------------- -->
 <a name="configuring"></a>
@@ -1082,6 +1085,9 @@ or functions using the following operators in this order of precedence:
  </tr>
 </table>
 
+<p>(Note that currently the exponentiation operator is not supported for
+  <code>FunctionParser_li</code> nor <code>FunctionParser_gmpint</code>.)
+
 <p>Since the unary minus has higher precedence than any other operator, for
   example the following expression is valid: <code>x*-y</code>
 
@@ -1218,6 +1224,11 @@ Without epsilon this comparison probably returns the wrong value.
     and 2.9, 2.5 and 2.1 are rounded to 2.0.</td>
 </tr>
 </table>
+
+<p>(Note that for <code>FunctionParser_li</code> and
+  <code>FunctionParser_gmpint</code> only the functions
+  <code>abs()</code>, <code>eval()</code>, <code>if()</code>,
+  <code>min()</code> and <code>max()</code> are supported.)
 
 <p>Examples of function string understood by the class:
 

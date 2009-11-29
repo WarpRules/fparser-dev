@@ -9,6 +9,25 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.0
+<ul>
+  <li>Added support for different numerical types: <code>double</code>,
+    <code>float</code>, <code>long double</code>, <code>long int</code>,
+    multiple-precision floating point numbers using the MPFR library, and
+    arbitrary precision integers using the GMP library. (Note that it's
+    not necessary for these two libraries to exist in the system in order
+    to use the Function Parser library with the other numerical types.
+    Support for these libraries is optionally compiled in using preprocessor
+    settings.)
+  <li>Optimizations to the <code>Parse()</code> method, making it 15-30%
+    faster with most inputs.
+  <li>The <code>Parse()</code> method now performs significantly more
+    bytecode optimizations than before, without compromising parsing speed.
+  <li>Several new optimization rules added to the <code>Optimize()</code>
+    method.
+  <li>Switched to the LGPL license.
+</ul>
+
 <p>What's new in v3.3.2
 <ul>
  <li>Fixed an incompatibility with MS Visual Studio which caused the optimizer

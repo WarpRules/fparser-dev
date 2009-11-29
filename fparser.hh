@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v3.3.2                                          *|
+|* Function Parser for C++ v4.0                                            *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 \***************************************************************************/
@@ -12,6 +12,12 @@
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 #include <iostream>
+#endif
+
+#ifdef _MSC_VER
+// Visual Studio's warning about missing definitions for the explicit
+// FunctionParserBase instantiations is irrelevant here.
+#pragma warning(disable : 4661)
 #endif
 
 namespace FPoptimizer_CodeTree { class CodeTree; }

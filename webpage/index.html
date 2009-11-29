@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v3.3.2  </h1>
+<h1>Function Parser for C++ v4.0    </h1>
 
 <h2>What is this library?</h2>
 
@@ -27,19 +27,31 @@ some cases interpreting mathematical expressions in a scripting language.
 keeping maximum portability. The library should compile and work with any
 standard-conforming C++ compiler.
 
-<p><a href="fparser.html">Full HTML documentation</a> (including usage
-license and copyright notices)
+<p>Different numerical types are supported: <code>double</code>,
+  <code>float</code>, <code>long double</code>, <code>long int</code>,
+  multiple-precision floating point numbers using the MPFR library, and
+  arbitrary precision integers using the GMP library. (Note that it's
+  not necessary for these two libraries to exist in the system in order
+  to use the Function Parser library with the other numerical types. Support
+  for these libraries is optionally compiled in using preprocessor settings.)
 
-<p><a href="example.cc">Simple example program</a>
+<p>This Library is distributed under the
+  <a href="http://www.gnu.org/copyleft/lesser.html">Lesser General Public
+    License</a> (LGPL) version 3.
+
+<p><a href="fparser.html">Full HTML documentation.</a>
+
+<p><a href="example.cc">Simple example program.</a>
 
 <p><a href="speedtests.html">Some speed tests.</a>
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser3.3.2.zip">fparser3.3.2.zip</a> v3.3.2
-(released 13 Oct 2009)
+<p>Download <a href="fparser4.0.zip">fparser4.0.zip</a> v4.0
+(released 29 Nov 2009)
 
 <p>(Older versions:
+<a href="fparser3.3.2.zip">v3.3.2</a>,
 <a href="fparser3.2.1.zip">v3.2.1</a>,
 <a href="fparser3.1.5.zip">v3.1.5</a>,
 <a href="fparser3.0.3.zip">v3.0.3</a>,
@@ -65,40 +77,27 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser3.3.2_devel.tar.bz2">fparser3.3.2_devel.tar.bz2</a>
+<a href="fparser4.0_devel.tar.bz2">fparser4.0_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
 
-<p>What's new in v3.3.2
+<p>What's new in v4.0
 <ul>
- <li>Fixed an incompatibility with MS Visual Studio which caused the optimizer
-   to enter an infinite loop with some input functions (VS interprets bitfields
-   slightly differently from gcc). Also minor additions and fine-tuning of the
-   optimizer.
-</ul>
-
-<p>What's new in v3.3.1
-<ul>
- <li>Fixed some incompatibilities with MS Visual Studio introduced with the
-   refactored optimizer.
-</ul>
-
-<p>What's new in v3.3
-<ul>
- <li>The <code>Parse()</code> method now performs more exhaustive constant
-   folding (calculating constant expressions at parse time) than before.
-   Also integral powers (eg. like <code>"x^4"</code>) are now more optimized
-   at parse time, resulting in faster evaluation even without a call to the
-   <code>Optimize()</code> method (although the latter will sometimes still
-   result in an even better result). The speed impact of this on the
-   <code>Parse()</code> method has been kept minimal.
- <li>More refactoring of the optimizer, making the <code>Optimize()</code>
-   method significantly faster than in the previous version. Also new and
-   more exhaustive rules have been added, resulting in better results in
-   certain cases (eg. when using basic operators in very complex functions).
- <li>Added utility member functions to parse a function so that the variables
-   in the function are deduced automatically. The found variables are returned
-   to the caller if requested.
+  <li>Added support for different numerical types: <code>double</code>,
+    <code>float</code>, <code>long double</code>, <code>long int</code>,
+    multiple-precision floating point numbers using the MPFR library, and
+    arbitrary precision integers using the GMP library. (Note that it's
+    not necessary for these two libraries to exist in the system in order
+    to use the Function Parser library with the other numerical types.
+    Support for these libraries is optionally compiled in using preprocessor
+    settings.)
+  <li>Optimizations to the <code>Parse()</code> method, making it 15-30%
+    faster with most inputs.
+  <li>The <code>Parse()</code> method now performs significantly more
+    bytecode optimizations than before, without compromising parsing speed.
+  <li>Several new optimization rules added to the <code>Optimize()</code>
+    method.
+  <li>Switched to the LGPL license.
 </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.

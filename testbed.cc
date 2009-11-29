@@ -1,7 +1,13 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 #include "fparser_mpfr.hh"
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
 #include "fparser_gmpint.hh"
+#endif
+
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -48,9 +54,11 @@ namespace
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
     inline bool fBool(double x) { return fabs(x) >= 0.5; }
-    inline bool fAnd(double x, double y) { return fBool(x) && fBool(y); }
-    inline bool fOr(double x, double y) { return fBool(x) || fBool(y); }
-    inline bool fNot(double x) { return !fBool(x); }
+    inline double fAnd(double x, double y)
+    { return double(fBool(x) && fBool(y)); }
+    inline double fOr(double x, double y)
+    { return double(fBool(x) || fBool(y)); }
+    inline double fNot(double x) { return double(!fBool(x)); }
 
 #ifndef FP_SUPPORT_ASINH
     inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
@@ -1095,8 +1103,8 @@ bool TestIntPow()
             for(int n=0; n<n_cbrt; ++n) os << "*3";
             os << "))";
             double exponent = double(m);
-            if(n_sqrt > 0) exponent /= std::pow(2, n_sqrt);
-            if(n_cbrt > 0) exponent /= std::pow(3, n_cbrt);
+            if(n_sqrt > 0) exponent /= std::pow(2.0, n_sqrt);
+            if(n_cbrt > 0) exponent /= std::pow(3.0, n_cbrt);
             if(!runFractionalPowTest(os.str(), exponent)) return false;
         }
     }
