@@ -296,8 +296,12 @@ int main(int argc, char* argv[])
     switch(parserType)
     {
       case FP_D: return run<FunctionParser>();
+#ifdef FP_SUPPORT_FLOAT_TYPE
       case FP_F: return run<FunctionParser_f>();
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
       case FP_LD: return run<FunctionParser_ld>();
+#endif
     }
 
     return 0;

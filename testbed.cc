@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <sstream>
 #include <algorithm>
+#include <cstring>
 
 #define Epsilon (1e-9)
 
@@ -1918,7 +1919,7 @@ bool parseRegressionTestFunction(Parser_t& parser, const TestData_t& testData,
     return true;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     MpfrFloat::setDefaultMantissaBits(80);
@@ -1926,6 +1927,13 @@ int main()
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     GmpInt::setDefaultNumberOfBits(80);
 #endif
+
+    bool runUTF8Test = true;
+
+    for(int i = 1; i < argc; ++i)
+    {
+        if(std::strcmp(argv[i], "-noUTF8Test") == 0) runUTF8Test = false;
+    }
 
     FunctionParser fp0;
 
@@ -2198,7 +2206,7 @@ int main()
     // Misc. tests
     // -----------
     if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
-       !TestIntPow() || !UTF8Test() || !TestIdentifiers() ||
+       !TestIntPow() || (runUTF8Test && !UTF8Test()) || !TestIdentifiers() ||
        !testUserDefinedFunctions())
         return 1;
 

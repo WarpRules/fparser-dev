@@ -1,7 +1,8 @@
 // Simple example file for the function parser
 // ===========================================
 /* Note that the library has to be compiled with
-   FP_SUPPORT_FLOAT_TYPE and FP_SUPPORT_LONG_DOUBLE_TYPE
+   FP_SUPPORT_FLOAT_TYPE, FP_SUPPORT_LONG_DOUBLE_TYPE and
+   FP_SUPPORT_LONG_INT_TYPE
    preprocessor macros defined for this example to work.
 
    Try with these input values with the different floating point parser

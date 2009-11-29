@@ -1123,10 +1123,10 @@ inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
 template<>
 inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
 {
-#define FP_INT_VERSION 1
     typedef long Value_t;
+#define FP_INT_VERSION 1
 #include "fp_opcode_add.inc"
-    //data->ByteCode.push_back(opcode);
+#undef FP_INT_VERSION
 }
 #endif
 
@@ -1135,8 +1135,9 @@ template<>
 inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
 {
     typedef GmpInt Value_t;
+#define FP_INT_VERSION 1
 #include "fp_opcode_add.inc"
-    //data->ByteCode.push_back(opcode);
+#undef FP_INT_VERSION
 }
 #endif
 

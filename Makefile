@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison++
 #===========================================================================
 
-RELEASE_VERSION=3.3.2
+RELEASE_VERSION=4.0
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -21,11 +21,11 @@ FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 #FEATURE_FLAGS += -DFP_NO_EVALUATION_CHECKS
 #FEATURE_FLAGS += -D_GLIBCXX_DEBUG
 #FEATURE_FLAGS += -DFP_DISABLE_SHORTCUT_LOGICAL_EVALUATION
-FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
-FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
-FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
+#FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
+#FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
+#FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
 #FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
-FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
+#FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -65,7 +65,7 @@ LD += -Xlinker --gc-sections
 
 CPPFLAGS += -I"`pwd`"
 
-all: testbed speedtest functioninfo example example2
+all: testbed speedtest functioninfo example
 
 FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_grammar_data.o \
@@ -100,7 +100,7 @@ testbed: testbed.o $(FP_MODULES)
 
 fpoptimizer.o: fpoptimizer.cc
 
-testbed_release: testbed.o fparser.o fpoptimizer.o
+testbed_release: testbed.o fparser.o fpoptimizer.o mpfr/MpfrFloat.o mpfr/GmpInt.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 speedtest: speedtest.o $(FP_MODULES)
@@ -255,7 +255,7 @@ devel_pack: set_version_string
 	fptypes.hh fpaux.hh fp_opcode_add.inc fp_identifier_parser.inc \
 	speedtest.cc testbed.cc \
 	fparser.html style.css \
-	fpoptimizer/*.hh fpoptimizer/*.cc \
+	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/*.inc \
 	fpoptimizer/fparser_bytecoderules.dat \
 	fpoptimizer/fpoptimizer_treerules.dat \
 	fpoptimizer/*.txt fpoptimizer/grammar_parser.y \
