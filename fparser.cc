@@ -1215,8 +1215,17 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
 
     if(requiredParams > 0)
     {
-        function = CompileExpression(function+1);
-        if(!function) return 0;
+        const char* function_end = CompileExpression(function+1);
+        if(!function_end)
+        {
+            // If an error occurred, verify whether it was caused by ()
+            ++function;
+            SkipSpace(function);
+            if(*function == ')') return SetErrorType(ILL_PARAMS_AMOUNT, function);
+            // Not caused by (), use the error message given by CompileExpression()
+            return 0;
+        }
+        function = function_end;
 
         for(unsigned i = 1; i < requiredParams; ++i)
         {
