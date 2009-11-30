@@ -881,6 +881,10 @@ bool TestErrorSituations()
       { FunctionParser::ILL_PARAMS_AMOUNT,   4, "Sub()" },
       { FunctionParser::ILL_PARAMS_AMOUNT,   5, "Sub(x)" },
       { FunctionParser::ILL_PARAMS_AMOUNT,   7, "Sub(x,1,2)" },
+      { FunctionParser::UNKNOWN_IDENTIFIER,  2, "x+Sin(1)" },
+      { FunctionParser::UNKNOWN_IDENTIFIER,  0, "sub(1,2)" },
+      { FunctionParser::UNKNOWN_IDENTIFIER,  0, "sinx(1)"  },
+      { FunctionParser::UNKNOWN_IDENTIFIER,  2, "1+X"      },
 #ifdef FP_DISABLE_EVAL
       { FunctionParser::UNKNOWN_IDENTIFIER,  0, "eval(x)" }
 #endif
@@ -919,8 +923,8 @@ bool TestErrorSituations()
         }
     }
 
-    const char* const invalidNames[] =
-    { "s2%", "sin", "(x)", "5x", "2" };
+    static const char* const invalidNames[] =
+    { "s2%", "sin", "(x)", "5x", "2", "\302\240"/*nbsp*/ };
     const unsigned namesAmnt = sizeof(invalidNames)/sizeof(invalidNames[0]);
 
     for(unsigned i = 0; i < namesAmnt; ++i)
