@@ -34,9 +34,13 @@ namespace FPoptimizer_CodeTree
             case cImmed:
                 return MinMaxTree(GetImmed(), GetImmed()); // a definite value.
             case cAnd:
+            case cAbsAnd:
             case cOr:
+            case cAbsOr:
             case cNot:
+            case cAbsNot:
             case cNotNot:
+            case cAbsNotNot:
             case cEqual:
             case cNEqual:
             case cLess:
@@ -263,6 +267,7 @@ namespace FPoptimizer_CodeTree
             }
 
             case cIf:
+            case cAbsIf:
             {
                 // No guess which branch is chosen. Produce a spanning min & max.
                 MinMaxTree res1 = GetParam(1).CalculateResultBoundaries();
@@ -752,11 +757,6 @@ namespace FPoptimizer_CodeTree
              * within fpoptimizer_bytecode_to_codetree.cc and thus
              * they will never occur in the calling context:
              */
-            case cAbsNot:
-            case cAbsNotNot:
-            case cAbsOr:
-            case cAbsAnd:
-            case cAbsIf:
                 break; /* Should never occur */
 
             /* Opcodes that do not occur in the tree for other reasons */
@@ -772,8 +772,11 @@ namespace FPoptimizer_CodeTree
 
             /* Opcodes that are completely unpredictable */
             case cVar:
+                break; // Cannot deduce
             case cPCall:
+                break;
             case cFCall:
+                break; // Cannot deduce
             case cEval:
                 break; // Cannot deduce
         }

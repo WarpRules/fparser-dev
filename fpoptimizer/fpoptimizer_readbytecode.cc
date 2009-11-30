@@ -145,9 +145,9 @@ namespace
         {
             CodeTree newnode;
             newnode.SetOpcode(opcode);
-            size_t stackhead = stack.size() - nparams;
-            for(size_t a=0; a<nparams; ++a)
-                newnode.AddParamMove( stack[stackhead + a] );
+            
+            std::vector<CodeTree> params = Pop(nparams);
+            newnode.SetParamsMove(params);
 
             if(!keep_powi)
             switch(opcode)
@@ -264,17 +264,15 @@ namespace
             DumpTree(newnode);
             std::cout <<std::endl;
         #endif
-            stack.resize(stackhead+1);
-            stack.back().swap(newnode);
+            stack.push_back(newnode);
         }
 
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
         {
             CodeTree newnode;
             newnode.SetFuncOpcode(opcode, funcno);
-            size_t stackhead = stack.size() - nparams;
-            for(size_t a=0; a<nparams; ++a)
-                newnode.AddParamMove( stack[stackhead + a] );
+            std::vector<CodeTree> params = Pop(nparams);
+            newnode.SetParamsMove(params);
             newnode.Rehash(false);
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "POP " << nparams << ", PUSH ";
@@ -282,8 +280,7 @@ namespace
             std::cout << std::endl;
         #endif
             FindClone(newnode);
-            stack.resize(stackhead+1);
-            stack.back().swap(newnode);
+            stack.push_back(newnode);
         }
 
         void AddConst(double value)
@@ -339,6 +336,14 @@ namespace
             stack.resize(stack.size()-1);
             return result;
         }
+        std::vector<CodeTree> Pop(unsigned n_pop)
+        {
+            std::vector<CodeTree> result(n_pop);
+            for(unsigned n=0; n<n_pop; ++n)
+                result[n].swap(stack[stack.size()-n_pop+n]);
+            stack.resize(stack.size()-n_pop);
+            return result;
+        }
 
         size_t GetStackTop() const { return stack.size(); }
     private:
@@ -381,6 +386,22 @@ namespace FPoptimizer_CodeTree
         const std::vector<unsigned>& ByteCode,
         const std::vector<double>& Immed,
         const FunctionParser::Data& fpdata,
+        bool keep_powi)
+    {
+        std::vector<CodeTree> var_trees;
+        var_trees.reserve(fpdata.numVariables);
+        for(unsigned n=0; n<fpdata.numVariables; ++n)
+        {
+            var_trees.push_back( CodeTree(n+VarBegin, CodeTree::VarTag()) );
+        }
+        GenerateFrom(ByteCode,Immed,fpdata,var_trees,keep_powi);
+    }
+
+    void CodeTree::GenerateFrom(
+        const std::vector<unsigned>& ByteCode,
+        const std::vector<double>& Immed,
+        const FunctionParser::Data& fpdata,
+        const std::vector<CodeTree>& var_trees,
         bool keep_powi)
     {
         CodeTreeParserData sim(keep_powi);
@@ -443,7 +464,7 @@ namespace FPoptimizer_CodeTree
             }
             if(OPCODE(opcode) >= VarBegin)
             {
-                sim.AddVar(opcode);
+                sim.Push(var_trees[opcode-VarBegin]);
             }
             else
             {
@@ -488,8 +509,17 @@ namespace FPoptimizer_CodeTree
                     {
                         unsigned funcno = ByteCode[++IP];
                         assert(funcno < fpdata.FuncParsers.size());
+                        const FunctionParserBase<double>& p =
+                            *fpdata.FuncParsers[funcno].parserPtr;
                         unsigned params = fpdata.FuncParsers[funcno].params;
-                        sim.EatFunc(params, OPCODE(opcode), funcno);
+                        
+                        /* Inline the procedure call */
+                        /* Works because cPCalls can never recurse */
+                        std::vector<CodeTree> paramlist = sim.Pop(params);
+                        CodeTree pcall_tree;
+                        pcall_tree.GenerateFrom(p.data->ByteCode, p.data->Immed, *p.data,
+                                                paramlist);
+                        sim.Push(pcall_tree);
                         break;
                     }
                     // Unary operators requiring special attention

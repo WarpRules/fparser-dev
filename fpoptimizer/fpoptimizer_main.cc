@@ -13,6 +13,8 @@ using namespace FPoptimizer_CodeTree;
 template<>
 void FunctionParserBase<double>::Optimize()
 {
+    typedef double Value_t;
+
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
@@ -23,7 +25,7 @@ void FunctionParserBase<double>::Optimize()
     FPoptimizer_Optimize::ApplyGrammars(tree);
 
     std::vector<unsigned> byteCode;
-    std::vector<double> immed;
+    std::vector<Value_t> immed;
     size_t stacktop_max = 0;
     tree.SynthesizeByteCode(byteCode, immed, stacktop_max);
 

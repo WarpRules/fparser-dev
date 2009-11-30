@@ -67,6 +67,13 @@ namespace FPoptimizer_CodeTree
             const FunctionParser::Data& data,
             bool keep_powi = false);
 
+        void GenerateFrom(
+            const std::vector<unsigned>& byteCode,
+            const std::vector<double>& immed,
+            const FunctionParser::Data& data,
+            const std::vector<CodeTree>& var_trees,
+            bool keep_powi = false);
+
         void SynthesizeByteCode(
             std::vector<unsigned>& byteCode,
             std::vector<double>&   immed,
