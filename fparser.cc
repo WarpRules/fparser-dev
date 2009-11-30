@@ -577,6 +577,7 @@ namespace
         "Illegal number of parameters to function", // 8
         "Syntax error: Premature end of string",    // 9
         "Syntax error: Expecting ( after function", // 10
+        "Syntax error: Unknown identifier",         // 11
         "(No function has been parsed yet)",
         ""
     };
@@ -1286,7 +1287,9 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
        * valid identifiers. Include them here to reduce
        * the number of jumps in the compiled program.
        */
-      case '*': case '+': case ',': case '-': case '/':
+      case '*': case ',': case '-': case '/':
+          return SetErrorType(SYNTAX_ERROR, function);
+      case '+': // Unary + not supported
           return SetErrorType(SYNTAX_ERROR, function);
     }
 
@@ -1383,6 +1386,10 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
                   data->ByteCode.push_back(cNop);
                   return function;
             }
+        }
+        else /* nameIter == namePtrs.end() */
+        {
+            return SetErrorType(UNKNOWN_IDENTIFIER, function);
         }
     }
 

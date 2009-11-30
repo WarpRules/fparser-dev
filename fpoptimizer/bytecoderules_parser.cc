@@ -819,7 +819,7 @@ namespace
           OutLine(Out) << "data->ByteCode.push_back(opcode);";
         }
         CodeSeq.Flush(out);
-        
+
         out << "return;\n";
         out << "// This list of dummy gotos is here to inhibit\n"
                "// compiler warnings on possibly unused labels\n";
