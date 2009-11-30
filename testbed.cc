@@ -819,27 +819,99 @@ bool TestErrorSituations()
     fp.AddFunction("Sub", Sub, 2);
     tmpfp.Parse("0", "x");
 
-    const char* const invalidFuncs[] =
-    { "abc", "x+y", "123b", "++c", "c++", "c+", "-", "sin", "sin()",
-      "sin(x", "sin x", "x+", "x x", "sin(y)", "sin(x, 1)", "x, x",
-      "x^^2", "x**x", "x+*x", "unit", "unit x", "x*unit", "unit*unit",
-      "unit unit", "x(unit)", "x+unit", "x*unit", "()", "", "x()", "x*()",
-      "sin(unit)", "sin unit", "1..2", "(", ")", "(x", "x)", ")x(",
-      "(((((((x))))))", "(((((((x))))))))", "2x", "(2)x", "(x)2", "2(x)",
-      "x(2)", "[x]", "@x", "$x", "{x}", "max(x)", "max(x, 1, 2)", "if(x,2)",
-      "if(x, 2, 3, 4)", "Value(x)", "Value(1+x)", "Value(1,x)", "Sqr()",
-      "Sqr(x,1)", "Sqr(1,2,x)", "Sub()", "Sub(x)", "Sub(x,1,2)"
+    static const struct
+    {
+        FunctionParser::ParseErrorType expected_error;
+        int                            expected_error_position;
+        const char*                    function_string;
+    } invalidFuncs[] =
+    {
+      { FunctionParser::MISSING_PARENTH,     5, "sin(x"},
+      { FunctionParser::EXPECT_PARENTH_FUNC, 4, "sin x"},
+      { FunctionParser::SYNTAX_ERROR,        2, "x+" },
+      { FunctionParser::EXPECT_OPERATOR,     2, "x x"},
+      { FunctionParser::UNKNOWN_IDENTIFIER,  4, "sin(y)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   5, "sin(x, 1)" },
+      { FunctionParser::EXPECT_OPERATOR,     1, "x, x"},
+      { FunctionParser::SYNTAX_ERROR,        2, "x^^2" },
+      { FunctionParser::SYNTAX_ERROR,        2, "x**x" },
+      { FunctionParser::SYNTAX_ERROR,        2, "x+*x" },
+      { FunctionParser::SYNTAX_ERROR,        0, "unit" },
+      { FunctionParser::SYNTAX_ERROR,        0, "unit x" },
+      { FunctionParser::SYNTAX_ERROR,        2, "x*unit" },
+      { FunctionParser::SYNTAX_ERROR,        0, "unit*unit" },
+      { FunctionParser::SYNTAX_ERROR,        0, "unit unit" },
+      { FunctionParser::EXPECT_OPERATOR,     1, "x(unit)"},
+      { FunctionParser::SYNTAX_ERROR,        2, "x+unit" },
+      { FunctionParser::SYNTAX_ERROR,        2, "x*unit" },
+      { FunctionParser::EMPTY_PARENTH,       1, "()"},
+      { FunctionParser::SYNTAX_ERROR,        0, "" },
+      { FunctionParser::EXPECT_OPERATOR,     1, "x()"},
+      { FunctionParser::EMPTY_PARENTH,       3, "x*()"},
+      { FunctionParser::SYNTAX_ERROR,        4, "sin(unit)" },
+      { FunctionParser::EXPECT_PARENTH_FUNC, 4, "sin unit"},
+      { FunctionParser::EXPECT_OPERATOR,     2, "1..2"},
+      { FunctionParser::SYNTAX_ERROR,        1, "(" },
+      { FunctionParser::MISM_PARENTH,        0, ")"},
+      { FunctionParser::MISSING_PARENTH,     2, "(x"},
+      { FunctionParser::EXPECT_OPERATOR,     1, "x)"},
+      { FunctionParser::MISM_PARENTH,        0, ")x("},
+      { FunctionParser::MISSING_PARENTH,     14,"(((((((x))))))"},
+      { FunctionParser::EXPECT_OPERATOR,     15,"(((((((x))))))))"},
+      { FunctionParser::EXPECT_OPERATOR,     1, "2x"},
+      { FunctionParser::EXPECT_OPERATOR,     3, "(2)x"},
+      { FunctionParser::EXPECT_OPERATOR,     3, "(x)2"},
+      { FunctionParser::EXPECT_OPERATOR,     1, "2(x)"},
+      { FunctionParser::EXPECT_OPERATOR,     1, "x(2)"},
+      { FunctionParser::SYNTAX_ERROR,        0, "[x]" },
+      { FunctionParser::SYNTAX_ERROR,        0, "@x" },
+      { FunctionParser::SYNTAX_ERROR,        0, "$x" },
+      { FunctionParser::SYNTAX_ERROR,        0, "{x}" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   5, "max(x)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   8, "max(x, 1, 2)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   6, "if(x,2)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   10,"if(x, 2, 3, 4)" },
+      { FunctionParser::MISSING_PARENTH,     6, "Value(x)"},
+      { FunctionParser::MISSING_PARENTH,     6, "Value(1+x)"},
+      { FunctionParser::MISSING_PARENTH,     6, "Value(1,x)"},
+      // Note: ^should these three not return ILL_PARAMS_AMOUNT instead?
+      { FunctionParser::ILL_PARAMS_AMOUNT,   4, "Sqr()"},
+      { FunctionParser::ILL_PARAMS_AMOUNT,   5, "Sqr(x,1)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   5, "Sqr(1,2,x)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   4, "Sub()" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   5, "Sub(x)" },
+      { FunctionParser::ILL_PARAMS_AMOUNT,   7, "Sub(x,1,2)" },
 #ifdef FP_DISABLE_EVAL
-      , "eval(x)"
+      { FunctionParser::UNKNOWN_IDENTIFIER,  0, "eval(x)" }
 #endif
     };
     const unsigned amnt = sizeof(invalidFuncs)/sizeof(invalidFuncs[0]);
     for(unsigned i = 0; i < amnt; ++i)
     {
-        if(fp.Parse(invalidFuncs[i], "x") < 0)
+        int parse_result = fp.Parse(invalidFuncs[i].function_string, "x");
+        if(parse_result < 0)
         {
-            std::cout << "Parsing the invalid function \"" << invalidFuncs[i]
+            std::cout << "Parsing the invalid function \""
+                      << invalidFuncs[i].function_string
                       << "\" didn't fail\n";
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+            fp.PrintByteCode(std::cout);
+#endif
+            retval = false;
+        }
+        else if(fp.GetParseErrorType() != invalidFuncs[i].expected_error
+             || parse_result != invalidFuncs[i].expected_error_position)
+        {
+            std::cout << "Parsing the invalid function \""
+                      << invalidFuncs[i].function_string
+                      << "\" produced ";
+            if(fp.GetParseErrorType() != invalidFuncs[i].expected_error)
+                std::cout << "wrong error code (" << fp.ErrorMsg() << ")";
+            if(parse_result != invalidFuncs[i].expected_error_position)
+                std::cout << "wrong pointer (expected "
+                          << invalidFuncs[i].expected_error_position
+                          << ", got " << parse_result << ")";
+            std::cout << "\n";
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
             fp.PrintByteCode(std::cout);
 #endif
