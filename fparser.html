@@ -1081,11 +1081,19 @@ or functions using the following operators in this order of precedence:
  </tr><tr>
   <td><code>A&amp;B</code></td>
   <td>result is 1 if <code>int(A)</code> and <code>int(B)</code> differ from
-      0, else 0</td>
+      0, else 0.<br>
+      Note: Regardless of the values, both operands are always
+      evaluated. However, if the expression is optimized, it may
+      be changed such that only one of the operands is evaluated,
+      according to standard shortcut logical operation semantics.</td>
  </tr><tr>
   <td><code>A|B</code></td>
   <td>result is 1 if <code>int(A)</code> or <code>int(B)</code> differ from 0,
-      else 0</td>
+      else 0.<br>
+      Note: Regardless of the values, both operands are always
+      evaluated. However, if the expression is optimized, it may
+      be changed such that only one of the operands is evaluated,
+      according to standard shortcut logical operation semantics.</td>
  </tr>
 </table>
 
