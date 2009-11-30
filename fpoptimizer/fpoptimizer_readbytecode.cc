@@ -349,6 +349,12 @@ namespace
     private:
         void FindClone(CodeTree& tree, bool recurse = true)
         {
+            // Disabled: Causes problems in optimization when
+            // the same subtree is included in logical and non-logical
+            // contexts: optimizations applied to the logical one will
+            // mess up the non-logical one.
+            return;
+            /*
             std::multimap<fphash_t, CodeTree>::const_iterator
                 i = clones.lower_bound(tree.GetHash());
             for(; i != clones.end() && i->first == tree.GetHash(); ++i)
@@ -360,6 +366,7 @@ namespace
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                     FindClone(tree.GetParam(a));
             clones.insert(std::make_pair(tree.GetHash(), tree));
+            */
         }
     private:
         std::vector<CodeTree> stack;

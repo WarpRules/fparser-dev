@@ -249,8 +249,10 @@ namespace FPoptimizer_Optimize
             if(range.first != range.second)
             {
                 std::cout << "Input (" << FP_GetOpcodeName(tree.GetOpcode())
-                          << "[" << tree.GetParamCount()
+                          << ")[" << tree.GetParamCount()
                           << "]";
+                if(from_logical_context)
+                    std::cout << "(Logical)";
 
                 unsigned first=~unsigned(0), prev=~unsigned(0);
                 const char* sep = ", rules ";
