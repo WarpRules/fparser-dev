@@ -48,6 +48,7 @@ Joel Yliluoma
    <ul>
       <li><a href="#identifiers">Identifier names</a>
       <li><a href="#functionsyntax">The function string syntax</a>
+      <li><a href="#whitespace">Whitespace</a>
    </ul>
  <li>Miscellaneous
    <ul>
@@ -1010,11 +1011,11 @@ parameters are:
    variables will be assigned here.
  <li><code>resultVarString</code>: The found variables will be written to
    this string, in the same format as accepted by the <code>Parse()</code>
-   function. The variable names will be sorted using the <code>&lt</code>
+   function. The variable names will be sorted using the <code>&lt;</code>
    operator of <code>std::string</code>.
  <li><code>resultVars</code>: The found variables will be written to this
    vector, each element being one variable name. They will be sorted using
-   the <code>&lt</code> operator of <code>std::string</code>. (The amount
+   the <code>&lt;</code> operator of <code>std::string</code>. (The amount
    of found variables can be retrieved, rather obviously, with the
    <code>size()</code> method of the vector.)
  <li><code>useDegrees</code>: As with <code>Parse()</code>.
@@ -1036,8 +1037,9 @@ the specified return values will be modified in case of error.
   described in the next subsections.
 
 <p>The name of an identifier can use any alphanumeric characters, the
-  underscore character and any UTF8-encoded unicode character. The first
-  character of the name cannot be a numeric digit, though.
+  underscore character and any UTF8-encoded unicode character, excluding
+  those denoting whitespace.
+  The first character of the name cannot be a numeric digit, though.
 
 <p>All functions, variables, constants and units must use unique names.
   It's not possible to add two different identifiers with the same name.
@@ -1255,6 +1257,43 @@ never reach that level but still take enormous amounts of time to evaluate.
 This can sometimes be undesirable because it is prone to exploitation,
 which is why <code>eval()</code> is disabled by default. It can be enabled
 in the <code>fpconfig.hh</code> file.
+
+
+<!-- -------------------------------------------------------------------- -->
+<a name="whitespace"></a>
+<h3>Whitespace</h3>
+
+<p>Arbitrary amounts of whitespace can optionally be included between
+  elements in the function string.
+  The following unicode characters are interpreted as whitespace:
+<table>
+ <tr>
+  <th>Character number</th>
+  <th>Character name</th>
+  <th>UTF-8 byte sequence</th>
+ </tr>
+ <tr><td>U+0009</td><td>HORIZONTAL TABULATION    </td><td>09</td></tr>
+ <tr><td>U+000A</td><td>LINE FEED                </td><td>0A</td></tr>
+ <tr><td>U+000B</td><td>VERTICAL TABULATION      </td><td>0B</td></tr>
+ <tr><td>U+000D</td><td>CARRIAGE RETURN          </td><td>0D</td></tr>
+ <tr><td>U+0020</td><td>SPACE                    </td><td>20</td></tr>
+ <tr><td>U+00A0</td><td>NO-BREAK SPACE           </td><td>C2 A0</td></tr>
+ <tr><td>U+2000</td><td>EN QUAD                  </td><td>E2 80 80</td></tr>
+ <tr><td>U+2001</td><td>EM QUAD                  </td><td>E2 80 81</td></tr>
+ <tr><td>U+2002</td><td>EN SPACE                 </td><td>E2 80 82</td></tr>
+ <tr><td>U+2003</td><td>EM SPACE                 </td><td>E2 80 83</td></tr>
+ <tr><td>U+2004</td><td>THREE-PER-EM SPACE       </td><td>E2 80 84</td></tr>
+ <tr><td>U+2005</td><td>FOUR-PER-EM SPACE        </td><td>E2 80 85</td></tr>
+ <tr><td>U+2006</td><td>SIX-PER-EM SPACE         </td><td>E2 80 86</td></tr>
+ <tr><td>U+2007</td><td>FIGURE SPACE             </td><td>E2 80 87</td></tr>
+ <tr><td>U+2008</td><td>PUNCTUATION SPACE        </td><td>E2 80 88</td></tr>
+ <tr><td>U+2009</td><td>THIN SPACE               </td><td>E2 80 89</td></tr>
+ <tr><td>U+200A</td><td>HAIR SPACE               </td><td>E2 80 8A</td></tr>
+ <tr><td>U+200B</td><td>ZERO WIDTH SPACE         </td><td>E2 80 8B</td></tr>
+ <tr><td>U+202F</td><td>NARROW NO-BREAK SPACE    </td><td>E2 80 AF</td></tr>
+ <tr><td>U+205F</td><td>MEDIUM MATHEMATICAL SPACE</td><td>E2 81 9F</td></tr>
+ <tr><td>U+3000</td><td>IDEOGRAPHIC SPACE        </td><td>E3 80 80</td></tr>
+</table>
 
 
 <!-- -------------------------------------------------------------------- -->
