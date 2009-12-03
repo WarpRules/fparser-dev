@@ -136,7 +136,7 @@ project for the compilation to work).
 
 <p>If you are going to use the MPFR or the GMP versions of the library,
 you also need to include <code>mpfr/MpfrFloat.cc</code> or
-<code>mpfr/GmpInt.cc</code> files in your project correspondingly.
+<code>mpfr/GmpInt.cc</code> files in your project, respectively.
 
 <p>Simple usage example:
 
@@ -189,8 +189,8 @@ you also need to include <code>mpfr/MpfrFloat.cc</code> or
     <p>The <code>FP_SUPPORT_FLOAT_TYPE</code> preprocessor macro needs to be
       defined for this class to be enabled.
     <p>Note that this version of the class uses C99 standard math functions
-      not yet available in all C++ compilers. Also the <code>ld</code> and
-      <code>li</code> versions of the class described below use such functions.
+      not yet available in all C++ compilers. Also the <code>ld</code> version
+      of the class described below use such functions.
   </dd>
 
   <dt><p><code>FunctionParser_ld</code></dt>
@@ -208,7 +208,7 @@ you also need to include <code>mpfr/MpfrFloat.cc</code> or
     <p>Note that this version of the class uses a reduced function syntax
       with support only for functions which are feasible to be used with
       integral types (namely <code>abs()</code>, <code>if()</code>,
-      <code>min()</code> and <code>max()</code>, besides basic artihmetic
+      <code>min()</code> and <code>max()</code>, besides basic arithmetic
       operators, except for the power operator).
   </dd>
 
@@ -217,7 +217,7 @@ you also need to include <code>mpfr/MpfrFloat.cc</code> or
     <p>This parser uses <code>MpfrFloat</code> as its numerical type.
     <p>The <code>FP_SUPPORT_MPFR_FLOAT_TYPE</code> preprocessor macro needs
       to be defined for this class to be enabled.
-    <p>Note that to use this version of the library,
+    <p>Note that to use this version of the parser,
       <code>"fparser_mpfr.hh"</code> needs to be included.
     <p><code>MpfrFloat</code> is an auxiliary class which uses the MPFR
       library for multiple-precision floating point numbers. The class
@@ -235,7 +235,7 @@ you also need to include <code>mpfr/MpfrFloat.cc</code> or
     <p>This parser uses <code>GmpInt</code> as its numerical type.
     <p>The <code>FP_SUPPORT_GMP_INT_TYPE</code> preprocessor macro needs
       to be defined for this class to be enabled.
-    <p>Note that to use this version of the library,
+    <p>Note that to use this version of the parser,
       <code>"fparser_gmpint.hh"</code> needs to be included.
     <p><code>GmpInt</code> is an auxiliary class which uses the GMP
       library for arbitrary-precision integer numbers. The class
