@@ -347,7 +347,7 @@ namespace
 
         size_t GetStackTop() const { return stack.size(); }
     private:
-        void FindClone(CodeTree& tree, bool recurse = true)
+        void FindClone(CodeTree& /*tree*/, bool /*recurse*/ = true)
         {
             // Disabled: Causes problems in optimization when
             // the same subtree is included in logical and non-logical

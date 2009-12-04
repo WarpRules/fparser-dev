@@ -140,10 +140,10 @@ namespace
                 {
                     const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
                     if(param.data.match_type == GroupFunction)
-                        NeedList.Immeds += 1;
+                        ++NeedList.Immeds;
                     else
                     {
-                        NeedList.SubTrees += 1;
+                        ++NeedList.SubTrees;
                         assert( param.data.subfunc_opcode < VarBegin );
                         NeedList.SubTreesDetail.inc(param.data.subfunc_opcode);
                     }
@@ -152,7 +152,7 @@ namespace
                 }
                 case NumConstant:
                 case ParamHolder:
-                    NeedList.Others += 1;
+                    ++NeedList.Others;
                     ++NeedList.minimum_need;
                     break;
             }
@@ -238,7 +238,7 @@ namespace FPoptimizer_Optimize
 
         size_t nparams = tree.GetParamCount();
 
-        if(nparams < NeedList.minimum_need)
+        if(nparams < size_t(NeedList.minimum_need))
         {
             // Impossible to satisfy
             return false;
@@ -251,23 +251,23 @@ namespace FPoptimizer_Optimize
             switch(opcode)
             {
                 case cImmed:
-                    if(NeedList.Immeds > 0) NeedList.Immeds -= 1;
-                    else NeedList.Others -= 1;
+                    if(NeedList.Immeds > 0) --NeedList.Immeds;
+                    else --NeedList.Others;
                     break;
                 case cVar:
                 case cFCall:
                 case cPCall:
-                    NeedList.Others -= 1;
+                    --NeedList.Others;
                     break;
                 default:
                     assert( opcode < VarBegin );
                     if(NeedList.SubTrees > 0
                     && NeedList.SubTreesDetail.get(opcode) > 0)
                     {
-                        NeedList.SubTrees -= 1;
+                        --NeedList.SubTrees;
                         NeedList.SubTreesDetail.dec(opcode);
                     }
-                    else NeedList.Others -= 1;
+                    else --NeedList.Others;
             }
         }
 

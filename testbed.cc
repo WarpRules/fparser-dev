@@ -675,11 +675,21 @@ long fi2(const long* p)
         min(x, 2*y) : max(y, z*2);
 }
 
+long fi3(const long* p)
+{
+#define PI3Code (x+y) + 2*(x-z) + 3*(x*y) + 4*(y/z) + 5*(x%z) + \
+        6*(x<y) + 7*(x<=z) + 8*(x>2*z) + 9*(y>=3*z) + 10*(x+y!=z) + \
+        11*(100+x) + 12*(101-y) + 13*(102*z) + 14*(103/x)
+#define PI3 Stringify(PI3Code), "x,y,z", fi3, 3, 1, 50, 1, false
+    const long x = p[0], y = p[1], z = p[2];
+    return PI3Code;
+}
+
 namespace
 {
     IntTest intTests[] =
     {
-        { PI1 }, { PI2 }
+        { PI1 }, { PI2 }, { PI3 }
     };
 
     const unsigned intTestsAmount = sizeof(intTests)/sizeof(intTests[0]);
@@ -1603,11 +1613,71 @@ namespace
     };
     const unsigned userFunctionsAmount =
         sizeof(userFunctions) / sizeof(userFunctions[0]);
+
+    double nestedFunc1(const double* p)
+    {
+        return p[0] + 2.0*p[1] + 3.0*p[2];
+    }
+
+    double nestedFunc2(const double* p)
+    {
+        const double params[3] = { -5.0*p[0], -10.0*p[1], -p[0] };
+        return p[0] + 4.0*nestedFunc1(params);
+    }
+
+    double nestedFunc3(const double* p)
+    {
+        const double params1[3] = { 2.5*p[0]+2.0, p[2], p[1]/2.5 };
+        const double params2[2] = { p[1] / 1.5 - 1.0, p[0] - 2.5 };
+        return nestedFunc1(params1) + nestedFunc2(params2);
+    }
 }
 
 bool testUserDefinedFunctions()
 {
     std::cout << "- Testing user-defined functions..." << std::endl;
+
+    FunctionParser nestedParser1, nestedParser2, nestedParser3;
+    nestedParser1.Parse("x + 2.0*y + 3.0*z", "x, y, z");
+    nestedParser2.AddFunction("nestedFunc1", nestedParser1);
+    nestedParser2.Parse("x + 4.0*nestedFunc1(-5.0*x, -10.0*y, -x)", "x,y");
+    nestedParser3.AddFunction("nestedFunc1", nestedParser1);
+    nestedParser3.AddFunction("nestedFunc2", nestedParser2);
+    nestedParser3.Parse("nestedFunc1(2.5*x+2.0, z, y/2.5) + "
+                        "nestedFunc2(y/1.5 - 1.0, x - 2.5)", "x,y,z");
+
+    for(int iteration = 0; iteration < 2; ++iteration)
+    {
+        double nestedFuncParams[3];
+        for(int i = 0; i < 100; ++i)
+        {
+            nestedFuncParams[0] = -10.0 + 20.0*i/100.0;
+            for(int j = 0; j < 100; ++j)
+            {
+                nestedFuncParams[1] = -10.0 + 20.0*j/100.0;
+                for(int k = 0; k < 100; ++k)
+                {
+                    nestedFuncParams[2] = -10.0 + 20.0*k/100.0;
+
+                    const double v1 = nestedParser3.Eval(nestedFuncParams);
+                    const double v2 = nestedFunc3(nestedFuncParams);
+                    if(fabs(v1-v2) > 1e-10)
+                    {
+                        std::cout << "Nested function test failed with "
+                                  << "parameter values ("
+                                  << nestedFuncParams[0] << ","
+                                  << nestedFuncParams[1]
+                                  << ").\nThe library "
+                                  << (iteration > 0 ? "(optimized) " : "")
+                                  << "returned " << v1
+                                  << " instead of " << v2 << "." << std::endl;
+                        return false;
+                    }
+                }
+            }
+        }
+        nestedParser3.Optimize();
+    }
 
     std::string funcNames[userFunctionsAmount];
     std::string userFunctionParserFunctions[userFunctionsAmount];

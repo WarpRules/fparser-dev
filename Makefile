@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison++
 #===========================================================================
 
-RELEASE_VERSION=4.0
+RELEASE_VERSION=4.0.1
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -24,7 +24,7 @@ FEATURE_FLAGS += -DFP_SUPPORT_TR1_MATH_FUNCS
 FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
-FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
+#FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
