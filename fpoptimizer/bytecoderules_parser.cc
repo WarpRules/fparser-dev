@@ -55,7 +55,7 @@ namespace
     };
 
     Node global_head;
-    std::vector<std::string> PossiblyUnusedLabelList;
+    std::set<std::string> PossiblyUnusedLabelList;
 
     std::string Indent(size_t n)
     {
@@ -100,13 +100,14 @@ namespace
     {
         void OutChain(std::ostream& out,
                       const std::vector<std::string>& chain,
-                      size_t indent)
+                      size_t indent,
+                      const std::string& precondition)
         {
-            std::string tmp, prevlabel;
+            std::string codehash, prevlabel;
             for(size_t a=chain.size(); a-- > 0; )
             {
-                tmp += chain[a];
-                std::string label = GenLabel(tmp);
+                codehash += chain[a];
+                std::string label = GenLabel(codehash);
                 Chains::iterator i = code.lower_bound(label);
                 if(i != code.end() && i->first == label)
                 {
@@ -118,22 +119,24 @@ namespace
                         j = code.find(j->second.nextlabel);
                     }
                     /*
-                    std::cerr << "expected: <" << tmp << ">\n"
+                    std::cerr << "expected: <" << codehash << ">\n"
                                  "got:      <" << got_chain << ">\n",
                     */
-                    assert(got_chain == tmp);
+                    assert(got_chain == codehash);
 
                     // nothing to do
                     i->second.n_uses += 1;
+                    i->second.precondition.insert(precondition);
                     if(!prevlabel.empty())
                         code.find(prevlabel)->second.n_uses -= 1;
                 }
                 else
                 {
                     ChainItem item;
-                    item.code      = chain[a];
-                    item.nextlabel = prevlabel;
-                    item.n_uses    = 1;
+                    item.code         = chain[a];
+                    item.precondition.insert(precondition);
+                    item.nextlabel    = prevlabel;
+                    item.n_uses       = 1;
                     code.insert(i, std::make_pair(label, item));
                 }
                 prevlabel = label;
@@ -148,6 +151,9 @@ namespace
         {
             std::set<std::string> done;
             std::vector<std::string> remain;
+
+            std::string effective_precondition = "";
+
             for(size_t a=0; a<heads.size(); ++a)
             {
                 if(done.find(heads[a]) != done.end())
@@ -163,10 +169,31 @@ namespace
                     const ChainItem& item = i->second;
                     done.insert(i->first);
 
+                    {std::string here_precondition;
+                    for(std::set<std::string>::const_iterator
+                        i = item.precondition.begin();
+                        i != item.precondition.end();
+                        ++i)
+                    {
+                        if(i->empty()) { here_precondition = ""; break; }
+                        if(!here_precondition.empty())
+                            here_precondition += " || ";
+                        here_precondition += *i;
+                    }
+                    if(here_precondition != effective_precondition)
+                    {
+                        if(!effective_precondition.empty())
+                            out << "#endif\n";
+                        if(!here_precondition.empty())
+                            out << "#if(" << here_precondition << ")\n";
+                        effective_precondition = here_precondition;
+                    }}
+
                     if(item.n_uses > mini)
                     {
                         std::string l = ChangeLabel(i->first);
-                        PossiblyUnusedLabelList.push_back(l);
+                        if(effective_precondition.empty())
+                            PossiblyUnusedLabelList.insert(l);
                         out << l << ": ";
                     }
                     else
@@ -176,24 +203,36 @@ namespace
                     if(!item.nextlabel.empty())
                     {
                         if(done.find(item.nextlabel) != done.end())
-                            out << " goto " << ChangeLabel(item.nextlabel) << ';';
+                        {
+                            std::string l = ChangeLabel(item.nextlabel);
+                            out << " goto " << l << ';';
+                            if(effective_precondition.empty())
+                                PossiblyUnusedLabelList.erase(l);
+                        }
                         else
                             remain.push_back(item.nextlabel);
                     }
                     else if(item.code.compare(0,5,"goto ") != false)
                         out << " return;";
                     out << "\n";
+
                     mini = 1;
                 }
             }
+            if(!effective_precondition.empty())
+                out << "#endif\n";
         }
     private:
         std::string GenLabel(unsigned crc, unsigned len)
         {
-            static const char table[] = /*"0123456789"*//*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/"abcdefghijklmn"/*"opqrstuvwxyz_"*/;
+            static const char table[] =
+                /*"0123456789"*/
+                /*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/
+                "abcdefghijklmn"
+                /*"opqrstuvwxyz_"*/;
             char result[16] = {0};
             int o=15;
-            for(;;)
+            while(true)
             {
                 result[--o] = table[crc % (sizeof(table)-1)];
                 crc /= (sizeof(table)-1);
@@ -213,16 +252,17 @@ namespace
             std::map<std::string, unsigned>::iterator
                 j = label_trans.lower_bound(orig);
             if(j != label_trans.end() && j->first == orig)
-                return GenLabel(j->second, 3);
+                return GenLabel(j->second, 3u);
             size_t lno = label_trans.size();
             label_trans.insert(j, std::make_pair(orig, lno));
-            return GenLabel(lno, 3);
+            return GenLabel(unsigned(lno), 3u);
         }
     private:
         struct ChainItem
         {
             std::string code;
             std::string nextlabel;
+            std::set<std::string> precondition;
             unsigned n_uses;
         };
         typedef std::map<std::string/*label*/, ChainItem> Chains;
@@ -244,7 +284,11 @@ namespace
     };
     struct OutCode
     {
-        OutCode(std::ostream& o, size_t i) : out(o), indent(i) { }
+        OutCode(std::ostream& o, size_t i,
+                const std::string& ifdefs)
+            : out(o),
+              precondition(ifdefs),
+              indent(i) { }
         ~OutCode()
         {
             for(size_t a=0; a<seq.size(); )
@@ -283,7 +327,7 @@ namespace
                 }
             }
             #endif
-            CodeSeq.OutChain(out, seq, indent);
+            CodeSeq.OutChain(out, seq, indent, precondition);
             if(seq.empty())
                 out << Indent(indent) << "return;\n";
         }
@@ -299,6 +343,7 @@ namespace
         void DidLine(const std::string& line) { seq.push_back(line); }
         std::ostream& out;
         std::vector<std::string> seq;
+        std::string precondition;
         size_t indent;
     };
     OutLine::~OutLine()
@@ -405,7 +450,8 @@ namespace
         const std::vector<Match>& so_far,
         const std::vector<Operation>& operations,
         size_t b_used,
-        size_t i_used)
+        size_t i_used,
+        const std::string& precondition)
     {
         outstream
             << Indent(indent)
@@ -449,7 +495,7 @@ namespace
             return false;
         }
 
-        OutCode Out(outstream, indent);
+        OutCode Out(outstream, indent, precondition);
 
         int n_b_exist  = (int)(b_used-1);
         int n_i_exist  = (int)(i_used  );
@@ -543,6 +589,10 @@ namespace
                         OutLine(Out)  << "goto TailCall_" << opcode << ";";
                         //OutLine(Out)  << "AddFunctionOpcode(opcode);";
                     }
+                    if(precondition.empty())
+                    {
+                        PossiblyUnusedLabelList.erase("TailCall_" + opcode);
+                    }
                     return true;
                 }
                 else
@@ -628,7 +678,7 @@ namespace
                     if(b_used == 0)
                     {
                         code << Indent(indent) << "TailCall_" << n.opcode.name << ":\n";
-                        PossiblyUnusedLabelList.push_back("TailCall_" + n.opcode.name);
+                        PossiblyUnusedLabelList.insert("TailCall_" + n.opcode.name);
                     }
                 #endif
                     if(!n.opcode.precondition.empty())
@@ -762,7 +812,8 @@ namespace
         {
             /*if(!head.predecessors.empty())
                 std::cout << Indent(indent) << "/""* NOTE: POSSIBLY AMBIGIOUS *""/\n";*/
-            if(SynthOperations(indent,code, so_far, head.opcode.operations, b_used, i_used))
+            if(SynthOperations(indent,code, so_far, head.opcode.operations, b_used, i_used,
+                               head.opcode.precondition))
             {
                 //out << Indent(indent) << "return;\n";
                 // ^ now redundant, as it is done by SynthOperations()
@@ -814,7 +865,7 @@ namespace
         Generate(global_head, std::vector<Match>(), 2, declarations,code, 0,0);
         out << code.str();
 
-        { OutCode Out(out, 2);
+        { OutCode Out(out, 2, "");
           Synther(Out, 2).ResetBoth(0,0);
           OutLine(Out) << "data->ByteCode.push_back(opcode);";
         }
@@ -823,11 +874,16 @@ namespace
         out << "return;\n";
         out << "// This list of dummy gotos is here to inhibit\n"
                "// compiler warnings on possibly unused labels\n";
-        for(size_t a=0; a<PossiblyUnusedLabelList.size(); ++a)
+        unsigned a=0;
+        for(std::set<std::string>::const_iterator
+            i = PossiblyUnusedLabelList.begin();
+            i != PossiblyUnusedLabelList.end();
+            ++i)
         {
-            out << "goto " << PossiblyUnusedLabelList[a] << ";";
+            out << "goto " << *i << ";";
             if(a+1 == PossiblyUnusedLabelList.size()
             || a%3 == 2) out << "\n";
+            ++a;
         }
         out << "#undef FP_ReDefinePointers\n";
         //out << "}\n";
@@ -836,7 +892,7 @@ namespace
 
     void Parse()
     {
-        for(;;)
+        while(true)
         {
             char Buf[2048];
             if(!std::fgets(Buf, sizeof(Buf), stdin)) break;
@@ -844,8 +900,25 @@ namespace
             while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
             if(*bufptr == '#' || *bufptr == '\r' || *bufptr == '\n') continue;
 
+            std::string Precondition;
+
+            if(*bufptr == 'I' && bufptr[1] == 'F' && bufptr[2] == '(')
+            {
+                bufptr += 3;
+                size_t balance = 0;
+                while(*bufptr != ')' || balance != 0)
+                {
+                    if(*bufptr == '\r' || *bufptr == '\n') break;
+                    if(*bufptr == '(') ++balance;
+                    if(*bufptr == ')') --balance;
+                    Precondition += *bufptr++;
+                }
+                if(*bufptr == ')') ++bufptr;
+                while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
+            }
+
             std::vector<Match> sequence;
-            for(;;)
+            while(true)
             {
                 Match m;
                 m.has_operations = false;
@@ -853,6 +926,7 @@ namespace
                 if(*bufptr == '-' && bufptr[1] == '>') break;
                 while(isalnum(*bufptr)) m.name += *bufptr++;
                 while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
+                if(*bufptr == '#') break;
                 if(*bufptr == '[')
                 {
                     size_t balance = 0; ++bufptr;
@@ -898,29 +972,15 @@ namespace
                 }
             }
 
+            if(!Precondition.empty())
+                head->opcode.precondition = Precondition;
+
             if(*bufptr == '-' && bufptr[1] == '>')
             {
                 head->opcode.has_operations = true;
                 bufptr += 2;
-                while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
 
-                if(*bufptr == 'I' && bufptr[1] == 'F'
-                && bufptr[2] == '(')
-                {
-                    head->opcode.precondition = "";
-                    bufptr += 3;
-                    size_t balance = 0;
-                    while(*bufptr != ')' || balance != 0)
-                    {
-                        if(*bufptr == '\r' || *bufptr == '\n') break;
-                        if(*bufptr == '(') ++balance;
-                        if(*bufptr == ')') --balance;
-                        head->opcode.precondition += *bufptr++;
-                    }
-                    if(*bufptr == ')') ++bufptr;
-                }
-
-                for(;;)
+                while(true)
                 {
                     while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
                     if(*bufptr == '#' || *bufptr == '\r' || *bufptr == '\n') break;
@@ -990,6 +1050,9 @@ namespace
         }
         if(!preconditions.empty() && !any_precondition)
         {
+            preconditions.insert(head.opcode.precondition);
+            head.opcode.precondition.clear();
+
             for(std::set<std::string>::const_iterator
                 i = preconditions.begin();
                 i != preconditions.end();

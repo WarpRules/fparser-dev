@@ -179,17 +179,29 @@ namespace
     inline Value_t Max(Value_t d1, Value_t d2) { return d1>d2 ? d1 : d2; }
 
     template<typename Value_t>
-    inline Value_t DegreesToRadians(Value_t degrees)
+    inline const Value_t& GetDegreesToRadiansFactor()
     {
         static const Value_t factor = const_pi<Value_t>() / Value_t(180);
-        return degrees * factor;
+        return factor;
+    }
+
+    template<typename Value_t>
+    inline Value_t DegreesToRadians(Value_t degrees)
+    {
+        return degrees * GetDegreesToRadiansFactor<Value_t>();
+    }
+
+    template<typename Value_t>
+    inline const Value_t& GetRadiansToDegreesFactor()
+    {
+        static const Value_t factor = Value_t(180) / const_pi<Value_t>();
+        return factor;
     }
 
     template<typename Value_t>
     inline Value_t RadiansToDegrees(Value_t radians)
     {
-        static const Value_t factor = Value_t(180) / const_pi<Value_t>();
-        return radians * factor;
+        return radians * GetRadiansToDegreesFactor<Value_t>();
     }
 
     template<typename Value_t>
@@ -1087,9 +1099,9 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
 template<typename Value_t>
 inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
 {
-#define FP_INT_VERSION 0
+#define FP_FLOAT_VERSION 1
 #include "fp_opcode_add.inc"
-#undef FP_INT_VERSION
+#undef FP_FLOAT_VERSION
 }
 
 #ifdef FP_SUPPORT_LONG_INT_TYPE
@@ -1097,9 +1109,9 @@ template<>
 inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
 {
     typedef long Value_t;
-#define FP_INT_VERSION 1
+#define FP_FLOAT_VERSION 0
 #include "fp_opcode_add.inc"
-#undef FP_INT_VERSION
+#undef FP_FLOAT_VERSION
 }
 #endif
 
@@ -1108,9 +1120,9 @@ template<>
 inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
 {
     typedef GmpInt Value_t;
-#define FP_INT_VERSION 1
+#define FP_FLOAT_VERSION 0
 #include "fp_opcode_add.inc"
-#undef FP_INT_VERSION
+#undef FP_FLOAT_VERSION
 }
 #endif
 

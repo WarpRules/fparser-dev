@@ -13,10 +13,10 @@
 #y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
 #y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
-y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
-cSqr x [!isEvenInteger(x*Value_t(2))] cPow -> cAbs [x*Value_t(2)] cPow
-cSqr cSqrt  -> IF(!FP_INT_VERSION) cAbs
-#cSqr cRSqrt -> IF(!FP_INT_VERSION) cAbs cInv
+IF(FP_FLOAT_VERSION) y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
+IF(FP_FLOAT_VERSION) cSqr x [!isEvenInteger(x*Value_t(2))] cPow -> cAbs [x*Value_t(2)] cPow
+IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs
+#IF(FP_FLOAT_VERSION) cSqr cRSqrt -> cAbs cInv
 
  # (x^y)^1.5  is unacceptable,
  #            for y might be 2, resulting in x^3
@@ -34,37 +34,37 @@ cSqr cSqrt  -> IF(!FP_INT_VERSION) cAbs
 #y [!IsIntegerConst(y)] cExp  x	[IsIntegerConst(x)] cPow -> [y*x] cExp
 #y [!IsIntegerConst(y)] cExp2 x	[IsIntegerConst(x)] cPow -> [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
-y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
-cExp  x	[IsIntegerConst(x)] cPow -> IF(!FP_INT_VERSION) [x] cMul cExp
-cExp2 x	[IsIntegerConst(x)] cPow -> IF(!FP_INT_VERSION) [x] cMul cExp2
-cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
-cSqr x cPow -> [x*Value_t(2)] cPow
+IF(FP_FLOAT_VERSION) y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow
+IF(FP_FLOAT_VERSION) cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
+IF(FP_FLOAT_VERSION) cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
+IF(FP_FLOAT_VERSION) cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
+IF(FP_FLOAT_VERSION) cSqr x cPow -> [x*Value_t(2)] cPow
 
-x cAbs	 		-> IF(!FP_INT_VERSION) [fp_abs(x)]
-x cAcos	 		-> IF(!FP_INT_VERSION) [fp_acos(x)]
-x [x>=Value_t(-1)&&x<=Value_t(1)] cAcosh -> IF(!FP_INT_VERSION) [fp_acosh(x)]
-x [x>=Value_t(-1)&&x<=Value_t(1)] cAsinh -> IF(!FP_INT_VERSION) [fp_asinh(x)]
-x cAtan	 		-> IF(!FP_INT_VERSION) [fp_atan(x)]
-x cAtanh 		-> IF(!FP_INT_VERSION) [fp_atanh(x)]
-x cCbrt	 		-> IF(!FP_INT_VERSION) [fp_cbrt(x)]
-x cCeil	 		-> IF(!FP_INT_VERSION) [fp_ceil(x)]
-x cCos	 		-> IF(!FP_INT_VERSION) [fp_cos(x)]
-x cCosh	 		-> IF(!FP_INT_VERSION) [fp_cosh(x)]
-x cExp	 		-> IF(!FP_INT_VERSION) [fp_exp(x)]
-x cExp2	 		-> IF(!FP_INT_VERSION) [fp_exp2(x)]
-x cFloor 		-> IF(!FP_INT_VERSION) [fp_floor(x)]
-x cInt	 		-> IF(!FP_INT_VERSION) [fp_int(x)]
-x [x>=Value_t(0)] cLog	-> IF(!FP_INT_VERSION) [fp_log(x)]
-x [x>=Value_t(0)] cLog10 -> IF(!FP_INT_VERSION) [fp_log10(x)]
-x [x>=Value_t(0)] cLog2	-> IF(!FP_INT_VERSION) [fp_log2(x)]
-x cSin	 		-> IF(!FP_INT_VERSION) [fp_sin(x)]
-x cSinh	 		-> IF(!FP_INT_VERSION) [fp_sinh(x)]
-x [x>=Value_t(0)] cSqrt	-> IF(!FP_INT_VERSION) [fp_sqrt(x)]
-x cTan	 		-> IF(!FP_INT_VERSION) [fp_tan(x)]
-x cTanh	 		-> IF(!FP_INT_VERSION) [fp_tanh(x)]
-x cTrunc 		-> IF(!FP_INT_VERSION) [fp_trunc(x)]
-x cDeg	 		-> IF(!FP_INT_VERSION) [RadiansToDegrees(x)]
-x cRad	 		-> IF(!FP_INT_VERSION) [DegreesToRadians(x)]
+IF(FP_FLOAT_VERSION) x cAbs	 		-> [fp_abs(x)]
+IF(FP_FLOAT_VERSION) x cAcos	 		-> [fp_acos(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAcosh -> [fp_acosh(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAsinh -> [fp_asinh(x)]
+IF(FP_FLOAT_VERSION) x cAtan	 		-> [fp_atan(x)]
+IF(FP_FLOAT_VERSION) x cAtanh 		-> [fp_atanh(x)]
+IF(FP_FLOAT_VERSION) x cCbrt	 		-> [fp_cbrt(x)]
+IF(FP_FLOAT_VERSION) x cCeil	 		-> [fp_ceil(x)]
+IF(FP_FLOAT_VERSION) x cCos	 		-> [fp_cos(x)]
+IF(FP_FLOAT_VERSION) x cCosh	 		-> [fp_cosh(x)]
+IF(FP_FLOAT_VERSION) x cExp	 		-> [fp_exp(x)]
+IF(FP_FLOAT_VERSION) x cExp2	 		-> [fp_exp2(x)]
+IF(FP_FLOAT_VERSION) x cFloor 		-> [fp_floor(x)]
+IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog	-> [fp_log(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog10 -> [fp_log10(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog2	-> [fp_log2(x)]
+IF(FP_FLOAT_VERSION) x cSin	 		-> [fp_sin(x)]
+IF(FP_FLOAT_VERSION) x cSinh	 		-> [fp_sinh(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]
+IF(FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]
+IF(FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]
+IF(FP_FLOAT_VERSION) x cTrunc 		-> [fp_trunc(x)]
+IF(FP_FLOAT_VERSION) x cDeg	 		-> [RadiansToDegrees(x)]
+IF(FP_FLOAT_VERSION) x cRad	 		-> [DegreesToRadians(x)]
 x cNeg			-> [-x]
 x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
 x [x==Value_t(1)] cMul	->
@@ -80,17 +80,21 @@ y x cSub		-> [y-x]
 #y x cRSub		-> [x-y]
 y x cMin		-> [Min(x,y)]
 y x cMax		-> [Max(x,y)]
-y x cAtan2		-> IF(!FP_INT_VERSION) [fp_atan2(y,x)]
-y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
+IF(FP_FLOAT_VERSION) y x cAtan2		-> [fp_atan2(y,x)]
+IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
 
 A [A >= VarBegin] x [x==Value_t(0)] cMul -> [x]
 
 x [x==Value_t(2)] cMul -> cDup cAdd
-cSqr cLog   -> IF(!FP_INT_VERSION) cAbs cLog   cDup cAdd
-cSqr cLog2  -> IF(!FP_INT_VERSION) cAbs cLog2  cDup cAdd
-cSqr cLog10 -> IF(!FP_INT_VERSION) cAbs cLog10 cDup cAdd
+IF(FP_FLOAT_VERSION) x [x==GetRadiansToDegreesFactor<Value_t>()] cMul -> cDeg
+IF(FP_FLOAT_VERSION) x [x==GetDegreesToRadiansFactor<Value_t>()] cMul -> cRad
+IF(FP_FLOAT_VERSION) cSqr cLog   -> cAbs cLog   cDup cAdd
+IF(FP_FLOAT_VERSION) cSqr cLog2  -> cAbs cLog2  cDup cAdd
+IF(FP_FLOAT_VERSION) cSqr cLog10 -> cAbs cLog10 cDup cAdd
+IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul
+IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul
 cDup cAdd cDup cAdd -> [4] cMul
 
 
@@ -116,44 +120,48 @@ y cSub x cAdd		-> [y-x] cSub
 y cSub x cSub		-> [y+x] cSub
 y cAdd x cSub		-> [y-x] cAdd
 
+IF(FP_FLOAT_VERSION) y [(y*x)==GetRadiansToDegreesFactor<Value_t>()] cMul x cMul -> cDeg
+IF(FP_FLOAT_VERSION) y [(y*x)==GetDegreesToRadiansFactor<Value_t>()] cMul x cMul -> cRad
 y cMul x cMul		-> [y*x] cMul
-y cMul x [x!=Value_t(0)] cDiv 	-> IF(!FP_INT_VERSION) [y/x] cMul
+IF(FP_FLOAT_VERSION) y [(y/x)==GetRadiansToDegreesFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
+IF(FP_FLOAT_VERSION) y [(y/x)==GetDegreesToRadiansFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
+IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
 
-x [x!=Value_t(0)] cDiv		-> IF(!FP_INT_VERSION) [Value_t(1)/x] cMul
+IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul
 
-#y cExp  x cPow -> IF(!FP_INT_VERSION) [y*x] cExp
-#y cExp2 x cPow -> IF(!FP_INT_VERSION) [y*x] cExp2
+#IF(FP_FLOAT_VERSION) y cExp  x cPow -> [y*x] cExp
+#IF(FP_FLOAT_VERSION) y cExp2 x cPow -> [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
-y cPow  x cPow -> [y*x] cPow
+IF(FP_FLOAT_VERSION) y cPow  x cPow -> [y*x] cPow
 
-x [x==Value_t(0.5)]      cPow -> IF(!FP_INT_VERSION) cSqrt
-x [x==Value_t(1)/Value_t(3)]  cPow -> IF(!FP_INT_VERSION) cCbrt
-x [x==Value_t(1)/Value_t(-3)] cPow -> IF(!FP_INT_VERSION) cCbrt cInv
-x [x==Value_t(-0.5)]     cPow -> IF(!FP_INT_VERSION) cRSqrt
-x [x==Value_t(-1)]     cPow -> cInv
+IF(FP_FLOAT_VERSION) x [x==Value_t(0.5)]      cPow -> cSqrt
+IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(3)]  cPow -> cCbrt
+IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv
+IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)]     cPow -> cRSqrt
+IF(FP_FLOAT_VERSION) x [x==Value_t(-1)]     cPow -> cInv
 
-cLog  cExp  -> IF(!FP_INT_VERSION)
-cLog2 cExp2 -> IF(!FP_INT_VERSION)
-cExp  cLog  -> IF(!FP_INT_VERSION)
-cExp2 cLog2 -> IF(!FP_INT_VERSION)
-cAsin cSin -> IF(!FP_INT_VERSION)
-cAcos cCos -> IF(!FP_INT_VERSION)
-cAtan cTan -> IF(!FP_INT_VERSION)
-cAsinh cSinh -> IF(!FP_INT_VERSION)
-cAcosh cCosh -> IF(!FP_INT_VERSION)
-cAtanh cTanh -> IF(!FP_INT_VERSION)
-cAtan2 cTan -> IF(!FP_INT_VERSION) cDiv
+IF(FP_FLOAT_VERSION) cLog  cExp  ->
+IF(FP_FLOAT_VERSION) cLog2 cExp2 ->
+IF(FP_FLOAT_VERSION) cExp  cLog  ->
+IF(FP_FLOAT_VERSION) cExp2 cLog2 ->
+IF(FP_FLOAT_VERSION) cAsin cSin ->
+IF(FP_FLOAT_VERSION) cAcos cCos ->
+IF(FP_FLOAT_VERSION) cAtan cTan ->
+IF(FP_FLOAT_VERSION) cAsinh cSinh ->
+IF(FP_FLOAT_VERSION) cAcosh cCosh ->
+IF(FP_FLOAT_VERSION) cAtanh cTanh ->
+IF(FP_FLOAT_VERSION) cAtan2 cTan -> cDiv
 cNeg  cAbs -> cAbs
 cInv  cInv ->
 cNeg  cNeg ->
-cPow  cInv -> cNeg cPow
+IF(FP_FLOAT_VERSION) cPow  cInv -> cNeg cPow
 
-cInv cDiv -> IF(!FP_INT_VERSION) cMul
+IF(FP_FLOAT_VERSION) cInv cDiv -> cMul
 cInv cMul -> cDiv
 cNeg cAdd -> cSub
 cNeg cSub -> cAdd
 
-x [x<0] cPow cMul -> [-x] cPow cDiv
+IF(FP_FLOAT_VERSION) x [x<0] cPow cMul -> [-x] cPow cDiv
 
 cLess        cNot -> cGreaterOrEq
 cLessOrEq    cNot -> cGreater
@@ -173,50 +181,50 @@ A                                 cAbsNot cNot -> A cAbsNotNot
 A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot
 
 A [IsNeverNegativeValueOpcode(A)] cAbs   -> A
-A [IsAlwaysIntegerOpcode(A)]	  cTrunc-> IF(!FP_INT_VERSION) A
-A [IsAlwaysIntegerOpcode(A)]	  cFloor-> IF(!FP_INT_VERSION) A
-A [IsAlwaysIntegerOpcode(A)]	  cCeil -> IF(!FP_INT_VERSION) A
-A [IsAlwaysIntegerOpcode(A)]	  cInt  -> IF(!FP_INT_VERSION) A
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cTrunc-> A
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cFloor-> A
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cCeil -> A
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A
 
-cFloor cNeg -> IF(!FP_INT_VERSION) cNeg cCeil
-cCeil  cNeg -> IF(!FP_INT_VERSION) cNeg cFloor
+IF(FP_FLOAT_VERSION) cFloor cNeg -> cNeg cCeil
+IF(FP_FLOAT_VERSION) cCeil  cNeg -> cNeg cFloor
 
-x cAdd cExp  -> IF(!FP_INT_VERSION) cExp  [fp_exp(x)]     cMul
-x cAdd cExp2 -> IF(!FP_INT_VERSION) cExp2 [fp_exp2(x)] cMul
+IF(FP_FLOAT_VERSION) x cAdd cExp  -> cExp  [fp_exp(x)]     cMul
+IF(FP_FLOAT_VERSION) x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 
-x cMul cExp  cDiv -> IF(!FP_INT_VERSION) [-x] cMul cExp  cMul
-x cMul cExp2 cDiv -> IF(!FP_INT_VERSION) [-x] cMul cExp2 cMul
+IF(FP_FLOAT_VERSION) x cMul cExp  cDiv -> [-x] cMul cExp  cMul
+IF(FP_FLOAT_VERSION) x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
-cAbs x [x!=Value_t(0)] cLess         -> IF(!FP_INT_VERSION) [Value_t(0.5)/x] cMul cNot
-cAbs x [x!=Value_t(0)] cGreaterOrEq  -> IF(!FP_INT_VERSION) [Value_t(0.5)/x] cMul cNotNot
+IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
+IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
 A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul
 
-cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
-cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
+IF(FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
+IF(FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
 
-cAbs cCos  -> IF(!FP_INT_VERSION) cCos
-cAbs cCosh -> IF(!FP_INT_VERSION) cCosh
-cNeg cCos  -> IF(!FP_INT_VERSION) cCos
-cNeg cCosh -> IF(!FP_INT_VERSION) cCosh
-cNeg cSin  -> IF(!FP_INT_VERSION) cSin cNeg
-cNeg cSinh -> IF(!FP_INT_VERSION) cSinh cNeg
-cNeg cTan  -> IF(!FP_INT_VERSION) cTan cNeg
-cNeg cTanh -> IF(!FP_INT_VERSION) cTanh cNeg
-x cMul cSin  cNeg -> IF(!FP_INT_VERSION) [-x] cMul cSin
-x cMul cSinh cNeg -> IF(!FP_INT_VERSION) [-x] cMul cSinh
-x cMul cTan  cNeg -> IF(!FP_INT_VERSION) [-x] cMul cTan
-x cMul cTanh cNeg -> IF(!FP_INT_VERSION) [-x] cMul cTanh
+IF(FP_FLOAT_VERSION) cAbs cCos  -> cCos
+IF(FP_FLOAT_VERSION) cAbs cCosh -> cCosh
+IF(FP_FLOAT_VERSION) cNeg cCos  -> cCos
+IF(FP_FLOAT_VERSION) cNeg cCosh -> cCosh
+IF(FP_FLOAT_VERSION) cNeg cSin  -> cSin cNeg
+IF(FP_FLOAT_VERSION) cNeg cSinh -> cSinh cNeg
+IF(FP_FLOAT_VERSION) cNeg cTan  -> cTan cNeg
+IF(FP_FLOAT_VERSION) cNeg cTanh -> cTanh cNeg
+IF(FP_FLOAT_VERSION) x cMul cSin  cNeg -> [-x] cMul cSin
+IF(FP_FLOAT_VERSION) x cMul cSinh cNeg -> [-x] cMul cSinh
+IF(FP_FLOAT_VERSION) x cMul cTan  cNeg -> [-x] cMul cTan
+IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh
 
-cAcosh cSinh -> IF(!FP_INT_VERSION) cSqr [Value_t(-1)] cAdd cSqrt
-cAsinh cCosh -> IF(!FP_INT_VERSION) cSqr  [Value_t(1)] cAdd cSqrt
-cSin cInv -> IF(!FP_INT_VERSION) cCsc
-cCos cInv -> IF(!FP_INT_VERSION) cSec
-cTan cInv -> IF(!FP_INT_VERSION) cCot
-cCsc cInv -> IF(!FP_INT_VERSION) cSin
-cSec cInv -> IF(!FP_INT_VERSION) cCos
-cCot cInv -> IF(!FP_INT_VERSION) cTan
+IF(FP_FLOAT_VERSION) cAcosh cSinh -> cSqr [Value_t(-1)] cAdd cSqrt
+IF(FP_FLOAT_VERSION) cAsinh cCosh -> cSqr  [Value_t(1)] cAdd cSqrt
+IF(FP_FLOAT_VERSION) cSin cInv -> cCsc
+IF(FP_FLOAT_VERSION) cCos cInv -> cSec
+IF(FP_FLOAT_VERSION) cTan cInv -> cCot
+IF(FP_FLOAT_VERSION) cCsc cInv -> cSin
+IF(FP_FLOAT_VERSION) cSec cInv -> cCos
+IF(FP_FLOAT_VERSION) cCot cInv -> cTan
 
 # Hardcoded optimizations that are too complex or
 # impossible to convey using this rule file:
-x cPow -> [DO_POWI]
+IF(FP_FLOAT_VERSION) x cPow -> [DO_POWI]
 A cMul -> [DO_MAYBE_SQR]
