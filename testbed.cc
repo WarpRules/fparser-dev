@@ -2005,6 +2005,9 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
     static std::string variablesString;
     static std::vector<std::string> variables;
 
+    if(verbose)
+        std::cout << "(Testing variable deduction )" << std::flush;
+
     int variablesAmount = -1;
     int retval = fp.ParseAndDeduceVariables
         (floatingPointTests[funcInd].funcString,

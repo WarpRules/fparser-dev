@@ -144,6 +144,9 @@ private:
     const char* CompileComparison(const char*);
     const char* CompileAnd(const char*);
     const char* CompileExpression(const char*);
+    inline const char* CompileFunction(const char*, unsigned);
+    inline const char* CompileParenthesis(const char*);
+    inline const char* CompileLiteral(const char*);
 };
 
 class FunctionParser: public FunctionParserBase<double> {};

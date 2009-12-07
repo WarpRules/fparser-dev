@@ -24,6 +24,13 @@ using namespace FUNCTIONPARSERTYPES;
 #endif
 #endif
 
+#ifdef __GNUC__
+# define likely(x)       __builtin_expect(!!(x), 1)
+# define unlikely(x)     __builtin_expect(!!(x), 0)
+#else
+# define likely(x)   (x)
+# define unlikely(x) (x)
+#endif
 
 //=========================================================================
 // Name handling functions
@@ -228,53 +235,6 @@ namespace
     inline bool isOddInteger(GmpInt value)
     {
         return value%2 != 0;
-    }
-#endif
-
-    template<typename Value_t>
-    inline Value_t parseLiteral(const char* nptr, char** endptr)
-    {
-        return strtod(nptr, endptr);
-    }
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template<>
-    inline float parseLiteral<float>(const char* nptr, char** endptr)
-    {
-        return strtof(nptr, endptr);
-    }
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template<>
-    inline long double parseLiteral<long double>(const char* nptr,
-                                                 char** endptr)
-    {
-        return strtold(nptr, endptr);
-    }
-#endif
-
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-    template<>
-    inline long parseLiteral<long>(const char* nptr, char** endptr)
-    {
-        return strtol(nptr, endptr, 10);
-    }
-#endif
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    template<>
-    inline MpfrFloat parseLiteral<MpfrFloat>(const char* nptr, char** endptr)
-    {
-        return MpfrFloat::parseString(nptr, endptr);
-    }
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline GmpInt parseLiteral<GmpInt>(const char* nptr, char** endptr)
-    {
-        return GmpInt::parseString(nptr, endptr);
     }
 #endif
 
@@ -602,6 +562,56 @@ namespace
             FunctionParserBase<Value_t>::MISSING_PARENTH;
     }
 
+    template<unsigned offset>
+    struct IntLiteralMask
+    {
+        enum { mask =
+            (    1UL << ('-'-offset)) |
+            (0x3FFUL << ('0'-offset)) }; /* 0x3FF = 10 bits worth "1" */
+    };
+
+    template<typename Value_t, unsigned offset>
+    struct LiteralMask
+    {
+        enum { mask =
+            (    1UL << ('.'-offset)) |
+            IntLiteralMask<offset>::mask };
+    };
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<unsigned offset>
+    struct LiteralMask<long, offset>: public IntLiteralMask<offset>
+    {
+    };
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<unsigned offset>
+    struct LiteralMask<GmpInt, offset>: public IntLiteralMask<offset>
+    {
+    };
+#endif
+
+    template<unsigned offset>
+    struct SimpleSpaceMask
+    {
+        enum { mask =
+            (1UL << ('\r'-offset)) |
+            (1UL << ('\n'-offset)) |
+            (1UL << ('\v'-offset)) |
+            (1UL << ('\t'-offset)) |
+            (1UL << (' ' -offset)) };
+    };
+
+    template<typename Value_t>
+    inline bool BeginsLiteral(unsigned byte)
+    {
+        const unsigned n = sizeof(unsigned long)>=8 ? 0 : '.';
+        byte -= n;
+        if(byte > (unsigned char)('9'-n)) return false;
+        unsigned long shifted = 1UL << byte;
+        const unsigned long mask = LiteralMask<Value_t, n>::mask;
+        return (mask & shifted);
+    }
+
     template<typename CharPtr>
     inline void SkipSpace(CharPtr& function)
     {
@@ -643,93 +653,46 @@ U+000B  \v
 */
         while(true)
         {
-            const unsigned char byte = (unsigned char)*function;
-
-#if(' ' == 32) /* ASCII */
-            if(sizeof(unsigned long) == 8)
+            const unsigned n = sizeof(unsigned long)>=8 ? 0 : '\t';
+            typedef signed char schar;
+            unsigned byte = (unsigned char)*function;
+            byte -= n;
+            // ^Note: values smaller than n intentionally become
+            //        big values here due to integer wrap. The
+            //        comparison below thus excludes them, making
+            //        the effective range 0x09..0x20 (32-bit)
+            //        or 0x00..0x20 (64-bit) within the if-clause.
+            if(byte <= (unsigned char)(' '-n))
             {
-                const unsigned n = sizeof(unsigned long)*8-1;
-                // ^ avoids compiler warning when not 64-bit
-                if(byte <= ' ')
-                {
-                    unsigned long shifted = 1UL << byte;
-                    const unsigned long mask =
-                        (1UL << ('\r'&n)) |
-                        (1UL << ('\n'&n)) |
-                        (1UL << ('\v'&n)) |
-                        (1UL << ('\t'&n)) |
-                        (1UL << (' ' &n));
-                    if(mask & shifted) { ++function; continue; }
-                    return;
-                }
+                unsigned long shifted = 1UL << byte;
+                const unsigned long mask = SimpleSpaceMask<n>::mask;
+                if(mask & shifted)
+                    { ++function; continue; } // \r, \n, \t, \v and space
+                break;
             }
-            else
+            if(likely(byte < 0xC2-n)) break;
+
+            if(byte == 0xC2-n && function[1] == char(0xA0))
+                { function += 2; continue; } // U+00A0
+            if(byte == 0xE3-n &&
+               function[1] == char(0x80) && function[2] == char(0x80))
+                { function += 3; continue; } // U+3000
+            if(byte == 0xE2-n)
             {
-                unsigned char cbyte = (unsigned char)(0x20 - *function);
-                if(cbyte <= 0x17)
+                if(function[1] == char(0x81))
                 {
-                    unsigned shifted = 1U << cbyte;
-                    const unsigned mask =
-                        (1U << (0x20 - '\r')) |
-                        (1U << (0x20 - '\n')) |
-                        (1U << (0x20 - '\v')) |
-                        (1U << (0x20 - '\t')) |
-                        (1U << (0x20 - ' '));
-                    if(mask & shifted) { ++function; continue; }
-                    return;
+                    if(function[2] != char(0x9F)) break;
+                    function += 3; // U+205F
+                    continue;
                 }
-            }
-#endif // #if(' ' == 32)
-
-#if(' ' == 32)
-            if(byte < 0xC2) return;
-#endif
-
-            switch(byte)
-            {
-#if(' ' != 32)
-              case ' ':
-              case '\r':
-              case '\n':
-              case '\v':
-              case '\t':
-                  ++function;
-                  break;
-#endif
-              case 0xC2:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0xA0) { function += 2; continue; }
-                  break;
-              }
-              case 0xE2:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0x81 && (unsigned char)(function[2]) == 0x9F)
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  if(byte2 == 0x80 &&
-                     ((unsigned char)(function[2]) == 0xAF ||
-                      ((unsigned char)(function[2]) >= 0x80 &&
-                       (unsigned char)(function[2]) <= 0x8B)))
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  break;
-              }
-              case 0xE3:
-              {
-                  unsigned char byte2 = function[1];
-                  if(byte2 == 0x80 && (unsigned char)(function[2]) == 0x80)
-                  {
-                      function += 3;
-                      continue;
-                  }
-                  break;
-              }
+                if(function[1] == char(0x80))
+                if(function[2] == char(0xAF) || // U+202F
+                   schar(function[2]) <= schar(0x8B) // U+2000..U+200B
+                  )
+                {
+                    function += 3;
+                    continue;
+                }
             }
             break;
         } // while(true)
@@ -1266,154 +1229,151 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 {
-    switch( (unsigned char) *function)
-    {
-      case '(': // Expression in parentheses
-      {
-          ++function;
-          SkipSpace(function);
-          if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
-
-          function = CompileExpression(function);
-          if(!function) return 0;
-
-          if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
-
-          ++function;
-          SkipSpace(function);
-          return function;
-      }
-
-      case '.': case '0': case '1': case '2':
-      case '3': case '4': case '5': case '6':
-      case '7': case '8': case '9': // Number
-      {
-          char* endPtr;
-          const Value_t val = parseLiteral<Value_t>(function, &endPtr);
-          if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-
-          AddImmedOpcode(val);
-          incStackPtr();
-
-          SkipSpace(endPtr);
-          return endPtr;
-      }
-
-      case ')': return SetErrorType(MISM_PARENTH, function);
-
-      /* The switch-case here covers the ascii range
-       * from 40 to 57 almost completely. A few characters
-       * however are missing, but they are not part of
-       * valid identifiers. Include them here to reduce
-       * the number of jumps in the compiled program.
-       */
-      case '*': case ',': case '-': case '/':
-          return SetErrorType(SYNTAX_ERROR, function);
-      case '+': // Unary + not supported
-          return SetErrorType(SYNTAX_ERROR, function);
-    }
+    if(BeginsLiteral<Value_t>( (unsigned char) *function))
+        return CompileLiteral(function);
 
     unsigned nameLength = readOpcode<Value_t>(function);
-
-    if(nameLength != 0) // Function, variable or constant
+    if(nameLength == 0)
     {
-        if(nameLength & 0x80000000U) // Function
-        {
-            OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
-            const char* endPtr = function + (nameLength & 0xFFFF);
-            SkipSpace(endPtr);
-
-            const FuncDefinition& funcDef = Functions[func_opcode];
-
-            if(func_opcode == cIf) // "if" is a special case
-                return CompileIf(endPtr);
-
-            unsigned requiredParams = funcDef.params;
-    #ifndef FP_DISABLE_EVAL
-            if(func_opcode == cEval)
-                requiredParams = data->numVariables;
-    #endif
-
-            function = CompileFunctionParams(endPtr, requiredParams);
-            if(!function) return 0;
-
-            if(useDegreeConversion)
-            {
-                if(funcDef.flags & FuncDefinition::AngleIn)
-                    AddFunctionOpcode(cRad);
-
-                AddFunctionOpcode(func_opcode);
-
-                if(funcDef.flags & FuncDefinition::AngleOut)
-                    AddFunctionOpcode(cDeg);
-            }
-            else
-            {
-                AddFunctionOpcode(func_opcode);
-            }
-            return function;
-        }
-
-        NamePtr name(function, nameLength);
-        const char* endPtr = function + nameLength;
-        SkipSpace(endPtr);
-
-        typename namePtrsType<Value_t>::iterator nameIter =
-            data->namePtrs.find(name);
-        if(nameIter != data->namePtrs.end())
-        {
-            const NameData<Value_t>* nameData = &nameIter->second;
-            switch(nameData->type)
-            {
-              case NameData<Value_t>::VARIABLE: // is variable
-                  data->ByteCode.push_back(nameData->index);
-                  incStackPtr();
-                  return endPtr;
-
-              case NameData<Value_t>::CONSTANT:
-                  AddImmedOpcode(nameData->value);
-                  incStackPtr();
-                  return endPtr;
-
-              case NameData<Value_t>::UNIT: break;
-
-      /* The reason why a cNop is added after a cFCall and a cPCall opcode is
-         that the function index could otherwise be confused with an actual
-         opcode (most prominently cImmed), making parse-time optimizations bug
-         (eg. if cNeg immediately follows an index value equal to cImmed, in
-         which case the parser would "optimize" it to negating the (inexistent)
-         literal, causing mayhem). The optimizer gets rid of the cNop safely.
-         (Another option would be to add some offset to the function index
-         when storing it in the bytecode, and then subtract that offset when
-         interpreting the bytecode, but this causes more programming overhead
-         than the speed overhead caused by the cNop to be worth the trouble,
-         especially since the function call caused by the opcode is quite slow
-         anyways.)
-       */
-              case NameData<Value_t>::FUNC_PTR:
-                  function = CompileFunctionParams
-                      (endPtr, data->FuncPtrs[nameData->index].params);
-                  data->ByteCode.push_back(cFCall);
-                  data->ByteCode.push_back(nameData->index);
-                  data->ByteCode.push_back(cNop);
-                  return function;
-
-              case NameData<Value_t>::PARSER_PTR:
-                  function = CompileFunctionParams
-                      (endPtr, data->FuncParsers[nameData->index].params);
-                  data->ByteCode.push_back(cPCall);
-                  data->ByteCode.push_back(nameData->index);
-                  data->ByteCode.push_back(cNop);
-                  return function;
-            }
-        }
-        else /* nameIter == namePtrs.end() */
-        {
-            return SetErrorType(UNKNOWN_IDENTIFIER, function);
-        }
+        // No identifier found
+        if(*function == '(') return CompileParenthesis(function);
+        if(*function == ')') return SetErrorType(MISM_PARENTH, function);
+        return SetErrorType(SYNTAX_ERROR, function);
     }
 
+    // Function, variable or constant
+    if(nameLength & 0x80000000U) // Function
+    {
+        OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
+        return CompileFunction(function + (nameLength & 0xFFFF), func_opcode);
+    }
+
+    NamePtr name(function, nameLength);
+    const char* endPtr = function + nameLength;
+    SkipSpace(endPtr);
+
+    typename namePtrsType<Value_t>::iterator nameIter =
+        data->namePtrs.find(name);
+    if(nameIter == data->namePtrs.end())
+    {
+        return SetErrorType(UNKNOWN_IDENTIFIER, function);
+    }
+
+    const NameData<Value_t>* nameData = &nameIter->second;
+    switch(nameData->type)
+    {
+      case NameData<Value_t>::VARIABLE: // is variable
+          data->ByteCode.push_back(nameData->index);
+          incStackPtr();
+          return endPtr;
+
+      case NameData<Value_t>::CONSTANT:
+          AddImmedOpcode(nameData->value);
+          incStackPtr();
+          return endPtr;
+
+      case NameData<Value_t>::UNIT:
+          break;
+
+  /* The reason why a cNop is added after a cFCall and a cPCall opcode is
+     that the function index could otherwise be confused with an actual
+     opcode (most prominently cImmed), making parse-time optimizations bug
+     (eg. if cNeg immediately follows an index value equal to cImmed, in
+     which case the parser would "optimize" it to negating the (inexistent)
+     literal, causing mayhem). The optimizer gets rid of the cNop safely.
+     (Another option would be to add some offset to the function index
+     when storing it in the bytecode, and then subtract that offset when
+     interpreting the bytecode, but this causes more programming overhead
+     than the speed overhead caused by the cNop to be worth the trouble,
+     especially since the function call caused by the opcode is quite slow
+     anyways.)
+   */
+      case NameData<Value_t>::FUNC_PTR:
+          function = CompileFunctionParams
+              (endPtr, data->FuncPtrs[nameData->index].params);
+          //if(!function) return 0;
+          data->ByteCode.push_back(cFCall);
+          data->ByteCode.push_back(nameData->index);
+          data->ByteCode.push_back(cNop);
+          return function;
+
+      case NameData<Value_t>::PARSER_PTR:
+          function = CompileFunctionParams
+              (endPtr, data->FuncParsers[nameData->index].params);
+          //if(!function) return 0;
+          data->ByteCode.push_back(cPCall);
+          data->ByteCode.push_back(nameData->index);
+          data->ByteCode.push_back(cNop);
+          return function;
+    }
+
+    // When it's an unit (or unrecognized type):
     return SetErrorType(SYNTAX_ERROR, function);
+}
+
+template<typename Value_t>
+inline const char* FunctionParserBase<Value_t>::CompileFunction
+(const char* function, unsigned func_opcode)
+{
+    SkipSpace(function);
+    const FuncDefinition& funcDef = Functions[func_opcode];
+
+    if(func_opcode == cIf) // "if" is a special case
+        return CompileIf(function);
+
+    unsigned requiredParams = funcDef.params;
+#ifndef FP_DISABLE_EVAL
+    if(func_opcode == cEval)
+        requiredParams = data->numVariables;
+#endif
+
+    function = CompileFunctionParams(function, requiredParams);
+    if(!function) return 0;
+
+    if(useDegreeConversion)
+    {
+        if(funcDef.flags & FuncDefinition::AngleIn)
+            AddFunctionOpcode(cRad);
+
+        AddFunctionOpcode(func_opcode);
+
+        if(funcDef.flags & FuncDefinition::AngleOut)
+            AddFunctionOpcode(cDeg);
+    }
+    else
+    {
+        AddFunctionOpcode(func_opcode);
+    }
+    return function;
+}
+
+template<typename Value_t>
+inline const char* FunctionParserBase<Value_t>::CompileParenthesis(const char* function)
+{
+    ++function; // Skip '('
+
+    SkipSpace(function);
+    if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
+    function = CompileExpression(function);
+    if(!function) return 0;
+
+    if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
+    ++function; // Skip ')'
+
+    SkipSpace(function);
+    return function;
+}
+
+template<typename Value_t>
+inline const char* FunctionParserBase<Value_t>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const double val = strtod(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
 }
 
 template<typename Value_t>
@@ -1483,7 +1443,47 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
     return function;
 }
 
+#ifdef FP_SUPPORT_FLOAT_TYPE
+template<>
+inline const char* FunctionParserBase<float>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const float val = strtof(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+#endif
+
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+template<>
+inline const char* FunctionParserBase<long double>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const long double val = strtold(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+#endif
+
 #ifdef FP_SUPPORT_LONG_INT_TYPE
+template<>
+inline const char* FunctionParserBase<long>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const long val = strtol(function, &endPtr, 10);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+
 template<>
 inline const char*
 FunctionParserBase<long>::CompilePow(const char* function)
@@ -1494,7 +1494,33 @@ FunctionParserBase<long>::CompilePow(const char* function)
 }
 #endif
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+template<>
+inline const char* FunctionParserBase<MpfrFloat>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const MpfrFloat val = MpfrFloat::parseString(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+#endif
+
 #ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+inline const char* FunctionParserBase<GmpInt>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const GmpInt val = GmpInt::parseString(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+
 template<>
 inline const char*
 FunctionParserBase<GmpInt>::CompilePow(const char* function)
