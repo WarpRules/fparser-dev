@@ -249,7 +249,11 @@ struct FunctionParserBase<Value_t>::Data
 
     std::vector<unsigned> ByteCode;
     std::vector<Value_t> Immed;
+#ifndef FP_USE_THREAD_SAFE_EVAL
     std::vector<Value_t> Stack;
+    // Note: When Stack exists,
+    //       Stack.size() and StackSize are mutually redundant.
+#endif
     unsigned StackSize;
 
     Data();

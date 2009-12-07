@@ -273,13 +273,11 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
     FuncParsers(rhs.FuncParsers),
     ByteCode(rhs.ByteCode),
     Immed(rhs.Immed),
-    Stack(),
+#ifndef FP_USE_THREAD_SAFE_EVAL
+    Stack(rhs.StackSize),
+#endif
     StackSize(rhs.StackSize)
 {
-#ifndef FP_USE_THREAD_SAFE_EVAL
-    Stack.resize(rhs.Stack.size());
-#endif
-
     for(typename namePtrsType<Value_t>::const_iterator i =
             rhs.namePtrs.begin();
         i != rhs.namePtrs.end();

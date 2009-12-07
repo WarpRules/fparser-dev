@@ -37,7 +37,9 @@ void FunctionParserBase<double>::Optimize()
     if(data->StackSize != stacktop_max)
     {
         data->StackSize = stacktop_max; // note: gcc warning is meaningful
+#ifndef FP_USE_THREAD_SAFE_EVAL
         data->Stack.resize(stacktop_max);
+#endif
     }
 
     data->ByteCode.swap(byteCode);
