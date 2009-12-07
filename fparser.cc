@@ -165,11 +165,11 @@ namespace
     inline bool truthValue_abs(Value_t abs_d) { return abs_d >= Value_t(0.5); }
 
     template<>
-    inline bool truthValue_abs<long>(long l) { return l != 0; }
+    inline bool truthValue_abs<long>(long l) { return l > 0; }
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
-    inline bool truthValue_abs<GmpInt>(GmpInt l) { return l != 0; }
+    inline bool truthValue_abs<GmpInt>(GmpInt l) { return l > 0; }
 #endif
 
     template<typename Value_t>
