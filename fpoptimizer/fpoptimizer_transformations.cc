@@ -978,7 +978,7 @@ namespace FPoptimizer_CodeTree
                     continue;
 
                 // And it must not be a simple expression
-                // Because cImmed, cVar are faster than cFetch
+                // Because cImmed, VarBegin are faster than cFetch
                 if(leaf.GetDepth() <= 1)
                     continue;
 
@@ -1040,7 +1040,7 @@ namespace FPoptimizer_CodeTree
                 }
 
                 // And it must not be a simple expression
-                // Because cImmed, cVar are faster than cFetch
+                // Because cImmed, VarBegin are faster than cFetch
                 if(tree.GetDepth() <= 1)
                 {
                     TreeCounts.erase(i);

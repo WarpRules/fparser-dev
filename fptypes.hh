@@ -50,7 +50,6 @@ namespace FUNCTIONPARSERTYPES
         cFCall, cPCall,
 
 #ifdef FP_SUPPORT_OPTIMIZER
-        cVar,   /* Denotes a variable in CodeTree (not used by bytecode) */
         cFetch, /* Same as Dup, except with absolute index
                    (next value is index) */
         cPopNMov, /* cPopNMov(x,y) moves [y] to [x] and deletes anything

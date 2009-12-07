@@ -125,7 +125,7 @@ namespace FPoptimizer_CodeTree
         inline bool IsDefined() const { return GetOpcode() != FUNCTIONPARSERTYPES::cNop; }
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
-        inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::cVar; }
+        inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::VarBegin; }
         bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
         long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool    IsLogicalValue() const;
@@ -182,8 +182,8 @@ namespace FPoptimizer_CodeTree
         FUNCTIONPARSERTYPES::OPCODE Opcode;
         union
         {
-            double   Value;   // In case of cImmed: value of the immed
-            unsigned Var;     // In case of cVar:   variable number
+            double   Value;   // In case of cImmed:   value of the immed
+            unsigned Var;     // In case of VarBegin: variable number
             unsigned Funcno;  // In case of cFCall or cPCall
         };
 
@@ -201,7 +201,7 @@ namespace FPoptimizer_CodeTree
         //   For cMin: operands to select the minimum of
         //   For cMax: operands to select the maximum of
         //   For cImmed, not used
-        //   For cVar,   not used
+        //   For VarBegin, not used
         //   For cIf:  operand 1 = condition, operand 2 = yes-branch, operand 3 = no-branch
         //   For anything else: the parameters required by the operation/function
         std::vector<CodeTree> Params;
@@ -228,7 +228,7 @@ namespace FPoptimizer_CodeTree
     inline void CodeTree::SetFuncOpcode(FUNCTIONPARSERTYPES::OPCODE o, unsigned f)
         { SetOpcode(o); data->Funcno = f; }
     inline void CodeTree::SetVar(unsigned v)
-        { SetOpcode(FUNCTIONPARSERTYPES::cVar); data->Var = v; }
+        { SetOpcode(FUNCTIONPARSERTYPES::VarBegin); data->Var = v; }
     inline void CodeTree::SetImmed(double v)
         { SetOpcode(FUNCTIONPARSERTYPES::cImmed); data->Value = v; }
     inline FUNCTIONPARSERTYPES::OPCODE CodeTree::GetOpcode() const { return data->Opcode; }

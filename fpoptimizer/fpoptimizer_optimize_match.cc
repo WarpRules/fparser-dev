@@ -254,7 +254,7 @@ namespace FPoptimizer_Optimize
                     if(NeedList.Immeds > 0) --NeedList.Immeds;
                     else --NeedList.Others;
                     break;
-                case cVar:
+                case VarBegin:
                 case cFCall:
                 case cPCall:
                     --NeedList.Others;

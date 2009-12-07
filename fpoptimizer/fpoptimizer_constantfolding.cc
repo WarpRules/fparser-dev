@@ -1714,7 +1714,7 @@ namespace FPoptimizer_CodeTree
         {
             case cImmed:
                 break; // nothing to do
-            case cVar:
+            case VarBegin:
                 break; // nothing to do
 
             case cAnd:
@@ -2345,7 +2345,6 @@ namespace FPoptimizer_CodeTree
             case cPopNMov:
             case cNop:
             case cJump:
-            case VarBegin:
                 break; /* Should never occur */
 
             /* Opcodes that we can't do anything about */

@@ -2568,7 +2568,7 @@ YYLABEL(yyerrhandle)
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
-enum { cVar,cFetch,cPopNMov };
+enum { cFetch,cPopNMov };
 #endif
 
 void FPoptimizerGrammarParser::yyerror(char* msg) // bison++ declares msg as char*.

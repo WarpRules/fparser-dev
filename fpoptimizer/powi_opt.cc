@@ -82,7 +82,6 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
 #endif
 
 #ifdef FP_SUPPORT_OPTIMIZER
-                    case cVar: n = "(var)"; break;
                     case cDup: n = "dup"; break;
                     case cInv: n = "inv"; break;
                     case cSqr: n = "sqr"; break;

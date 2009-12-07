@@ -145,7 +145,7 @@ namespace
         {
             CodeTree newnode;
             newnode.SetOpcode(opcode);
-            
+
             std::vector<CodeTree> params = Pop(nparams);
             newnode.SetParamsMove(params);
 
@@ -520,7 +520,7 @@ namespace FPoptimizer_CodeTree
                         const FunctionParserBase<double>& p =
                             *fpdata.FuncParsers[funcno].parserPtr;
                         unsigned params = fpdata.FuncParsers[funcno].params;
-                        
+
                         /* Inline the procedure call */
                         /* Works because cPCalls can never recurse */
                         std::vector<CodeTree> paramlist = sim.Pop(params);
@@ -694,7 +694,6 @@ namespace FPoptimizer_CodeTree
                         sim.PopNMov(stackOffs_target, stackOffs_source);
                         break;
                     }
-                    // Note: cVar should never be encountered in bytecode.
                     // Other functions
 #ifndef FP_DISABLE_EVAL
                     case cEval:

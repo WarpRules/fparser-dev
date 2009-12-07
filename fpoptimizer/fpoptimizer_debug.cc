@@ -76,7 +76,7 @@ namespace FPoptimizer_CodeTree
                   << std::dec << ")";
                 */
                 return;
-            case cVar:   o << "Var" << (tree.GetVar() - VarBegin); return;
+            case VarBegin: o << "Var" << (tree.GetVar() - VarBegin); return;
             case cAdd: sep2 = " +"; break;
             case cMul: sep2 = " *"; break;
             case cAnd: sep2 = " &"; break;
@@ -111,8 +111,8 @@ namespace FPoptimizer_CodeTree
 
         switch(tree.GetOpcode())
         {
-            case cImmed: o << "cImmed " << tree.GetImmed(); o << '\n'; return;
-            case cVar:   o << "cVar " << (tree.GetVar() - VarBegin); o << '\n'; return;
+            case cImmed:   o << "cImmed " << tree.GetImmed(); o << '\n'; return;
+            case VarBegin: o << "VarBegin " << (tree.GetVar() - VarBegin); o << '\n'; return;
             default:
                 o << FP_GetOpcodeName(tree.GetOpcode());
                 if(tree.GetOpcode() == cFCall || tree.GetOpcode() == cPCall)

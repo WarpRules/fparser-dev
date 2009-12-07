@@ -62,7 +62,7 @@ namespace FPoptimizer_CodeTree
                     NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
                 }
                 break; // no params
-            case cVar:
+            case VarBegin:
                 NewHash.hash1 ^= (Var<<24) | (Var>>24);
                 NewHash.hash2 += (fphash_value_t(Var)*5) ^ 2345678;
                 break; // no params

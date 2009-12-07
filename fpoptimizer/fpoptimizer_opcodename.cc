@@ -101,7 +101,6 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cFCall: p = "cFCall"; break;
         case cPCall: p = "cPCall"; break;
 #ifdef FP_SUPPORT_OPTIMIZER
-        case cVar: p = "cVar"; break;
         case cFetch: p = "cFetch"; break;
         case cPopNMov: p = "cPopNMov"; break;
         case cLog2by: p = "cLog2by"; break;

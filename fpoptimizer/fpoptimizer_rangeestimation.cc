@@ -771,8 +771,6 @@ namespace FPoptimizer_CodeTree
                 break; /* Should never occur */
 
             /* Opcodes that are completely unpredictable */
-            case cVar:
-                break; // Cannot deduce
             case cPCall:
                 break;
             case cFCall:

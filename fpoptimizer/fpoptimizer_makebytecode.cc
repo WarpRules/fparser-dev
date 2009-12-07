@@ -74,7 +74,7 @@ namespace FPoptimizer_CodeTree
 
         switch(GetOpcode())
         {
-            case cVar:
+            case VarBegin:
                 synth.PushVar(GetVar());
                 break;
             case cImmed:

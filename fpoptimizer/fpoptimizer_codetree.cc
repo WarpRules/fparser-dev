@@ -27,7 +27,7 @@ namespace FPoptimizer_CodeTree
     CodeTree::CodeTree(unsigned v, CodeTree::VarTag)
         : data(new CodeTreeData)
     {
-        data->Opcode = cVar;
+        data->Opcode = VarBegin;
         data->Var    = v;
         data->Recalculate_Hash_NoRecursion();
     }
@@ -321,10 +321,10 @@ namespace FPoptimizer_CodeTree
         if(Opcode != b.Opcode) return false;
         switch(Opcode)
         {
-            case cImmed: return FloatEqual(Value, b.Value);
-            case cVar:   return Var == b.Var;
+            case cImmed:   return FloatEqual(Value, b.Value);
+            case VarBegin: return Var == b.Var;
             case cFCall:
-            case cPCall: if(Funcno != b.Funcno) return false; break;
+            case cPCall:   if(Funcno != b.Funcno) return false; break;
             default: break;
         }
         if(Params.size() != b.Params.size()) return false;
@@ -374,10 +374,10 @@ namespace FPoptimizer_CodeTree
     {
         switch(Opcode)
         {
-            case cVar:   Var   = b.Var; break;
-            case cImmed: Value = b.Value; break;
+            case VarBegin: Var   = b.Var; break;
+            case cImmed:   Value = b.Value; break;
             case cPCall:
-            case cFCall: Funcno = b.Funcno; break;
+            case cFCall:   Funcno = b.Funcno; break;
             default: break;
         }
     }
@@ -393,10 +393,10 @@ namespace FPoptimizer_CodeTree
     {
         switch(Opcode)
         {
-            case cVar:   Var   = b.Var; break;
-            case cImmed: Value = b.Value; break;
+            case VarBegin: Var   = b.Var; break;
+            case cImmed:   Value = b.Value; break;
             case cPCall:
-            case cFCall: Funcno = b.Funcno; break;
+            case cFCall:   Funcno = b.Funcno; break;
             default: break;
         }
     }

@@ -2090,8 +2090,6 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
 
 #ifdef FP_SUPPORT_OPTIMIZER
-          case   cVar: break;  // Paranoia. These should never exist
-
           case   cFetch:
               {
                   unsigned stackOffs = ByteCode[++IP];
@@ -2764,7 +2762,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
     #endif
 
     #ifdef FP_SUPPORT_OPTIMIZER
-                        case cVar:    n = "(var)"; break;
                         case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
                         case cFetch:
                         {
