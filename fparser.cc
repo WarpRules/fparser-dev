@@ -576,8 +576,12 @@ namespace
     struct IntLiteralMask
     {
         enum { mask =
-            (    1UL << ('-'-offset)) |
+        //    (    1UL << ('-'-offset)) |
             (0x3FFUL << ('0'-offset)) }; /* 0x3FF = 10 bits worth "1" */
+        // Note: If you change fparser to support negative numbers parsing
+        //       (as opposed to parsing them as cNeg followed by literal),
+        //       enable the '-' line above, and change the offset value
+        //       in BeginsLiteral() to '-' instead of '.'.
     };
 
     template<typename Value_t, unsigned offset>
