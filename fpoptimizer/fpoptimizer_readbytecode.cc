@@ -442,7 +442,7 @@ namespace FPoptimizer_CodeTree
              || opcode == cFetch))
             {
                 // Parse a powi sequence
-                //size_t was_ip = IP;
+                size_t was_ip = IP;
                 double exponent = ParsePowiSequence(
                     ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
@@ -468,6 +468,7 @@ namespace FPoptimizer_CodeTree
                         goto after_powi;
                     }
                 }
+                IP = was_ip;
             }
             if(OPCODE(opcode) >= VarBegin)
             {
