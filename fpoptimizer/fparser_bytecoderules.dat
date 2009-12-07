@@ -117,7 +117,7 @@ y cSub x cSub		-> [y+x] cSub
 y cAdd x cSub		-> [y-x] cAdd
 
 y cMul x cMul		-> [y*x] cMul
-y cMul x [x!=Value_t(0)] cDiv 	-> [y*x] cMul
+y cMul x [x!=Value_t(0)] cDiv 	-> IF(!FP_INT_VERSION) [y/x] cMul
 
 x [x!=Value_t(0)] cDiv		-> IF(!FP_INT_VERSION) [Value_t(1)/x] cMul
 

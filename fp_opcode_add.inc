@@ -1353,17 +1353,24 @@
 #if(!FP_INT_VERSION)
             switch(ByteCodePtr[-1])
             {
+#if(!FP_INT_VERSION)
               case cMul:
+#if(!FP_INT_VERSION)
                 switch(ByteCodePtr[-2])
                 {
                   case cImmed:
                     y = ImmedPtr[-1];
-                    FP_TRACE_BYTECODE_OPTIMIZATION("y cMul x[x!=Value_t(0)] cDiv", "[y*x] cMul");
+#if(!FP_INT_VERSION)
+                    FP_TRACE_BYTECODE_OPTIMIZATION("y cMul x[x!=Value_t(0)] cDiv", "[y/x] cMul");
                     /* ByteCodePtr[-2] = cImmed; */ // redundant, matches y @ 3
                     /* ByteCodePtr[-1] = cMul; */ // redundant, matches cMul @ 2
-                    goto Lab;
+                    goto Lfh;
+#endif
+                    break;
                 }
+#endif
                 break;
+#endif
               case cImmed:
                 y = ImmedPtr[-1];
                 FP_TRACE_BYTECODE_OPTIMIZATION("y x[x!=Value_t(0)] cDiv", "[y/x]");
