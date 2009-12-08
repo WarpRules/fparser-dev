@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v4.0.1                                          *|
+|* Function Parser for C++ v4.0.2                                          *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 \***************************************************************************/
@@ -623,7 +623,7 @@ namespace
         if(byte > (unsigned char)('9'-n)) return false;
         unsigned long shifted = 1UL << byte;
         const unsigned long mask = LiteralMask<Value_t, n>::mask;
-        return (mask & shifted);
+        return (mask & shifted) != 0;
     }
 
     template<typename CharPtr>

@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.0.1  </h1>
+<h1>Function Parser for C++ v4.0.2  </h1>
 
 <h2>What is this library?</h2>
 
@@ -47,8 +47,8 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.0.1.zip">fparser4.0.1.zip</a> v4.0.1
-(released 4 Dec 2009)
+<p>Download <a href="fparser4.0.2.zip">fparser4.0.2.zip</a> v4.0.2
+(released 8 Dec 2009)
 
 <p>(Older versions:
 <a href="fparser3.3.2.zip">v3.3.2</a>,
@@ -77,9 +77,17 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.0_devel.tar.bz2">fparser4.0_devel.tar.bz2</a>
+<a href="fparser4.0.2_devel.tar.bz2">fparser4.0.2_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v4.0.2
+<ul>
+  <li>Fixed bug which caused functions like <code>"x*4/2"</code> to be parsed
+    incorrectly.
+  <li>Fixed bug with functions of type <code>"cosh(asinh(x))"</code> which
+    potentially caused a stack corruption.
+</ul>
 
 <p>What's new in v4.0.1
 <ul>
