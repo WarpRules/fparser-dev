@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include <cstdio>
+#include <cstdlib>
 #include <vector>
 #include <string>
 #include <iostream>
@@ -44,7 +45,6 @@ namespace
                 && condition==b.condition;
         }
 
-        std::string            precondition;
         std::vector<Operation> operations;
         bool has_operations;
     };
@@ -100,8 +100,7 @@ namespace
     {
         void OutChain(std::ostream& out,
                       const std::vector<std::string>& chain,
-                      size_t indent,
-                      const std::string& precondition)
+                      size_t indent)
         {
             std::string codehash, prevlabel;
             for(size_t a=chain.size(); a-- > 0; )
@@ -126,7 +125,6 @@ namespace
 
                     // nothing to do
                     i->second.n_uses += 1;
-                    i->second.precondition.insert(precondition);
                     if(!prevlabel.empty())
                         code.find(prevlabel)->second.n_uses -= 1;
                 }
@@ -134,7 +132,6 @@ namespace
                 {
                     ChainItem item;
                     item.code         = chain[a];
-                    item.precondition.insert(precondition);
                     item.nextlabel    = prevlabel;
                     item.n_uses       = 1;
                     code.insert(i, std::make_pair(label, item));
@@ -152,8 +149,6 @@ namespace
             std::set<std::string> done;
             std::vector<std::string> remain;
 
-            std::string effective_precondition = "";
-
             for(size_t a=0; a<heads.size(); ++a)
             {
                 if(done.find(heads[a]) != done.end())
@@ -169,31 +164,9 @@ namespace
                     const ChainItem& item = i->second;
                     done.insert(i->first);
 
-                    {std::string here_precondition;
-                    for(std::set<std::string>::const_iterator
-                        i = item.precondition.begin();
-                        i != item.precondition.end();
-                        ++i)
-                    {
-                        if(i->empty()) { here_precondition = ""; break; }
-                        if(!here_precondition.empty())
-                            here_precondition += " || ";
-                        here_precondition += *i;
-                    }
-                    if(here_precondition != effective_precondition)
-                    {
-                        if(!effective_precondition.empty())
-                            out << "#endif\n";
-                        if(!here_precondition.empty())
-                            out << "#if(" << here_precondition << ")\n";
-                        effective_precondition = here_precondition;
-                    }}
-
                     if(item.n_uses > mini)
                     {
                         std::string l = ChangeLabel(i->first);
-                        if(effective_precondition.empty())
-                            PossiblyUnusedLabelList.insert(l);
                         out << l << ": ";
                     }
                     else
@@ -206,8 +179,6 @@ namespace
                         {
                             std::string l = ChangeLabel(item.nextlabel);
                             out << " goto " << l << ';';
-                            if(effective_precondition.empty())
-                                PossiblyUnusedLabelList.erase(l);
                         }
                         else
                             remain.push_back(item.nextlabel);
@@ -219,8 +190,6 @@ namespace
                     mini = 1;
                 }
             }
-            if(!effective_precondition.empty())
-                out << "#endif\n";
         }
     private:
         std::string GenLabel(unsigned crc, unsigned len)
@@ -262,7 +231,6 @@ namespace
         {
             std::string code;
             std::string nextlabel;
-            std::set<std::string> precondition;
             unsigned n_uses;
         };
         typedef std::map<std::string/*label*/, ChainItem> Chains;
@@ -284,10 +252,8 @@ namespace
     };
     struct OutCode
     {
-        OutCode(std::ostream& o, size_t i,
-                const std::string& ifdefs)
+        OutCode(std::ostream& o, size_t i)
             : out(o),
-              precondition(ifdefs),
               indent(i) { }
         ~OutCode()
         {
@@ -327,7 +293,7 @@ namespace
                 }
             }
             #endif
-            CodeSeq.OutChain(out, seq, indent, precondition);
+            CodeSeq.OutChain(out, seq, indent);
             if(seq.empty())
                 out << Indent(indent) << "return;\n";
         }
@@ -343,7 +309,6 @@ namespace
         void DidLine(const std::string& line) { seq.push_back(line); }
         std::ostream& out;
         std::vector<std::string> seq;
-        std::string precondition;
         size_t indent;
     };
     OutLine::~OutLine()
@@ -450,8 +415,7 @@ namespace
         const std::vector<Match>& so_far,
         const std::vector<Operation>& operations,
         size_t b_used,
-        size_t i_used,
-        const std::string& precondition)
+        size_t i_used)
     {
         outstream
             << Indent(indent)
@@ -495,7 +459,7 @@ namespace
             return false;
         }
 
-        OutCode Out(outstream, indent, precondition);
+        OutCode Out(outstream, indent);
 
         int n_b_exist  = (int)(b_used-1);
         int n_i_exist  = (int)(i_used  );
@@ -589,10 +553,7 @@ namespace
                         OutLine(Out)  << "goto TailCall_" << opcode << ";";
                         //OutLine(Out)  << "AddFunctionOpcode(opcode);";
                     }
-                    if(precondition.empty())
-                    {
-                        PossiblyUnusedLabelList.erase("TailCall_" + opcode);
-                    }
+                    PossiblyUnusedLabelList.erase("TailCall_" + opcode);
                     return true;
                 }
                 else
@@ -648,11 +609,6 @@ namespace
         size_t i_used,
         int mode = mode_children+mode_operations)
     {
-        if(!head.opcode.precondition.empty())
-        {
-            code << "#if(" << head.opcode.precondition << ")\n";
-        }
-
         if(!head.predecessors.empty() && (mode & mode_children))
         {
             std::string last_op_name = BexprName(b_used);
@@ -681,8 +637,6 @@ namespace
                         PossiblyUnusedLabelList.insert("TailCall_" + n.opcode.name);
                     }
                 #endif
-                    if(!n.opcode.precondition.empty())
-                        code << "#if(" << n.opcode.precondition << ")\n";
                     code << Indent(indent) << "  case " << n.opcode.name << ":\n";
                     //code << Indent(indent) << "  {\n";
                     std::vector<Match> ref(so_far);
@@ -691,8 +645,6 @@ namespace
                     //code << Indent(indent) << "  }\n";
                     if(!returned)
                         code << Indent(indent) << "    break;\n";
-                    if(!n.opcode.precondition.empty())
-                        code << "#endif\n";
                 }
             }
             bool first_immed = true;
@@ -739,14 +691,10 @@ namespace
                                 Generate(n, ref, indent+4, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                         else
                         {
-                            if(!n.opcode.precondition.empty())
-                                code << "#if(" << n.opcode.precondition << ")\n";
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
                             Generate(n, ref, indent+6, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
-                            if(!n.opcode.precondition.empty())
-                                code << "#endif\n";
                         }
                     }
                 }
@@ -795,14 +743,10 @@ namespace
                             Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                         else
                         {
-                            if(!n.opcode.precondition.empty())
-                                code << "#if(" << n.opcode.precondition << ")\n";
                             code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
                             code << Indent(indent) << "    {\n";
                             Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                             code << Indent(indent) << "    }\n";
-                            if(!n.opcode.precondition.empty())
-                                code << "#endif\n";
                         }
                     }
                 }
@@ -812,60 +756,24 @@ namespace
         {
             /*if(!head.predecessors.empty())
                 std::cout << Indent(indent) << "/""* NOTE: POSSIBLY AMBIGIOUS *""/\n";*/
-            if(SynthOperations(indent,code, so_far, head.opcode.operations, b_used, i_used,
-                               head.opcode.precondition))
+            if(SynthOperations(indent,code, so_far, head.opcode.operations, b_used, i_used))
             {
                 //out << Indent(indent) << "return;\n";
                 // ^ now redundant, as it is done by SynthOperations()
-                if(!head.opcode.precondition.empty())
-                {
-                    code << "#endif\n";
-                    return false; // did not necessarily return
-                }
                 return true;
             }
-        }
-        if(!head.opcode.precondition.empty())
-        {
-            code << "#endif\n";
         }
         return false;
     }
 
     void Generate(std::ostream& out)
     {
-        out << kOutputCommentBlock << "\n";
-        out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
-        out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
-        //out << "template<typename Value_t>\n"
-        //       "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
-        //       "{\n";
-        out <<  "  unsigned* ByteCodePtr;\n"
-                "  Value_t*   ImmedPtr;\n"
-#if(0) // This causes a crash when compiling with Visual Studio
-                "#ifdef _GLIBCXX_DEBUG\n"
-                "  /* Shut up glibc warnings */\n"
-                "  #define FP_ReDefinePointers() \\\n"
-                "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
-                "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
-                "#else\n"
-                "  /* Trust me, I know what I am doing */\n"
-                "  #define FP_ReDefinePointers() \\\n"
-                "    ByteCodePtr = &data->ByteCode[data->ByteCode.size() - 1]; \\\n"
-                "    ImmedPtr    = &data->Immed   [data->Immed.size()    - 1];\n"
-                "#endif\n"
-#else
-                "  #define FP_ReDefinePointers() \\\n"
-                "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
-                "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
-#endif
-                "  FP_ReDefinePointers();\n";
         std::ostringstream code;
         std::ostream& declarations = out;
         Generate(global_head, std::vector<Match>(), 2, declarations,code, 0,0);
         out << code.str();
 
-        { OutCode Out(out, 2, "");
+        { OutCode Out(out, 2);
           Synther(Out, 2).ResetBoth(0,0);
           OutLine(Out) << "data->ByteCode.push_back(opcode);";
         }
@@ -873,7 +781,7 @@ namespace
 
         out << "return;\n";
         out << "// This list of dummy gotos is here to inhibit\n"
-               "// compiler warnings on possibly unused labels\n";
+               "// compiler warnings on unused labels\n";
         unsigned a=0;
         for(std::set<std::string>::const_iterator
             i = PossiblyUnusedLabelList.begin();
@@ -885,12 +793,16 @@ namespace
             || a%3 == 2) out << "\n";
             ++a;
         }
-        out << "#undef FP_ReDefinePointers\n";
-        //out << "}\n";
-        out << "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
     }
 
-    void Parse()
+
+    struct ParsingMode
+    {
+        std::set<std::string> different_preconditions;
+        bool collect_preconditions;
+        std::set<std::string> allowed_preconditions;
+    };
+    void Parse(ParsingMode& mode)
     {
         while(true)
         {
@@ -915,6 +827,20 @@ namespace
                 }
                 if(*bufptr == ')') ++bufptr;
                 while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
+            }
+
+            if(mode.collect_preconditions)
+            {
+                if(!Precondition.empty())
+                    mode.different_preconditions.insert(Precondition);
+                continue;
+            }
+
+            if(!Precondition.empty()
+            && mode.allowed_preconditions.find(Precondition)
+            == mode.allowed_preconditions.end())
+            {
+                continue;
             }
 
             std::vector<Match> sequence;
@@ -972,9 +898,6 @@ namespace
                 }
             }
 
-            if(!Precondition.empty())
-                head->opcode.precondition = Precondition;
-
             if(*bufptr == '-' && bufptr[1] == '>')
             {
                 head->opcode.has_operations = true;
@@ -1009,76 +932,91 @@ namespace
             }
         }
     }
-
-    void AddPreconditionsFrom(const Node& head, std::set<std::string>& preconditions)
-    {
-        const std::string& input = head.opcode.precondition;
-        size_t begin=0, balance=0;
-        for(size_t pos=0; pos<input.size(); ++pos)
-        {
-            if(input[pos] == '(') { ++balance; continue; }
-            if(input[pos] == ')') { --balance; continue; }
-            if(pos == begin && input[pos] == ' ') { begin=pos+1; continue; }
-            if(balance == 0
-            && input[pos] == '|' && input[pos+1] == '|')
-            {
-                size_t end = pos;
-                while(end > 0 && input[end-1] == ' ') --end;
-                if(end > begin)
-                    preconditions.insert(std::string(input, begin, end-begin));
-                begin = pos+2;
-                pos += 1;
-            }
-        }
-        size_t end = input.size();
-        while(end > 0 && input[end-1] == ' ') --end;
-        if(end > begin)
-            preconditions.insert(std::string(input, begin, end-begin));
-    }
-
-    void BackPropagatePreconditions(Node& head)
-    {
-        std::set<std::string> preconditions;
-        bool any_precondition = false;
-        for(size_t a=0; a<head.predecessors.size(); ++a)
-        {
-            BackPropagatePreconditions(*head.predecessors[a]);
-            if(head.predecessors[a]->opcode.precondition.empty())
-                any_precondition = true;
-            else
-                AddPreconditionsFrom(*head.predecessors[a], preconditions);
-        }
-        if(!preconditions.empty() && !any_precondition)
-        {
-            preconditions.insert(head.opcode.precondition);
-            head.opcode.precondition.clear();
-
-            for(std::set<std::string>::const_iterator
-                i = preconditions.begin();
-                i != preconditions.end();
-                ++i)
-            {
-                if(head.opcode.precondition.empty())
-                    head.opcode.precondition = *i;
-                else
-                {
-                    head.opcode.precondition += " || ";
-                    head.opcode.precondition += *i;
-                }
-            }
-        }
-    }
-
-    void BackPropagatePreconditions()
-    {
-        BackPropagatePreconditions(global_head);
-    }
 }
 
 int main()
 {
-    Parse();
-    BackPropagatePreconditions();
-    Generate(std::cout);
+    ParsingMode mode;
+    mode.collect_preconditions = true;
+    Parse(mode);
+
+    std::vector<std::string> different_preconditions(
+        mode.different_preconditions.begin(),
+        mode.different_preconditions.end() );
+
+    size_t n_different_parsers = 1 << different_preconditions.size();
+
+    std::ostream& out = std::cout;
+
+    out << kOutputCommentBlock << "\n";
+    out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
+    out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
+    //out << "template<typename Value_t>\n"
+    //       "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
+    //       "{\n";
+    out <<  "  unsigned* ByteCodePtr;\n"
+            "  Value_t*   ImmedPtr;\n"
+#if(0) // This causes a crash when compiling with Visual Studio
+            "#ifdef _GLIBCXX_DEBUG\n"
+            "  /* Shut up glibc warnings */\n"
+            "  #define FP_ReDefinePointers() \\\n"
+            "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
+            "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
+            "#else\n"
+            "  /* Trust me, I know what I am doing */\n"
+            "  #define FP_ReDefinePointers() \\\n"
+            "    ByteCodePtr = &data->ByteCode[data->ByteCode.size() - 1]; \\\n"
+            "    ImmedPtr    = &data->Immed   [data->Immed.size()    - 1];\n"
+            "#endif\n"
+#else
+            "  #define FP_ReDefinePointers() \\\n"
+            "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
+            "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
+#endif
+            "  FP_ReDefinePointers();\n";
+
+    for(size_t n=0; n<n_different_parsers; ++n)
+    {
+        mode.collect_preconditions = false;
+        mode.allowed_preconditions.clear();
+        for(size_t b=0; b<different_preconditions.size(); ++b)
+        {
+            if(n & (1 << b))
+                mode.allowed_preconditions.insert(different_preconditions[b]);
+        }
+        if(std::fseek(stdin, 0, SEEK_SET) < 0)
+        {
+            std::perror("fseek");
+            return -1;
+        }
+
+        global_head = Node();
+        PossiblyUnusedLabelList.clear();
+        declared.clear();
+
+        Parse(mode);
+
+        if(n_different_parsers == 1)
+            Generate(out);
+        else
+        {
+            const char* sep = "#if(";
+            for(size_t b=0; b<different_preconditions.size(); ++b, sep = " && ")
+            {
+                if(n & (1 << b))
+                    out << sep << different_preconditions[b];
+                else
+                    out << sep << "!" << different_preconditions[b];
+            }
+            out << ")\n";
+            Generate(out);
+            out << "#endif\n";
+        }
+    }
+
+    out << "#undef FP_ReDefinePointers\n";
+    //out << "}\n";
+    out << "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
+
     return 0;
 }
