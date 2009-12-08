@@ -1116,12 +1116,18 @@ namespace FPoptimizer_CodeTree
         for(;;)
         {
             if(GetParam(0).GetOpcode() == cNot)
-                { SetOpcode(cIf); }
+            {
+                SetOpcode(cIf);
+                GetParam(0).Become( GetParam(0).GetParam(0) );
+                GetParam(1).swap(GetParam(2));
+            }
             else if(GetParam(0).GetOpcode() == cAbsNot)
-                { SetOpcode(cAbsIf); }
+            {
+                SetOpcode(cAbsIf);
+                GetParam(0).Become( GetParam(0).GetParam(0) );
+                GetParam(1).swap(GetParam(2));
+            }
             else break;
-            GetParam(0).Become( GetParam(0).GetParam(0) );
-            GetParam(1).swap(GetParam(2));
         }
         if(GetParam(0).GetOpcode() == cIf
         || GetParam(0).GetOpcode() == cAbsIf)
@@ -1791,6 +1797,52 @@ namespace FPoptimizer_CodeTree
                     case 0: goto ReplaceTreeWithOne;
                     default: ;
                 }
+                if(GetOpcode() == cNot && GetParam(0).IsAlwaysSigned(true))
+                    SetOpcode(cAbsNot);
+
+                if(GetParam(0).GetOpcode() == cIf
+                || GetParam(0).GetOpcode() == cAbsIf)
+                {
+                    CodeTree iftree = GetParam(0);
+                    const CodeTree& ifp1 = iftree.GetParam(1);
+                    const CodeTree& ifp2 = iftree.GetParam(2);
+                    if(ifp1.GetOpcode() == cNot
+                    || ifp1.GetOpcode() == cAbsNot)
+                    {
+                        // cNot [(cIf [x (cNot[y]) z])] -> cIf [x (cNotNot[y]) (cNot[z])]
+                        SetParam(0, iftree.GetParam(0)); // condition
+                        CodeTree p1;
+                        p1.SetOpcode(ifp1.GetOpcode()==cNot ? cNotNot : cAbsNotNot);
+                        p1.AddParam(ifp1.GetParam(0));
+                        p1.Rehash();
+                        AddParamMove(p1);
+                        CodeTree p2;
+                        p2.SetOpcode(GetOpcode());
+                        p2.AddParam(ifp2);
+                        p2.Rehash();
+                        AddParamMove(p2);
+                        SetOpcode(iftree.GetOpcode());
+                        goto redo;
+                    }
+                    if(ifp2.GetOpcode() == cNot
+                    || ifp2.GetOpcode() == cAbsNot)
+                    {
+                        // cNot [(cIf [x y (cNot[z])])] -> cIf [x (cNot[y]) (cNotNot[z])]
+                        SetParam(0, iftree.GetParam(0)); // condition
+                        CodeTree p1;
+                        p1.SetOpcode(GetOpcode());
+                        p1.AddParam(ifp1);
+                        p1.Rehash();
+                        AddParamMove(p1);
+                        CodeTree p2;
+                        p2.SetOpcode(ifp2.GetOpcode()==cNot ? cNotNot : cAbsNotNot);
+                        p2.AddParam(ifp2.GetParam(0));
+                        p2.Rehash();
+                        AddParamMove(p2);
+                        SetOpcode(iftree.GetOpcode());
+                        goto redo;
+                    }
+                }
                 break;
             }
             case cNotNot:
@@ -1810,6 +1862,44 @@ namespace FPoptimizer_CodeTree
                     case 0: goto ReplaceTreeWithZero;
                     case 1: goto ReplaceTreeWithOne;
                     default: ;
+                }
+                if(GetOpcode() == cNotNot && GetParam(0).IsAlwaysSigned(true))
+                    SetOpcode(cAbsNotNot);
+
+                if(GetParam(0).GetOpcode() == cIf
+                || GetParam(0).GetOpcode() == cAbsIf)
+                {
+                    CodeTree iftree = GetParam(0);
+                    const CodeTree& ifp1 = iftree.GetParam(1);
+                    const CodeTree& ifp2 = iftree.GetParam(2);
+                    if(ifp1.GetOpcode() == cNot
+                    || ifp1.GetOpcode() == cAbsNot)
+                    {
+                        // cNotNot [(cIf [x (cNot[y]) z])] -> cIf [x (cNot[y]) (cNotNot[z])]
+                        SetParam(0, iftree.GetParam(0)); // condition
+                        AddParam(ifp1);
+                        CodeTree p2;
+                        p2.SetOpcode(GetOpcode());
+                        p2.AddParam(ifp2);
+                        p2.Rehash();
+                        AddParamMove(p2);
+                        SetOpcode(iftree.GetOpcode());
+                        goto redo;
+                    }
+                    if(ifp2.GetOpcode() == cNot
+                    || ifp2.GetOpcode() == cAbsNot)
+                    {
+                        // cNotNot [(cIf [x y (cNot[z])])] -> cIf [x (cNotNot[y]) (cNot[z])]
+                        SetParam(0, iftree.GetParam(0)); // condition
+                        CodeTree p1;
+                        p1.SetOpcode(GetOpcode());
+                        p1.AddParam(ifp1);
+                        p1.Rehash();
+                        AddParamMove(p1);
+                        AddParam(ifp2);
+                        SetOpcode(iftree.GetOpcode());
+                        goto redo;
+                    }
                 }
                 break;
             }

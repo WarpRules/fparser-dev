@@ -110,9 +110,6 @@
 
 [LOGICAL]
 
-cNot [(cIf [x (cNot[y]) z])] -> cIf [x (cNotNot[y]) (cNot[z])]
-cNot [(cIf [x y (cNot[z])])] -> cIf [x (cNot[y]) (cNotNot[z])]
-
 # Change cLessOrEq into cLess for less rules to check
 # This way, the only comparison opcodes appearing in cIf
 # are cEqual,cNEqual,cLess.
@@ -746,6 +743,10 @@ cIf [x@P y z]    -> cAbsIf x y z
 
 cAbsIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
+
+cLess        [x 0.5] -> cAbsNot[x]
+cLessOrEq    [0.5 x] -> cAbsNotNot[x]
+
 
 [NON_SHORTCUT_LOGICAL_EVALUATION]
 

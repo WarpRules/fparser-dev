@@ -272,8 +272,8 @@ namespace FPoptimizer_CodeTree
                 // No guess which branch is chosen. Produce a spanning min & max.
                 MinMaxTree res1 = GetParam(1).CalculateResultBoundaries();
                 MinMaxTree res2 = GetParam(2).CalculateResultBoundaries();
-                if(!res2.has_min) res1.has_min = false; else if(res2.min < res1.min) res1.min = res2.min;
-                if(!res2.has_max) res1.has_max = false; else if(res2.max > res1.max) res1.max = res2.max;
+                if(!res2.has_min) res1.has_min = false; else if(res1.has_min && res2.min < res1.min) res1.min = res2.min;
+                if(!res2.has_max) res1.has_max = false; else if(res1.has_max && res2.max > res1.max) res1.max = res2.max;
                 return res1;
             }
 
