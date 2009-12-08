@@ -56,6 +56,7 @@ namespace
 
     Node global_head;
     std::set<std::string> PossiblyUnusedLabelList;
+    unsigned DefaultLabelCounter;
 
     std::string Indent(size_t n)
     {
@@ -89,6 +90,17 @@ namespace
     {
         if(!(opcode[0] == 'c' && isupper(opcode[1])))
             return true;
+        for(size_t b=0; b<global_head.predecessors.size(); ++b)
+            if(global_head.predecessors[b]->opcode.type == Match::FixedOpcode
+            && global_head.predecessors[b]->opcode.name == opcode)
+                return true;
+        for(size_t b=0; b<global_head.predecessors.size(); ++b)
+            if(global_head.predecessors[b]->opcode.type == Match::AnyOpcode)
+                return true;
+        return false;
+    }
+    bool HasTailCallFor(const std::string& opcode)
+    {
         for(size_t b=0; b<global_head.predecessors.size(); ++b)
             if(global_head.predecessors[b]->opcode.type == Match::FixedOpcode
             && global_head.predecessors[b]->opcode.name == opcode)
@@ -444,20 +456,6 @@ namespace
                 << Indent(indent) << "  return;\n";
             return false;
         }
-        if(!operations.empty() && operations[0].result == "DO_MAYBE_SQR")
-        {
-            /* Catch the common case of "x x cMul" -> "x cSqr" */
-            outstream
-                << Indent(indent) << "if(" << so_far[1].name << " >= VarBegin)\n"
-                << Indent(indent) << "{\n"
-                << Indent(indent) << "  if(" << so_far[1].name << " == " << Bexpr(2) << ")\n"
-                << Indent(indent) << "    { " << Bexpr(1) << " = cSqr; return; }\n"
-            /* Catch the common case of x cMul x cMul -> x cSqr cMul */
-                << Indent(indent) << "  if(" << Bexpr(2) << " == cMul && " << so_far[1].name << " == " << Bexpr(3) << ")\n"
-                << Indent(indent) << "    { " << Bexpr(1) << " = cMul; " << Bexpr(2) << " = cSqr; return; }\n"
-                << Indent(indent) << "}\n";
-            return false;
-        }
         if(!operations.empty() && operations[0].result == "DO_STACKPLUS1")
         {
             outstream
@@ -531,7 +529,8 @@ namespace
             if(!redundant && HasHandlingFor(opcode))
             {
                 if(a+1 == operations.size()
-                && opcode[0] == 'c' && isupper(opcode[1]))
+                && opcode[0] == 'c' && isupper(opcode[1])
+                && HasTailCallFor(opcode))
                 {
                     if(b_offset > 0 && i_offset > 0)
                         offset_synth.ResetBoth(b_offset, i_offset);
@@ -619,6 +618,7 @@ namespace
         if(!head.predecessors.empty() && (mode & mode_children))
         {
             std::string last_op_name = BexprName(b_used);
+            std::string default_label_name;
             /*
             if(last_op_name != "opcode")
                 code << Indent(indent) << "const unsigned " << last_op_name << " = " << Bexpr(b_used) << ";\n";
@@ -651,7 +651,15 @@ namespace
                     bool returned = Generate(n, ref, indent+4, declarations,code, b_used+1, i_used);
                     //code << Indent(indent) << "  }\n";
                     if(!returned)
-                        code << Indent(indent) << "    break;\n";
+                    {
+                        if(default_label_name.empty())
+                        {
+                            std::ostringstream tmp;
+                            tmp << "Default" << DefaultLabelCounter++;
+                            default_label_name = tmp.str();
+                        }
+                        code << Indent(indent) << "    goto " << default_label_name << ";\n";
+                    }
                 }
             }
             bool first_immed = true;
@@ -713,6 +721,17 @@ namespace
 
             bool first_anyopcode = true;
             std::set<std::string> opcode_labels;
+
+            if(!default_label_name.empty())
+            {
+                if(first_immed)
+                {
+                    code << Indent(indent) << "  case cImmed: break;\n";
+                }
+                code << Indent(indent) << "  default: " << default_label_name << ":;\n";
+                first_anyopcode = false;
+            }
+
             for(int round=0; round<4; ++round)
                 for(size_t a=0; a<head.predecessors.size(); ++a)
                 {
@@ -999,6 +1018,7 @@ int main()
 
         global_head = Node();
         PossiblyUnusedLabelList.clear();
+        DefaultLabelCounter=0;
         declared.clear();
 
         Parse(mode);

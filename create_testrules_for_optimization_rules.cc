@@ -288,7 +288,7 @@ int main()
         ++i)
     {
         const Rule& r = **i;
-        
+
         if(r.logical_context)
         {
             // Skipping logical context rule

@@ -170,6 +170,10 @@ cGreaterOrEq cNot -> cLess
 cEqual       cNot -> cNEqual
 cNEqual      cNot -> cEqual
 
+B [B==A] A [A >= VarBegin]                               -> A cDup
+D [D==B] C [C==A] B [B >= VarBegin] A [IsUnaryOpcode(A)] -> D C cDup
+cDup cMul -> cSqr
+
 cNeg  cNot -> cNot
 cAbs  cNot -> cNot
 cNot  cNot -> cNotNot
@@ -218,6 +222,12 @@ IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh
 IF(FP_FLOAT_VERSION) cAcosh cSinh -> [DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt
 IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSqrt
 
+IF(FP_FLOAT_VERSION) cSin cDiv -> cCsc cMul
+IF(FP_FLOAT_VERSION) cCos cDiv -> cSec cMul
+IF(FP_FLOAT_VERSION) cTan cDiv -> cCot cMul
+IF(FP_FLOAT_VERSION) cCsc cDiv -> cSin cMul
+IF(FP_FLOAT_VERSION) cSec cDiv -> cCos cMul
+IF(FP_FLOAT_VERSION) cCot cDiv -> cTan cMul
 IF(FP_FLOAT_VERSION) cSin cInv -> cCsc
 IF(FP_FLOAT_VERSION) cCos cInv -> cSec
 IF(FP_FLOAT_VERSION) cTan cInv -> cCot
@@ -228,4 +238,5 @@ IF(FP_FLOAT_VERSION) cCot cInv -> cTan
 # Hardcoded optimizations that are too complex or
 # impossible to convey using this rule file:
 IF(FP_FLOAT_VERSION) x cPow -> [DO_POWI]
-A cMul -> [DO_MAYBE_SQR]
+B [B==A] A [A >= VarBegin] cMul       -> B cSqr
+B [B==A] cMul A [A >= VarBegin] cMul  -> B cSqr cMul

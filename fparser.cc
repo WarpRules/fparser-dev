@@ -990,6 +990,20 @@ namespace
         }
         return false;
     }
+    
+    bool IsUnaryOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cInv: case cNeg:
+          case cNot: case cAbsNot:
+          case cNotNot: case cAbsNotNot:
+          case cSqr: case cRSqrt: 
+          case cDeg: case cRad:
+            return true;
+        }
+        return (op < FUNC_AMOUNT && Functions[op].params == 1);
+    }
 
 #ifdef FP_EPSILON
     const double EpsilonOrZero = FP_EPSILON;
@@ -1277,7 +1291,10 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     switch(nameData->type)
     {
       case NameData<Value_t>::VARIABLE: // is variable
-          data->ByteCode.push_back(nameData->index);
+          if(unlikely(!data->ByteCode.empty() && data->ByteCode.back() == nameData->index))
+              data->ByteCode.push_back(cDup);
+          else
+              data->ByteCode.push_back(nameData->index);
           incStackPtr();
           return endPtr;
 
