@@ -28,52 +28,52 @@ with the compiler options <code>-O3 -ffast-math -march=native</code>
 
 <hr>
 <p>Function:
-<code>"pow(x,14)+pow(y,8)"</code>
+<code>"x^14 + y^8"</code>
 <ul>
- <li>Parse time: 1.26 &micro;s. (791&nbsp;796 parses/s)
- <li>Eval time: 0.11 &micro;s. (8&nbsp;983&nbsp;232 evals/s)
- <li>Optimized: 0.11 &micro;s. (8&nbsp;984&nbsp;443 evals/s)
- <li>Optimization time: 56 &micro;s. (17&nbsp;852 optimizes/s)
+ <li>Parse time: 0.98 &micro;s. (1&nbsp;016&nbsp;906 parses/s)
+ <li>Eval time: 0.11 &micro;s. (8&nbsp;862&nbsp;419 evals/s)
+ <li>Optimized: 0.11 &micro;s. (8&nbsp;980&nbsp;207 evals/s)
+ <li>Optimization time: 55 &micro;s. (17&nbsp;944 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
-<code>"((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10) - (4*pow(y,3)+2*y*y-10*y+2))*10"</code>
+<code>"((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10"</code>
 <ul>
- <li>Parse time: 5.00 &micro;s. (200&nbsp;168 parses/s)
- <li>Eval time: 0.48 &micro;s. (2&nbsp;083&nbsp;773 evals/s)
- <li>Optimized: 0.23 &micro;s. (4&nbsp;280&nbsp;968 evals/s)
- <li>Optimization time: 1502 &micro;s. (665 optimizes/s)
+ <li>Parse time: 4.70 &micro;s. (212&nbsp;666 parses/s)
+ <li>Eval time: 0.48 &micro;s. (2&nbsp;099&nbsp;682 evals/s)
+ <li>Optimized: 0.24 &micro;s. (4&nbsp;236&nbsp;076 evals/s)
+ <li>Optimization time: 1486 &micro;s. (672 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4"</code>
 <ul>
- <li>Parse time: 5.11 &micro;s. (195&nbsp;777 parses/s)
- <li>Eval time: 0.41 &micro;s. (2&nbsp;420&nbsp;197 evals/s)
- <li>Optimized: 0.06 &micro;s. (15&nbsp;641&nbsp;863 evals/s)
- <li>Optimization time: 856 &micro;s. (1&nbsp;168 optimizes/s)
+ <li>Parse time: 4.79 &micro;s. (208&nbsp;879 parses/s)
+ <li>Eval time: 0.39 &micro;s. (2&nbsp;560&nbsp;678 evals/s)
+ <li>Optimized: 0.06 &micro;s. (15&nbsp;654&nbsp;719 evals/s)
+ <li>Optimization time: 830 &micro;s. (1&nbsp;203 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
-<code>"sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)"</code>
+<code>"(tan(x)*cos(x))^2 - 1.2*log(atan2(sqrt((-y^2)+1), y) * 4.91^y) + cos(-x)^2"</code>
 <ul>
- <li>Parse time: 2.43 &micro;s. (411&nbsp;984 parses/s)
- <li>Eval time: 0.34 &micro;s. (2&nbsp;901&nbsp;195 evals/s)
- <li>Optimized: 0.38 &micro;s. (2&nbsp;634&nbsp;591 evals/s)
- <li>Optimization time: 452 &micro;s. (2&nbsp;208 optimizes/s)
+ <li>Parse time: 3.74 &micro;s. (267&nbsp;641 parses/s)
+ <li>Eval time: 0.59 &micro;s. (1&nbsp;705&nbsp;450 evals/s)
+ <li>Optimized: 0.23 &micro;s. (4&nbsp;284&nbsp;095 evals/s)
+ <li>Optimization time: 403 &micro;s. (2&nbsp;480 optimizes/s)
 </ul>
 
 <hr>
 <p>Function:
 <code>"exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3) - cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)"</code>
 <ul>
- <li>Parse time: 9.13 &micro;s. (109&nbsp;531 parses/s)
- <li>Eval time: 1.06 &micro;s. (947&nbsp;506 evals/s)
- <li>Optimized: 0.89 &micro;s. (1&nbsp;128&nbsp;524 evals/s)
- <li>Optimization time: 1509 &micro;s. (662 optimizes/s)
+ <li>Parse time: 8.48 &micro;s. (117&nbsp;928 parses/s)
+ <li>Eval time: 1.05 &micro;s. (948&nbsp;600 evals/s)
+ <li>Optimized: 0.91 &micro;s. (1&nbsp;098&nbsp;860 evals/s)
+ <li>Optimization time: 1537 &micro;s. (650 optimizes/s)
 </ul>
 
 <hr>
@@ -84,23 +84,23 @@ with the compiler options <code>-O3 -ffast-math -march=native</code>
 
 <hr>
 <p>Function:
-<code>"pow(x,14)+pow(y,8)"</code>
+<code>"x^14 + y^8"</code>
 <ul>
- <li>Parse time: 0.67 &micro;s. (1&nbsp;496&nbsp;524 parses/s)
- <li>Eval time: 0.05 &micro;s. (20&nbsp;182&nbsp;042 evals/s)
- <li>Optimized: 0.05 &micro;s. (20&nbsp;303&nbsp;537 evals/s)
- <li>Optimization time: 30 &micro;s. (32&nbsp;886 optimizes/s)
+ <li>Parse time: 0.54 &micro;s. (1&nbsp;839&nbsp;063 parses/s)
+ <li>Eval time: 0.05 &micro;s. (20&nbsp;000&nbsp;400 evals/s)
+ <li>Optimized: 0.06 &micro;s. (17&nbsp;295&nbsp;203 evals/s)
+ <li>Optimization time: 30 &micro;s. (32&nbsp;638 optimizes/s)
 
 </ul>
 
 <hr>
 <p>Function:
-<code>"((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10) - (4*pow(y,3)+2*y*y-10*y+2))*10"</code>
+<code>"((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10"</code>
 <ul>
- <li>Parse time: 2.86 &micro;s. (349&nbsp;204 parses/s)
- <li>Eval time: 0.19 &micro;s. (5&nbsp;159&nbsp;319 evals/s)
- <li>Optimized: 0.19 &micro;s. (5&nbsp;154&nbsp;147 evals/s)
- <li>Optimization time: 783 &micro;s. (1&nbsp;275 optimizes/s)
+ <li>Parse time: 2.85 &micro;s. (350&nbsp;548 parses/s)
+ <li>Eval time: 0.15 &micro;s. (6&nbsp;478&nbsp;341 evals/s)
+ <li>Optimized: 0.18 &micro;s. (5&nbsp;605&nbsp;789 evals/s)
+ <li>Optimization time: 786 &micro;s. (1&nbsp;272 optimizes/s)
 
 </ul>
 
@@ -108,21 +108,21 @@ with the compiler options <code>-O3 -ffast-math -march=native</code>
 <p>Function:
 <code>"((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4"</code>
 <ul>
- <li>Parse time: 3.00 &micro;s. (333&nbsp;345 parses/s)
- <li>Eval time: 0.12 &micro;s. (8&nbsp;026&nbsp;745 evals/s)
- <li>Optimized: 0.04 &micro;s. (26&nbsp;747&nbsp;265 evals/s)
- <li>Optimization time: 439 &micro;s. (2&nbsp;277 optimizes/s)
+ <li>Parse time: 3.04 &micro;s. (329&nbsp;059 parses/s)
+ <li>Eval time: 0.20 &micro;s. (4&nbsp;914&nbsp;004 evals/s)
+ <li>Optimized: 0.04 &micro;s. (27&nbsp;088&nbsp;525 evals/s)
+ <li>Optimization time: 442 &micro;s. (2&nbsp;260 optimizes/s)
 
 </ul>
 
 <hr>
 <p>Function:
-<code>"sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)"</code>
+<code>"(tan(x)*cos(x))^2 - 1.2*log(atan2(sqrt((-y^2)+1), y) * 4.91^y) + cos(-x)^2"</code>
 <ul>
- <li>Parse time: 1.66 &micro;s. (603&nbsp;147 parses/s)
- <li>Eval time: 0.20 &micro;s. (4&nbsp;881&nbsp;382 evals/s)
- <li>Optimized: 0.24 &micro;s. (4&nbsp;217&nbsp;362 evals/s)
- <li>Optimization time: 240 &micro;s. (4&nbsp;160 optimizes/s)
+ <li>Parse time: 2.25 &micro;s. (444&nbsp;006 parses/s)
+ <li>Eval time: 0.43 &micro;s. (2&nbsp;320&nbsp;314 evals/s)
+ <li>Optimized: 0.15 &micro;s. (6&nbsp;684&nbsp;022 evals/s)
+ <li>Optimization time: 220 &micro;s. (4&nbsp;535 optimizes/s)
 
 </ul>
 
@@ -130,10 +130,10 @@ with the compiler options <code>-O3 -ffast-math -march=native</code>
 <p>Function:
 <code>"exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3) - cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)"</code>
 <ul>
- <li>Parse time: 5.20 &micro;s. (192&nbsp;199 parses/s)
- <li>Eval time: 0.56 &micro;s. (1&nbsp;789&nbsp;403 evals/s)
- <li>Optimized: 0.46 &micro;s. (2&nbsp;161&nbsp;141 evals/s)
- <li>Optimization time: 814 &micro;s. (1&nbsp;227 optimizes/s)
+ <li>Parse time: 5.22 &micro;s. (191&nbsp;479 parses/s)
+ <li>Eval time: 0.49 &micro;s. (2&nbsp;029&nbsp;859 evals/s)
+ <li>Optimized: 0.45 &micro;s. (2&nbsp;246&nbsp;166 evals/s)
+ <li>Optimization time: 817 &micro;s. (1&nbsp;223 optimizes/s)
 
 </ul>
 
