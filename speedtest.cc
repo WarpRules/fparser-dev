@@ -13,11 +13,20 @@
 
 //#define FUNC0 x+y+(sin(x)*cos(x)*log(x)*(-x-y+log(y)-sin(x)))
 //#define FUNC0 pow(x,14)+pow(y,8)+pow(x,2)+2*x*y+pow(y,2)
-#define FUNC0 pow(x,14)+pow(y,8)
+#define FUNC0 pow(x,14) + pow(y,8)
+#define FUNC0P x^14 + y^8
+
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10) - (4*pow(y,3)+2*y*y-10*y+2))*10
+#define FUNC1P ((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
+
 #define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
-#define FUNC3 sin(sqrt(10-x*x+y*y))+cos(sqrt(5-x*x-y*y))+sin(x*x+y*y)
+#define FUNC2P FUNC2
+
+#define FUNC3 pow((tan(x)*cos(x)), 2) - 1.2*log(atan2(sqrt((-pow(y,2))+1), y) * pow(4.91, y)) + pow(cos(-x), 2)
+#define FUNC3P (tan(x)*cos(x))^2 - 1.2*log(atan2(sqrt((-y^2)+1), y) * 4.91^y) + cos(-x)^2
+
 #define FUNC4 exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3) - cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)
+#define FUNC4P FUNC4
 
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
@@ -82,11 +91,11 @@ namespace
 
     const FuncData funcData[] =
     {
-        { Stringify(FUNC0), "x,y", func0_d, func0_f, func0_ld },
-        { Stringify(FUNC1), "x,y", func1_d, func1_f, func1_ld },
-        { Stringify(FUNC2), "x,y", func2_d, func2_f, func2_ld },
-        { Stringify(FUNC3), "x,y", func3_d, func3_f, func3_ld },
-        { Stringify(FUNC4), "x,y", func4_d, func4_f, func4_ld }
+        { Stringify(FUNC0P), "x,y", func0_d, func0_f, func0_ld },
+        { Stringify(FUNC1P), "x,y", func1_d, func1_f, func1_ld },
+        { Stringify(FUNC2P), "x,y", func2_d, func2_f, func2_ld },
+        { Stringify(FUNC3P), "x,y", func3_d, func3_f, func3_ld },
+        { Stringify(FUNC4P), "x,y", func4_d, func4_f, func4_ld }
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
@@ -180,7 +189,7 @@ template<typename Parser_t>
 int run()
 {
     Parser_t fp, fp2;
-    typename Parser_t::value_type values[3] = { 1, 2, 3 };
+    typename Parser_t::value_type values[3] = { .25, .5, .75 };
 
     for(unsigned i = 0; i < FunctionsAmount; ++i)
     {
