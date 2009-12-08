@@ -105,7 +105,6 @@ namespace
                     #undef op
                     case cImmed: return; // does not occur
                     case cJump: return; // does not occur
-                    case cVar: return; // does not occur
                     case cDup: return; // does not occur
                     case cFetch: return; // does not occur
                     case cPopNMov: return; // does not occur
@@ -289,6 +288,13 @@ int main()
         ++i)
     {
         const Rule& r = **i;
+        
+        if(r.logical_context)
+        {
+            // Skipping logical context rule
+            // FIXME: Instead, devise a test that utilizes logical context
+            continue;
+        }
 
         ParamSpec_SubFunctionData in_func = r.match_tree;
         if(r.ruletype == ReplaceParams
