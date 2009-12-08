@@ -67,7 +67,7 @@ namespace
                     case cCot: fp_pref = "cot"; cp_pref = "(1/tan("; return;
                     case cCsc: fp_pref = "csc"; cp_pref = "(1/sin("; return;
                     case cSec: fp_pref = "sec"; cp_pref = "(1/cos("; return;
-                    case cInt: fp_pref = "int"; cp_pref = "floor(0.5+("; return;
+                    case cInt: fp_pref = "int"; cp_pref = "(floor(0.5+("; return;
                     #define op(opcode, fpcode, cpcode) \
                         case opcode: \
                             fp_pref = #fpcode "("; \
