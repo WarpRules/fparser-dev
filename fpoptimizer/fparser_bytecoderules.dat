@@ -215,8 +215,9 @@ IF(FP_FLOAT_VERSION) x cMul cSinh cNeg -> [-x] cMul cSinh
 IF(FP_FLOAT_VERSION) x cMul cTan  cNeg -> [-x] cMul cTan
 IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh
 
-IF(FP_FLOAT_VERSION) cAcosh cSinh -> cSqr [Value_t(-1)] cAdd cSqrt
-IF(FP_FLOAT_VERSION) cAsinh cCosh -> cSqr  [Value_t(1)] cAdd cSqrt
+IF(FP_FLOAT_VERSION) cAcosh cSinh -> [DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt
+IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSqrt
+
 IF(FP_FLOAT_VERSION) cSin cInv -> cCsc
 IF(FP_FLOAT_VERSION) cCos cInv -> cSec
 IF(FP_FLOAT_VERSION) cTan cInv -> cCot

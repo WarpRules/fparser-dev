@@ -413,7 +413,7 @@ namespace
     bool SynthOperations(
         size_t indent, std::ostream& outstream,
         const std::vector<Match>& so_far,
-        const std::vector<Operation>& operations,
+        std::vector<Operation> operations,
         size_t b_used,
         size_t i_used)
     {
@@ -457,6 +457,13 @@ namespace
                 << Indent(indent) << "    { " << Bexpr(1) << " = cMul; " << Bexpr(2) << " = cSqr; return; }\n"
                 << Indent(indent) << "}\n";
             return false;
+        }
+        if(!operations.empty() && operations[0].result == "DO_STACKPLUS1")
+        {
+            outstream
+                << Indent(indent) << "incStackPtr();\n"
+                << Indent(indent) << "--StackPtr;\n";
+            operations.erase(operations.begin());
         }
 
         OutCode Out(outstream, indent);

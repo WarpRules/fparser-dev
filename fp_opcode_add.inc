@@ -993,7 +993,9 @@ goto TailCall_cSub;
           /* opcode = cCosh; */ // redundant, matches cCosh @ 0
           goto Lfc;
         case cAsinh:
-          FP_TRACE_BYTECODE_OPTIMIZATION("cAsinh cCosh", "cSqr [Value_t(1)] cAdd cSqrt");
+          FP_TRACE_BYTECODE_OPTIMIZATION("cAsinh cCosh", "[DO_STACKPLUS1] cSqr [Value_t(1)] cAdd cSqrt");
+          incStackPtr();
+          --StackPtr;
           goto Lfd;
         case cImmed:
           x = ImmedPtr[0];
@@ -1174,7 +1176,9 @@ goto TailCall_cSub;
           FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cSinh", "cSinh cNeg");
           goto Lgf;
         case cAcosh:
-          FP_TRACE_BYTECODE_OPTIMIZATION("cAcosh cSinh", "cSqr [Value_t(-1)] cAdd cSqrt");
+          FP_TRACE_BYTECODE_OPTIMIZATION("cAcosh cSinh", "[DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt");
+          incStackPtr();
+          --StackPtr;
           goto Lgg;
         case cImmed:
           x = ImmedPtr[0];
