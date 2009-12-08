@@ -635,6 +635,12 @@ double f56(const double* p)
     return fmod(1.75e21, x);
 }
 
+double f57(const double* p)
+{
+#define P57 "cosh(asinh(x))", "x", f57, 1, .05, 1.0, .01, false
+    const double x = p[0];
+    return cosh(fp_asinh(x));
+}
 
 namespace
 {
@@ -650,7 +656,7 @@ namespace
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
         { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 },
-        { P55 }, { P56 }
+        { P55 }, { P56 }, { P57 }
     };
 
     const unsigned floatingPointTestsAmount =
