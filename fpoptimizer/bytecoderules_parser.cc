@@ -90,10 +90,14 @@ namespace
     {
         if(!(opcode[0] == 'c' && isupper(opcode[1])))
             return true;
+
+        if(opcode == "cImmed" || opcode == "cDup") return false;
+
         for(size_t b=0; b<global_head.predecessors.size(); ++b)
             if(global_head.predecessors[b]->opcode.type == Match::FixedOpcode
             && global_head.predecessors[b]->opcode.name == opcode)
                 return true;
+
         for(size_t b=0; b<global_head.predecessors.size(); ++b)
             if(global_head.predecessors[b]->opcode.type == Match::AnyOpcode)
                 return true;
@@ -632,6 +636,15 @@ namespace
         #endif
             code << Indent(indent) << "switch(" << Bexpr(b_used) << ")\n";
             code << Indent(indent) << "{\n";
+
+            bool needs_default_case = false;
+            for(size_t b=0; b<head.predecessors.size(); ++b)
+            {
+                const Node& n = *head.predecessors[b];
+                if(n.opcode.type == Match::AnyOpcode)
+                    { needs_default_case=true; break; }
+            }
+
             for(size_t a=0; a<head.predecessors.size(); ++a)
             {
                 const Node& n = *head.predecessors[a];
@@ -652,13 +665,20 @@ namespace
                     //code << Indent(indent) << "  }\n";
                     if(!returned)
                     {
-                        if(default_label_name.empty())
+                        if(needs_default_case)
                         {
-                            std::ostringstream tmp;
-                            tmp << "Default" << DefaultLabelCounter++;
-                            default_label_name = tmp.str();
+                            if(default_label_name.empty())
+                            {
+                                std::ostringstream tmp;
+                                tmp << "Default" << DefaultLabelCounter++;
+                                default_label_name = tmp.str();
+                            }
+                            code << Indent(indent) << "    goto " << default_label_name << ";\n";
                         }
-                        code << Indent(indent) << "    goto " << default_label_name << ";\n";
+                        else
+                        {
+                            code << Indent(indent) << "    break;\n";
+                        }
                     }
                 }
             }
@@ -719,55 +739,51 @@ namespace
                     code << Indent(indent) << "    break;\n";
             }
 
-            bool first_anyopcode = true;
             std::set<std::string> opcode_labels;
 
-            if(!default_label_name.empty())
+            if(needs_default_case)
             {
-                code << Indent(indent) << "  default: " << default_label_name << ":;\n";
-                first_anyopcode = false;
-            }
+                code << Indent(indent) << "  default:";
+                if(!default_label_name.empty())
+                    code << " " << default_label_name << ":;";
+                code << "\n";
 
-            for(int round=0; round<4; ++round)
-                for(size_t a=0; a<head.predecessors.size(); ++a)
-                {
-                    const Node& n = *head.predecessors[a];
-                    if(n.opcode.type == Match::AnyOpcode)
+                for(int round=0; round<4; ++round)
+                    for(size_t a=0; a<head.predecessors.size(); ++a)
                     {
-                        if(round < 2  && n.opcode.has_operations) continue;
-                        if(round >= 2 && !n.opcode.has_operations) continue;
-                        if((round & 1) != !!n.opcode.condition.empty()) continue;
-                        if(first_anyopcode)
+                        const Node& n = *head.predecessors[a];
+                        if(n.opcode.type == Match::AnyOpcode)
                         {
-                            code << Indent(indent) << "  default:\n";
-                            first_anyopcode = false;
-                        }
-                        //code << Indent(indent) << "  /* round " << round << " a = " << a << " */\n";
-                        std::set<std::string>::iterator i = opcode_labels.lower_bound(n.opcode.name);
-                        if(i == opcode_labels.end() || *i != n.opcode.name)
-                        {
-                            if(declared.find(n.opcode.name) == declared.end())
+                            if(round < 2  && n.opcode.has_operations) continue;
+                            if(round >= 2 && !n.opcode.has_operations) continue;
+                            if((round & 1) != !!n.opcode.condition.empty()) continue;
+                            //code << Indent(indent) << "  /* round " << round << " a = " << a << " */\n";
+                            std::set<std::string>::iterator i = opcode_labels.lower_bound(n.opcode.name);
+                            if(i == opcode_labels.end() || *i != n.opcode.name)
                             {
-                                declared.insert(n.opcode.name);
-                                declarations << Indent(2) << "unsigned " << n.opcode.name << ";\n";
+                                if(declared.find(n.opcode.name) == declared.end())
+                                {
+                                    declared.insert(n.opcode.name);
+                                    declarations << Indent(2) << "unsigned " << n.opcode.name << ";\n";
+                                }
+                                //code << Indent(indent) << "    " << n.opcode.name << " = " << last_op_name << ";\n";
+                                code << Indent(indent) << "    " << n.opcode.name << " = " << Bexpr(b_used) << ";\n";
+                                opcode_labels.insert(i, n.opcode.name);
                             }
-                            //code << Indent(indent) << "    " << n.opcode.name << " = " << last_op_name << ";\n";
-                            code << Indent(indent) << "    " << n.opcode.name << " = " << Bexpr(b_used) << ";\n";
-                            opcode_labels.insert(i, n.opcode.name);
-                        }
-                        std::vector<Match> ref(so_far);
-                        ref.push_back(n.opcode);
-                        if(n.opcode.condition.empty())
-                            Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
-                        else
-                        {
-                            code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
-                            code << Indent(indent) << "    {\n";
-                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
-                            code << Indent(indent) << "    }\n";
+                            std::vector<Match> ref(so_far);
+                            ref.push_back(n.opcode);
+                            if(n.opcode.condition.empty())
+                                Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                            else
+                            {
+                                code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
+                                code << Indent(indent) << "    {\n";
+                                Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                code << Indent(indent) << "    }\n";
+                            }
                         }
                     }
-                }
+            }
             code << Indent(indent) << "}\n";
         }
         if(head.opcode.has_operations && (mode & mode_operations))

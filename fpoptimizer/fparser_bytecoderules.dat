@@ -95,7 +95,7 @@ IF(FP_FLOAT_VERSION) cSqr cLog2  -> cAbs cLog2  cDup cAdd
 IF(FP_FLOAT_VERSION) cSqr cLog10 -> cAbs cLog10 cDup cAdd
 IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul
 IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul
-cDup cAdd cDup cAdd -> [4] cMul
+cDup cAdd cDup cAdd -> [Value_t(4)] cMul
 
 
 y x cLess		-> [fp_less(y,x)]
