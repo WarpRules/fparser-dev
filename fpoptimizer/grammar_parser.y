@@ -12,6 +12,7 @@
 #include "fpoptimizer_consts.hh"
 #include "fpoptimizer_opcodename.hh"
 
+#include <cstdio>
 #include <cctype>
 #include <cstdlib>
 #include <iostream>

@@ -5,6 +5,7 @@
 #include <set>
 #include <string>
 #include <cstring>
+#include <cstdio>
 #include <ctime>
 #include <cmath>
 #include <sstream>
