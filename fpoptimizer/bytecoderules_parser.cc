@@ -724,10 +724,6 @@ namespace
 
             if(!default_label_name.empty())
             {
-                if(first_immed)
-                {
-                    code << Indent(indent) << "  case cImmed: break;\n";
-                }
                 code << Indent(indent) << "  default: " << default_label_name << ":;\n";
                 first_anyopcode = false;
             }
@@ -743,10 +739,6 @@ namespace
                         if((round & 1) != !!n.opcode.condition.empty()) continue;
                         if(first_anyopcode)
                         {
-                            if(first_immed)
-                            {
-                                code << Indent(indent) << "  case cImmed: break;\n";
-                            }
                             code << Indent(indent) << "  default:\n";
                             first_anyopcode = false;
                         }

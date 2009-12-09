@@ -181,7 +181,7 @@ cNotNot cNot    -> cNot
 cAbsNotNot cNot -> cAbsNot
 
 A [IsLogicalOpcode(A)]            cAbsNot cNot -> A
-A                                 cAbsNot cNot -> A cAbsNotNot
+A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot
 A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot
 
 A [IsNeverNegativeValueOpcode(A)] cAbs   -> A

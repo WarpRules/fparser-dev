@@ -87,7 +87,6 @@
           {
             switch(ByteCodePtr[-1])
             {
-              case cImmed: break;
               default:
                 A = ByteCodePtr[-1];
                 if(A >= VarBegin)
@@ -147,7 +146,6 @@
               case cMul:
                 switch(ByteCodePtr[-2])
                 {
-                  case cImmed: break;
                   default:
                     B = ByteCodePtr[-2];
                     if(B==A)
@@ -159,7 +157,6 @@
                     }
                 }
                 goto Default3;
-              case cImmed: break;
               default: Default3:;
                 B = ByteCodePtr[-1];
                 if(B==A)
@@ -239,7 +236,6 @@
                   goto Lbb;
               }
               goto Default4;
-            case cImmed: break;
             default: Default4:;
           }
           goto Default5;
@@ -413,7 +409,6 @@
         case cAbsNot:
           switch(ByteCodePtr[-1])
           {
-            case cImmed: break;
             default:
               A = ByteCodePtr[-1];
               if(IsLogicalOpcode(A))
@@ -422,9 +417,12 @@
                 /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
                 goto Lab;
               }
-              FP_TRACE_BYTECODE_OPTIMIZATION("A cAbsNot cNot", "A cAbsNotNot");
-              /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
-              goto Lcd;
+              if(A!=cImmed)
+              {
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[A!=cImmed] cAbsNot cNot", "A cAbsNotNot");
+                /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
+                goto Lcd;
+              }
           }
           goto Default8;
         case cImmed:
@@ -452,7 +450,6 @@
           {
             switch(ByteCodePtr[-1])
             {
-              case cImmed: break;
               default:
                 A = ByteCodePtr[-1];
                 if(IsNeverNegativeValueOpcode(A))
@@ -603,7 +600,6 @@
           FP_TRACE_BYTECODE_OPTIMIZATION("cNeg cAbs", "cAbs");
           /* opcode = cAbs; */ // redundant, matches cAbs @ 0
           goto Ldb;
-        case cImmed: break;
         default:
           A = ByteCodePtr[0];
           if(IsNeverNegativeValueOpcode(A))
@@ -614,14 +610,12 @@
           }
       }
       goto Default1;
-    case cImmed: break;
     default: Default1:;
       A = opcode;
       if(A >= VarBegin)
       {
         switch(ByteCodePtr[0])
         {
-          case cImmed: break;
           default:
             B = ByteCodePtr[0];
             if(B==A)
@@ -635,21 +629,18 @@
       {
         switch(ByteCodePtr[0])
         {
-          case cImmed: break;
           default:
             B = ByteCodePtr[0];
             if(B >= VarBegin)
             {
               switch(ByteCodePtr[-1])
               {
-                case cImmed: break;
                 default:
                   C = ByteCodePtr[-1];
                   if(C==A)
                   {
                     switch(ByteCodePtr[-2])
                     {
-                      case cImmed: break;
                       default:
                         D = ByteCodePtr[-2];
                         if(D==B)
@@ -860,7 +851,6 @@ goto TailCall_cSub;
                     goto Leb;
                 }
                 goto Default0;
-              case cImmed: break;
               default: Default0:;
             }
           }
@@ -1414,7 +1404,6 @@ goto TailCall_cSub;
                   goto Laa;
               }
               goto Default6;
-            case cImmed: break;
             default: Default6:;
           }
           goto Default5;
@@ -1433,7 +1422,6 @@ goto TailCall_cSub;
                   goto Laa;
               }
               goto Default7;
-            case cImmed: break;
             default: Default7:;
           }
           goto Default5;
@@ -1452,7 +1440,6 @@ goto TailCall_cSub;
                   goto Laa;
               }
               goto Default8;
-            case cImmed: break;
             default: Default8:;
           }
           goto Default5;
@@ -1471,7 +1458,6 @@ goto TailCall_cSub;
                   goto Laa;
               }
               goto Default9;
-            case cImmed: break;
             default: Default9:;
           }
           goto Default5;
@@ -1553,7 +1539,6 @@ goto TailCall_cSub;
           {
             switch(ByteCodePtr[-1])
             {
-              case cImmed: break;
               default:
                 A = ByteCodePtr[-1];
                 if(A >= VarBegin)
@@ -1641,7 +1626,6 @@ goto TailCall_cSub;
               case cMul:
                 switch(ByteCodePtr[-2])
                 {
-                  case cImmed: break;
                   default:
                     B = ByteCodePtr[-2];
                     if(B==A)
@@ -1653,7 +1637,6 @@ goto TailCall_cSub;
                     }
                 }
                 goto Default12;
-              case cImmed: break;
               default: Default12:;
                 B = ByteCodePtr[-1];
                 if(B==A)
@@ -1688,7 +1671,6 @@ goto TailCall_cSub;
                   goto Lik;
               }
               goto Default13;
-            case cImmed: break;
             default: Default13:;
           }
           goto Default14;
@@ -1707,7 +1689,6 @@ goto TailCall_cSub;
                   goto Lik;
               }
               goto Default15;
-            case cImmed: break;
             default: Default15:;
           }
           goto Default14;
@@ -1818,7 +1799,6 @@ goto TailCall_cSub;
                   goto Lbb;
               }
               goto Default17;
-            case cImmed: break;
             default: Default17:;
           }
           goto Default18;
@@ -2009,7 +1989,6 @@ goto TailCall_cSub;
         case cAbsNot:
           switch(ByteCodePtr[-1])
           {
-            case cImmed: break;
             default:
               A = ByteCodePtr[-1];
               if(IsLogicalOpcode(A))
@@ -2018,9 +1997,12 @@ goto TailCall_cSub;
                 /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
                 goto Lab;
               }
-              FP_TRACE_BYTECODE_OPTIMIZATION("A cAbsNot cNot", "A cAbsNotNot");
-              /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
-              goto Lcd;
+              if(A!=cImmed)
+              {
+                FP_TRACE_BYTECODE_OPTIMIZATION("A[A!=cImmed] cAbsNot cNot", "A cAbsNotNot");
+                /* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
+                goto Lcd;
+              }
           }
           goto Default21;
         case cImmed:
@@ -2057,7 +2039,6 @@ goto TailCall_cSub;
           {
             switch(ByteCodePtr[-1])
             {
-              case cImmed: break;
               default:
                 A = ByteCodePtr[-1];
                 if(IsNeverNegativeValueOpcode(A))
@@ -2209,14 +2190,12 @@ goto TailCall_cSub;
           break;
       }
       goto Default2;
-    case cImmed: break;
     default: Default2:;
       A = opcode;
       if(A >= VarBegin)
       {
         switch(ByteCodePtr[0])
         {
-          case cImmed: break;
           default:
             B = ByteCodePtr[0];
             if(B==A)
@@ -2230,21 +2209,18 @@ goto TailCall_cSub;
       {
         switch(ByteCodePtr[0])
         {
-          case cImmed: break;
           default:
             B = ByteCodePtr[0];
             if(B >= VarBegin)
             {
               switch(ByteCodePtr[-1])
               {
-                case cImmed: break;
                 default:
                   C = ByteCodePtr[-1];
                   if(C==A)
                   {
                     switch(ByteCodePtr[-2])
                     {
-                      case cImmed: break;
                       default:
                         D = ByteCodePtr[-2];
                         if(D==B)
