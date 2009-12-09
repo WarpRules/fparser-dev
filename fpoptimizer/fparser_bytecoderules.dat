@@ -240,3 +240,11 @@ IF(FP_FLOAT_VERSION) cCot cInv -> cTan
 IF(FP_FLOAT_VERSION) x cPow -> [DO_POWI]
 B [B==A] A [A >= VarBegin] cMul       -> B cSqr
 B [B==A] cMul A [A >= VarBegin] cMul  -> B cSqr cMul
+
+IF(FP_FLOAT_VERSION) cExp2	 -> [DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp
+IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(const_e<Value_t>())] cMul
+IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(const_e<Value_t>())] cMul
+
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd
