@@ -435,7 +435,31 @@ namespace
     {
         outstream
             << Indent(indent)
-            << "FP_TRACE_BYTECODE_OPTIMIZATION(\"";
+            << "FP_TRACE_BYTECODE_OPTIMIZATION(";
+
+        unsigned n_with_lines = 0;
+        std::ostringstream trace_with;
+        for(size_t a=0; a<so_far.size(); ++a)
+        {
+            if(so_far[a].type != Match::Immed
+            && so_far[a].type != Match::AnyOpcode) continue;
+            if(n_with_lines == 0)
+                trace_with << ",\n" << Indent(indent+2) << "\"    with ";
+            else
+                trace_with << "\n" << Indent(indent+6) << "<< \", ";
+            trace_with << so_far[a].name << " = \" << ";
+            if(so_far[a].type == Match::Immed)
+                trace_with << so_far[a].name;
+            else
+                trace_with << "(" << so_far[a].name
+                           << " < VarBegin ? FP_GetOpcodeName(OPCODE(" << so_far[a].name
+                           << ")) : \"<var>\")";
+            ++n_with_lines;
+        }
+        if(n_with_lines > 0)
+            outstream << "\n" << Indent(indent+2);
+
+        outstream << '"';
         for(size_t a=so_far.size(); a-- > 0; )
         {
             if(a+1 != so_far.size()) outstream << ' ';
@@ -443,7 +467,10 @@ namespace
             if(!so_far[a].condition.empty())
                 outstream << '[' << so_far[a].condition << ']';
         }
-        outstream << "\", \"";
+        if(n_with_lines > 0)
+            outstream << "\",\n" << Indent(indent+2) << "\"";
+        else
+            outstream << "\", \"";
         for(size_t a=0; a<operations.size(); ++a)
         {
             if(a > 0) outstream << ' ';
@@ -451,7 +478,15 @@ namespace
             outstream << operations[a].result;
             if(operations[a].type == Operation::Immed) outstream << ']';
         }
-        outstream << "\");\n";
+        outstream << "\"";
+        if(n_with_lines == 0)
+            outstream << ", \"\"";
+        else if(n_with_lines == 1)
+            trace_with << " << \"\\n\"";
+        else
+            trace_with << "\n" << Indent(indent+6) << "<< \"\\n\"";
+        outstream << trace_with.str();
+        outstream << ");\n";
 
         if(!operations.empty() && operations[0].result == "DO_POWI")
         {
@@ -982,32 +1017,23 @@ int main()
 
     std::ostream& out = std::cout;
 
-    out << kOutputCommentBlock << "\n";
-    out << "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to)\n";
-    out << "//#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to) std::cout << \"Changing \\\"\" from \"\\\"\\n    into \\\"\" to \"\\\"\\n\"\n";
-    //out << "template<typename Value_t>\n"
-    //       "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
-    //       "{\n";
-    out <<  "  unsigned* ByteCodePtr;\n"
-            "  Value_t*   ImmedPtr;\n"
-#if(0) // This causes a crash when compiling with Visual Studio
-            "#ifdef _GLIBCXX_DEBUG\n"
-            "  /* Shut up glibc warnings */\n"
-            "  #define FP_ReDefinePointers() \\\n"
-            "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
-            "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
-            "#else\n"
-            "  /* Trust me, I know what I am doing */\n"
-            "  #define FP_ReDefinePointers() \\\n"
-            "    ByteCodePtr = &data->ByteCode[data->ByteCode.size() - 1]; \\\n"
-            "    ImmedPtr    = &data->Immed   [data->Immed.size()    - 1];\n"
-            "#endif\n"
-#else
-            "  #define FP_ReDefinePointers() \\\n"
-            "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
-            "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
-#endif
-            "  FP_ReDefinePointers();\n";
+    out <<
+        kOutputCommentBlock << "\n";
+    out <<
+        "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to,with) \\\n"
+        "    /*std::cout << \"Changing \\\"\" from \"\\\"\\n\" \\\n"
+        "                   \"    into \\\"\" to \"\\\"\\n\" with*/"
+        "\n\n"
+    //  "template<typename Value_t>\n"
+    //  "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
+    //  "{\n"
+        "  unsigned* ByteCodePtr;\n"
+        "  Value_t*   ImmedPtr;\n"
+        "\n"
+        "  #define FP_ReDefinePointers() \\\n"
+        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
+        "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
+        "  FP_ReDefinePointers();\n";
 
     for(size_t n=0; n<n_different_parsers; ++n)
     {
@@ -1031,6 +1057,8 @@ int main()
 
         Parse(mode);
 
+        out << "\n";
+
         if(n_different_parsers == 1)
             Generate(out);
         else
@@ -1049,9 +1077,11 @@ int main()
         }
     }
 
-    out << "#undef FP_ReDefinePointers\n";
-    //out << "}\n";
-    out << "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
+    out <<
+        "\n"
+        "#undef FP_ReDefinePointers\n"
+    //  "}\n"
+        "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
 
     return 0;
 }

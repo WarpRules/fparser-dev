@@ -990,7 +990,7 @@ namespace
         }
         return false;
     }
-    
+
     bool IsUnaryOpcode(unsigned op)
     {
         switch(op)
@@ -998,7 +998,7 @@ namespace
           case cInv: case cNeg:
           case cNot: case cAbsNot:
           case cNotNot: case cAbsNotNot:
-          case cSqr: case cRSqrt: 
+          case cSqr: case cRSqrt:
           case cDeg: case cRad:
             return true;
         }
@@ -1113,6 +1113,9 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     }
     return false;
 }
+
+//#include "fpoptimizer/fpoptimizer_opcodename.hh"
+// ^ needed only if FP_TRACE_BYTECODE_OPTIMIZATION() is used
 
 template<typename Value_t>
 inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
