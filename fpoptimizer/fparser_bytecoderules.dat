@@ -122,7 +122,8 @@ y cAdd x cSub		-> [y-x] cAdd
 
 IF(FP_FLOAT_VERSION) y [(y*x)==GetRadiansToDegreesFactor<Value_t>()] cMul x cMul -> cDeg
 IF(FP_FLOAT_VERSION) y [(y*x)==GetDegreesToRadiansFactor<Value_t>()] cMul x cMul -> cRad
-y cMul x cMul		-> [y*x] cMul
+y [y*x==Value_t(1)] cMul x cMul ->
+y                   cMul x cMul -> [y*x] cMul
 IF(FP_FLOAT_VERSION) y [(y/x)==GetRadiansToDegreesFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
 IF(FP_FLOAT_VERSION) y [(y/x)==GetDegreesToRadiansFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
 IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
@@ -170,6 +171,22 @@ cGreaterOrEq cNot -> cLess
 cEqual       cNot -> cNEqual
 cNEqual      cNot -> cEqual
 
+cAbs x [x==Value_t(0)] cEqual  -> [x] cEqual
+cAbs x [x==Value_t(0)] cNEqual -> [x] cNEqual
+cSqr x [x==Value_t(0)] cEqual  -> [x] cEqual
+cSqr x [x==Value_t(0)] cNEqual -> [x] cNEqual
+
+                     y                 cAdd x A [IsComparisonOpcode(A)] -> [x-y] A
+                     y                 cSub x A [IsComparisonOpcode(A)] -> [x+y] A
+                                       cNeg x A [IsComparisonOpcode(A)] -> [-x] {OppositeComparisonOpcode(A)}
+IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] A
+IF(FP_FLOAT_VERSION) y [y<Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] {OppositeComparisonOpcode(A)}
+IF(FP_FLOAT_VERSION) y [y>=Value_t(0)] cDiv x A [IsComparisonOpcode(A)] -> [x*y] A
+IF(FP_FLOAT_VERSION) y [y<Value_t(0)]  cDiv x A [IsComparisonOpcode(A)] -> [x*y] {OppositeComparisonOpcode(A)}
+IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow x [x>Value_t(0)] A [IsComparisonOpcode(A)] -> [fp_pow(x,1/y)] A
+IF(FP_FLOAT_VERSION) cSqr x [x>Value_t(0)] A [IsComparisonOpcode(A)] -> cAbs [fp_sqrt(x)] A
+
+
 B [B==A] A [A >= VarBegin]                               -> A cDup
 D [D==B] C [C==A] B [B >= VarBegin] A [IsUnaryOpcode(A)] -> D C cDup
 cDup cMul -> cSqr
@@ -199,9 +216,26 @@ IF(FP_FLOAT_VERSION) x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 IF(FP_FLOAT_VERSION) x cMul cExp  cDiv -> [-x] cMul cExp  cMul
 IF(FP_FLOAT_VERSION) x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
+IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cEqual  -> cNot
+IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cNEqual -> cNotNot
+IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(0)] cGreater     -> cNotNot
+IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(1)] cGreaterOrEq -> cNotNot
+IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(1)] cLess     -> cNot
+IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(0)] cLessOrEq -> cNot
+IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cGreater     -> A cNotNot
+IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cGreaterOrEq -> A cNotNot
+IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cLess     -> A cNot
+IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLessOrEq -> A cNot
+IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cEqual  -> A
+IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot
+
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
+
+# Multiplication with zero:
 A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul
+A [A>=VarBegin]      x [x==Value_t(0)] cMul ->   [x]
+A [A>=VarBegin] cMul x [x==Value_t(0)] cMul -> A [x] cMul
 
 IF(FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 IF(FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
