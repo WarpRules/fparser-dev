@@ -38,8 +38,8 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
 
-CXX=g++
-LD=g++
+CXX=g++-4.4
+LD=g++-4.4
 
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 

@@ -29,7 +29,7 @@ namespace
 
     struct Operation
     {
-        enum { Opcode, Immed } type;
+        enum { Opcode, ImmedFunc, OpcodeFunc } type;
         std::string result;
     };
     struct Match
@@ -206,6 +206,12 @@ namespace
                     mini = 1;
                 }
             }
+        }
+        void clear()
+        {
+            heads.clear();
+            label_trans.clear();
+            code.clear();
         }
     private:
         std::string GenLabel(unsigned crc, unsigned len)
@@ -474,9 +480,17 @@ namespace
         for(size_t a=0; a<operations.size(); ++a)
         {
             if(a > 0) outstream << ' ';
-            if(operations[a].type == Operation::Immed) outstream << '[';
-            outstream << operations[a].result;
-            if(operations[a].type == Operation::Immed) outstream << ']';
+            switch(operations[a].type)
+            {
+                case Operation::ImmedFunc:
+                    outstream << '[' << operations[a].result << ']';
+                    break;
+                case Operation::OpcodeFunc:
+                    outstream << '{' << operations[a].result << '}';
+                    break;
+                case Operation::Opcode:
+                    outstream << operations[a].result;
+            }
         }
         outstream << "\"";
         if(n_with_lines == 0)
@@ -517,7 +531,7 @@ namespace
         {
             std::string opcode = operations[a].result;
 
-            if(operations[a].type == Operation::Immed)
+            if(operations[a].type == Operation::ImmedFunc)
             {
                 bool requires_var = false;
                 for(size_t a=0; a<opcode.size(); ++a)
@@ -900,16 +914,24 @@ namespace
 
             if(mode.collect_preconditions)
             {
+                while(!Precondition.empty()
+                    && Precondition[0] == '!') Precondition.erase(Precondition.begin());
                 if(!Precondition.empty())
                     mode.different_preconditions.insert(Precondition);
                 continue;
             }
 
-            if(!Precondition.empty()
-            && mode.allowed_preconditions.find(Precondition)
-            == mode.allowed_preconditions.end())
+            if(!Precondition.empty())
             {
-                continue;
+                std::string cond = Precondition;
+                bool inverse = false;
+                while(cond[0] == '!')
+                    { inverse = !inverse; cond.erase(cond.begin()); }
+                if((mode.allowed_preconditions.find(cond)
+                 == mode.allowed_preconditions.end()) != inverse)
+                {
+                    continue;
+                }
             }
 
             std::vector<Match> sequence;
@@ -988,7 +1010,20 @@ namespace
                             op.result += *bufptr++;
                         }
                         if(*bufptr == ']') ++bufptr;
-                        op.type = Operation::Immed;
+                        op.type = Operation::ImmedFunc;
+                    }
+                    else if(*bufptr == '{')
+                    {
+                        size_t balance = 0; ++bufptr;
+                        while(*bufptr != '}' || balance != 0)
+                        {
+                            if(*bufptr == '\r' || *bufptr == '\n') break;
+                            if(*bufptr == '{') ++balance;
+                            if(*bufptr == '}') --balance;
+                            op.result += *bufptr++;
+                        }
+                        if(*bufptr == '}') ++bufptr;
+                        op.type = Operation::OpcodeFunc;
                     }
                     else
                     {
@@ -1053,6 +1088,7 @@ int main()
         global_head = Node();
         PossiblyUnusedLabelList.clear();
         DefaultLabelCounter=0;
+        CodeSeq.clear();
         declared.clear();
 
         Parse(mode);

@@ -953,6 +953,31 @@ namespace
         return false;
     }
 
+    bool IsComparisonOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cEqual: case cNEqual:
+          case cLess: case cLessOrEq:
+          case cGreater: case cGreaterOrEq:
+              return true;
+          default: break;
+        }
+        return false;
+    }
+
+    unsigned OppositeComparisonOpcode(unsigned op)
+    {
+        switch(op)
+        {
+            case cLess: return cGreater;
+            case cGreater: return cLess;
+            case cLessOrEq: return cGreaterOrEq;
+            case cGreaterOrEq: return cLessOrEq;
+        }
+        return op;
+    }
+
     bool IsNeverNegativeValueOpcode(unsigned op)
     {
         switch(op)
