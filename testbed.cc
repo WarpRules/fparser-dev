@@ -642,6 +642,14 @@ double f57(const double* p)
     return cosh(fp_asinh(x));
 }
 
+double f58(const double* p)
+{
+#define P58Code (-x < 3) + (x*-1 > 5) + (x*-3 < 10) + (x*-3 < y*7) + (x*4 < y*7) + (x*6 < y*-3) + (-x < 11) + (5 < -y)
+#define P58 Stringify(P58Code), "x,y", f58, 2, -11, 11, 1, false
+    const double x = p[0], y = p[1];
+    return P58Code;
+}
+
 namespace
 {
     FloatingPointTest floatingPointTests[] =
@@ -656,7 +664,7 @@ namespace
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
         { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 },
-        { P55 }, { P56 }, { P57 }
+        { P55 }, { P56 }, { P57 }, { P58 }
     };
 
     const unsigned floatingPointTestsAmount =
@@ -691,11 +699,19 @@ long fi3(const long* p)
     return PI3Code;
 }
 
+long fi4(const long* p)
+{
+#define PI4Code (-x < 3) + (x*-1 > 5) + (x*-3 < 10) + (x*-3 < y*7) + (x*4 < y*7) + (x*6 < y*-3) + (-x < 11) + (5 < -y)
+#define PI4 Stringify(PI4Code), "x,y", fi4, 2, -11, 11, 1, false
+    const long x = p[0], y = p[1];
+    return PI4Code;
+}
+
 namespace
 {
     IntTest intTests[] =
     {
-        { PI1 }, { PI2 }, { PI3 }
+        { PI1 }, { PI2 }, { PI3 }, { PI4 }
     };
 
     const unsigned intTestsAmount = sizeof(intTests)/sizeof(intTests[0]);

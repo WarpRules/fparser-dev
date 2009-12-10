@@ -182,13 +182,18 @@ cLessOrEq    [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 
-cLess        [(cMul % <1>) &]  : (cMul <1>) *(& /%)
-cLessOrEq    [(cMul % <1>) &]  : (cMul <1>) *(& /%)
+cLess        [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
+cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
+cLess        [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
+cLessOrEq    [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
 cEqual       [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 cNEqual      [(cMul % <1>) &]  : (cMul <1>) *(& /%)
 
-cLess        [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cLessOrEq    [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
+cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
+cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
+cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
+cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
+
 cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
 
