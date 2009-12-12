@@ -97,6 +97,24 @@ namespace
         return true;
     }
 
+    template<typename Value_t>
+    std::string findName(const namePtrsType<Value_t>& nameMap,
+                         unsigned index,
+                         typename NameData<Value_t>::DataType type)
+    {
+        for(typename namePtrsType<Value_t>::const_iterator
+                iter = nameMap.begin();
+            iter != nameMap.end();
+            ++iter)
+        {
+            if(iter->second.type != type) continue;
+            if(iter->second.index == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
+    }
+
     unsigned readOpcodeForFloatType(const char* input)
     {
     /*
@@ -121,27 +139,33 @@ namespace
         return value;
     }
 
+    template<typename value_t>
+    struct IsIntType
+    {
+        enum { result = false };
+    };
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    struct IsIntType<long>
+    {
+        enum { result = true };
+    };
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    struct IsIntType<GmpInt>
+    {
+        enum { result = true };
+    };
+#endif
+
     template<typename Value_t>
     inline unsigned readOpcode(const char* input)
     {
-        return readOpcodeForFloatType(input);
+        return IsIntType<Value_t>::result
+                ? readOpcodeForIntType(input)
+                : readOpcodeForFloatType(input);
     }
-
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-    template<>
-    inline unsigned readOpcode<long>(const char* input)
-    {
-        return readOpcodeForIntType(input);
-    }
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline unsigned readOpcode<GmpInt>(const char* input)
-    {
-        return readOpcodeForIntType(input);
-    }
-#endif
 
     template<typename Value_t>
     bool containsOnlyValidNameChars(const std::string& name)
@@ -151,26 +175,20 @@ namespace
     }
 
     template<typename Value_t>
-    inline bool truthValue(Value_t d) { return fp_abs(d) >= Value_t(0.5); }
-
-    template<>
-    inline bool truthValue<long>(long l) { return l != 0; }
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline bool truthValue<GmpInt>(GmpInt l) { return l != 0; }
-#endif
+    inline bool truthValue(Value_t d)
+    {
+        return IsIntType<Value_t>::result
+                ? d != 0
+                : fp_abs(d) >= Value_t(0.5);
+    }
 
     template<typename Value_t>
-    inline bool truthValue_abs(Value_t abs_d) { return abs_d >= Value_t(0.5); }
-
-    template<>
-    inline bool truthValue_abs<long>(long l) { return l > 0; }
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline bool truthValue_abs<GmpInt>(GmpInt l) { return l > 0; }
-#endif
+    inline bool truthValue_abs(Value_t abs_d)
+    {
+        return IsIntType<Value_t>::result
+                ? abs_d > 0
+                : abs_d >= Value_t(0.5);
+    }
 
     template<typename Value_t>
     inline Value_t Min(Value_t d1, Value_t d2) { return d1<d2 ? d1 : d2; }
@@ -1028,6 +1046,22 @@ namespace
             return true;
         }
         return (op < FUNC_AMOUNT && Functions[op].params == 1);
+    }
+
+    bool IsBinaryOpcode(unsigned op)
+    {
+        switch(op)
+        {
+          case cAdd: case cSub: case cRSub:
+          case cMul: case cDiv: case cRDiv:
+          case cMod:
+          case cEqual: case cNEqual: case cLess:
+          case cLessOrEq: case cGreater: case cGreaterOrEq:
+          case cAnd: case cAbsAnd:
+          case cOr: case cAbsOr:
+            return true;
+        }
+        return (op < FUNC_AMOUNT && Functions[op].params == 2);
     }
 
 #ifdef FP_EPSILON
@@ -2360,24 +2394,6 @@ namespace
         {
             dest << ' ';
         }
-    }
-
-    template<typename Value_t>
-    std::string findName(const namePtrsType<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
-    {
-        for(typename namePtrsType<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
-        {
-            if(iter->second.type != type) continue;
-            if(iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
-        }
-        return "?";
     }
 
     const struct PowiMuliType
