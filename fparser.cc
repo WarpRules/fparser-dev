@@ -1942,7 +1942,12 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           endif
               Stack[SP] = fp_acos(Stack[SP]); break;
 
-          case cAcosh: Stack[SP] = fp_acosh(Stack[SP]); break;
+          case cAcosh:
+#           ifndef FP_NO_EVALUATION_CHECKS
+              if(Stack[SP] < Value_t(1))
+              { evalErrorType=4; return Value_t(0); }
+#           endif
+              Stack[SP] = fp_acosh(Stack[SP]); break;
 
           case  cAsin:
 #           ifndef FP_NO_EVALUATION_CHECKS
@@ -1958,7 +1963,12 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case cAtan2: Stack[SP-1] = fp_atan2(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-          case cAtanh: Stack[SP] = fp_atanh(Stack[SP]); break;
+          case cAtanh:
+#           ifndef FP_NO_EVALUATION_CHECKS
+              if(Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1))
+              { evalErrorType=4; return Value_t(0); }
+#           endif
+              Stack[SP] = fp_atanh(Stack[SP]); break;
 
           case  cCbrt: Stack[SP] = fp_cbrt(Stack[SP]); break;
 
