@@ -2100,8 +2100,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cMul: Stack[SP-1] *= Stack[SP]; --SP; break;
 
           case   cDiv:
+#           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
+#           else
+              if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
+              { evalErrorType=1; return Value_t(0); }
+#           endif
               Stack[SP-1] /= Stack[SP]; --SP; break;
 
           case   cMod:
@@ -2239,6 +2244,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
+#           else
+              if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
+              { evalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP] = Value_t(1)/Stack[SP];
               break;
@@ -2250,6 +2258,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRDiv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP-1] == Value_t(0))
+              { evalErrorType=1; return Value_t(0); }
+#           else
+              if(IsIntType<Value_t>::result && Stack[SP-1] == Value_t(0))
               { evalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
