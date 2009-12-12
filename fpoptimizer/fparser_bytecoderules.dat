@@ -1,20 +1,17 @@
 # This documents all the optimizations that are done to bytecode
 # by fparser.cc directly while parsing the input function
 # (excluding powi).
-#
-# The idea is to generate automatically the optimizations from
-# this file, but we are not there yet.
-#
 
 # identifiers: lowercase=cImmeds, uppercase=opcodes
 # [bracketed expression in condition]: constraints to input immeds or opcodes
 # [bracketed expression in replacement]: function that produces an immed
+# {braceted expression in replacement}: function that produces an opcode
 
 #y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp  x cPow -> cAbs [y*x] cExp
 #y [isEvenInteger(y)&&!isEvenInteger(x*y)] cExp2 x cPow -> cAbs [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
 IF(FP_FLOAT_VERSION) y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow
-IF(FP_FLOAT_VERSION) cSqr x [!isEvenInteger(x*Value_t(2))] cPow -> cAbs [x*Value_t(2)] cPow
+IF(FP_FLOAT_VERSION) cSqr x [!isEvenInteger(x+x)] cPow -> cAbs [x+x] cPow
 IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs
 #IF(FP_FLOAT_VERSION) cSqr cRSqrt -> cAbs cInv
 
@@ -38,14 +35,15 @@ IF(FP_FLOAT_VERSION) y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> 
 IF(FP_FLOAT_VERSION) cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp
 IF(FP_FLOAT_VERSION) cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2
 IF(FP_FLOAT_VERSION) cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow
-IF(FP_FLOAT_VERSION) cSqr x cPow -> [x*Value_t(2)] cPow
+IF(FP_FLOAT_VERSION) cSqr x cPow -> [x+x] cPow
 
 x cAbs	 		-> [fp_abs(x)]
-IF(FP_FLOAT_VERSION) x cAcos	 		-> [fp_acos(x)]
-IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAcosh -> [fp_acosh(x)]
-IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAsinh -> [fp_asinh(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(1)]                 cAcosh -> [fp_acosh(x)]
+IF(FP_FLOAT_VERSION) x                                 cAsinh -> [fp_asinh(x)]
+IF(FP_FLOAT_VERSION) x [x> Value_t(-1)&&x< Value_t(1)] cAtanh -> [fp_atanh(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAcos -> [fp_acos(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAsin -> [fp_asin(x)]
 IF(FP_FLOAT_VERSION) x cAtan	 		-> [fp_atan(x)]
-IF(FP_FLOAT_VERSION) x cAtanh 			-> [fp_atanh(x)]
 IF(FP_FLOAT_VERSION) x cCbrt	 		-> [fp_cbrt(x)]
 IF(FP_FLOAT_VERSION) x cCeil	 		-> [fp_ceil(x)]
 IF(FP_FLOAT_VERSION) x cCos	 		-> [fp_cos(x)]
@@ -54,17 +52,19 @@ IF(FP_FLOAT_VERSION) x cExp	 		-> [fp_exp(x)]
 IF(FP_FLOAT_VERSION) x cExp2	 		-> [fp_exp2(x)]
 IF(FP_FLOAT_VERSION) x cFloor 			-> [fp_floor(x)]
 IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]
-IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog	-> [fp_log(x)]
-IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog10	-> [fp_log10(x)]
-IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cLog2	-> [fp_log2(x)]
+IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog	-> [fp_log(x)]
+IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog10	-> [fp_log10(x)]
+IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog2	-> [fp_log2(x)]
 IF(FP_FLOAT_VERSION) x cSin	 		-> [fp_sin(x)]
 IF(FP_FLOAT_VERSION) x cSinh	 		-> [fp_sinh(x)]
 IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]
+#IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
 IF(FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]
 IF(FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]
 IF(FP_FLOAT_VERSION) x cTrunc 			-> [fp_trunc(x)]
 IF(FP_FLOAT_VERSION) x cDeg	 		-> [RadiansToDegrees(x)]
 IF(FP_FLOAT_VERSION) x cRad	 		-> [DegreesToRadians(x)]
+cSqrt cInv -> cRSqrt
 x cNeg			-> [-x]
 x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
 x [x==Value_t(1)] cMul	->
@@ -84,6 +84,18 @@ IF(FP_FLOAT_VERSION) y x cAtan2		-> [fp_atan2(y,x)]
 IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
+# Multiplications by zero: Undo as many operands as possible by peeling.
+# Some of these optimimizations can be disabled due to law of diminishing returns.
+A [A >= VarBegin]                                                                                       x [x==Value_t(0)] cMul ->        [x]
+                                                 A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t(0)] cMul ->        [x] cMul
+B [B >= VarBegin]                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul ->        [x] cMul
+B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul -> A      [x] cMul
+y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul ->        [x] cMul
+A [A >= VarBegin]                                                                                  cMul x [x==Value_t(0)] cMul ->        [x] cMul
+C [C >= VarBegin]                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul ->   A [x] cMul
+C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul -> B A [x] cMul
+y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul ->   A [x] cMul
+
 
 x [x==Value_t(2)] cMul -> cDup cAdd
 IF(FP_FLOAT_VERSION) x [x==GetRadiansToDegreesFactor<Value_t>()] cMul -> cDeg
@@ -95,6 +107,20 @@ IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul
 IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul
 cDup cAdd cDup cAdd -> [Value_t(4)] cMul
 
+cDup cMin ->
+cDup cMax ->
+B [B==A] cDup A [A >= VarBegin] cMin -> B cDup
+B [B==A] cDup A [A >= VarBegin] cMax -> B cDup
+B [B==A] cMin A [A >= VarBegin] cMin -> B cMin
+B [B==A] cMax A [A >= VarBegin] cMax -> B cMax
+
+# x/x = 1. Since we cannot easily replace x with 1
+# without handling all kinds of lengths for lhs,
+# multiply it with 0 instead (this will invoke the
+# operand peeler), and then add 1.
+cDup cDiv              -> [Value_t(0)] cMul [Value_t(1)] cAdd
+# Exactly the same here, with x^0, however cPow is float-only:
+IF(FP_FLOAT_VERSION) x [x==Value_t(0)] cPow -> [Value_t(0)] cMul [Value_t(1)] cAdd
 
 y x cLess		-> [fp_less(y,x)]
 y x cLessOrEq		-> [fp_lessOrEq(y,x)]
@@ -108,25 +134,30 @@ y x cOr			-> [truthValue(x)||truthValue(y)]
 #y x cAbsOr		-> [truthValue_abs(x)||truthValue_abs(y)]
 
 cNeg x cMul		-> [-x] cMul
-cNeg x cDiv		-> [-x] cDiv
 x cMul cNeg		-> [-x] cMul
-x [x==Value_t(-1)] cMul	-> cNeg
+x [x==Value_t(-1)] cMul		-> cNeg
+cNeg x [x!=Value_t(0)] cDiv	-> [-x] cDiv
 
 
 y cAdd x cAdd		-> [y+x] cAdd
-y cSub x cAdd		-> [y-x] cSub
-y cSub x cSub		-> [y+x] cSub
-y cAdd x cSub		-> [y-x] cAdd
 
 IF(FP_FLOAT_VERSION) y [(y*x)==GetRadiansToDegreesFactor<Value_t>()] cMul x cMul -> cDeg
 IF(FP_FLOAT_VERSION) y [(y*x)==GetDegreesToRadiansFactor<Value_t>()] cMul x cMul -> cRad
 y [y*x==Value_t(1)] cMul x cMul ->
 y                   cMul x cMul -> [y*x] cMul
+cDup [x+x==Value_t(1)] cAdd x cMul ->
+cDup                   cAdd x cMul -> [x+x] cMul
+
 IF(FP_FLOAT_VERSION) y [(y/x)==GetRadiansToDegreesFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
 IF(FP_FLOAT_VERSION) y [(y/x)==GetDegreesToRadiansFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
 IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
 
 IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul
+
+# This rule does not speed up evaluation at all, but
+# it greatly simplifies the optimization rule set, when
+# we don't need to check for sequences of an immed and cSub.
+x cSub -> [-x] cAdd
 
 #IF(FP_FLOAT_VERSION) y cExp  x cPow -> [y*x] cExp
 #IF(FP_FLOAT_VERSION) y cExp2 x cPow -> [y*x] cExp2
@@ -139,16 +170,19 @@ IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv
 IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)]     cPow -> cRSqrt
 IF(FP_FLOAT_VERSION) x [x==Value_t(-1)]     cPow -> cInv
 
-IF(FP_FLOAT_VERSION) cLog  cExp  ->
-IF(FP_FLOAT_VERSION) cLog2 cExp2 ->
+IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cLog  cExp  -> A
+IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cLog2 cExp2 -> A
+# ^ Doable only if lhs > 0.
 IF(FP_FLOAT_VERSION) cExp  cLog  ->
 IF(FP_FLOAT_VERSION) cExp2 cLog2 ->
-IF(FP_FLOAT_VERSION) cAsin cSin ->
-IF(FP_FLOAT_VERSION) cAcos cCos ->
-IF(FP_FLOAT_VERSION) cAtan cTan ->
+#IF(FP_FLOAT_VERSION) cAsin cSin ->
+#IF(FP_FLOAT_VERSION) cAcos cCos ->
+# ^ Doable only if abs(x) <= 1
+#IF(FP_FLOAT_VERSION) cAtan cTan ->
 IF(FP_FLOAT_VERSION) cAsinh cSinh ->
 IF(FP_FLOAT_VERSION) cAcosh cCosh ->
-IF(FP_FLOAT_VERSION) cAtanh cTanh ->
+#IF(FP_FLOAT_VERSION) cAtanh cTanh ->
+# ^ Doable only if abs(x) < 1
 IF(FP_FLOAT_VERSION) cAtan2 cTan -> cDiv
 cNeg  cAbs -> cAbs
 cInv  cInv ->
@@ -175,19 +209,12 @@ cSqr x [x==Value_t(0)] cEqual  -> [x] cEqual
 cSqr x [x==Value_t(0)] cNEqual -> [x] cNEqual
 
                      y                 cAdd x A [IsComparisonOpcode(A)] -> [x-y] A
-                     y                 cSub x A [IsComparisonOpcode(A)] -> [x+y] A
                                        cNeg x A [IsComparisonOpcode(A)] -> [-x] {OppositeComparisonOpcode(A)}
 IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] A
 IF(FP_FLOAT_VERSION) y [y<Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] {OppositeComparisonOpcode(A)}
-IF(FP_FLOAT_VERSION) y [y>=Value_t(0)] cDiv x A [IsComparisonOpcode(A)] -> [x*y] A
-IF(FP_FLOAT_VERSION) y [y<Value_t(0)]  cDiv x A [IsComparisonOpcode(A)] -> [x*y] {OppositeComparisonOpcode(A)}
-IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow x [x>Value_t(0)] A [IsComparisonOpcode(A)] -> [fp_pow(x,1/y)] A
-IF(FP_FLOAT_VERSION) cSqr x [x>Value_t(0)] A [IsComparisonOpcode(A)] -> cAbs [fp_sqrt(x)] A
+IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_pow(x,1/y)] A
+IF(FP_FLOAT_VERSION)                   cSqr [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> cAbs [fp_sqrt(x)] A
 
-
-B [B==A] A [A >= VarBegin]                               -> A cDup
-D [D==B] C [C==A] B [B >= VarBegin] A [IsUnaryOpcode(A)] -> D C cDup
-cDup cMul -> cSqr
 
 cNeg  cNot -> cNot
 cAbs  cNot -> cNot
@@ -205,8 +232,10 @@ IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cFloor-> A
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cCeil -> A
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A
 
-IF(FP_FLOAT_VERSION) cFloor cNeg -> cNeg cCeil
-IF(FP_FLOAT_VERSION) cCeil  cNeg -> cNeg cFloor
+#IF(FP_FLOAT_VERSION) x cMul cFloor cNeg -> [-x] cMul cCeil
+#IF(FP_FLOAT_VERSION) x cMul cCeil  cNeg -> [-x] cMul cFloor
+IF(FP_FLOAT_VERSION) cNeg cFloor -> cCeil cNeg
+IF(FP_FLOAT_VERSION) cNeg cCeil  -> cFloor cNeg
 
 IF(FP_FLOAT_VERSION) x cAdd cExp  -> cExp  [fp_exp(x)]     cMul
 IF(FP_FLOAT_VERSION) x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
@@ -229,11 +258,6 @@ IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot
 
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
-
-# Multiplication with zero:
-A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul
-A [A>=VarBegin]      x [x==Value_t(0)] cMul ->   [x]
-A [A>=VarBegin] cMul x [x==Value_t(0)] cMul -> A [x] cMul
 
 IF(FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 IF(FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
@@ -270,12 +294,38 @@ IF(FP_FLOAT_VERSION) cCot cInv -> cTan
 # Hardcoded optimizations that are too complex or
 # impossible to convey using this rule file:
 IF(FP_FLOAT_VERSION) x cPow -> [DO_POWI]
-B [B==A] A [A >= VarBegin] cMul       -> B cSqr
-B [B==A] cMul A [A >= VarBegin] cMul  -> B cSqr cMul
+
+# x*x = x^2
+B [B==A]           A [A >= VarBegin] cMul  -> B cSqr
+
+# ...*x*x = ...*x^2
+B [B==A]      cMul A [A >= VarBegin] cMul  -> B cSqr cMul
+
+# -x*x = -(x^2)
+B [B==A] cNeg      A [A >= VarBegin] cMul  -> B cSqr      cNeg
+
+# ...*-x*x = ...*-(x^2)
+B [B==A] cNeg cMul A [A >= VarBegin] cMul  -> B cSqr cMul cNeg
+
+cNeg cSqr -> cSqr
+cAbs cSqr -> cSqr
+
+B [B==A] A [A >= VarBegin] -> A cDup
+D [D==B] C [C==A]      B [B >= VarBegin] A [IsUnaryOpcode(A)]      -> D C cDup
+D [D==B] C [C==A] cMul B [B >= VarBegin] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul
+cDup cMul -> cSqr
+
 
 IF(FP_FLOAT_VERSION) cExp2	 -> [DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp
 IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(const_e<Value_t>())] cMul
 IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(const_e<Value_t>())] cMul
+
+#    expr0 expr1 cExp cMul cLog
+# -> expr0 cLog expr1 cAdd
+# could be done if expr1 is a var. Too special case. Not doing...
+#    expr0 cLog expr1 cLog
+# -> expr0 expr1 cMul cLog
+# similar.
 
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd

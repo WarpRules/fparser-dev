@@ -1064,6 +1064,38 @@ namespace
         return (op < FUNC_AMOUNT && Functions[op].params == 2);
     }
 
+    bool HasInvalidRangesOpcode(unsigned op)
+    {
+#ifndef FP_NO_EVALUATION_CHECKS
+        // Returns true, if the given opcode has a range of
+        // input values that gives an error.
+        switch(op)
+        {
+            case cAcos: // allowed range: |x| <= 1
+            case cAsin: // allowed range: |x| <= 1
+            case cAcosh: // allowed range: x >= 1
+            case cAtanh: // allowed range: |x| < 1
+            //case cCot: // note: no range, just separate values
+            //case cCsc: // note: no range, just separate values
+            case cLog: // allowed range: x > 0
+            case cLog2: // allowed range: x > 0
+            case cLog10: // allowed range: x > 0
+        #ifdef FP_SUPPORT_OPTIMIZER
+            case cLog2by: // allowed range: x > 0
+        #endif
+            //case cPow: // note: no range, just separate values
+            //case cSec: // note: no range, just separate values
+            case cSqrt: // allowed range: x >= 0
+            case cRSqrt: // allowed range: x > 0
+            //case cDiv: // note: no range, just separate values
+            //case cRDiv: // note: no range, just separate values
+            //case cInv: // note: no range, just separate values
+                return true;
+        }
+#endif
+        return false;
+    }
+
 #ifdef FP_EPSILON
     const double EpsilonOrZero = FP_EPSILON;
 #else
