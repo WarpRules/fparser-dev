@@ -524,7 +524,7 @@ namespace
                         lines[1].swap(streams_wrap_buf[1]);
                         if(!lines[2].empty() && lines[0].size() >= two_columns)
                             lines[2].swap(streams_wrap_buf[2]);
-                        else
+                        else if(lines[0].size() < two_columns)
                             lines[0].resize(two_columns, ' ');
                     }
 

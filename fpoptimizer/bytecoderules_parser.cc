@@ -27,6 +27,10 @@ namespace
         "   file is internally #included by fparser.cc.\n"
         "*/\n";
 
+    std::string trim(const std::string& s);
+
+    const unsigned ShortLabelLength = 3u;
+
     struct Operation
     {
         enum { Opcode, ImmedFunc, OpcodeFunc } type;
@@ -47,6 +51,7 @@ namespace
 
         std::vector<Operation> operations;
         bool has_operations;
+        unsigned defined_on_line;
     };
     struct Node
     {
@@ -57,6 +62,21 @@ namespace
     Node global_head;
     std::set<std::string> PossiblyUnusedLabelList;
     unsigned DefaultLabelCounter;
+
+    std::string trim(const std::string& s)
+    {
+        size_t rm_begin = 0;
+        while(rm_begin < s.size() && s[rm_begin] == ' ') ++rm_begin;
+        size_t rm_end = 0;
+        while(rm_end < s.size()-rm_begin && s[s.size()-1-rm_end] == ' ') ++rm_end;
+        std::string result (s, rm_begin, s.size()-rm_end-rm_begin );
+        do {
+            std::string::size_type spos = result.find(' ');
+            if(spos == result.npos) break;
+            result.erase(spos, 1);
+        } while(true);
+        return result;
+    }
 
     std::string Indent(size_t n)
     {
@@ -186,7 +206,7 @@ namespace
                         out << l << ": ";
                     }
                     else
-                        out << std::string(5, ' ');
+                        out << std::string(ShortLabelLength+2, ' ');
                     //out << " /*" << item.n_uses << "*/ ";
                     out << item.code;
                     if(!item.nextlabel.empty())
@@ -216,11 +236,17 @@ namespace
     private:
         std::string GenLabel(unsigned crc, unsigned len)
         {
+            /* If you get duplicate label errors from the resulting code
+             * and the only thing you have done is add more optimization
+             * rules, just uncomment one of these characters to enable
+             * its use in the label name. If they are all already in use,
+             * you will need to increase the ShortLabellength setting by one.
+             */
             static const char table[] =
                 /*"0123456789"*/
                 /*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/
-                "abcdefghijklmn"
-                /*"opqrstuvwxyz_"*/;
+                "abcdefghijklmnop"
+                /*"qrstuvwxyz_"*/;
             char result[16] = {0};
             int o=15;
             while(true)
@@ -243,10 +269,10 @@ namespace
             std::map<std::string, unsigned>::iterator
                 j = label_trans.lower_bound(orig);
             if(j != label_trans.end() && j->first == orig)
-                return GenLabel(j->second, 3u);
+                return GenLabel(j->second, ShortLabelLength);
             size_t lno = label_trans.size();
             label_trans.insert(j, std::make_pair(orig, lno));
-            return GenLabel(unsigned(lno), 3u);
+            return GenLabel(unsigned(lno), ShortLabelLength);
         }
     private:
         struct ChainItem
@@ -435,13 +461,15 @@ namespace
     bool SynthOperations(
         size_t indent, std::ostream& outstream,
         const std::vector<Match>& so_far,
-        std::vector<Operation> operations,
+        const Match& src_node,
         size_t b_used,
         size_t i_used)
     {
+        std::vector<Operation> operations ( src_node.operations );
+
         outstream
             << Indent(indent)
-            << "FP_TRACE_BYTECODE_OPTIMIZATION(";
+            << "FP_TRACE_BYTECODE_OPTIMIZATION(" << src_node.defined_on_line << ',';
 
         unsigned n_with_lines = 0;
         std::ostringstream trace_with;
@@ -457,9 +485,7 @@ namespace
             if(so_far[a].type == Match::Immed)
                 trace_with << so_far[a].name;
             else
-                trace_with << "(" << so_far[a].name
-                           << " < VarBegin ? FP_GetOpcodeName(OPCODE(" << so_far[a].name
-                           << ")) : \"<var>\")";
+                trace_with << "FP_TRACE_OPCODENAME(" << so_far[a].name << ")";
             ++n_with_lines;
         }
         if(n_with_lines > 0)
@@ -527,9 +553,10 @@ namespace
 
         Synther offset_synth(Out, indent);
 
+        bool changed = false;
         for(size_t a=0; a<operations.size(); ++a)
         {
-            std::string opcode = operations[a].result;
+            std::string opcode = trim(operations[a].result);
 
             if(operations[a].type == Operation::ImmedFunc)
             {
@@ -555,12 +582,14 @@ namespace
                     else
                     {
                         OutLine(Out)  << Iexpr(i_offset-1) << " = " << opcode << ";";
+                        changed = true;
                     }
                 }
                 else
                 {
                     offset_synth.ResetImmed();
                     OutLine(Out)  << "data->Immed.push_back(" << opcode << ");";
+                    changed = true;
                 }
                 //if(requires_var) { Out.Flush(); requires_var = false; }
                 --i_offset;
@@ -568,7 +597,7 @@ namespace
             }
 
             bool redundant = false;
-            if(b_offset > 0)
+            if(b_offset > 0 && (!changed || !HasHandlingFor(opcode)))
             {
                 const Match& m = so_far[b_offset];
                 if(opcode == (m.type == Match::Immed ? "cImmed" : m.name))
@@ -622,6 +651,7 @@ namespace
                     OutLine(Out)  << "AddFunctionOpcode(" << opcode << ");";
                     //if(requires_var) { Out.Flush(); requires_var = false; }
                     i_offset = b_offset = 0;
+                    changed = true;
                 }
             }
             else
@@ -637,12 +667,16 @@ namespace
                             << " @ " << (b_offset);
                     }
                     else
+                    {
                         OutLine(Out)  << Bexpr(b_offset) << " = " << opcode << ";";
+                        changed = true;
+                    }
                 }
                 else
                 {
                     offset_synth.ResetByteCode();
                     OutLine(Out)  << "data->ByteCode.push_back(" << opcode << ");";
+                    changed = true;
                 }
                 if(requires_var) { Out.Flush(); requires_var = false; }
                 --b_offset;
@@ -683,35 +717,86 @@ namespace
                 code << Indent(indent-2) << "PickContinuation:\n";
             }
         #endif
-            code << Indent(indent) << "switch(" << Bexpr(b_used) << ")\n";
-            code << Indent(indent) << "{\n";
-
             bool needs_default_case = false;
+            bool needs_immed_case   = false;
+            std::set<std::string> other_cases;
             for(size_t b=0; b<head.predecessors.size(); ++b)
             {
                 const Node& n = *head.predecessors[b];
                 if(n.opcode.type == Match::AnyOpcode)
-                    { needs_default_case=true; break; }
+                    needs_default_case = true;
+                else if(n.opcode.type == Match::Immed)
+                    needs_immed_case = true;
+                else
+                    other_cases.insert(n.opcode.name);
+            }
+            bool needs_switchcase =
+                (needs_immed_case+needs_default_case+other_cases.size()) > 1;
+
+            if(needs_switchcase)
+            {
+                code << Indent(indent) << "switch(" << Bexpr(b_used) << ")\n";
+                code << Indent(indent) << "{\n";
             }
 
-            for(size_t a=0; a<head.predecessors.size(); ++a)
+            if(!other_cases.empty())
             {
-                const Node& n = *head.predecessors[a];
-                if(n.opcode.type == Match::FixedOpcode)
+                unsigned other_indent = needs_switchcase ? 4 : 2;
+                for(std::set<std::string>::const_iterator
+                    i = other_cases.begin();
+                    i != other_cases.end();
+                    ++i)
                 {
+                    const std::string& op = *i;
+
                 #ifndef USE_CONTINUATIONS
                     if(b_used == 0)
                     {
-                        code << Indent(indent) << "TailCall_" << n.opcode.name << ":\n";
-                        PossiblyUnusedLabelList.insert("TailCall_" + n.opcode.name);
+                        code << Indent(indent) << "TailCall_" << op << ":\n";
+                        PossiblyUnusedLabelList.insert("TailCall_" + op);
                     }
                 #endif
-                    code << Indent(indent) << "  case " << n.opcode.name << ":\n";
-                    //code << Indent(indent) << "  {\n";
-                    std::vector<Match> ref(so_far);
-                    ref.push_back(n.opcode);
-                    bool returned = Generate(n, ref, indent+4, declarations,code, b_used+1, i_used);
-                    //code << Indent(indent) << "  }\n";
+                    if(needs_switchcase)
+                    {
+                        code << Indent(indent) << "  case " << op << ":\n";
+                    }
+                    else
+                    {
+                        code << Indent(indent) << "if(" << Bexpr(b_used) << " == " << op << ")\n"
+                             << Indent(indent) << "{\n";
+                    }
+
+                    bool returned = false;
+
+                    for(int round=0; round<4; ++round)
+                        for(size_t a=0; a<head.predecessors.size(); ++a)
+                        {
+                            const Node& n = *head.predecessors[a];
+                            if(round < 2  && n.opcode.has_operations) continue;
+                            if(round >= 2 && !n.opcode.has_operations) continue;
+                            if((round & 1) != !!n.opcode.condition.empty()) continue;
+
+                            if(n.opcode.type == Match::FixedOpcode
+                            && n.opcode.name == op)
+                            {
+                                //code << Indent(indent) << "  {\n";
+                                std::vector<Match> ref(so_far);
+                                ref.push_back(n.opcode);
+
+                                if(n.opcode.condition.empty())
+                                {
+                                    returned |=
+                                        Generate(n, ref, indent+other_indent, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                }
+                                else
+                                {
+                                    code << Indent(indent+other_indent) << "if(" << n.opcode.condition << ")\n";
+                                    code << Indent(indent+other_indent) << "{\n";
+                                    Generate(n, ref, indent+other_indent+2, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                    code << Indent(indent+other_indent) << "}\n";
+                                }
+                            }
+                        }
                     if(!returned)
                     {
                         if(needs_default_case)
@@ -722,16 +807,18 @@ namespace
                                 tmp << "Default" << DefaultLabelCounter++;
                                 default_label_name = tmp.str();
                             }
-                            code << Indent(indent) << "    goto " << default_label_name << ";\n";
+                            code << Indent(indent+other_indent) << "goto " << default_label_name << ";\n";
                         }
-                        else
+                        else if(needs_switchcase)
                         {
-                            code << Indent(indent) << "    break;\n";
+                            code << Indent(indent+other_indent) << "break;\n";
                         }
                     }
+                    if(!needs_switchcase)
+                        code << Indent(indent) << "}\n";
                 }
             }
-            bool first_immed = true;
+
             std::set<std::string> immed_labels;
             bool immed_returned = false;
             /*
@@ -740,62 +827,80 @@ namespace
               Round 2:  code, has condition,     mode_children | mode_operations
               Round 3:  code, no condition,      mode_children | mode_operations
             */
-            for(int round=0; round<4; ++round)
-                for(size_t a=0; a<head.predecessors.size(); ++a)
+            if(needs_immed_case)
+            {
+                if(needs_switchcase)
                 {
-                    const Node& n = *head.predecessors[a];
-                    if(n.opcode.type == Match::Immed)
+                    code << Indent(indent) << "  case cImmed:\n";
+                }
+                else
+                {
+                    code << Indent(indent) << "if(" << Bexpr(b_used) << " == cImmed)\n"
+                         << Indent(indent) << "{\n";
+                }
+                unsigned imm_indent = needs_switchcase ? 4 : 2;
+
+                for(int round=0; round<4; ++round)
+                    for(size_t a=0; a<head.predecessors.size(); ++a)
                     {
-                        if(round < 2  && n.opcode.has_operations) continue;
-                        if(round >= 2 && !n.opcode.has_operations) continue;
-                        if((round & 1) != !!n.opcode.condition.empty()) continue;
+                        const Node& n = *head.predecessors[a];
+                        if(n.opcode.type == Match::Immed)
+                        {
+                            if(round < 2  && n.opcode.has_operations) continue;
+                            if(round >= 2 && !n.opcode.has_operations) continue;
+                            if((round & 1) != !!n.opcode.condition.empty()) continue;
 
-                        if(first_immed)
-                        {
-                            code << Indent(indent) << "  case cImmed:\n";
-                            first_immed = false;
-                        }
-                        //code << Indent(indent) << "  /* round " << round << " a = " << a << " */\n";
-                        std::set<std::string>::iterator i = immed_labels.lower_bound(n.opcode.name);
-                        if(i == immed_labels.end() || *i != n.opcode.name)
-                        {
-                            if(declared.find(n.opcode.name) == declared.end())
+                            //code << Indent(indent) << "  /* round " << round << " a = " << a << " */\n";
+                            std::set<std::string>::iterator i = immed_labels.lower_bound(n.opcode.name);
+                            if(i == immed_labels.end() || *i != n.opcode.name)
                             {
-                                declared.insert(n.opcode.name);
-                                declarations << Indent(2) << "Value_t " << n.opcode.name << ";\n";
-                            }
+                                if(declared.find(n.opcode.name) == declared.end())
+                                {
+                                    declared.insert(n.opcode.name);
+                                    declarations << Indent(2) << "Value_t " << n.opcode.name << ";\n";
+                                }
 
-                            code << Indent(indent) << "    " << n.opcode.name << " = " << Iexpr(i_used) << ";\n";
-                            immed_labels.insert(i, n.opcode.name);
-                        }
-                        std::vector<Match> ref(so_far);
-                        ref.push_back(n.opcode);
-                        if(n.opcode.condition.empty())
-                            immed_returned =
-                                Generate(n, ref, indent+4, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
-                        else
-                        {
-                            code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
-                            code << Indent(indent) << "    {\n";
-                            Generate(n, ref, indent+6, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
-                            code << Indent(indent) << "    }\n";
+                                code << Indent(indent+imm_indent) << n.opcode.name << " = " << Iexpr(i_used) << ";\n";
+                                immed_labels.insert(i, n.opcode.name);
+                            }
+                            std::vector<Match> ref(so_far);
+                            ref.push_back(n.opcode);
+                            if(n.opcode.condition.empty())
+                                immed_returned =
+                                    Generate(n, ref, indent+imm_indent, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
+                            else
+                            {
+                                code << Indent(indent+imm_indent) << "if(" << n.opcode.condition << ")\n";
+                                code << Indent(indent+imm_indent) << "{\n";
+                                Generate(n, ref, indent+imm_indent+2, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
+                                code << Indent(indent+imm_indent) << "}\n";
+                            }
                         }
                     }
+
+                if(needs_switchcase)
+                {
+                    if(!immed_returned)
+                        code << Indent(indent) << "    break;\n";
                 }
-            if(!first_immed)
-            {
-                if(!immed_returned)
-                    code << Indent(indent) << "    break;\n";
+                else
+                {
+                    code << Indent(indent) << "}\n";
+                }
             }
 
             std::set<std::string> opcode_labels;
 
             if(needs_default_case)
             {
-                code << Indent(indent) << "  default:";
-                if(!default_label_name.empty())
-                    code << " " << default_label_name << ":;";
-                code << "\n";
+                if(needs_switchcase)
+                {
+                    code << Indent(indent) << "  default:";
+                    if(!default_label_name.empty())
+                        code << " " << default_label_name << ":;";
+                    code << "\n";
+                }
+                unsigned default_indent = needs_switchcase ? 4 : 0;
 
                 for(int round=0; round<4; ++round)
                     for(size_t a=0; a<head.predecessors.size(); ++a)
@@ -815,31 +920,34 @@ namespace
                                     declared.insert(n.opcode.name);
                                     declarations << Indent(2) << "unsigned " << n.opcode.name << ";\n";
                                 }
-                                //code << Indent(indent) << "    " << n.opcode.name << " = " << last_op_name << ";\n";
-                                code << Indent(indent) << "    " << n.opcode.name << " = " << Bexpr(b_used) << ";\n";
+                                code << Indent(indent+default_indent) << n.opcode.name << " = " << Bexpr(b_used) << ";\n";
                                 opcode_labels.insert(i, n.opcode.name);
                             }
                             std::vector<Match> ref(so_far);
                             ref.push_back(n.opcode);
                             if(n.opcode.condition.empty())
-                                Generate(n, ref, indent+4, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                Generate(n, ref, indent+default_indent, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                             else
                             {
-                                code << Indent(indent) << "    if(" << n.opcode.condition << ")\n";
-                                code << Indent(indent) << "    {\n";
-                                Generate(n, ref, indent+6, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
-                                code << Indent(indent) << "    }\n";
+                                code << Indent(indent+default_indent) << "if(" << n.opcode.condition << ")\n";
+                                code << Indent(indent+default_indent) << "{\n";
+                                Generate(n, ref, indent+default_indent+2, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                code << Indent(indent+default_indent) << "}\n";
                             }
                         }
                     }
             }
-            code << Indent(indent) << "}\n";
+
+            if(needs_switchcase)
+            {
+                code << Indent(indent) << "}\n";
+            }
         }
         if(head.opcode.has_operations && (mode & mode_operations))
         {
             /*if(!head.predecessors.empty())
                 std::cout << Indent(indent) << "/""* NOTE: POSSIBLY AMBIGIOUS *""/\n";*/
-            if(SynthOperations(indent,code, so_far, head.opcode.operations, b_used, i_used))
+            if(SynthOperations(indent,code, so_far, head.opcode, b_used, i_used))
             {
                 //out << Indent(indent) << "return;\n";
                 // ^ now redundant, as it is done by SynthOperations()
@@ -878,6 +986,40 @@ namespace
         }
     }
 
+    bool isnamech(char c)
+    {
+        return c=='_' || (c>='a' && c<='z') || (c>='A' && c<='Z');
+    }
+
+    void VerifyExpressions(
+        const std::set<std::string>& expressions,
+        const std::set<std::string>& identifiers,
+        unsigned lineno)
+    {
+        for(std::set<std::string>::const_iterator
+            i = expressions.begin();
+            i != expressions.end();
+            ++i)
+        {
+            const std::string& e = *i;
+            for(size_t a=0; a<e.size(); ++a)
+            {
+                if( isnamech(e[a])
+                && !isnamech(e[a+1])
+                && (a==0 || !isnamech(e[a-1])))
+                {
+                    std::string id(e, a, 1);
+                    if(identifiers.find(id) == identifiers.end())
+                    {
+                        std::cerr
+                            << "WARNING: Identifier '" << id
+                            << "' used on line " << lineno
+                            << " is undefined\n";
+                    }
+                }
+            }
+        }
+    }
 
     struct ParsingMode
     {
@@ -887,10 +1029,12 @@ namespace
     };
     void Parse(ParsingMode& mode)
     {
+        unsigned lineno = 0;
         while(true)
         {
             char Buf[2048];
             if(!std::fgets(Buf, sizeof(Buf), stdin)) break;
+            ++lineno;
             char* bufptr = Buf;
             while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
             if(*bufptr == '#' || *bufptr == '\r' || *bufptr == '\n') continue;
@@ -934,6 +1078,9 @@ namespace
                 }
             }
 
+            std::set<std::string> identifiers_defined_here;
+            std::set<std::string> expressions_used_here;
+
             std::vector<Match> sequence;
             while(true)
             {
@@ -942,6 +1089,7 @@ namespace
                 while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
                 if(*bufptr == '-' && bufptr[1] == '>') break;
                 while(isalnum(*bufptr)) m.name += *bufptr++;
+                m.name = trim(m.name);
                 while(*bufptr == ' ' || *bufptr == '\t') ++bufptr;
                 if(*bufptr == '#') break;
                 if(*bufptr == '[')
@@ -955,13 +1103,21 @@ namespace
                         m.condition += *bufptr++;
                     }
                     if(*bufptr == ']') ++bufptr;
+                    m.condition = trim(m.condition);
+                    expressions_used_here.insert(m.condition);
                 }
                 if(m.name[0] == 'c' && m.name.size() > 1)
                     m.type = Match::FixedOpcode;
                 else if(isupper(m.name[0]))
+                {
                     m.type = Match::AnyOpcode;
+                    identifiers_defined_here.insert(m.name);
+                }
                 else
+                {
                     m.type = Match::Immed;
+                    identifiers_defined_here.insert(m.name);
+                }
 
                 sequence.push_back(m);
             }
@@ -991,7 +1147,14 @@ namespace
 
             if(*bufptr == '-' && bufptr[1] == '>')
             {
+                if(head->opcode.has_operations)
+                {
+                    std::cerr << "WARNING: Duplicate definition on line " << lineno
+                              << ", previously defined on line " << head->opcode.defined_on_line
+                              << std::endl;
+                }
                 head->opcode.has_operations = true;
+                head->opcode.defined_on_line = lineno;
                 bufptr += 2;
 
                 while(true)
@@ -1011,6 +1174,7 @@ namespace
                         }
                         if(*bufptr == ']') ++bufptr;
                         op.type = Operation::ImmedFunc;
+                        expressions_used_here.insert(op.result);
                     }
                     else if(*bufptr == '{')
                     {
@@ -1024,6 +1188,7 @@ namespace
                         }
                         if(*bufptr == '}') ++bufptr;
                         op.type = Operation::OpcodeFunc;
+                        expressions_used_here.insert(op.result);
                     }
                     else
                     {
@@ -1034,6 +1199,10 @@ namespace
                     head->opcode.operations.push_back(op);
                 }
             }
+
+            VerifyExpressions(expressions_used_here,
+                              identifiers_defined_here,
+                              lineno);
         }
     }
 }
@@ -1055,18 +1224,27 @@ int main()
     out <<
         kOutputCommentBlock << "\n";
     out <<
-        "#define FP_TRACE_BYTECODE_OPTIMIZATION(from,to,with) \\\n"
-        "    /*std::cout << \"Changing \\\"\" from \"\\\"\\n\" \\\n"
+        "#define FP_TRACE_OPCODENAME(op) \\\n"
+        "    (op < VarBegin \\\n"
+        "        ? FP_GetOpcodeName(OPCODE(op)) \\\n"
+        "        : findName(data->namePtrs,op,NameData<Value_t>::VARIABLE))\n"
+        "#define FP_TRACE_BYTECODE_OPTIMIZATION(srcline,from,to,with) \\\n"
+        "    /*std::cout << \"Changing \\\"\" from \"\\\"\\t(line \" #srcline \")\\n\" \\\n"
         "                   \"    into \\\"\" to \"\\\"\\n\" with*/"
         "\n\n"
     //  "template<typename Value_t>\n"
     //  "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
     //  "{\n"
+        "  static unsigned DummyOpList[1] = {cNop};\n"
+        "  /* DummyOpList is needed to prevent crash when 1+x\n"
+        "   * is changed into x+1 and the bytecode containing just \"x\"\n"
+        "   * is tested against the rule which changes \"x x\" into \"x cDup\".\n"
+        "   */\n"
         "  unsigned* ByteCodePtr;\n"
         "  Value_t*   ImmedPtr;\n"
         "\n"
         "  #define FP_ReDefinePointers() \\\n"
-        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
+        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : &DummyOpList[0]; \\\n"
         "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
         "  FP_ReDefinePointers();\n";
 
@@ -1117,7 +1295,8 @@ int main()
         "\n"
         "#undef FP_ReDefinePointers\n"
     //  "}\n"
-        "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
+        "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n"
+        "#undef FP_TRACE_OPCODENAME\n";
 
     return 0;
 }

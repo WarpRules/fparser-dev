@@ -85,8 +85,6 @@ IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
 x cNot			-> [!truthValue(x)]
 
 
-A [A >= VarBegin] x [x==Value_t(0)] cMul -> [x]
-
 x [x==Value_t(2)] cMul -> cDup cAdd
 IF(FP_FLOAT_VERSION) x [x==GetRadiansToDegreesFactor<Value_t>()] cMul -> cDeg
 IF(FP_FLOAT_VERSION) x [x==GetDegreesToRadiansFactor<Value_t>()] cMul -> cRad
@@ -218,10 +216,10 @@ IF(FP_FLOAT_VERSION) x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
 
 IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cEqual  -> cNot
 IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cNEqual -> cNotNot
-IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(0)] cGreater     -> cNotNot
-IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(1)] cGreaterOrEq -> cNotNot
-IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(1)] cLess     -> cNot
-IF(!FP_FLOAT_VERSION) cAbs [x==Value_t(0)] cLessOrEq -> cNot
+IF(!FP_FLOAT_VERSION) cAbs x [x==Value_t(0)] cGreater     -> cNotNot
+IF(!FP_FLOAT_VERSION) cAbs x [x==Value_t(1)] cGreaterOrEq -> cNotNot
+IF(!FP_FLOAT_VERSION) cAbs x [x==Value_t(1)] cLess     -> cNot
+IF(!FP_FLOAT_VERSION) cAbs x [x==Value_t(0)] cLessOrEq -> cNot
 IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cGreater     -> A cNotNot
 IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cGreaterOrEq -> A cNotNot
 IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cLess     -> A cNot
