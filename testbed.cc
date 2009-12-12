@@ -650,6 +650,13 @@ double f58(const double* p)
     return P58Code;
 }
 
+double f59(const double* p)
+{
+#define P59 "cosh(x^2) + tanh(y^2)", "x,y", f59, 2, -2.0, 2.0, .12, false
+    const double x = p[0], y = p[1];
+    return cosh(x*x) + tanh(y*y);
+}
+
 namespace
 {
     FloatingPointTest floatingPointTests[] =
@@ -664,7 +671,7 @@ namespace
         { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
         { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
         { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 },
-        { P55 }, { P56 }, { P57 }, { P58 }
+        { P55 }, { P56 }, { P57 }, { P58 }, { P59 }
     };
 
     const unsigned floatingPointTestsAmount =
