@@ -247,7 +247,7 @@ namespace FPoptimizer_CodeTree
                     else // min, no max
                     {
                         if(m.min >= 0.0) // 0..inf -> 1..inf
-                            { m.has_max = true; m.max = cosh(m.min); m.min = 1.0; }
+                            { m.has_max = false; m.min = cosh(m.min); }
                         else
                             { m.has_max = false; m.min = 1.0; } // Anything between 1..inf
                     }
