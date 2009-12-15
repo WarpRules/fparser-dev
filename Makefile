@@ -96,12 +96,12 @@ RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
 	fparser.html style.css
 
 testbed: testbed.o $(FP_MODULES)
-	$(LD) -o $@ $^ $(LDFLAGS)
+	$(LD) -o $@ $^ $(LDFLAGS) -lboost_thread-mt
 
 fpoptimizer.o: fpoptimizer.cc
 
 testbed_release: testbed.o fparser.o fpoptimizer.o mpfr/MpfrFloat.o mpfr/GmpInt.o
-	$(LD) -o $@ $^ $(LDFLAGS)
+	$(LD) -o $@ $^ $(LDFLAGS) -lboost_thread-mt
 
 speedtest: speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)

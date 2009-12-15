@@ -1508,10 +1508,10 @@ goto TailCall_cOr;goto TailCall_cSub;
       if(ByteCodePtr[0] == cImmed)
       {
         x = ImmedPtr[0];
-        if(x>=Value_t(-1))
+        if(x>=Value_t(1))
         {
           FP_TRACE_BYTECODE_OPTIMIZATION(41,
-            "x[x>=Value_t(-1)] cAcosh",
+            "x[x>=Value_t(1)] cAcosh",
             "[fp_acosh(x)]",
             "    with x = " << x << "\n");
           /* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1

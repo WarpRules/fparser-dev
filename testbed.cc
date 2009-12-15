@@ -1876,6 +1876,106 @@ bool testUserDefinedFunctions()
 
 
 //=========================================================================
+// Multithreaded test
+//=========================================================================
+#if defined(FP_USE_THREAD_SAFE_EVAL) || defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+#include <boost/thread.hpp>
+
+class TestingThread
+{
+    int mThreadNumber;
+    FunctionParser* mFp;
+    volatile static bool mOk;
+
+    static double function(const double* vars)
+    {
+        const double x = vars[0], y = vars[1];
+        return sin(sqrt(x*x+y*y)) + 2*cos(2*sqrt(2*x*x+2*y*y));
+    }
+
+ public:
+    TestingThread(int n, FunctionParser* fp):
+        mThreadNumber(n), mFp(fp)
+    {}
+
+    static bool ok() { return mOk; }
+
+    void operator()()
+    {
+        double vars[2];
+        for(vars[0] = -10.0; vars[0] <= 10.0; vars[0] += 0.02)
+        {
+            for(vars[1] = -10.0; vars[1] <= 10.0; vars[1] += 0.02)
+            {
+                if(!mOk) return;
+
+                const double v1 = function(vars);
+                const double v2 = mFp->Eval(vars);
+                const double scale = pow(10.0, floor(log10(fabs(v1))));
+                const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
+                const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+                const double diff = sv2-sv1;
+
+                if(fabs(diff) > 1e-6)
+                {
+                    mOk = false;
+                    std::cout << "\nThread " << mThreadNumber
+                              << " failed ([" << vars[0] << "," << vars[1]
+                              << "] -> " << v2 << " vs. " << v1 << ")"
+                              << std::endl;
+                    return;
+                }
+            }
+        }
+    }
+};
+
+volatile bool TestingThread::mOk = true;
+
+bool testMultithreadedEvaluation()
+{
+    std::cout << "- Testing multithreaded evaluation... 1" << std::flush;
+
+    FunctionParser fp;
+    fp.Parse("sin(sqrt(x*x+y*y)) + 2*cos(2*sqrt(2*x*x+2*y*y))", "x,y");
+
+    boost::thread t1(TestingThread(1, &fp)), t2(TestingThread(2, &fp));
+    t1.join();
+    t2.join();
+    if(!TestingThread::ok()) return false;
+
+    std::cout << " 2" << std::flush;
+    boost::thread
+        t3(TestingThread(3, &fp)), t4(TestingThread(4, &fp)),
+        t5(TestingThread(5, &fp)), t6(TestingThread(6, &fp));
+    t3.join();
+    t4.join();
+    t5.join();
+    t6.join();
+    if(!TestingThread::ok()) return false;
+
+    std::cout << " 3" << std::flush;
+    fp.Optimize();
+    boost::thread
+        t7(TestingThread(7, &fp)), t8(TestingThread(8, &fp)),
+        t9(TestingThread(9, &fp));
+    t7.join();
+    t8.join();
+    t9.join();
+    if(!TestingThread::ok()) return false;
+
+    std::cout << std::endl;
+    return true;
+}
+
+#else
+
+bool testMultithreadedEvaluation() { return true; }
+
+#endif
+
+
+//=========================================================================
 // Main test function
 //=========================================================================
 template<typename Value_t>
@@ -2393,7 +2493,7 @@ int main(int argc, char* argv[])
     // -----------
     if(!TestCopying() || !TestErrorSituations() || !WhiteSpaceTest() ||
        !TestIntPow() || (runUTF8Test && !UTF8Test()) || !TestIdentifiers() ||
-       !testUserDefinedFunctions())
+       !testUserDefinedFunctions() || !testMultithreadedEvaluation())
         return 1;
 
     std::cout << "==================================================\n"
