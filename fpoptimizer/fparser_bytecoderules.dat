@@ -170,6 +170,8 @@ IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv
 IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)]     cPow -> cRSqrt
 IF(FP_FLOAT_VERSION) x [x==Value_t(-1)]     cPow -> cInv
 
+IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cSqrt cSqr  -> A
+# ^ Doable only if lhs > 0.
 IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cLog  cExp  -> A
 IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cLog2 cExp2 -> A
 # ^ Doable only if lhs > 0.
@@ -240,8 +242,9 @@ IF(FP_FLOAT_VERSION) cNeg cCeil  -> cFloor cNeg
 IF(FP_FLOAT_VERSION) x cAdd cExp  -> cExp  [fp_exp(x)]     cMul
 IF(FP_FLOAT_VERSION) x cAdd cExp2 -> cExp2 [fp_exp2(x)] cMul
 
-IF(FP_FLOAT_VERSION) x cMul cExp  cDiv -> [-x] cMul cExp  cMul
-IF(FP_FLOAT_VERSION) x cMul cExp2 cDiv -> [-x] cMul cExp2 cMul
+IF(FP_FLOAT_VERSION) cPow  cDiv -> cNeg cPow  cMul
+IF(FP_FLOAT_VERSION) cExp  cDiv -> cNeg cExp  cMul
+IF(FP_FLOAT_VERSION) cExp2 cDiv -> cNeg cExp2 cMul
 
 IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cEqual  -> cNot
 IF(!FP_FLOAT_VERSION) x [x==Value_t(0)] cNEqual -> cNotNot
@@ -304,13 +307,19 @@ B [B==A]      cMul A [A >= VarBegin] cMul  -> B cSqr cMul
 # -x*x = -(x^2)
 B [B==A] cNeg      A [A >= VarBegin] cMul  -> B cSqr      cNeg
 
+# x*-x = -(x^2)
+B [B==A]      A [A >= VarBegin] cNeg cMul  -> B cSqr      cNeg
+
 # ...*-x*x = ...*-(x^2)
 B [B==A] cNeg cMul A [A >= VarBegin] cMul  -> B cSqr cMul cNeg
+
+# ...*x*-x = ...*-(x^2)
+B [B==A] cMul A [A >= VarBegin] cNeg cMul  -> B cSqr cMul cNeg
 
 cNeg cSqr -> cSqr
 cAbs cSqr -> cSqr
 
-B [B==A] A [A >= VarBegin] -> A cDup
+B [B==A] A [A >= VarBegin] -> B cDup
 D [D==B] C [C==A]      B [B >= VarBegin] A [IsUnaryOpcode(A)]      -> D C cDup
 D [D==B] C [C==A] cMul B [B >= VarBegin] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul
 cDup cMul -> cSqr
