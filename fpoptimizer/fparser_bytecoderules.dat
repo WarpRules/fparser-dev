@@ -196,7 +196,7 @@ cInv cMul -> cDiv
 cNeg cAdd -> cSub
 cNeg cSub -> cAdd
 
-IF(FP_FLOAT_VERSION) x [x<0] cPow cMul -> [-x] cPow cDiv
+#IF(FP_FLOAT_VERSION) x [x<0] cPow cMul -> [-x] cPow cDiv
 
 cLess        cNot -> cGreaterOrEq
 cLessOrEq    cNot -> cGreater
