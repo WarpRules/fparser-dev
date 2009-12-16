@@ -78,9 +78,9 @@ namespace
         return result;
     }
 
-    std::string Indent(size_t n)
+    std::string Indent(size_t ntabs, size_t nspaces=0)
     {
-        return std::string(n, ' ');
+        return std::string(ntabs, '\t') + std::string(nspaces, ' ');
     }
 
     std::string Bexpr(size_t pos)
@@ -478,9 +478,9 @@ namespace
             if(so_far[a].type != Match::Immed
             && so_far[a].type != Match::AnyOpcode) continue;
             if(n_with_lines == 0)
-                trace_with << ",\n" << Indent(indent+2) << "\"    with ";
+                trace_with << ",\n" << Indent(indent+1) << "\"    with ";
             else
-                trace_with << "\n" << Indent(indent+6) << "<< \", ";
+                trace_with << "\n" << Indent(indent+1,4) << "<< \", ";
             trace_with << so_far[a].name << " = \" << ";
             if(so_far[a].type == Match::Immed)
                 trace_with << so_far[a].name;
@@ -489,7 +489,7 @@ namespace
             ++n_with_lines;
         }
         if(n_with_lines > 0)
-            outstream << "\n" << Indent(indent+2);
+            outstream << "\n" << Indent(indent+1);
 
         outstream << '"';
         for(size_t a=so_far.size(); a-- > 0; )
@@ -500,7 +500,7 @@ namespace
                 outstream << '[' << so_far[a].condition << ']';
         }
         if(n_with_lines > 0)
-            outstream << "\",\n" << Indent(indent+2) << "\"";
+            outstream << "\",\n" << Indent(indent+1) << "\"";
         else
             outstream << "\", \"";
         for(size_t a=0; a<operations.size(); ++a)
@@ -524,7 +524,7 @@ namespace
         else if(n_with_lines == 1)
             trace_with << " << \"\\n\"";
         else
-            trace_with << "\n" << Indent(indent+6) << "<< \"\\n\"";
+            trace_with << "\n" << Indent(indent+1,4) << "<< \"\\n\"";
         outstream << trace_with.str();
         outstream << ");\n";
 
@@ -630,7 +630,14 @@ namespace
                     }
                     else
                     {
+                    #if 0
+                        OutLine(Out) 
+                            << "/* opcode = " << operations.back().result << "; */"
+                            << " // redundant, not really needed with tailcalls";
+                        // Yes, it's needed due to Default-gotos
+                    #else
                         OutLine(Out)  << "opcode = " << operations.back().result << ";";
+                    #endif
                     }
 
                     if(offset_synth.KnowOffsets())
@@ -714,7 +721,7 @@ namespace
         #ifdef USE_CONTINUATIONS
             if(b_used == 0)
             {
-                code << Indent(indent-2) << "PickContinuation:\n";
+                code << Indent(indent-1,2) << "PickContinuation:\n";
             }
         #endif
             bool needs_default_case = false;
@@ -741,7 +748,8 @@ namespace
 
             if(!other_cases.empty())
             {
-                unsigned other_indent = needs_switchcase ? 4 : 2;
+                unsigned other_indent = needs_switchcase ? 1 : 1;
+
                 for(std::set<std::string>::const_iterator
                     i = other_cases.begin();
                     i != other_cases.end();
@@ -758,7 +766,7 @@ namespace
                 #endif
                     if(needs_switchcase)
                     {
-                        code << Indent(indent) << "  case " << op << ":\n";
+                        code << Indent(indent) << "case " << op << ":\n";
                     }
                     else
                     {
@@ -792,7 +800,7 @@ namespace
                                 {
                                     code << Indent(indent+other_indent) << "if(" << n.opcode.condition << ")\n";
                                     code << Indent(indent+other_indent) << "{\n";
-                                    Generate(n, ref, indent+other_indent+2, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                    Generate(n, ref, indent+other_indent+1, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                                     code << Indent(indent+other_indent) << "}\n";
                                 }
                             }
@@ -831,14 +839,14 @@ namespace
             {
                 if(needs_switchcase)
                 {
-                    code << Indent(indent) << "  case cImmed:\n";
+                    code << Indent(indent) << "case cImmed:\n";
                 }
                 else
                 {
                     code << Indent(indent) << "if(" << Bexpr(b_used) << " == cImmed)\n"
                          << Indent(indent) << "{\n";
                 }
-                unsigned imm_indent = needs_switchcase ? 4 : 2;
+                unsigned imm_indent = needs_switchcase ? 1 : 1;
 
                 for(int round=0; round<4; ++round)
                     for(size_t a=0; a<head.predecessors.size(); ++a)
@@ -857,7 +865,7 @@ namespace
                                 if(declared.find(n.opcode.name) == declared.end())
                                 {
                                     declared.insert(n.opcode.name);
-                                    declarations << Indent(2) << "Value_t " << n.opcode.name << ";\n";
+                                    declarations << Indent(1) << "Value_t " << n.opcode.name << ";\n";
                                 }
 
                                 code << Indent(indent+imm_indent) << n.opcode.name << " = " << Iexpr(i_used) << ";\n";
@@ -872,7 +880,7 @@ namespace
                             {
                                 code << Indent(indent+imm_indent) << "if(" << n.opcode.condition << ")\n";
                                 code << Indent(indent+imm_indent) << "{\n";
-                                Generate(n, ref, indent+imm_indent+2, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
+                                Generate(n, ref, indent+imm_indent+1, declarations,code, b_used+1, i_used+1, mode_children|(round>=2?mode_operations:0));
                                 code << Indent(indent+imm_indent) << "}\n";
                             }
                         }
@@ -881,7 +889,7 @@ namespace
                 if(needs_switchcase)
                 {
                     if(!immed_returned)
-                        code << Indent(indent) << "    break;\n";
+                        code << Indent(indent+imm_indent) << "break;\n";
                 }
                 else
                 {
@@ -895,12 +903,12 @@ namespace
             {
                 if(needs_switchcase)
                 {
-                    code << Indent(indent) << "  default:";
+                    code << Indent(indent) << "default:";
                     if(!default_label_name.empty())
                         code << " " << default_label_name << ":;";
                     code << "\n";
                 }
-                unsigned default_indent = needs_switchcase ? 4 : 0;
+                unsigned default_indent = needs_switchcase ? 1 : 0;
 
                 for(int round=0; round<4; ++round)
                     for(size_t a=0; a<head.predecessors.size(); ++a)
@@ -918,7 +926,7 @@ namespace
                                 if(declared.find(n.opcode.name) == declared.end())
                                 {
                                     declared.insert(n.opcode.name);
-                                    declarations << Indent(2) << "unsigned " << n.opcode.name << ";\n";
+                                    declarations << Indent(1) << "unsigned " << n.opcode.name << ";\n";
                                 }
                                 code << Indent(indent+default_indent) << n.opcode.name << " = " << Bexpr(b_used) << ";\n";
                                 opcode_labels.insert(i, n.opcode.name);
@@ -931,7 +939,7 @@ namespace
                             {
                                 code << Indent(indent+default_indent) << "if(" << n.opcode.condition << ")\n";
                                 code << Indent(indent+default_indent) << "{\n";
-                                Generate(n, ref, indent+default_indent+2, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
+                                Generate(n, ref, indent+default_indent+1, declarations,code, b_used+1, i_used, mode_children|(round>=2?mode_operations:0));
                                 code << Indent(indent+default_indent) << "}\n";
                             }
                         }
@@ -961,11 +969,11 @@ namespace
     {
         std::ostringstream code;
         std::ostream& declarations = out;
-        Generate(global_head, std::vector<Match>(), 2, declarations,code, 0,0);
+        Generate(global_head, std::vector<Match>(), 1, declarations,code, 0,0);
         out << code.str();
 
-        { OutCode Out(out, 2);
-          Synther(Out, 2).ResetBoth(0,0);
+        { OutCode Out(out, 1);
+          Synther(Out, 1).ResetBoth(0,0);
           OutLine(Out) << "data->ByteCode.push_back(opcode);";
         }
         CodeSeq.Flush(out);
