@@ -1584,14 +1584,14 @@ namespace FPoptimizer_CodeTree
             { RangeComparisonData::MakeFalse,  // If identical: always false
               {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
                RangeComparisonData::MakeNEqual,
-               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeFalse, // If Always p0 > p1: always false
                RangeComparisonData::MakeFalse} // If Always p0 >= p1: always false
             },
             // cLessOrEq:
             // Case:      p0 <= p1  Antonym: p0 > p1
             // Synonym:   p1 >= p0  Antonym: p1 < p0
             { RangeComparisonData::MakeTrue,   // If identical: always true
-              {RangeComparisonData::Unchanged,
+              {RangeComparisonData::Unchanged, // If Always p0  < p1: ?
                RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
                RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
                RangeComparisonData::MakeEqual} // If Never  p0  < p1:  use cEqual
@@ -1600,7 +1600,7 @@ namespace FPoptimizer_CodeTree
             // Case:      p0 >  p1  Antonym: p0 <= p1
             // Synonym:   p1 <  p0  Antonym: p1 >= p0
             { RangeComparisonData::MakeFalse,  // If identical: always false
-              {RangeComparisonData::Unchanged,
+              {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
                RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
                RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
                RangeComparisonData::MakeNEqual}
@@ -1611,7 +1611,7 @@ namespace FPoptimizer_CodeTree
             { RangeComparisonData::MakeTrue,   // If identical: always true
               {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
                RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
-               RangeComparisonData::Unchanged,
+               RangeComparisonData::Unchanged, // If always p0  > p1: ?
                RangeComparisonData::MakeTrue}  // If Never  p0  > p1:  use cEqual
             }
         };
