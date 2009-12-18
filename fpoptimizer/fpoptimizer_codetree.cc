@@ -70,19 +70,19 @@ namespace FPoptimizer_CodeTree
                 std::sort(Params.begin(), Params.end(), ParamComparer());
                 break;
             case cLess:
-                //if(ParamComparer() (Params[1], Params[0]))
-                //    { std::swap(Params[0], Params[1]); Opcode = cGreater; }
+                if(ParamComparer() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cGreater; }
                 break;
             case cLessOrEq:
-                //if(ParamComparer() (Params[1], Params[0]))
-                //    { std::swap(Params[0], Params[1]); Opcode = cGreaterOrEq; }
+                if(ParamComparer() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cGreaterOrEq; }
                 break;
             case cGreater:
-                //if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLess; }
                 break;
             case cGreaterOrEq:
-                //if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLessOrEq; }
                 break;
             default:

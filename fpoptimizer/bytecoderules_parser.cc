@@ -535,13 +535,6 @@ namespace
                 << Indent(indent) << "  return;\n";
             return false;
         }
-        if(!operations.empty() && operations[0].result == "DO_STACKPLUS1")
-        {
-            outstream
-                << Indent(indent) << "incStackPtr();\n"
-                << Indent(indent) << "--StackPtr;\n";
-            operations.erase(operations.begin());
-        }
 
         OutCode Out(outstream, indent);
 
@@ -557,6 +550,13 @@ namespace
         for(size_t a=0; a<operations.size(); ++a)
         {
             std::string opcode = trim(operations[a].result);
+            if(opcode == "DO_STACKPLUS1")
+            {
+                outstream
+                    << Indent(indent) << "incStackPtr();\n"
+                    << Indent(indent) << "--StackPtr;\n";
+                continue;
+            }
 
             if(operations[a].type == Operation::ImmedFunc)
             {
@@ -631,7 +631,7 @@ namespace
                     else
                     {
                     #if 0
-                        OutLine(Out) 
+                        OutLine(Out)
                             << "/* opcode = " << operations.back().result << "; */"
                             << " // redundant, not really needed with tailcalls";
                         // Yes, it's needed due to Default-gotos

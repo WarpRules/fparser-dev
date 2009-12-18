@@ -467,10 +467,31 @@ namespace
 
     struct RangeComparisonData
     {
-        enum Decision { MakeFalse=0, MakeTrue=1, MakeNEqual=2, MakeEqual=3, Unchanged=4 };
-
+        enum Decision
+        {
+            MakeFalse=0,
+            MakeTrue=1,
+            MakeNEqual=2,
+            MakeEqual=3,
+            MakeNotNotP0=4,
+            MakeNotNotP1=5,
+            MakeNotP0=6,
+            MakeNotP1=7,
+            Unchanged=8
+        };
+        enum WhatDoWhenCase
+        {
+            Never =0,
+            Eq0   =1, // val==0
+            Eq1   =2, // val==1
+            Gt0Le1=3, // val>0 && val<=1
+            Ge0Lt1=4  // val>=0 && val<1
+        };
         Decision if_identical; // What to do when operands are identical
         Decision if_always[4]; // What to do if Always <, <=, >, >=
+        struct { Decision what : 4; WhatDoWhenCase when : 4; }
+            p0_logical_a, p1_logical_a,
+            p0_logical_b, p1_logical_b;
 
         Decision Analyze(const CodeTree& a, const CodeTree& b) const
         {
@@ -481,19 +502,47 @@ namespace
             MinMaxTree p1 = b.CalculateResultBoundaries();
             if(p0.has_max && p1.has_min)
             {
-                if(p0.max <  p1.min)// && if_always[0] != Unchanged)
+                if(p0.max <  p1.min && if_always[0] != Unchanged)
                     return if_always[0]; // p0 < p1
-                if(p0.max <= p1.min)// && if_always[1] != Unchanged)
+                if(p0.max <= p1.min && if_always[1] != Unchanged)
                     return if_always[1]; // p0 <= p1
             }
             if(p0.has_min && p1.has_max)
             {
-                if(p0.min >  p1.max)// && if_always[2] != Unchanged)
+                if(p0.min >  p1.max && if_always[2] != Unchanged)
                     return if_always[2]; // p0 > p1
-                if(p0.min >= p1.max)// && if_always[3] != Unchanged)
+                if(p0.min >= p1.max && if_always[3] != Unchanged)
                     return if_always[3]; // p0 >= p1
             }
+
+            if(a.IsLogicalValue())
+            {
+                if(p0_logical_a.what != Unchanged)
+                    if(TestCase(p0_logical_a.when, p1)) return p0_logical_a.what;
+                if(p0_logical_b.what != Unchanged)
+                    if(TestCase(p0_logical_b.when, p1)) return p0_logical_b.what;
+            }
+            if(b.IsLogicalValue())
+            {
+                if(p1_logical_a.what != Unchanged)
+                    if(TestCase(p1_logical_a.when, p0)) return p1_logical_a.what;
+                if(p1_logical_b.what != Unchanged)
+                    if(TestCase(p1_logical_b.when, p0)) return p1_logical_b.what;
+            }
             return Unchanged;
+        }
+        static bool TestCase(WhatDoWhenCase when, const MinMaxTree& p)
+        {
+            if(!p.has_min || !p.has_max) return false;
+            switch(when)
+            {
+                case Eq0: return p.min==0.0 && p.max==p.min;
+                case Eq1: return p.min==1.0 && p.max==p.max;
+                case Gt0Le1: return p.min>0 && p.max<=1;
+                case Ge0Lt1: return p.min>=0 && p.max<1;
+                default:;
+            }
+            return false;
         }
     };
 
@@ -1556,7 +1605,7 @@ namespace FPoptimizer_CodeTree
         return false; // No changes that require a rerun
     }
 
-    void CodeTree::ConstantFolding_ComparisonOperations()
+    bool CodeTree::ConstantFolding_ComparisonOperations()
     {
         static const RangeComparisonData Data[6] =
         {
@@ -1567,7 +1616,13 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::MakeFalse,  // If Always p0 < p1: always false
                RangeComparisonData::Unchanged,
                RangeComparisonData::MakeFalse,  // If Always p0 > p1: always false
-               RangeComparisonData::Unchanged}
+               RangeComparisonData::Unchanged},
+             // NotNot(p0) if p1==1    NotNot(p1) if p0==1
+             //    Not(p0) if p1==0       Not(p1) if p0==0
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotP0, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotP1, RangeComparisonData::Eq0}
             },
             // cNEqual:
             // Case:      p0 != p1  Antonym: p0 == p1
@@ -1576,7 +1631,13 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::MakeTrue,  // If Always p0 < p1: always true
                RangeComparisonData::Unchanged,
                RangeComparisonData::MakeTrue,  // If Always p0 > p1: always true
-               RangeComparisonData::Unchanged}
+               RangeComparisonData::Unchanged},
+             // NotNot(p0) if p1==0    NotNot(p1) if p0==0
+             //    Not(p0) if p1==1       Not(p1) if p0==1
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotP0, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotP1, RangeComparisonData::Eq1}
             },
             // cLess:
             // Case:      p0 < p1   Antonym: p0 >= p1
@@ -1585,7 +1646,12 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
                RangeComparisonData::MakeNEqual,
                RangeComparisonData::MakeFalse, // If Always p0 > p1: always false
-               RangeComparisonData::MakeFalse} // If Always p0 >= p1: always false
+               RangeComparisonData::MakeFalse},// If Always p0 >= p1: always false
+             // Not(p0)   if p1>0 & p1<=1    --   NotNot(p1) if p0>=0 & p0<1
+              {RangeComparisonData::MakeNotP0,    RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cLessOrEq:
             // Case:      p0 <= p1  Antonym: p0 > p1
@@ -1594,7 +1660,12 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::Unchanged, // If Always p0  < p1: ?
                RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
                RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
-               RangeComparisonData::MakeEqual} // If Never  p0  < p1:  use cEqual
+               RangeComparisonData::MakeEqual},// If Never  p0  < p1:  use cEqual
+             // Not(p0)    if p1>=0 & p1<1   --   NotNot(p1) if p0>0 & p0<=1
+              {RangeComparisonData::MakeNotP0,    RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cGreater:
             // Case:      p0 >  p1  Antonym: p0 <= p1
@@ -1603,7 +1674,12 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
                RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
                RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
-               RangeComparisonData::MakeNEqual}
+               RangeComparisonData::MakeNEqual},
+             // NotNot(p0) if p1>=0 & p1<1   --   Not(p1)   if p0>0 & p0<=1
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::MakeNotP1,    RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cGreaterOrEq:
             // Case:      p0 >= p1  Antonym: p0 < p1
@@ -1612,19 +1688,29 @@ namespace FPoptimizer_CodeTree
               {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
                RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
                RangeComparisonData::Unchanged, // If always p0  > p1: ?
-               RangeComparisonData::MakeTrue}  // If Never  p0  > p1:  use cEqual
+               RangeComparisonData::MakeTrue}, // If Never  p0  > p1:  use cEqual
+             // NotNot(p0) if p1>0 & p1<=1   --   Not(p1)    if p0>=0 & p0<1
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::MakeNotP1,    RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             }
         };
         switch(Data[GetOpcode()-cEqual].Analyze(GetParam(0), GetParam(1)))
         {
             case RangeComparisonData::MakeFalse:
-                data = new CodeTreeData(0.0); break;
+                data = new CodeTreeData(0.0); return true;
             case RangeComparisonData::MakeTrue:
-                data = new CodeTreeData(1.0); break;
-            case RangeComparisonData::MakeEqual:  SetOpcode(cEqual); break;
-            case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); break;
+                data = new CodeTreeData(1.0); return true;
+            case RangeComparisonData::MakeEqual:  SetOpcode(cEqual); return true;
+            case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); return true;
+            case RangeComparisonData::MakeNotNotP0: SetOpcode(cNotNot); DelParam(1); return true;
+            case RangeComparisonData::MakeNotNotP1: SetOpcode(cNotNot); DelParam(0); return true;
+            case RangeComparisonData::MakeNotP0: SetOpcode(cNot); DelParam(1); return true;
+            case RangeComparisonData::MakeNotP1: SetOpcode(cNot); DelParam(0); return true;
             case RangeComparisonData::Unchanged:;
         }
+        return false;
     }
 
     bool CodeTree::ConstantFolding_Assimilate()
@@ -2092,7 +2178,68 @@ namespace FPoptimizer_CodeTree
             case cGreater:
             case cLessOrEq:
             case cGreaterOrEq:
-                ConstantFolding_ComparisonOperations();
+                if(ConstantFolding_ComparisonOperations()) goto redo;
+                // Any reversible functions:
+                //   sin(x)  -> ASIN: Not doable, x can be cyclic
+                //   asin(x) -> SIN: doable.
+                //                   Invalid combinations are caught by
+                //                   range-estimation. Threshold is at |pi/2|.
+                //   acos(x) -> COS: doable.
+                //                   Invalid combinations are caught by
+                //                   range-estimation. Note that though
+                //                   the range is contiguous, it is direction-flipped.
+                //    log(x) -> EXP: no problem
+                //   exp2, exp10: Converted to cPow, done by grammar.
+                //   atan(x) -> TAN: doable.
+                //                   Invalid combinations are caught by
+                //                   range-estimation. Threshold is at |pi/2|.
+                //   sinh(x) -> ASINH: no problem
+                //   tanh(x) -> ATANH: no problem, but atanh is limited to -1..1
+                //                     Invalid combinations are caught by
+                //                     range-estimation, but the exact value
+                //                     of 1.0 still needs checking, because
+                //                     it involves infinity.
+                if(GetParam(1).IsImmed())
+                    switch(GetParam(0).GetOpcode())
+                    {
+                        case cAsin:
+                            SetParam(0, GetParam(0).GetParam(0));
+                            SetParam(1, CodeTree(fp_sin(GetParam(1).GetImmed())));
+                            goto redo;
+                        case cAcos:
+                            // -1..+1 --> pi..0 (polarity-flipping)
+                            SetParam(0, GetParam(0).GetParam(0));
+                            SetParam(1, CodeTree(fp_cos(GetParam(1).GetImmed())));
+                            SetOpcode( GetOpcode()==cLess ? cGreater
+                                     : GetOpcode()==cLessOrEq ? cGreaterOrEq
+                                     : GetOpcode()==cGreater ? cLess
+                                     : GetOpcode()==cGreaterOrEq ? cLessOrEq
+                                     : GetOpcode() );
+                            goto redo;
+                        case cAtan:
+                            SetParam(0, GetParam(0).GetParam(0));
+                            SetParam(1, CodeTree(fp_tan(GetParam(1).GetImmed())));
+                            goto redo;
+                        case cLog:
+                            // Different logarithms have a constant-multiplication,
+                            // which is no problem.
+                            SetParam(0, GetParam(0).GetParam(0));
+                            SetParam(1, CodeTree(fp_exp(GetParam(1).GetImmed())));
+                            goto redo;
+                        case cSinh:
+                            SetParam(0, GetParam(0).GetParam(0));
+                            SetParam(1, CodeTree(fp_asinh(GetParam(1).GetImmed())));
+                            goto redo;
+                        case cTanh:
+                            if(fabs(GetParam(1).GetImmed()) < 1.0)
+                            {
+                                SetParam(0, GetParam(0).GetParam(0));
+                                SetParam(1, CodeTree(fp_atanh(GetParam(1).GetImmed())));
+                                goto redo;
+                            }
+                            break;
+                        default: break;
+                    }
                 break;
 
             case cAbs:

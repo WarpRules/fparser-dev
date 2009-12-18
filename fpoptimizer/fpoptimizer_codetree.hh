@@ -152,7 +152,7 @@ namespace FPoptimizer_CodeTree
         bool ConstantFolding_AddLogicItems();
         bool ConstantFolding_IfOperations();
         bool ConstantFolding_PowOperations();
-        void ConstantFolding_ComparisonOperations();
+        bool ConstantFolding_ComparisonOperations();
         template<typename CondType>
         bool ConstantFolding_LogicCommon(CondType cond_type, bool is_logical);
         bool ConstantFolding_MulGrouping();

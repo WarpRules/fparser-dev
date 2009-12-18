@@ -220,11 +220,11 @@ namespace FPoptimizer_CodeTree
                 if(m.has_max) m.max = sinh(m.max);
                 return m;
             }
-            case cTanh: /* defined for all values -inf <= x <= inf */
+            case cTanh: /* defined for all values -inf <= x <= inf, results within -1..1 */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = tanh(m.min); // No boundaries
-                if(m.has_max) m.max = tanh(m.max);
+                if(m.has_min) m.min = tanh(m.min); else { m.has_min = true; m.min =-1.0; }
+                if(m.has_max) m.max = tanh(m.max); else { m.has_max = true; m.max = 1.0; }
                 return m;
             }
             case cCosh: /* defined for all values -inf <= x <= inf, results within 1..inf */
