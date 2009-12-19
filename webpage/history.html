@@ -9,6 +9,14 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.0.3
+  <ul>
+    <li>New optimization rules in both <code>Parse()</code> and
+      <code>Optimize()</code>.
+    <li>Fixed optimizer bugs: Functions of the form <code>"cosh(x^2)"</code>
+      and <code>"-x&lt;3"</code> were wrongly optimized.
+  </ul>
+
 <p>What's new in v4.0.2
 <ul>
   <li>Fixed bug which caused functions like <code>"x*4/2"</code> to be parsed
