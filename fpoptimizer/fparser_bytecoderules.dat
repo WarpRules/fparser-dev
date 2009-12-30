@@ -105,7 +105,6 @@ IF(FP_FLOAT_VERSION) cSqr cLog2  -> cAbs cLog2  cDup cAdd
 IF(FP_FLOAT_VERSION) cSqr cLog10 -> cAbs cLog10 cDup cAdd
 IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul
 IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul
-cDup cAdd cDup cAdd -> [Value_t(4)] cMul
 
 cDup cMin ->
 cDup cMax ->
@@ -145,8 +144,12 @@ IF(FP_FLOAT_VERSION) y [(y*x)==GetRadiansToDegreesFactor<Value_t>()] cMul x cMul
 IF(FP_FLOAT_VERSION) y [(y*x)==GetDegreesToRadiansFactor<Value_t>()] cMul x cMul -> cRad
 y [y*x==Value_t(1)] cMul x cMul ->
 y                   cMul x cMul -> [y*x] cMul
-cDup [x+x==Value_t(1)] cAdd x cMul ->
-cDup                   cAdd x cMul -> [x+x] cMul
+cDup cAdd      cDup cAdd -> [Value_t(4)] cMul
+cDup cAdd cMul cDup cAdd -> cMul [Value_t(4)] cMul
+IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->
+                     cDup                   cAdd      x cMul ->      [x+x] cMul
+IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd cMul x cMul -> cMul
+                     cDup                   cAdd cMul x cMul -> cMul [x+x] cMul
 
 IF(FP_FLOAT_VERSION) y [(y/x)==GetRadiansToDegreesFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
 IF(FP_FLOAT_VERSION) y [(y/x)==GetDegreesToRadiansFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
@@ -229,6 +232,12 @@ IF(FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)] cLog10 x A [IsComparison
 IF(FP_FLOAT_VERSION)                 cAtan [fp_abs(x)<const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_tan(x)] A
 IF(FP_FLOAT_VERSION)                 cSinh x A [IsComparisonOpcode(A)] -> [fp_asinh(x)] A
 IF(FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsComparisonOpcode(A)] -> [fp_atanh(x)] A
+
+# (x+3)*4 -> x*4 + 12
+                  y      cAdd x cMul -> [x]   cMul   [y*x]      cAdd
+  A [A>=VarBegin] y cMul cAdd x cMul -> [x]   cMul A [y*x] cMul cAdd
+  A [A>=VarBegin] y cMul cSub x cMul -> [x]   cMul A [y*x] cMul cSub
+x A [A>=VarBegin] y      cAdd   cMul -> [x] A cMul   [y*x]      cAdd
 
 
 cNeg  cNot -> cNot
