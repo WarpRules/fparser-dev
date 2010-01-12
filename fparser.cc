@@ -139,26 +139,6 @@ namespace
         return value;
     }
 
-    template<typename value_t>
-    struct IsIntType
-    {
-        enum { result = false };
-    };
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-    template<>
-    struct IsIntType<long>
-    {
-        enum { result = true };
-    };
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    struct IsIntType<GmpInt>
-    {
-        enum { result = true };
-    };
-#endif
-
     template<typename Value_t>
     inline unsigned readOpcode(const char* input)
     {
@@ -173,28 +153,6 @@ namespace
         if(name.empty()) return false;
         return readOpcode<Value_t>(name.c_str()) == (unsigned) name.size();
     }
-
-    template<typename Value_t>
-    inline bool truthValue(Value_t d)
-    {
-        return IsIntType<Value_t>::result
-                ? d != 0
-                : fp_abs(d) >= Value_t(0.5);
-    }
-
-    template<typename Value_t>
-    inline bool truthValue_abs(Value_t abs_d)
-    {
-        return IsIntType<Value_t>::result
-                ? abs_d > 0
-                : abs_d >= Value_t(0.5);
-    }
-
-    template<typename Value_t>
-    inline Value_t Min(Value_t d1, Value_t d2) { return d1<d2 ? d1 : d2; }
-
-    template<typename Value_t>
-    inline Value_t Max(Value_t d1, Value_t d2) { return d1>d2 ? d1 : d2; }
 
     template<typename Value_t>
     inline const Value_t& GetDegreesToRadiansFactor()
@@ -2041,7 +1999,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case cFloor: Stack[SP] = fp_floor(Stack[SP]); break;
 
           case    cIf:
-                  if(truthValue(Stack[SP--]))
+                  if(fp_truth(Stack[SP--]))
                       IP += 2;
                   else
                   {
@@ -2076,10 +2034,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[SP] = fp_log2(Stack[SP]);
               break;
 
-          case   cMax: Stack[SP-1] = Max(Stack[SP-1], Stack[SP]);
+          case   cMax: Stack[SP-1] = fp_max(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
-          case   cMin: Stack[SP-1] = Min(Stack[SP-1], Stack[SP]);
+          case   cMin: Stack[SP-1] = fp_min(Stack[SP-1], Stack[SP]);
                        --SP; break;
 
           case   cPow:
@@ -2181,19 +2139,17 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[SP-1] = fp_lessOrEq(Stack[SP], Stack[SP-1]);
               --SP; break;
 
-          case   cNot: Stack[SP] = Value_t(!truthValue(Stack[SP])); break;
+          case   cNot: Stack[SP] = fp_not(Stack[SP]); break;
+
+          case cNotNot: Stack[SP] = fp_notNot(Stack[SP]); break;
 
           case   cAnd:
-              Stack[SP-1] = Value_t
-                  (truthValue(Stack[SP-1]) && truthValue(Stack[SP]));
+              Stack[SP-1] = fp_and(Stack[SP-1], Stack[SP]);
               --SP; break;
 
           case    cOr:
-              Stack[SP-1] = Value_t
-                  (truthValue(Stack[SP-1]) || truthValue(Stack[SP]));
+              Stack[SP-1] = fp_or(Stack[SP-1], Stack[SP]);
               --SP; break;
-
-          case cNotNot: Stack[SP] = Value_t(truthValue(Stack[SP])); break;
 
 // Degrees-radians conversion:
           case   cDeg: Stack[SP] = RadiansToDegrees(Stack[SP]); break;
@@ -2258,19 +2214,17 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               break;
 #endif // FP_SUPPORT_OPTIMIZER
           case cAbsNot:
-              Stack[SP] = Value_t(!truthValue_abs(Stack[SP])); break;
+              Stack[SP] = fp_absNot(Stack[SP]); break;
           case cAbsNotNot:
-              Stack[SP] = Value_t(truthValue_abs(Stack[SP])); break;
+              Stack[SP] = fp_absNotNot(Stack[SP]); break;
           case cAbsAnd:
-              Stack[SP-1] = Value_t(truthValue_abs(Stack[SP-1]) &&
-                                    truthValue_abs(Stack[SP]));
+              Stack[SP-1] = fp_absAnd(Stack[SP-1], Stack[SP]);
               --SP; break;
           case cAbsOr:
-              Stack[SP-1] = Value_t(truthValue_abs(Stack[SP-1]) ||
-                                    truthValue_abs(Stack[SP]));
+              Stack[SP-1] = fp_absOr(Stack[SP-1], Stack[SP]);
               --SP; break;
           case cAbsIf:
-              if(truthValue_abs(Stack[SP--]))
+              if(fp_absTruth(Stack[SP--]))
                   IP += 2;
               else
               {

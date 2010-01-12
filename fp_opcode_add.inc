@@ -149,7 +149,7 @@
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(130,
 					"y x cAnd",
-					"[truthValue(x)&&truthValue(y)]",
+					"[fp_and(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -476,7 +476,7 @@
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(82,
 					"y x cMax",
-					"[Max(x,y)]",
+					"[fp_max(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -538,7 +538,7 @@
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(81,
 					"y x cMin",
-					"[Min(x,y)]",
+					"[fp_min(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -1214,7 +1214,7 @@
 			x = ImmedPtr[0];
 			FP_TRACE_BYTECODE_OPTIMIZATION(85,
 				"x cNot",
-				"[!truthValue(x)]",
+				"[fp_not(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lee;
@@ -1241,7 +1241,7 @@
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(131,
 					"y x cOr",
-					"[truthValue(x)||truthValue(y)]",
+					"[fp_or(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -1411,7 +1411,7 @@ Lff: goto TailCall_cAdd;
 Lag: ImmedPtr[-1] = y+x;
 Lah: data->Immed.pop_back();
 Lbd: data->ByteCode.pop_back(); return;
-Lai: ImmedPtr[-1] = truthValue(x)&&truthValue(y); goto Lah;
+Lai: ImmedPtr[-1] = fp_and(x,y); goto Lah;
 Laj: data->Immed.push_back(Value_t(0));
      ByteCodePtr[0] = cImmed;
      AddFunctionOpcode(cMul);
@@ -1448,8 +1448,8 @@ Lbg: data->Immed.pop_back();
      data->ByteCode.pop_back(); goto Lfk;
 Lbh: ImmedPtr[-1] = fp_less(y,x); goto Lah;
 Lbi: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lah;
-Lbj: ImmedPtr[-1] = Max(x,y); goto Lah;
-Lbk: ImmedPtr[-1] = Min(x,y); goto Lah;
+Lbj: ImmedPtr[-1] = fp_max(x,y); goto Lah;
+Lbk: ImmedPtr[-1] = fp_min(x,y); goto Lah;
 Lbl: ImmedPtr[-1] = fp_mod(y,x); goto Lah;
 Lbm: ImmedPtr[-1] = x;
      data->Immed.pop_back();
@@ -1597,8 +1597,8 @@ Leb: ByteCodePtr -= 1;
 Lec: ByteCodePtr -= 1;
      data->ByteCode.pop_back();
      opcode = cEqual; goto Lfj;
-Lee: ImmedPtr[0] = !truthValue(x); return;
-Leg: ImmedPtr[-1] = truthValue(x)||truthValue(y); goto Lah;
+Lee: ImmedPtr[0] = fp_not(x); return;
+Leg: ImmedPtr[-1] = fp_or(x,y); goto Lah;
 Leh: ByteCodePtr -= 1;
      data->ByteCode.pop_back(); goto Lfn;
 Lei: ByteCodePtr -= 1;
@@ -1775,7 +1775,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(130,
 					"y x cAnd",
-					"[truthValue(x)&&truthValue(y)]",
+					"[fp_and(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -2529,7 +2529,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(82,
 					"y x cMax",
-					"[Max(x,y)]",
+					"[fp_max(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -2591,7 +2591,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(81,
 					"y x cMin",
-					"[Min(x,y)]",
+					"[fp_min(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -3374,7 +3374,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			FP_TRACE_BYTECODE_OPTIMIZATION(85,
 				"x cNot",
-				"[!truthValue(x)]",
+				"[fp_not(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lie;
@@ -3401,7 +3401,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 				y = ImmedPtr[-1];
 				FP_TRACE_BYTECODE_OPTIMIZATION(131,
 					"y x cOr",
-					"[truthValue(x)||truthValue(y)]",
+					"[fp_or(x,y)]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
@@ -4080,7 +4080,7 @@ Lmb: goto TailCall_cAdd;
 Lai: ImmedPtr[-1] = y+x;
 Laj: data->Immed.pop_back();
 Lbg: data->ByteCode.pop_back(); return;
-Lak: ImmedPtr[-1] = truthValue(x)&&truthValue(y); goto Laj;
+Lak: ImmedPtr[-1] = fp_and(x,y); goto Laj;
 Lal: ImmedPtr[0] = fp_asin(x); return;
 Lam: ImmedPtr[0] = fp_asinh(x); return;
 Lan: ImmedPtr[0] = fp_atan(x); return;
@@ -4264,8 +4264,8 @@ Len: data->ByteCode.pop_back();
      AddFunctionOpcode(cAbs);
      AddFunctionOpcode(cLog2); goto Lnf;
 Leo: ImmedPtr[0] = fp_log2(x); return;
-Lep: ImmedPtr[-1] = Max(x,y); goto Laj;
-Lfa: ImmedPtr[-1] = Min(x,y); goto Laj;
+Lep: ImmedPtr[-1] = fp_max(x,y); goto Laj;
+Lfa: ImmedPtr[-1] = fp_min(x,y); goto Laj;
 Lfb: ImmedPtr[-1] = fp_mod(y,x); goto Laj;
 Lfc: ImmedPtr[-1] = x;
      data->Immed.pop_back();
@@ -4441,8 +4441,8 @@ Lic: ByteCodePtr -= 1;
      data->ByteCode.pop_back();
      opcode = cEqual; goto Lmn;
 Lid: data->ByteCode.pop_back(); goto Lmp;
-Lie: ImmedPtr[0] = !truthValue(x); return;
-Lig: ImmedPtr[-1] = truthValue(x)||truthValue(y); goto Laj;
+Lie: ImmedPtr[0] = fp_not(x); return;
+Lig: ImmedPtr[-1] = fp_or(x,y); goto Laj;
 Lih: data->Immed.pop_back();
      data->ByteCode.pop_back();
      data->ByteCode.pop_back();

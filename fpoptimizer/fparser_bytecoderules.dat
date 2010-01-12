@@ -78,11 +78,11 @@ x [x==Value_t(0)] cSub	->
 y x cSub		-> [y-x]
 #y [y!=Value_t(0)] x cRDiv -> [x/y]
 #y x cRSub		-> [x-y]
-y x cMin		-> [Min(x,y)]
-y x cMax		-> [Max(x,y)]
+y x cMin		-> [fp_min(x,y)]
+y x cMax		-> [fp_max(x,y)]
 IF(FP_FLOAT_VERSION) y x cAtan2		-> [fp_atan2(y,x)]
 IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
-x cNot			-> [!truthValue(x)]
+x cNot			-> [fp_not(x)]
 
 # Multiplications by zero: Undo as many operands as possible by peeling.
 # Some of these optimimizations can be disabled due to law of diminishing returns.
@@ -127,10 +127,10 @@ y x cGreater		-> [fp_less(x,y)]
 y x cGreaterOrEq	-> [fp_lessOrEq(x,y)]
 y x cEqual		-> [fp_equal(y,x)]
 y x cNEqual		-> [fp_nequal(y,x)]
-y x cAnd		-> [truthValue(x)&&truthValue(y)]
-y x cOr			-> [truthValue(x)||truthValue(y)]
-#y x cAbsAnd		-> [truthValue_abs(x)&&truthValue_abs(y)]
-#y x cAbsOr		-> [truthValue_abs(x)||truthValue_abs(y)]
+y x cAnd		-> [fp_and(x,y)]
+y x cOr			-> [fp_or(x,y)]
+#y x cAbsAnd		-> [fp_absAnd(x,y)]
+#y x cAbsOr		-> [fp_absOr(x,y)]
 
 cNeg x cMul		-> [-x] cMul
 x cMul cNeg		-> [-x] cMul

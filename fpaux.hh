@@ -26,6 +26,26 @@
 #ifdef ONCE_FPARSER_H_
 namespace FUNCTIONPARSERTYPES
 {
+    template<typename value_t>
+    struct IsIntType
+    {
+        enum { result = false };
+    };
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    struct IsIntType<long>
+    {
+        enum { result = true };
+    };
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    struct IsIntType<GmpInt>
+    {
+        enum { result = true };
+    };
+#endif
+
 //==========================================================================
 // Math funcs
 //==========================================================================
@@ -482,59 +502,106 @@ namespace FUNCTIONPARSERTYPES
 // -------------------------------------------------------------------------
 #ifdef FP_EPSILON
     template<typename Value_t>
-    inline bool fp_equal(Value_t x, Value_t y)
-    { return fp_abs(x - y) <= fp_epsilon<Value_t>(); }
+    inline bool fp_equal(const Value_t& x, const Value_t& y)
+    { return IsIntType<Value_t>::result
+        ? (x == y)
+        : (fp_abs(x - y) <= fp_epsilon<Value_t>()); }
 
     template<typename Value_t>
-    inline bool fp_nequal(Value_t x, Value_t y)
-    { return fp_abs(x - y) > fp_epsilon<Value_t>(); }
+    inline bool fp_nequal(const Value_t& x, const Value_t& y)
+    { return IsIntType<Value_t>::result
+        ? (x != y)
+        : (fp_abs(x - y) > fp_epsilon<Value_t>()); }
 
     template<typename Value_t>
-    inline bool fp_less(Value_t x, Value_t y)
-    { return x < y - fp_epsilon<Value_t>(); }
+    inline bool fp_less(const Value_t& x, const Value_t& y)
+    { return IsIntType<Value_t>::result
+        ? (x < y)
+        : (x < y - fp_epsilon<Value_t>()); }
 
     template<typename Value_t>
-    inline bool fp_lessOrEq(Value_t x, Value_t y)
-    { return x <= y + fp_epsilon<Value_t>(); }
+    inline bool fp_lessOrEq(const Value_t& x, const Value_t& y)
+    { return IsIntType<Value_t>::result
+        ? (x <= y)
+        : (x <= y + fp_epsilon<Value_t>()); }
 #else // FP_EPSILON
     template<typename Value_t>
-    inline bool fp_equal(Value_t x, Value_t y) { return x == y; }
+    inline bool fp_equal(const Value_t& x, const Value_t& y) { return x == y; }
 
     template<typename Value_t>
-    inline bool fp_nequal(Value_t x, Value_t y) { return x != y; }
+    inline bool fp_nequal(const Value_t& x, const Value_t& y) { return x != y; }
 
     template<typename Value_t>
-    inline bool fp_less(Value_t x, Value_t y) { return x < y; }
+    inline bool fp_less(const Value_t& x, const Value_t& y) { return x < y; }
 
     template<typename Value_t>
-    inline bool fp_lessOrEq(Value_t x, Value_t y) { return x <= y; }
+    inline bool fp_lessOrEq(const Value_t& x, const Value_t& y) { return x <= y; }
 #endif // FP_EPSILON
 
-    template<>
-    inline bool fp_equal<long>(long x, long y) { return x == y; }
+    template<typename Value_t>
+    inline bool fp_greater(const Value_t& x, const Value_t& y)
+    { return fp_less(y, x); }
 
-    template<>
-    inline bool fp_nequal<long>(long x, long y) { return x != y; }
+    template<typename Value_t>
+    inline bool fp_greaterOrEq(const Value_t& x, const Value_t& y)
+    { return fp_lessOrEq(y, x); }
 
-    template<>
-    inline bool fp_less<long>(long x, long y) { return x < y; }
+    template<typename Value_t>
+    inline bool fp_truth(const Value_t& d)
+    {
+        return IsIntType<Value_t>::result
+                ? d != 0
+                : fp_abs(d) >= Value_t(0.5);
+    }
 
-    template<>
-    inline bool fp_lessOrEq<long>(long x, long y) { return x <= y; }
+    template<typename Value_t>
+    inline bool fp_absTruth(const Value_t& abs_d)
+    {
+        return IsIntType<Value_t>::result
+                ? abs_d > 0
+                : abs_d >= Value_t(0.5);
+    }
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline bool fp_equal<GmpInt>(GmpInt x, GmpInt y) { return x == y; }
+    template<typename Value_t>
+    inline const Value_t& fp_min(const Value_t& d1, const Value_t& d2)
+        { return d1<d2 ? d1 : d2; }
 
-    template<>
-    inline bool fp_nequal<GmpInt>(GmpInt x, GmpInt y) { return x != y; }
+    template<typename Value_t>
+    inline const Value_t& fp_max(const Value_t& d1, const Value_t& d2)
+        { return d1>d2 ? d1 : d2; }
 
-    template<>
-    inline bool fp_less<GmpInt>(GmpInt x, GmpInt y) { return x < y; }
+    template<typename Value_t>
+    inline const Value_t fp_not(const Value_t& b)
+        { return Value_t(!fp_truth(b)); }
 
-    template<>
-    inline bool fp_lessOrEq<GmpInt>(GmpInt x, GmpInt y) { return x <= y; }
-#endif
+    template<typename Value_t>
+    inline const Value_t fp_notNot(const Value_t& b)
+        { return Value_t(fp_truth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_absNot(const Value_t& b)
+        { return Value_t(!fp_absTruth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_absNotNot(const Value_t& b)
+        { return Value_t(fp_absTruth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_and(const Value_t& a, const Value_t& b)
+        { return Value_t(fp_truth(a) && fp_truth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_or(const Value_t& a, const Value_t& b)
+        { return Value_t(fp_truth(a) || fp_truth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_absAnd(const Value_t& a, const Value_t& b)
+        { return Value_t(fp_absTruth(a) && fp_absTruth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_absOr(const Value_t& a, const Value_t& b)
+        { return Value_t(fp_absTruth(a) || fp_absTruth(b)); }
+
 } // namespace FUNCTIONPARSERTYPES
 
 #endif // ONCE_FPARSER_H_
