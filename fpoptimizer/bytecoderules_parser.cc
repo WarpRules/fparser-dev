@@ -1243,16 +1243,11 @@ int main()
     //  "template<typename Value_t>\n"
     //  "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
     //  "{\n"
-        "  static unsigned DummyOpList[1] = {cNop};\n"
-        "  /* DummyOpList is needed to prevent crash when 1+x\n"
-        "   * is changed into x+1 and the bytecode containing just \"x\"\n"
-        "   * is tested against the rule which changes \"x x\" into \"x cDup\".\n"
-        "   */\n"
         "  unsigned* ByteCodePtr;\n"
         "  Value_t*   ImmedPtr;\n"
         "\n"
         "  #define FP_ReDefinePointers() \\\n"
-        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : &DummyOpList[0]; \\\n"
+        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
         "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
         "  FP_ReDefinePointers();\n";
 

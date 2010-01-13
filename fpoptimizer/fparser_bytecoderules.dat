@@ -341,9 +341,9 @@ B [B==A] cMul A [A >= VarBegin] cNeg cMul  -> B cSqr cMul cNeg
 cNeg cSqr -> cSqr
 cAbs cSqr -> cSqr
 
-B [B==A] A [A >= VarBegin] -> B cDup
-D [D==B] C [C==A]      B [B >= VarBegin] A [IsUnaryOpcode(A)]      -> D C cDup
-D [D==B] C [C==A] cMul B [B >= VarBegin] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul
+B [B==A] A [A >= VarBegin && data->ByteCode.size() > 0] -> B cDup
+D [D==B] C [C==A]      B [B >= VarBegin && data->ByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup
+D [D==B] C [C==A] cMul B [B >= VarBegin && data->ByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul
 cDup cMul -> cSqr
 
 

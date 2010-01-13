@@ -18,16 +18,11 @@
     /*std::cout << "Changing \"" from "\"\t(line " #srcline ")\n" \
                    "    into \"" to "\"\n" with*/
 
-  static unsigned DummyOpList[1] = {cNop};
-  /* DummyOpList is needed to prevent crash when 1+x
-   * is changed into x+1 and the bytecode containing just "x"
-   * is tested against the rule which changes "x x" into "x cDup".
-   */
   unsigned* ByteCodePtr;
   Value_t*   ImmedPtr;
 
   #define FP_ReDefinePointers() \
-    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : &DummyOpList[0]; \
+    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \
     ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;
   FP_ReDefinePointers();
 
@@ -1030,7 +1025,7 @@
 			if(IsUnaryOpcode(A))
 			{
 				B = ByteCodePtr[-1];
-				if(B>=VarBegin)
+				if(B>=VarBegin&&data->ByteCode.size()>1)
 				{
 					if(ByteCodePtr[-2] == cMul)
 					{
@@ -1041,7 +1036,7 @@
 							if(D==B)
 							{
 								FP_TRACE_BYTECODE_OPTIMIZATION(346,
-									"D[D==B] C[C==A] cMul B[B>=VarBegin] A[IsUnaryOpcode(A)] cMul",
+									"D[D==B] C[C==A] cMul B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
 									    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -1336,13 +1331,13 @@
 				}
 			}
 		}
-		if(A>=VarBegin)
+		if(A>=VarBegin&&data->ByteCode.size()>0)
 		{
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(344,
-					"B[B==A] A[A>=VarBegin]",
+					"B[B==A] A[A>=VarBegin&&data->ByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
 					    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -1354,7 +1349,7 @@
 		if(IsUnaryOpcode(A))
 		{
 			B = ByteCodePtr[0];
-			if(B>=VarBegin)
+			if(B>=VarBegin&&data->ByteCode.size()>1)
 			{
 				C = ByteCodePtr[-1];
 				if(C==A)
@@ -1363,7 +1358,7 @@
 					if(D==B)
 					{
 						FP_TRACE_BYTECODE_OPTIMIZATION(345,
-							"D[D==B] C[C==A] B[B>=VarBegin] A[IsUnaryOpcode(A)]",
+							"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -3150,7 +3145,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 			if(IsUnaryOpcode(A))
 			{
 				B = ByteCodePtr[-1];
-				if(B>=VarBegin)
+				if(B>=VarBegin&&data->ByteCode.size()>1)
 				{
 					if(ByteCodePtr[-2] == cMul)
 					{
@@ -3161,7 +3156,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 							if(D==B)
 							{
 								FP_TRACE_BYTECODE_OPTIMIZATION(346,
-									"D[D==B] C[C==A] cMul B[B>=VarBegin] A[IsUnaryOpcode(A)] cMul",
+									"D[D==B] C[C==A] cMul B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
 									    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -4003,13 +3998,13 @@ goto TailCall_cOr;goto TailCall_cSub;
 				}
 			}
 		}
-		if(A>=VarBegin)
+		if(A>=VarBegin&&data->ByteCode.size()>0)
 		{
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(344,
-					"B[B==A] A[A>=VarBegin]",
+					"B[B==A] A[A>=VarBegin&&data->ByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
 					    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -4021,7 +4016,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 		if(IsUnaryOpcode(A))
 		{
 			B = ByteCodePtr[0];
-			if(B>=VarBegin)
+			if(B>=VarBegin&&data->ByteCode.size()>1)
 			{
 				C = ByteCodePtr[-1];
 				if(C==A)
@@ -4030,7 +4025,7 @@ goto TailCall_cOr;goto TailCall_cSub;
 					if(D==B)
 					{
 						FP_TRACE_BYTECODE_OPTIMIZATION(345,
-							"D[D==B] C[C==A] B[B>=VarBegin] A[IsUnaryOpcode(A)]",
+							"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", B = " << FP_TRACE_OPCODENAME(B)
