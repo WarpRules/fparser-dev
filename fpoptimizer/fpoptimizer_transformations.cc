@@ -999,6 +999,39 @@ namespace FPoptimizer_CodeTree
         return false;
     }
 
+    bool IsDescendantOf(const CodeTree& parent, const CodeTree& expr)
+    {
+        for(size_t a=0; a<parent.GetParamCount(); ++a)
+            if(parent.GetParam(a).IsIdenticalTo(expr))
+                return true;
+
+        for(size_t a=0; a<parent.GetParamCount(); ++a)
+            if(IsDescendantOf(parent.GetParam(a), expr))
+                return true;
+
+        return false;
+    }
+
+    bool GoodMomentForCSE(const CodeTree& parent, const CodeTree& expr)
+    {
+        if(parent.GetOpcode() == cIf)
+            return true;
+
+        // Good if it's one of our direct children
+        // Bad if it is a descendant of only one of our children
+
+        for(size_t a=0; a<parent.GetParamCount(); ++a)
+            if(parent.GetParam(a).IsIdenticalTo(expr))
+                return true;
+
+        size_t leaf_count = 0;
+        for(size_t a=0; a<parent.GetParamCount(); ++a)
+            if(IsDescendantOf(parent.GetParam(a), expr))
+                ++leaf_count;
+
+        return leaf_count != 1;
+    }
+
     size_t CodeTree::SynthCommonSubExpressions(
         FPoptimizer_ByteCode::ByteCodeSynth& synth) const
     {
@@ -1066,6 +1099,12 @@ namespace FPoptimizer_CodeTree
                 if(ContainsOtherCandidates(*this, tree, synth, TreeCounts))
                 {
                     // Don't erase it; it may be a proper candidate later
+                    continue;
+                }
+
+                if(!GoodMomentForCSE(*this, tree))
+                {
+                    TreeCounts.erase(i);
                     continue;
                 }
 
