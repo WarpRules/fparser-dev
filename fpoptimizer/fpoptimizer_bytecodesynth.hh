@@ -56,13 +56,20 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1);
         }
 
-        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& tree)
+        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& tree, int offset = 0)
         {
-            if(StackTop > 0)
+            if((int)StackTop > offset)
             {
-                StackState[StackTop-1].first = true;
-                StackState[StackTop-1].second = tree;
+                StackState[StackTop-1-offset].first = true;
+                StackState[StackTop-1-offset].second = tree;
             }
+        }
+
+        bool IsStackTop(const FPoptimizer_CodeTree::CodeTree& tree, int offset = 0) const
+        {
+            return (int)StackTop > offset
+               && StackState[StackTop-1-offset].first
+               && StackState[StackTop-1-offset].second.IsIdenticalTo(tree);
         }
 
         void EatNParams(unsigned eat_count)
@@ -119,7 +126,8 @@ namespace FPoptimizer_ByteCode
 
         size_t FindPos(const FPoptimizer_CodeTree::CodeTree& tree) const
         {
-            /*std::cout << "Stack state now(" << StackTop << "):\n";
+            /*
+            std::cout << "Stack state now(" << StackTop << "):\n";
             for(size_t a=0; a<StackTop; ++a)
             {
                 std::cout << a << ": ";
@@ -145,6 +153,11 @@ namespace FPoptimizer_ByteCode
             size_t pos = FindPos(tree);
             if(pos != ~size_t(0))
             {
+            #ifdef DEBUG_SUBSTITUTIONS
+                std::cout << "Found duplicate at [" << pos <<"]: ";
+                DumpTree(tree);
+                std::cout << " -- issuing cDup or cFetch\n";
+            #endif
                 DoDup(pos);
                 return true;
             }

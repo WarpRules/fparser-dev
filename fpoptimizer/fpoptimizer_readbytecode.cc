@@ -626,6 +626,12 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(CONSTANT_L2I); // y log(x) CONSTANT_L2I
                         sim.Eat(3, cMul);           // y*log(x)*CONSTANT_L2I
                         break;
+                    case cSinCos:
+                        sim.Dup();
+                        sim.Eat(1, cSin);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(1, cCos);
+                        break;
                     //case cLog:
                     //    sim.Eat(1, cLog2);
                     //    sim.AddConst(CONSTANT_L2);

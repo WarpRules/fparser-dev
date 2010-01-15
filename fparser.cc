@@ -2212,6 +2212,12 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
               --SP;
               break;
+
+          case cSinCos:
+              fp_sinCos(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
+
 #endif // FP_SUPPORT_OPTIMIZER
           case cAbsNot:
               Stack[SP] = fp_absNot(Stack[SP]); break;
@@ -2868,6 +2874,22 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                                 stack.push_back(stacktop);
                             }
                             output << "cPopNMov(" << a << ", " << b << ")";
+                            produces = 0;
+                            break;
+                        }
+                        case cSinCos:
+                        {
+                            if(showExpression)
+                            {
+                                std::pair<int, std::string> sin = stack.back();
+                                std::pair<int, std::string> cos(
+                                    0, "cos(" + sin.second + ")");
+                                sin.first = 0;
+                                sin.second = "sin(" + sin.second + ")";
+                                stack.back() = sin;
+                                stack.push_back(cos);
+                            }
+                            output << "sincos";
                             produces = 0;
                             break;
                         }

@@ -2580,6 +2580,7 @@ namespace FPoptimizer_CodeTree
             case cDup:
             case cFetch:
             case cPopNMov:
+            case cSinCos:
             case cNop:
             case cJump:
                 break; /* Should never occur */

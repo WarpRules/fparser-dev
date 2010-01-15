@@ -5,8 +5,8 @@
 #include "fpoptimizer_codetree.hh"
 #include "fptypes.hh"
 #include "fpoptimizer_consts.hh"
-#include "fpoptimizer_bytecodesynth.hh"
 #include "fpoptimizer_optimize.hh"
+#include "fpoptimizer_bytecodesynth.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
@@ -118,16 +118,48 @@ namespace FPoptimizer_CodeTree
                         break; // done
                 }
 
+                // If any of the params is currently a copy of
+                // the stack topmost item, treat it first.
                 int n_stacked = 0;
+                std::vector<bool> done( GetParamCount() , false );
+                CodeTree synthed_tree;
+                synthed_tree.SetOpcode(GetOpcode());
+                for(;;)
+                {
+                    bool found = false;
+                    for(size_t a=0; a<GetParamCount(); ++a)
+                    {
+                        if(done[a]) continue;
+                        if(synth.IsStackTop(GetParam(a)))
+                        {
+                            found = true;
+                            done[a] = true;
+                            GetParam(a).SynthesizeByteCode(synth);
+                            synthed_tree.AddParam(GetParam(a));
+                            if(++n_stacked > 1)
+                            {
+                                // Cumulate at the earliest opportunity.
+                                synth.AddOperation(GetOpcode(), 2); // stack state: -2+1 = -1
+                                synthed_tree.Rehash(false);
+                                synth.StackTopIs(synthed_tree);
+                                n_stacked = n_stacked - 2 + 1;
+                            }
+                        }
+                    }
+                    if(!found) break;
+                }
+
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
+                    if(done[a]) continue;
                     GetParam(a).SynthesizeByteCode(synth);
-                    ++n_stacked;
-
-                    if(n_stacked > 1)
+                    synthed_tree.AddParam(GetParam(a));
+                    if(++n_stacked > 1)
                     {
                         // Cumulate at the earliest opportunity.
                         synth.AddOperation(GetOpcode(), 2); // stack state: -2+1 = -1
+                        synthed_tree.Rehash(false);
+                        synth.StackTopIs(synthed_tree);
                         n_stacked = n_stacked - 2 + 1;
                     }
                 }

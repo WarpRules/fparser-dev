@@ -146,6 +146,14 @@ namespace FUNCTIONPARSERTYPES
         return fp_pow_base(x, y);
     }
 
+    template<typename Value_t>
+    inline void fp_sinCos(Value_t& sin, Value_t& cos, const Value_t& a)
+    {
+        // Assuming that "cos" and "a" don't overlap, but "sin" and "a" may.
+        cos = fp_cos(a);
+        sin = fp_sin(a);
+    }
+
 // -------------------------------------------------------------------------
 // double
 // -------------------------------------------------------------------------
@@ -220,6 +228,13 @@ namespace FUNCTIONPARSERTYPES
     inline bool IsIntegerConst(double a)
     { return FloatEqual(a, (double)(long)a); }
 
+  #ifdef _GNU_SOURCE
+    template<>
+    inline void fp_sinCos<double>(double& sin, double& cos, const double& a)
+    {
+        sincos(a, &sin, &cos);
+    }
+  #endif
 
 // -------------------------------------------------------------------------
 // float
@@ -297,6 +312,13 @@ namespace FUNCTIONPARSERTYPES
     inline bool IsIntegerConst(float a)
     { return FloatEqual(a, (float)(long)a); }
 #endif // FP_SUPPORT_FLOAT_TYPE
+  #ifdef _GNU_SOURCE
+    template<>
+    inline void fp_sinCos<float>(float& sin, float& cos, const float& a)
+    {
+        sincosf(a, &sin, &cos);
+    }
+  #endif
 
 
 
@@ -375,6 +397,14 @@ namespace FUNCTIONPARSERTYPES
     inline bool IsIntegerConst(long double a)
     { return FloatEqual(a, (long double)(long)a); }
 #endif // FP_SUPPORT_LONG_DOUBLE_TYPE
+
+  #ifdef _GNU_SOURCE
+    template<>
+    inline void fp_sinCos<long double>(long double& sin, long double& cos, const long double& a)
+    {
+        sincosl(a, &sin, &cos);
+    }
+  #endif
 
 
 // -------------------------------------------------------------------------
