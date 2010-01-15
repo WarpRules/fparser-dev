@@ -2265,12 +2265,12 @@ int main(int argc, char* argv[])
     bool ret = fp.AddConstant("pi", M_PI);
     ret = ret && fp.AddConstant("CONST", CONST);
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    ret = ret && fp_ld.AddConstant("pi", M_PI);
-    ret = ret && fp_ld.AddConstant("CONST", CONST);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     ret = ret && fp_f.AddConstant("pi", (float)M_PI);
     ret = ret && fp_f.AddConstant("CONST", CONST);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    ret = ret && fp_ld.AddConstant("pi", M_PI);
+    ret = ret && fp_ld.AddConstant("CONST", CONST);
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     ret = ret && fp_mpfr.AddConstant("pi", M_PI);
