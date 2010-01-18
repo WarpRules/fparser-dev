@@ -485,10 +485,10 @@ P41CodePart*4+P41CodePart*x+P41CodePart*y+P41CodePart*z
 
 double f42(const double* p)
 {
-#define P42 "sqrt(x*x) + 1.5*((y*y)^.25)" , "x,y", f42, 2, -10, 10, .025, false
+#define P42 "sqrt(x*x) + 1.5*((y*y)^.25) + hypot(x,y)" , "x,y", f42, 2, -10, 10, .025, false
     const double x = p[0], y = p[1];
     const double xx = x*x, yy = y*y; // to avoid gcc bug with -ffast-math
-    return sqrt(xx) + 1.5*(pow(yy, .25));
+    return sqrt(xx) + 1.5*(pow(yy, .25)) + sqrt(xx + yy);
 }
 
 double f43(const double* p)

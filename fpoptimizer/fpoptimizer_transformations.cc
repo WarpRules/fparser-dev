@@ -43,7 +43,7 @@ namespace
 
         size_t GetCSEscore() const
         {
-            size_t n_sincos = std::min(n_as_cos_param, n_as_sin_param);
+            //size_t n_sincos = std::min(n_as_cos_param, n_as_sin_param);
             size_t result = n_occurrences;// - n_sincos;
             return result;
         }
