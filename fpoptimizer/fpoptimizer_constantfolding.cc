@@ -2,7 +2,6 @@
 #include "fpoptimizer_optimize.hh"
 #include "fpoptimizer_consts.hh"
 
-#include <cmath> /* for CalculateResultBoundaries() */
 #include <algorithm>
 
 #include "fpconfig.hh"
@@ -2345,7 +2344,7 @@ namespace FPoptimizer_CodeTree
                       goto ReplaceTreeWithConstValue; }
 
             case cLog:
-                HANDLE_UNARY_CONST_FUNC(log);
+                HANDLE_UNARY_CONST_FUNC(fp_log);
                 if(GetParam(0).GetOpcode() == cPow)
                 {
                     CodeTree pow = GetParam(0);
@@ -2431,7 +2430,7 @@ namespace FPoptimizer_CodeTree
             case cMod: /* Can more be done than this? */
                 if(GetParam(0).IsImmed()
                 && GetParam(1).IsImmed())
-                    { const_value = fmod(GetParam(0).GetImmed(), GetParam(1).GetImmed());
+                    { const_value = fp_mod(GetParam(0).GetImmed(), GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 break;
 
@@ -2470,8 +2469,8 @@ namespace FPoptimizer_CodeTree
                 }
                 if(GetParam(0).IsImmed()
                 && GetParam(1).IsImmed())
-                    { const_value = atan2(GetParam(0).GetImmed(),
-                                          GetParam(1).GetImmed());
+                    { const_value = fp_atan2(GetParam(0).GetImmed(),
+                                             GetParam(1).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 if((p1.has_min && p1.min > 0.0)               // p1 != 0.0
                 || (p1.has_max && p1.max < NEGATIVE_MAXIMUM)) // become atan(p0 / p1)
@@ -2549,29 +2548,37 @@ namespace FPoptimizer_CodeTree
                 HANDLE_UNARY_CONST_FUNC(fp_exp2); break;
             case cRSqrt: // converted into cPow x -0.5
                 if(GetParam(0).IsImmed())
-                    { const_value = 1.0 / sqrt(GetParam(0).GetImmed());
+                    { const_value = 1.0 / fp_sqrt(GetParam(0).GetImmed());
                       goto ReplaceTreeWithConstValue; }
                 break;
             case cCot: // converted into cMul (cPow (cTan x) -1)
                 if(GetParam(0).IsImmed())
-                    { double tmp = tan(GetParam(0).GetImmed());
+                    { double tmp = fp_tan(GetParam(0).GetImmed());
                       if(tmp != 0.0)
                       { const_value = 1.0 / tmp;
                         goto ReplaceTreeWithConstValue; } }
                 break;
             case cSec: // converted into cMul (cPow (cCos x) -1)
                 if(GetParam(0).IsImmed())
-                    { double tmp = cos(GetParam(0).GetImmed());
+                    { double tmp = fp_cos(GetParam(0).GetImmed());
                       if(tmp != 0.0)
                       { const_value = 1.0 / tmp;
                         goto ReplaceTreeWithConstValue; } }
                 break;
             case cCsc: // converted into cMul (cPow (cSin x) -1)
                 if(GetParam(0).IsImmed())
-                    { double tmp = sin(GetParam(0).GetImmed());
+                    { double tmp = fp_sin(GetParam(0).GetImmed());
                       if(tmp != 0.0)
                       { const_value = 1.0 / tmp;
                         goto ReplaceTreeWithConstValue; } }
+                break;
+            case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))
+                if(GetParam(0).IsImmed() && GetParam(1).IsImmed())
+                {
+                    const_value = fp_hypot(GetParam(0).GetImmed(),
+                                           GetParam(1).GetImmed());
+                    goto ReplaceTreeWithConstValue;
+                }
                 break;
 
             /* Opcodes that do not occur in the tree for other reasons */

@@ -65,6 +65,7 @@ namespace FPoptimizer_CodeTree
             case cMax:
             case cAnd:
             case cOr:
+            case cHypot:
             case cEqual:
             case cNEqual:
                 std::sort(Params.begin(), Params.end(), ParamComparer());

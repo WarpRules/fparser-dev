@@ -64,6 +64,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cExp: p = "cExp"; break;
         case cExp2: p = "cExp2"; break;
         case cFloor: p = "cFloor"; break;
+        case cHypot: p = "cHypot"; break;
         case cIf: p = "cIf"; break;
         case cInt: p = "cInt"; break;
         case cLog: p = "cLog"; break;

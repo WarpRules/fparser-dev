@@ -966,6 +966,7 @@ namespace
           case cLess: case cLessOrEq:
           case cGreater: case cGreaterOrEq:
           case cSqrt: case cRSqrt: case cSqr:
+          case cHypot:
           case cAbs:
           case cAcos: case cCosh:
               return true;
@@ -1997,6 +1998,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cExp2: Stack[SP] = fp_exp2(Stack[SP]); break;
 
           case cFloor: Stack[SP] = fp_floor(Stack[SP]); break;
+
+          case cHypot:
+              Stack[SP-1] = fp_hypot(Stack[SP-1], Stack[SP]);
+              --SP; break;
 
           case    cIf:
                   if(fp_truth(Stack[SP--]))

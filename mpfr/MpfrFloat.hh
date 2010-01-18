@@ -122,10 +122,12 @@ class MpfrFloat
     static MpfrFloat sec(const MpfrFloat&);
     static MpfrFloat csc(const MpfrFloat&);
     static MpfrFloat cot(const MpfrFloat&);
+    static void sincos(const MpfrFloat&, MpfrFloat& sin, MpfrFloat& cos);
     static MpfrFloat acos(const MpfrFloat&);
     static MpfrFloat asin(const MpfrFloat&);
     static MpfrFloat atan(const MpfrFloat&);
     static MpfrFloat atan2(const MpfrFloat&, const MpfrFloat&);
+    static MpfrFloat hypot(const MpfrFloat&, const MpfrFloat&);
     static MpfrFloat cosh(const MpfrFloat&);
     static MpfrFloat sinh(const MpfrFloat&);
     static MpfrFloat tanh(const MpfrFloat&);

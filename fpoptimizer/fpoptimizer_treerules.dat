@@ -758,6 +758,8 @@ cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
 cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
 cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 
+cPow [ (cAdd [(cPow [x %@E])  (cPow [y &@E])] ) 0.5 ] -> (cHypot [(cPow [x *(% 0.5)]) (cPow [y *(& 0.5)])])
+
 [ABS_LOGICAL]
 
 cNot    [x@P] -> cAbsNot [x]

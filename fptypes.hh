@@ -32,7 +32,8 @@ namespace FUNCTIONPARSERTYPES
         cCbrt, cCeil,
         cCos, cCosh, cCot, cCsc,
         cEval,
-        cExp, cExp2, cFloor, cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
+        cExp, cExp2, cFloor, cHypot,
+        cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
         cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
         cTrunc,
 
@@ -143,6 +144,7 @@ namespace FUNCTIONPARSERTYPES
         /*cExp  */ { FP_FNAME("exp"),   1, FuncDefinition::Enabled },
         /*cExp2 */ { FP_FNAME("exp2"),  1, FuncDefinition::Enabled },
         /*cFloor*/ { FP_FNAME("floor"), 1, FuncDefinition::Enabled },
+        /*cHypot*/ { FP_FNAME("hypot"), 2, FuncDefinition::Enabled },
         /*cIf   */ { FP_FNAME("if"),    0,
                      FuncDefinition::Enabled | FuncDefinition::OkForInt },
         /*cInt  */ { FP_FNAME("int"),   1, FuncDefinition::Enabled },

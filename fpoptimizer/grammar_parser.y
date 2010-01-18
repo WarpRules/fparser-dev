@@ -1525,7 +1525,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 // This has a chance of being an opcode token
                 std::string opcodetoken = IdBuf.substr(1);
                 opcodetoken[0] = std::tolower(opcodetoken[0]);
-                
+
                 unsigned nameLength = readOpcode(opcodetoken.c_str());
                 if(nameLength & 0x80000000U)
                 {

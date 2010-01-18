@@ -49,6 +49,7 @@
 #define FP_SUPPORT_EXP2
 #define FP_SUPPORT_LOG2
 #define FP_SUPPORT_CBRT
+#define FP_SUPPORT_HYPOT
 #endif
 
 /*

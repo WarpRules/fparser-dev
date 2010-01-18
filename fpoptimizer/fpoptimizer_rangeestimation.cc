@@ -1,8 +1,6 @@
 #include "fpoptimizer_codetree.hh"
 #include "fpoptimizer_consts.hh"
 
-#include <cmath> /* for CalculateResultBoundaries() */
-
 #ifdef FP_SUPPORT_OPTIMIZER
 
 using namespace FUNCTIONPARSERTYPES;
@@ -86,8 +84,8 @@ namespace FPoptimizer_CodeTree
             case cLog: /* Defined for 0.0 < x <= inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = log(m.min); } // No boundaries
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = log(m.max); }
+                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log(m.min); } // No boundaries
+                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log(m.max); }
                 return m;
             }
 
@@ -143,8 +141,8 @@ namespace FPoptimizer_CodeTree
             case cAtan: /* defined for all values -inf <= x <= inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = atan(m.min); else { m.min = -CONSTANT_PIHALF; m.has_min = true; }
-                if(m.has_max) m.max = atan(m.max); else { m.max =  CONSTANT_PIHALF; m.has_max = true; }
+                if(m.has_min) m.min = fp_atan(m.min); else { m.min = -CONSTANT_PIHALF; m.has_min = true; }
+                if(m.has_max) m.max = fp_atan(m.max); else { m.max =  CONSTANT_PIHALF; m.has_max = true; }
                 return m;
             }
             case cAtan2: /* too complicated to estimate */
@@ -190,27 +188,27 @@ namespace FPoptimizer_CodeTree
             case cCeil:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.max = std::ceil(m.max); // ceil() may increase the value, may not decrease
+                m.max = fp_ceil(m.max); // ceil() may increase the value, may not decrease
                 return m;
             }
             case cFloor:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.min = std::floor(m.min); // floor() may decrease the value, may not increase
+                m.min = fp_floor(m.min); // floor() may decrease the value, may not increase
                 return m;
             }
             case cTrunc:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.min = std::floor(m.min); // trunc() may either increase or decrease the value
-                m.max = std::ceil(m.max); // for safety, we assume both
+                m.min = fp_floor(m.min); // trunc() may either increase or decrease the value
+                m.max = fp_ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cInt:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.min = std::floor(m.min); // int() may either increase or decrease the value
-                m.max = std::ceil(m.max); // for safety, we assume both
+                m.min = fp_floor(m.min); // int() may either increase or decrease the value
+                m.max = fp_ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cSinh: /* defined for all values -inf <= x <= inf */
@@ -235,19 +233,19 @@ namespace FPoptimizer_CodeTree
                     if(m.has_max) // max, min
                     {
                         if(m.min >= 0.0 && m.max >= 0.0) // +x .. +y
-                            { m.min = cosh(m.min); m.max = cosh(m.max); }
+                            { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max); }
                         else if(m.min < 0.0 && m.max >= 0.0) // -x .. +y
-                            { double tmp = cosh(m.min); m.max = cosh(m.max);
+                            { double tmp = fp_cosh(m.min); m.max = fp_cosh(m.max);
                               if(tmp > m.max) m.max = tmp;
                               m.min = 1.0; }
                         else // -x .. -y
-                            { m.min = cosh(m.min); m.max = cosh(m.max);
+                            { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max);
                               std::swap(m.min, m.max); }
                     }
                     else // min, no max
                     {
                         if(m.min >= 0.0) // 0..inf -> 1..inf
-                            { m.has_max = false; m.min = cosh(m.min); }
+                            { m.has_max = false; m.min = fp_cosh(m.min); }
                         else
                             { m.has_max = false; m.min = 1.0; } // Anything between 1..inf
                     }
@@ -257,7 +255,7 @@ namespace FPoptimizer_CodeTree
                     m.has_min = true; m.min = 1.0; // always a lower boundary
                     if(m.has_max) // max, no min
                     {
-                        m.min = cosh(m.max); // n..inf
+                        m.min = fp_cosh(m.max); // n..inf
                         m.has_max = false; // No upper boundary
                     }
                     else // no max, no min
@@ -715,6 +713,17 @@ namespace FPoptimizer_CodeTree
                 tmp.AddParam(GetParam(0));
                 tmp.AddParam(CodeTree(-0.5));
                 return tmp.CalculateResultBoundaries();
+            }
+            case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))
+            {
+                CodeTree xsqr, ysqr, add, sqrt;
+                xsqr.AddParam(GetParam(0)); xsqr.AddParam(CodeTree(2));
+                ysqr.AddParam(GetParam(1)); ysqr.AddParam(CodeTree(2));
+                xsqr.SetOpcode(cPow); ysqr.SetOpcode(cPow);
+                add.AddParamMove(xsqr); add.AddParamMove(ysqr);
+                add.SetOpcode(cAdd); sqrt.AddParamMove(add);
+                sqrt.SetOpcode(cSqrt);
+                return sqrt.CalculateResultBoundaries();
             }
             case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
             {

@@ -784,6 +784,14 @@ MpfrFloat MpfrFloat::cot(const MpfrFloat& value)
     return retval;
 }
 
+void MpfrFloat::sincos(const MpfrFloat& value,
+                       MpfrFloat& sin,
+                       MpfrFloat& cos)
+{
+    mpfr_sin_cos(
+        sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+}
+
 MpfrFloat MpfrFloat::acos(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
@@ -809,6 +817,14 @@ MpfrFloat MpfrFloat::atan2(const MpfrFloat& value1, const MpfrFloat& value2)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_atan2(retval.mData->mFloat,
+               value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::hypot(const MpfrFloat& value1, const MpfrFloat& value2)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_hypot(retval.mData->mFloat,
                value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
     return retval;
 }
