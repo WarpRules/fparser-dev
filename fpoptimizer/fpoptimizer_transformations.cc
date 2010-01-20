@@ -39,6 +39,8 @@ namespace
             n_occurrences += 1;
             if(op == cCos) ++n_as_cos_param;
             if(op == cSin) ++n_as_sin_param;
+            if(op == cSec) ++n_as_cos_param;
+            if(op == cCsc) ++n_as_sin_param;
         }
 
         size_t GetCSEscore() const

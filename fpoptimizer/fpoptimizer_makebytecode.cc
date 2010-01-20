@@ -69,6 +69,30 @@ namespace FPoptimizer_CodeTree
         {
             return;
         }
+        if(GetOpcode() == cSec)
+        {
+            CodeTree invtree; invtree.SetParams(GetParams());
+            invtree.SetOpcode(cCos); invtree.Rehash(false);
+            if(synth.FindAndDup(invtree)) { synth.AddOperation(cInv,1,1); return; }
+        }
+        if(GetOpcode() == cSin)
+        {
+            CodeTree invtree; invtree.SetParams(GetParams());
+            invtree.SetOpcode(cCsc); invtree.Rehash(false);
+            if(synth.FindAndDup(invtree)) { synth.AddOperation(cInv,1,1); return; }
+        }
+        if(GetOpcode() == cCsc)
+        {
+            CodeTree invtree; invtree.SetParams(GetParams());
+            invtree.SetOpcode(cSin); invtree.Rehash(false);
+            if(synth.FindAndDup(invtree)) { synth.AddOperation(cInv,1,1); return; }
+        }
+        if(GetOpcode() == cCos)
+        {
+            CodeTree invtree; invtree.SetParams(GetParams());
+            invtree.SetOpcode(cSec); invtree.Rehash(false);
+            if(synth.FindAndDup(invtree)) { synth.AddOperation(cInv,1,1); return; }
+        }
 
         size_t n_subexpressions_synthesized = SynthCommonSubExpressions(synth);
 
