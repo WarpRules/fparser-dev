@@ -1,7 +1,6 @@
 %{
 #define YYDEBUG 1
 #define YYERROR_VERBOSE 1
-#define YY_FPoptimizerGrammarParser_ERROR_VERBOSE 1
 #include <string.h> // for error reporting
 
 #include "fpconfig.hh"
@@ -34,15 +33,18 @@
 
 /*********/
 using namespace FPoptimizer_Grammar;
-using namespace FUNCTIONPARSERTYPES;
 
 class GrammarDumper;
+
+static void yyerror(const char* msg);
+static int yylex(union YYSTYPE* lval);
 
 namespace
 {
     /* This function generated with make_identifier_parser.cc */
     unsigned readOpcode(const char* input)
     {
+        using namespace FUNCTIONPARSERTYPES;
 #include "fp_identifier_parser.inc"
         return 0;
     }
@@ -84,13 +86,15 @@ namespace GrammarData
     class FunctionType
     {
     public:
-        OPCODE        Opcode;
+        FUNCTIONPARSERTYPES::OPCODE Opcode;
         MatchedParams Params;
     public:
-        FunctionType(OPCODE o, const MatchedParams& p) : Opcode(o), Params(p) { }
+        FunctionType(FUNCTIONPARSERTYPES::OPCODE o, const MatchedParams& p)
+            : Opcode(o), Params(p) { }
 
         void RecursivelySetDefaultParamMatchingType()
         {
+            using namespace FUNCTIONPARSERTYPES;
             Params.RecursivelySetDefaultParamMatchingType();
             if((Opcode == cAdd || Opcode == cMul
             || Opcode == cAnd || Opcode == cOr
@@ -139,14 +143,14 @@ namespace GrammarData
         {
         }
 
-        ParamSpec(OPCODE o, const std::vector<ParamSpec*>& p)
+        ParamSpec(FUNCTIONPARSERTYPES::OPCODE o, const std::vector<ParamSpec*>& p)
             : DepMask(),
               Opcode(SubFunction),
               Func(new FunctionType(o, MatchedParams(PositionalParams))),
               ImmedConstraint(0),
               IsConst(true)
         {
-            if(o == cNeg && p[0]->Opcode == NumConstant)
+            if(o == FUNCTIONPARSERTYPES::cNeg && p[0]->Opcode == NumConstant)
             {
                 delete Func;
                 Opcode        = NumConstant;
@@ -404,9 +408,7 @@ namespace GrammarData
     }
 }
 
-#define YY_FPoptimizerGrammarParser_MEMBERS \
-    GrammarData::Grammar grammar;
-
+GrammarData::Grammar grammar;
 std::vector<ParamSpec> plist;
 std::vector<Rule>      rlist;
 
@@ -577,6 +579,7 @@ public:
 
     void RegisterGrammar(const std::vector<GrammarData::Grammar>& gset)
     {
+        using namespace FUNCTIONPARSERTYPES;
         std::vector<Rule> this_rules;
 
         for(size_t a=0; a<gset.size(); ++a)
@@ -614,6 +617,7 @@ public:
     void DumpGrammar(const std::string& grammarname,
                      const std::vector<GrammarData::Grammar>& gset)
     {
+        using namespace FUNCTIONPARSERTYPES;
         std::vector<unsigned> rule_list;
 
         std::vector<Rule> this_rules;
@@ -715,6 +719,7 @@ public:
 
     static std::string ConstValueToString(double value)
     {
+        using namespace FUNCTIONPARSERTYPES;
         std::ostringstream result;
         result.precision(50);
         #define if_const(n) \
@@ -758,8 +763,8 @@ public:
                     break; }
             switch(param.first)
             {
-                set(ParamHolder, plist_p, );
-                set(NumConstant, plist_n, );
+                set(ParamHolder, plist_p, {} );
+                set(NumConstant, plist_n, {} );
                 set(SubFunction, plist_s,
                      ParamSpec_SubFunction* p = (ParamSpec_SubFunction*)param.second;
                      for(size_t a=0; a<p->data.param_count; ++a)
@@ -1076,7 +1081,6 @@ static GrammarDumper dumper;
 
 %}
 
-%name FPoptimizerGrammarParser
 %pure_parser
 
 %union {
@@ -1089,9 +1093,9 @@ static GrammarDumper dumper;
     GrammarData::MatchedParams* p;
     GrammarData::ParamSpec*     a;
 
-    double             num;
-    unsigned           index;
-    OPCODE             opcode;
+    double                       num;
+    unsigned                     index;
+    FUNCTIONPARSERTYPES::OPCODE  opcode;
 }
 
 /* See documentation about syntax and token meanings in fpoptimizer.dat */
@@ -1118,7 +1122,7 @@ static GrammarDumper dumper;
     grammar:
       grammar substitution
       {
-        this->grammar.AddRule(*$2);
+        grammar.AddRule(*$2);
         delete $2;
       }
     | grammar param_constraints substitution
@@ -1130,7 +1134,7 @@ static GrammarDumper dumper;
         }
         if($2 & Value_Logical)
             $3->SetLogicalContextOnly();
-        this->grammar.AddRule(*$3);
+        grammar.AddRule(*$3);
         delete $3;
       }
     | grammar NEWLINE
@@ -1306,7 +1310,7 @@ static GrammarDumper dumper;
 enum { cVar,cFetch,cPopNMov };
 #endif
 
-void FPoptimizerGrammarParser::yyerror(char* msg) // bison++ declares msg as char*.
+static void yyerror(const char* msg)
 {
     std::cerr << msg << std::endl;
     for(;;)
@@ -1318,7 +1322,7 @@ void FPoptimizerGrammarParser::yyerror(char* msg) // bison++ declares msg as cha
     exit(1);
 }
 
-int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
+static int yylex(YYSTYPE* lval)
 {
     int c = std::fgetc(stdin);
     switch(c)
@@ -1340,14 +1344,14 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
         {
             c = std::fgetc(stdin);
             std::ungetc(c, stdin);
-            if(c == '(') { lval->opcode = cAdd; return BUILTIN_FUNC_NAME; }
+            if(c == '(') { lval->opcode = FUNCTIONPARSERTYPES::cAdd; return BUILTIN_FUNC_NAME; }
             return '+';
         }
         case '*':
         {
             c = std::fgetc(stdin);
             std::ungetc(c, stdin);
-            if(c == '(') { lval->opcode = cMul; return BUILTIN_FUNC_NAME; }
+            if(c == '(') { lval->opcode = FUNCTIONPARSERTYPES::cMul; return BUILTIN_FUNC_NAME; }
             return '*';
         }
         case '-':
@@ -1359,11 +1363,11 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             {
                 goto GotNumeric;
             }
-            lval->opcode = cNeg;
+            lval->opcode = FUNCTIONPARSERTYPES::cNeg;
             return UNARY_TRANSFORMATION;
         }
         case '/':
-            lval->opcode = cInv;
+            lval->opcode = FUNCTIONPARSERTYPES::cInv;
             return UNARY_TRANSFORMATION;
 
         case '=':
@@ -1484,39 +1488,39 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
 
             /* Detect opcodes */
-            if(IdBuf == "cAdd") { lval->opcode = cAdd; return OPCODE; }
-            if(IdBuf == "cAnd") { lval->opcode = cAnd; return OPCODE; }
-            if(IdBuf == "cMul") { lval->opcode = cMul; return OPCODE; }
-            if(IdBuf == "cOr")  { lval->opcode = cOr; return OPCODE; }
+            if(IdBuf == "cAdd") { lval->opcode = FUNCTIONPARSERTYPES::cAdd; return OPCODE; }
+            if(IdBuf == "cAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAnd; return OPCODE; }
+            if(IdBuf == "cMul") { lval->opcode = FUNCTIONPARSERTYPES::cMul; return OPCODE; }
+            if(IdBuf == "cOr")  { lval->opcode = FUNCTIONPARSERTYPES::cOr; return OPCODE; }
 
-            if(IdBuf == "cNeg") { lval->opcode = cNeg; return OPCODE; }
-            if(IdBuf == "cSub") { lval->opcode = cSub; return OPCODE; }
-            if(IdBuf == "cDiv") { lval->opcode = cDiv; return OPCODE; }
-            if(IdBuf == "cMod") { lval->opcode = cMod; return OPCODE; }
-            if(IdBuf == "cEqual") { lval->opcode = cEqual; return OPCODE; }
-            if(IdBuf == "cNEqual") { lval->opcode = cNEqual; return OPCODE; }
-            if(IdBuf == "cLess") { lval->opcode = cLess; return OPCODE; }
-            if(IdBuf == "cLessOrEq") { lval->opcode = cLessOrEq; return OPCODE; }
-            if(IdBuf == "cGreater") { lval->opcode = cGreater; return OPCODE; }
-            if(IdBuf == "cGreaterOrEq") { lval->opcode = cGreaterOrEq; return OPCODE; }
-            if(IdBuf == "cNot") { lval->opcode = cNot; return OPCODE; }
-            if(IdBuf == "cNotNot") { lval->opcode = cNotNot; return OPCODE; }
-            if(IdBuf == "cAbsNot") { lval->opcode = cAbsNot; return OPCODE; }
-            if(IdBuf == "cAbsNotNot") { lval->opcode = cAbsNotNot; return OPCODE; }
-            if(IdBuf == "cAbsAnd") { lval->opcode = cAbsAnd; return OPCODE; }
-            if(IdBuf == "cAbsOr") { lval->opcode = cAbsOr; return OPCODE; }
-            if(IdBuf == "cAbsIf") { lval->opcode = cAbsIf; return OPCODE; }
-            if(IdBuf == "cDeg")  { lval->opcode = cDeg; return OPCODE; }
-            if(IdBuf == "cRad")  { lval->opcode = cRad; return OPCODE; }
-            if(IdBuf == "cInv")  { lval->opcode = cInv; return OPCODE; }
-            if(IdBuf == "cSqr")  { lval->opcode = cSqr; return OPCODE; }
-            if(IdBuf == "cRDiv") { lval->opcode = cRDiv; return OPCODE; }
-            if(IdBuf == "cRSub") { lval->opcode = cRSub; return OPCODE; }
-            if(IdBuf == "cRSqrt") { lval->opcode = cRSqrt; return OPCODE; }
+            if(IdBuf == "cNeg") { lval->opcode = FUNCTIONPARSERTYPES::cNeg; return OPCODE; }
+            if(IdBuf == "cSub") { lval->opcode = FUNCTIONPARSERTYPES::cSub; return OPCODE; }
+            if(IdBuf == "cDiv") { lval->opcode = FUNCTIONPARSERTYPES::cDiv; return OPCODE; }
+            if(IdBuf == "cMod") { lval->opcode = FUNCTIONPARSERTYPES::cMod; return OPCODE; }
+            if(IdBuf == "cEqual") { lval->opcode = FUNCTIONPARSERTYPES::cEqual; return OPCODE; }
+            if(IdBuf == "cNEqual") { lval->opcode = FUNCTIONPARSERTYPES::cNEqual; return OPCODE; }
+            if(IdBuf == "cLess") { lval->opcode = FUNCTIONPARSERTYPES::cLess; return OPCODE; }
+            if(IdBuf == "cLessOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cLessOrEq; return OPCODE; }
+            if(IdBuf == "cGreater") { lval->opcode = FUNCTIONPARSERTYPES::cGreater; return OPCODE; }
+            if(IdBuf == "cGreaterOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cGreaterOrEq; return OPCODE; }
+            if(IdBuf == "cNot") { lval->opcode = FUNCTIONPARSERTYPES::cNot; return OPCODE; }
+            if(IdBuf == "cNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cNotNot; return OPCODE; }
+            if(IdBuf == "cAbsNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNot; return OPCODE; }
+            if(IdBuf == "cAbsNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNotNot; return OPCODE; }
+            if(IdBuf == "cAbsAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAbsAnd; return OPCODE; }
+            if(IdBuf == "cAbsOr") { lval->opcode = FUNCTIONPARSERTYPES::cAbsOr; return OPCODE; }
+            if(IdBuf == "cAbsIf") { lval->opcode = FUNCTIONPARSERTYPES::cAbsIf; return OPCODE; }
+            if(IdBuf == "cDeg")  { lval->opcode = FUNCTIONPARSERTYPES::cDeg; return OPCODE; }
+            if(IdBuf == "cRad")  { lval->opcode = FUNCTIONPARSERTYPES::cRad; return OPCODE; }
+            if(IdBuf == "cInv")  { lval->opcode = FUNCTIONPARSERTYPES::cInv; return OPCODE; }
+            if(IdBuf == "cSqr")  { lval->opcode = FUNCTIONPARSERTYPES::cSqr; return OPCODE; }
+            if(IdBuf == "cRDiv") { lval->opcode = FUNCTIONPARSERTYPES::cRDiv; return OPCODE; }
+            if(IdBuf == "cRSub") { lval->opcode = FUNCTIONPARSERTYPES::cRSub; return OPCODE; }
+            if(IdBuf == "cRSqrt") { lval->opcode = FUNCTIONPARSERTYPES::cRSqrt; return OPCODE; }
 #ifdef FP_SUPPORT_OPTIMIZER
-            if(IdBuf == "cLog2by") { lval->opcode = cLog2by; return OPCODE; }
+            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cLog2by; return OPCODE; }
 #else
-            if(IdBuf == "cLog2by") { lval->opcode = cNop; return OPCODE; }
+            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cNop; return OPCODE; }
 #endif
 
             /* Detect other function opcodes */
@@ -1524,7 +1528,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
             {
                 // This has a chance of being an opcode token
                 std::string opcodetoken = IdBuf.substr(1);
-                opcodetoken[0] = std::tolower(opcodetoken[0]);
+                opcodetoken[0] = (char) std::tolower( opcodetoken[0] );
 
                 unsigned nameLength = readOpcode(opcodetoken.c_str());
                 if(nameLength & 0x80000000U)
@@ -1535,7 +1539,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 }
                 std::cerr <<
                     "Warning: Unrecognized opcode '" << IdBuf << "' interpreted as cNop\n";
-                lval->opcode = cNop;
+                lval->opcode = FUNCTIONPARSERTYPES::cNop;
                 return OPCODE;
             }
 
@@ -1547,7 +1551,7 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                 for(size_t a=0; a<grouptoken.size(); ++a)
                 {
                     if(std::islower(grouptoken[a])) goto NotAGroupToken;
-                    grouptoken[a] = std::tolower(grouptoken[a]);
+                    grouptoken[a] = (char) std::tolower(grouptoken[a]);
                 }
                 if(1) // scope
                 {
@@ -1560,13 +1564,13 @@ int FPoptimizerGrammarParser::yylex(yy_FPoptimizerGrammarParser_stype* lval)
                     }
                     if(IdBuf == "MOD")
                     {
-                        lval->opcode = cMod;
+                        lval->opcode = FUNCTIONPARSERTYPES::cMod;
                         return BUILTIN_FUNC_NAME;
                     }
 
                     std::cerr << "Warning: Unrecognized constant function '" << IdBuf
                               << "' interpreted as cNop\n";
-                    lval->opcode = cNop;
+                    lval->opcode = FUNCTIONPARSERTYPES::cNop;
                     return BUILTIN_FUNC_NAME;
                 }
             NotAGroupToken:;
@@ -1620,11 +1624,12 @@ int main()
 
     for(;;)
     {
-        FPoptimizerGrammarParser x;
-        x.yyparse();
+        grammar = GrammarData::Grammar();
 
-        x.grammar.BuildFinalDepMask();
-        sections[sectionname] = x.grammar;
+        yyparse();
+
+        grammar.BuildFinalDepMask();
+        sections[sectionname] = grammar;
 
         int c = std::fgetc(stdin);
         if(c != '[')

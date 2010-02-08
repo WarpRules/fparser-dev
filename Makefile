@@ -4,7 +4,7 @@
 # same extensions.
 #
 # Also requires: rm, grep, sed and g++ (regardless of what CXX and LD are)
-# The optimizer code generator requires bison++
+# The optimizer code generator requires bison
 #===========================================================================
 
 RELEASE_VERSION=4.0.3
@@ -135,7 +135,7 @@ fpoptimizer/grammar_parser: \
 
 fpoptimizer/grammar_parser.cc: \
 		fpoptimizer/grammar_parser.y
-	bison++ --output=$@ $<
+	bison --output=$@ $<
 
 fpoptimizer/fpoptimizer_grammar_data.cc: \
 		fpoptimizer/grammar_parser \
