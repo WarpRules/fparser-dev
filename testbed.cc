@@ -112,6 +112,7 @@ struct FloatingPointTest
     unsigned paramAmount;
     double paramMin, paramMax, paramStep;
     bool useDegrees;
+    const char* testname;
 };
 
 struct IntTest
@@ -122,6 +123,7 @@ struct IntTest
     unsigned paramAmount;
     long paramMin, paramMax, paramStep;
     bool useDegrees;
+    const char* testname;
 };
 
 double f1(const double* p)
@@ -668,17 +670,18 @@ namespace
 {
     FloatingPointTest floatingPointTests[] =
     {
-        { P1 }, { P2 }, { P3 }, { P4 }, { P5 },
+        { P1,"1" }, { P2,"2" }, { P3,"3" }, { P4,"4" }, { P5,"5" },
 #ifndef FP_DISABLE_EVAL
-        { P6 },
+        { P6,"6" },
 #endif
-        { P7 }, { P8 }, { P9 }, { P10 }, { P11 }, { P12 }, { P13 }, { P14 },
-        { P15 }, { P16 }, { P17 }, { P18 }, { P19 }, { P20 }, { P21 }, { P22 },
-        { P23 }, { P24 }, { P25 }, { P26 }, { P27 }, { P28 }, { P29 }, { P30 },
-        { P31 }, { P32 }, { P33 }, { P34 }, { P35 }, { P36 }, { P37 }, { P38 },
-        { P39 }, { P40 }, { P41 }, { P42 }, { P43 }, { P44 }, { P45 }, { P46 },
-        { P47 }, { P48 }, { P49 }, { P50 }, { P51 }, { P52 }, { P53 }, { P54 },
-        { P55 }, { P56 }, { P57 }, { P58 }, { P59 }
+        { P7,"7" }, { P8,"8" }, { P9,"9" }, { P10,"10" }, { P11,"11" }, { P12,"12" }, { P13,"13" }, { P14,"14" },
+        { P15,"15" }, { P16,"16" }, { P17,"17" },
+        { P18,"18" }, { P19,"19" }, { P20,"20" }, { P21,"21" }, { P22,"22" },
+        { P23,"23" }, { P24,"24" }, { P25,"25" }, { P26,"26" }, { P27,"27" }, { P28,"28" }, { P29,"29" }, { P30,"30" },
+        { P31,"31" }, { P32,"32" }, { P33,"33" }, { P34,"34" }, { P35,"35" }, { P36,"36" }, { P37,"37" }, { P38,"38" },
+        { P39,"39" }, { P40,"40" }, { P41,"41" }, { P42,"42" }, { P43,"43" }, { P44,"44" }, { P45,"45" }, { P46,"46" },
+        { P47,"47" }, { P48,"48" }, { P49,"49" }, { P50,"50" }, { P51,"51" }, { P52,"52" }, { P53,"53" }, { P54,"54" },
+        { P55,"55" }, { P56,"56" }, { P57,"57" }, { P58,"58" }, { P59,"59" }
     };
 
     const unsigned floatingPointTestsAmount =
@@ -725,7 +728,7 @@ namespace
 {
     IntTest intTests[] =
     {
-        { PI1 }, { PI2 }, { PI3 }, { PI4 }
+        { PI1,"1" }, { PI2,"2" }, { PI3,"3" }, { PI4,"4" }
     };
 
     const unsigned intTestsAmount = sizeof(intTests)/sizeof(intTests[0]);
@@ -2453,7 +2456,7 @@ int main(int argc, char* argv[])
                     static_cast<double>(floatingPointTests[i].paramAmount))
                       << " param. combinations): " << std::flush;
         else
-            std::cout << i+1 << std::flush << " ";
+            std::cout << floatingPointTests[i].testname << std::flush << " ";
 
         if(!runTest(fp, floatingPointTests[i], "Not optimized", Epsilon))
             return 1;
@@ -2521,7 +2524,7 @@ int main(int argc, char* argv[])
 
     for(unsigned i = 0; i < intTestsAmount; ++i)
     {
-        std::cout << i+1 << std::flush << " ";
+        std::cout << intTests[i].testname << std::flush << " ";
 
 #ifdef FP_SUPPORT_LONG_INT_TYPE
         if(!parseRegressionTestFunction(fp_li, intTests[i], "_li"))
