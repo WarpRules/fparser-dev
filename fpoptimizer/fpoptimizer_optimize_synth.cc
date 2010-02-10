@@ -52,7 +52,8 @@ namespace FPoptimizer_Optimize
                          */
                         assert(tree.GetOpcode() == cAdd || tree.GetOpcode() == cMul
                             || tree.GetOpcode() == cMin || tree.GetOpcode() == cMax
-                            || tree.GetOpcode() == cAnd || tree.GetOpcode() == cOr);
+                            || tree.GetOpcode() == cAnd || tree.GetOpcode() == cOr
+                            || tree.GetOpcode() == cAbsAnd || tree.GetOpcode() == cAbsOr);
                         tree.Become(tree.GetParam(0));
                     }
                 }
