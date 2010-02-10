@@ -146,6 +146,11 @@ y [y*x==Value_t(1)] cMul x cMul ->
 y                   cMul x cMul -> [y*x] cMul
 cDup cAdd      cDup cAdd -> [Value_t(4)] cMul
 cDup cAdd cMul cDup cAdd -> cMul [Value_t(4)] cMul
+
+cDup x cMul cAdd -> [x+Value_t(1)] cMul 
+cDup x cPow cMul -> [x+Value_t(1)] cPow 
+cDup cSub        -> [Value_t(0)] cMul
+
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->
                      cDup                   cAdd      x cMul ->      [x+x] cMul
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd cMul x cMul -> cMul
