@@ -793,10 +793,10 @@ cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
 #cAdd x@L@M <1>    -> cAbsIf [x (cAdd <1> 1) (cAdd <1>)]
 cMul x@L   <1>    -> cAbsIf [x (cMul <1>) 0]
 
-cAnd x y        -> cIf [x (cNotNot[y]) 0]
-cOr  x y        -> cIf [x 1 (cNotNot[y])]
-cAbsAnd x y     -> cAbsIf [x   (cAbsNotNot[y]) 0]
-cAbsOr  x y     -> cAbsIf [x 1 (cAbsNotNot[y])  ]
+cAnd x <1>      -> cIf [x   (cAbsNotNot[(cAnd <1>)]) 0]
+cOr  x <1>      -> cIf [x 1 (cAbsNotNot[(cOr <1>)])   ]
+cAbsAnd x <1>   -> cAbsIf [x   (cAbsNotNot[(cAbsAnd <1>)]) 0]
+cAbsOr  x <1>   -> cAbsIf [x 1 (cAbsNotNot[(cAbsOr  <1>)])  ]
 
 [IGNORE_IF_SIDEEFFECTS]
 
