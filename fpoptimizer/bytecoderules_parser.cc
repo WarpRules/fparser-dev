@@ -245,8 +245,8 @@ namespace
             static const char table[] =
                 /*"0123456789"*/
                 /*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/
-                "abcdefghijklmnop"
-                /*"qrstuvwxyz_"*/;
+                "abcdefghijklmnopq"
+                /*"rstuvwxyz_"*/;
             char result[16] = {0};
             int o=15;
             while(true)
@@ -307,7 +307,11 @@ namespace
         {
             for(size_t a=0; a<seq.size(); )
             {
-                if(seq[a][0] == '/' && seq[a][1] == '*')
+                if((seq[a][0] == '/' && seq[a][1] == '*')
+                || (seq[a][0] == 'n' && seq[a][1] == '_')
+                || (seq[a][0] == 'r' && seq[a][1] == 'e' && seq[a][2] == 'p')
+                || (seq[a][0] == 'o' && seq[a][1] == 'p' && seq[a][2] == '_')
+                  )
                 {
                     out << Indent(indent) << seq[a] << "\n";
                     seq.erase(seq.begin()+a);
@@ -426,8 +430,17 @@ namespace
         #else
             if(know_bytecode_offset)
                 OutLine(Out)  << "ByteCodePtr -= " << n << ";";
+          #if 0
             for(; n > 0; --n)
                 OutLine(Out)  << "data->ByteCode.pop_back();";
+          #else
+            /*if(n == 1)
+                OutLine(Out)  << "data->ByteCode.pop_back();";
+            else*/ if(n > 0)
+            {
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->ByteCode.pop_back();";
+            }
+          #endif
         #endif
         }
 
@@ -442,8 +455,15 @@ namespace
         #else
             if(know_immed_offset)
                 OutLine(Out)  << "ImmedPtr -= " << n << ";";
+         #if 0
             for(; n > 0; --n)
                 OutLine(Out)  << "data->Immed.pop_back();";
+         #else
+            if(n > 0)
+            {
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->Immed.pop_back();";
+            }
+         #endif
         #endif
         }
 
@@ -546,6 +566,9 @@ namespace
 
         Synther offset_synth(Out, indent);
 
+        bool rep_v_used = false;
+        bool op_v_used  = false;
+
         bool changed = false;
         for(size_t a=0; a<operations.size(); ++a)
         {
@@ -581,14 +604,28 @@ namespace
                     }
                     else
                     {
-                        OutLine(Out)  << Iexpr(i_offset-1) << " = " << opcode << ";";
+                        if(rep_v_used || true)
+                            OutLine(Out)  << Iexpr(i_offset-1) << " = " << opcode << ";";
+                        else
+                        {
+                            OutLine(Out)  << "rep_v = " << opcode << ";";
+                            OutLine(Out)  << Iexpr(i_offset-1) << " = rep_v;";
+                            rep_v_used = true;
+                        }
                         changed = true;
                     }
                 }
                 else
                 {
                     offset_synth.ResetImmed();
-                    OutLine(Out)  << "data->Immed.push_back(" << opcode << ");";
+                    if(rep_v_used || true)
+                        OutLine(Out)  << "data->Immed.push_back(" << opcode << ");";
+                    else
+                    {
+                        OutLine(Out)  << "rep_v = " << opcode << ";";
+                        OutLine(Out)  << "data->Immed.push_back(rep_v);";
+                        rep_v_used = true;
+                    }
                     changed = true;
                 }
                 //if(requires_var) { Out.Flush(); requires_var = false; }
@@ -634,7 +671,6 @@ namespace
                         OutLine(Out)
                             << "/* opcode = " << operations.back().result << "; */"
                             << " // redundant, not really needed with tailcalls";
-                        // Yes, it's needed due to Default-gotos
                     #else
                         OutLine(Out)  << "opcode = " << operations.back().result << ";";
                     #endif
@@ -655,7 +691,14 @@ namespace
                 {
                     offset_synth.ResetBoth(b_offset>0 ? b_offset : 0,
                                            i_offset>0 ? i_offset : 0);
-                    OutLine(Out)  << "AddFunctionOpcode(" << opcode << ");";
+                    if(op_v_used || true || opcode[0]!='c' || opcode=="cImmed")
+                        OutLine(Out)  << "AddFunctionOpcode(" << opcode << ");";
+                    else
+                    {
+                        OutLine(Out)  << "op_v = " << opcode << ";";
+                        OutLine(Out)  << "AddFunctionOpcode(op_v);";
+                        op_v_used = true;
+                    }
                     //if(requires_var) { Out.Flush(); requires_var = false; }
                     i_offset = b_offset = 0;
                     changed = true;
@@ -682,7 +725,14 @@ namespace
                 else
                 {
                     offset_synth.ResetByteCode();
-                    OutLine(Out)  << "data->ByteCode.push_back(" << opcode << ");";
+                    if(op_v_used || true || opcode[0]!='c' || opcode=="cImmed")
+                        OutLine(Out)  << "data->ByteCode.push_back(" << opcode << ");";
+                    else
+                    {
+                        OutLine(Out)  << "op_v = " << opcode << ";";
+                        OutLine(Out)  << "data->ByteCode.push_back(op_v);";
+                        op_v_used = true;
+                    }
                     changed = true;
                 }
                 if(requires_var) { Out.Flush(); requires_var = false; }
@@ -1245,6 +1295,8 @@ int main()
     //  "{\n"
         "  unsigned* ByteCodePtr;\n"
         "  Value_t*   ImmedPtr;\n"
+        //"  unsigned n_b, n_i, op_v;\n"
+        //"  Value_t  rep_v;\n"
         "\n"
         "  #define FP_ReDefinePointers() \\\n"
         "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
