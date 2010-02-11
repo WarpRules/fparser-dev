@@ -170,6 +170,31 @@ cAbsIf [x 0 1] -> cAbsNot [x]
 @L cNotNot [x]         -> x
 @L cAbs [x]            -> x
 
+cAnd    (cGreater[x %]) (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAnd    (cGreater[x %]) (cAbsNot[x])    : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+cAnd    (cGreater[x %]) (cGreater[& x]) : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAnd    (cLess[% x])    (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsAnd (cGreater[x %]) (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsAnd (cGreater[x %]) (cAbsNot[x])    : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+cAbsAnd (cGreater[x %]) (cGreater[& x]) : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsAnd (cLess[% x])    (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cOr    (cLessOrEq[x %]) (cGreaterOrEq[x &])    : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cOr    (cLessOrEq[x %]) (cAbsNotNot[x])        : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+cOr    (cLessOrEq[x %]) (cLessOrEq[& x])       : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cOr    (cGreaterOrEq[% x]) (cGreaterOrEq[x &]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsOr (cLessOrEq[x %]) (cGreaterOrEq[x &])    : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsOr (cLessOrEq[x %]) (cAbsNotNot[x])        : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+cAbsOr (cLessOrEq[x %]) (cLessOrEq[& x])       : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+cAbsOr (cGreaterOrEq[% x]) (cGreaterOrEq[x &]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+
+#cOr    (cAbsNot[x]) (cAbsNot[(cMul{x -1})])  : (cNot[x])
+#cAbsOr (cAbsNot[x]) (cAbsNot[(cMul{x -1})])  : (cNot[x])
+#cOr    (cAbsNotNot[x]) (cAbsNotNot[(cMul{x -1})])  : (cNotNot[x])
+#cAbsOr (cAbsNotNot[x]) (cAbsNotNot[(cMul{x -1})])  : (cNotNot[x])
+
+cAbsNotNot (cMul %@P <1>) -> (cGreaterOrEq[(cMul <1>) *(0.5 /%)])
+cAbsNotNot (cMul %@N <1>) -> (cLessOrEq[(cMul <1>)    *(0.5 /%)])
+
 [SIMPLIFY_EQUATION]
 
 cLess        [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
@@ -783,7 +808,6 @@ cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
 cLess        [x 0.5] -> cAbsNot[x]
 cGreaterOrEq [x 0.5] -> cAbsNotNot[x]
 
-
 [NON_SHORTCUT_LOGICAL_EVALUATION]
 
 cOr  x@L y@L          : (cNotNot (cAdd x y))
@@ -872,7 +896,7 @@ IGNORE_IF_SIDEEFFECTS
 LOGICAL
 
 $optimize_shortcut_logical_evaluation
-SHORTCUT_LOGICAL_EVALUATION
+#SHORTCUT_LOGICAL_EVALUATION
 LOGICAL
 
 $optimize_nonshortcut_logical_evaluation

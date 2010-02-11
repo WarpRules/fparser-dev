@@ -147,8 +147,8 @@ y                   cMul x cMul -> [y*x] cMul
 cDup cAdd      cDup cAdd -> [Value_t(4)] cMul
 cDup cAdd cMul cDup cAdd -> cMul [Value_t(4)] cMul
 
-cDup x cMul cAdd -> [x+Value_t(1)] cMul 
-cDup x cPow cMul -> [x+Value_t(1)] cPow 
+cDup x cMul cAdd -> [x+Value_t(1)] cMul
+cDup x cPow cMul -> [x+Value_t(1)] cPow
 cDup cSub        -> [Value_t(0)] cMul
 
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->
@@ -285,9 +285,16 @@ IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cLess 
 IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLessOrEq -> A cNot
 IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cEqual  -> A
 IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot
+IF(!FP_FLOAT_VERSION) x cAdd cNotNot -> [x] cNEqual
+IF(!FP_FLOAT_VERSION) x cAdd cNot    -> [x] cEqual
 
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
+
+IF(FP_FLOAT_VERSION) x [x==Value_t(0.5)] cLess         -> cAbsNot
+IF(FP_FLOAT_VERSION) x [x==Value_t(0.5)] cGreaterOrEq  -> cAbsNotNot
+IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)] cGreater   -> cNeg cAbsNot
+IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)] cLessOrEq  -> cNeg cAbsNotNot
 
 IF(FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow
 IF(FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow
