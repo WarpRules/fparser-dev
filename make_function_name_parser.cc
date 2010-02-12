@@ -1,3 +1,12 @@
+/*==========================================================================
+  make_function_name_parser
+  -------------------------
+  Copyright: Joel Yliluoma
+  This program (make_function_name_parser) is distributed under the terms of
+  the GNU General Public License (GPL) version 3.
+  See gpl.txt for the license text.
+============================================================================*/
+
 #define FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 
 #include <set>

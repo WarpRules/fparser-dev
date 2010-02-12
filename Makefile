@@ -50,7 +50,18 @@ CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 #CXXFLAGS += -std=c++0x
 
-LDFLAGS = -lgmp -lmpfr
+ifneq (,$(findstring -DFP_SUPPORT_MPFR_FLOAT_TYPE,$(FEATURE_FLAGS)))
+LDFLAGS += -lgmp -lmpfr
+ADDITIONAL_MODULES = mpfr/MpfrFloat.o
+ifneq (,$(findstring -DFP_SUPPORT_GMP_INT_TYPE,$(FEATURE_FLAGS)))
+ADDITIONAL_MODULES += mpfr/GmpInt.o
+endif
+else
+ifneq (,$(findstring -DFP_SUPPORT_GMP_INT_TYPE,$(FEATURE_FLAGS)))
+LDFLAGS += -lgmp
+ADDITIONAL_MODULES = mpfr/GmpInt.o
+endif
+endif
 
 LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections
@@ -85,15 +96,14 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/fpoptimizer_transformations.o \
 		fpoptimizer/fpoptimizer_debug.o \
 		fpoptimizer/fpoptimizer_hash.o \
-		mpfr/MpfrFloat.o \
-		mpfr/GmpInt.o
+		$(ADDITIONAL_MODULES)
 
 RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
 	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
 	fp_opcode_add.inc fp_identifier_parser.inc \
-	fparser.html style.css
+	fparser.html style.css lgpl.txt gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS) -lboost_thread-mt
@@ -242,7 +252,7 @@ set_version_string: VersionChanger
 	./VersionChanger $(RELEASE_VERSION) fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
 	fpoptimizer.cc fptypes.hh fpaux.hh \
-	fp_opcode_add.inc \
+	fp_opcode_add.inc fpoptimizer/fpoptimizer_header.txt \
 	fpoptimizer/bytecoderules_parser.cc fparser.html webpage/index.html
 
 pack: $(RELEASE_PACK_FILES) set_version_string
@@ -254,7 +264,7 @@ devel_pack: set_version_string
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
 	fptypes.hh fpaux.hh fp_opcode_add.inc fp_identifier_parser.inc \
 	speedtest.cc testbed.cc \
-	fparser.html style.css \
+	fparser.html style.css lgpl.txt gpl.txt \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/*.inc \
 	fpoptimizer/fparser_bytecoderules.dat \
 	fpoptimizer/fpoptimizer_treerules.dat \

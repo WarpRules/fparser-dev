@@ -1,3 +1,12 @@
+/*==========================================================================
+  functioninfo
+  ------------
+  Copyright: Juha Nieminen, Joel Yliluoma
+  This program (functioninfo) is distributed under the terms of the
+  GNU General Public License (GPL) version 3.
+  See gpl.txt for the license text.
+============================================================================*/
+
 #include "fparser.hh"
 #include <iostream>
 #include <iomanip>
@@ -20,7 +29,6 @@ namespace
     const unsigned kParseLoopsPerUnit = 100000;
     const unsigned kEvalLoopsPerUnit = 300000;
     const unsigned kOptimizeLoopsPerUnit = 1000;
-    const double kEpsilon = 1e-9;
     const bool kPrintTimingProgress = false;
 
     const unsigned kMaxVarValueSetsAmount = 10000;
@@ -30,50 +38,59 @@ namespace
     const double kVarValuesDeltaFactor2 = 10.0;
     const double kVarValuesDeltaFactor2Threshold = 10.0;
 
-    double Sqr(const double* p)
+    template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
+    template<> inline float epsilon<float>() { return 1e-5F; }
+    template<> inline long epsilon<long>() { return 0; }
+
+    template<typename Value_t>
+    Value_t Sqr(const Value_t* p)
     {
         return p[0]*p[0];
     }
 
-    double Sub(const double* p)
+    template<typename Value_t>
+    Value_t Sub(const Value_t* p)
     {
         return p[0]-p[1];
     }
 
-    double Value(const double* )
+    template<typename Value_t>
+    Value_t Value(const Value_t*)
     {
-        return 10.0;
+        return Value_t(10);
     }
 
-    class InitializableParser: public FunctionParser
+    template<typename Value_t>
+    class InitializableParser: public FunctionParserBase<Value_t>
     {
      public:
         InitializableParser(const char* function, const char* vars)
         {
-            assert(Parse(function, vars) < 0);
+            assert(FunctionParserBase<Value_t>::Parse(function, vars) < 0);
         }
     };
 
 
-    class ParserWithConsts: public FunctionParser
+    template<typename Value_t>
+    class ParserWithConsts: public FunctionParserBase<Value_t>
     {
      public:
         ParserWithConsts()
         {
-            AddConstant("pi", 3.14159265358979323846);
-            AddConstant("e", 2.71828182845904523536);
-            AddUnit("k", 1000);
-            AddUnit("M", 1000000);
-            AddUnit("dozen", 12);
-            AddUnit("dozens", 12);
+            AddConstant("pi", Value_t(3.14159265358979323846));
+            AddConstant("e", Value_t(2.71828182845904523536));
+            AddUnit("k", Value_t(1000));
+            AddUnit("M", Value_t(1000000));
+            AddUnit("dozen", Value_t(12));
+            AddUnit("dozens", Value_t(12));
 
-            AddFunction("sqr", Sqr, 1);
-            AddFunction("sub", Sub, 2);
-            AddFunction("value", Value, 0);
+            AddFunction("sqr", Sqr<Value_t>, 1);
+            AddFunction("sub", Sub<Value_t>, 2);
+            AddFunction("value", Value<Value_t>, 0);
 
-            static InitializableParser SqrFun("x*x", "x");
-            static InitializableParser SubFun("x-y", "x,y");
-            static InitializableParser ValueFun("5", "");
+            static InitializableParser<Value_t> SqrFun("x*x", "x");
+            static InitializableParser<Value_t> SubFun("x-y", "x,y");
+            static InitializableParser<Value_t> ValueFun("5", "");
 
             AddFunction("psqr", SqrFun);
             AddFunction("psub", SubFun);
@@ -87,11 +104,12 @@ namespace
         unsigned mLoopsPerSecond;
     };
 
+    template<typename Value_t>
     struct FunctionInfo
     {
         std::string mFunctionString;
-        ParserWithConsts mParser;
-        std::vector<double> mValidVarValues;
+        ParserWithConsts<Value_t> mParser;
+        std::vector<Value_t> mValidVarValues;
 
         TimingInfo mParseTiming;
         TimingInfo mEvalTiming;
@@ -101,25 +119,50 @@ namespace
         TimingInfo mDoubleOptimizedEvalTiming;
     };
 
-    ParserWithConsts gParser, gAuxParser;
-    std::string gFunctionString, gVarString;
-    std::vector<std::vector<double> > gVarValues;
-    bool gUseDegrees = false;
-    const double* gEvalParameters = 0;
 
+    template<typename Value_t>
+    struct ParserData
+    {
+        static ParserWithConsts<Value_t> gParser, gAuxParser;
+        static std::vector<std::vector<Value_t> > gVarValues;
+        static const Value_t* gEvalParameters;
+    };
+
+    template<typename Value_t>
+    ParserWithConsts<Value_t> ParserData<Value_t>::gParser;
+
+    template<typename Value_t>
+    ParserWithConsts<Value_t> ParserData<Value_t>::gAuxParser;
+
+    template<typename Value_t>
+    std::vector<std::vector<Value_t> > ParserData<Value_t>::gVarValues;
+
+    template<typename Value_t>
+    const Value_t* ParserData<Value_t>::gEvalParameters = 0;
+
+
+    std::string gFunctionString, gVarString;
+    bool gUseDegrees = false;
+
+    template<typename Value_t>
     inline void doParse()
     {
-        gParser.Parse(gFunctionString, gVarString, gUseDegrees);
+        ParserData<Value_t>::gParser.Parse
+            (gFunctionString, gVarString, gUseDegrees);
     }
 
+    template<typename Value_t>
     inline void doEval()
     {
-        gParser.Eval(gEvalParameters);
+        ParserData<Value_t>::gParser.Eval
+            (ParserData<Value_t>::gEvalParameters);
     }
 
+    template<typename Value_t>
     inline void doOptimize()
     {
-        gAuxParser = gParser; gAuxParser.Optimize();
+        ParserData<Value_t>::gAuxParser = ParserData<Value_t>::gParser;
+        ParserData<Value_t>::gAuxParser.Optimize();
     }
 
     template<void(*Function)(), unsigned loopsPerUnit>
@@ -161,43 +204,58 @@ namespace
         ++gTimingCounter;
     }
 
-    void getTimingInfo(FunctionInfo& info)
+    template<typename Value_t>
+    void getTimingInfo(FunctionInfo<Value_t>& info)
     {
         gFunctionString = info.mFunctionString;
-        gEvalParameters = &info.mValidVarValues[0];
+        ParserData<Value_t>::gEvalParameters = &info.mValidVarValues[0];
 
         printTimingInfo();
-        info.mParseTiming = getTimingInfo<doParse, kParseLoopsPerUnit>();
+        info.mParseTiming =
+            getTimingInfo<doParse<Value_t>, kParseLoopsPerUnit>();
 
         printTimingInfo();
-        info.mEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+        info.mEvalTiming =
+            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
 
         printTimingInfo();
-        info.mOptimizeTiming = // optimizing a non-optimized parsing
-            getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
+        info.mOptimizeTiming = // optimizing a non-optimized func
+            getTimingInfo<doOptimize<Value_t>, kOptimizeLoopsPerUnit>();
 
         printTimingInfo();
-        gParser.Optimize();
-        info.mDoubleOptimizeTiming = // optimizing an already-optimized parsing
-            getTimingInfo<doOptimize, kOptimizeLoopsPerUnit>();
-
-        printTimingInfo(); // evaluating an optimized parsing
-        info.mOptimizedEvalTiming = getTimingInfo<doEval, kEvalLoopsPerUnit>();
+        ParserData<Value_t>::gParser.Optimize();
+        info.mDoubleOptimizeTiming = // optimizing an already-optimized func
+            getTimingInfo<doOptimize<Value_t>, kOptimizeLoopsPerUnit>();
 
         printTimingInfo();
-        gParser.Optimize(); // evaluating a twice-optimized parsing
-        info.mDoubleOptimizedEvalTiming =
-            getTimingInfo<doEval, kEvalLoopsPerUnit>();
+        info.mOptimizedEvalTiming = // evaluating an optimized func
+            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
+
+        printTimingInfo();
+        ParserData<Value_t>::gParser.Optimize();
+        info.mDoubleOptimizedEvalTiming = // evaluating a twice-optimized func
+            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
     }
 
-    bool findValidVarValues(std::vector<FunctionInfo>& functions)
+    template<typename Value_t>
+    inline bool valueIsOk(Value_t value)
+    {
+        return !(value < -1e14 || value > 1e14);
+    }
+
+    template<>
+    inline bool valueIsOk<long>(long) { return true; }
+
+    template<typename Value_t>
+    bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions)
     {
         unsigned varsAmount = 1;
         for(size_t i = 0; i < gVarString.length(); ++i)
             if(gVarString[i] == ',')
                 ++varsAmount;
 
-        std::vector<double> varValues(varsAmount, 0);
+        std::vector<Value_t> varValues(varsAmount, 0);
+        std::vector<double> doubleValues(varsAmount, 0);
         std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
 
         for(size_t i = 0; i < functions.size(); ++i)
@@ -205,12 +263,14 @@ namespace
 
         while(true)
         {
+            for(unsigned i = 0; i < varsAmount; ++i)
+                varValues[i] = Value_t(doubleValues[i]);
+
             bool wasOk = false;
             for(size_t i = 0; i < functions.size(); ++i)
             {
-                double value = functions[i].mParser.Eval(&varValues[0]);
-                if(functions[i].mParser.EvalError() == 0 &&
-                   !(value < -1e14 || value > 1e14))
+                Value_t value = functions[i].mParser.Eval(&varValues[0]);
+                if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
                 {
                     functions[i].mValidVarValues = varValues;
                     wasOk = true;
@@ -219,36 +279,37 @@ namespace
 
             if(wasOk)
             {
-                gVarValues.push_back(varValues);
-                if(gVarValues.size() >= kMaxVarValueSetsAmount)
+                ParserData<Value_t>::gVarValues.push_back(varValues);
+                if(ParserData<Value_t>::gVarValues.size() >=
+                   kMaxVarValueSetsAmount)
                     return true;
             }
 
             size_t varIndex = 0;
             while(true)
             {
-                varValues[varIndex] = -varValues[varIndex];
-                if(varValues[varIndex] < 0.0)
+                doubleValues[varIndex] = -doubleValues[varIndex];
+                if(doubleValues[varIndex] < 0.0)
                     break;
 
-                varValues[varIndex] += deltas[varIndex];
+                doubleValues[varIndex] += deltas[varIndex];
                 if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
                     deltas[varIndex] *= kVarValuesDeltaFactor1;
                 else
                     deltas[varIndex] *= kVarValuesDeltaFactor2;
 
-                if(varValues[varIndex] <= kVarValuesUpperLimit)
+                if(doubleValues[varIndex] <= kVarValuesUpperLimit)
                     break;
                 else
                 {
-                    varValues[varIndex] = 0.0;
+                    doubleValues[varIndex] = 0.0;
                     deltas[varIndex] = kVarValuesInitialDelta;
-                    if(++varIndex == varValues.size())
+                    if(++varIndex == doubleValues.size())
                     {
-                        if(gVarValues.empty())
+                        if(ParserData<Value_t>::gVarValues.empty())
                         {
-                            gVarValues.push_back
-                                (std::vector<double>(varsAmount, 0));
+                            ParserData<Value_t>::gVarValues.push_back
+                                (std::vector<Value_t>(varsAmount, 0));
                             return false;
                         }
                         return true;
@@ -258,22 +319,59 @@ namespace
         }
     }
 
-    bool compareFunctions(size_t function1Index, size_t function2Index,
-                          ParserWithConsts& parser1, const char* parser1Type,
-                          ParserWithConsts& parser2, const char* parser2Type)
+    template<typename Value_t>
+    inline Value_t fpAbs(Value_t value)
     {
-        const size_t varsAmount = gVarValues[0].size();
-        for(size_t varSetInd = 0; varSetInd < gVarValues.size(); ++varSetInd)
-        {
-            const double* values = &gVarValues[varSetInd][0];
-            const double v1 = parser1.Eval(values);
-            const double v2 = parser2.Eval(values);
+        return value < Value_t(0) ? -value : value;
+    }
 
-            const double scale = pow(10.0, floor(log10(fabs(v1))));
-            const double sv1 = fabs(v1) < kEpsilon ? 0 : v1/scale;
-            const double sv2 = fabs(v2) < kEpsilon ? 0 : v2/scale;
-            const double diff = sv2-sv1;
-            if(std::fabs(diff) > kEpsilon)
+    template<typename Value_t>
+    inline Value_t scaledDiff(Value_t v1, Value_t v2)
+    {
+        const double scale = pow(10.0, floor(log10(double(fpAbs(v1)))));
+        const Value_t sv1 =
+            fpAbs(v1) < epsilon<Value_t>() ? 0 : Value_t(v1/scale);
+        const Value_t sv2 =
+            fpAbs(v2) < epsilon<Value_t>() ? 0 : Value_t(v2/scale);
+        return sv2 - sv1;
+    }
+
+    template<>
+    inline long scaledDiff<long>(long v1, long v2)
+    {
+        return v2 - v1;
+    }
+
+    template<typename Value_t>
+    inline bool notEqual(Value_t v1, Value_t v2)
+    {
+        return fpAbs(scaledDiff(v1, v2)) > epsilon<Value_t>();
+    }
+
+    template<>
+    inline bool notEqual<long>(long v1, long v2)
+    {
+        return v1 != v2;
+    }
+
+    template<typename Value_t>
+    bool compareFunctions(size_t function1Index, size_t function2Index,
+                          ParserWithConsts<Value_t>& parser1,
+                          const char* parser1Type,
+                          ParserWithConsts<Value_t>& parser2,
+                          const char* parser2Type)
+    {
+        const size_t varsAmount = ParserData<Value_t>::gVarValues[0].size();
+        for(size_t varSetInd = 0;
+            varSetInd < ParserData<Value_t>::gVarValues.size();
+            ++varSetInd)
+        {
+            const Value_t* values =
+                &ParserData<Value_t>::gVarValues[varSetInd][0];
+            const Value_t v1 = parser1.Eval(values);
+            const Value_t v2 = parser2.Eval(values);
+
+            if(notEqual(v1, v2))
             {
                 if(parser1.EvalError() && parser1Type[0] == 'n')
                 {
@@ -304,8 +402,8 @@ namespace
                     std::cout << std::setprecision(18) << v2;
                 std::cout << "\n******* (Difference: " << (v2-v1)
                           << ", scaled diff: "
-                          << std::setprecision(18) << diff << ")"
-                          << std::endl;
+                          << std::setprecision(18) << scaledDiff(v1, v2)
+                          << ")" << std::endl;
                 return false;
             }
         }
@@ -314,7 +412,8 @@ namespace
 
     bool had_double_optimization_problems = false;
 
-    bool checkEquality(const std::vector<FunctionInfo>& functions)
+    template<typename Value_t>
+    bool checkEquality(const std::vector<FunctionInfo<Value_t> >& functions)
     {
         static const char not_optimized[] = "not optimized";
         static const char optimized[]     = "optimized";
@@ -322,7 +421,7 @@ namespace
         static const char* const optimize_labels[3] =
             { not_optimized, optimized, optimized2 };
 
-        ParserWithConsts parser1, parser2, parser3;
+        ParserWithConsts<Value_t> parser1, parser2, parser3;
 
         bool errors = false;
         for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
@@ -412,11 +511,12 @@ namespace
 
     enum PrintMode { print_wrap, print_cut, print_no_cut_or_wrap };
 
-    void printByteCodes(const std::vector<FunctionInfo>& functions,
+    template<typename Value_t>
+    void printByteCodes(const std::vector<FunctionInfo<Value_t> >& functions,
                         PrintMode mode = print_no_cut_or_wrap)
     {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        ParserWithConsts parser;
+        ParserWithConsts<Value_t> parser;
         const char* const wall =
             (mode == print_no_cut_or_wrap)
                 ? "\33[0m| "
@@ -552,7 +652,8 @@ namespace
 #endif
     }
 
-    void printFunctionTimings(std::vector<FunctionInfo>& functions)
+    template<typename Value_t>
+    void printFunctionTimings(std::vector<FunctionInfo<Value_t> >& functions)
     {
         std::printf
         ("    ,------------------------------------------------------------------------,\n"
@@ -561,21 +662,23 @@ namespace
         for(size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
-            std::printf("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%10.1f |%10.1f |\n",
-                        unsigned(i+1),
-                        functions[i].mParseTiming.mMicroSeconds,
-                        functions[i].mEvalTiming.mMicroSeconds,
-                        functions[i].mOptimizedEvalTiming.mMicroSeconds,
-                        functions[i].mDoubleOptimizedEvalTiming.mMicroSeconds,
-                        functions[i].mOptimizeTiming.mMicroSeconds,
-                        functions[i].mDoubleOptimizeTiming.mMicroSeconds
-                       );
+            std::printf
+                ("|%2u | %10.3f |%10.3f |%10.3f |%10.3f |%10.1f |%10.1f |\n",
+                 unsigned(i+1),
+                 functions[i].mParseTiming.mMicroSeconds,
+                 functions[i].mEvalTiming.mMicroSeconds,
+                 functions[i].mOptimizedEvalTiming.mMicroSeconds,
+                 functions[i].mDoubleOptimizedEvalTiming.mMicroSeconds,
+                 functions[i].mOptimizeTiming.mMicroSeconds,
+                 functions[i].mDoubleOptimizeTiming.mMicroSeconds
+                 );
         }
         std::printf
         ("'----------------------------------------------------------------------------'\n");
     }
 
-    bool checkFunctionValidity(FunctionInfo& info)
+    template<typename Value_t>
+    bool checkFunctionValidity(FunctionInfo<Value_t>& info)
     {
         int result = info.mParser.Parse(info.mFunctionString, gVarString,
                                         gUseDegrees);
@@ -585,18 +688,19 @@ namespace
                       << std::string(result+1, ' ')
                       << "^ " << info.mParser.ErrorMsg() << std::endl;
             if(info.mParser.GetParseErrorType() ==
-               FunctionParser::INVALID_VARS)
+               FunctionParserBase<Value_t>::INVALID_VARS)
                 std::cerr << "Vars: \"" << gVarString << "\"" << std::endl;
             return false;
         }
         return true;
     }
 
-    void deduceVariables(const std::vector<FunctionInfo>& functions)
+    template<typename Value_t>
+    void deduceVariables(const std::vector<FunctionInfo<Value_t> >& functions)
     {
         typedef std::set<std::string> StrSet;
         StrSet varNames;
-        ParserWithConsts parser;
+        ParserWithConsts<Value_t> parser;
 
         for(size_t funcInd = 0; funcInd < functions.size(); ++funcInd)
         {
@@ -643,6 +747,9 @@ namespace
             "Usage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
+            "  -f                 : Use FunctionParser_f.\n"
+            "  -ld                : Use FunctionParser_ld.\n"
+            "  -li                : Use FunctionParser_li.\n"
             "  -vars <var string> : Specify a var string.\n"
             "  -nt                : No timing measurements.\n"
             "  -ntd               : No timing if functions differ.\n"
@@ -651,34 +758,14 @@ namespace
     }
 }
 
-int main(int argc, char* argv[])
+template<typename Value_t>
+int functionInfo(const char* const parserTypeString,
+                 const std::vector<std::string>& functionStrings,
+                 bool measureTimings, bool noTimingIfEqualityErrors)
 {
-    if(argc < 2) return printHelp(argv[0]);
-
-    std::vector<FunctionInfo> functions;
-    bool measureTimings = true, noTimingIfEqualityErrors = false;
-
-    for(int i = 1; i < argc; ++i)
-    {
-        if(std::strcmp(argv[i], "-vars") == 0)
-        {
-            if(++i == argc) return printHelp(argv[0]);
-            gVarString = argv[i];
-        }
-        else if(std::strcmp(argv[i], "-nt") == 0)
-            measureTimings = false;
-        else if(std::strcmp(argv[i], "-ntd") == 0)
-            noTimingIfEqualityErrors = true;
-        else if(std::strcmp(argv[i], "-deg") == 0)
-            gUseDegrees = true;
-        else
-        {
-            functions.push_back(FunctionInfo());
-            functions.back().mFunctionString = argv[i];
-        }
-    }
-
-    if(functions.empty()) return printHelp(argv[0]);
+    std::vector<FunctionInfo<Value_t> > functions(functionStrings.size());
+    for(size_t i = 0; i < functions.size(); ++i)
+        functions[i].mFunctionString = functionStrings[i];
 
     if(gVarString.empty())
         deduceVariables(functions);
@@ -691,31 +778,29 @@ int main(int argc, char* argv[])
 
     const bool validVarValuesFound = findValidVarValues(functions);
 
-    std::cout << SEPARATOR << std::endl;
+    std::cout << SEPARATOR << std::endl
+              << "Parser type: " << parserTypeString << std::endl;
     for(size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
-    const size_t varsAmount = gVarValues[0].size();
-    const size_t varValueSetsAmount = gVarValues.size();
+    const size_t varsAmount = ParserData<Value_t>::gVarValues[0].size();
+    const size_t varValueSetsAmount = ParserData<Value_t>::gVarValues.size();
     std::cout << "- Var string: \"" << gVarString << "\" ("
-              << gVarValues[0].size()
+              << ParserData<Value_t>::gVarValues[0].size()
               << (varsAmount == 1 ? " var" : " vars")
               << ") (using " << varValueSetsAmount << " set"
               << (varValueSetsAmount == 1 ? ")\n" : "s)\n");
 
-    //std::vector<double> t(1, -99.9);
-    //gVarValues.insert(gVarValues.begin(), t);
-
 #if 0
     std::cout << SEPARATOR << "\nTesting with variable values:\n";
-    for(size_t i = 0; i < gVarValues.size(); ++i)
+    for(size_t i = 0; i < ParserData<Value_t>::gVarValues.size(); ++i)
     {
         if(i > 0) std::cout << (i%5==0 ? "\n" : " ");
         std::cout << "(";
-        for(size_t j = 0; j < gVarValues[i].size(); ++j)
+        for(size_t j = 0; j < ParserData<Value_t>::gVarValues[i].size(); ++j)
         {
             if(j > 0) std::cout << ",";
-            std::cout << gVarValues[i][j];
+            std::cout << ParserData<Value_t>::gVarValues[i][j];
         }
         std::cout << ")";
     }
@@ -742,5 +827,91 @@ int main(int argc, char* argv[])
         printFunctionTimings(functions);
     }
 
+    return 0;
+}
+
+int main(int argc, char* argv[])
+{
+    if(argc < 2) return printHelp(argv[0]);
+
+    enum ParserType { FP_D, FP_F, FP_LD, FP_LI };
+
+    std::vector<std::string> functionStrings;
+    bool measureTimings = true, noTimingIfEqualityErrors = false;
+    ParserType parserType = FP_D;
+
+    for(int i = 1; i < argc; ++i)
+    {
+        if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
+        else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
+        else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
+        else if(std::strcmp(argv[i], "-vars") == 0)
+        {
+            if(++i == argc) return printHelp(argv[0]);
+            gVarString = argv[i];
+        }
+        else if(std::strcmp(argv[i], "-nt") == 0)
+            measureTimings = false;
+        else if(std::strcmp(argv[i], "-ntd") == 0)
+            noTimingIfEqualityErrors = true;
+        else if(std::strcmp(argv[i], "-deg") == 0)
+            gUseDegrees = true;
+        else
+            functionStrings.push_back(argv[i]);
+    }
+
+    if(functionStrings.empty()) return printHelp(argv[0]);
+
+    const char* notCompiledParserType = 0;
+
+    switch(parserType)
+    {
+      case FP_D:
+#ifndef FP_DISABLE_DOUBLE_TYPE
+          return functionInfo<double>
+              ("double", functionStrings,
+               measureTimings, noTimingIfEqualityErrors);
+#else
+          notCompiledParserType = "double";
+          break;
+#endif
+
+      case FP_F:
+#ifdef FP_SUPPORT_FLOAT_TYPE
+          return functionInfo<float>
+              ("float", functionStrings,
+               measureTimings, noTimingIfEqualityErrors);
+#else
+          notCompiledParserType = "float";
+          break;
+#endif
+
+      case FP_LD:
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+          return functionInfo<long double>
+              ("long double", functionStrings,
+               measureTimings, noTimingIfEqualityErrors);
+#else
+          notCompiledParserType = "long double";
+          break;
+#endif
+
+      case FP_LI:
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+          return functionInfo<long int>
+              ("long int", functionStrings,
+               measureTimings, noTimingIfEqualityErrors);
+#else
+          notCompiledParserType = "long int";
+          break;
+#endif
+    }
+
+    if(notCompiledParserType)
+    {
+        std::cout << "Error: Support for type " << notCompiledParserType
+                  << " was not compiled in." << std::endl;
+        return 1;
+    }
     return 0;
 }

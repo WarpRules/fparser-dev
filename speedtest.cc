@@ -1,3 +1,12 @@
+/*==========================================================================
+  speedtest
+  ---------
+  Copyright: Juha Nieminen, Joel Yliluoma
+  This program (speedtest) is distributed under the terms of
+  the GNU General Public License (GPL) version 3.
+  See gpl.txt for the license text.
+============================================================================*/
+
 //#define TEST_JIT
 //#define MEASURE_PARSING_SPEED_ONLY
 

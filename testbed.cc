@@ -1,3 +1,12 @@
+/*==========================================================================
+  testbed
+  ---------
+  Copyright: Juha Nieminen, Joel Yliluoma
+  This program (testbed) is distributed under the terms of
+  the GNU General Public License (GPL) version 3.
+  See gpl.txt for the license text.
+============================================================================*/
+
 #include "fpconfig.hh"
 #include "fparser.hh"
 
