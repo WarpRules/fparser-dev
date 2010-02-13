@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison
 #===========================================================================
 
-RELEASE_VERSION=4.0.3
+RELEASE_VERSION=4.0.4
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -63,6 +63,14 @@ ADDITIONAL_MODULES = mpfr/GmpInt.o
 endif
 endif
 
+ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL,$(FEATURE_FLAGS)))
+BOOST_THREAD_LIB = -lboost_thread-mt
+else
+ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA,$(FEATURE_FLAGS)))
+BOOST_THREAD_LIB = -lboost_thread-mt
+endif
+endif
+
 LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections
 # ^Use this option to list everything that GC removed.
@@ -106,12 +114,12 @@ RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
 	fparser.html style.css lgpl.txt gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
-	$(LD) -o $@ $^ $(LDFLAGS) -lboost_thread-mt
+	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
 
 fpoptimizer.o: fpoptimizer.cc
 
-testbed_release: testbed.o fparser.o fpoptimizer.o mpfr/MpfrFloat.o mpfr/GmpInt.o
-	$(LD) -o $@ $^ $(LDFLAGS) -lboost_thread-mt
+testbed_release: testbed.o fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
+	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
 
 speedtest: speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)

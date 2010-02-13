@@ -9,6 +9,18 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.0.4
+  <ul>
+    <li>Some new optimization rules in both <code>Parse()</code> and
+      <code>Optimize()</code>.
+    <li>Fixed some optimizer bugs (among others, functions of the form
+      <code>"a()|b()|c()"</code>, where <code>a</code>, <code>b</code>
+      and <code>c</code> are user-defined functions, were wrongly optimized.)
+    <li>The utility programs in the development package are now separately
+      licensed under the GPL. (This doesn't affect the library itself, which
+      is still LGPL.)
+  </ul>
+
 <p>What's new in v4.0.3
   <ul>
     <li>New optimization rules in both <code>Parse()</code> and

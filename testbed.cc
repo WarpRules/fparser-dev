@@ -2042,7 +2042,8 @@ bool runTest(Parser_t& fp, const FloatingPointTest& testData,
         for(unsigned i = 0; i < testData.paramAmount; ++i)
             fp_vars[i] = vars[i];
 
-        const typename Parser_t::value_type v1 = testData.funcPtr(vars);
+        const typename Parser_t::value_type orig_v1 = testData.funcPtr(vars);
+        const double v1 = toDouble(orig_v1);
         const double v2 = toDouble(fp.Eval(fp_vars));
 
         const double scale = pow(10.0, floor(log10(fabs(v1))));
@@ -2061,7 +2062,7 @@ bool runTest(Parser_t& fp, const FloatingPointTest& testData,
                 std::cout << (ind>0 ? ", " : "") << vars[ind];
             std::cout << ")\nthe library returned "
                       << std::setprecision(18) << v2 << " instead of "
-                      << std::setprecision(18) << v1 << std::endl
+                      << std::setprecision(18) << orig_v1 << std::endl
                       << "(Difference: "
                       << std::setprecision(18) << v2-v1
                       << "; scaled diff "

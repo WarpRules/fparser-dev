@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v4.0.3                                          *|
+|* Function Parser for C++ v4.0.4                                          *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 |*                                                                         *|
@@ -390,7 +390,7 @@ namespace FUNCTIONPARSERTYPES
 
 #ifndef FP_SUPPORT_LOG2
     inline long double fp_log2(long double x)
-    { return log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
+    { return fp_log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
 #else
     inline long double fp_log2(long double x) { return log2l(x); }
 #endif // FP_SUPPORT_LOG2
