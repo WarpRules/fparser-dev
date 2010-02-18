@@ -164,9 +164,17 @@ namespace
     template<typename Value_t>
     inline bool isEvenInteger(Value_t value)
     {
-        long longval = (long)value;
-        return fp_equal(value, Value_t(longval)) && (longval%2) == 0;
+        const Value_t halfValue = value * Value_t(0.5);
+        return fp_equal(halfValue, fp_floor(halfValue));
     }
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    inline bool isEvenInteger(long value)
+    {
+        return value%2 == 0;
+    }
+#endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
@@ -187,9 +195,17 @@ namespace
     template<typename Value_t>
     inline bool isOddInteger(Value_t value)
     {
-        long longval = (long)value;
-        return fp_equal(value, Value_t(longval)) && (longval%2) != 0;
+        const Value_t halfValue = (value + Value_t(1)) * Value_t(0.5);
+        return fp_equal(halfValue, fp_floor(halfValue));
     }
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    inline bool isOddInteger(long value)
+    {
+        return value%2 != 0;
+    }
+#endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
