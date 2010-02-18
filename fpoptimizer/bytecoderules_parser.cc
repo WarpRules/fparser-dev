@@ -438,9 +438,7 @@ namespace
                 OutLine(Out)  << "data->ByteCode.pop_back();";
             else if(n > 0)
             {
-                //OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->ByteCode.pop_back();";
-                OutLine(Out) << "data->ByteCode.resize(data->ByteCode.size()-"
-                             << n << ");";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->ByteCode.pop_back();";
             }
           #endif
         #endif
@@ -465,9 +463,7 @@ namespace
                 OutLine(Out)  << "data->Immed.pop_back();";
             else if(n > 0)
             {
-                //OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->Immed.pop_back();";
-                OutLine(Out) << "data->Immed.resize(data->Immed.size()-"
-                             << n << ");";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->Immed.pop_back();";
             }
          #endif
         #endif
