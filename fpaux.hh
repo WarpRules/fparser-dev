@@ -173,25 +173,25 @@ namespace FUNCTIONPARSERTYPES
 
 
     template<typename Value_t>
-    inline Value_t const_pi()
+    inline Value_t fp_const_pi()
     {
         return Value_t(3.1415926535897932384626433832795L);
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    inline MpfrFloat const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
+    inline MpfrFloat fp_const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
 #endif
 
     template<typename Value_t>
-    inline Value_t const_e()
+    inline Value_t fp_const_e()
     {
         return Value_t(2.7182818284590452353602874713526624977572L);
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    inline MpfrFloat const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
+    inline MpfrFloat fp_const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
 #endif
 
 

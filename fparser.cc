@@ -138,7 +138,7 @@ namespace
     template<typename Value_t>
     inline const Value_t& GetDegreesToRadiansFactor()
     {
-        static const Value_t factor = const_pi<Value_t>() / Value_t(180);
+        static const Value_t factor = fp_const_pi<Value_t>() / Value_t(180);
         return factor;
     }
 
@@ -151,7 +151,7 @@ namespace
     template<typename Value_t>
     inline const Value_t& GetRadiansToDegreesFactor()
     {
-        static const Value_t factor = Value_t(180) / const_pi<Value_t>();
+        static const Value_t factor = Value_t(180) / fp_const_pi<Value_t>();
         return factor;
     }
 
@@ -1489,7 +1489,7 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         unsigned op = cPow;
         if(data->ByteCode.back() == cImmed)
         {
-            if(data->Immed.back() == const_e<Value_t>())
+            if(data->Immed.back() == fp_const_e<Value_t>())
                 { op = cExp;  data->ByteCode.pop_back();
                     data->Immed.pop_back(); --StackPtr; }
             else if(data->Immed.back() == Value_t(2))

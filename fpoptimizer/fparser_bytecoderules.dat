@@ -231,10 +231,10 @@ IF(FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)]   cLog x A [IsComparison
 IF(FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)]  cLog2 x A [IsComparisonOpcode(A)] -> B [fp_exp2(x)] A
 IF(FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)] cLog10 x A [IsComparisonOpcode(A)] -> B [fp_pow(Value_t(10),x)] A
 # ^ Doable only if lhs > 0.
-#IF(FP_FLOAT_VERSION)                 cAsin [fp_abs(x)<const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_sin(x)] A
-#IF(FP_FLOAT_VERSION)                 cAcos [x>=Value_t(0)&&fp_abs(x)<const_pi<Value_t>()] x A [IsComparisonOpcode(A)] -> [fp_cos(x)] {OppositeComparisonOpcode(A)}
+#IF(FP_FLOAT_VERSION)                 cAsin [fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_sin(x)] A
+#IF(FP_FLOAT_VERSION)                 cAcos [x>=Value_t(0)&&fp_abs(x)<fp_const_pi<Value_t>()] x A [IsComparisonOpcode(A)] -> [fp_cos(x)] {OppositeComparisonOpcode(A)}
 # ^ Doable only if abs(x) <= 1
-IF(FP_FLOAT_VERSION)                 cAtan [fp_abs(x)<const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_tan(x)] A
+IF(FP_FLOAT_VERSION)                 cAtan [fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_tan(x)] A
 IF(FP_FLOAT_VERSION)                 cSinh x A [IsComparisonOpcode(A)] -> [fp_asinh(x)] A
 IF(FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsComparisonOpcode(A)] -> [fp_atanh(x)] A
 
@@ -360,8 +360,8 @@ cDup cMul -> cSqr
 
 
 IF(FP_FLOAT_VERSION) cExp2	 -> [DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp
-IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(const_e<Value_t>())] cMul
-IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(const_e<Value_t>())] cMul
+IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul
+IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul
 
 #    expr0 expr1 cExp cMul cLog
 # -> expr0 cLog expr1 cAdd

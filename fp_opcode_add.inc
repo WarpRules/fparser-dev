@@ -2524,7 +2524,7 @@ goto TailCall_cNotNot;goto TailCall_cOr;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(364,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(364,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--StackPtr;
 			goto Lei;
@@ -2564,7 +2564,7 @@ goto TailCall_cNotNot;goto TailCall_cOr;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(363,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(363,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--StackPtr;
 			goto Lem;
@@ -3933,10 +3933,10 @@ goto TailCall_cNotNot;goto TailCall_cOr;goto TailCall_cSub;
 					}
 					break;
 				case cAtan:
-					if(fp_abs(x)<const_pi<Value_t>()*Value_t(0.5))
+					if(fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5))
 					{
 						FP_TRACE_BYTECODE_OPTIMIZATION(237,
-							"cAtan[fp_abs(x)<const_pi<Value_t>()*Value_t(0.5)] x A[IsComparisonOpcode(A)]",
+							"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A[IsComparisonOpcode(A)]",
 							"[fp_tan(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
@@ -4349,7 +4349,7 @@ Leg: data->ByteCode.pop_back();
      AddFunctionOpcode(cLog);
 Lna: data->ByteCode.push_back(cDup); goto Lme;
 Leh: ImmedPtr[0] = fp_log(x); return;
-Lei: data->Immed.push_back(fp_log10(const_e<Value_t>()));
+Lei: data->Immed.push_back(fp_log10(fp_const_e<Value_t>()));
 Lnb: ByteCodePtr[0] = cImmed; goto Llh;
 Lej: data->Immed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) data->ByteCode.pop_back();
@@ -4359,7 +4359,7 @@ Lek: data->ByteCode.pop_back();
      AddFunctionOpcode(cAbs);
      AddFunctionOpcode(cLog10); goto Lna;
 Lel: ImmedPtr[0] = fp_log10(x); return;
-Lem: data->Immed.push_back(fp_log2(const_e<Value_t>())); goto Lnb;
+Lem: data->Immed.push_back(fp_log2(fp_const_e<Value_t>())); goto Lnb;
 Len: data->Immed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) data->ByteCode.pop_back();
      AddFunctionOpcode(cLog2);
