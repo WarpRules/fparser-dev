@@ -76,7 +76,7 @@ namespace
     MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif
 
-
+}
 
 
 //=========================================================================
@@ -1527,16 +1527,16 @@ bool runRegressionTest(
     return true;
 }
 
-template<typename Value_t>
-struct RegressionTests
-{
-    static const TestType<Value_t> Tests[];
-};
-template<typename Value_t>
-const TestType<Value_t> RegressionTests<Value_t>::Tests[] = { TestType<Value_t>() };
-
 namespace
 {
+    template<typename Value_t>
+    struct RegressionTests
+    {
+        static const TestType<Value_t> Tests[];
+    };
+    template<typename Value_t>
+    const TestType<Value_t> RegressionTests<Value_t>::Tests[] = { TestType<Value_t>() };
+
     /* These functions in fparser produce bool values. However,
      * the testing functions require that they produce Value_t's. */
     #define BoolProxy(Fname) \
@@ -1552,9 +1552,9 @@ namespace
     template<typename Value_t>
     Value_t fp_truth(const Value_t& a)
         { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
-}
 
 #include "testbed_tests.inc"
+}
 
 template<typename Value_t>
 bool runRegressionTests(const std::string& valueType)
@@ -1714,8 +1714,6 @@ bool runRegressionTests(const std::string& valueType)
 
     return true;
 }
-
-} // namespace
 
 //=========================================================================
 // Main
