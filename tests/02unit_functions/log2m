@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x
+R=-400, 400, 0.1
+F=log2(x)
+C=MpfrFloat::log2(x)

@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x,y
+R=-4, 4, 0.05
+F=hypot(x,y)
+C=sqrtf(x*x + y*y)

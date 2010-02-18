@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
+T=ld
+V=x,z
+R=-11, 11, 0.3
+F=x%z
+C=fmodl(x,z)

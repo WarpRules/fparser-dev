@@ -1,0 +1,7 @@
+DEG=true
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x
+R=-40000, 40000, 5
+F=tanh(x)
+C=tanhf(d2r(x))

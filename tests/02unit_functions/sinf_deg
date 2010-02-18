@@ -1,0 +1,7 @@
+DEG=true
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x
+R=-400, 400, 5
+F=sin(x)
+C=sinf(d2r(x))

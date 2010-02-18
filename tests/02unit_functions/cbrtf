@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x
+R=-50000, 50000, 1000
+F=cbrt(x)
+C=cbrtf(x)
