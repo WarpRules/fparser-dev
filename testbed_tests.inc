@@ -31,7 +31,7 @@ Value_t cpp_01unit_operators_and_d(const Value_t* vars)
     const Value_t& y = vars[1];
 #line 5 "tests/01unit_operators/and_d"
 #line 5 "tests/01unit_operators/and_d"
-    return fp_truth(x) && fp_truth(y);
+    return Value_t( fp_abs(x) >= Value_t(0.5) ? fp_abs(y) >= Value_t(0.5) : Value_t(0) );
 }
 template<typename Value_t>
 Value_t cpp_01unit_operators_and_i(const Value_t* vars)
@@ -310,7 +310,7 @@ Value_t cpp_01unit_operators_or_d(const Value_t* vars)
     const Value_t& y = vars[1];
 #line 5 "tests/01unit_operators/or_d"
 #line 5 "tests/01unit_operators/or_d"
-    return fp_truth(x) || fp_truth(y);
+    return Value_t( fp_abs(x) < Value_t(0.5) ? fp_abs(y) >= Value_t(0.5) : Value_t(1) );
 }
 template<typename Value_t>
 Value_t cpp_01unit_operators_or_i(const Value_t* vars)
