@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x,z
+R=-11, 11, 0.3
+F=x%z
+C=x%z

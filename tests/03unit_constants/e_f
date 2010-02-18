@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x
+R=0,1,1
+F=x*0+ naturalnumber
+C=expf(x*0+1)

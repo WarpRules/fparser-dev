@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x,y
+R=-4, 4, 0.05
+F=hypot(x,y)
+C=MpfrFloat::hypot(x,y)

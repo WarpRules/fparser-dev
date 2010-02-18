@@ -1,0 +1,7 @@
+DEG=true
+D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
+T=ld
+V=x
+R=-40000, 40000, 5
+F=cos(x)
+C=cosl(d2r(x))

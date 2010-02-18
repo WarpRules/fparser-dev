@@ -168,6 +168,13 @@ fpoptimizer/bytecoderules_parser: \
 fp_opcode_add.inc: fpoptimizer/bytecoderules_parser fpoptimizer/fparser_bytecoderules.dat
 	fpoptimizer/bytecoderules_parser < fpoptimizer/fparser_bytecoderules.dat > $@
 
+tests/make_tests: \
+		tests/make_tests.o
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+testbed_tests.inc: tests/make_tests
+	tests/make_tests tests/*/* | sed "s@<stdout>@$@@" > $@
+
 fpoptimizer.cc: \
 		fpoptimizer/grammar_parser.y \
 		fpoptimizer/grammar_parser.cc \
@@ -296,8 +303,10 @@ distclean: clean
 	rm -f	*~
 
 .dep:
-	g++ -MM $(CPPFLAGS) $(wildcard *.cc) > .dep
-	g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
-	g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
+	echo -n '' > .dep
+	- g++ -MM $(CPPFLAGS) $(wildcard *.cc) >> .dep
+	- g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
+	- g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
+	- echo "testbed_tests.inc: " `/bin/ls tests/*/*|grep -v '~'` >> .dep
 
 -include .dep

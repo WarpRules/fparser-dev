@@ -17,6 +17,8 @@
 #include "fparser_gmpint.hh"
 #endif
 
+#include "fpaux.hh"
+
 #include <cmath>
 #include <iostream>
 #include <iomanip>
@@ -25,20 +27,10 @@
 #include <algorithm>
 #include <cstring>
 
-#define Epsilon   (1e-9)
-#define Epsilon_f (1e-1)
-
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
-
 #define CONST 1.5
 
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
-
-#define FIRST_TEST 0
-//#define FIRST_TEST 29
 
 namespace
 {
@@ -46,711 +38,44 @@ namespace
 
     // Auxiliary functions
     // -------------------
-#ifndef _MSC_VER /* workaround for compiler bug? MSC 15.0 */
-    inline double abs(double d) { return fabs(d); }
-#endif
-    template<typename T>
-    inline T min(T x, T y) { return x<y ? x : y; }
-    template<typename T>
-    inline T max(T x, T y) { return x>y ? x : y; }
-    inline long max(long x, long y) { return x>y ? x : y; }
-    inline double r2d(double x) { return x*180.0/M_PI; }
-    inline double d2r(double x) { return x*M_PI/180.0; }
-#ifndef __ICC /* workaround for compiler bug? (ICC 11.0) */
-    inline double cot(double x) { return 1.0 / std::tan(x); }
-#endif
-    inline double csc(double x) { return 1.0 / std::sin(x); }
-    inline double sec(double x) { return 1.0 / std::cos(x); }
+    template<typename Value_t>
+    inline Value_t r2d(Value_t x)
+        { return x*Value_t(180.0/ FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() ); }
+
+    template<typename Value_t>
+    inline Value_t d2r(Value_t x)
+        { return x*Value_t(FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() /180.0); }
+
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
-    inline bool fBool(double x) { return fabs(x) >= 0.5; }
-    inline double fAnd(double x, double y)
-    { return double(fBool(x) && fBool(y)); }
-    inline double fOr(double x, double y)
-    { return double(fBool(x) || fBool(y)); }
-    inline double fNot(double x) { return double(!fBool(x)); }
+    template<typename Value_t>
+    Value_t Sqr(const Value_t* p) { return p[0]*p[0]; }
 
-#ifndef FP_SUPPORT_ASINH
-    inline double fp_asinh(double x) { return log(x + sqrt(x*x + 1)); }
-    inline double fp_acosh(double x) { return log(x + sqrt(x*x - 1)); }
-    inline double fp_atanh(double x) { return log( (1+x) / (1-x) ) * 0.5; }
-#else
-    inline double fp_asinh(double x) { return asinh(x); }
-    inline double fp_acosh(double x) { return acosh(x); }
-    inline double fp_atanh(double x) { return atanh(x); }
-#endif // FP_SUPPORT_ASINH
-    inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
+    template<typename Value_t>
+    Value_t Sub(const Value_t* p) { return p[0]-p[1]; }
 
-    inline int doubleToInt(double d)
-    {
-        return d<0 ? -int((-d)+.5) : int(d+.5);
-    }
+    template<typename Value_t>
+    Value_t Value(const Value_t*) { return 10; }
 
-    double Sqr(const double* p) { return p[0]*p[0]; }
-    double Sub(const double* p) { return p[0]-p[1]; }
-    double Value(const double*) { return 10; }
+
+    template<typename Value_t>
+    Value_t Epsilon() { return Value_t(1e-9); }
 
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    float Sqr_f(const float* p) { return p[0]*p[0]; }
-    float Sub_f(const float* p) { return p[0]-p[1]; }
-    float Value_f(const float*) { return 10; }
+    template<>
+    float Epsilon<float>() { return 1e-3f; }
 #endif
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    long double Sqr_ld(const long double* p) { return p[0]*p[0]; }
-    long double Sub_ld(const long double* p) { return p[0]-p[1]; }
-    long double Value_ld(const long double*) { return 10; }
+    template<>
+    long double Epsilon<long double>() { return 1e-10l; }
 #endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    MpfrFloat Sqr_mpfr(const MpfrFloat* p) { return p[0]*p[0]; }
-    MpfrFloat Sub_mpfr(const MpfrFloat* p) { return p[0]-p[1]; }
-    MpfrFloat Value_mpfr(const MpfrFloat*) { return 10; }
+    template<>
+    MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif
-}
 
-
-//============================================================================
-// Test function definitions
-//============================================================================
-struct FloatingPointTest
-{
-    const char* funcString;
-    const char* paramString;
-    double (*funcPtr)(const double*);
-    unsigned paramAmount;
-    double paramMin, paramMax, paramStep;
-    bool useDegrees;
-    const char* testname;
-};
-
-struct IntTest
-{
-    const char* funcString;
-    const char* paramString;
-    long (*funcPtr)(const long*);
-    unsigned paramAmount;
-    long paramMin, paramMax, paramStep;
-    bool useDegrees;
-    const char* testname;
-};
-
-double f1(const double* p)
-{
-#define P1 "x*4/2 + (1+(2+3)) + x*x+x+1+2+3*4+5*6*\n7-8*9", "x", \
-        f1, 1, -1000, 1000, .1, false
-    const double x = p[0];
-    return x*4/2 + (1+(2+3)) + x*x+x+(1.0+2.0+3.0*4.0+5.0*6.0*7.0-8.0*9.0);
-/*
-    const double x = p[0], y = p[1], z = p[2];
-#define P1 "x - (y*(y*(y*-1))*1)", "x,y,z", f1, 3, .1, 4, .1, false
-    return x - (y*(y*(y*-1))*1);
-*/
-}
-double f2(const double* p)
-{
-#define P2 " 2 * x+ sin ( x ) / .5 + 2-sin(x)*sin(x)", "x", \
-        f2, 1, -1000, 1000, .1, false
-    const double x = p[0];
-    return 2*x+sin(x)/.5 + 2-sin(x)*sin(x);
-}
-double f3(const double* p)
-{
-#define P3 "(x=y & y=x)+  1+2-3.1*4e2/.5 + x*x+y*y+z*z", "x,y,z", \
-        f3, 3, -10, 10, .5, false
-    const double x = p[0], y = p[1], z = p[2];
-    return (x==y && y==x)+ 1.0+2.0-3.1*4e2/.5 + x*x+y*y+z*z;
-}
-double f4(const double* p)
-{
-#define P4 \
-    " ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y) ", \
-        "x,y", f4, 2, -100, 100, .5, false
-    const double x = p[0], y = p[1];
-    return ( ((( ( x-y) -( ((y) *2) -3)) )* 4))+sin(x)*cos(y)-cos(x)*sin(y);
-}
-double f5(const double* p)
-{
-#define P5 "__A5_x08^o__5_0AB_", "__A5_x08,o__5_0AB_", \
-        f5, 2, .1, 10, .05, false
-    const double x = p[0], y = p[1];
-    return pow(x,y);
-}
-#ifndef FP_DISABLE_EVAL
-double f6(const double* p)
-{
-#define P6 "if(x>0&y>0,x*y+eval(x-1,y-1),0)+1", "x,y", \
-        f6, 2, .1, 10, .2, false
-    const double x = p[0], y = p[1];
-    const double v[2] = { x-1, y-1 };
-    return (x>1e-14 && y>1e-14 ? x*y+f6(v) : 0)+1;
-}
-#endif
-double f7(const double* p)
-{
-#define P7 "cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5))", "x", \
-        f7, 1, -10, 10, .001, false
-    const double x = p[0];
-    return cos(x)*sin(1-x)*(1-cos(x/2)*sin(x*5));
-}
-double f8(const double* p)
-{
-#define P8 "atan2(x,y)+max(x,y)", "x,y", f8, 2, -10, 10,.05, false
-    const double x = p[0], y = p[1];
-    return atan2(x,y) + (x>y ? x : y);
-}
-double f9(const double* p)
-{
-#define P9 "1.5+x*y-2+4/8+z+z+z+z+x/(y*z)", "x,y,z", f9, 3, 1, 21, .3, false
-    const double x = p[0], y = p[1], z = p[2];
-    return 1.5+x*y-2.0+4.0/8.0+z+z+z+z+x/(y*z);
-}
-double f10(const double* p)
-{
-#define P10 "1+sin(cos(max(1+2+3+4+5, x+y+z)))+2", "x,y,z", \
-        f10, 3, 1, 21, .3, false
-    const double x = p[0], y = p[1], z = p[2];
-    return 1.0+sin(cos(max(1.0+2.0+3.0+4.0+5.0, x+y+z)))+2.0;
-}
-double f11(const double* p)
-{
-#define P11 "-(-(-(-(-x))-x))+y*1+log(1.1^z)", "x,y,z", \
-        f11, 3, 1, 21, .25, false
-    const double x = p[0], y = p[1], z = p[2];
-    return -(-(-(-(-x))-x))+y*1+log(pow(1.1,z));
-}
-double f12(const double* p)
-{
-#define P12 "1/log(10^((3-2)/log(x)))", "x", f12, 1, 1, 2000, .05, false
-    const double x = p[0];
-    return 1.0/log(pow(10.0, 1.0/log(x)));
-}
-double f13(const double* p)
-{
-#define P13 "x^3 * x^4 + y^3 * y^5", "x,y", f13, 2, -50, 50, .5, false
-    const double x = p[0], y = p[1];
-    return pow(x,3) * pow(x,4) + pow(y,3) * pow(y,5);
-}
-double f14(const double* p)
-{
-#define P14 "x*pi + sin(2*pi) + CONST", "x", f14, 1, -50, 50, .01, false
-    const double x = p[0];
-    return x*M_PI + sin(2*M_PI) + CONST;
-}
-double f15(const double* p)
-{
-#define P15 "x^y/log(y) + log(x)/log(y) + log(x^y)", "x,y", \
-        f15, 2, 1.1, 8, .02, false
-    const double x = p[0], y = p[1];
-    return pow(x,y)/log(y) + log(x)/log(y) + log(pow(x,y));
-}
-double f16(const double* p)
-{
-#define P16 "if(x<0, if(y<0, x+y, x-y), if(y>0, x*y, x+2*y))", "x,y", \
-        f16, 2, -20, 20, .1, false
-    const double x = p[0], y = p[1];
-    return x<0 ? (y<0 ? x+y : x-y) : (y>0 ? x*y : x+2*y);
-}
-double f17(const double* p)
-{
-#define P17 "sqr(x)+sub(x,y)+psqr(y)+psub(y+1,x-2)-1", "x,y", \
-        f17, 2, -20, 20, .1, false
-    const double x = p[0], y = p[1];
-    double p2[] = { y+1, x-2 };
-    return Sqr(p)+Sub(p)+Sqr(p+1)+Sub(p2)-1;
-}
-double f18(const double* p)
-{
-#define P18 " - ( - ( - ( - 5 ) ) ) * -x^ -y^-2", "x,y", \
-        f18, 2, 1, 20, .1, false
-    const double x = p[0], y = p[1];
-    return - ( - ( - ( - 5 ) ) ) * -pow(x, -pow(y, -2));
-}
-
-double f19(const double* p)
-{
-#define P19 "(x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x=y)+100000*(x!=y)+\
-(x&y)*2+(x|y)*20+(!x)*200+(!!x)*2000+4*!((x<y)&(x<3))+40*!!(!(x>y)|(x>3))", \
-        "x,y", f19, 2, -100, 100, .5, false
-    const double x = p[0], y = p[1];
-    return (x<y)+10*(x<=y)+100*(x>y)+1000*(x>=y)+10000*(x==y)+100000*(x!=y)
-        +(x&&y)*2+(x||y)*20+(!x)*200+(!!x)*2000
-        +4*!((x<y)&&(x<3))+40*!!(!(x>y)||(x>3));
-}
-
-double f20(const double* p)
-{
-#define P20 "(!(x != y) & !x) + !(!(!(!y)))", "x,y", \
-        f20, 2, -100, 100, 1, false
-    const double x = p[0], y = p[1];
-    return  (!(x != y) && !x) + !(!(!(!y)));
-}
-
-double f21(const double* p)
-{
-#define P21 "sqr(x)+value()-pvalue ( ) ", "x", f21, 1, -10, 10, 1, false
-    return Sqr(p)+Value(0)-5;
-}
-
-double f22(const double* p)
-{
-#define P22 "3.5doubled + 10*x tripled - sin(y)doubled + \
-100*(x doubled-y tripled)doubled + 5/2doubled + 1.1^x doubled + \
-1.1doubled^x doubled", "x,y", \
-        f22, 2, -10, 10, .05, false
-    const double x = p[0], y = p[1];
-    return (3.5*2) + 10*(x*3) - (sin(y)*2) + 100*((x*2)-(y*3))*2 + 5.0/(2*2) +
-        pow(1.1, x*2) + pow(1.1*2, x*2);
-}
-
-double f23(const double* p)
-{
-#define P23 "(x/(2*acos(0)))*180", "x", f23, 1, -1000, 1000, .1, false
-    return (p[0]/(2*acos(0.0)))*180;
-}
-
-double f24(const double* p)
-{
-#define P24 \
-    "(min(x, min(1,x)) + min(x, 1))/2 + min(x, 1)*3 + max(0, min(-2,0))", \
-        "x", f24, 1, -1000, 1000, .1, false
-    return (std::min(*p, std::min(1.0, *p)) + std::min(*p, 1.0))/2 +
-        std::min(*p, 1.0)*3 + std::max(0.0, std::min(-2.0, 0.0));
-}
-
-double f25(const double* p)
-{
-#define P25 "a^b^c + a^-2 * (-b^2) + (-b^-c)", "a,b,c", f25, 3, 1, 3, .1, false
-    const double a = p[0], b = p[1], c = p[2];
-    return pow(a, pow(b, c)) + pow(a, -2) * (-pow(b, 2)) + (-pow(b, -c));
-}
-
-double f26(const double* p)
-{
-#define P26 "sin(x) + cos(x*1.5) + asin(x/110) + acos(x/120)", "x", \
-        f26, 1, -100, 100, .1, true
-    const double x = p[0];
-    return sin(d2r(x)) + cos(d2r(x*1.5)) +
-        r2d(asin(x/110.0)) + r2d(acos(x/120.0));
-}
-
-double f27(const double* p)
-{
-#define P27 "abs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+\
-cosh(x)+cot(x)+csc(x) + pow(x,y)", "x,y", \
-        f27, 2, .1, .9, .025, false
-    const double x = p[0], y = p[1];
-    return fabs(x)+acos(x)+asin(x)+atan(x)+atan2(x,y)+ceil(x)+cos(x)+cosh(x)+
-        1.0/tan(x)+1.0/sin(x) + pow(x,y);
-}
-
-double f28(const double* p)
-{
-#define P28 "exp(x)+floor(x)+int(x)+log(x)+log10(x)+max(x,y)+min(x,y)+\
-sec(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)+ceil(y)+trunc(y)", "x,y", \
-        f28, 2, .1, .9, .025, false
-    const double x = p[0], y = p[1];
-    return exp(x)+floor(x)+floor(x+.5)+log(x)+log10(x)+std::max(x,y)+
-        std::min(x,y)+1.0/cos(x)+sin(x)+sinh(x)+sqrt(x)+tan(x)+tanh(x)+
-        ceil(y)+fp_trunc(y);
-}
-
-double f29(const double* p)
-{
-#define P29 "x-y*1", "x,y", f29, 2, -100, 100, .1, false
-    return p[0] - p[1]*1;
-}
-
-double f30(const double* p)
-{
-#define P30 "x - y*1 + (x%y) + x / (y^1.1) + 2^3 + 5%3 + x^(y^0) + x^0.5", \
-        "x,y", f30, 2, 3, 10, 1, false
-    const double x = p[0], y = p[1];
-    return x - y*1 + fmod(x,y) + x / pow(y,1.1) + pow(2.0,3) + fmod(5.0,3.0) +
-        pow(x,pow(y,0)) + pow(x,0.5);
-}
-
-double f31(const double* p)
-{
-    const double x = p[0], y = p[1], z = p[2];
-#define P31 "x - (y*(y*(y*-1))*1) + log(x*exp(1.0)^y) - log(x^y) + \
-exp(1.0)^log(x+6) + 10^(log(x+6)/log(y+6)*log(z+6)/log(10)) - \
-exp(1.0)^(log(x+6)*y) - 5^(log(x+7)/log(5)) + (x*z+17)^3 * (x*z+17)^2 / \
-(x*z+17)^4", "x,y,z", f31, 3, .1, 4, .1, false
-
-    return x - (y*(y*(y*-1))*1) + log(x*pow(exp(1.0),y)) - log(pow(x,y)) +
-        pow(exp(1.0),log(x+6)) +
-        pow(10.0,log(x+6)/log(y+6)*log(z+6)/log(10.0)) -
-        pow(exp(1.0), log(x+6)*y) - pow(5.0,log(x+7)/log(5.0)) +
-        pow(x*z+17,3) * pow(x*z+17,2) / pow(x*z+17,4);
-}
-
-double f32(const double* p)
-{
-#define P32code \
-    x\
-    +y/y-min(3,4)-x-max(4,3)+max(3,4)-min(4,3)+0+(z*1)\
-    +(x-2+2)+(x*0.5*2)+y*0\
-    +min(min(min(4.0,x),1.0),min(x,min(min(y,4.0),z)))\
-    +max(max(max(4.0,x),1.0),max(x,max(max(y,4.0),z)))\
-    +(abs(1)+acos(1.0)+asin(1.0)+atan(1.0)+ceil(1.1)+cos(0.0)\
-     +cosh(0.0)+floor(1.1)+log(1.0)+sin(0.0)+sinh(0.0)+tan(1.0)\
-     +tanh(1.0)+atan2(1.0,1.0))\
-    +(x-(y-z))\
-    +(x+y) + (x*y)\
-    +max(x,max(x,max(x,max(x,x))))*-1.0\
-    +(z-z)\
-    +1/sin(x/5) + 1/cos(y/5) + 1/tan(z/5)\
-    +log10(cot(z/5) + csc(y/5) + sec(x/5))\
-    +log(30+x)*log(40+y)/log(50+z)\
-    +sin(x/57.295779513082320877)\
-    +asin(x/10)*57.295779513082320877\
-    +floor(-x) + 1/ceil(x)\
-    +sqrt(5 * 0.2)\
-    +(-x+-x+-x+-x+-x+-x)
-#define P32 Stringify(P32code), "x,y,z", f32, 3, 1, 2, .05, false
-
-    const double x = p[0], y = p[1], z = p[2];
-    return P32code;
-}
-
-double f33(const double* p)
-{
-#define P33 "sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y)", \
-        "x,y", f33, 2, -2, 2, .1, false
-    const double x = p[0], y = p[1];
-    return sin(sqrt(10-x*x+y*y))+cos(sqrt(15-x*x-y*y))+sin(x*x+y*y);
-}
-
-double f34(const double* p)
-{
-#define P34 "\343\201\212+\346\227\251*\343\201\206-t", \
-        "t,\343\201\206,\343\201\212,\346\227\251", \
-        f34, 4, -5, 5, 1, false
-    const double t = p[0], z = p[1], x = p[2], y = p[3];
-    return x+y*z-t;
-}
-
-double f35(const double* p)
-{
-#define P35 "A_very_long_variable_name_1-A_very_long_variable_name_2+\
-Yet_a_third_very_long_variable_name*A_very_long_variable_name_1", \
-        "A_very_long_variable_name_1,A_very_long_variable_name_2,\
-Yet_a_third_very_long_variable_name", f35, 3, -10, 10, 1, false
-    const double x = p[0], y = p[1], z = p[2];
-    return x-y+z*x;
-}
-
-double f36(const double* p)
-{
-#define P36 "-if(x<0, x, -x) + -if(x<5, 2, 3)", "x", f36, 1, -10, 10, .1, false
-    const double x = p[0];
-    return -(x<0 ? x : -x) + -(x<5 ? 2 : 3);
-}
-
-double f37(const double* p)
-{
-#define P37 "5 + 7.5*8 / 3 - 2^4*2 + 7%2+4 + x", "x", \
-        f37, 1, -10, 10, .1, false
-    const double x = p[0];
-    return 5 + 7.5*8 / 3 - pow(2.0,4)*2 + 7%2+4 + x;
-}
-
-double f38(const double* p)
-{
-#define P38 "asinh(x) + 1.5*acosh(y+3) + 2.2*atanh(z)", "x,y,z", \
-        f38, 3, -.9, .9, .05, false
-    const double x = p[0], y = p[1], z = p[2];
-    return fp_asinh(x) + 1.5*fp_acosh(y+3) + 2.2*fp_atanh(z);
-}
-
-double f39(const double* p)
-{
-#define P39Code sin(x+cos(y*1.5))-cos(x+sin(y*1.5))+z*z*z*sin(z*z*z-x*x-y*y)-\
-cos(y*1.5)*sin(x+cos(y*1.5))+x*y*z+x*y*2.5+x*y*z*cos(x)+x*y*cos(x)+x*z*cos(x)+\
-y*z*2.5+(x*y*z*cos(x)-x*y*z-y*cos(x)-x*z*y+x*y+x*z-cos(x)*x)
-#define P39 Stringify(P39Code), "x,y,z", f39, 3, -2, 2, .08, false
-    const double x = p[0], y = p[1], z = p[2];
-    return P39Code;
-}
-
-double f40(const double* p)
-{
-#define P40CodePart x+x+x+x+x+x+x+x+x+x+x+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z+y+z
-#define P40Code (P40CodePart)*(P40CodePart)+2*(P40CodePart)-x*y*(P40CodePart)+\
-x*(P40CodePart)
-#define P40 Stringify(P40Code), "x,y,z", f40, 3, -2, 2, .075, false
-    const double x = p[0], y = p[1], z = p[2];
-    return P40Code;
-}
-
-double f41(const double* p)
-{
-#define P41CodePart (sin(x)+cos(y))
-#define P41Code x*3+x*y+x*z+x*sin(y*z) - \
-P41CodePart*4+P41CodePart*x+P41CodePart*y+P41CodePart*z
-#define P41 Stringify(P41Code), "x,y,z", f41, 3, -2, 2, .075, false
-    const double x = p[0], y = p[1], z = p[2];
-    return P41Code;
-}
-
-double f42(const double* p)
-{
-#define P42 "sqrt(x*x) + 1.5*((y*y)^.25) + hypot(x,y)" , "x,y", f42, 2, -10, 10, .025, false
-    const double x = p[0], y = p[1];
-    const double xx = x*x, yy = y*y; // to avoid gcc bug with -ffast-math
-    return sqrt(xx) + 1.5*(pow(yy, .25)) + sqrt(xx + yy);
-}
-
-double f43(const double* p)
-{
-#define P43 "log(x*x)+abs(exp(abs(x)+1))" , "x", f43, 1, -100, 100, .03, false
-    const double x = p[0];
-    const double xx = x*x;
-    return log(xx)+abs(exp(abs(x)+1));
-}
-
-double f44(const double* p)
-{
-#define P44 "(x^2)^(1/8) + 1.1*(x^3)^(1/7) + 1.2*(x^4)^(1/6) + \
-1.3*(x^5)^(1/5) + 1.4*(x^6)^(1/6) + 1.5*(x^7)^(1/4) + 1.6*(x^8)^(1/3) + \
-1.7*(x^9)^(1/2) + 1.8*(sqrt(abs(-sqrt(x))^3))" , "x", \
-        f44, 1, 0, 100, .025, false
-    const double x = p[0];
-    const double x2 = x*x, x3 = x*x*x;
-    const double x4 = x2*x2, x5 = x3*x2, x6 = x3*x3;
-    const double x7 = x6*x, x8 = x6*x2, x9 = x6*x3;
-    return pow(x2, 1.0/8.0) +
-        1.1 * pow(x3, 1.0/7.0) +
-        1.2 * pow(x4, 1.0/6.0) +
-        1.3 * pow(x5, 1.0/5.0) +
-        1.4 * pow(x6, 1.0/6.0) +
-        1.5 * pow(x7, 1.0/4.0) +
-        1.6 * pow(x8, 1.0/3.0) +
-        1.7 * pow(x9, 1.0/2.0) +
-        1.8 * sqrt(pow(abs(-sqrt(x)), 3));
-}
-
-double f45(const double* p)
-{
-#define P45 "(x^2)^(1/7) + 1.1*(x^4)^(1/5) + 1.2*(x^6)^(1/3)" , "x", \
-        f45, 1, -10, 10, .025, false
-    const double x = p[0];
-    const double x2 = x*x;
-    const double x4 = x2*x2;
-    const double x6 = x4*x2;
-    return pow(x2, 1.0/7.0) +
-        1.1*pow(x4, 1.0/5.0) +
-        1.2*pow(x6, 1.0/3.0);
-}
-
-double f46(const double* p)
-{
-#define P46 "abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) + \
-(acos(x) < (acos(y)-10)) + 1.2*max(-4, acos(x)) + 1.3*min(9, acos(x)-9)" , \
-        "x,y", f46, 2, -.9, .9, .015, false
-    const double x = p[0], y = p[1];
-    return abs(floor(acos(x)+4)) + 1.1*abs(floor(acos(y)+1.5)) +
-        (acos(x) < (acos(y)-10)) + 1.2*max(-4.0, acos(x)) +
-        1.3*min(9.0, acos(x)-9);
-}
-
-double f47(const double* p)
-{
-#define P47 "1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) + \
-1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) + 1.5*(cosh(y)+sinh(y))",\
-        "x,y", f47, 2, -10, 10, .1, false
-    const double x = p[0], y = p[1];
-    return 1.1*(exp(x)+exp(-x)) + 1.2*(exp(y)-exp(-y)) +
-        1.3*((exp(-x)+exp(x))/2) + 1.4*((exp(-x)-exp(x))/2) +
-        1.5*(cosh(y)+sinh(y));
-}
-
-double f48(const double* p)
-{
-#define P48 "sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2)+1)*log(2)) + \
-!(x | !(x/4))" , "x", f48, 1, 2, 1e9, 1.2e7, false
-    const double x = p[0];
-    return sinh((log(x)/5+1)*5) + 1.2*cosh((log(x)/log(2.0)+1)*log(2.0)) +
-        (!(doubleToInt(x) || !doubleToInt(x/4)));
-}
-
-double f49(const double* p)
-{
-#define P49 "atan2(0, x) + (-4*(x-100))^3.3" , "x", f49, 1, -100, 100, .03, false
-    const double x = p[0];
-    return atan2(0, x) + pow(-4*(x-100), 3.3);
-}
-
-double f50(const double* p)
-{
-#define P50 "(x<y | y<x) + 2*(x<y & y<x) + 4*(x<=y & y<=x) + \
-8*(x<y & x!=y) + 16*(x<y | x!=y) + 32*(x<=y & x>=y) + 64*(x<=y | x>=y) + \
-128*(x!=y & x=y) + 256*(x!=y & x!=y) + 512*(x<=y & x=y)" , "x,y", \
-        f50, 2, -10, 10, 1, false
-    const double x = p[0], y = p[1];
-    return
-        (x<y || y<x) + 2*(x<y && y<x) + 4*(x<=y && y<=x) + 8*(x<y && x!=y) +
-        16*(x<y || x!=y) + 32*(x<=y && x>=y) + 64*(x<=y || x>=y) +
-        128*(x!=y && x==y) + 256*(x!=y && x!=y) + 512*(x<=y && x==y);
-}
-
-double f51(const double* p)
-{
-#define P51 "log(-x)" , "x", f51, 1, -100, -1, .5, false
-    const double x = p[0];
-    return log(-x);
-}
-
-double f52(const double* p)
-{
-#define P52Code x + (1.0+2.0+3.0+4.0-5.0-6.0-7.0-8.0)/3.0 + \
-  4.0*(1.0+sin(2.0)+cos(4.0*5.0+6.0)/2.0) + cos(0.5)*tan(0.6+0.2) - \
-  1.1/log(2.1)*sqrt(3.3)
-#define P52 Stringify(P52Code)" + 2^3" , "x", f52, 1, -10, 10, .5, false
-    const double x = p[0];
-    return P52Code + pow(2.0, 3.0);
-}
-
-double f53(const double* p)
-{
-#define P53 "(x&y) + 1.1*(int(x/10)|int(y/10)) + 1.2*((-!-!-x)+(!-!-!y)) + \
-1.3*(-------x + !!!!!!!y)" , "x,y", f53, 2, 0, 10, 1, false
-    const double x = p[0], y = p[1];
-    return fAnd(x,y) + 1.1*(fOr(doubleToInt(x/10.0),doubleToInt(y/10.0))) +
-        1.2*((-fNot(-fNot(-x))) + fNot(-fNot(-fNot(y)))) +
-        1.3*(-x + fNot(y));
-}
-
-double f54(const double* p)
-{
-#define P54 "(x<y)+(x<=y)+(x>y)+(x>=y)+(x=y)+(x!=y)+(x&y)+(x|y)+(!x)+(!!x)+\
-!((x<y)&(x<3))+!!(!(x>y)|(x>3))", \
-        "x,y", f54, 2, -100, 100, .5, false
-    const double x = p[0], y = p[1];
-    return (x<y)+(x<=y)+(x>y)+(x>=y)+(x==y)+(x!=y)+(fAnd(x,y))+(fOr(x,y))+
-        (fNot(x))+(fNot(fNot(x)))+fNot((fAnd((x<y),(x<3))))+
-        !!(fOr(!(x>y),(x>3)));
-}
-
-double f55(const double* p)
-{
-#define P55 "(x^1.2 < 0) + (y^2.5 < 0) + 2*(x*x<0) + 3*(y^3<0) + 4*(x^4<0)", \
-        "x,y", f55, 2, 1, 100, .5, false
-    const double x = p[0], y = p[1];
-    return (pow(x,1.2) < 0) + (pow(y,2.5) < 0) + 2*(x*x<0) + 3*(pow(y,3)<0) +
-        4*(pow(x,4)<0);
-}
-
-double f56(const double* p)
-{
-//#define P56 "1.6646342e+21%x", "x", f56, 1, .25, 100, .25, false
-#define P56 "1.75e21%x", "x", f56, 1, .25, 100, .25, false
-    const double x = p[0];
-    // 1.6646342e+21 chosen as such to be larger than 2^64,
-    // which is the limit where repeated runs of fprem opcode
-    // on 387 is required.
-    //return fmod(1.6646342e+21, x);
-    return fmod(1.75e21, x);
-}
-
-double f57(const double* p)
-{
-#define P57 "cosh(asinh(x))", "x", f57, 1, .05, 1.0, .01, false
-    const double x = p[0];
-    return cosh(fp_asinh(x));
-}
-
-double f58(const double* p)
-{
-#define P58Code (-x < 3) + (x*-1 > 5) + (x*-3 < 10) + (x*-3 < y*7) + (x*4 < y*7) + (x*6 < y*-3) + (-x < 11) + (5 < -y)
-#define P58 Stringify(P58Code), "x,y", f58, 2, -11, 11, 1, false
-    const double x = p[0], y = p[1];
-    return P58Code;
-}
-
-double f59(const double* p)
-{
-#define P59 "cosh(x^2) + tanh(y^2)", "x,y", f59, 2, -2.0, 2.0, .12, false
-    const double x = p[0], y = p[1];
-    return cosh(x*x) + tanh(y*y);
-}
-
-double f60(const double* p)
-{
-#define P60 "sqr(x) | sub(x,y) | value()", "x,y", f60, 2, -2.0, 2.0, 1, false
-    return fOr(fOr(Sqr(p), Sub(p)), Value(p));
-}
-
-namespace
-{
-    FloatingPointTest floatingPointTests[] =
-    {
-        { P1,"1" }, { P2,"2" }, { P3,"3" }, { P4,"4" }, { P5,"5" },
-#ifndef FP_DISABLE_EVAL
-        { P6,"6" },
-#endif
-        { P7,  "7" }, { P8,  "8" }, { P9,  "9" }, { P10,"10" }, { P11,"11" },
-        { P12,"12" }, { P13,"13" }, { P14,"14" }, { P15,"15" }, { P16,"16" },
-        { P17,"17" }, { P18,"18" }, { P19,"19" }, { P20,"20" }, { P21,"21" },
-        { P22,"22" }, { P23,"23" }, { P24,"24" }, { P25,"25" }, { P26,"26" },
-        { P27,"27" }, { P28,"28" }, { P29,"29" }, { P30,"30" }, { P31,"31" },
-        { P32,"32" }, { P33,"33" }, { P34,"34" }, { P35,"35" }, { P36,"36" },
-        { P37,"37" }, { P38,"38" }, { P39,"39" }, { P40,"40" }, { P41,"41" },
-        { P42,"42" }, { P43,"43" }, { P44,"44" }, { P45,"45" }, { P46,"46" },
-        { P47,"47" }, { P48,"48" }, { P49,"49" }, { P50,"50" }, { P51,"51" },
-        { P52,"52" }, { P53,"53" }, { P54,"54" }, { P55,"55" }, { P56,"56" },
-        { P57,"57" }, { P58,"58" }, { P59,"59" }, { P60,"60" }
-    };
-
-    const unsigned floatingPointTestsAmount =
-        sizeof(floatingPointTests)/sizeof(floatingPointTests[0]);
-}
-
-
-long fi1(const long* p)
-{
-#define PI1Code 1+2+3-4*5*6/3+10/2-9%2 + (x+y - 11*x + z/10 + x/(z+31))
-#define PI1 Stringify(PI1Code), "x,y,z", fi1, 3, -30, 30, 1, false
-    const long x = p[0], y = p[1], z = p[2];
-    return PI1Code;
-}
-
-long fi2(const long* p)
-{
-#define PI2 "if(abs(x*y) < 20 | x+y > 30 & z > 5, min(x,2*y), max(y,z*2))", \
-        "x,y,z", fi2, 3, -30, 30, 1, false
-    const long x = p[0], y = p[1], z = p[2];
-    return (std::abs(x*y) < 20 || (x+y > 30 && z > 5)) ?
-        min(x, 2*y) : max(y, z*2);
-}
-
-long fi3(const long* p)
-{
-#define PI3Code (x+y) + 2*(x-z) + 3*(x*y) + 4*(y/z) + 5*(x%z) + \
-        6*(x<y) + 7*(x<=z) + 8*(x>2*z) + 9*(y>=3*z) + 10*(x+y!=z) + \
-        11*(100+x) + 12*(101-y) + 13*(102*z) + 14*(103/x)
-#define PI3 Stringify(PI3Code), "x,y,z", fi3, 3, 1, 50, 1, false
-    const long x = p[0], y = p[1], z = p[2];
-    return PI3Code;
-}
-
-long fi4(const long* p)
-{
-#define PI4Code (-x < 3) + (x*-1 > 5) + (x*-3 < 10) + (x*-3 < y*7) + (x*4 < y*7) + (x*6 < y*-3) + (-x < 11) + (5 < -y)
-#define PI4 Stringify(PI4Code), "x,y", fi4, 2, -11, 11, 1, false
-    const long x = p[0], y = p[1];
-    return PI4Code;
-}
-
-namespace
-{
-    IntTest intTests[] =
-    {
-        { PI1,"1" }, { PI2,"2" }, { PI3,"3" }, { PI4,"4" }
-    };
-
-    const unsigned intTestsAmount = sizeof(intTests)/sizeof(intTests[0]);
 }
 
 
@@ -761,7 +86,7 @@ bool TestCopyingNoDeepCopy(FunctionParser p)
 {
     double vars[2] = { 3, 5 };
 
-    if(std::fabs(p.Eval(vars) - 13) > Epsilon)
+    if(std::fabs(p.Eval(vars) - 13) > Epsilon<double>())
     {
         std::cout << "- Giving as function parameter (no deep copy): ";
         std::cout << "Failed." << std::endl;
@@ -779,7 +104,7 @@ bool TestCopyingDeepCopy(FunctionParser p)
 
     p.Parse("x*y-1", "x,y");
 
-    if(std::fabs(p.Eval(vars) - 14) > Epsilon)
+    if(std::fabs(p.Eval(vars) - 14) > Epsilon<double>())
     {
         std::cout << "- Giving as function parameter (deep copy): ";
         std::cout << "Failed." << std::endl;
@@ -802,7 +127,7 @@ bool TestCopying()
     p1.Parse("x*y-2", "x,y");
 
     FunctionParser p2(p1);
-    if(std::fabs(p2.Eval(vars) - 8) > Epsilon)
+    if(std::fabs(p2.Eval(vars) - 8) > Epsilon<double>())
     {
         std::cout << "- Copy constructor with no deep copy: ";
         std::cout << "Failed." << std::endl;
@@ -813,7 +138,7 @@ bool TestCopying()
     }
 
     p2.Parse("x*y-1", "x,y");
-    if(std::fabs(p2.Eval(vars) - 9) > Epsilon)
+    if(std::fabs(p2.Eval(vars) - 9) > Epsilon<double>())
     {
         retval = false;
         std::cout << "- Copy constructor with deep copy: ";
@@ -824,18 +149,18 @@ bool TestCopying()
     }
 
     p3 = p1;
-    if(std::fabs(p3.Eval(vars) - 8) > Epsilon)
+    if(std::fabs(p3.Eval(vars) - 8) > Epsilon<double>())
     {
         retval = false;
         std::cout << "- Assignment with no deep copy: ";
         std::cout << "Failed." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
         p3.PrintByteCode(std::cout);
-#endif
+ #endif
     }
 
     p3.Parse("x*y-1", "x,y");
-    if(std::fabs(p3.Eval(vars) - 9) > Epsilon)
+    if(std::fabs(p3.Eval(vars) - 9) > Epsilon<double>())
     {
         retval = false;
         std::cout << "- Assignment with deep copy: ";
@@ -849,7 +174,7 @@ bool TestCopying()
         retval = false;
 
     // Final test to check that p1 still works:
-    if(std::fabs(p1.Eval(vars) - 8) > Epsilon)
+    if(std::fabs(p1.Eval(vars) - 8) > Epsilon<double>())
     {
         std::cout << "Failed: p1 was corrupted." << std::endl;
         retval = false;
@@ -859,7 +184,7 @@ bool TestCopying()
         retval = false;
 
     // Final test to check that p1 still works:
-    if(std::fabs(p1.Eval(vars) - 8) > Epsilon)
+    if(std::fabs(p1.Eval(vars) - 8) > Epsilon<double>())
     {
         std::cout << "Failed: p1 was corrupted." << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
@@ -882,9 +207,9 @@ bool TestErrorSituations()
     bool retval = true;
     FunctionParser fp, tmpfp;
     fp.AddUnit("unit", 2);
-    fp.AddFunction("Value", Value, 0);
-    fp.AddFunction("Sqr", Sqr, 1);
-    fp.AddFunction("Sub", Sub, 2);
+    fp.AddFunction("Value", Value<double>, 0);
+    fp.AddFunction("Sqr", Sqr<double>, 1);
+    fp.AddFunction("Sub", Sub<double>, 2);
     tmpfp.Parse("0", "x");
 
     static const struct
@@ -1004,7 +329,7 @@ bool TestErrorSituations()
                       << "\") as constant didn't fail" << std::endl;
             retval = false;
         }
-        if(fp.AddFunction(n, Sqr, 1))
+        if(fp.AddFunction(n, Sqr<double>, 1))
         {
             std::cout << "Adding an invalid name (\"" << n
                       << "\") as funcptr didn't fail" << std::endl;
@@ -1025,7 +350,7 @@ bool TestErrorSituations()
     }
 
     fp.AddConstant("CONST", 1);
-    fp.AddFunction("PTR", Sqr, 1);
+    fp.AddFunction("PTR", Sqr<double>, 1);
     fp.AddFunction("PARSER", tmpfp);
 
     if(fp.AddConstant("PTR", 1))
@@ -1035,7 +360,7 @@ bool TestErrorSituations()
                   << std::endl;
         retval = false;
     }
-    if(fp.AddFunction("CONST", Sqr, 1))
+    if(fp.AddFunction("CONST", Sqr<double>, 1))
     {
         std::cout <<
             "Adding a userdef constant (\"CONST\") as funcptr didn't fail"
@@ -1076,7 +401,7 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
 
     double vars[1];
     for(vars[0] = -2.0; vars[0] <= 2.0; vars[0] += .1)
-        if(fabs(fp.Eval(vars) - wsFunc(vars[0])) > Epsilon)
+        if(fabs(fp.Eval(vars) - wsFunc(vars[0])) > Epsilon<double>())
         {
             std::cout << "Failed.\n";
             return false;
@@ -1142,10 +467,10 @@ bool compareExpValues(double value, const std::string& funcStr,
                       double v1, double v2, bool isOptimized)
 {
     const double scale = pow(10.0, floor(log10(fabs(v1))));
-    const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
-    const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+    const double sv1 = fabs(v1) < Epsilon<double>() ? 0 : v1/scale;
+    const double sv2 = fabs(v2) < Epsilon<double>() ? 0 : v2/scale;
     const double diff = sv2-sv1;
-    if(std::fabs(diff) > Epsilon)
+    if(std::fabs(diff) > Epsilon<double>())
     {
         std::cout << "For \"" << funcStr << "\" with x=" << value
                   << " the library (";
@@ -1561,7 +886,7 @@ bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
     {
       case 0: return fp.AddConstant(name, 123);
       case 1: return fp.AddUnit(name, 456);
-      case 2: return fp.AddFunction(name, Sqr, 1);
+      case 2: return fp.AddFunction(name, Sqr<double>, 1);
       case 3: return fp.AddFunction(name, anotherParser);
     }
     return false;
@@ -1941,8 +1266,8 @@ class TestingThread
                 const double v1 = function(vars);
                 const double v2 = mFp->Eval(vars);
                 const double scale = pow(10.0, floor(log10(fabs(v1))));
-                const double sv1 = fabs(v1) < Epsilon ? 0 : v1/scale;
-                const double sv2 = fabs(v2) < Epsilon ? 0 : v2/scale;
+                const double sv1 = fabs(v1) < Epsilon<double>() ? 0 : v1/scale;
+                const double sv2 = fabs(v2) < Epsilon<double>() ? 0 : v2/scale;
                 const double diff = sv2-sv1;
 
                 if(fabs(diff) > 1e-6)
@@ -2003,164 +1328,60 @@ bool testMultithreadedEvaluation() { return true; }
 
 #endif
 
-
-//=========================================================================
-// Main test function
-//=========================================================================
 template<typename Value_t>
-inline double toDouble(const Value_t& value)
-{ return double(value); }
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-template<>
-inline double toDouble<MpfrFloat>(const MpfrFloat& value)
-{ return value.toDouble(); }
-#endif
-
-template<typename Parser_t>
-bool runTest(Parser_t& fp, const FloatingPointTest& testData,
-             const char* const parserType,
-             const typename Parser_t::value_type Eps)
+struct TestType
 {
-    double vars[10];
-    typename Parser_t::value_type fp_vars[10];
+    unsigned paramAmount;
+    Value_t paramMin, paramMax, paramStep;
+    bool useDegrees;
 
-    for(unsigned i = 0; i < testData.paramAmount; ++i)
-        vars[i] = testData.paramMin;
+    Value_t (*funcPtr)(const Value_t*);
+    const char* paramString;
+    const char* testName;
+    const char* funcString;
+};
 
-    while(true)
-    {
-        unsigned i = 0;
-        while(i < testData.paramAmount &&
-              (vars[i] += testData.paramStep) > testData.paramMax)
-        {
-            vars[i++] = testData.paramMin;
-        }
-
-        if(i == testData.paramAmount) break;
-
-        for(unsigned i = 0; i < testData.paramAmount; ++i)
-            fp_vars[i] = vars[i];
-
-        const typename Parser_t::value_type orig_v1 = testData.funcPtr(vars);
-        const double v1 = toDouble(orig_v1);
-        const double v2 = toDouble(fp.Eval(fp_vars));
-
-        const double scale = pow(10.0, floor(log10(fabs(v1))));
-        const double sv1 = fabs(v1) < Eps ? 0 : v1/scale;
-        const double sv2 = fabs(v2) < Eps ? 0 : v2/scale;
-        const double diff = sv2-sv1;
-
-        if(fabs(diff) > Eps)
-        {
-            if(!verbose)
-                std::cout << "\nFunction:\n\"" << testData.funcString
-                          << "\"\n(" << parserType << ")";
-
-            std::cout << std::endl << "Error: For (";
-            for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                std::cout << (ind>0 ? ", " : "") << vars[ind];
-            std::cout << ")\nthe library returned "
-                      << std::setprecision(18) << v2 << " instead of "
-                      << std::setprecision(18) << orig_v1 << std::endl
-                      << "(Difference: "
-                      << std::setprecision(18) << v2-v1
-                      << "; scaled diff "
-                      << diff << ")" << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-            fp.PrintByteCode(std::cout);
-#endif
-            return false;
-        }
-    }
-
-    return true;
-}
-
-template<typename Parser_t>
-bool runTest(Parser_t& fp, const IntTest& testData,
-             const char* const parserType)
-{
-    long vars[10];
-    typename Parser_t::value_type fp_vars[10];
-
-    for(unsigned i = 0; i < testData.paramAmount; ++i)
-        vars[i] = testData.paramMin;
-
-    while(true)
-    {
-        unsigned i = 0;
-        while(i < testData.paramAmount &&
-              (vars[i] += testData.paramStep) > testData.paramMax)
-        {
-            vars[i++] = testData.paramMin;
-        }
-
-        if(i == testData.paramAmount) break;
-
-        for(unsigned i = 0; i < testData.paramAmount; ++i)
-            fp_vars[i] = vars[i];
-
-        const long v1 = testData.funcPtr(vars);
-        const typename Parser_t::value_type v2 = fp.Eval(fp_vars);
-
-        if(v1 != v2)
-        {
-            if(!verbose)
-                std::cout << "\nFunction:\n\"" << testData.funcString
-                          << "\"\n(" << parserType << ")";
-
-            std::cout << std::endl << "Error: For (";
-            for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                std::cout << (ind>0 ? ", " : "") << vars[ind];
-            std::cout << ")\nthe library returned "
-                      << v2 << " instead of "
-                      << v1 << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-            fp.PrintByteCode(std::cout);
-#endif
-            return false;
-        }
-    }
-
-    return true;
-}
 
 //=========================================================================
 // Test variable deduction
 //=========================================================================
+template<typename Value_t>
 bool checkVarString(const char* idString,
-                    FunctionParser& fp, unsigned funcInd, int errorIndex,
+                    FunctionParserBase<Value_t> & fp,
+                    const TestType<Value_t>& testData,
+                    int errorIndex,
                     int variablesAmount, const std::string& variablesString)
 {
     const bool stringsMatch =
-        (variablesString == floatingPointTests[funcInd].paramString);
+        (variablesString == testData.paramString);
     if(errorIndex >= 0 ||
-       variablesAmount != int(floatingPointTests[funcInd].paramAmount) ||
+       variablesAmount != int(testData.paramAmount) ||
        !stringsMatch)
     {
         std::cout << "\n" << idString
                   << " ParseAndDeduceVariables() failed with function:\n\""
-                  << floatingPointTests[funcInd].funcString << "\"\n";
+                  << testData.funcString << "\"\n";
         if(errorIndex >= 0)
             std::cout << "Error index: " << errorIndex
                       << ": " << fp.ErrorMsg() << std::endl;
         else if(!stringsMatch)
             std::cout << "Deduced var string was \"" << variablesString
                       << "\" instead of \""
-                      << floatingPointTests[funcInd].paramString
+                      << testData.paramString
                       << "\"." << std::endl;
         else
             std::cout << "Deduced variables amount was "
                       << variablesAmount << " instead of "
-                      << floatingPointTests[funcInd].paramAmount << "."
+                      << testData.paramAmount << "."
                       << std::endl;
         return false;
     }
     return true;
 }
 
-bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
+template<typename Value_t>
+bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
+                           const TestType<Value_t>& testData)
 {
     static std::string variablesString;
     static std::vector<std::string> variables;
@@ -2170,38 +1391,38 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
 
     int variablesAmount = -1;
     int retval = fp.ParseAndDeduceVariables
-        (floatingPointTests[funcInd].funcString,
-         &variablesAmount, floatingPointTests[funcInd].useDegrees);
+        (testData.funcString,
+         &variablesAmount, testData.useDegrees);
     if(retval >= 0 || variablesAmount !=
-       int(floatingPointTests[funcInd].paramAmount))
+       int(testData.paramAmount))
     {
         std::cout <<
             "\nFirst ParseAndDeduceVariables() failed with function:\n\""
-                  << floatingPointTests[funcInd].funcString << "\"\n";
+                  << testData.funcString << "\"\n";
         if(retval >= 0)
             std::cout << "Error index: " << retval
                       << ": " << fp.ErrorMsg() << std::endl;
         else
             std::cout << "Deduced variables amount was "
                       << variablesAmount << " instead of "
-                      << floatingPointTests[funcInd].paramAmount << "."
+                      << testData.paramAmount << "."
                       << std::endl;
         return false;
     }
 
     variablesAmount = -1;
     retval = fp.ParseAndDeduceVariables
-        (floatingPointTests[funcInd].funcString,
+        (testData.funcString,
          variablesString,
          &variablesAmount,
-         floatingPointTests[funcInd].useDegrees);
-    if(!checkVarString("Second", fp, funcInd, retval, variablesAmount,
+         testData.useDegrees);
+    if(!checkVarString("Second", fp, testData, retval, variablesAmount,
                        variablesString))
         return false;
 
-    retval = fp.ParseAndDeduceVariables(floatingPointTests[funcInd].funcString,
+    retval = fp.ParseAndDeduceVariables(testData.funcString,
                                         variables,
-                                        floatingPointTests[funcInd].useDegrees);
+                                        testData.useDegrees);
     variablesAmount = int(variables.size());
     variablesString.clear();
     for(unsigned i = 0; i < variables.size(); ++i)
@@ -2209,33 +1430,289 @@ bool testVariableDeduction(FunctionParser& fp, unsigned funcInd)
         if(i > 0) variablesString += ',';
         variablesString += variables[i];
     }
-    return checkVarString("Third", fp, funcInd, retval, variablesAmount,
+    return checkVarString("Third", fp, testData, retval, variablesAmount,
                           variablesString);
 }
 
 
 //=========================================================================
-// Main
+// Main test function
 //=========================================================================
-template<typename Parser_t, typename TestData_t>
-bool parseRegressionTestFunction(Parser_t& parser, const TestData_t& testData,
-                                 const char* parserTypeStr)
+template<typename Value_t>
+bool runRegressionTest(
+    FunctionParserBase<Value_t>& fp,
+    const TestType<Value_t>& testData,
+    const std::string& valueType,
+    const Value_t Eps)
 {
-    const int retval =
-        parser.Parse(testData.funcString, testData.paramString,
-                     testData.useDegrees);
-    if(retval >= 0)
+    Value_t vars[10];
+    Value_t fp_vars[10];
+
+    for(unsigned i = 0; i < testData.paramAmount; ++i)
+        vars[i] = testData.paramMin;
+
+    while(true)
     {
-        std::cout << "With FunctionParser" << parserTypeStr
-                  << "\nin \"" << testData.funcString
-                  << "\" (\"" << testData.paramString
-                  << "\"), col " << retval
-                  << ":\n" << parser.ErrorMsg() << std::endl;
-        return false;
+        unsigned i = 0;
+        while(i < testData.paramAmount &&
+              (vars[i] += testData.paramStep) > testData.paramMax)
+        {
+            vars[i++] = testData.paramMin;
+        }
+
+        if(i == testData.paramAmount) break;
+
+        for(unsigned i = 0; i < testData.paramAmount; ++i)
+            fp_vars[i] = vars[i];
+
+        const Value_t v1 = testData.funcPtr(vars);
+        if(true) /*test Eval() */
+        {
+            const Value_t v2 = fp.Eval(fp_vars);
+
+            std::ostringstream error;
+            
+            if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+            {
+                if(v1 != v2)
+                {
+                    error << v2 << " instead of " << v1;
+                }
+            }
+            else
+            {
+                using namespace FUNCTIONPARSERTYPES;
+                const Value_t scale = fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
+                const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
+                const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
+                const Value_t diff = fp_abs(sv2-sv1);
+
+                if(diff > Eps)
+                {
+                    error << std::setprecision(48) << v2 << " instead of "
+                          << std::setprecision(48) << v1 << std::endl
+                          << "(Difference: "
+                          << std::setprecision(48) << v2-v1
+                          << ", epsilon: "
+                          << std::setprecision(48) << Eps
+                          << "; scaled diff "
+                          << std::setprecision(48) << diff
+                          << ")";
+                }
+            }
+
+            if(!error.str().empty())
+            {
+                if(!verbose)
+                    std::cout << "\nTest " << testData.testName
+                              << ", function:\n\"" << testData.funcString
+                              << "\"\n(" << valueType << ")";
+
+                std::cout << std::endl << "Error: For (";
+                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                    std::cout << (ind>0 ? ", " : "") << vars[ind];
+                std::cout << ")\nthe library returned " << error.str() << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+                fp.PrintByteCode(std::cout);
+#endif
+                return false;
+            }
+        } /* test Eval() */
     }
     return true;
 }
 
+namespace
+{
+    template<typename Value_t>
+    struct RegressionTests
+    {
+        static const TestType<Value_t> Tests[];
+    };
+    template<typename Value_t>
+    const TestType<Value_t> RegressionTests<Value_t>::Tests[] = { TestType<Value_t>() };
+
+    /* These functions in fparser produce bool values. However,
+     * the testing functions require that they produce Value_t's. */
+    #define BoolProxy(Fname) \
+    template<typename Value_t> \
+    Value_t Fname(const Value_t& a, const Value_t& b) \
+        { return Value_t(FUNCTIONPARSERTYPES::Fname(a,b)); }
+    BoolProxy(fp_less)
+    BoolProxy(fp_lessOrEq)
+    BoolProxy(fp_greater)
+    BoolProxy(fp_greaterOrEq)
+    BoolProxy(fp_equal)
+    BoolProxy(fp_nequal)
+    template<typename Value_t>
+    Value_t fp_truth(const Value_t& a)
+        { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
+
+#include "testbed_tests.inc"
+}
+
+template<typename Value_t>
+bool runRegressionTests(const std::string& valueType)
+{
+    // Setup the function parser for testing
+    // -------------------------------------
+    FunctionParserBase<Value_t> fp;
+
+    std::cout << "Running regression tests for data type \"" << valueType << "\"...\n";
+
+    bool ret = fp.AddConstant("pi",               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
+    ret = ret && fp.AddConstant("naturalnumber",  FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
+    ret = ret && fp.AddConstant("CONST",  Value_t(CONST));
+    if(!ret)
+    {
+        std::cout << "Ooops! AddConstant() didn't work" << std::endl;
+        return false;
+    }
+
+    ret = fp.AddUnit("doubled", 2);
+    ret = ret && fp.AddUnit("tripled", 3);
+    if(!ret)
+    {
+        std::cout << "Ooops! AddUnit() didn't work" << std::endl;
+        return false;
+    }
+
+    ret = fp.AddFunction("sub", Sub<Value_t>, 2);
+    ret = ret && fp.AddFunction("sqr", Sqr<Value_t>, 1);
+    ret = ret && fp.AddFunction("value", Value<Value_t>, 0);
+    if(!ret)
+    {
+        std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
+        return false;
+    }
+
+    FunctionParserBase<Value_t> SqrFun, SubFun, ValueFun;
+    if(verbose) std::cout << "Parsing SqrFun... ";
+    SqrFun.Parse("x*x", "x");
+    if(verbose) std::cout << std::endl;
+    if(verbose) std::cout << "Parsing SubFun... ";
+    SubFun.Parse("x-y", "x,y");
+    if(verbose) std::cout << std::endl;
+    if(verbose) std::cout << "Parsing ValueFun... ";
+    ValueFun.Parse("5", "");
+    if(verbose) std::cout << std::endl;
+
+    ret = fp.AddFunction("psqr", SqrFun);
+    ret = ret && fp.AddFunction("psub", SubFun);
+    ret = ret && fp.AddFunction("pvalue", ValueFun);
+    if(!ret)
+    {
+        std::cout << "Ooops! AddFunction(parser) didn't work" << std::endl;
+        return false;
+    }
+
+    // Test repeated constant addition
+    // -------------------------------
+    for(Value_t value = 0; value < 20; value += 1)
+    {
+        if(!fp.AddConstant("TestConstant", value))
+        {
+            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
+            return false;
+        }
+
+        fp.Parse("TestConstant", "");
+        if(fp.Eval(0) != value)
+        {
+            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
+            else std::cout << "Changing the value of 'TestConstant' failed\n";
+            return false;
+        }
+    }
+
+    std::string prev_test_prefix;
+    const unsigned maxtests = ~0U; // unknown
+    /*    sizeof(RegressionTests<Value_t>::Tests)
+      / sizeof(RegressionTests<Value_t>::Tests[0]); */
+    for(unsigned i = 0; i < maxtests; ++i)
+    {
+        const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
+        if(!testData.testName) break;
+
+        const int retval =
+            fp.Parse(testData.funcString, testData.paramString,
+                     testData.useDegrees);
+        if(retval >= 0)
+        {
+            std::cout <<
+                "With FunctionParserBase<" << valueType << ">"
+                "\nin \"" << testData.funcString <<
+                "\" (\"" << testData.paramString <<
+                "\"), col " << retval <<
+                ":\n" << fp.ErrorMsg() << std::endl;
+            return false;
+        }
+
+        //fp.PrintByteCode(std::cout);
+        if(verbose)
+            std::cout << /*std::right <<*/ std::setw(2)
+                      << testData.testName << ": \""
+                      << testData.funcString << "\" (" <<
+                FUNCTIONPARSERTYPES::fp_pow((testData.paramMax -
+                     testData.paramMin) /
+                    testData.paramStep,
+                    Value_t( (int) testData.paramAmount))
+                      << " param. combinations): " << std::flush;
+        else
+        {
+            const char* tn = testData.testName;
+            const char* p = std::strrchr(tn, '/');
+            if(!p)
+                { prev_test_prefix = ""; std::cout << tn; }
+            else
+            {
+                std::string path_prefix(tn, p-tn);
+                if(path_prefix == prev_test_prefix)
+                    std::cout << (p+1);
+                else
+                    { if(!prev_test_prefix.empty()) std::cout << std::endl;
+                      std::cout << tn;
+                      prev_test_prefix = path_prefix; }
+            }
+            std::cout << std::flush << " ";
+        }
+
+        if(!runRegressionTest(fp, testData, valueType + ", not optimized", Epsilon<Value_t>()))
+            return false;
+
+        if(verbose) std::cout << "Ok." << std::endl;
+
+        fp.Optimize();
+        //fp.PrintByteCode(std::cout);
+
+        if(verbose) std::cout << "    Optimized: " << std::flush;
+        if(!runRegressionTest(fp, testData, valueType + ", after optimization",
+                              Epsilon<Value_t>() ))
+            return false;
+
+        if(verbose)
+            std::cout << "(Calling Optimize() several times) " << std::flush;
+
+        for(int j = 0; j < 20; ++j)
+            fp.Optimize();
+        if(!runRegressionTest(fp, testData,
+                    valueType + ", after several optimization runs",
+                    Epsilon<Value_t>() ))
+            return false;
+
+        if(!testVariableDeduction(fp, testData)) return false;
+
+        if(verbose) std::cout << "Ok." << std::endl;
+    }
+
+    if(!verbose) std::cout << std::endl;
+
+    return true;
+}
+
+//=========================================================================
+// Main
+//=========================================================================
 int main(int argc, char* argv[])
 {
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -2272,298 +1749,31 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    // Setup the function parser for testing
-    // -------------------------------------
-    FunctionParser fp;
+    bool err = false;
+
+    err |= !runRegressionTests<double> ("double");
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    FunctionParser_f fp_f;
+    err |= !runRegressionTests<float> ("float");
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    FunctionParser_ld fp_ld;
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    FunctionParser_mpfr fp_mpfr;
-#endif
-
-    bool ret = fp.AddConstant("pi", M_PI);
-    ret = ret && fp.AddConstant("CONST", CONST);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    ret = ret && fp_f.AddConstant("pi", (float)M_PI);
-    ret = ret && fp_f.AddConstant("CONST", CONST);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    ret = ret && fp_ld.AddConstant("pi", M_PI);
-    ret = ret && fp_ld.AddConstant("CONST", CONST);
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    ret = ret && fp_mpfr.AddConstant("pi", M_PI);
-    ret = ret && fp_mpfr.AddConstant("CONST", CONST);
-#endif
-    if(!ret)
-    {
-        std::cout << "Ooops! AddConstant() didn't work" << std::endl;
-        return 1;
-    }
-
-    ret = fp.AddUnit("doubled", 2);
-    ret = ret && fp.AddUnit("tripled", 3);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    ret = ret && fp_f.AddUnit("doubled", 2);
-    ret = ret && fp_f.AddUnit("tripled", 3);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    ret = ret && fp_ld.AddUnit("doubled", 2);
-    ret = ret && fp_ld.AddUnit("tripled", 3);
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    ret = ret && fp_mpfr.AddUnit("doubled", 2);
-    ret = ret && fp_mpfr.AddUnit("tripled", 3);
-#endif
-    if(!ret)
-    {
-        std::cout << "Ooops! AddUnit() didn't work" << std::endl;
-        return 1;
-    }
-
-    ret = fp.AddFunction("sub", Sub, 2);
-    ret = ret && fp.AddFunction("sqr", Sqr, 1);
-    ret = ret && fp.AddFunction("value", Value, 0);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    ret = ret && fp_f.AddFunction("sub", Sub_f, 2);
-    ret = ret && fp_f.AddFunction("sqr", Sqr_f, 1);
-    ret = ret && fp_f.AddFunction("value", Value_f, 0);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    ret = ret && fp_ld.AddFunction("sub", Sub_ld, 2);
-    ret = ret && fp_ld.AddFunction("sqr", Sqr_ld, 1);
-    ret = ret && fp_ld.AddFunction("value", Value_ld, 0);
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    ret = ret && fp_mpfr.AddFunction("sub", Sub_mpfr, 2);
-    ret = ret && fp_mpfr.AddFunction("sqr", Sqr_mpfr, 1);
-    ret = ret && fp_mpfr.AddFunction("value", Value_mpfr, 0);
-#endif
-    if(!ret)
-    {
-        std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
-        return 1;
-    }
-
-    FunctionParser SqrFun, SubFun, ValueFun;
-    if(verbose) std::cout << "Parsing SqrFun... ";
-    SqrFun.Parse("x*x", "x");
-    if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing SubFun... ";
-    SubFun.Parse("x-y", "x,y");
-    if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing ValueFun... ";
-    ValueFun.Parse("5", "");
-    if(verbose) std::cout << std::endl;
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    FunctionParser_f SqrFun_f, SubFun_f, ValueFun_f;
-    SqrFun_f.Parse("x*x", "x");
-    SubFun_f.Parse("x-y", "x,y");
-    ValueFun_f.Parse("5", "");
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    FunctionParser_ld SqrFun_ld, SubFun_ld, ValueFun_ld;
-    SqrFun_ld.Parse("x*x", "x");
-    SubFun_ld.Parse("x-y", "x,y");
-    ValueFun_ld.Parse("5", "");
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    FunctionParser_mpfr SqrFun_mpfr, SubFun_mpfr, ValueFun_mpfr;
-    SqrFun_mpfr.Parse("x*x", "x");
-    SubFun_mpfr.Parse("x-y", "x,y");
-    ValueFun_mpfr.Parse("5", "");
-#endif
-
-    ret = fp.AddFunction("psqr", SqrFun);
-    ret = ret && fp.AddFunction("psub", SubFun);
-    ret = ret && fp.AddFunction("pvalue", ValueFun);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    ret = ret && fp_f.AddFunction("psqr", SqrFun_f);
-    ret = ret && fp_f.AddFunction("psub", SubFun_f);
-    ret = ret && fp_f.AddFunction("pvalue", ValueFun_f);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    ret = ret && fp_ld.AddFunction("psqr", SqrFun_ld);
-    ret = ret && fp_ld.AddFunction("psub", SubFun_ld);
-    ret = ret && fp_ld.AddFunction("pvalue", ValueFun_ld);
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    ret = ret && fp_mpfr.AddFunction("psqr", SqrFun_mpfr);
-    ret = ret && fp_mpfr.AddFunction("psub", SubFun_mpfr);
-    ret = ret && fp_mpfr.AddFunction("pvalue", ValueFun_mpfr);
-#endif
-    if(!ret)
-    {
-        std::cout << "Ooops! AddFunction(parser) didn't work" << std::endl;
-        return 1;
-    }
-
-    // Test repeated constant addition
-    // -------------------------------
-    for(double value = 0; value < 20; value += 1)
-    {
-        if(!fp.AddConstant("TestConstant", value))
-        {
-            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
-            return 1;
-        }
-
-        fp.Parse("TestConstant", "");
-        if(fp.Eval(0) != value)
-        {
-            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
-            else std::cout << "Changing the value of 'TestConstant' failed\n";
-            return 1;
-        }
-    }
-
-
-#if(1)
-    // Main testing loop
-    // -----------------
-    std::cout << "- Performing regression tests..." << std::endl;
-    std::cout << "Tested parser types: double";
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    std::cout << ", float";
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    std::cout << ", long double";
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    std::cout << ", MpfrFloat";
+    err |= !runRegressionTests<long double> ("long double");
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-    std::cout << ", long";
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    std::cout << ", GmpInt";
-#endif
-    std::cout << std::endl;
-
-    for(unsigned i = FIRST_TEST; i < floatingPointTestsAmount; ++i)
-    {
-        if(!parseRegressionTestFunction(fp, floatingPointTests[i], ""))
-            return 1;
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-        if(!parseRegressionTestFunction(fp_f, floatingPointTests[i], "_f"))
-            return 1;
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        if(!parseRegressionTestFunction(fp_ld, floatingPointTests[i], "_ld"))
-            return 1;
-#endif
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        if(!parseRegressionTestFunction
-           (fp_mpfr, floatingPointTests[i], "_mpfr"))
-            return 1;
-#endif
-
-        //fp.PrintByteCode(std::cout);
-        if(verbose)
-            std::cout << /*std::right <<*/ std::setw(2) << i+1 << ": \""
-                      << floatingPointTests[i].funcString << "\" (" <<
-                pow((floatingPointTests[i].paramMax -
-                     floatingPointTests[i].paramMin) /
-                    floatingPointTests[i].paramStep,
-                    static_cast<double>(floatingPointTests[i].paramAmount))
-                      << " param. combinations): " << std::flush;
-        else
-            std::cout << floatingPointTests[i].testname << std::flush << " ";
-
-        if(!runTest(fp, floatingPointTests[i], "Not optimized", Epsilon))
-            return 1;
-#ifdef FP_SUPPORT_FLOAT_TYPE
-        //if(!runTest(fp_f, floatingPointTests[i], "float, not optimized", Epsilon_f))
-        //    return 1;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        if(!runTest(fp_ld, floatingPointTests[i], "long double, not optimized", Epsilon))
-            return 1;
+    err |= !runRegressionTests<long> ("long int");
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        if(!runTest(fp_mpfr, floatingPointTests[i], "MpfrFloat, not optimized", Epsilon))
-            return 1;
-#endif
-
-        if(verbose) std::cout << "Ok." << std::endl;
-
-        fp.Optimize();
-        //fp.PrintByteCode(std::cout);
-
-        if(verbose) std::cout << "    Optimized: " << std::flush;
-        if(!runTest(fp, floatingPointTests[i], "After optimization", Epsilon))
-            return 1;
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-        fp_f.Optimize();
-        //if(!runTest(fp_f, floatingPointTests[i], "float, optimized", Epsilon_f))
-        //    return 1;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        fp_ld.Optimize();
-        //if(!runTest(fp_ld, floatingPointTests[i], "long double, optimized", Epsilon))
-        //    return 1;
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        fp_mpfr.Optimize();
-        //if(!runTest(fp_mpfr, floatingPointTests[i], "mpfr, optimized", Epsilon))
-        //    return 1;
-#endif
-
-        if(verbose)
-            std::cout << "(Calling Optimize() several times) " << std::flush;
-
-        for(int j = 0; j < 20; ++j)
-            fp.Optimize();
-        if(!runTest(fp, floatingPointTests[i],
-                    "After several optimization runs", Epsilon))
-            return 1;
-
-        if(!testVariableDeduction(fp, i)) return 1;
-
-        if(verbose) std::cout << "Ok." << std::endl;
-    }
-
-#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
-    if(!verbose) std::cout << std::endl;
-
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-    FunctionParser_li fp_li;
+    err |= !runRegressionTests<MpfrFloat> ("MpfrFloat");
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-    FunctionParser_gmpint fp_gmpint;
+    err |= !runRegressionTests<GmpInt> ("GmpInt");
 #endif
+    if(err)
+        return 1;
 
-    for(unsigned i = 0; i < intTestsAmount; ++i)
-    {
-        std::cout << intTests[i].testname << std::flush << " ";
-
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-        if(!parseRegressionTestFunction(fp_li, intTests[i], "_li"))
-            return 1;
-        if(!runTest(fp_li, intTests[i], "long int, not optimized"))
-            return 1;
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-        if(!parseRegressionTestFunction(fp_gmpint, intTests[i], "_gmpint"))
-            return 1;
-        if(!runTest(fp_gmpint, intTests[i], "GmpInt, not optimized"))
-            return 1;
-#endif
-    }
-#endif
-
-    if(!verbose) std::cout << "Ok." << std::endl;
-#endif
-
+////////////////////////////
+////////////////////////////
+////////////////////////////
+////////////////////////////
 
     // Misc. tests
     // -----------

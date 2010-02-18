@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x
+R=-10, 10, 0.25
+F=floor(x)
+C=floorf(x)

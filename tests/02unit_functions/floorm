@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x
+R=-10, 10, 0.25
+F=floor(x)
+C=MpfrFloat::floor(x)

@@ -1,0 +1,7 @@
+DEG=true
+D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
+T=ld
+V=x
+R=-400, 400, 0.1
+F=sinh(x)
+C=sinhl(d2r(x))

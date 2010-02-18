@@ -1,0 +1,119 @@
+Each file documents a distinct function to test, and the conditions for testing.
+
+-------------------------
+D=defined(CONSTANT1) && !defined(CONSTANT2)
+-------------------------
+
+Optional.
+This line can be used to specify compile-time conditions which
+determine whether this rule should be tested at all.
+If your line is "D=xxx", the rule will be handled
+as if enclosed in "#if xxx" ... "#endif".
+
+This line, if used, must be indicated before the C line.
+
+-------------------------
+T=d f ld mf li gi
+-------------------------
+
+Mandatory!
+A line beginning with "T=" describes which datatypes this rule applies to.
+  d=double
+  f=float
+  ld=long double
+  mf=mpfr float
+  li=long int
+  gi=gmp int
+
+-------------------------
+DEG=true
+-------------------------
+
+Optional.
+This line, when exists, specifies that degrees conversion is to be
+requested from fparser. In the C++ function you must do your own
+degrees conversions.
+
+
+-------------------------
+V=x,y,z
+-------------------------
+
+Mandatory!
+This lists the parameters (variables) for the function.
+The number of parameters is automatically deduced from this.
+The variable names are to be written in a format accepted by fparser.
+If they are not valid C++ variable names, make_tests will rename them
+transparently.
+
+This line, must be indicated before the C line.
+
+
+-------------------------
+R=-100, 100, 0.5
+-------------------------
+
+Mandatory!
+This specifies the minimum, the maximum, and the step value
+that are used for iterating through the function parameters
+in the testing procedure.
+
+
+-------------------------
+F=x+y+z
+-------------------------
+
+Mandatory!
+This specifies the fparser function to test.
+
+You can use \ to continue the function to the next line.
+
+
+-------------------------
+C=x+y+z
+-------------------------
+
+Mandatory!
+This specifies the C++ function expression that corresponds
+the fparser function. You do not need to typecast your numeric
+constants; casts will be automatically added by make_tests.
+
+You can use \ to continue the function to the next line.
+
+The expression must not be a full statement; make_tests will
+automatically prefix it with "return " and add a ";" at the
+end of it.
+
+------------------------
+Calling PCall functions in the C++ code
+-----------------------
+In order to call PCall functions in the C++ code,
+use this syntax:
+
+  Sub({x+1, y-1})
+
+This is equivalent to the fparser function Sub(x+1, y-1).
+
+make_tests will automatically translate this to code that
+sets up an array for the function parameters, and will place
+the expressions in that array, and pass the array pointer
+to the function as a parameter.
+
+
+
+------------------------
+Using recursion in the C++ code
+-----------------------
+In order to recurse in the C++ code,
+use this syntax:
+
+  Eval({x+1, y-1})
+
+This is equivalent to the fparser function eval(x+1, y-1).
+
+make_tests will automatically translate this to code that
+sets up an array for the function parameters, and will place
+the expressions in that array, and pass the array pointer
+to the same function as a parameter.
+
+

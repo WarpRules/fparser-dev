@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x
+R=-140, 140, 0.1
+F=cosh(x)
+C=MpfrFloat::cosh(x)

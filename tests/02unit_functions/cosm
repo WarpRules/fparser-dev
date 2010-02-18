@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
+T=mf
+V=x
+R=-40000, 40000, 5
+F=cos(x)
+C=MpfrFloat::cos(x)

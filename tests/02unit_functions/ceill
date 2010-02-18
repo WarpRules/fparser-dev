@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
+T=ld
+V=x
+R=-10, 10, 0.25
+F=ceil(x)
+C=ceill(x)

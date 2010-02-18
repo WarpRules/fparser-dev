@@ -1,0 +1,6 @@
+D=defined(FP_SUPPORT_FLOAT_TYPE)
+T=f
+V=x,y
+R=0.01, 4, 0.05
+F=pow(x,y)
+C=powf(x,y)
