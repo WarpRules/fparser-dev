@@ -9,6 +9,18 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.0.5
+  <ul>
+    <li>Fixed bugs and deficiencies in the <code>MpfrFloat</code> class:
+      <ul>
+	<li>All existing values became NaN if the
+	  <code>MpfrFloat::setDefaultMantissaBits()</code> was called.
+	<li><code>MpfrFloat::const_e()</code> was incorrectly calculated.
+	<li>The value of <code>MpfrFloat::someEpsilon()</code> is more
+	  sensible now (more proportional to the precision of the mantissa).
+      </ul>
+  </ul>
+
 <p>What's new in v4.0.4
   <ul>
     <li>Some new optimization rules in both <code>Parse()</code> and
