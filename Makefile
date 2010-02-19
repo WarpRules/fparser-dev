@@ -1,10 +1,10 @@
 #===========================================================================
-# This Makefile uses quite heavily GNU Make features, so it's probably
+# This Makefile uses quite heavily GNU Make extensions, so it's probably
 # hopeless to try to use it with other Make programs which do not have the
 # same extensions.
 #
-# Also requires: rm, grep, sed and g++ (regardless of what CXX and LD are)
-# The optimizer code generator requires bison
+# Also requires: rm, grep, sed and g++ (regardless of what CXX and LD are).
+# The optimizer code generator requires bison.
 #===========================================================================
 
 RELEASE_VERSION=4.0.4
@@ -278,7 +278,7 @@ devel_pack: set_version_string
 	Makefile example.cc example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
 	fptypes.hh fpaux.hh fp_opcode_add.inc fp_identifier_parser.inc \
-	speedtest.cc testbed.cc \
+	speedtest.cc testbed.cc tests/*.cc tests/*.txt tests/*/* \
 	fparser.html style.css lgpl.txt gpl.txt \
 	fpoptimizer/*.hh fpoptimizer/*.cc fpoptimizer/*.inc \
 	fpoptimizer/fparser_bytecoderules.dat \
@@ -304,7 +304,7 @@ distclean: clean
 
 .dep:
 	echo -n '' > .dep
-	- g++ -MM $(CPPFLAGS) $(wildcard *.cc) >> .dep
+	- g++ -MM -MG $(CPPFLAGS) $(wildcard *.cc) >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
 	- echo "testbed_tests.inc: " `/bin/ls tests/*/*|grep -v '~'` >> .dep
