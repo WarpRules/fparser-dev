@@ -29,9 +29,9 @@ class MpfrFloat::MpfrFloatDataContainer
 
     void recalculateEpsilon()
     {
-        mpfr_set_si(mConst_epsilon->mFloat, 0, GMP_RNDN);
-        for(int i = 0; i < 1000; ++i)
-            mpfr_nextabove(mConst_epsilon->mFloat);
+        mpfr_set_si(mConst_epsilon->mFloat, 1, GMP_RNDN);
+        mpfr_div_2ui(mConst_epsilon->mFloat, mConst_epsilon->mFloat,
+                     mDefaultPrecision*7/8 - 1, GMP_RNDN);
     }
 
  public:
@@ -78,10 +78,14 @@ class MpfrFloat::MpfrFloatDataContainer
         {
             mDefaultPrecision = bits;
             for(size_t i = 0; i < mData.size(); ++i)
-                mpfr_set_prec(mData[i].mFloat, bits);
+                mpfr_prec_round(mData[i].mFloat, bits, GMP_RNDN);
 
             if(mConst_pi) mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
-            if(mConst_e) mpfr_const_euler(mConst_e->mFloat, GMP_RNDN);
+            if(mConst_e)
+            {
+                mpfr_set_si(mConst_e->mFloat, 1, GMP_RNDN);
+                mpfr_exp(mConst_e->mFloat, mConst_e->mFloat, GMP_RNDN);
+            }
             if(mConst_log2) mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
             if(mConst_epsilon) recalculateEpsilon();
         }
@@ -113,7 +117,8 @@ class MpfrFloat::MpfrFloatDataContainer
         if(!mConst_e)
         {
             mConst_e = allocateMpfrFloatData(false);
-            mpfr_const_euler(mConst_e->mFloat, GMP_RNDN);
+            mpfr_set_si(mConst_e->mFloat, 1, GMP_RNDN);
+            mpfr_exp(mConst_e->mFloat, mConst_e->mFloat, GMP_RNDN);
         }
         return MpfrFloat(mConst_e);
     }

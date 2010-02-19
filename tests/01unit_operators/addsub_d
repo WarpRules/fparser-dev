@@ -1,5 +1,5 @@
 T=d f ld mf
 V=x,y,z
-R=-8, 8, 0.333333
+R=-6, 6, 0.5
 F=x+y+x+x-z+x
 C=x+y+x+x-z+x

@@ -1,6 +1,6 @@
 T=d ld mf
 V=x,y,z
-R=.1,4,.3
+R=.1,4,.35
 
 # This function is too complex for "float" accuracy
 

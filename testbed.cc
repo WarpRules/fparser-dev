@@ -73,7 +73,11 @@ namespace
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
+    MpfrFloat Epsilon<MpfrFloat>()
+    {
+        static const MpfrFloat eps(1e-12);
+        return eps;
+    }
 #endif
 
     void setAnsiColor(unsigned color)
@@ -1454,6 +1458,12 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
 //=========================================================================
 // Main test function
 //=========================================================================
+bool runRegressionTest(
+    FunctionParserBase<double>&,
+    const TestType<double>&,
+    const std::string&,
+    const double) { return true; }
+
 template<typename Value_t>
 bool runRegressionTest(
     FunctionParserBase<Value_t>& fp,
@@ -1469,14 +1479,14 @@ bool runRegressionTest(
 
     while(true)
     {
-        unsigned i = 0;
-        while(i < testData.paramAmount &&
-              (vars[i] += testData.paramStep) > testData.paramMax)
+        unsigned paramInd = 0;
+        while(paramInd < testData.paramAmount &&
+              (vars[paramInd] += testData.paramStep) > testData.paramMax)
         {
-            vars[i++] = testData.paramMin;
+            vars[paramInd++] = testData.paramMin;
         }
 
-        if(i == testData.paramAmount) break;
+        if(paramInd == testData.paramAmount) break;
 
         for(unsigned i = 0; i < testData.paramAmount; ++i)
             fp_vars[i] = vars[i];
@@ -1487,7 +1497,7 @@ bool runRegressionTest(
             const Value_t v2 = fp.Eval(fp_vars);
 
             std::ostringstream error;
-            
+
             if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
             {
                 if(v1 != v2)
@@ -1498,7 +1508,8 @@ bool runRegressionTest(
             else
             {
                 using namespace FUNCTIONPARSERTYPES;
-                const Value_t scale = fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
+                const Value_t scale =
+                    fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
                 const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
                 const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
                 const Value_t diff = fp_abs(sv2-sv1);
