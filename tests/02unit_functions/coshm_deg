@@ -2,6 +2,6 @@ DEG=true
 D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
 T=mf
 V=x
-R=-400, 400, 0.1
+R=-140, 140, 0.1
 F=cosh(x)
 C=MpfrFloat::cosh(d2r(x))

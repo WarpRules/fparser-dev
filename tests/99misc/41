@@ -1,4 +1,4 @@
-T=d f ld mf
+T=d ld mf
 V=x,y,z
 R=-2, 2, .15
 

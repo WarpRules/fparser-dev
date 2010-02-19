@@ -1482,49 +1482,30 @@ bool runRegressionTest(
             fp_vars[i] = vars[i];
 
         const Value_t v1 = testData.funcPtr(vars);
-        const Value_t v2 = fp.Eval(fp_vars);
-
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        if(true) /*test Eval() */
         {
-            if(v1 != v2)
-            {
-                if(!verbose)
-                    std::cout << "\nTest " << testData.testName
-                              << ", function:\n\"" << testData.funcString
-                              << "\"\n(" << valueType << ")";
+            const Value_t v2 = fp.Eval(fp_vars);
 
-                std::cout << std::endl << "Error: For (";
-                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                    std::cout << (ind>0 ? ", " : "") << vars[ind];
-                std::cout << ")\nthe library returned "
-                          << v2 << " instead of "
-                          << v1 << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-                fp.PrintByteCode(std::cout);
-#endif
-                return false;
+            std::ostringstream error;
+            
+            if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+            {
+                if(v1 != v2)
+                {
+                    error << v2 << " instead of " << v1;
+                }
             }
-        }
-        else
-        {
-            using namespace FUNCTIONPARSERTYPES;
-            const Value_t scale = fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
-            const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
-            const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
-            const Value_t diff = fp_abs(sv2-sv1);
-
-            if(diff > Eps)
+            else
             {
-                if(!verbose)
-                    std::cout << "\nTest " << testData.testName
-                              << ", function:\n\"" << testData.funcString
-                              << "\"\n(" << valueType << ")";
+                using namespace FUNCTIONPARSERTYPES;
+                const Value_t scale = fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
+                const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
+                const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
+                const Value_t diff = fp_abs(sv2-sv1);
 
-                std::cout << std::endl << "Error: For (";
-                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                    std::cout << (ind>0 ? ", " : "") << vars[ind];
-                std::cout << ")\nthe library returned "
-                          << std::setprecision(48) << v2 << " instead of "
+                if(diff > Eps)
+                {
+                    error << std::setprecision(48) << v2 << " instead of "
                           << std::setprecision(48) << v1 << std::endl
                           << "(Difference: "
                           << std::setprecision(48) << v2-v1
@@ -1532,13 +1513,27 @@ bool runRegressionTest(
                           << std::setprecision(48) << Eps
                           << "; scaled diff "
                           << std::setprecision(48) << diff
-                          << ")" << std::endl;
+                          << ")";
+                }
+            }
+
+            if(!error.str().empty())
+            {
+                if(!verbose)
+                    std::cout << "\nTest " << testData.testName
+                              << ", function:\n\"" << testData.funcString
+                              << "\"\n(" << valueType << ")";
+
+                std::cout << std::endl << "Error: For (";
+                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                    std::cout << (ind>0 ? ", " : "") << vars[ind];
+                std::cout << ")\nthe library returned " << error.str() << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
                 fp.PrintByteCode(std::cout);
 #endif
                 return false;
             }
-        }
+        } /* test Eval() */
     }
     return true;
 }
