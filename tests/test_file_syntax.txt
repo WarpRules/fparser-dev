@@ -117,3 +117,40 @@ the expressions in that array, and pass the array pointer
 to the same function as a parameter.
 
 
+------------------------
+Which tests go where
+------------------------
+
+01unit_operators:
+	These tests test each basic operator in the most
+	simple manner possible. The C++ functions used
+	to verify the operators should not use code that
+	depends on portions of fparser being implemented
+	correctly.
+
+02unit_functions:
+	These tests test each built-in function in the
+	most simple manner possble. The C++ functions used
+	to verify the operators should not use code that
+	depends on portions of fparser being implemented
+	correctly, aside from basic operators.
+	I.e. to test sin(), don't use fp_sin() to verify
+	it; verify it against math library's sin(), sinf(),
+	etc. directly.
+
+03unit_constants:
+	These tests verify that the fp_const_* functions
+	produce mathematically correct values.
+	
+50regressions:
+	Tests in this directory target specific bugs which
+	have been discovered. The test should contain nothing
+	but the minimal code to trigger the bug.
+	The test file should document the bug.
+
+99misc:
+	Put here tests which don't belong in other categories.
+	In the C++ functions, use the type-agnostic fp_* functions
+	to reduce the need to implement different versions for
+	each type. The validity of each fp_* function is expected
+	to have been verified in the unit tests.
