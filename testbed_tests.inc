@@ -3069,11 +3069,11 @@ const TestType<MpfrFloat>
     { 1, -400, 400, 0.5, false, cpp_02unit_functions_abs_d<MpfrFloat>,
       "x", "02unit_functions/abs_d", "abs(x)" },
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-    { 1, -1, 1, 0.01, false, cpp_02unit_functions_acoshm<MpfrFloat>,
+    { 1, 1, 400, 0.1, false, cpp_02unit_functions_acoshm<MpfrFloat>,
       "x", "02unit_functions/acoshm", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_MPFR_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-    { 1, -1, 1, 0.01, true, cpp_02unit_functions_acoshm_deg<MpfrFloat>,
+    { 1, 1, 400, 0.1, true, cpp_02unit_functions_acoshm_deg<MpfrFloat>,
       "x", "02unit_functions/acoshm_deg", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_MPFR_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
@@ -3163,15 +3163,15 @@ const TestType<MpfrFloat>
     { 3, -1.25,1.25,0.25, false, cpp_02unit_functions_if_d<MpfrFloat>,
       "x,y,z", "02unit_functions/if_d", "if(x,y,z)" },
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-    { 1, -400, 400, 0.1, false, cpp_02unit_functions_log2m<MpfrFloat>,
+    { 1, 1e-6, 400, 0.1, false, cpp_02unit_functions_log2m<MpfrFloat>,
       "x", "02unit_functions/log2m", "log2(x)" },
 #endif /*defined(FP_SUPPORT_MPFR_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-    { 1, -400, 400, 0.1, false, cpp_02unit_functions_log10m<MpfrFloat>,
+    { 1, 1e-6, 400, 0.1, false, cpp_02unit_functions_log10m<MpfrFloat>,
       "x", "02unit_functions/log10m", "log10(x)" },
 #endif /*defined(FP_SUPPORT_MPFR_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-    { 1, -400, 400, 0.1, false, cpp_02unit_functions_logm<MpfrFloat>,
+    { 1, 1e-6, 400, 0.1, false, cpp_02unit_functions_logm<MpfrFloat>,
       "x", "02unit_functions/logm", "log(x)" },
 #endif /*defined(FP_SUPPORT_MPFR_FLOAT_TYPE) */
     { 2, -4, 4, 1, false, cpp_02unit_functions_max<MpfrFloat>,
@@ -3399,9 +3399,9 @@ const TestType<double>
       "x", "02unit_functions/acos", "acos(x)" },
     { 1, -1, 1, 0.01, true, cpp_02unit_functions_acos_deg<double>,
       "x", "02unit_functions/acos_deg", "acos(x)" },
-    { 1, -1, 1, 0.01, false, cpp_02unit_functions_acosh<double>,
+    { 1, 1, 400, 0.1, false, cpp_02unit_functions_acosh<double>,
       "x", "02unit_functions/acosh", "acosh(x)" },
-    { 1, -1, 1, 0.01, true, cpp_02unit_functions_acosh_deg<double>,
+    { 1, 1, 400, 0.1, true, cpp_02unit_functions_acosh_deg<double>,
       "x", "02unit_functions/acosh_deg", "acosh(x)" },
     { 1, -1, 1, 0.01, false, cpp_02unit_functions_asin<double>,
       "x", "02unit_functions/asin", "asin(x)" },
@@ -3443,11 +3443,11 @@ const TestType<double>
       "x,y", "02unit_functions/hypot", "hypot(x,y)" },
     { 3, -1.25,1.25,0.25, false, cpp_02unit_functions_if_d<double>,
       "x,y,z", "02unit_functions/if_d", "if(x,y,z)" },
-    { 1, -4000, 4000, 0.1, false, cpp_02unit_functions_log<double>,
+    { 1, 1e-6, 4000, 0.1, false, cpp_02unit_functions_log<double>,
       "x", "02unit_functions/log", "log(x)" },
-    { 1, -4000, 4000, 0.1, false, cpp_02unit_functions_log2<double>,
+    { 1, 1e-6, 4000, 0.1, false, cpp_02unit_functions_log2<double>,
       "x", "02unit_functions/log2", "log2(x)" },
-    { 1, -4000, 4000, 0.1, false, cpp_02unit_functions_log10<double>,
+    { 1, 1e-6, 4000, 0.1, false, cpp_02unit_functions_log10<double>,
       "x", "02unit_functions/log10", "log10(x)" },
     { 2, -4, 4, 1, false, cpp_02unit_functions_max<double>,
       "x,y", "02unit_functions/max", "max(x,y)" },
@@ -3653,11 +3653,11 @@ const TestType<float>
       "x", "02unit_functions/acosf_deg", "acos(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_FLOAT_TYPE)
-    { 1, -1.0f, 1.0f, 0.01f, false, cpp_02unit_functions_acoshf<float>,
+    { 1, 1.0f, 400.0f, 0.1f, false, cpp_02unit_functions_acoshf<float>,
       "x", "02unit_functions/acoshf", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_FLOAT_TYPE)
-    { 1, -1.0f, 1.0f, 0.01f, true, cpp_02unit_functions_acoshf_deg<float>,
+    { 1, 1.0f, 400.0f, 0.1f, true, cpp_02unit_functions_acoshf_deg<float>,
       "x", "02unit_functions/acoshf_deg", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_FLOAT_TYPE)
@@ -3739,15 +3739,15 @@ const TestType<float>
     { 3, -1.25f,1.25f,0.25f, false, cpp_02unit_functions_if_d<float>,
       "x,y,z", "02unit_functions/if_d", "if(x,y,z)" },
 #if defined(FP_SUPPORT_FLOAT_TYPE)
-    { 1, -400.0f, 400.0f, 0.1f, false, cpp_02unit_functions_log2f<float>,
+    { 1, 1e-6f, 400.0f, 0.1f, false, cpp_02unit_functions_log2f<float>,
       "x", "02unit_functions/log2f", "log2(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_FLOAT_TYPE)
-    { 1, -400.0f, 400.0f, 0.1f, false, cpp_02unit_functions_log10f<float>,
+    { 1, 1e-6f, 400.0f, 0.1f, false, cpp_02unit_functions_log10f<float>,
       "x", "02unit_functions/log10f", "log10(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
 #if defined(FP_SUPPORT_FLOAT_TYPE)
-    { 1, -400.0f, 400.0f, 0.1f, false, cpp_02unit_functions_logf<float>,
+    { 1, 1e-6f, 400.0f, 0.1f, false, cpp_02unit_functions_logf<float>,
       "x", "02unit_functions/logf", "log(x)" },
 #endif /*defined(FP_SUPPORT_FLOAT_TYPE) */
     { 2, -4.0f, 4.0f, 1.0f, false, cpp_02unit_functions_max<float>,
@@ -4039,11 +4039,11 @@ const TestType<long double>
     { 1, -400.0l, 400.0l, 0.5l, false, cpp_02unit_functions_abs_d<long double>,
       "x", "02unit_functions/abs_d", "abs(x)" },
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-    { 1, -1.0l, 1.0l, 0.01l, false, cpp_02unit_functions_acoshl<long double>,
+    { 1, 1.0l, 400.0l, 0.1l, false, cpp_02unit_functions_acoshl<long double>,
       "x", "02unit_functions/acoshl", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_LONG_DOUBLE_TYPE) */
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-    { 1, -1.0l, 1.0l, 0.01l, true, cpp_02unit_functions_acoshl_deg<long double>,
+    { 1, 1.0l, 400.0l, 0.1l, true, cpp_02unit_functions_acoshl_deg<long double>,
       "x", "02unit_functions/acoshl_deg", "acosh(x)" },
 #endif /*defined(FP_SUPPORT_LONG_DOUBLE_TYPE) */
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
@@ -4133,15 +4133,15 @@ const TestType<long double>
     { 3, -1.25l,1.25l,0.25l, false, cpp_02unit_functions_if_d<long double>,
       "x,y,z", "02unit_functions/if_d", "if(x,y,z)" },
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-    { 1, -400.0l, 400.0l, 0.1l, false, cpp_02unit_functions_log2l<long double>,
+    { 1, 1e-6l, 400.0l, 0.1l, false, cpp_02unit_functions_log2l<long double>,
       "x", "02unit_functions/log2l", "log2(x)" },
 #endif /*defined(FP_SUPPORT_LONG_DOUBLE_TYPE) */
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-    { 1, -400.0l, 400.0l, 0.1l, false, cpp_02unit_functions_log10l<long double>,
+    { 1, 1e-6l, 400.0l, 0.1l, false, cpp_02unit_functions_log10l<long double>,
       "x", "02unit_functions/log10l", "log10(x)" },
 #endif /*defined(FP_SUPPORT_LONG_DOUBLE_TYPE) */
 #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-    { 1, -400.0l, 400.0l, 0.1l, false, cpp_02unit_functions_logl<long double>,
+    { 1, 1e-6l, 400.0l, 0.1l, false, cpp_02unit_functions_logl<long double>,
       "x", "02unit_functions/logl", "log(x)" },
 #endif /*defined(FP_SUPPORT_LONG_DOUBLE_TYPE) */
     { 2, -4.0l, 4.0l, 1.0l, false, cpp_02unit_functions_max<long double>,
