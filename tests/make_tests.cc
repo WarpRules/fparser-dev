@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cctype>
 #include <iostream>
+#include <fstream>
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
@@ -80,7 +81,7 @@ typedef std::vector<TestData> TestCollection;
 std::map<std::string/*datatype*/,
          TestCollection> tests;
 
-void ListTests()
+void ListTests(std::ostream& outStream)
 {
     for(std::map<std::string, TestCollection>::const_iterator
         i = tests.begin();
@@ -91,12 +92,12 @@ void ListTests()
         std::string defines = GetDefinesFor(type);
         size_t n_tests         = i->second.size();
 
-        std::cout << "\n";
+        outStream << "\n";
 
         if(!defines.empty())
-            std::cout << "#ifdef " << defines << "\n";
+            outStream << "#ifdef " << defines << "\n";
 
-        std::cout <<
+        outStream <<
             "template<>\n"
             "struct RegressionTests<" << type << ">\n"
             "{\n"
@@ -107,18 +108,18 @@ void ListTests()
             "    RegressionTests<" << type << ">::Tests[]";
         if(n_tests == 0)
         {
-            std::cout <<
+            outStream <<
                 " = { TestType<" << type << ">() };\n";
         }
         else
         {
-            std::cout << " =\n{\n";
+            outStream << " =\n{\n";
             for(size_t a=0; a<n_tests; ++a)
             {
                 const TestData& testdata = i->second[a];
 
                 if(!testdata.IfDef.empty())
-                    std::cout << "#if " << testdata.IfDef << "\n";
+                    outStream << "#if " << testdata.IfDef << "\n";
 
                 std::ostringstream ranges;
                 const char* rangesdata = testdata.ParamValueRanges.c_str();
@@ -135,7 +136,7 @@ void ListTests()
                         ranges << *rangesdata++;
                 }
 
-                std::cout
+                outStream
                     << "    { " << testdata.ParamAmount
                     << ", " << ranges.str()
                     << ", " << (testdata.UseDegrees ? "true" : "false")
@@ -144,12 +145,12 @@ void ListTests()
                        "\", \"" << testdata.TestName
                     << "\", \"" << testdata.FuncString << "\" },\n";
                 if(!testdata.IfDef.empty())
-                    std::cout << "#endif /*" << testdata.IfDef << " */\n";
+                    outStream << "#endif /*" << testdata.IfDef << " */\n";
             }
-            std::cout << "    TestType<" << type << ">() };\n";
+            outStream << "    TestType<" << type << ">() };\n";
         }
         if(!defines.empty())
-            std::cout << "#endif /*" << defines << " */\n";
+            outStream << "#endif /*" << defines << " */\n";
     }
 }
 
@@ -508,12 +509,32 @@ bool natcomp(const std::string& a, const std::string& b)
 
 int main(int argc, char* argv[])
 {
+    const char* outputFileName = 0;
+    std::ofstream outputFileStream;
+
     std::ostringstream out;
 
     std::vector<std::string> files;
 
     for(int a=1; a<argc; ++a)
     {
+        if(std::strcmp(argv[a], "-o") == 0)
+        {
+            if(++a == argc)
+            {
+                std::cerr << "Expecting output file name after -o\n";
+                return 1;
+            }
+            outputFileName = argv[a];
+            outputFileStream.open(argv[a]);
+            if(!outputFileStream)
+            {
+                std::cerr << "Could not write to " << argv[a] << "\n";
+                return 1;
+            }
+            continue;
+        }
+
         std::string fn ( argv[a] );
         if(fn.empty()) continue;
 
@@ -522,6 +543,9 @@ int main(int argc, char* argv[])
 
         files.push_back(fn);
     }
+
+    std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
+    const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
 
     std::sort(files.begin(), files.end(), natcomp);
 
@@ -541,8 +565,8 @@ int main(int argc, char* argv[])
     unsigned lineno = 2;
     for(size_t a=0; a<outstr.size(); ++a)
         if(outstr[a] == '\n') ++lineno;
-    std::cout << outstr;
-    std::cout << "#line " << lineno << " \"<stdout>\"\n";
-    ListTests();
+    outStream << outstr;
+    outStream << "#line " << lineno << " \"" << outStreamName << "\"\n";
+    ListTests(outStream);
     return 0;
 }

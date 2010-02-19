@@ -76,6 +76,22 @@ namespace
     MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif
 
+    void setAnsiColor(unsigned color)
+    {
+        static int bold = 0;
+        std::cout << "\33[";
+        if(color > 7)
+        {
+            if(!bold) { std::cout << "1;"; bold=1; }
+            color -= 7;
+        }
+        else if(bold) { std::cout << "0;"; bold=0; }
+        std::cout << 30+color << "m";
+    }
+
+    void setAnsiBold() { std::cout << "\33[1m"; }
+
+    void resetAnsiColor() { std::cout << "\33[0m"; }
 }
 
 
@@ -1563,7 +1579,10 @@ bool runRegressionTests(const std::string& valueType)
     // -------------------------------------
     FunctionParserBase<Value_t> fp;
 
-    std::cout << "Running regression tests for data type \"" << valueType << "\"...\n";
+    setAnsiBold();
+    std::cout << "======================== Parser type \"" << valueType
+              << "\" ========================" << std::endl;
+    resetAnsiColor();
 
     bool ret = fp.AddConstant("pi",               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
     ret = ret && fp.AddConstant("naturalnumber",  FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
@@ -1754,26 +1773,25 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    bool err = false;
+    //bool err = false;
 
-    err |= !runRegressionTests<double> ("double");
+    if(!runRegressionTests<double> ("double")) return 1;
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    err |= !runRegressionTests<float> ("float");
+    if(!runRegressionTests<float> ("float")) return 1;
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    err |= !runRegressionTests<long double> ("long double");
+    if(!runRegressionTests<long double> ("long double")) return 1;
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-    err |= !runRegressionTests<long> ("long int");
+    if(!runRegressionTests<long> ("long int")) return 1;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    err |= !runRegressionTests<MpfrFloat> ("MpfrFloat");
+    if(!runRegressionTests<MpfrFloat> ("MpfrFloat")) return 1;
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-    err |= !runRegressionTests<GmpInt> ("GmpInt");
+    if(!runRegressionTests<GmpInt> ("GmpInt")) return 1;
 #endif
-    if(err)
-        return 1;
+    // if(err) return 1;
 
 ////////////////////////////
 ////////////////////////////

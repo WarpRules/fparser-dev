@@ -1,6 +1,6 @@
 D=defined(FP_SUPPORT_FLOAT_TYPE)
 T=f
 V=x
-R=-400, 400, 0.1
+R=-40, 40, 0.025
 F=cosh(x)
 C=coshf(x)
