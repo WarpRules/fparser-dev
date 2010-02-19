@@ -173,7 +173,7 @@ tests/make_tests: \
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 testbed_tests.inc: tests/make_tests
-	tests/make_tests tests/*/* | sed "s@<stdout>@$@@" > $@
+	tests/make_tests tests/*/* -o $@
 
 fpoptimizer.cc: \
 		fpoptimizer/grammar_parser.y \
