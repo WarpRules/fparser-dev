@@ -2,6 +2,6 @@ DEG=true
 D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
 T=ld
 V=x
-R=-1, 1, 0.01
+R=1, 400, 0.1
 F=acosh(x)
 C=r2d(acoshl(x))
