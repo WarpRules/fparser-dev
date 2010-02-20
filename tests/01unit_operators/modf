@@ -1,4 +1,3 @@
-D=defined(FP_SUPPORT_FLOAT_TYPE)
 T=f
 V=x,z
 R=-11, 11, 0.3

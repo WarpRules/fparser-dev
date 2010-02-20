@@ -1,5 +1,4 @@
 DEG=true
-D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
 T=ld
 V=x
 R=-140, 140, 0.1

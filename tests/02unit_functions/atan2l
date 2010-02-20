@@ -1,4 +1,3 @@
-D=defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
 T=ld
 V=x,y
 R=-4, 4, 0.05

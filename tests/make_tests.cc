@@ -81,8 +81,10 @@ typedef std::vector<TestData> TestCollection;
 std::map<std::string/*datatype*/,
          TestCollection> tests;
 
-std::ostringstream mpfrconst_list;
 std::set<std::string> mpfrconst_set;
+
+std::map<std::string, std::string> define_sections;
+std::string default_function_section;
 
 void ListTests(std::ostream& outStream)
 {
@@ -150,7 +152,7 @@ void ListTests(std::ostream& outStream)
                 if(!testdata.IfDef.empty())
                     outStream << "#endif /*" << testdata.IfDef << " */\n";
             }
-            outStream << "    TestType<" << type << ">() };\n";
+            outStream << "    TestType<" << type << ">()\n};\n";
         }
         if(!defines.empty())
             outStream << "#endif /*" << defines << " */\n";
@@ -263,9 +265,9 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
 
                         if(mpfrconst_set.insert(mpfrconst_name).second)
                         {
-                            mpfrconst_list
-                                << "static const MpfrFloat " << mpfrconst_name
-                                << "\n    = MpfrFloat::parseString(\"" << num << "\", 0);\n";
+                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"]
+                                += "static const MpfrFloat " + mpfrconst_name
+                                 + "\n    = MpfrFloat::parseString(\"" + num + "\", 0);\n";
                         }
 
                         codebuf << mpfrconst_name;
@@ -323,8 +325,7 @@ std::string MakeFuncName(const std::string& testname)
     return base;
 }
 
-void CompileTest(const std::string& testname, FILE* fp,
-                 std::ostream& out)
+void CompileTest(const std::string& testname, FILE* fp)
 {
     char Buf[4096]={0};
     std::string linebuf;
@@ -338,6 +339,8 @@ void CompileTest(const std::string& testname, FILE* fp,
     std::ostringstream declbuf;
 
     std::map<std::string, std::string> var_trans;
+
+    std::string limited_to_section;
 
     unsigned linenumber = 0;
     while(fgets(Buf,sizeof(Buf)-1,fp))
@@ -416,6 +419,9 @@ void CompileTest(const std::string& testname, FILE* fp,
 
                         valuepos = space;
                     }
+
+                    if(DataTypes.size() == 1)
+                        limited_to_section = GetDefinesFor(*DataTypes.begin());
                 }
                 break;
             case 'V': // variable list
@@ -500,58 +506,73 @@ void CompileTest(const std::string& testname, FILE* fp,
                     std::string funcname = MakeFuncName(test.TestName);
                     test.TestFuncName = funcname;
 
-                    std::ostringstream declbuf1, codebuf1;
-                    declbuf1 << declbuf.str();
-                    //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
+                    bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
+                    bool unitype = DataTypes.size() == 1;
 
-                    const char* valuepos_backup = valuepos;
-                    CompileFunction(valuepos, funcname, declbuf1, codebuf1, false);
+                    std::ostringstream out;
 
-                    if(!test.IfDef.empty())
-                        out << "#if " << test.IfDef << "\n";
+                    if(!unitype || !includes_mpfr)
+                    {
+                        std::ostringstream declbuf1, codebuf1;
+                        declbuf1 << declbuf.str();
+                        //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                    out <<
-                        "template<typename Value_t>\n"
-                        "Value_t " << funcname << "(const Value_t* vars)\n"
-                        "{\n"
-                        "    using namespace FUNCTIONPARSERTYPES;\n" <<
-                        declbuf1.str();
-                    out << "#line " << linenumber << " \"" << testname << "\"\n";
-                    out <<
-                        "    return " << codebuf1.str() << ";\n"
-                        "}\n";
+                        const char* valuepos_1 = valuepos;
+                        CompileFunction(valuepos_1, funcname, declbuf1, codebuf1, false);
 
-                    if(!test.IfDef.empty())
-                        out << "#endif /* " << test.IfDef << " */\n";
+                        out <<
+                            "template<typename Value_t>\n"
+                            "Value_t " << funcname << "(const Value_t* vars)\n"
+                            "{\n"
+                            "    using namespace FUNCTIONPARSERTYPES;\n" <<
+                            declbuf1.str();
+                        out << "#line " << linenumber << " \"" << testname << "\"\n";
+                        out <<
+                            "    return " << codebuf1.str() << ";\n"
+                            "}\n";
+                    }
+                    else
+                        out <<
+                            "template<typename Value_t>\n"
+                            "Value_t " << funcname << "(const Value_t* ) { }\n";
 
-                    if(DataTypes.find("MpfrFloat") != DataTypes.end())
+                    (limited_to_section.empty()
+                        ? default_function_section
+                        : define_sections[limited_to_section]) += out.str();
+
+                    if(includes_mpfr)
                     {
                         std::ostringstream declbuf2, codebuf2;
                         declbuf2 << declbuf.str();
                         //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                        CompileFunction(valuepos_backup, funcname, declbuf2, codebuf2, true);
+                        CompileFunction(valuepos, funcname, declbuf2, codebuf2, true);
 
-                        if(codebuf2.str().find("mflit") != codebuf2.str().npos)
+                        if(codebuf2.str().find("mflit") != codebuf2.str().npos
+                        || unitype)
                         {
-                            out << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
+                            std::ostringstream out2;
+
                             if(!test.IfDef.empty())
-                                out << "#if " << test.IfDef << "\n";
-                            out <<
+                                out2 << "#if " << test.IfDef << "\n";
+
+                            out2 <<
                                 "template<>\n"
-                                "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n"
+                                "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n";
+                            out2 <<
                                 "{\n"
                                 "    typedef MpfrFloat Value_t;\n"
                                 "    using namespace FUNCTIONPARSERTYPES;\n" <<
                                 declbuf2.str();
-                            out << "#line " << linenumber << " \"" << testname << "\"\n";
-                            out <<
+                            out2 << "#line " << linenumber << " \"" << testname << "\"\n";
+                            out2 <<
                                 "    return " << codebuf2.str() << ";\n"
                                 "}\n";
 
                             if(!test.IfDef.empty())
-                                out << "#endif /* " << test.IfDef << " */\n";
-                            out << "#endif\n";
+                                out2 << "#endif /* " << test.IfDef << " */\n";
+
+                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"] += out2.str();
                         }
                     }
                 }
@@ -637,9 +658,6 @@ int main(int argc, char* argv[])
 
     std::sort(files.begin(), files.end(), natcomp);
 
-    mpfrconst_list << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
-
-    std::ostringstream out2;
     for(size_t a=0; a<files.size(); ++a)
     {
         FILE* fp = std::fopen(files[a].c_str(), "rt");
@@ -648,14 +666,22 @@ int main(int argc, char* argv[])
             std::perror(files[a].c_str());
             continue;
         }
-        CompileTest(files[a], fp, out2);
+        CompileTest(files[a], fp);
         fclose(fp);
     }
 
-    mpfrconst_list << "#endif\n";
-
-    out << mpfrconst_list.str();
-    out << out2.str();
+    out << default_function_section;
+    for(std::map<std::string, std::string>::const_iterator
+        i = define_sections.begin(); i != define_sections.end(); ++i)
+    {
+        if(i->first != "FP_SUPPORT_MPFR_FLOAT_TYPE")
+            out << "\n#ifdef " << i->first << "\n" << i->second
+                << "#endif /*" << i->first << " */\n";
+    }
+    std::map<std::string, std::string>::const_iterator
+        i = define_sections.find("FP_SUPPORT_MPFR_FLOAT_TYPE");
+    out << "\n#ifdef " << i->first << "\n" << i->second
+        << "#endif /*" << i->first << " */\n";
 
     const std::string outstr = out.str();
     unsigned lineno = 2;

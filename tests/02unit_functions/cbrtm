@@ -1,4 +1,3 @@
-D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
 T=mf
 V=x
 R=-50000, 50000, 1000

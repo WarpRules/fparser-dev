@@ -1,5 +1,4 @@
 DEG=true
-D=defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
 T=mf
 V=x
 R=-89, 89, 0.25
