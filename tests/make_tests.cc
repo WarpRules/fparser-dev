@@ -81,6 +81,9 @@ typedef std::vector<TestData> TestCollection;
 std::map<std::string/*datatype*/,
          TestCollection> tests;
 
+std::ostringstream mpfrconst_list;
+std::set<std::string> mpfrconst_set;
+
 void ListTests(std::ostream& outStream)
 {
     for(std::map<std::string, TestCollection>::const_iterator
@@ -153,6 +156,18 @@ void ListTests(std::ostream& outStream)
             outStream << "#endif /*" << defines << " */\n";
     }
 }
+
+template<typename CharT>
+void
+str_replace_inplace(std::basic_string<CharT>& where,
+                    const std::basic_string<CharT>& search,
+                    const std::basic_string<CharT>& with)
+{
+    for(typename std::basic_string<CharT>::size_type a = where.size();
+        (a = where.rfind(search, a)) != where.npos;
+        where.replace(a, search.size(), with)) {}
+}
+
 
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
                      std::ostream& declbuf,
@@ -230,17 +245,30 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                     std::string num(funcstr, endptr-funcstr);
                     char* endptr2 = 0;
                     strtol(funcstr, &endptr2, 10);
-                    if(endptr2 && endptr2 == endptr) // an int or long
+                    /*if(endptr2 && std::strcmp(endptr2, ".0") == 0)
+                    {
+                        num.erase(num.size()-2, num.size()); // made-int
+                        codebuf << "Value_t(" << num << ")";
+                    }
+                    else*/ if(endptr2 && endptr2 == endptr) // an int or long
                     {
                         codebuf << "Value_t(" << num << ")";
                     }
                     else
                     {
-                        static unsigned mpfrconstcounter = 0;
-                        declbuf << "    static const MpfrFloat mflit" << mpfrconstcounter
-                                << " = MpfrFloat::parseString(\"" << num << "\", 0);\n";
-                        codebuf << "mflit" << mpfrconstcounter;
-                        ++mpfrconstcounter;
+                        std::string mpfrconst_name = "mflit" + num;
+                        str_replace_inplace(mpfrconst_name, std::string("."), std::string("_"));
+                        str_replace_inplace(mpfrconst_name, std::string("+"), std::string("p"));
+                        str_replace_inplace(mpfrconst_name, std::string("-"), std::string("m"));
+
+                        if(mpfrconst_set.insert(mpfrconst_name).second)
+                        {
+                            mpfrconst_list
+                                << "static const MpfrFloat " << mpfrconst_name
+                                << "\n    = MpfrFloat::parseString(\"" << num << "\", 0);\n";
+                        }
+
+                        codebuf << mpfrconst_name;
                     }
                     if(*endptr == 'f' || *endptr == 'l') ++endptr;
                 }
@@ -270,17 +298,6 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 codebuf << *funcstr++;
         }
     }
-}
-
-template<typename CharT>
-void
-str_replace_inplace(std::basic_string<CharT>& where,
-                    const std::basic_string<CharT>& search,
-                    const std::basic_string<CharT>& with)
-{
-    for(typename std::basic_string<CharT>::size_type a = where.size();
-        (a = where.rfind(search, a)) != where.npos;
-        where.replace(a, search.size(), with)) {}
 }
 
 std::string ReplaceVars(const char* function,
@@ -423,7 +440,7 @@ void CompileTest(const std::string& testname, FILE* fp,
                         vars.push_back(begin);
 
                     bool outputted_line_stmt = false;
-                    
+
                     for(size_t a=0; a<vars.size(); ++a)
                     {
                         std::string oldvarname = vars[a];
@@ -446,7 +463,7 @@ void CompileTest(const std::string& testname, FILE* fp,
                             newvarname = varnamebuf.str();
                             var_trans[oldvarname] = newvarname;
                         }
-                        
+
                         if(!outputted_line_stmt)
                         {
                             outputted_line_stmt = true;
@@ -514,8 +531,8 @@ void CompileTest(const std::string& testname, FILE* fp,
                         //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                         CompileFunction(valuepos_backup, funcname, declbuf2, codebuf2, true);
-                        
-                        if(declbuf2.str().find("mflit") != declbuf2.str().npos)
+
+                        if(codebuf2.str().find("mflit") != codebuf2.str().npos)
                         {
                             out << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
                             if(!test.IfDef.empty())
@@ -620,6 +637,9 @@ int main(int argc, char* argv[])
 
     std::sort(files.begin(), files.end(), natcomp);
 
+    mpfrconst_list << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
+
+    std::ostringstream out2;
     for(size_t a=0; a<files.size(); ++a)
     {
         FILE* fp = std::fopen(files[a].c_str(), "rt");
@@ -628,9 +648,14 @@ int main(int argc, char* argv[])
             std::perror(files[a].c_str());
             continue;
         }
-        CompileTest(files[a], fp, out);
+        CompileTest(files[a], fp, out2);
         fclose(fp);
     }
+
+    mpfrconst_list << "#endif\n";
+
+    out << mpfrconst_list.str();
+    out << out2.str();
 
     const std::string outstr = out.str();
     unsigned lineno = 2;
