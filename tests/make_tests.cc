@@ -156,7 +156,8 @@ void ListTests(std::ostream& outStream)
 
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
                      std::ostream& declbuf,
-                     std::ostream& codebuf)
+                     std::ostream& codebuf,
+                     bool is_mpfr = false)
 {
     static unsigned BufCounter = 0;
 
@@ -195,7 +196,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 codebuf << BufName << "[" << (NParams-1) << "]=(";
 
                 CompileFunction(funcstr, eval_name,
-                    declbuf, codebuf);
+                    declbuf, codebuf, is_mpfr);
 
                 codebuf << "), ";
                 if(*funcstr == ',') ++funcstr;
@@ -224,8 +225,26 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 std::strtod(funcstr, &endptr);
             if(endptr && endptr != funcstr)
             {
-                if(*endptr == 'f' || *endptr == 'l') ++endptr;
-                codebuf << "Value_t(" << std::string(funcstr, endptr-funcstr) << ")";
+                if(is_mpfr)
+                {
+                    std::string num(funcstr, endptr-funcstr);
+                    if(num == "0")
+                        codebuf << "MpfrFloat(0)";
+                    else
+                    {
+                        static unsigned mpfrconstcounter = 0;
+                        declbuf << "    static const MpfrFloat mflit" << mpfrconstcounter
+                                << " = MpfrFloat::parseString(\"" << num << "\", 0);\n";
+                        codebuf << "mflit" << mpfrconstcounter;
+                        ++mpfrconstcounter;
+                    }
+                    if(*endptr == 'f' || *endptr == 'l') ++endptr;
+                }
+                else
+                {
+                    if(*endptr == 'f' || *endptr == 'l') ++endptr;
+                    codebuf << "Value_t(" << std::string(funcstr, endptr-funcstr) << ")";
+                }
                 funcstr = endptr;
             }
             else if((*funcstr >= 'A' && *funcstr <= 'Z')
@@ -291,7 +310,6 @@ void CompileTest(const std::string& testname, FILE* fp,
     test.TestName = testname;
     str_replace_inplace(test.TestName, std::string("tests/"), std::string(""));
 
-    std::ostringstream codebuf;
     std::ostringstream declbuf;
 
     std::map<std::string, std::string> var_trans;
@@ -442,7 +460,7 @@ void CompileTest(const std::string& testname, FILE* fp,
                         Replaced = ReplaceVars(valuepos, var_trans);
                         valuepos = Replaced.c_str();
                     }
-                    
+
                     std::string funcname = MakeFuncName(test.TestName);
                     test.TestFuncName = funcname;
 
@@ -455,17 +473,50 @@ void CompileTest(const std::string& testname, FILE* fp,
                         "{\n"
                         "    using namespace FUNCTIONPARSERTYPES;\n";
 
-                    declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
+                    std::ostringstream declbuf1, codebuf1;
+                    declbuf1 << declbuf.str();
 
-                    CompileFunction(valuepos, funcname, declbuf, codebuf);
+                    declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                    out << declbuf.str() <<
+                    const char* valuepos_backup = valuepos;
+                    CompileFunction(valuepos, funcname, declbuf1, codebuf1, false);
+
+                    out << declbuf1.str() <<
                         "#line " << linenumber << " \"" << testname << "\"\n"
-                        "    return " << codebuf.str() << ";\n"
+                        "    return " << codebuf1.str() << ";\n"
                         "}\n";
 
                     if(!test.IfDef.empty())
                         out << "#endif /* " << test.IfDef << " */\n";
+
+                    if(DataTypes.find("MpfrFloat") != DataTypes.end())
+                    {
+                        out << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
+                        if(!test.IfDef.empty())
+                            out << "#if " << test.IfDef << "\n";
+                        out <<
+                            "template<>\n"
+                            "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n"
+                            "{\n"
+                            "    typedef MpfrFloat Value_t;\n"
+                            "    using namespace FUNCTIONPARSERTYPES;\n";
+
+                        std::ostringstream declbuf2, codebuf2;
+                        declbuf2 << declbuf.str();
+
+                        declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
+
+                        CompileFunction(valuepos_backup, funcname, declbuf2, codebuf2, true);
+
+                        out << declbuf2.str() <<
+                            "#line " << linenumber << " \"" << testname << "\"\n"
+                            "    return " << codebuf2.str() << ";\n"
+                            "}\n";
+
+                        if(!test.IfDef.empty())
+                            out << "#endif /* " << test.IfDef << " */\n";
+                        out << "#endif\n";
+                    }
                 }
                 break;
         }
