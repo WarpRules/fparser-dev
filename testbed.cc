@@ -27,10 +27,6 @@
 #include <algorithm>
 #include <cstring>
 
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795
-#endif
-
 #define CONST 1.5
 
 #define StringifyHlp(x) #x
@@ -79,11 +75,7 @@ namespace
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    MpfrFloat Epsilon<MpfrFloat>()
-    {
-        static const MpfrFloat eps(1e-12);
-        return eps;
-    }
+    MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif
 
 #ifndef _MSC_VER
