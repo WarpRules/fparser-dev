@@ -40,7 +40,7 @@ namespace
 {
     const bool verbose = false;
 
-    std::vector<const char*> selected_regression_tests;
+    std::vector<const char*> selectedRegressionTests;
 
     // Auxiliary functions
     // -------------------
@@ -1620,10 +1620,10 @@ static bool WildMatch_Dirmask(const char *pattern, const char *what)
     if(testmask.find('/') == testmask.npos) testmask = "*/" + testmask;
     return WildMatch(testmask.c_str(), what);
 }
-bool is_selected_test(const char* testName)
+bool IsSelectedTest(const char* testName)
 {
-    for(size_t a=0; a<selected_regression_tests.size(); ++a)
-        if(WildMatch_Dirmask(selected_regression_tests[a], testName))
+    for(size_t a=0; a<selectedRegressionTests.size(); ++a)
+        if(WildMatch_Dirmask(selectedRegressionTests[a], testName))
             return true;
     return false;
 }
@@ -1714,7 +1714,7 @@ bool runRegressionTests(const std::string& valueType)
         const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
         if(!testData.testName) break;
 
-        if(!is_selected_test(testData.testName)) continue;
+        if(!IsSelectedTest(testData.testName)) continue;
 
         const int retval =
             fp.Parse(testData.funcString, testData.paramString,
@@ -1805,7 +1805,7 @@ int main(int argc, char* argv[])
 #endif
 
     bool runUTF8Test = true;
-    bool run_all_types = true;
+    bool runAllTypes = true;
     bool run_d = false, run_f = false, run_ld = false;
     bool run_li = false, run_mf = false, run_gi = false;
 
@@ -1844,15 +1844,29 @@ int main(int argc, char* argv[])
             if(std::strcmp(argv[i+1], "help") == 0)
             {
                 std::cout << "Available tests:\n";
-                size_t p=0;
+                size_t c=0;
+                std::string prev_test_prefix;
                 for(size_t a=0; a<tests.size(); ++a)
                 {
-                    if(p+tests[a].size() >= 76) { p=0; std::cout << "\n"; }
-                    if(p==0) { std::cout << "        "; p+=8; }
-                    else { std::cout << " "; p+=1; }
-                    std::cout << tests[a]; p += tests[a].size();
+                    std::string tn = tests[a];
+                    size_t p = tn.rfind('/');
+                    if(p == tn.npos)
+                        prev_test_prefix = "";
+                    else
+                    {
+                        std::string path_prefix(tn, 0, p);
+                        if(path_prefix != prev_test_prefix)
+                            { if(c) { std::cout << std::endl; c=0; }
+                              prev_test_prefix = path_prefix;
+                              std::cout << "    " << path_prefix << "/\n"; }
+                        tn.erase(0, p+1);
+                    }
+                    if(c+tn.size() >= 76) { c=0; std::cout << "\n"; }
+                    if(c==0) { std::cout << "        "; c+=8; }
+                    else { std::cout << " "; c+=1; }
+                    std::cout << tn; c += tn.size();
                 }
-                if(p) std::cout << std::endl;
+                if(c) std::cout << std::endl;
                 return 0;
             }
             while(i+1 < argc && argv[i+1][0] != '-')
@@ -1867,31 +1881,31 @@ int main(int argc, char* argv[])
                               << "\n\"testbed -tests help\" to list available tests.\n";
                     return -1;
                 }
-                selected_regression_tests.push_back(t);
+                selectedRegressionTests.push_back(t);
             }
         }
         else if(std::strcmp(argv[i], "-d") == 0
              || std::strcmp(argv[i], "-double") == 0)
-            run_all_types = false, run_d = true;
+            runAllTypes = false, run_d = true;
         else if(std::strcmp(argv[i], "-f") == 0
              || std::strcmp(argv[i], "-float") == 0)
-            run_all_types = false, run_d = true;
+            runAllTypes = false, run_d = true;
         else if(std::strcmp(argv[i], "-ld") == 0
              || std::strcmp(argv[i], "-longdouble") == 0)
-            run_all_types = false, run_ld = true;
+            runAllTypes = false, run_ld = true;
         else if(std::strcmp(argv[i], "-li") == 0
              || std::strcmp(argv[i], "-longint") == 0)
-            run_all_types = false, run_li = true;
+            runAllTypes = false, run_li = true;
         else if(std::strcmp(argv[i], "-mf") == 0
              || std::strcmp(argv[i], "-mpfr") == 0)
-            run_all_types = false, run_mf = true;
+            runAllTypes = false, run_mf = true;
         else if(std::strcmp(argv[i], "-gi") == 0
              || std::strcmp(argv[i], "-gmpint") == 0)
-            run_all_types = false, run_gi = true;
+            runAllTypes = false, run_gi = true;
     }
 
-    if(selected_regression_tests.empty())
-        selected_regression_tests.push_back("*");
+    if(selectedRegressionTests.empty())
+        selectedRegressionTests.push_back("*");
 
     FunctionParser fp0;
 
@@ -1915,26 +1929,26 @@ int main(int argc, char* argv[])
 
     //bool err = false;
 
-    if(run_all_types || run_d)
+    if(runAllTypes || run_d)
         if(!runRegressionTests<double> ("double")) return 1;
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    if(run_all_types || run_f)
+    if(runAllTypes || run_f)
         if(!runRegressionTests<float> ("float")) return 1;
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    if(run_all_types || run_ld)
+    if(runAllTypes || run_ld)
         if(!runRegressionTests<long double> ("long double")) return 1;
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-    if(run_all_types || run_li)
+    if(runAllTypes || run_li)
         if(!runRegressionTests<long> ("long int")) return 1;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(run_all_types || run_mf)
+    if(runAllTypes || run_mf)
         if(!runRegressionTests<MpfrFloat> ("MpfrFloat")) return 1;
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-    if(run_all_types || run_gi)
+    if(runAllTypes || run_gi)
         if(!runRegressionTests<GmpInt> ("GmpInt")) return 1;
 #endif
     // if(err) return 1;
