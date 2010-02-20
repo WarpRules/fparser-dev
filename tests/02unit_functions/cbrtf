@@ -3,4 +3,4 @@ T=f
 V=x
 R=-50000, 50000, 1000
 F=cbrt(x)
-C=x<0 ? -expf(logf(-x) / 3) : (x>0 ? expf(logf(x) / 3) : 0)
+C=cbrtf(x)

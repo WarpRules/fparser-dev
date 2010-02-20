@@ -4,4 +4,4 @@ T=f
 V=x
 R=1, 400, 0.1
 F=acosh(x)
-C=r2d(logf(x + sqrtf(x*x - 1)))
+C=r2d(acoshf(x))

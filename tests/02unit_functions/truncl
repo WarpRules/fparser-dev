@@ -3,4 +3,4 @@ T=ld
 V=x
 R=-400, 400, 0.1
 F=trunc(x)
-C=x<0 ? ceill(x) : floorl(x)
+C=truncl(x)
