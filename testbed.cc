@@ -1931,10 +1931,14 @@ int main(int argc, char* argv[])
     // Test that the parser doesn't crash if Eval() is called before Parse():
     fp0.Eval(0);
 
-    int res = fp0.Parse("x+y } ", "x,y");
+    const char* const delimiterTestFunction = "x+y } ";
+    fp0.setDelimiterChar('}');
+    int res = fp0.Parse(delimiterTestFunction, "x,y");
     if(fp0.GetParseErrorType() != fp0.FP_NO_ERROR || res != 4)
     {
-        std::cout << "Delimiter test failed" << std::endl;
+        std::cout << "Delimiter test \"" << delimiterTestFunction
+                  << "\" failed at " << res << ": " << fp0.ErrorMsg()
+                  << std::endl;
         return 1;
     }
     fp0.Parse("x+}y", "x,y");
