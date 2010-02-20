@@ -1863,7 +1863,7 @@ int main(int argc, char* argv[])
             if(std::strcmp(argv[i+1], "help") == 0)
             {
                 std::cout << "Available tests:\n";
-                size_t c=0;
+                size_t column=0;
                 std::string prev_test_prefix;
                 for(size_t a=0; a<tests.size(); ++a)
                 {
@@ -1873,19 +1873,19 @@ int main(int argc, char* argv[])
                         prev_test_prefix = "";
                     else
                     {
-                        std::string path_prefix(tn, 0, p);
+                        {std::string path_prefix(tn, 0, p);
                         if(path_prefix != prev_test_prefix)
-                            { if(c) { std::cout << std::endl; c=0; }
+                            { if(column) { std::cout << std::endl; column=0; }
                               prev_test_prefix = path_prefix;
-                              std::cout << "    " << path_prefix << "/\n"; }
+                              std::cout << "    " << path_prefix << "/\n"; }}
                         tn.erase(0, p+1);
                     }
-                    if(c+tn.size() >= 76) { c=0; std::cout << "\n"; }
-                    if(c==0) { std::cout << "        "; c+=8; }
-                    else { std::cout << " "; c+=1; }
-                    std::cout << tn; c += tn.size();
+                    if(column+tn.size() >= 76) { column=0; std::cout << "\n"; }
+                    if(column==0) { std::cout << "        "; column+=8; }
+                    else { std::cout << " "; column+=1; }
+                    std::cout << tn; column += tn.size();
                 }
-                if(c) std::cout << std::endl;
+                if(column) std::cout << std::endl;
                 return 0;
             }
             while(i+1 < argc && argv[i+1][0] != '-')
@@ -1931,7 +1931,6 @@ int main(int argc, char* argv[])
     // Test that the parser doesn't crash if Eval() is called before Parse():
     fp0.Eval(0);
 
-    fp0.setDelimiterChar('}');
     int res = fp0.Parse("x+y } ", "x,y");
     if(fp0.GetParseErrorType() != fp0.FP_NO_ERROR || res != 4)
     {

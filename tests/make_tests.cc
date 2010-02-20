@@ -246,8 +246,12 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 }
                 else
                 {
-                    if(*endptr == 'f' || *endptr == 'l') ++endptr;
-                    codebuf << "Value_t(" << std::string(funcstr, endptr-funcstr) << ")";
+                    std::string num(funcstr, endptr-funcstr);
+                    if(*endptr == 'f' || *endptr == 'l')
+                        num += *endptr++;
+                    else
+                        num += 'l';
+                    codebuf << "Value_t(" << num << ")";
                 }
                 funcstr = endptr;
             }
