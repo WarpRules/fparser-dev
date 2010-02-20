@@ -1569,6 +1569,15 @@ namespace
     template<typename Value_t>
     const TestType<Value_t> RegressionTests<Value_t>::Tests[] = { TestType<Value_t>() };
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat makeMF(const char* str)
+    {
+        MpfrFloat f;
+        f.parseValue(str);
+        return f;
+    }
+#endif
+
     /* These functions in fparser produce bool values. However,
      * the testing functions require that they produce Value_t's. */
     #define BoolProxy(Fname) \

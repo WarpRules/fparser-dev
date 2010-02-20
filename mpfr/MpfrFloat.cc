@@ -394,11 +394,13 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
 
 void MpfrFloat::parseValue(const char* value)
 {
+    copyIfShared();
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
 }
 
 void MpfrFloat::parseValue(const char* value, char** endptr)
 {
+    copyIfShared();
     mpfr_strtofr(mData->mFloat, value, endptr, 10, GMP_RNDN);
 }
 
