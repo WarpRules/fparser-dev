@@ -409,8 +409,6 @@ void CompileTest(const std::string& testname, FILE* fp,
 
                     const char* begin = valuepos;
 
-                    declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
-
                     std::vector<std::string> vars;
 
                     for(; *valuepos; ++valuepos)
@@ -424,6 +422,8 @@ void CompileTest(const std::string& testname, FILE* fp,
                     if(begin != valuepos)
                         vars.push_back(begin);
 
+                    bool outputted_line_stmt = false;
+                    
                     for(size_t a=0; a<vars.size(); ++a)
                     {
                         std::string oldvarname = vars[a];
@@ -446,9 +446,20 @@ void CompileTest(const std::string& testname, FILE* fp,
                             newvarname = varnamebuf.str();
                             var_trans[oldvarname] = newvarname;
                         }
-                        declbuf << "    const Value_t& " << newvarname
-                                << " = vars[" << a << "];\n";
+                        
+                        if(!outputted_line_stmt)
+                        {
+                            outputted_line_stmt = true;
+                            declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
+                            declbuf << "    const Value_t";
+                        }
+                        else
+                            declbuf << ",";
+                        declbuf << " &" << newvarname
+                                << " = vars[" << a << "]";
                     }
+                    if(outputted_line_stmt)
+                        declbuf << ";\n";
                 }
                 break;
             case 'R': // parameter value ranges
@@ -474,7 +485,7 @@ void CompileTest(const std::string& testname, FILE* fp,
 
                     std::ostringstream declbuf1, codebuf1;
                     declbuf1 << declbuf.str();
-                    declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
+                    //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                     const char* valuepos_backup = valuepos;
                     CompileFunction(valuepos, funcname, declbuf1, codebuf1, false);
@@ -487,8 +498,9 @@ void CompileTest(const std::string& testname, FILE* fp,
                         "Value_t " << funcname << "(const Value_t* vars)\n"
                         "{\n"
                         "    using namespace FUNCTIONPARSERTYPES;\n" <<
-                        declbuf1.str() <<
-                        "#line " << linenumber << " \"" << testname << "\"\n"
+                        declbuf1.str();
+                    out << "#line " << linenumber << " \"" << testname << "\"\n";
+                    out <<
                         "    return " << codebuf1.str() << ";\n"
                         "}\n";
 
@@ -499,7 +511,7 @@ void CompileTest(const std::string& testname, FILE* fp,
                     {
                         std::ostringstream declbuf2, codebuf2;
                         declbuf2 << declbuf.str();
-                        declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
+                        //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                         CompileFunction(valuepos_backup, funcname, declbuf2, codebuf2, true);
                         
@@ -514,8 +526,9 @@ void CompileTest(const std::string& testname, FILE* fp,
                                 "{\n"
                                 "    typedef MpfrFloat Value_t;\n"
                                 "    using namespace FUNCTIONPARSERTYPES;\n" <<
-                                declbuf2.str() <<
-                                "#line " << linenumber << " \"" << testname << "\"\n"
+                                declbuf2.str();
+                            out << "#line " << linenumber << " \"" << testname << "\"\n";
+                            out <<
                                 "    return " << codebuf2.str() << ";\n"
                                 "}\n";
 
