@@ -228,8 +228,12 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 if(is_mpfr)
                 {
                     std::string num(funcstr, endptr-funcstr);
-                    if(num == "0")
-                        codebuf << "MpfrFloat(0)";
+                    char* endptr2 = 0;
+                    strtol(funcstr, &endptr2, 10);
+                    if(endptr2 && endptr2 == endptr) // an int or long
+                    {
+                        codebuf << "Value_t(" << num << ")";
+                    }
                     else
                     {
                         static unsigned mpfrconstcounter = 0;
@@ -464,6 +468,13 @@ void CompileTest(const std::string& testname, FILE* fp,
                     std::string funcname = MakeFuncName(test.TestName);
                     test.TestFuncName = funcname;
 
+                    std::ostringstream declbuf1, codebuf1;
+                    declbuf1 << declbuf.str();
+                    declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
+
+                    const char* valuepos_backup = valuepos;
+                    CompileFunction(valuepos, funcname, declbuf1, codebuf1, false);
+
                     if(!test.IfDef.empty())
                         out << "#if " << test.IfDef << "\n";
 
@@ -471,17 +482,8 @@ void CompileTest(const std::string& testname, FILE* fp,
                         "template<typename Value_t>\n"
                         "Value_t " << funcname << "(const Value_t* vars)\n"
                         "{\n"
-                        "    using namespace FUNCTIONPARSERTYPES;\n";
-
-                    std::ostringstream declbuf1, codebuf1;
-                    declbuf1 << declbuf.str();
-
-                    declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
-
-                    const char* valuepos_backup = valuepos;
-                    CompileFunction(valuepos, funcname, declbuf1, codebuf1, false);
-
-                    out << declbuf1.str() <<
+                        "    using namespace FUNCTIONPARSERTYPES;\n" <<
+                        declbuf1.str() <<
                         "#line " << linenumber << " \"" << testname << "\"\n"
                         "    return " << codebuf1.str() << ";\n"
                         "}\n";
@@ -491,31 +493,32 @@ void CompileTest(const std::string& testname, FILE* fp,
 
                     if(DataTypes.find("MpfrFloat") != DataTypes.end())
                     {
-                        out << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
-                        if(!test.IfDef.empty())
-                            out << "#if " << test.IfDef << "\n";
-                        out <<
-                            "template<>\n"
-                            "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n"
-                            "{\n"
-                            "    typedef MpfrFloat Value_t;\n"
-                            "    using namespace FUNCTIONPARSERTYPES;\n";
-
                         std::ostringstream declbuf2, codebuf2;
                         declbuf2 << declbuf.str();
-
                         declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                         CompileFunction(valuepos_backup, funcname, declbuf2, codebuf2, true);
+                        
+                        if(declbuf2.str().find("mflit") != declbuf2.str().npos)
+                        {
+                            out << "#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE\n";
+                            if(!test.IfDef.empty())
+                                out << "#if " << test.IfDef << "\n";
+                            out <<
+                                "template<>\n"
+                                "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n"
+                                "{\n"
+                                "    typedef MpfrFloat Value_t;\n"
+                                "    using namespace FUNCTIONPARSERTYPES;\n" <<
+                                declbuf2.str() <<
+                                "#line " << linenumber << " \"" << testname << "\"\n"
+                                "    return " << codebuf2.str() << ";\n"
+                                "}\n";
 
-                        out << declbuf2.str() <<
-                            "#line " << linenumber << " \"" << testname << "\"\n"
-                            "    return " << codebuf2.str() << ";\n"
-                            "}\n";
-
-                        if(!test.IfDef.empty())
-                            out << "#endif /* " << test.IfDef << " */\n";
-                        out << "#endif\n";
+                            if(!test.IfDef.empty())
+                                out << "#endif /* " << test.IfDef << " */\n";
+                            out << "#endif\n";
+                        }
                     }
                 }
                 break;
