@@ -27,6 +27,10 @@
 #include <algorithm>
 #include <cstring>
 
+#ifndef M_PI
+#define M_PI 3.1415926535897932384626433832795
+#endif
+
 #define CONST 1.5
 
 #define StringifyHlp(x) #x
@@ -80,6 +84,7 @@ namespace
     }
 #endif
 
+#ifndef _MSC_VER
     void setAnsiColor(unsigned color)
     {
         static int bold = 0;
@@ -96,6 +101,11 @@ namespace
     void setAnsiBold() { std::cout << "\33[1m"; }
 
     void resetAnsiColor() { std::cout << "\33[0m"; }
+#else
+    void setAnsiColor(unsigned) {}
+    void setAnsiBold() {}
+    void resetAnsiColor() {}
+#endif
 }
 
 
