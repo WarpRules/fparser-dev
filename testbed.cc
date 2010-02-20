@@ -1627,6 +1627,33 @@ bool IsSelectedTest(const char* testName)
             return true;
     return false;
 }
+/* Asciibetical comparator, with in-string integer values sorted naturally */
+bool natcomp(const std::string& a, const std::string& b)
+{
+    size_t ap=0, bp=0;
+    while(ap < a.size() && bp < b.size())
+    {
+        if(a[ap] >= '0' && a[ap] <= '9' 
+        && b[bp] >= '0' && b[bp] <= '9')
+        {
+            unsigned long aval = (a[ap++] - '0');
+            unsigned long bval = (b[bp++] - '0');
+            while(ap < a.size() && a[ap] >= '0' && a[ap] <= '9')
+                aval = aval*10ul + (a[ap++] - '0');
+            while(bp < b.size() && b[bp] >= '0' && b[bp] <= '9')
+                bval = bval*10ul + (b[bp++] - '0');
+            if(aval != bval)
+                return aval < bval;
+        }   
+        else
+        {
+            if(a[ap] != b[ap]) return a[ap] < b[ap];
+            ++ap; ++bp;
+        }
+    }
+    return (bp < b.size() && ap >= a.size());
+}
+
 
 template<typename Value_t>
 bool runRegressionTests(const std::string& valueType)
@@ -1838,7 +1865,7 @@ int main(int argc, char* argv[])
             for(unsigned a=0; RegressionTests<GmpInt>::Tests[a].testName; ++a)
                 tests.push_back(RegressionTests<GmpInt>::Tests[a].testName);
 #endif
-            std::sort(tests.begin(), tests.end());
+            std::sort(tests.begin(), tests.end(), natcomp);
             tests.erase(std::unique(tests.begin(), tests.end()), tests.end());
 
             if(std::strcmp(argv[i+1], "help") == 0)
