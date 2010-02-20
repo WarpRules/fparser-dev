@@ -1,6 +1,5 @@
-D=defined(FP_SUPPORT_TR1_MATH_FUNCS)
 T=d
 V=x
 R=-50000, 50000, 1000
 F=cbrt(x)
-C=cbrt(x)
+C=x<0 ? -exp(log(-x) / 3) : (x>0 ? exp(log(x) / 3) : 0)
