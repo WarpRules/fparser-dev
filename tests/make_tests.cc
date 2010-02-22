@@ -35,6 +35,7 @@ namespace
 
         if(type == "float")       return fltvalue + "f";
         if(type == "long double") return fltvalue + "l";
+        if(type == "double")      return fltvalue;
         return value;
     }
     std::string GetTypeFor(const std::string& typecode)
@@ -174,7 +175,7 @@ str_replace_inplace(std::basic_string<CharT>& where,
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
                      std::ostream& declbuf,
                      std::ostream& codebuf,
-                     bool is_mpfr = false)
+                     const std::string& limited_to_datatype)
 {
     static unsigned BufCounter = 0;
 
@@ -213,7 +214,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 codebuf << BufName << "[" << (NParams-1) << "]=(";
 
                 CompileFunction(funcstr, eval_name,
-                    declbuf, codebuf, is_mpfr);
+                    declbuf, codebuf, limited_to_datatype);
 
                 codebuf << "), ";
                 if(*funcstr == ',') ++funcstr;
@@ -242,7 +243,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 std::strtod(funcstr, &endptr);
             if(endptr && endptr != funcstr)
             {
-                if(is_mpfr)
+                if(limited_to_datatype == "MpfrFloat")
                 {
                     std::string num(funcstr, endptr-funcstr);
                     char* endptr2 = 0;
@@ -272,16 +273,22 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
 
                         codebuf << mpfrconst_name;
                     }
-                    if(*endptr == 'f' || *endptr == 'l') ++endptr;
+                    //if(*endptr == 'f' || *endptr == 'l') ++endptr;
                 }
                 else
                 {
                     std::string num(funcstr, endptr-funcstr);
+                    if(limited_to_datatype.empty())
+                        codebuf << "Value_t(" << num << "l)";
+                    else
+                        codebuf << NumConst(limited_to_datatype, num);
+                    /*
                     if(*endptr == 'f' || *endptr == 'l')
                         num += *endptr++;
                     else
                         num += 'l';
                     codebuf << "Value_t(" << num << ")";
+                    */
                 }
                 funcstr = endptr;
             }
@@ -340,7 +347,7 @@ void CompileTest(const std::string& testname, FILE* fp)
 
     std::map<std::string, std::string> var_trans;
 
-    std::string limited_to_section;
+    std::string limited_to_datatype;
 
     unsigned linenumber = 0;
     while(fgets(Buf,sizeof(Buf)-1,fp))
@@ -421,7 +428,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                     }
 
                     if(DataTypes.size() == 1)
-                        limited_to_section = GetDefinesFor(*DataTypes.begin());
+                        limited_to_datatype = *DataTypes.begin();
                 }
                 break;
             case 'V': // variable list
@@ -473,7 +480,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                         if(!outputted_line_stmt)
                         {
                             outputted_line_stmt = true;
-                            declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
+                            //declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
                             declbuf << "    const Value_t";
                         }
                         else
@@ -518,7 +525,8 @@ void CompileTest(const std::string& testname, FILE* fp)
                         //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                         const char* valuepos_1 = valuepos;
-                        CompileFunction(valuepos_1, funcname, declbuf1, codebuf1, false);
+                        CompileFunction(valuepos_1, funcname, declbuf1, codebuf1,
+                                        limited_to_datatype);
 
                         out <<
                             "template<typename Value_t>\n"
@@ -526,7 +534,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                             "{\n"
                             "    using namespace FUNCTIONPARSERTYPES;\n" <<
                             declbuf1.str();
-                        out << "#line " << linenumber << " \"" << testname << "\"\n";
+                        //out << "#line " << linenumber << " \"" << testname << "\"\n";
                         out <<
                             "    return " << codebuf1.str() << ";\n"
                             "}\n";
@@ -536,9 +544,9 @@ void CompileTest(const std::string& testname, FILE* fp)
                             "template<typename Value_t>\n"
                             "Value_t " << funcname << "(const Value_t* ) { }\n";
 
-                    (limited_to_section.empty()
+                    ((limited_to_datatype.empty() || limited_to_datatype == "double")
                         ? default_function_section
-                        : define_sections[limited_to_section]) += out.str();
+                        : define_sections[GetDefinesFor(limited_to_datatype)]) += out.str();
 
                     if(includes_mpfr)
                     {
@@ -546,7 +554,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                         declbuf2 << declbuf.str();
                         //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                        CompileFunction(valuepos, funcname, declbuf2, codebuf2, true);
+                        CompileFunction(valuepos, funcname, declbuf2, codebuf2, "MpfrFloat");
 
                         if(codebuf2.str().find("mflit") != codebuf2.str().npos
                         || unitype)
@@ -564,7 +572,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                                 "    typedef MpfrFloat Value_t;\n"
                                 "    using namespace FUNCTIONPARSERTYPES;\n" <<
                                 declbuf2.str();
-                            out2 << "#line " << linenumber << " \"" << testname << "\"\n";
+                            //out2 << "#line " << linenumber << " \"" << testname << "\"\n";
                             out2 <<
                                 "    return " << codebuf2.str() << ";\n"
                                 "}\n";

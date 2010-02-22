@@ -1625,7 +1625,7 @@ bool natcomp(const std::string& a, const std::string& b)
     size_t ap=0, bp=0;
     while(ap < a.size() && bp < b.size())
     {
-        if(a[ap] >= '0' && a[ap] <= '9' 
+        if(a[ap] >= '0' && a[ap] <= '9'
         && b[bp] >= '0' && b[bp] <= '9')
         {
             unsigned long aval = (a[ap++] - '0');
@@ -1636,7 +1636,7 @@ bool natcomp(const std::string& a, const std::string& b)
                 bval = bval*10ul + (b[bp++] - '0');
             if(aval != bval)
                 return aval < bval;
-        }   
+        }
         else
         {
             if(a[ap] != b[ap]) return a[ap] < b[ap];
