@@ -1,0 +1,6 @@
+# cExp2  x    [IsIntegerConst(x)] cPow -> [x] cMul cExp
+T=d
+V=x
+R=-10,10,0.1
+F=exp2(x)^1506
+C=fp_pow(fp_exp2(x),1506)
