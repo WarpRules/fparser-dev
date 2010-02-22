@@ -148,15 +148,6 @@ class MpfrFloat::MpfrFloatDataContainer
 //===========================================================================
 // Shared data
 //===========================================================================
-namespace
-{
-    std::vector<char>& mpfrFloatString()
-    {
-        static std::vector<char> str;
-        return str;
-    }
-}
-
 // This should ensure that the container is not accessed by any MpfrFloat
 // instance before it has been constructed or after it has been destroyed
 // (which might otherwise happen if MpfrFloat is instantiated globally.)
@@ -421,10 +412,10 @@ const char* MpfrFloat::getAsString(unsigned precision) const
         "[mpfr_snprintf() is not supported in mpfr versions prior to 2.4]";
     return retval;
 #else
-    mpfrFloatString().resize(precision+30);
-    mpfr_snprintf(&(mpfrFloatString()[0]), precision+30, "%.*RNg", precision,
-                  mData->mFloat);
-    return &(mpfrFloatString()[0]);
+    static std::vector<char> str;
+    str.resize(precision+30);
+    mpfr_snprintf(&(str[0]), precision+30, "%.*RNg", precision, mData->mFloat);
+    return &(str[0]);
 #endif
 }
 
@@ -700,7 +691,7 @@ MpfrFloat operator%(double lhs, const MpfrFloat& rhs)
 
 std::ostream& operator<<(std::ostream& os, const MpfrFloat& value)
 {
-    os << value.getAsString(os.precision());
+    os << value.getAsString(unsigned(os.precision()));
     return os;
 }
 

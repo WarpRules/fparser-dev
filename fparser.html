@@ -134,16 +134,25 @@ with preprocessor macros. See the <a href="#parsertypes">documentation
 below</a> for details.)
 
 <p>When compiling, you have to compile <code>fparser.cc</code> and
-<code>fpoptimizer.cc</code> and link them to the main program. In some
+<code>fpoptimizer.cc</code> and link them to the main program. In many
 developement environments it's enough to add those two files to your
 current project (usually header files don't have to be added to the
 project for the compilation to work).
 
 <p>If you are going to use the MPFR or the GMP versions of the library,
-you also need to include <code>mpfr/MpfrFloat.cc</code> or
-<code>mpfr/GmpInt.cc</code> files in your project, respectively.
+you also need to add <code>mpfr/MpfrFloat.cc</code> or
+<code>mpfr/GmpInt.cc</code> files to your project, respectively. Otherwise
+they should not be added to the project.
 
-<p>Simple usage example:
+<p>Note that part of the library source code is inside several
+<code>.inc</code> files (these files contain auto-generated C++ code),
+provided in the library package. These files are used by
+<code>fparser.cc</code> and don't need to be added explicitly to the
+project in most IDEs (such as Visual Studio). Basically, you don't need
+to do anything with these files, other than keep them in the same directory
+as <code>fparser.cc</code>.
+
+<p>Simple usage example of the library:
 
 <pre>
     FunctionParser fp;
