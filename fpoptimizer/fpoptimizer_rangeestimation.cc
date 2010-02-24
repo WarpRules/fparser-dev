@@ -54,29 +54,22 @@ namespace FPoptimizer_CodeTree
             {
                 /* cAbs always produces a positive value */
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min && m.has_max)
+                
+                bool spans_across_zero =
+                       (!m.has_min || m.min < 0.0)
+                    && (!m.has_max || m.max >= 0.0);
+                
+                if(m.has_min) m.min = fabs(m.min);
+                if(m.has_max) m.max = fabs(m.max);
+                
+                if(m.has_min && m.has_max && m.min > m.max)
+                    std::swap(m.min, m.max);
+                
+                if(spans_across_zero)
                 {
-                    if(m.min < 0.0 && m.max >= 0.0) // ex. -10..+6 or -6..+10
-                    {
-                        /* -x..+y: spans across zero. min=0, max=greater of |x| and |y|. */
-                        double tmp = -m.min; if(tmp > m.max) m.max = tmp;
-                        m.min = 0.0; m.has_min = true;
-                    }
-                    else if(m.min < 0.0) // ex. -10..-4
-                        { double tmp = m.max; m.max = -m.min; m.min = -tmp; }
-                }
-                else if(!m.has_min && m.has_max && m.max < 0.0) // ex. -inf..-10
-                {
-                    m.min = fabs(m.max); m.has_min = true; m.has_max = false;
-                }
-                else if(!m.has_max && m.has_min && m.min > 0.0) // ex. +10..+inf
-                {
-                    m.min = fabs(m.min); m.has_min = true; m.has_max = false;
-                }
-                else // ex. -inf..+inf, -inf..+10, -10..+inf
-                {
-                    // all of these cover -inf..0, 0..+inf, or both
-                    m.min = 0.0; m.has_min = true; m.has_max = false;
+                    if(!m.has_min) m.has_max = false;
+                    m.min     = 0.0;
+                    m.has_min = true;
                 }
                 return m;
             }
@@ -188,20 +181,20 @@ namespace FPoptimizer_CodeTree
             case cCeil:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.max = fp_ceil(m.max); // ceil() may increase the value, may not decrease
+                if(m.has_max) m.max = fp_ceil(m.max); // ceil() may increase the value, may not decrease
                 return m;
             }
             case cFloor:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.min = fp_floor(m.min); // floor() may decrease the value, may not increase
+                if(m.has_min) m.min = fp_floor(m.min); // floor() may decrease the value, may not increase
                 return m;
             }
             case cTrunc:
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                m.min = fp_floor(m.min); // trunc() may either increase or decrease the value
-                m.max = fp_ceil(m.max); // for safety, we assume both
+                if(m.has_min) m.min = fp_floor(m.min); // trunc() may either increase or decrease the value
+                if(m.has_max) m.max = fp_ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cInt:
@@ -214,15 +207,15 @@ namespace FPoptimizer_CodeTree
             case cSinh: /* defined for all values -inf <= x <= inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = sinh(m.min); // No boundaries
-                if(m.has_max) m.max = sinh(m.max);
+                if(m.has_min) m.min = fp_sinh(m.min); // No boundaries
+                if(m.has_max) m.max = fp_sinh(m.max);
                 return m;
             }
             case cTanh: /* defined for all values -inf <= x <= inf, results within -1..1 */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = tanh(m.min); else { m.has_min = true; m.min =-1.0; }
-                if(m.has_max) m.max = tanh(m.max); else { m.has_max = true; m.max = 1.0; }
+                if(m.has_min) m.min = fp_tanh(m.min); else { m.has_min = true; m.min =-1.0; }
+                if(m.has_max) m.max = fp_tanh(m.max); else { m.has_max = true; m.max = 1.0; }
                 return m;
             }
             case cCosh: /* defined for all values -inf <= x <= inf, results within 1..inf */

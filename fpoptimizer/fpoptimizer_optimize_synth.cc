@@ -56,9 +56,20 @@ namespace FPoptimizer_Optimize
                             || tree.GetOpcode() == cAbsAnd || tree.GetOpcode() == cAbsOr);
                         tree.Become(tree.GetParam(0));
                     }
+                    else if(tree.GetParamCount() == 0)
+                    {
+                        switch(tree.GetOpcode())
+                        {
+                            case cAdd: case cOr:
+                                tree = CodeTree(0.0);
+                                break;
+                            case cMul: case cAnd:
+                                tree = CodeTree(1.0);
+                            default: break;
+                        }
+                    }
                 }
-                if(inner)
-                    tree.Rehash();
+                if(inner) tree.Rehash();
                 break; }
         }
     }

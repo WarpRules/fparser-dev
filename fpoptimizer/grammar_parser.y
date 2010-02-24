@@ -1406,6 +1406,7 @@ static int yylex(YYSTYPE* lval)
                 case 'Q': { lval->index = Sign_NoIdea; return PARAM_CONSTRAINT; }
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
+                case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; }
             }
             std::ungetc(c2, stdin);
             return '@';
@@ -1565,6 +1566,16 @@ static int yylex(YYSTYPE* lval)
                     if(IdBuf == "MOD")
                     {
                         lval->opcode = FUNCTIONPARSERTYPES::cMod;
+                        return BUILTIN_FUNC_NAME;
+                    }
+                    if(IdBuf == "DIV")
+                    {
+                        lval->opcode = FUNCTIONPARSERTYPES::cDiv;
+                        return BUILTIN_FUNC_NAME;
+                    }
+                    if(IdBuf == "SUB")
+                    {
+                        lval->opcode = FUNCTIONPARSERTYPES::cSub;
                         return BUILTIN_FUNC_NAME;
                     }
 

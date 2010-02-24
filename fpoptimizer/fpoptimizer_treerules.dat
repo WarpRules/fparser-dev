@@ -48,6 +48,7 @@
 #                                 @Q  = Only those where positive/negative not known
 #                                 @1  = value evaluating to +1 or -1 only
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
+#                                 @C  = Const (x@C is similar to % and &)
 #                             # they can be applied to IMMEDHOLDER_TOKENs and NAMEDHOLDER_TOKENs
 # %token RULE_CONSTRAINT          @L  = Logical context only
 #                                       i.e. when the result of the tree will only
@@ -119,7 +120,17 @@ cIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 
 cIf [(cLess[x y]) x y] -> cMin x y
 cIf [(cLess[x y]) y x] -> cMax x y
-cIf [(cLess[0 x]) (cFloor[x]) (cCeil[x])] -> cTrunc x
+cIf [(cLessOrEq[x y]) x y] -> cMin x y
+cIf [(cLessOrEq[x y]) y x] -> cMax x y
+cIf [(cGreater[x y]) y x] -> cMin x y
+cIf [(cGreater[x y]) x y] -> cMax x y
+cIf [(cGreaterOrEq[x y]) y x] -> cMin x y
+cIf [(cGreaterOrEq[x y]) x y] -> cMax x y
+
+cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x
+cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x
+cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x
+cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x
 
 cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)])
 cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)])
@@ -197,12 +208,12 @@ cAbsNotNot (cMul %@N <1>) -> (cLessOrEq[(cMul <1>)    *(0.5 /%)])
 
 [SIMPLIFY_EQUATION]
 
-cLess        [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cGreater     [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cEqual       [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
-cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) +(& -%)
+cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cGreater     [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cEqual       [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
 
 cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
 cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
@@ -218,28 +229,28 @@ cGreaterOrEq [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 
-cLess        [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
-cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
-cGreater     [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
-cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) *(& /%)
-cLess        [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
-cLessOrEq    [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
-cGreater     [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
-cGreaterOrEq [(cMul %@N <1>) &]  : *(& /%) (cMul <1>)
-cEqual       [(cMul % <1>) &]  : (cMul <1>) *(& /%)
-cNEqual      [(cMul % <1>) &]  : (cMul <1>) *(& /%)
+cLess        [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
+cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
+cGreater     [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
+cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
+cLess        [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
+cLessOrEq    [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
+cGreater     [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
+cGreaterOrEq [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
+cEqual       [(cMul % <1>) &]  : (cMul <1>) DIV(& %)
+cNEqual      [(cMul % <1>) &]  : (cMul <1>) DIV(& %)
 
-cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
-cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
-cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
-cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> & /%) (cMul <1>)
+cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
+cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
+cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
+cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
 
-cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
-cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> & /%)
+cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
 
 #cLess        [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cLessOrEq    [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
@@ -273,12 +284,12 @@ cEqual       [(cPow [% x]) (cPow [% y])] : x y
 cNEqual      [(cPow [% x]) (cPow [% y])] : x y
 #  ^Note: This fails on exp(x)=exp(y) because of epsilon
 
-cLess        [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cLessOrEq    [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cGreater     [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cGreaterOrEq [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cEqual       [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
-cNEqual      [(cPow [%@P x]) &@P] : x *(LOG(&) /LOG(%))
+cLess        [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cLessOrEq    [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cGreater     [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cGreaterOrEq [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cEqual       [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cNEqual      [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
 
 [REMOVE_REDUNDANT]
 
