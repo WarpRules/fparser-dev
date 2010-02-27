@@ -302,11 +302,13 @@ release_clean:
 distclean: clean
 	rm -f	*~
 
+TESTBED_TEST_FILES = $(wildcard tests/*/*)
+testbed_tests.inc: $(TESTBED_TEST_FILES)
+
 .dep:
 	echo -n '' > .dep
 	- g++ -MM -MG $(CPPFLAGS) $(wildcard *.cc) >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
-	- echo "testbed_tests.inc: " `/bin/ls tests/*/*|grep -v '~'` >> .dep
 
 -include .dep
