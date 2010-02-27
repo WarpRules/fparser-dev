@@ -99,13 +99,17 @@ namespace
     unsigned readOpcodeForFloatType(const char* input)
     {
     /*
+     Assuming unsigned = 32 bits:
+        76543210 76543210 76543210 76543210
      Return value if built-in function:
-              16 lowest bits = function name length
-              15 next bits   = function opcode
-              1 bit (&0x80000000U) = indicates function
+        1PPPPPPP PPPPPPPP LLLLLLLL LLLLLLLL
+          P = function opcode      (15 bits)
+          L = function name length (16 bits)
      Return value if not built-in function:
-              31 lowest bits = function name length
-              other bits zero
+        0LLLLLLL LLLLLLLL LLLLLLLL LLLLLLLL
+          L = function name length (31 bits)
+     If unsigned has more than 32 bits, the other
+     higher order bits are to be assumed zero.
     */
 #include "fp_identifier_parser.inc"
         return 0;
