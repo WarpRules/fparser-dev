@@ -1921,6 +1921,29 @@ int main(int argc, char* argv[])
         else if(std::strcmp(argv[i], "-gi") == 0
              || std::strcmp(argv[i], "-gmpint") == 0)
             runAllTypes = false, run_gi = true;
+
+        else if(std::strcmp(argv[i], "--help") == 0
+             || std::strcmp(argv[i], "-help") == 0
+             || std::strcmp(argv[i], "-h") == 0
+             || std::strcmp(argv[i], "/?") == 0)
+        {
+            std::cout <<
+                "Usage: " << argv[0] << " [<option> ...]\n"
+                "\n"
+                "    -noUTF8Test       Skip UTF-8 testing\n"
+                "    -tests <tests>    Select tests to perform, wildcards ok\n"
+                "                      Example: -tests 'cmp*'\n"
+                "    -tests help       List available tests\n"
+                "    -d                Test double datatype\n"
+                "    -f                Test float datatype\n"
+                "    -ld               Test long double datatype\n"
+                "    -li               Test long int datatype\n"
+                "    -mf, -mpfr        Test mpfrFloat datatype\n"
+                "    -gi, -gmpint      Test gmpInt datatype\n"
+                "    -h, --help        This help\n"
+                "\n";
+            return 0;
+        }
     }
 
     if(selectedRegressionTests.empty())
