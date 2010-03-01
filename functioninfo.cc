@@ -856,6 +856,11 @@ int main(int argc, char* argv[])
             noTimingIfEqualityErrors = true;
         else if(std::strcmp(argv[i], "-deg") == 0)
             gUseDegrees = true;
+        else if(std::strcmp(argv[i], "--help") == 0
+             || std::strcmp(argv[i], "-help") == 0
+             || std::strcmp(argv[i], "-h") == 0
+             || std::strcmp(argv[i], "/?") == 0)
+            printHelp(argv[0]);
         else
             functionStrings.push_back(argv[i]);
     }

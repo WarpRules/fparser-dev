@@ -309,6 +309,21 @@ int main(int argc, char* argv[])
         if(std::strcmp(argv[1], "-html") == 0) gPrintHTML = true;
         else if(std::strcmp(argv[1], "-f") == 0) parserType = FP_F;
         else if(std::strcmp(argv[1], "-ld") == 0) parserType = FP_LD;
+        else if(std::strcmp(argv[i], "--help") == 0
+             || std::strcmp(argv[i], "-help") == 0
+             || std::strcmp(argv[i], "-h") == 0
+             || std::strcmp(argv[i], "/?") == 0)
+        {
+            std::cout <<
+                "Usage: " << argv[0] << " [<option> ...]\n"
+                "\n"
+                "    -f                Test float datatype\n"
+                "    -ld               Test long double datatype\n"
+                "    -html             Print output in html format\n"
+                "    -h, --help        This help\n"
+                "\n";
+            return 0;
+        }
     }
 
     switch(parserType)
