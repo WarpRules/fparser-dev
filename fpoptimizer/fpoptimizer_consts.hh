@@ -25,3 +25,4 @@
 #define CONSTANT_POS_INF     HUGE_VAL  // positive infinity, from math.h
 #define CONSTANT_NEG_INF   (-HUGE_VAL) // negative infinity
 #define CONSTANT_PIHALF (M_PI / 2)
+#define CONSTANT_TWOPI  (M_PI + M_PI)

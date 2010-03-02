@@ -134,11 +134,11 @@ namespace GrammarData
         {
         }
 
-        ParamSpec(double d)
+        ParamSpec(double d, unsigned constraints)
             : DepMask(),
               Opcode(NumConstant),
               ConstantValue(d),
-              ImmedConstraint(0),
+              ImmedConstraint(constraints),
               IsConst(true)
         {
         }
@@ -155,6 +155,7 @@ namespace GrammarData
                 delete Func;
                 Opcode        = NumConstant;
                 ConstantValue = -p[0]->ConstantValue;
+                ImmedConstraint = p[0]->ImmedConstraint;
             }
             else
             {
@@ -538,6 +539,7 @@ public:
             {
                 ParamSpec_NumConstant* result = new ParamSpec_NumConstant;
                 result->constvalue     = p.ConstantValue;
+                result->modulo         = p.ImmedConstraint;
                 return std::make_pair(NumConstant, (void*)result);
             }
             case ParamHolder:
@@ -716,6 +718,19 @@ public:
         if(!*sep) result << "0";
         return result.str();
     }
+    static std::string ModuloToString(unsigned constraints)
+    {
+        std::ostringstream result;
+        const char* sep = "";
+        static const char s[] = " | ";
+        switch( Modulo_Mode(constraints) )
+        {
+            case Modulo_None: break;
+            case Modulo_Radians: result << sep << "Modulo_Radians"; sep=s; break;
+        }
+        if(!*sep) result << "0";
+        return result.str();
+    }
 
     static std::string ConstValueToString(double value)
     {
@@ -739,6 +754,7 @@ public:
         else if_const(CONSTANT_DR)
         else if_const(CONSTANT_RD)
         else if_const(CONSTANT_PIHALF)
+        else if_const(CONSTANT_TWOPI)
         else if_const(FPOPT_NAN_CONST)
         #undef if_const
         else result << value;
@@ -785,6 +801,7 @@ public:
             const ParamSpec_NumConstant& a,
             const ParamSpec_NumConstant& b) const
         {
+            if(a.modulo != b.modulo) return a.modulo < b.modulo;
             return a.constvalue < b.constvalue;
         } };
         struct s_compare { bool operator() (
@@ -896,6 +913,7 @@ public:
         {
             std::ostringstream result;
             result << "{" << ConstValueToString(i.constvalue)
+                   << ", " << ModuloToString(i.modulo)
                    << "}";
             return result.str();
         }
@@ -1107,6 +1125,7 @@ static GrammarDumper dumper;
 %token <opcode>    OPCODE
 %token <opcode>    UNARY_TRANSFORMATION
 %token <index>     PARAM_CONSTRAINT
+%token <index>     CONST_CONSTRAINT
 %token NEWLINE
 
 %token SUBST_OP_COLON /* ':' */
@@ -1116,7 +1135,7 @@ static GrammarDumper dumper;
 %type <f> function function_match
 %type <p> paramlist
 %type <a> param
-%type <index> param_constraints
+%type <index> param_constraints const_constraints
 
 %%
     grammar:
@@ -1250,9 +1269,9 @@ static GrammarDumper dumper;
     ;
 
     param:
-       NUMERIC_CONSTANT         /* particular immed */
+       NUMERIC_CONSTANT const_constraints /* particular immed */
        {
-         $$ = new GrammarData::ParamSpec($1);
+         $$ = new GrammarData::ParamSpec($1, $2);
        }
     |  IMMEDHOLDER_TOKEN param_constraints  /* a placeholder for some immed */
        {
@@ -1296,6 +1315,17 @@ static GrammarDumper dumper;
 
     param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */
        param_constraints PARAM_CONSTRAINT
+       {
+         $$ = $1 | $2;
+       }
+    |  /* empty */
+       {
+         $$ = 0;
+       }
+    ;
+
+    const_constraints: /* List of possible constraints to the given param */
+       const_constraints CONST_CONSTRAINT
        {
          $$ = $1 | $2;
        }
@@ -1407,6 +1437,7 @@ static int yylex(YYSTYPE* lval)
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
                 case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; }
+                case 'R': { lval->index = Modulo_Radians; return CONST_CONSTRAINT; }
             }
             std::ungetc(c2, stdin);
             return '@';
@@ -1480,6 +1511,7 @@ static int yylex(YYSTYPE* lval)
             if(IdBuf == "CONSTANT_DR") { lval->num = CONSTANT_DR; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PI") { lval->num = CONSTANT_PI; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PIHALF") { lval->num = CONSTANT_PIHALF; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_TWOPI") { lval->num = CONSTANT_TWOPI; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2I") { lval->num = CONSTANT_L2I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10I") { lval->num = CONSTANT_L10I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2") { lval->num = CONSTANT_L2; return NUMERIC_CONSTANT; }
