@@ -17,6 +17,7 @@
 #include <cctype>
 #include <cmath>
 #include <cassert>
+#include <limits>
 using namespace std;
 
 #include "fptypes.hh"
@@ -271,7 +272,7 @@ namespace
     }
 #endif
 
-    static int testxdigit(unsigned c)
+    static inline int testxdigit(unsigned c)
     {
         if((c-'0') < 10u) return c&15; // 0..9
         if(((c|0x20)-'a') < 6u) return 9+(c&15); // A..F or a..f
@@ -279,7 +280,7 @@ namespace
     }
 
     template<typename elem_t, unsigned n_limbs, unsigned limb_bits>
-    static void AddXdigit(elem_t* buffer, unsigned nibble)
+    static inline void AddXdigit(elem_t* buffer, unsigned nibble)
     {
         for(unsigned p=0; p<n_limbs; ++p)
         {
@@ -289,14 +290,18 @@ namespace
         }
     }
 
-    template<typename ResultType>
-    ResultType parseHexLiteral(const char* str, char** endptr)
+    template<typename Value_t>
+    Value_t parseHexLiteral(const char* str, char** endptr)
     {
-        const int MantissaBits = sizeof(ResultType)*8-4;
+        const unsigned bits_per_char = 8;
+
+        const int MantissaBits =
+            std::numeric_limits<Value_t>::radix == 2
+            ? std::numeric_limits<Value_t>::digits
+            : (((sizeof(Value_t) * bits_per_char) &~ 3) - 4);
 
         typedef unsigned long elem_t;
         const int ExtraMantissaBits = 4 + ((MantissaBits+3)&~3); // Store one digit more for correct rounding
-        const unsigned bits_per_char = 8;
         const unsigned limb_bits = sizeof(elem_t) * bits_per_char;
         const unsigned n_limbs   = (ExtraMantissaBits + limb_bits-1) / limb_bits;
         elem_t mantissa_buffer[n_limbs] = { 0 };
@@ -361,11 +366,11 @@ namespace
 
         if(endptr) *endptr = (char*) str;
 
-        ResultType result = ldexp(ResultType(mantissa_buffer[0]), exponent);
+        Value_t result = ldexp(Value_t(mantissa_buffer[0]), exponent);
         for(size_t p=1; p<n_limbs; ++p)
         {
             exponent += limb_bits;
-            result += ldexp(ResultType(mantissa_buffer[p]), exponent);
+            result += ldexp(Value_t(mantissa_buffer[p]), exponent);
         }
         return result;
     }
