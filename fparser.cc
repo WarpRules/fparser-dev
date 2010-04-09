@@ -271,86 +271,81 @@ namespace
     }
 #endif
 
+    static int testxdigit(unsigned c)
+    {
+        if((c-'0') < 10u) return c&15; // 0..9
+        if(((c|0x20)-'a') < 6u) return 9+(c&15); // A..F or a..f
+        return -1; // Not a hex digit
+    }
+
+    template<typename elem_t, unsigned n_limbs, unsigned limb_bits>
+    static void AddXdigit(elem_t* buffer, unsigned nibble)
+    {
+        for(unsigned p=0; p<n_limbs; ++p)
+        {
+            unsigned carry = buffer[p] >> (elem_t)(limb_bits-4);
+            buffer[p] = (buffer[p] << 4) | nibble;
+            nibble = carry;
+        }
+    }
+
     template<typename ResultType>
     ResultType parseHexLiteral(const char* str, char** endptr)
     {
         const int MantissaBits = sizeof(ResultType)*8;
-        const int ExtraMantissaBits = MantissaBits + 4; // Store one digit more for correct rounding
-        const size_t bits_per_char = 8;
-        const size_t limb_bits = sizeof(size_t) * bits_per_char;
-        const size_t n_limbs   = (ExtraMantissaBits + limb_bits-1) / limb_bits;
-        size_t mantissa_buffer[n_limbs] = { 0 };
 
-#define AddXdigit(n)                                                    \
-        do {                                                            \
-            for(size_t p=n_limbs; p-- > 1; )                            \
-            {                                                           \
-                mantissa_buffer[p] <<= 4;                               \
-                mantissa_buffer[p] |=                                   \
-                    (mantissa_buffer[p-1] >> size_t(limb_bits-4));      \
-            }                                                           \
-            mantissa_buffer[0] <<= 4;                                   \
-            mantissa_buffer[0] |= n;                                    \
-        } while(0)
+        typedef unsigned long elem_t;
+        const int ExtraMantissaBits = 4 + ((MantissaBits+3)&~3); // Store one digit more for correct rounding
+        const unsigned bits_per_char = 8;
+        const unsigned limb_bits = sizeof(elem_t) * bits_per_char;
+        const unsigned n_limbs   = (ExtraMantissaBits + limb_bits-1) / limb_bits;
+        elem_t mantissa_buffer[n_limbs] = { 0 };
 
         int n_mantissa_bits = 0; // Track the number of bits
         int exponent = 0; // The exponent that will be used to multiply the mantissa
         // Read integer portion
         while(true)
         {
-            if(*str >= '0' && *str <= '9') AddXdigit( *str++ - '0' );
-            else if(*str >= 'A' && *str <= 'F') AddXdigit( *str++ + 10 - 'A' );
-            else if(*str >= 'a' && *str <= 'f') AddXdigit( *str++ + 10 - 'a' );
-            else break;
+            int xdigit = testxdigit(*str);
+            if(xdigit < 0) break;
+            AddXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
+            ++str;
+
             n_mantissa_bits += 4;
             if(n_mantissa_bits >= ExtraMantissaBits)
             {
                 // Exhausted the precision. Parse the rest (until exponent)
                 // normally but ignore the actual digits.
-                while(true)
-                {
-                    if(*str >= '0' && *str <= '9') ++str;
-                    else if(*str >= 'A' && *str <= 'F') ++str;
-                    else if(*str >= 'a' && *str <= 'f') ++str;
-                    else break;
+                for(; testxdigit(*str) >= 0; ++str)
                     exponent += 4;
-                }
                 // Read but ignore decimals
                 if(*str == '.')
-                {
-                    ++str;
-                read_decimals_ignore:
-                    while(true)
-                    {
-                        if(*str >= '0' && *str <= '9') ++str;
-                        else if(*str >= 'A' && *str <= 'F') ++str;
-                        else if(*str >= 'a' && *str <= 'f') ++str;
-                        else break;
-                    }
-                }
+                    for(++str; testxdigit(*str) >= 0; ++str)
+                        {}
                 goto read_exponent;
             }
         }
         // Read decimals
         if(*str == '.')
-        {
-            ++str;
-            while(true)
+            for(++str; ; )
             {
-                if(*str >= '0' && *str <= '9') AddXdigit( *str++ - '0' );
-                else if(*str >= 'A' && *str <= 'F') AddXdigit( *str++ + 10 - 'A' );
-                else if(*str >= 'a' && *str <= 'f') AddXdigit( *str++ + 10 - 'a' );
-                else break;
+                int xdigit = testxdigit(*str);
+                if(xdigit < 0) break;
+                AddXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
+                ++str;
+
                 exponent -= 4;
                 n_mantissa_bits += 4;
                 if(n_mantissa_bits >= ExtraMantissaBits)
                 {
                     // Exhausted the precision. Skip the rest
                     // of the decimals, until the exponent.
-                    goto read_decimals_ignore;
+                    while(testxdigit(*str) >= 0)
+                        ++str;
+                    break;
                 }
             }
-        }
+
         // Read exponent
     read_exponent:
         if(*str == 'p' || *str == 'P')
@@ -1346,6 +1341,18 @@ inline const char*
 FunctionParserBase<Value_t>::CompileLiteral(const char* function)
 {
     char* endptr;
+#if 0 /* Profile the hex literal parser */
+    if(function[0]=='0' && function[1]=='x')
+    {
+        // Parse hexadecimal literal if fp_parseLiteral didn't already
+        Value_t val = parseHexLiteral<Value_t>(function+2, &endptr);
+        if(endptr == function+2) return SetErrorType(SYNTAX_ERROR, function);
+        AddImmedOpcode(val);
+        incStackPtr();
+        SkipSpace(endptr);
+        return endptr;
+    }
+#endif
     Value_t val = fp_parseLiteral<Value_t>(function, &endptr);
 
     if(endptr == function+1 && function[0] == '0' && function[1] == 'x')
