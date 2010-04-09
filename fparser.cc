@@ -367,7 +367,7 @@ namespace
         if(endptr) *endptr = (char*) str;
 
         Value_t result = ldexp(Value_t(mantissa_buffer[0]), exponent);
-        for(size_t p=1; p<n_limbs; ++p)
+        for(unsigned p=1; p<n_limbs; ++p)
         {
             exponent += limb_bits;
             result += ldexp(Value_t(mantissa_buffer[p]), exponent);
