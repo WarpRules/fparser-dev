@@ -292,7 +292,7 @@ namespace
     template<typename ResultType>
     ResultType parseHexLiteral(const char* str, char** endptr)
     {
-        const int MantissaBits = sizeof(ResultType)*8;
+        const int MantissaBits = sizeof(ResultType)*8-4;
 
         typedef unsigned long elem_t;
         const int ExtraMantissaBits = 4 + ((MantissaBits+3)&~3); // Store one digit more for correct rounding
