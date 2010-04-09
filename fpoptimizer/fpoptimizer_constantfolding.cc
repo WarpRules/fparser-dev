@@ -2089,6 +2089,8 @@ namespace FPoptimizer_CodeTree
             case cMin:
             {
                 ConstantFolding_Assimilate();
+                if(GetParam(0).IsIdenticalTo(GetParam(1)))
+                    goto ReplaceTreeWithParam0;
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -2128,6 +2130,8 @@ namespace FPoptimizer_CodeTree
             case cMax:
             {
                 ConstantFolding_Assimilate();
+                if(GetParam(0).IsIdenticalTo(GetParam(1)))
+                    goto ReplaceTreeWithParam0;
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -2410,13 +2414,21 @@ namespace FPoptimizer_CodeTree
             case cSin: HANDLE_UNARY_CONST_FUNC(fp_sin); break;
             case cCos: HANDLE_UNARY_CONST_FUNC(fp_cos); break;
             case cTan: HANDLE_UNARY_CONST_FUNC(fp_tan); break;
-            case cCeil: HANDLE_UNARY_CONST_FUNC(fp_ceil); break;
-            case cTrunc: HANDLE_UNARY_CONST_FUNC(fp_trunc); break;
-            case cFloor: HANDLE_UNARY_CONST_FUNC(fp_floor); break;
+            case cCeil:
+                if(GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                HANDLE_UNARY_CONST_FUNC(fp_ceil); break;
+            case cTrunc:
+                if(GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                HANDLE_UNARY_CONST_FUNC(fp_trunc); break;
+            case cFloor:
+                if(GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                HANDLE_UNARY_CONST_FUNC(fp_floor); break;
+            case cInt:
+                if(GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                HANDLE_UNARY_CONST_FUNC(fp_int); break;
             case cCbrt: HANDLE_UNARY_CONST_FUNC(fp_cbrt); break; // converted into cPow x 0.33333
             case cSqrt: HANDLE_UNARY_CONST_FUNC(fp_sqrt); break; // converted into cPow x 0.5
             case cExp: HANDLE_UNARY_CONST_FUNC(fp_exp); break; // convered into cPow CONSTANT_E x
-            case cInt: HANDLE_UNARY_CONST_FUNC(fp_int); break;
             case cLog2: HANDLE_UNARY_CONST_FUNC(fp_log2); break;
             case cLog10: HANDLE_UNARY_CONST_FUNC(fp_log10); break;
 

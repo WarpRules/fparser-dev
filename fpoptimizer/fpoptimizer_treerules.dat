@@ -49,6 +49,8 @@
 #                                 @1  = value evaluating to +1 or -1 only
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
 #                                 @C  = Const (x@C is similar to % and &)
+# %token CONST_CONSTRAINT     # constraint applicable to a numeric literal:
+#                                 @R  = Radians: Constant is tested after normalizing to -pi/2..pi/2 range
 #                             # they can be applied to IMMEDHOLDER_TOKENs and NAMEDHOLDER_TOKENs
 # %token RULE_CONSTRAINT          @L  = Logical context only
 #                                       i.e. when the result of the tree will only
@@ -96,7 +98,7 @@
 #     ;
 #
 #     param:
-#        NUMERIC_CONSTANT                     /* particular immed */
+#        NUMERIC_CONSTANT const_constraints   /* particular immed */
 #     |  IMMEDHOLDER_TOKEN param_constraints  /* a placeholder for some immed */
 #     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
 #     |  NAMEDHOLDER_TOKEN param_constraints  /* any expression, indicated by "x", "a" etc. */
@@ -106,6 +108,11 @@
 #
 #     param_constraints: /* List of possible constraints to the given param, eg. odd,int,etc */
 #        param_constraints PARAM_CONSTRAINT
+#     |  /* empty */
+#     ;
+#
+#     const_constraints: /* List of possible constraints to the given numeric value */
+#        const_constraints CONST_CONSTRAINT
 #     |  /* empty */
 #     ;
 
@@ -293,17 +300,7 @@ cNEqual      [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
 
 [REMOVE_REDUNDANT]
 
-# In a min-list, two identical components are reduced into one
-cMin x x    : x
-# In a max-list, two identical components are reduced into one
-cMax x x    : x
-
 cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
-
-cFloor [x@I] -> x
-cInt   [x@I] -> x
-cTrunc [x@I] -> x
-cCeil  [x@I] -> x
 
 [EXTRACT1]
 
@@ -511,15 +508,26 @@ cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
 cCos [(cMul -1 <1>)] : (cMul <1>)
 cCos [(cAbs [x])] : x
 
-
 # cos(pi/2 - x) = sin(x)
-cCos [(cAdd {CONSTANT_PIHALF (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]
+cCos [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]
 # sin(pi/2 - x) = cos(x)
-cSin [(cAdd {CONSTANT_PIHALF (cMul %@N <1>)})] -> cCos[(cMul -% <1>)]
+cSin [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cCos[(cMul -% <1>)]
 # cos(x - pi/2) = cos(pi/2 - x) = sin(x)
-cCos [(cAdd -CONSTANT_PIHALF <1>)]            -> cSin[(cAdd <1>)]
+cCos [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cSin[(cAdd <1>)]
 # sin(x - pi/2) = -sin(pi/2 - x) = -cos(x)
-cSin [(cAdd -CONSTANT_PIHALF <1>)]            -> cMul -1 (cCos[(cAdd <1>)])
+cSin [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cMul -1 (cCos[(cAdd <1>)])
+# sin(x + pi/2) = cos(x)
+cSin [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cCos[(cAdd <1>)]
+# cos(x + pi/2) = sin(-x)
+cCos [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cSin[(cMul -1 (cAdd <1>))]
+# sin(x + pi) = -sin(x)
+cSin [(cAdd  CONSTANT_PI@R <1>)]                -> cMul -1 (cSin[(cAdd <1>)])
+# cos(x + pi) = -cos(x)
+cCos [(cAdd  CONSTANT_PI@R    <1>)]             -> cMul -1 (cCos[(cAdd <1>)])
+# 
+cCos [(cAdd 0@R <1>)]             -> cCos[(cAdd <1>)]
+cSin [(cAdd 0@R <1>)]             -> cSin[(cAdd <1>)]
+
 
 # sin(x)^2 + cos(x)^2 = 1
 cAdd  (cPow[ (cSin[x]) 2]) (cPow [(cCos[x]) 2]) : 1
@@ -610,10 +618,10 @@ cMul -1 (cTan [(cMul %@N <1>)]) : (cTan [(cMul -% <1>)])
 #                   tan(pi/2 - x) = 1/tan(x)
 #                      reverse is probably better
 #                      but cot() isn't exactly bad, so keep it
-#cPow [(cTan[x]) -1] -> cTan [(cAdd [CONSTANT_PIHALF (cMul [-1 x])])]
+#cPow [(cTan[x]) -1] -> cTan [(cAdd [CONSTANT_PIHALF@R (cMul [-1 x])])]
 
-cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul {-1 x})})]) (cTan [x]) : 1
-cMul (cTan [(cAdd {CONSTANT_PIHALF (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
+cMul (cTan [(cAdd {CONSTANT_PIHALF@R (cMul {-1 x})})]) (cTan [x]) : 1
+cMul (cTan [(cAdd {CONSTANT_PIHALF@R (cMul -1 <1>)})]) (cTan [(cMul <1>)]) : 1
 
 # tan(atan(x)) = x
 cTan [(cAtan [x])] -> x

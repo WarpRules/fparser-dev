@@ -46,6 +46,11 @@ namespace FPoptimizer_Grammar
         Constness_Any    = 0x00,
         Constness_Const  = 0x80
     };
+    enum Modulo_Mode
+    {
+        Modulo_None    = 0,
+        Modulo_Radians = 1
+    };
 
     /* The param_opcode field of the ParamSpec has the following
      * possible values (from enum SpecialOpcode):
@@ -94,7 +99,7 @@ namespace FPoptimizer_Grammar
 # define PACKED_GRAMMAR_ATTRIBUTE
 #endif
 
-    enum { PARAM_INDEX_BITS = 9 };
+    enum { PARAM_INDEX_BITS = 10 };
 
     /* A ParamSpec object describes
      * either a parameter (leaf, node) that must be matched,
@@ -114,7 +119,8 @@ namespace FPoptimizer_Grammar
 
     struct ParamSpec_NumConstant
     {
-        double constvalue;        // the value
+        double      constvalue;        // the value
+        unsigned    modulo;            // modulo mode
     } PACKED_GRAMMAR_ATTRIBUTE;
 
     struct ParamSpec_SubFunctionData
@@ -186,12 +192,12 @@ namespace FPoptimizer_Grammar
         bool      logical_context  : 1;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
-        unsigned  repl_param_count : 2; /* Assumed to be 1 when type == ProduceNewTree */
-        unsigned  repl_param_list  : 27;
+        unsigned  repl_param_count : 2+13; /* Assumed to be 1 when type == ProduceNewTree */
+        unsigned  repl_param_list  : 30;
 
         /* The function that we must match. Always a SubFunction. */
         ParamSpec_SubFunctionData match_tree;
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+1+2+27 + 48 = 80 bits = 10 bytes
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+1+13+2+30 + 48 = 96 bits = 12 bytes
 
     /* Grammar is a set of rules for tree substitutions. */
     struct Grammar

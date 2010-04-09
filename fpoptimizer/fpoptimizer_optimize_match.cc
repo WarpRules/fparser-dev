@@ -316,7 +316,19 @@ namespace FPoptimizer_Optimize
             {
                 const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
                 if(!tree.IsImmed()) return false;
-                return FloatEqual(tree.GetImmed(), param.constvalue);
+                double imm = tree.GetImmed();
+                switch(param.modulo)
+                {
+                    case Modulo_None: break;
+                    case Modulo_Radians:
+                        imm = fp_mod(imm, fp_const_pi<double>()*2.0);
+                        if(imm < 0)
+                            imm += fp_const_pi<double>()*2.0;
+                        if(imm > fp_const_pi<double>())
+                            imm -= fp_const_pi<double>()*2.0;
+                        break;
+                }
+                return FloatEqual(imm, param.constvalue);
             }
             case ParamHolder: /* Any arbitrary node */
             {

@@ -112,31 +112,36 @@ namespace FPoptimizer_CodeTree
                 if(m.has_max) m.max = fp_asinh(m.max);
                 return m;
             }
-            case cAtanh: /* defined for all values -inf <= x <= inf */
+            case cAtanh: /* defined for -1.0 <= x < 1, results within -inf..+inf */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = fp_atanh(m.min); // No boundaries
+                /* Assuming that x is never outside valid limits */
+                if(m.has_min) m.min = fp_atanh(m.min);
                 if(m.has_max) m.max = fp_atanh(m.max);
                 return m;
             }
             case cAcos: /* defined for -1.0 <= x < 1, results within CONSTANT_PI..0 */
             {
-                /* Somewhat complicated to narrow down from this */
-                /* TODO: A resourceful programmer may add it later. */
-                return MinMaxTree( 0.0, CONSTANT_PI );
+                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                /* Assuming that x is never outside valid limits */
+                return MinMaxTree(
+                    m.has_max ? fp_acos(m.max) : 0.0,
+                    m.has_min ? fp_acos(m.min) : CONSTANT_PI);
             }
             case cAsin: /* defined for -1.0 <= x < 1, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
-                /* Somewhat complicated to narrow down from this */
-                /* TODO: A resourceful programmer may add it later. */
-                return MinMaxTree( -CONSTANT_PIHALF, CONSTANT_PIHALF );
+                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                /* Assuming that x is never outside valid limits */
+                return MinMaxTree(
+                    m.has_min ? fp_asin(m.min) : -CONSTANT_PIHALF,
+                    m.has_max ? fp_asin(m.max) :  CONSTANT_PIHALF);
             }
-            case cAtan: /* defined for all values -inf <= x <= inf */
+            case cAtan: /* defined for all values -inf <= x <= inf, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = fp_atan(m.min); else { m.min = -CONSTANT_PIHALF; m.has_min = true; }
-                if(m.has_max) m.max = fp_atan(m.max); else { m.max =  CONSTANT_PIHALF; m.has_max = true; }
-                return m;
+                return MinMaxTree(
+                    m.has_min ? fp_atan(m.min) : -CONSTANT_PIHALF,
+                    m.has_max ? fp_atan(m.max) :  CONSTANT_PIHALF);
             }
             case cAtan2: /* too complicated to estimate */
             {
@@ -161,12 +166,32 @@ namespace FPoptimizer_CodeTree
             }
 
             case cSin:
+            {
+                /* Quite difficult to estimate due to the cyclic nature of the function. */
+                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                bool covers_full_cycle
+                    = !m.has_min || !m.has_max
+                    || (m.max - m.min) >= (2.0*CONSTANT_PI);
+                if(covers_full_cycle)
+                    return MinMaxTree(-1.0, 1.0);
+                double min = fmod(m.min, 2.0*CONSTANT_PI); if(min<0) min+=2.0*CONSTANT_PI;
+                double max = fmod(m.max, 2.0*CONSTANT_PI); if(max<0) max+=2.0*CONSTANT_PI;                
+                if(max < min) max += 2.0*CONSTANT_PI;
+                bool covers_plus1  = (min <= CONSTANT_PIHALF && max >= CONSTANT_PIHALF);
+                bool covers_minus1 = (min <= 1.5*CONSTANT_PI && max >= 1.5*CONSTANT_PI);
+                if(covers_plus1 && covers_minus1)
+                    return MinMaxTree(-1.0, 1.0);
+                if(covers_minus1)
+                    return MinMaxTree(-1.0, fp_max(fp_sin(min), fp_sin(max)));
+                if(covers_plus1)
+                    return MinMaxTree(fp_min(fp_sin(min), fp_sin(max)), 1.0);
+                return MinMaxTree(fp_min(fp_sin(min), fp_sin(max)),
+                                  fp_max(fp_sin(min), fp_sin(max)));
+            }
             case cCos:
             {
-                /* Could be narrowed down from here,
-                 * but it's too complicated due to
-                 * the cyclic nature of the function. */
-                /* TODO: A resourceful programmer may add it later. */
+                /* Quite difficult to estimate due to the cyclic nature of the function. */
+                /* cos(x) = sin(pi/2 - x) = sin(x + pi/2) */
                 return MinMaxTree(-1.0, 1.0);
             }
             case cTan:

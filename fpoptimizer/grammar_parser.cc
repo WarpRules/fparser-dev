@@ -205,11 +205,11 @@ namespace GrammarData
         {
         }
 
-        ParamSpec(double d)
+        ParamSpec(double d, unsigned constraints)
             : DepMask(),
               Opcode(NumConstant),
               ConstantValue(d),
-              ImmedConstraint(0),
+              ImmedConstraint(constraints),
               IsConst(true)
         {
         }
@@ -226,6 +226,7 @@ namespace GrammarData
                 delete Func;
                 Opcode        = NumConstant;
                 ConstantValue = -p[0]->ConstantValue;
+                ImmedConstraint = p[0]->ImmedConstraint;
             }
             else
             {
@@ -609,6 +610,7 @@ public:
             {
                 ParamSpec_NumConstant* result = new ParamSpec_NumConstant;
                 result->constvalue     = p.ConstantValue;
+                result->modulo         = p.ImmedConstraint;
                 return std::make_pair(NumConstant, (void*)result);
             }
             case ParamHolder:
@@ -787,6 +789,19 @@ public:
         if(!*sep) result << "0";
         return result.str();
     }
+    static std::string ModuloToString(unsigned constraints)
+    {
+        std::ostringstream result;
+        const char* sep = "";
+        static const char s[] = " | ";
+        switch( Modulo_Mode(constraints) )
+        {
+            case Modulo_None: break;
+            case Modulo_Radians: result << sep << "Modulo_Radians"; sep=s; break;
+        }
+        if(!*sep) result << "0";
+        return result.str();
+    }
 
     static std::string ConstValueToString(double value)
     {
@@ -810,6 +825,7 @@ public:
         else if_const(CONSTANT_DR)
         else if_const(CONSTANT_RD)
         else if_const(CONSTANT_PIHALF)
+        else if_const(CONSTANT_TWOPI)
         else if_const(FPOPT_NAN_CONST)
         #undef if_const
         else result << value;
@@ -856,6 +872,7 @@ public:
             const ParamSpec_NumConstant& a,
             const ParamSpec_NumConstant& b) const
         {
+            if(a.modulo != b.modulo) return a.modulo < b.modulo;
             return a.constvalue < b.constvalue;
         } };
         struct s_compare { bool operator() (
@@ -967,6 +984,7 @@ public:
         {
             std::ostringstream result;
             result << "{" << ConstValueToString(i.constvalue)
+                   << ", " << ModuloToString(i.modulo)
                    << "}";
             return result.str();
         }
@@ -1153,7 +1171,7 @@ static GrammarDumper dumper;
 
 
 /* Line 189 of yacc.c  */
-#line 1157 "fpoptimizer/grammar_parser.cc"
+#line 1175 "fpoptimizer/grammar_parser.cc"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -1188,9 +1206,10 @@ static GrammarDumper dumper;
      OPCODE = 263,
      UNARY_TRANSFORMATION = 264,
      PARAM_CONSTRAINT = 265,
-     NEWLINE = 266,
-     SUBST_OP_COLON = 267,
-     SUBST_OP_ARROW = 268
+     CONST_CONSTRAINT = 266,
+     NEWLINE = 267,
+     SUBST_OP_COLON = 268,
+     SUBST_OP_ARROW = 269
    };
 #endif
 
@@ -1201,7 +1220,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 1086 "fpoptimizer/grammar_parser.y"
+#line 1104 "fpoptimizer/grammar_parser.y"
 
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1219,7 +1238,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 1223 "fpoptimizer/grammar_parser.cc"
+#line 1242 "fpoptimizer/grammar_parser.cc"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -1231,7 +1250,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 1235 "fpoptimizer/grammar_parser.cc"
+#line 1254 "fpoptimizer/grammar_parser.cc"
 
 #ifdef short
 # undef short
@@ -1446,20 +1465,20 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  2
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   87
+#define YYLAST   81
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  20
+#define YYNTOKENS  21
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  8
+#define YYNNTS  9
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  23
+#define YYNRULES  25
 /* YYNRULES -- Number of states.  */
-#define YYNSTATES  43
+#define YYNSTATES  45
 
 /* YYTRANSLATE(YYLEX) -- Bison symbol number corresponding to YYLEX.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   268
+#define YYMAXUTOK   269
 
 #define YYTRANSLATE(YYX)						\
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -1471,15 +1490,15 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-      18,    19,     2,     2,     2,     2,     2,     2,     2,     2,
+      19,    20,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,    14,     2,    15,     2,     2,     2,     2,     2,     2,
+       2,    15,     2,    16,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
-       2,     2,     2,    16,     2,    17,     2,     2,     2,     2,
+       2,     2,     2,    17,     2,    18,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1493,7 +1512,7 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    12,    13
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14
 };
 
 #if YYDEBUG
@@ -1502,29 +1521,30 @@ static const yytype_uint8 yytranslate[] =
 static const yytype_uint8 yyprhs[] =
 {
        0,     0,     3,     6,    10,    13,    14,    19,    24,    29,
-      31,    36,    41,    44,    47,    50,    51,    53,    56,    61,
-      64,    69,    72,    75
+      31,    36,    41,    44,    47,    50,    51,    54,    57,    62,
+      65,    70,    73,    76,    77,    80
 };
 
 /* YYRHS -- A `-1'-separated list of the rules' RHS.  */
 static const yytype_int8 yyrhs[] =
 {
-      21,     0,    -1,    21,    22,    -1,    21,    27,    22,    -1,
-      21,    11,    -1,    -1,    23,    13,    26,    11,    -1,    23,
-      13,    24,    11,    -1,    23,    12,    25,    11,    -1,    24,
-      -1,     8,    14,    25,    15,    -1,     8,    16,    25,    17,
-      -1,     8,    25,    -1,    25,    26,    -1,    25,     5,    -1,
-      -1,     3,    -1,     6,    27,    -1,     7,    18,    25,    19,
-      -1,     4,    27,    -1,    18,    24,    19,    27,    -1,     9,
-      26,    -1,    27,    10,    -1,    -1
+      22,     0,    -1,    22,    23,    -1,    22,    28,    23,    -1,
+      22,    12,    -1,    -1,    24,    14,    27,    12,    -1,    24,
+      14,    25,    12,    -1,    24,    13,    26,    12,    -1,    25,
+      -1,     8,    15,    26,    16,    -1,     8,    17,    26,    18,
+      -1,     8,    26,    -1,    26,    27,    -1,    26,     5,    -1,
+      -1,     3,    29,    -1,     6,    28,    -1,     7,    19,    26,
+      20,    -1,     4,    28,    -1,    19,    25,    20,    28,    -1,
+       9,    27,    -1,    28,    10,    -1,    -1,    29,    11,    -1,
+      -1
 };
 
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,  1123,  1123,  1128,  1140,  1141,  1145,  1154,  1172,  1194,
-    1206,  1214,  1222,  1232,  1236,  1247,  1253,  1257,  1262,  1273,
-    1278,  1283,  1298,  1303
+       0,  1142,  1142,  1147,  1159,  1160,  1164,  1173,  1191,  1213,
+    1225,  1233,  1241,  1251,  1255,  1266,  1272,  1276,  1281,  1292,
+    1297,  1302,  1317,  1322,  1328,  1333
 };
 #endif
 
@@ -1535,10 +1555,11 @@ static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "NUMERIC_CONSTANT", "NAMEDHOLDER_TOKEN",
   "RESTHOLDER_TOKEN", "IMMEDHOLDER_TOKEN", "BUILTIN_FUNC_NAME", "OPCODE",
-  "UNARY_TRANSFORMATION", "PARAM_CONSTRAINT", "NEWLINE", "SUBST_OP_COLON",
-  "SUBST_OP_ARROW", "'['", "']'", "'{'", "'}'", "'('", "')'", "$accept",
-  "grammar", "substitution", "function_match", "function", "paramlist",
-  "param", "param_constraints", 0
+  "UNARY_TRANSFORMATION", "PARAM_CONSTRAINT", "CONST_CONSTRAINT",
+  "NEWLINE", "SUBST_OP_COLON", "SUBST_OP_ARROW", "'['", "']'", "'{'",
+  "'}'", "'('", "')'", "$accept", "grammar", "substitution",
+  "function_match", "function", "paramlist", "param", "param_constraints",
+  "const_constraints", 0
 };
 #endif
 
@@ -1548,24 +1569,25 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,    91,    93,   123,   125,    40,    41
+     265,   266,   267,   268,   269,    91,    93,   123,   125,    40,
+      41
 };
 # endif
 
 /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    20,    21,    21,    21,    21,    22,    22,    22,    23,
-      24,    24,    24,    25,    25,    25,    26,    26,    26,    26,
-      26,    26,    27,    27
+       0,    21,    22,    22,    22,    22,    23,    23,    23,    24,
+      25,    25,    25,    26,    26,    26,    27,    27,    27,    27,
+      27,    27,    28,    28,    29,    29
 };
 
 /* YYR2[YYN] -- Number of symbols composing right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
        0,     2,     2,     3,     2,     0,     4,     4,     4,     1,
-       4,     4,     2,     2,     2,     0,     1,     2,     4,     2,
-       4,     2,     2,     0
+       4,     4,     2,     2,     2,     0,     2,     2,     4,     2,
+       4,     2,     2,     0,     2,     0
 };
 
 /* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
@@ -1574,34 +1596,34 @@ static const yytype_uint8 yyr2[] =
 static const yytype_uint8 yydefact[] =
 {
        5,    23,     1,    15,     4,     2,     0,     9,     0,    15,
-      15,    12,    15,     0,    22,     3,     0,     0,    16,    23,
+      15,    12,    15,     0,    22,     3,     0,     0,    25,    23,
       14,    23,     0,     0,     0,    13,     0,     0,     0,    10,
-      11,    19,    17,    15,    21,     0,     8,     7,     6,     0,
-      23,    18,    20
+      11,    16,    19,    17,    15,    21,     0,     8,     7,     6,
+      24,     0,    23,    18,    20
 };
 
 /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     1,     5,     6,     7,    11,    25,     8
+      -1,     1,     5,     6,     7,    11,    25,     8,    31
 };
 
 /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
    STATE-NUM.  */
-#define YYPACT_NINF -18
+#define YYPACT_NINF -16
 static const yytype_int8 yypact[] =
 {
-     -18,    71,   -18,    20,   -18,   -18,    29,   -18,    30,   -18,
-     -18,    52,   -18,    59,   -18,   -18,    10,    26,   -18,   -18,
-     -18,   -18,    -8,    69,    19,   -18,    42,     7,    28,   -18,
-     -18,    40,    40,   -18,   -18,    33,   -18,   -18,   -18,     2,
-     -18,   -18,    40
+     -16,    14,   -16,    58,   -16,   -16,    16,   -16,    68,   -16,
+     -16,    48,   -16,    55,   -16,   -16,    12,    29,   -16,   -16,
+     -16,   -16,   -14,    62,    52,   -16,    37,     8,    25,   -16,
+     -16,    34,    60,    60,   -16,   -16,    57,   -16,   -16,   -16,
+     -16,     4,   -16,   -16,    60
 };
 
 /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -18,   -18,    46,   -18,    13,    -9,    -1,   -17
+     -16,   -16,    64,   -16,    26,    -9,   -11,   -15,   -16
 };
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
@@ -1611,39 +1633,39 @@ static const yytype_int8 yypgoto[] =
 #define YYTABLE_NINF -1
 static const yytype_uint8 yytable[] =
 {
-      16,    17,    31,    26,    32,    18,    19,    20,    21,    22,
-      33,    23,    28,    18,    19,    20,    21,    22,    37,    23,
-      24,    41,    34,    42,    39,    29,    27,     3,    24,    18,
-      19,    20,    21,    22,     9,    23,    10,    35,     3,    38,
-      14,    12,    13,    30,    24,    18,    19,    20,    21,    22,
-      14,    23,    40,    36,    15,    18,    19,    20,    21,    22,
-      24,    23,    18,    19,     0,    21,    22,     3,    23,     0,
-      24,     2,    18,    19,     0,    21,    22,    24,    23,     3,
-       0,     0,     4,     0,     0,     0,     0,    24
+      16,    17,    28,    26,    32,    34,    33,    18,    19,    20,
+      21,    22,    35,    23,     2,    18,    19,    20,    21,    22,
+      38,    23,     3,    24,    43,    41,     4,    44,    29,    12,
+      13,    24,    18,    19,    20,    21,    22,    39,    23,    27,
+      18,    19,    20,    21,    22,    40,    23,    30,    24,    37,
+      36,    18,    19,    20,    21,    22,    24,    23,    18,    19,
+       3,    21,    22,     3,    23,    18,    19,    24,    21,    22,
+      14,    23,    15,     9,    24,    10,     3,    42,    14,     0,
+       0,    24
 };
 
 static const yytype_int8 yycheck[] =
 {
-       9,    10,    19,    12,    21,     3,     4,     5,     6,     7,
-      18,     9,    13,     3,     4,     5,     6,     7,    11,     9,
-      18,    19,    23,    40,    33,    15,    13,     8,    18,     3,
-       4,     5,     6,     7,    14,     9,    16,    24,     8,    11,
-      10,    12,    13,    17,    18,     3,     4,     5,     6,     7,
-      10,     9,    19,    11,     8,     3,     4,     5,     6,     7,
-      18,     9,     3,     4,    -1,     6,     7,     8,     9,    -1,
-      18,     0,     3,     4,    -1,     6,     7,    18,     9,     8,
-      -1,    -1,    11,    -1,    -1,    -1,    -1,    18
+       9,    10,    13,    12,    19,    19,    21,     3,     4,     5,
+       6,     7,    23,     9,     0,     3,     4,     5,     6,     7,
+      12,     9,     8,    19,    20,    34,    12,    42,    16,    13,
+      14,    19,     3,     4,     5,     6,     7,    12,     9,    13,
+       3,     4,     5,     6,     7,    11,     9,    18,    19,    12,
+      24,     3,     4,     5,     6,     7,    19,     9,     3,     4,
+       8,     6,     7,     8,     9,     3,     4,    19,     6,     7,
+      10,     9,     8,    15,    19,    17,     8,    20,    10,    -1,
+      -1,    19
 };
 
 /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
    symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,    21,     0,     8,    11,    22,    23,    24,    27,    14,
-      16,    25,    12,    13,    10,    22,    25,    25,     3,     4,
-       5,     6,     7,     9,    18,    26,    25,    24,    26,    15,
-      17,    27,    27,    18,    26,    24,    11,    11,    11,    25,
-      19,    19,    27
+       0,    22,     0,     8,    12,    23,    24,    25,    28,    15,
+      17,    26,    13,    14,    10,    23,    26,    26,     3,     4,
+       5,     6,     7,     9,    19,    27,    26,    25,    27,    16,
+      18,    29,    28,    28,    19,    27,    25,    12,    12,    12,
+      11,    26,    20,    20,    28
 };
 
 #define yyerrok		(yyerrstatus = 0)
@@ -2456,7 +2478,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 1124 "fpoptimizer/grammar_parser.y"
+#line 1143 "fpoptimizer/grammar_parser.y"
     {
         grammar.AddRule(*(yyvsp[(2) - (2)].r));
         delete (yyvsp[(2) - (2)].r);
@@ -2466,7 +2488,7 @@ yyreduce:
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 1129 "fpoptimizer/grammar_parser.y"
+#line 1148 "fpoptimizer/grammar_parser.y"
     {
         if((yyvsp[(2) - (3)].index) != Value_Logical)
         {
@@ -2483,7 +2505,7 @@ yyreduce:
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 1147 "fpoptimizer/grammar_parser.y"
+#line 1166 "fpoptimizer/grammar_parser.y"
     {
         (yyvsp[(3) - (4)].a)->RecursivelySetDefaultParamMatchingType();
 
@@ -2495,7 +2517,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 1157 "fpoptimizer/grammar_parser.y"
+#line 1176 "fpoptimizer/grammar_parser.y"
     {
         GrammarData::ParamSpec* p = new GrammarData::ParamSpec((yyvsp[(3) - (4)].f));
         p->RecursivelySetDefaultParamMatchingType();
@@ -2515,7 +2537,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 1174 "fpoptimizer/grammar_parser.y"
+#line 1193 "fpoptimizer/grammar_parser.y"
     {
         /*if($1->Params.RestHolderIndex != 0)
         {
@@ -2538,7 +2560,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 1195 "fpoptimizer/grammar_parser.y"
+#line 1214 "fpoptimizer/grammar_parser.y"
     {
            if(!(yyvsp[(1) - (1)].f)->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2552,7 +2574,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 1210 "fpoptimizer/grammar_parser.y"
+#line 1229 "fpoptimizer/grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p));
          delete (yyvsp[(3) - (4)].p);
@@ -2562,7 +2584,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 1218 "fpoptimizer/grammar_parser.y"
+#line 1237 "fpoptimizer/grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p)->SetType(SelectedParams));
          delete (yyvsp[(3) - (4)].p);
@@ -2572,7 +2594,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 1225 "fpoptimizer/grammar_parser.y"
+#line 1244 "fpoptimizer/grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (2)].opcode), *(yyvsp[(2) - (2)].p)->SetType(AnyParams));
          delete (yyvsp[(2) - (2)].p);
@@ -2582,7 +2604,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 1233 "fpoptimizer/grammar_parser.y"
+#line 1252 "fpoptimizer/grammar_parser.y"
     {
           (yyval.p) = (yyvsp[(1) - (2)].p)->AddParam((yyvsp[(2) - (2)].a));
         ;}
@@ -2591,7 +2613,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 1237 "fpoptimizer/grammar_parser.y"
+#line 1256 "fpoptimizer/grammar_parser.y"
     {
           if((yyvsp[(1) - (2)].p)->RestHolderIndex != 0)
           {
@@ -2606,7 +2628,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 1247 "fpoptimizer/grammar_parser.y"
+#line 1266 "fpoptimizer/grammar_parser.y"
     {
           (yyval.p) = new GrammarData::MatchedParams;
         ;}
@@ -2615,16 +2637,16 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 1254 "fpoptimizer/grammar_parser.y"
+#line 1273 "fpoptimizer/grammar_parser.y"
     {
-         (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (1)].num));
+         (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].num), (yyvsp[(2) - (2)].index));
        ;}
     break;
 
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 1258 "fpoptimizer/grammar_parser.y"
+#line 1277 "fpoptimizer/grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index), GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index) | Constness_Const);
@@ -2634,7 +2656,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 1263 "fpoptimizer/grammar_parser.y"
+#line 1282 "fpoptimizer/grammar_parser.y"
     {
          /* Verify that $3 consists of constants */
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (4)].opcode), (yyvsp[(3) - (4)].p)->GetParams() );
@@ -2650,7 +2672,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 1274 "fpoptimizer/grammar_parser.y"
+#line 1293 "fpoptimizer/grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index) + 2, GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index));
@@ -2660,7 +2682,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 1279 "fpoptimizer/grammar_parser.y"
+#line 1298 "fpoptimizer/grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(2) - (4)].f));
          (yyval.a)->SetConstraint((yyvsp[(4) - (4)].index));
@@ -2670,7 +2692,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 1284 "fpoptimizer/grammar_parser.y"
+#line 1303 "fpoptimizer/grammar_parser.y"
     {
          /* Verify that $2 is constant */
          if(!(yyvsp[(2) - (2)].a)->VerifyIsConstant())
@@ -2687,7 +2709,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 1299 "fpoptimizer/grammar_parser.y"
+#line 1318 "fpoptimizer/grammar_parser.y"
     {
          (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
        ;}
@@ -2696,7 +2718,25 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 1303 "fpoptimizer/grammar_parser.y"
+#line 1322 "fpoptimizer/grammar_parser.y"
+    {
+         (yyval.index) = 0;
+       ;}
+    break;
+
+  case 24:
+
+/* Line 1455 of yacc.c  */
+#line 1329 "fpoptimizer/grammar_parser.y"
+    {
+         (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
+       ;}
+    break;
+
+  case 25:
+
+/* Line 1455 of yacc.c  */
+#line 1333 "fpoptimizer/grammar_parser.y"
     {
          (yyval.index) = 0;
        ;}
@@ -2705,7 +2745,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 2709 "fpoptimizer/grammar_parser.cc"
+#line 2749 "fpoptimizer/grammar_parser.cc"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2917,7 +2957,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 1307 "fpoptimizer/grammar_parser.y"
+#line 1337 "fpoptimizer/grammar_parser.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
@@ -3021,6 +3061,7 @@ static int yylex(YYSTYPE* lval)
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
                 case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; }
+                case 'R': { lval->index = Modulo_Radians; return CONST_CONSTRAINT; }
             }
             std::ungetc(c2, stdin);
             return '@';
@@ -3094,6 +3135,7 @@ static int yylex(YYSTYPE* lval)
             if(IdBuf == "CONSTANT_DR") { lval->num = CONSTANT_DR; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PI") { lval->num = CONSTANT_PI; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PIHALF") { lval->num = CONSTANT_PIHALF; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_TWOPI") { lval->num = CONSTANT_TWOPI; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2I") { lval->num = CONSTANT_L2I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10I") { lval->num = CONSTANT_L10I; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2") { lval->num = CONSTANT_L2; return NUMERIC_CONSTANT; }
