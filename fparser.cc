@@ -37,7 +37,7 @@ using namespace FUNCTIONPARSERTYPES;
 #endif
 
 //=========================================================================
-// Name handling functions
+// Utility functions
 //=========================================================================
 namespace
 {
@@ -238,6 +238,149 @@ namespace
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     inline int valueToInt(GmpInt value) { return int(value.toInt()); }
+#endif
+
+    template<typename Value_t>
+    inline Value_t fp_parseLiteral(const char* str, char** endptr)
+    {
+        return strtod(str, endptr);
+    }
+
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template<>
+    inline float fp_parseLiteral<float>(const char* str, char** endptr)
+    {
+        return strtof(str, endptr);
+    }
+#endif
+
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template<>
+    inline long double fp_parseLiteral<long double>(const char* str,
+                                                    char** endptr)
+    {
+        return strtold(str, endptr);
+    }
+#endif
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    inline long fp_parseLiteral<long>(const char* str, char** endptr)
+    {
+        return strtol(str, endptr, 10);
+    }
+#endif
+
+    template<typename ResultType>
+    ResultType parseHexLiteral(const char* str, char** endptr)
+    {
+        const int MantissaBits = sizeof(ResultType)*8;
+        const int ExtraMantissaBits = MantissaBits + 4; // Store one digit more for correct rounding
+        const size_t bits_per_char = 8;
+        const size_t limb_bits = sizeof(size_t) * bits_per_char;
+        const size_t n_limbs   = (ExtraMantissaBits + limb_bits-1) / limb_bits;
+        size_t mantissa_buffer[n_limbs] = { 0 };
+
+#define AddXdigit(n)                                                    \
+        do {                                                            \
+            for(size_t p=n_limbs; p-- > 1; )                            \
+            {                                                           \
+                mantissa_buffer[p] <<= 4;                               \
+                mantissa_buffer[p] |=                                   \
+                    (mantissa_buffer[p-1] >> size_t(limb_bits-4));      \
+            }                                                           \
+            mantissa_buffer[0] <<= 4;                                   \
+            mantissa_buffer[0] |= n;                                    \
+        } while(0)
+
+        int n_mantissa_bits = 0; // Track the number of bits
+        int exponent = 0; // The exponent that will be used to multiply the mantissa
+        // Read integer portion
+        while(true)
+        {
+            if(*str >= '0' && *str <= '9') AddXdigit( *str++ - '0' );
+            else if(*str >= 'A' && *str <= 'F') AddXdigit( *str++ + 10 - 'A' );
+            else if(*str >= 'a' && *str <= 'f') AddXdigit( *str++ + 10 - 'a' );
+            else break;
+            n_mantissa_bits += 4;
+            if(n_mantissa_bits >= ExtraMantissaBits)
+            {
+                // Exhausted the precision. Parse the rest (until exponent)
+                // normally but ignore the actual digits.
+                while(true)
+                {
+                    if(*str >= '0' && *str <= '9') ++str;
+                    else if(*str >= 'A' && *str <= 'F') ++str;
+                    else if(*str >= 'a' && *str <= 'f') ++str;
+                    else break;
+                    exponent += 4;
+                }
+                // Read but ignore decimals
+                if(*str == '.')
+                {
+                    ++str;
+                read_decimals_ignore:
+                    while(true)
+                    {
+                        if(*str >= '0' && *str <= '9') ++str;
+                        else if(*str >= 'A' && *str <= 'F') ++str;
+                        else if(*str >= 'a' && *str <= 'f') ++str;
+                        else break;
+                    }
+                }
+                goto read_exponent;
+            }
+        }
+        // Read decimals
+        if(*str == '.')
+        {
+            ++str;
+            while(true)
+            {
+                if(*str >= '0' && *str <= '9') AddXdigit( *str++ - '0' );
+                else if(*str >= 'A' && *str <= 'F') AddXdigit( *str++ + 10 - 'A' );
+                else if(*str >= 'a' && *str <= 'f') AddXdigit( *str++ + 10 - 'a' );
+                else break;
+                exponent -= 4;
+                n_mantissa_bits += 4;
+                if(n_mantissa_bits >= ExtraMantissaBits)
+                {
+                    // Exhausted the precision. Skip the rest
+                    // of the decimals, until the exponent.
+                    goto read_decimals_ignore;
+                }
+            }
+        }
+        // Read exponent
+    read_exponent:
+        if(*str == 'p' || *str == 'P')
+        {
+            const char* str2 = str+1;
+            int p_exponent = strtol(str2, (char**) &str2, 10);
+            if(str2 != str+1)
+            {
+                exponent += p_exponent;
+                str = str2;
+            }
+        }
+
+        if(endptr) *endptr = (char*) str;
+
+        ResultType result = ldexp(ResultType(mantissa_buffer[0]), exponent);
+        for(size_t p=1; p<n_limbs; ++p)
+        {
+            exponent += limb_bits;
+            result += ldexp(ResultType(mantissa_buffer[p]), exponent);
+        }
+        return result;
+    }
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    long parseHexLiteral<long>(const char* str, char** endptr)
+    {
+        return strtol(str, endptr, 16);
+    }
 #endif
 }
 
@@ -1199,6 +1342,57 @@ inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
 #endif
 
 template<typename Value_t>
+inline const char*
+FunctionParserBase<Value_t>::CompileLiteral(const char* function)
+{
+    char* endptr;
+    Value_t val = fp_parseLiteral<Value_t>(function, &endptr);
+
+    if(endptr == function+1 && function[0] == '0' && function[1] == 'x')
+    {
+        // Parse hexadecimal literal if fp_parseLiteral didn't already
+        val = parseHexLiteral<Value_t>(function+2, &endptr);
+        if(endptr == function+2) return SetErrorType(SYNTAX_ERROR, function);
+    }
+    else if(endptr == function) return SetErrorType(SYNTAX_ERROR, function);
+
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endptr);
+    return endptr;
+}
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+template<>
+inline const char*
+FunctionParserBase<MpfrFloat>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const MpfrFloat val = MpfrFloat::parseString(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+inline const char*
+FunctionParserBase<GmpInt>::CompileLiteral(const char* function)
+{
+    char* endPtr;
+    const GmpInt val = GmpInt::parseString(function, &endPtr);
+    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
+    AddImmedOpcode(val);
+    incStackPtr();
+    SkipSpace(endPtr);
+    return endPtr;
+}
+#endif
+
+template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
 {
     if(*function != '(') return SetErrorType(EXPECT_PARENTH_FUNC, function);
@@ -1277,7 +1471,8 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
             // If an error occurred, verify whether it was caused by ()
             ++function;
             SkipSpace(function);
-            if(*function == ')') return SetErrorType(ILL_PARAMS_AMOUNT, function);
+            if(*function == ')')
+                return SetErrorType(ILL_PARAMS_AMOUNT, function);
             // Not caused by (), use the error message given by CompileExpression()
             return 0;
         }
@@ -1433,7 +1628,8 @@ inline const char* FunctionParserBase<Value_t>::CompileFunction
 }
 
 template<typename Value_t>
-inline const char* FunctionParserBase<Value_t>::CompileParenthesis(const char* function)
+inline const char*
+FunctionParserBase<Value_t>::CompileParenthesis(const char* function)
 {
     ++function; // Skip '('
 
@@ -1447,18 +1643,6 @@ inline const char* FunctionParserBase<Value_t>::CompileParenthesis(const char* f
 
     SkipSpace(function);
     return function;
-}
-
-template<typename Value_t>
-inline const char* FunctionParserBase<Value_t>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const double val = strtod(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
 }
 
 template<typename Value_t>
@@ -1528,47 +1712,7 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
     return function;
 }
 
-#ifdef FP_SUPPORT_FLOAT_TYPE
-template<>
-inline const char* FunctionParserBase<float>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const float val = strtof(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
-}
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-template<>
-inline const char* FunctionParserBase<long double>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const long double val = strtold(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
-}
-#endif
-
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-template<>
-inline const char* FunctionParserBase<long>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const long val = strtol(function, &endPtr, 10);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
-}
-
 template<>
 inline const char*
 FunctionParserBase<long>::CompilePow(const char* function)
@@ -1579,33 +1723,7 @@ FunctionParserBase<long>::CompilePow(const char* function)
 }
 #endif
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-template<>
-inline const char* FunctionParserBase<MpfrFloat>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const MpfrFloat val = MpfrFloat::parseString(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
-}
-#endif
-
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-template<>
-inline const char* FunctionParserBase<GmpInt>::CompileLiteral(const char* function)
-{
-    char* endPtr;
-    const GmpInt val = GmpInt::parseString(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
-}
-
 template<>
 inline const char*
 FunctionParserBase<GmpInt>::CompilePow(const char* function)

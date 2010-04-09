@@ -8,6 +8,7 @@
 ============================================================================*/
 
 #include "fparser.hh"
+#include "fparser_gmpint.hh"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -41,6 +42,10 @@ namespace
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
     template<> inline float epsilon<float>() { return 1e-5F; }
     template<> inline long epsilon<long>() { return 0; }
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<> inline GmpInt epsilon<GmpInt>() { return 0; }
+#endif
 
     template<typename Value_t>
     Value_t Sqr(const Value_t* p)
@@ -246,6 +251,11 @@ namespace
     template<>
     inline bool valueIsOk<long>(long) { return true; }
 
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool valueIsOk<GmpInt>(GmpInt) { return true; }
+#endif
+
     template<typename Value_t>
     bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions)
     {
@@ -342,6 +352,14 @@ namespace
         return v2 - v1;
     }
 
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline GmpInt scaledDiff<GmpInt>(GmpInt v1, GmpInt v2)
+    {
+        return v2 - v1;
+    }
+#endif
+
     template<typename Value_t>
     inline bool notEqual(Value_t v1, Value_t v2)
     {
@@ -353,6 +371,14 @@ namespace
     {
         return v1 != v2;
     }
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    inline bool notEqual<GmpInt>(GmpInt v1, GmpInt v2)
+    {
+        return v1 != v2;
+    }
+#endif
 
     template<typename Value_t>
     bool compareFunctions(size_t function1Index, size_t function2Index,
@@ -750,6 +776,7 @@ namespace
             "  -f                 : Use FunctionParser_f.\n"
             "  -ld                : Use FunctionParser_ld.\n"
             "  -li                : Use FunctionParser_li.\n"
+            "  -gi                : Use FunctionParser_gmpint.\n"
             "  -vars <var string> : Specify a var string.\n"
             "  -nt                : No timing measurements.\n"
             "  -ntd               : No timing if functions differ.\n"
@@ -834,7 +861,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 2) return printHelp(argv[0]);
 
-    enum ParserType { FP_D, FP_F, FP_LD, FP_LI };
+    enum ParserType { FP_D, FP_F, FP_LD, FP_LI, FP_GI };
 
     std::vector<std::string> functionStrings;
     bool measureTimings = true, noTimingIfEqualityErrors = false;
@@ -845,6 +872,7 @@ int main(int argc, char* argv[])
         if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
         else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
         else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
+        else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
         else if(std::strcmp(argv[i], "-vars") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
@@ -908,6 +936,16 @@ int main(int argc, char* argv[])
                measureTimings, noTimingIfEqualityErrors);
 #else
           notCompiledParserType = "long int";
+          break;
+#endif
+
+      case FP_GI:
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+          return functionInfo<GmpInt>
+              ("GmpInt", functionStrings,
+               measureTimings, noTimingIfEqualityErrors);
+#else
+          notCompiledParserType = "GmpInt";
           break;
 #endif
     }
