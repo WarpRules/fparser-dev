@@ -149,7 +149,7 @@ void ListTests(std::ostream& outStream)
                     << ", " << testdata.TestFuncName << "<" << type << ">,\n"
                        "      \"" << testdata.ParamString <<
                        "\", \"" << testdata.TestName
-                    << "\", \"" << testdata.FuncString << "\" },\n";
+                    << "\", \"" << testdata.FuncString << "\", 0 },\n";
                 if(!testdata.IfDef.empty())
                     outStream << "#endif /*" << testdata.IfDef << " */\n";
             }

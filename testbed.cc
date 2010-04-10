@@ -1363,6 +1363,8 @@ struct TestType
     const char* paramString;
     const char* testName;
     const char* funcString;
+
+    double (*doubleFuncPtr)(const double*);
 };
 
 
@@ -1462,97 +1464,6 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
 //=========================================================================
 // Main test function
 //=========================================================================
-bool runRegressionTest(
-    FunctionParserBase<double>&,
-    const TestType<double>&,
-    const std::string&,
-    const double) { return true; }
-
-template<typename Value_t>
-bool runRegressionTest(
-    FunctionParserBase<Value_t>& fp,
-    const TestType<Value_t>& testData,
-    const std::string& valueType,
-    const Value_t Eps)
-{
-    Value_t vars[10];
-    Value_t fp_vars[10];
-
-    for(unsigned i = 0; i < testData.paramAmount; ++i)
-        vars[i] = testData.paramMin;
-
-    while(true)
-    {
-        unsigned paramInd = 0;
-        while(paramInd < testData.paramAmount &&
-              (vars[paramInd] += testData.paramStep) > testData.paramMax)
-        {
-            vars[paramInd++] = testData.paramMin;
-        }
-
-        if(paramInd == testData.paramAmount) break;
-
-        for(unsigned i = 0; i < testData.paramAmount; ++i)
-            fp_vars[i] = vars[i];
-
-        const Value_t v1 = testData.funcPtr(vars);
-        if(true) /*test Eval() */
-        {
-            const Value_t v2 = fp.Eval(fp_vars);
-
-            std::ostringstream error;
-
-            if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
-            {
-                if(v1 != v2)
-                {
-                    error << v2 << " instead of " << v1;
-                }
-            }
-            else
-            {
-                using namespace FUNCTIONPARSERTYPES;
-                const Value_t scale =
-                    fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
-                const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
-                const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
-                const Value_t diff = fp_abs(sv2-sv1);
-
-                if(diff > Eps)
-                {
-                    error << std::setprecision(48) << v2 << " instead of "
-                          << std::setprecision(48) << v1 << std::endl
-                          << "(Difference: "
-                          << std::setprecision(48) << v2-v1
-                          << ", epsilon: "
-                          << std::setprecision(48) << Eps
-                          << "; scaled diff "
-                          << std::setprecision(48) << diff
-                          << ")";
-                }
-            }
-
-            if(!error.str().empty())
-            {
-                if(!verbose)
-                    std::cout << "\nTest " << testData.testName
-                              << ", function:\n\"" << testData.funcString
-                              << "\"\n(" << valueType << ")";
-
-                std::cout << std::endl << "Error: For (";
-                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                    std::cout << (ind>0 ? ", " : "") << vars[ind];
-                std::cout << ")\nthe library returned " << error.str() << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-                fp.PrintByteCode(std::cout);
-#endif
-                return false;
-            }
-        } /* test Eval() */
-    }
-    return true;
-}
-
 namespace
 {
     template<typename Value_t>
@@ -1588,7 +1499,168 @@ namespace
     Value_t fp_truth(const Value_t& a)
         { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
 
+#if defined(FP_SUPPORT_GMP_INT_TYPE) && !defined(FP_SUPPORT_LONG_INT_TYPE)
+#define FP_SUPPORT_LONG_INT_TYPE
 #include "testbed_tests.inc"
+#undef FP_SUPPORT_LONG_INT_TYPE
+#else
+#include "testbed_tests.inc"
+#endif
+}
+
+namespace
+{
+    template<typename Value_t>
+    void testAgainstDouble(Value_t*, Value_t, const TestType<Value_t>&,
+                           std::ostream&) {}
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    void testAgainstDouble(MpfrFloat* vars, MpfrFloat parserValue,
+                           const TestType<MpfrFloat>& testData,
+                           std::ostream& error)
+    {
+        if(!testData.doubleFuncPtr) return;
+
+        double doubleVars[10];
+        for(unsigned i = 0; i < 10; ++i) doubleVars[i] = vars[i].toDouble();
+
+        const double Eps = Epsilon<double>();
+
+        const double v1 = testData.doubleFuncPtr(doubleVars);
+        const double v2 = parserValue.toDouble();
+
+        using namespace FUNCTIONPARSERTYPES;
+        const double scale = fp_pow(10.0, fp_floor(fp_log10(fp_abs(v1))));
+        const double sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
+        const double sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
+        const double diff = fp_abs(sv2-sv1);
+
+        if(diff > Eps)
+        {
+            error << std::setprecision(16) << v2 << " instead of "
+                  << std::setprecision(16) << v1
+                  << "\n(Difference: "
+                  << std::setprecision(16) << v2-v1
+                  << ", epsilon: "
+                  << std::setprecision(16) << Eps
+                  << "; scaled diff "
+                  << std::setprecision(16) << diff
+                  << ")\nwhen tested against the double function.";
+        }
+    }
+#endif
+
+    template<typename Value_t>
+    void testAgainstLongInt(Value_t*, Value_t, unsigned, std::ostream&) {}
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    void testAgainstLongInt(GmpInt* vars, GmpInt parserValue,
+                            unsigned testIndex, std::ostream& error)
+    {
+        long longVars[10];
+        for(unsigned i = 0; i < 10; ++i) longVars[i] = vars[i].toInt();
+
+        const TestType<long>& longTestData =
+            RegressionTests<long>::Tests[testIndex];
+        const long longValue = longTestData.funcPtr(longVars);
+        if(longValue != parserValue)
+        {
+            error << parserValue << " instead of " << longValue
+                  << "\nwhen tested against the long int function.";
+        }
+    }
+#endif
+}
+
+template<typename Value_t>
+bool runRegressionTest(FunctionParserBase<Value_t>& fp,
+                       const TestType<Value_t>& testData,
+                       const std::string& valueType,
+                       const Value_t Eps,
+                       unsigned testIndex)
+{
+    Value_t vars[10];
+    Value_t fp_vars[10];
+
+    for(unsigned i = 0; i < testData.paramAmount; ++i)
+        vars[i] = testData.paramMin;
+
+    while(true)
+    {
+        unsigned paramInd = 0;
+        while(paramInd < testData.paramAmount &&
+              (vars[paramInd] += testData.paramStep) > testData.paramMax)
+        {
+            vars[paramInd++] = testData.paramMin;
+        }
+
+        if(paramInd == testData.paramAmount) break;
+
+        for(unsigned i = 0; i < testData.paramAmount; ++i)
+            fp_vars[i] = vars[i];
+
+        const Value_t v1 = testData.funcPtr(vars);
+        if(true) /*test Eval() */
+        {
+            const Value_t v2 = fp.Eval(fp_vars);
+
+            std::ostringstream error;
+
+            if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+            {
+                if(v1 != v2)
+                {
+                    error << v2 << " instead of " << v1;
+                }
+                else
+                    testAgainstLongInt(vars, v2, testIndex, error);
+            }
+            else
+            {
+                using namespace FUNCTIONPARSERTYPES;
+                const Value_t scale =
+                    fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
+                const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
+                const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
+                const Value_t diff = fp_abs(sv2-sv1);
+
+                if(diff > Eps)
+                {
+                    error << std::setprecision(28) << v2 << " instead of "
+                          << std::setprecision(28) << v1
+                          << "\n(Difference: "
+                          << std::setprecision(28) << v2-v1
+                          << ", epsilon: "
+                          << std::setprecision(28) << Eps
+                          << "; scaled diff "
+                          << std::setprecision(28) << diff
+                          << ")";
+                }
+                else
+                    testAgainstDouble(vars, v2, testData, error);
+            }
+
+            if(!error.str().empty())
+            {
+                if(!verbose)
+                    std::cout << "\n****************************\nTest "
+                              << testData.testName
+                              << ", function:\n\"" << testData.funcString
+                              << "\"\n(" << valueType << ")";
+
+                std::cout << std::endl << "Error: For (";
+                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                    std::cout << (ind>0 ? ", " : "") << vars[ind];
+                std::cout << ")\nthe library returned " << error.str()
+                          << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+                fp.PrintByteCode(std::cout);
+#endif
+                return false;
+            }
+        } /* test Eval() */
+    }
+    return true;
 }
 
 static bool WildMatch(const char *pattern, const char *what)
@@ -1659,9 +1731,11 @@ bool runRegressionTests(const std::string& valueType)
               << "\" ========================" << std::endl;
     resetAnsiColor();
 
-    bool ret = fp.AddConstant("pi",               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
-    ret = ret && fp.AddConstant("naturalnumber",  FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
-    ret = ret && fp.AddConstant("CONST",  Value_t(CONST));
+    bool ret = fp.AddConstant("pi",
+                              FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
+    ret = ret && fp.AddConstant("naturalnumber",
+                                FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
+    ret = ret && fp.AddConstant("CONST", Value_t(CONST));
     if(!ret)
     {
         std::cout << "Ooops! AddConstant() didn't work" << std::endl;
@@ -1778,7 +1852,8 @@ bool runRegressionTests(const std::string& valueType)
             std::cout << std::flush << " ";
         }
 
-        if(!runRegressionTest(fp, testData, valueType + ", not optimized", Epsilon<Value_t>()))
+        if(!runRegressionTest(fp, testData, valueType + ", not optimized",
+                              Epsilon<Value_t>(), i))
             return false;
 
         if(verbose) std::cout << "Ok." << std::endl;
@@ -1788,7 +1863,7 @@ bool runRegressionTests(const std::string& valueType)
 
         if(verbose) std::cout << "    Optimized: " << std::flush;
         if(!runRegressionTest(fp, testData, valueType + ", after optimization",
-                              Epsilon<Value_t>() ))
+                              Epsilon<Value_t>(), i))
             return false;
 
         if(verbose)
@@ -1797,8 +1872,8 @@ bool runRegressionTests(const std::string& valueType)
         for(int j = 0; j < 20; ++j)
             fp.Optimize();
         if(!runRegressionTest(fp, testData,
-                    valueType + ", after several optimization runs",
-                    Epsilon<Value_t>() ))
+                              valueType + ", after several optimization runs",
+                              Epsilon<Value_t>(), i))
             return false;
 
         if(!testVariableDeduction(fp, testData)) return false;

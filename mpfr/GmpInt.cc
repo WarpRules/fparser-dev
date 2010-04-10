@@ -329,7 +329,16 @@ GmpInt& GmpInt::operator/=(long value)
 GmpInt& GmpInt::operator%=(const GmpInt& rhs)
 {
     copyIfShared();
-    mpz_mod(mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    if(operator<(0))
+    {
+        negate();
+        mpz_mod(mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+        negate();
+    }
+    else
+    {
+        mpz_mod(mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    }
     return *this;
 }
 
@@ -337,7 +346,16 @@ GmpInt& GmpInt::operator%=(long value)
 {
     copyIfShared();
     if(value < 0) value = -value;
-    mpz_mod_ui(mData->mInteger, mData->mInteger, value);
+    if(operator<(0))
+    {
+        negate();
+        mpz_mod_ui(mData->mInteger, mData->mInteger, value);
+        negate();
+    }
+    else
+    {
+        mpz_mod_ui(mData->mInteger, mData->mInteger, value);
+    }
     return *this;
 }
 
@@ -477,7 +495,17 @@ GmpInt GmpInt::operator/(long value) const
 GmpInt GmpInt::operator%(const GmpInt& rhs) const
 {
     GmpInt retval(kNoInitialization);
-    mpz_mod(retval.mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    if(operator<(0))
+    {
+        mpz_neg(retval.mData->mInteger, mData->mInteger);
+        mpz_mod(retval.mData->mInteger,
+                retval.mData->mInteger, rhs.mData->mInteger);
+        retval.negate();
+    }
+    else
+    {
+        mpz_mod(retval.mData->mInteger, mData->mInteger, rhs.mData->mInteger);
+    }
     return retval;
 }
 
@@ -485,7 +513,16 @@ GmpInt GmpInt::operator%(long value) const
 {
     GmpInt retval(kNoInitialization);
     if(value < 0) value = -value;
-    mpz_mod_ui(retval.mData->mInteger, mData->mInteger, value);
+    if(operator<(0))
+    {
+        mpz_neg(retval.mData->mInteger, mData->mInteger);
+        mpz_mod_ui(retval.mData->mInteger, retval.mData->mInteger, value);
+        retval.negate();
+    }
+    else
+    {
+        mpz_mod_ui(retval.mData->mInteger, mData->mInteger, value);
+    }
     return retval;
 }
 
