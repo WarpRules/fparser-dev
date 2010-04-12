@@ -153,16 +153,31 @@ void ListTests(std::ostream& outStream)
                 != testdata.DataTypes.end())
                 {
                     // If the same test is defined for both "double" and
-                    // "mpfrFloat", include an extra pointer to the "double"
-                    // test in the "mpfrFloat" test.
+                    // "MpfrFloat", include an extra pointer to the "double"
+                    // test in the "MpfrFloat" test.
                     outStream
-                        << ", " << testdata.TestFuncName << "<double>,";
+                        << ", " << testdata.TestFuncName << "<double>";
+                }
+                else
+                    outStream
+                        << ", 0";
+
+                if(type == "GmpInt"
+                && testdata.DataTypes.find("long")
+                != testdata.DataTypes.end())
+                {
+                    // If the same test is defined for both "long" and
+                    // "GmpInt", include an extra pointer to the "long"
+                    // test in the "GmpInt" test.
+                    outStream
+                        << ", " << testdata.TestFuncName << "<long>,";
                 }
                 else
                     outStream
                         << ", 0,";
+
                 outStream
-                    << " 0,\n      \"" << testdata.ParamString
+                    << "\n      \"" << testdata.ParamString
                     << "\", \"" << testdata.TestName
                     << "\", \"" << testdata.FuncString
                     << "\" },\n";

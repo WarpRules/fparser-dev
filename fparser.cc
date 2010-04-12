@@ -356,10 +356,10 @@ namespace
         if(*str == 'p' || *str == 'P')
         {
             const char* str2 = str+1;
-            int p_exponent = strtol(str2, (char**) &str2, 10);
-            if(str2 != str+1)
+            long p_exponent = strtol(str2, (char**) &str2, 10);
+            if(str2 != str+1 && p_exponent == (long)(int)p_exponent)
             {
-                exponent += p_exponent;
+                exponent += (int)p_exponent;
                 str = str2;
             }
         }

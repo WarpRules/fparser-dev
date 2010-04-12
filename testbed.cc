@@ -1557,7 +1557,7 @@ namespace
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     void testAgainstLongInt(GmpInt* vars, GmpInt parserValue,
-                            const TestType<long>& testData,
+                            const TestType<GmpInt>& testData,
                             std::ostream& error)
     {
         if(!testData.longFuncPtr) return;
