@@ -66,6 +66,7 @@ struct TestData
     std::string ParamValueRanges;
     bool UseDegrees;
     std::string TestFuncName, TestName;
+    std::set<std::string> DataTypes;
 
     TestData():
         FuncString(), ParamString(),
@@ -146,10 +147,25 @@ void ListTests(std::ostream& outStream)
                     << "    { " << testdata.ParamAmount
                     << ", " << ranges.str()
                     << ", " << (testdata.UseDegrees ? "true" : "false")
-                    << ", " << testdata.TestFuncName << "<" << type << ">,\n"
-                       "      \"" << testdata.ParamString <<
-                       "\", \"" << testdata.TestName
-                    << "\", \"" << testdata.FuncString << "\", 0 },\n";
+                    << ", " << testdata.TestFuncName << "<" << type << ">";
+                if(type == "MpfrFloat"
+                && testdata.DataTypes.find("double")
+                != testdata.DataTypes.end())
+                {
+                    // If the same test is defined for both "double" and
+                    // "mpfrFloat", include an extra pointer to the "double"
+                    // test in the "mpfrFloat" test.
+                    outStream
+                        << ", " << testdata.TestFuncName << "<double>,";
+                }
+                else
+                    outStream
+                        << ", 0,";
+                outStream
+                    << "\n      \"" << testdata.ParamString
+                    << "\", \"" << testdata.TestName
+                    << "\", \"" << testdata.FuncString
+                    << "\" },\n";
                 if(!testdata.IfDef.empty())
                     outStream << "#endif /*" << testdata.IfDef << " */\n";
             }
@@ -429,6 +445,8 @@ void CompileTest(const std::string& testname, FILE* fp)
 
                     if(DataTypes.size() == 1)
                         limited_to_datatype = *DataTypes.begin();
+
+                    test.DataTypes = DataTypes;
                 }
                 break;
             case 'V': // variable list

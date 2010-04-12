@@ -1360,11 +1360,11 @@ struct TestType
     bool useDegrees;
 
     Value_t (*funcPtr)(const Value_t*);
+    double (*doubleFuncPtr)(const double*);
+
     const char* paramString;
     const char* testName;
     const char* funcString;
-
-    double (*doubleFuncPtr)(const double*);
 };
 
 
