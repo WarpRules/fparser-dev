@@ -2089,8 +2089,6 @@ namespace FPoptimizer_CodeTree
             case cMin:
             {
                 ConstantFolding_Assimilate();
-                if(GetParam(0).IsIdenticalTo(GetParam(1)))
-                    goto ReplaceTreeWithParam0;
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -2105,6 +2103,8 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree smallest_maximum;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
+                    while(a+1 < GetParamCount() && GetParam(a).IsIdenticalTo(GetParam(a+1)))
+                        DelParam(a+1);
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
                     if(p.has_max && (!smallest_maximum.has_max || p.max < smallest_maximum.max))
                     {
@@ -2130,8 +2130,6 @@ namespace FPoptimizer_CodeTree
             case cMax:
             {
                 ConstantFolding_Assimilate();
-                if(GetParam(0).IsIdenticalTo(GetParam(1)))
-                    goto ReplaceTreeWithParam0;
                 /* Goal: If there is any pair of two operands, where
                  * their ranges form a disconnected set, i.e. as below:
                  *     xxxxx
@@ -2146,6 +2144,8 @@ namespace FPoptimizer_CodeTree
                 MinMaxTree biggest_minimum;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
+                    while(a+1 < GetParamCount() && GetParam(a).IsIdenticalTo(GetParam(a+1)))
+                        DelParam(a+1);
                     MinMaxTree p = GetParam(a).CalculateResultBoundaries();
                     if(p.has_min && (!biggest_minimum.has_min || p.min > biggest_minimum.min))
                     {
