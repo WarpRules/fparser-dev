@@ -54,17 +54,17 @@ namespace FPoptimizer_CodeTree
             {
                 /* cAbs always produces a positive value */
                 MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                
+
                 bool spans_across_zero =
                        (!m.has_min || m.min < 0.0)
                     && (!m.has_max || m.max >= 0.0);
-                
+
                 if(m.has_min) m.min = fabs(m.min);
                 if(m.has_max) m.max = fabs(m.max);
-                
+
                 if(m.has_min && m.has_max && m.min > m.max)
                     std::swap(m.min, m.max);
-                
+
                 if(spans_across_zero)
                 {
                     if(!m.has_min) m.has_max = false;
@@ -175,7 +175,7 @@ namespace FPoptimizer_CodeTree
                 if(covers_full_cycle)
                     return MinMaxTree(-1.0, 1.0);
                 double min = fmod(m.min, 2.0*CONSTANT_PI); if(min<0) min+=2.0*CONSTANT_PI;
-                double max = fmod(m.max, 2.0*CONSTANT_PI); if(max<0) max+=2.0*CONSTANT_PI;                
+                double max = fmod(m.max, 2.0*CONSTANT_PI); if(max<0) max+=2.0*CONSTANT_PI;
                 if(max < min) max += 2.0*CONSTANT_PI;
                 bool covers_plus1  = (min <= CONSTANT_PIHALF && max >= CONSTANT_PIHALF);
                 bool covers_minus1 = (min <= 1.5*CONSTANT_PI && max >= 1.5*CONSTANT_PI);
