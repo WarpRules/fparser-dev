@@ -1,3 +1,5 @@
+# Note: Contains a duplicate of regressions 1 and 2
+
 T=d f ld mf li gi
 V=x
 R=-1000,1000,1
