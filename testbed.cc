@@ -1361,6 +1361,7 @@ struct TestType
 
     Value_t (*funcPtr)(const Value_t*);
     double (*doubleFuncPtr)(const double*);
+    long (*longFuncPtr)(const long*);
 
     const char* paramString;
     const char* testName;
@@ -1551,18 +1552,20 @@ namespace
 #endif
 
     template<typename Value_t>
-    void testAgainstLongInt(Value_t*, Value_t, unsigned, std::ostream&) {}
+    void testAgainstLongInt(Value_t*, Value_t, const TestType<Value_t>&,
+                            std::ostream&) {}
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     void testAgainstLongInt(GmpInt* vars, GmpInt parserValue,
-                            unsigned testIndex, std::ostream& error)
+                            const TestType<long>& testData,
+                            std::ostream& error)
     {
+        if(!testData.longFuncPtr) return;
+
         long longVars[10];
         for(unsigned i = 0; i < 10; ++i) longVars[i] = vars[i].toInt();
 
-        const TestType<long>& longTestData =
-            RegressionTests<long>::Tests[testIndex];
-        const long longValue = longTestData.funcPtr(longVars);
+        const long longValue = testData.longFuncPtr(longVars);
         if(longValue != parserValue)
         {
             error << parserValue << " instead of " << longValue
@@ -1576,8 +1579,7 @@ template<typename Value_t>
 bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                        const TestType<Value_t>& testData,
                        const std::string& valueType,
-                       const Value_t Eps,
-                       unsigned testIndex)
+                       const Value_t Eps)
 {
     Value_t vars[10];
     Value_t fp_vars[10];
@@ -1613,7 +1615,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                     error << v2 << " instead of " << v1;
                 }
                 else
-                    testAgainstLongInt(vars, v2, testIndex, error);
+                    testAgainstLongInt(vars, v2, testData, error);
             }
             else
             {
@@ -1853,7 +1855,7 @@ bool runRegressionTests(const std::string& valueType)
         }
 
         if(!runRegressionTest(fp, testData, valueType + ", not optimized",
-                              Epsilon<Value_t>(), i))
+                              Epsilon<Value_t>()))
             return false;
 
         if(verbose) std::cout << "Ok." << std::endl;
@@ -1863,7 +1865,7 @@ bool runRegressionTests(const std::string& valueType)
 
         if(verbose) std::cout << "    Optimized: " << std::flush;
         if(!runRegressionTest(fp, testData, valueType + ", after optimization",
-                              Epsilon<Value_t>(), i))
+                              Epsilon<Value_t>()))
             return false;
 
         if(verbose)
@@ -1873,7 +1875,7 @@ bool runRegressionTests(const std::string& valueType)
             fp.Optimize();
         if(!runRegressionTest(fp, testData,
                               valueType + ", after several optimization runs",
-                              Epsilon<Value_t>(), i))
+                              Epsilon<Value_t>()))
             return false;
 
         if(!testVariableDeduction(fp, testData)) return false;

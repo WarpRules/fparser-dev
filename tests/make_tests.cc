@@ -162,7 +162,7 @@ void ListTests(std::ostream& outStream)
                     outStream
                         << ", 0,";
                 outStream
-                    << "\n      \"" << testdata.ParamString
+                    << " 0,\n      \"" << testdata.ParamString
                     << "\", \"" << testdata.TestName
                     << "\", \"" << testdata.FuncString
                     << "\" },\n";
