@@ -213,6 +213,11 @@ cAbsOr (cGreaterOrEq[% x]) (cGreaterOrEq[x &]) : (cNotNot (cMul /+(& -%) (cAdd x
 cAbsNotNot (cMul %@P <1>) -> (cGreaterOrEq[(cMul <1>) *(0.5 /%)])
 cAbsNotNot (cMul %@N <1>) -> (cLessOrEq[(cMul <1>)    *(0.5 /%)])
 
+# min(x, max(x, ...)) = x
+# max(x, min(x, ...)) = x
+cMin x (cMax x <1>)  : x
+cMax x (cMin x <1>)  : x
+
 [SIMPLIFY_EQUATION]
 
 cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
