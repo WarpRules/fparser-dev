@@ -88,6 +88,8 @@ std::set<std::string> mpfrconst_set;
 std::map<std::string, std::string> define_sections;
 std::string default_function_section;
 
+std::string TranslateString(const std::string& str);
+
 void ListTests(std::ostream& outStream)
 {
     for(std::map<std::string, TestCollection>::const_iterator
@@ -177,10 +179,10 @@ void ListTests(std::ostream& outStream)
                         << ", 0,";
 
                 outStream
-                    << "\n      \"" << testdata.ParamString
-                    << "\", \"" << testdata.TestName
-                    << "\", \"" << testdata.FuncString
-                    << "\" },\n";
+                    << "\n      " << TranslateString(testdata.ParamString)
+                    << ", " << TranslateString(testdata.TestName)
+                    << ", " << TranslateString(testdata.FuncString)
+                    << " },\n";
                 if(!testdata.IfDef.empty())
                     outStream << "#endif /*" << testdata.IfDef << " */\n";
             }
@@ -199,7 +201,11 @@ str_replace_inplace(std::basic_string<CharT>& where,
 {
     for(typename std::basic_string<CharT>::size_type a = where.size();
         (a = where.rfind(search, a)) != where.npos;
-        where.replace(a, search.size(), with)) {}
+        )
+    {
+        where.replace(a, search.size(), with);
+        if(a--==0) break;
+    }
 }
 
 
@@ -356,11 +362,96 @@ std::string ReplaceVars(const char* function,
     return result;
 }
 
+//std::string StringBuffer;
+std::string TranslateString(const std::string& str)
+{
+    std::string val = str;
+    str_replace_inplace(val, std::string("/"), std::string("\"\"/\"\""));
+    str_replace_inplace(val, std::string("+"), std::string("\"\"+\"\""));
+    str_replace_inplace(val, std::string("*"), std::string("\"\"*\"\""));
+    str_replace_inplace(val, std::string("x"), std::string("\"\"x\"\""));
+    str_replace_inplace(val, std::string("|"), std::string("\"\"|\"\""));
+    str_replace_inplace(val, std::string("&"), std::string("\"\"&\"\""));
+    if(val[0] == '"') val.erase(0,1); else val.insert(val.begin(), '"');
+    if(val[val.size()-1] == '"') val.erase(val.size()-1, 1); else val += '"';
+    str_replace_inplace(val, std::string("\"\"\"\""), std::string(""));
+    return val;
+    /*
+    if(str.size() <= 6)
+    {
+        return '"' + str + '"';
+    }
+    std::string keyword = str;
+    keyword += '\0';
+    size_t p = StringBuffer.find(keyword);
+    if(p == StringBuffer.npos)
+    {
+        p = StringBuffer.size();
+        StringBuffer += keyword;
+    }
+    char Buf[128];
+    std::sprintf(Buf, "ts+%u", (unsigned)p);
+    return Buf;
+    */
+}
+/*
+void MakeStringBuffer(std::ostream& out)
+{
+    size_t pos = 26; bool quote = false;
+    out << "const char ts[" << StringBuffer.size() << "] = ";
+    for(size_t a=0; a < StringBuffer.size(); ++a)
+    {
+        //if(pos >= 70) { if(quote) { quote=false; out << '"'; } out << "\n"; pos = 0; }
+        if(!quote) { quote=true; out << '"'; ++pos; }
+        if(StringBuffer[a] == '\0')
+            { out << "\\0"; pos += 2;
+              if(a+1 < StringBuffer.size()
+              && std::isdigit(StringBuffer[a+1]))
+                { out << '"'; quote=false; ++pos; }
+            }
+        else
+            { out << StringBuffer[a]; pos += 1;
+              if(StringBuffer[a] == '/')
+                { out << '"'; quote=false; ++pos; }
+            }
+    }
+    if(quote) out << '"';
+    out << ";\n";
+}*/
+
+static const char cbuf[] =
+"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
+
 std::string MakeFuncName(const std::string& testname)
 {
+    static unsigned counter = 0;
+    std::string result = "qZ";
+    for(unsigned p = counter++; p != 0; p /= 63)
+        result += cbuf[p % 63];
+    return result;
+#if 0
     std::string base = "cpp_" + testname;
     str_replace_inplace(base, std::string("/"), std::string("_"));
+    /*
+    bool changed = false;
+    for(;;)
+    {
+        size_t p = base.find('_');
+        if(p == base.npos) break;
+
+        base.replace(p, 1, "),");
+        base = "FPMERGE(" + base;
+        changed = true;
+    }
+    if(changed)
+    {
+        base.replace(base.find(')'), 1, "");
+        base += ')';
+        str_replace_inplace(base, std::string(","), std::string(",_"));
+    }
+    */
     return base;
+#endif
 }
 
 void CompileTest(const std::string& testname, FILE* fp)
@@ -657,6 +748,343 @@ bool natcomp(const std::string& a, const std::string& b)
     return (bp < b.size() && ap >= a.size());
 }
 
+class CPPcompressor
+{
+    struct token
+    {
+        std::string value;
+        unsigned    hash;
+        bool        preproc;
+        //int balance;
+
+        token(const std::string& v) : value(v)
+        {
+            Rehash();
+        }
+
+        void operator=(const std::string& v) { value=v; Rehash(); }
+
+        bool operator==(const token& b) const
+        {
+            return hash == b.hash && value == b.value;
+        }
+
+        bool operator!=(const token& b) const
+            { return !operator==(b); }
+
+        void Rehash()
+        {
+            hash = 0;
+            preproc = value[0] == '#';
+            //balance = 0;
+            for(size_t a=0; a<value.size(); ++a)
+            {
+                hash = hash*0x8088405 + value[a];
+                //if(value[a]=='(') ++balance;
+                //else if(value[]==')') --balance;
+            }
+        }
+        void swap(token& b)
+        {
+            value.swap(b.value);
+            std::swap(hash, b.hash);
+            //std::swap(balance, b.balance);
+            std::swap(preproc, b.preproc);
+        }
+    };
+    struct length_rec
+    {
+        unsigned begin_index;
+        unsigned num_tokens;
+        unsigned num_occurrences;
+    };
+public:
+    std::string Compress(const std::string& input)
+    {
+        std::vector<token> tokens = Tokenize(input);
+        std::vector<std::pair<std::string, std::vector<token> > > Defines;
+        std::string result;
+        for(;;)
+        {
+            static unsigned seq_count = 1;
+            std::string seq_name_buf = "q";
+            {unsigned p=seq_count++;
+            seq_name_buf += cbuf[p%35]; p/=35; // 0-9A-Y
+            for(; p!=0; p /= 63)
+                seq_name_buf += cbuf[p%63];}
+            size_t seq_name_length = seq_name_buf.size();
+
+            /* Find a sub-sequence of tokens for which
+             * the occurrence-count times total length is
+             * largest and the balance of parentheses is even.
+             */
+            std::map<unsigned, length_rec> hash_results;
+            long best_score=0;
+            size_t best_score_length=0;
+            unsigned best_hash=0;
+
+            std::cerr << tokens.size() << " tokens\n";
+
+            std::vector<bool> donttest(tokens.size(), false);
+            const size_t lookahead_depth = 70;
+            for(size_t a=0; a<tokens.size(); ++a)
+            {
+                if(donttest[a]) continue;
+
+                //std::cerr << a << '\t' << best_score << '\t' << best_score_length << '\r' << std::flush;
+                size_t cap = a+lookahead_depth;
+                for(size_t b=a+1; b<tokens.size() && b<cap; ++b)
+                {
+                    size_t max_match_len = std::min(tokens.size()-b, b-a);
+                    size_t match_len = 0;
+                    unsigned hash = 0;
+                    //int balance = 0;
+                    while(match_len < max_match_len && tokens[a+match_len] == tokens[b+match_len])
+                    {
+                        const token& word = tokens[a+match_len];
+                        if(word.preproc) break; // Cannot include preprocessing tokens in substrings
+                        //balance += word.balance;
+                        //if(balance < 0) break;
+
+                        ++match_len;
+                        hash = ~hash*0x8088405u + word.hash;
+
+                        //donttest[b] = true;
+                        if(true)
+                        {
+                            std::map<unsigned, length_rec>::iterator i
+                                = hash_results.lower_bound(hash);
+                            if(i == hash_results.end() || i->first != hash)
+                            {
+                                length_rec rec;
+                                rec.begin_index = a;
+                                rec.num_tokens  = match_len;
+                                rec.num_occurrences = 1;
+                                hash_results.insert(i, std::make_pair(hash,rec));
+                                cap = std::max(cap, b+match_len+lookahead_depth);
+                            }
+                            else if(i->second.begin_index == a)
+                            {
+                                if(std::equal(
+                                    tokens.begin()+a, tokens.begin()+a+match_len,
+                                    tokens.begin() + i->second.begin_index))
+                                {
+                                    long string_len = GetSeq(tokens.begin()+a, match_len, false).size();
+                                    long n = (i->second.num_occurrences += 1);
+                                    long define_length = seq_name_length + 9 - long(string_len);
+                                    long replace_length = long(string_len) - (long(seq_name_length)+1);
+                                    long score = replace_length * n - define_length;
+                                    if(score > best_score)
+                                    {
+                                        best_score        = score;
+                                        best_score_length = string_len;
+                                        best_hash         = hash;
+                                    }
+                                }
+                                cap = std::max(cap, b+match_len+lookahead_depth);
+                            }
+                        }
+                    }
+                }
+            }
+            if(best_score > 0)
+            {
+                const length_rec& rec = hash_results[best_hash];
+                if(rec.num_occurrences > 0)
+                {
+                    /* Found a practical saving */
+                    std::vector<token> sequence
+                        (tokens.begin()+rec.begin_index,
+                         tokens.begin()+rec.begin_index+rec.num_tokens);
+                    std::cerr << "#define " << seq_name_buf << " " <<
+                        GetSeq(sequence.begin(), sequence.size(), false)<< "\n";
+
+                    /* If this define is a substring of an existing define,
+                     * move it prior to that and replace the defines.
+                     */
+                    size_t position=Defines.size();
+                    for(size_t a=Defines.size(); a-- > 0; )
+                    {
+                        std::vector<token>& tmp = Defines[a].second;
+                        bool changed = false;
+                        for(size_t b=0; b+rec.num_tokens < tmp.size(); ++b)
+                            if(std::equal(sequence.begin(),
+                                          sequence.end(),
+                                          tmp.begin()+b))
+                            {
+                                tmp[b] = seq_name_buf;
+                                tmp.erase(tmp.begin()+b+1, tmp.begin()+b+rec.num_tokens);
+                                changed = true;
+                            }
+                        if(changed)
+                        {
+                            std::string r = GetSeq(tmp.begin(), tmp.size(), false);
+                            std::cerr << "#redefine " << Defines[a].first << " " << r << "\n";
+                            position = a;
+                        }
+                    }
+                    Defines.insert(Defines.begin() + position,
+                                   std::make_pair(seq_name_buf, sequence));
+
+                    /* Replace all occurrences of the sequence with the sequence name */
+                    std::vector<bool> deletemap(tokens.size(), false);
+                    for(size_t a=rec.begin_index+rec.num_tokens;
+                               a+rec.num_tokens<=tokens.size();
+                               ++a)
+                    {
+                        if(std::equal(tokens.begin() + rec.begin_index,
+                                      tokens.begin() + rec.begin_index + rec.num_tokens,
+                                      tokens.begin()+a))
+                        {
+                            tokens[a] = seq_name_buf;
+                            for(size_t b=1; b<rec.num_tokens; ++b)
+                                deletemap[++a] = true;
+                        }
+                    }
+                    size_t tgt=0, src=0;
+                    for(; src < tokens.size(); ++src)
+                        if(!deletemap[src])
+                            tokens[tgt++].swap(tokens[src]);
+                    tokens.erase(tokens.begin()+tgt, tokens.end());
+
+                    /* Find more repetitions */
+                    continue;
+                }
+            }
+            break;
+        }
+        for(size_t a=0; a<Defines.size(); ++a)
+            result += "#define " + Defines[a].first + " " +
+                GetSeq(Defines[a].second.begin(), Defines[a].second.size(), false) + "\n";
+        result += GetSeq(tokens.begin(), tokens.size(), true);
+        return result;
+    }
+private:
+    static std::vector<token> Tokenize(const std::string& input)
+    {
+        std::vector<token> result;
+        size_t a=0, b=input.size();
+        while(a < b)
+        {
+            if(input[a]==' ' || input[a]=='\t'
+            || input[a]=='\n' || input[a]=='\r') { ++a; continue; }
+            if(input[a]=='_' || (input[a]>='a' && input[a]<='z')
+                             || (input[a]>='A' && input[a]<='Z'))
+            {
+                size_t name_begin = a;
+                while(++a < b)
+                {
+                    if(isnamechar(input[a])) continue;
+                    break;
+                }
+                result.push_back(input.substr(name_begin, a-name_begin));
+                continue;
+            }
+            if((input[a] >= '0' && input[a] <= '9') || input[a] == '.')
+            {
+                size_t value_begin = a;
+                while(++a < b)
+                {
+                    if((input[a]>='0' && input[a]<='9')
+                    || input[a]=='.' || input[a]=='+' || input[a]=='-'
+                    || input[a]=='x' || (input[a]>='a' && input[a]<='f')
+                    || input[a]=='p' || (input[a]>='A' && input[a]<='F')
+                    || input[a]=='l' || input[a]=='f'
+                    || input[a]=='L' || input[a]=='F') continue;
+                    break;
+                }
+                result.push_back(input.substr(value_begin, a-value_begin));
+                continue;
+            }
+            if(input[a] == '>' || input[a] == '<' || input[a] == '!' || input[a] == '=')
+                if(input[a+1] == '=')
+                    { result.push_back(input.substr(a, 2)); a += 2; continue; }
+            if(input[a] == ':' && input[a+1] == ':')
+                    { result.push_back(input.substr(a, 2)); a += 2; continue; }
+            if(input[a] == '#')
+            {
+                size_t preproc_begin = a;
+                while(++a < b)
+                    if(input[a]=='\n') { ++a; break; }
+                result.push_back(input.substr(preproc_begin, a-preproc_begin));
+                continue;
+            }
+            if(input[a] == '"')
+            {
+                size_t string_begin = a;
+                while(++a < b)
+                    if(input[a]=='"' && input[a-1] != '\\') { ++a; break; }
+                result.push_back(input.substr(string_begin, a-string_begin));
+                continue;
+            }
+            result.push_back(input.substr(a++,1));
+        }
+        return result;
+    }
+    static inline bool isnamechar(char c) { return std::isalnum(c) || c == '_'; }
+    static std::string GetSeq(std::vector<token>::const_iterator begin, size_t n,
+                              bool NewLines)
+    {
+        /* Resequence the input */
+        std::string result;
+        int quotemode = 0;
+        size_t linebegin=0;
+        while(n-- > 0)
+        {
+            const std::string& value = begin->value; ++begin;
+
+            if(value[0] == '#') result += '\n';
+            if(!result.empty() && isnamechar(value[0])
+            && isnamechar(result[result.size()-1]))
+            {
+                if(!NewLines || result.size() < linebegin+50)
+                    result += ' ';
+                else
+                {
+                    result += '\n';
+                    linebegin = result.size();
+                }
+            }
+
+            switch(quotemode)
+            {
+                case 0: // prev wasn't a quote
+                    if(value[0] == '"'
+                    && (n>0 && begin->value[0] == '"'))
+                        { quotemode = 1;
+                          result += value.substr(0, value.size()-1);
+                          continue;
+                        }
+                    else
+                        result += value;
+                    break;
+                case 1: // prev was a quote, skip this quote
+                    if(n>0 && begin->value[0] == '"')
+                        { result += value.substr(1, value.size()-2);
+                          continue;
+                        }
+                    else
+                        { quotemode = 0;
+                          result += value.substr(1);
+                        }
+                    break;
+            }
+            if(NewLines)
+            {
+                if(value[0] == '#'
+                || value[0] == '}'
+                || value[0] == '"'
+                  )
+                {
+                    result += '\n';
+                    linebegin = result.size();
+                }
+            }
+        }
+        return result;
+    }
+};
+
 int main(int argc, char* argv[])
 {
     const char* outputFileName = 0;
@@ -724,12 +1152,25 @@ int main(int argc, char* argv[])
     out << "\n#ifdef " << i->first << "\n" << i->second
         << "#endif /*" << i->first << " */\n";
 
+    std::ostringstream buffer;
+    //buffer << "#define FPMERGEDUMMY(a,b) a##b\n";
+    //buffer << "#define FPMERGE(a,b) FPMERGEDUMMY(a,b)\n";
+
     const std::string outstr = out.str();
     unsigned lineno = 2;
     for(size_t a=0; a<outstr.size(); ++a)
         if(outstr[a] == '\n') ++lineno;
-    outStream << outstr;
-    outStream << "#line " << lineno << " \"" << outStreamName << "\"\n";
-    ListTests(outStream);
+    buffer << outstr;
+    //buffer << "#line " << lineno << " \"" << outStreamName << "\"\n";
+    ListTests(buffer);
+
+    //MakeStringBuffer(buffer);
+    //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";
+
+    CPPcompressor Compressor;
+
+    //outStream << buffer.str();
+    outStream << Compressor.Compress(buffer.str());
+
     return 0;
 }
