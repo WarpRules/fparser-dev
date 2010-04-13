@@ -4,7 +4,6 @@
 
 int main()
 {
-    const double x = -0.99;
-    std::cout << asinh(x) << "\n"
-              << MpfrFloat::asinh(x) << std::endl;
+    MpfrFloat x = MpfrFloat::parseString("0x123zzz", 0);
+    std::cout << x << std::endl;
 }

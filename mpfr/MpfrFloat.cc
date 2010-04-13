@@ -951,7 +951,7 @@ MpfrFloat MpfrFloat::trunc(const MpfrFloat& value)
 MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_strtofr(retval.mData->mFloat, str, endptr, 10, GMP_RNDN);
+    mpfr_strtofr(retval.mData->mFloat, str, endptr, 0, GMP_RNDN);
     return retval;
 }
 
