@@ -87,6 +87,7 @@ std::set<std::string> mpfrconst_set;
 
 std::map<std::string, std::string> define_sections;
 std::string default_function_section;
+std::map<std::string, std::string> class_declarations;
 
 std::string TranslateString(const std::string& str);
 
@@ -105,20 +106,21 @@ void ListTests(std::ostream& outStream)
 
         if(!defines.empty())
             outStream << "#ifdef " << defines << "\n";
+        outStream << "#define Value_t " << type << "\n";
 
         outStream <<
             "template<>\n"
-            "struct RegressionTests<" << type << ">\n"
+            "struct RegressionTests<Value_t>\n"
             "{\n"
-            "    static const TestType<" << type << "> Tests[];\n"
+            "    static const TestType<Value_t> Tests[];\n"
             "};\n"
             //"template<>\n"
-            "const TestType<" << type << ">\n"
-            "    RegressionTests<" << type << ">::Tests[]";
+            "const TestType<Value_t>\n"
+            "    RegressionTests<Value_t>::Tests[]";
         if(n_tests == 0)
         {
             outStream <<
-                " = { TestType<" << type << ">() };\n";
+                " = { TestType<Value_t>() };\n";
         }
         else
         {
@@ -149,7 +151,7 @@ void ListTests(std::ostream& outStream)
                     << "    { " << testdata.ParamAmount
                     << ", " << ranges.str()
                     << ", " << (testdata.UseDegrees ? "true" : "false")
-                    << ", " << testdata.TestFuncName << "<" << type << ">";
+                    << ", " << testdata.TestFuncName << "<Value_t>";
                 if(type == "MpfrFloat"
                 && testdata.DataTypes.find("double")
                 != testdata.DataTypes.end())
@@ -186,8 +188,10 @@ void ListTests(std::ostream& outStream)
                 if(!testdata.IfDef.empty())
                     outStream << "#endif /*" << testdata.IfDef << " */\n";
             }
-            outStream << "    TestType<" << type << ">()\n};\n";
+            outStream << "    TestType<Value_t>()\n};\n";
         }
+
+        outStream << "#undef Value_t\n";
         if(!defines.empty())
             outStream << "#endif /*" << defines << " */\n";
     }
@@ -304,8 +308,8 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                         if(mpfrconst_set.insert(mpfrconst_name).second)
                         {
                             define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"]
-                                += "static const MpfrFloat " + mpfrconst_name
-                                 + "\n    = MpfrFloat::parseString(\"" + num + "\", 0);\n";
+                                += "static const Value_t " + mpfrconst_name
+                                 + "\n    = Value_t::parseString(\"" + num + "\", 0);\n";
                         }
 
                         codebuf << mpfrconst_name;
@@ -372,6 +376,8 @@ std::string TranslateString(const std::string& str)
     str_replace_inplace(val, std::string("x"), std::string("\"\"x\"\""));
     str_replace_inplace(val, std::string("|"), std::string("\"\"|\"\""));
     str_replace_inplace(val, std::string("&"), std::string("\"\"&\"\""));
+    str_replace_inplace(val, std::string("pow"), std::string("\"\"pow\"\""));
+    str_replace_inplace(val, std::string("sin"), std::string("\"\"sin\"\""));
     if(val[0] == '"') val.erase(0,1); else val.insert(val.begin(), '"');
     if(val[val.size()-1] == '"') val.erase(val.size()-1, 1); else val += '"';
     str_replace_inplace(val, std::string("\"\"\"\""), std::string(""));
@@ -422,35 +428,30 @@ void MakeStringBuffer(std::ostream& out)
 static const char cbuf[] =
 "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
 
-std::string MakeFuncName(const std::string& testname)
+std::pair<std::string, std::string>
+    MakeFuncName(const std::string& testname)
 {
+#if 0
     static unsigned counter = 0;
     std::string result = "qZ";
     for(unsigned p = counter++; p != 0; p /= 63)
         result += cbuf[p % 63];
     return result;
-#if 0
-    std::string base = "cpp_" + testname;
-    str_replace_inplace(base, std::string("/"), std::string("_"));
-    /*
-    bool changed = false;
-    for(;;)
-    {
-        size_t p = base.find('_');
-        if(p == base.npos) break;
+#else
+    std::string base = "cpp/" + testname;
 
-        base.replace(p, 1, "),");
-        base = "FPMERGE(" + base;
-        changed = true;
-    }
-    if(changed)
-    {
-        base.replace(base.find(')'), 1, "");
-        base += ')';
-        str_replace_inplace(base, std::string(","), std::string(",_"));
-    }
-    */
-    return base;
+    size_t p = base.rfind('/');
+    std::string classname = base.substr(0, p);
+    std::string methodname = base.substr(p+1);
+    str_replace_inplace(classname, std::string("/"), std::string("_"));
+    str_replace_inplace(methodname, std::string("/"), std::string("_"));
+    // Change the method name to prevent clashes with
+    // with reserved words or the any namespace
+    if(isdigit(methodname[0]))
+        methodname.insert(0, "t");
+    else
+        methodname[0] = std::toupper(methodname[0]);
+    return std::make_pair(classname, methodname);
 #endif
 }
 
@@ -634,8 +635,9 @@ void CompileTest(const std::string& testname, FILE* fp)
                         valuepos = Replaced.c_str();
                     }
 
-                    std::string funcname = MakeFuncName(test.TestName);
-                    test.TestFuncName = funcname;
+                    std::pair<std::string,std::string>
+                        funcname = MakeFuncName(test.TestName);
+                    test.TestFuncName = funcname.first+"::"+funcname.second;
 
                     bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
                     bool unitype = DataTypes.size() == 1;
@@ -649,24 +651,52 @@ void CompileTest(const std::string& testname, FILE* fp)
                         //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
                         const char* valuepos_1 = valuepos;
-                        CompileFunction(valuepos_1, funcname, declbuf1, codebuf1,
+                        CompileFunction(valuepos_1, funcname.second, declbuf1, codebuf1,
                                         limited_to_datatype);
 
-                        out <<
-                            "template<typename Value_t>\n"
-                            "Value_t " << funcname << "(const Value_t* vars)\n"
-                            "{\n"
-                            "    using namespace FUNCTIONPARSERTYPES;\n" <<
+                        std::ostringstream body;
+
+                        body <<
+                            "{\n" <<
                             declbuf1.str();
                         //out << "#line " << linenumber << " \"" << testname << "\"\n";
-                        out <<
+                        body <<
                             "    return " << codebuf1.str() << ";\n"
                             "}\n";
+
+                        std::ostringstream decl;
+
+                        if(limited_to_datatype.empty() || limited_to_datatype == "double")
+                        {
+                            std::string bodystr = body.str();
+                            str_replace_inplace(bodystr, std::string("\n"), std::string("\n    "));
+                            decl <<
+                                "    template<typename Value_t> static Value_t " << funcname.second
+                                           << "(const Value_t* vars)\n"
+                                           << "    " << bodystr << "\n";
+                            class_declarations[funcname.first] += decl.str();
+                        }
+                        else
+                        {
+                            decl <<
+                                "    template<typename Value_t> static Value_t " << funcname.second
+                                           << "(const Value_t* vars);\n";
+                            class_declarations[funcname.first] += decl.str();
+
+                            out <<
+                                "template<typename Value_t>\n"
+                                "Value_t " << funcname.first << "::" << funcname.second
+                                           << "(const Value_t* vars)\n"
+                                           << body.str();
+                        }
                     }
                     else
-                        out <<
-                            "template<typename Value_t>\n"
-                            "Value_t " << funcname << "(const Value_t* ) { }\n";
+                    {
+                        std::ostringstream decl;
+                        decl <<
+                            "    template<typename Value_t> static Value_t " << funcname.second << "(const Value_t* vars);\n";
+                        class_declarations[funcname.first] += decl.str();
+                    }
 
                     ((limited_to_datatype.empty() || limited_to_datatype == "double")
                         ? default_function_section
@@ -678,7 +708,8 @@ void CompileTest(const std::string& testname, FILE* fp)
                         declbuf2 << declbuf.str();
                         //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                        CompileFunction(valuepos, funcname, declbuf2, codebuf2, "MpfrFloat");
+                        CompileFunction(valuepos, funcname.second,
+                                        declbuf2, codebuf2, "MpfrFloat");
 
                         if(codebuf2.str().find("mflit") != codebuf2.str().npos
                         || unitype)
@@ -690,15 +721,15 @@ void CompileTest(const std::string& testname, FILE* fp)
 
                             out2 <<
                                 "template<>\n"
-                                "MpfrFloat " << funcname << "<MpfrFloat> (const MpfrFloat* vars)\n";
-                            out2 <<
+                                "Value_t " << funcname.first << "::" << funcname.second
+                                             << "<Value_t> (const Value_t* vars)\n"
                                 "{\n"
-                                "    typedef MpfrFloat Value_t;\n"
-                                "    using namespace FUNCTIONPARSERTYPES;\n" <<
-                                declbuf2.str();
+                                << declbuf2.str();
                             //out2 << "#line " << linenumber << " \"" << testname << "\"\n";
+                            std::string code = codebuf2.str();
+                            str_replace_inplace(code, std::string("MpfrFloat"), std::string("Value_t"));
                             out2 <<
-                                "    return " << codebuf2.str() << ";\n"
+                                "    return " << code << ";\n"
                                 "}\n";
 
                             if(!test.IfDef.empty())
@@ -1037,7 +1068,7 @@ private:
             if(!result.empty() && isnamechar(value[0])
             && isnamechar(result[result.size()-1]))
             {
-                if(!NewLines || result.size() < linebegin+50)
+                if(!NewLines/* || result.size() < linebegin+50*/)
                     result += ' ';
                 else
                 {
@@ -1139,7 +1170,20 @@ int main(int argc, char* argv[])
         fclose(fp);
     }
 
+    out << "namespace { using namespace FUNCTIONPARSERTYPES;\n";
+
+    for(std::map<std::string, std::string>::const_iterator
+        i = class_declarations.begin();
+        i != class_declarations.end();
+        ++i)
+    {
+        out << "struct " << i->first << "\n"
+            << "{\n"
+            << i->second
+            << "};\n";
+    }
     out << default_function_section;
+
     for(std::map<std::string, std::string>::const_iterator
         i = define_sections.begin(); i != define_sections.end(); ++i)
     {
@@ -1149,28 +1193,24 @@ int main(int argc, char* argv[])
     }
     std::map<std::string, std::string>::const_iterator
         i = define_sections.find("FP_SUPPORT_MPFR_FLOAT_TYPE");
-    out << "\n#ifdef " << i->first << "\n" << i->second
+    out << "\n#ifdef " << i->first << "\n"
+        << "#define Value_t MpfrFloat\n"
+        << i->second
+        << "#undef Value_t\n"
         << "#endif /*" << i->first << " */\n";
 
-    std::ostringstream buffer;
-    //buffer << "#define FPMERGEDUMMY(a,b) a##b\n";
-    //buffer << "#define FPMERGE(a,b) FPMERGEDUMMY(a,b)\n";
+    out << "}\n";
 
-    const std::string outstr = out.str();
-    unsigned lineno = 2;
-    for(size_t a=0; a<outstr.size(); ++a)
-        if(outstr[a] == '\n') ++lineno;
-    buffer << outstr;
-    //buffer << "#line " << lineno << " \"" << outStreamName << "\"\n";
-    ListTests(buffer);
+    ListTests(out);
 
-    //MakeStringBuffer(buffer);
+
+    //MakeStringBuffer(out);
     //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";
 
     CPPcompressor Compressor;
 
-    //outStream << buffer.str();
-    outStream << Compressor.Compress(buffer.str());
+    //outStream << out.str();
+    outStream << Compressor.Compress(out.str());
 
     return 0;
 }
