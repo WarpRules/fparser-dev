@@ -1,0 +1,5 @@
+T=d
+V=x
+R=-4,-4,0.5
+F= pow(cos(x),2.0) + pow(cosh(x),2.0)
+C= fp_pow(fp_cos(x),2.0) + fp_pow(fp_cosh(x),2.0)

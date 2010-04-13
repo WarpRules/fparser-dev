@@ -1,0 +1,5 @@
+T=d
+V=x
+R=-4,-4,0.5
+F= tan(x) * cosh(x)
+C= fp_tan(x) * fp_cosh(x)

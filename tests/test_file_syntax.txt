@@ -141,7 +141,22 @@ Which tests go where
 03unit_constants:
 	These tests verify that the fp_const_* functions
 	produce mathematically correct values.
-	
+
+10optimizer_bytecode:
+	Unit tests for each bytecode optimization done
+	by the parser itself.
+
+20optimizer_optimizations:
+	Testcases for categorigally each fpoptimizer optimization.
+	(Incomplete)
+
+21optimizer_trigcombinations:
+	This is a machine generated list of tests that stress
+	all combinations of sin/cos/tan/sinh/cos/tanh/exp
+	with exponents -2..+2 in multiplications and additions,
+	to catch any misoperations thereof. It is easy to
+	get them wrong, so an exhaustive testing is justified.
+
 50regressions:
 	Tests in this directory target specific bugs which
 	have been discovered. The test should contain nothing

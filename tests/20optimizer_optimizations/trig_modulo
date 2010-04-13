@@ -25,3 +25,11 @@ C=fp_cos(x+fp_const_pi<Value_t>()) + \
   fp_sin(x-fp_const_pi<Value_t>()*5/2) + \
   fp_sin(x-fp_const_pi<Value_t>()*6/2) + \
   fp_sin(x-fp_const_pi<Value_t>()*7/2)
+
+# Expected optimization:
+#   cos(x + pi*2/3)
+# + cos(x - pi*2/3)
+# + sin(x - pi*2/3)
+# + sin(x + pi*2/3)
+# - 4*sin(x)
+# - 4*cos(x)

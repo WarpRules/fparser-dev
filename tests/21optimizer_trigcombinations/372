@@ -1,0 +1,5 @@
+T=d
+V=x
+R=-4,-4,0.5
+F= 1 / pow(cosh(x),2.0)
+C= 1 / fp_pow(fp_cosh(x),2.0)
