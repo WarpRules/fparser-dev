@@ -1942,6 +1942,10 @@ int main(int argc, char* argv[])
                 std::cout << "Available tests:\n";
                 size_t column=0;
                 std::string prev_test_prefix;
+
+                bool counting_tests = false;
+                long last_count     = 0, count_length = 0;
+
                 for(size_t a=0; a<tests.size(); ++a)
                 {
                     std::string tn = tests[a];
@@ -1952,15 +1956,47 @@ int main(int argc, char* argv[])
                     {
                         {std::string path_prefix(tn, 0, p);
                         if(path_prefix != prev_test_prefix)
-                            { if(column) { std::cout << std::endl; column=0; }
-                              prev_test_prefix = path_prefix;
-                              std::cout << "    " << path_prefix << "/\n"; }}
+                        {
+                            if(counting_tests && count_length > 1)
+                            { std::ostringstream tmp; tmp << "-" << last_count;
+                              std::cout << tmp.str(); column += tmp.str().size(); }
+                            counting_tests = false;
+                            if(column) { std::cout << std::endl; column=0; }
+                            prev_test_prefix = path_prefix;
+                            std::cout << "    " << path_prefix << "/\n";
+                        }}
                         tn.erase(0, p+1);
                     }
                     if(column+tn.size() >= 76) { column=0; std::cout << "\n"; }
                     if(column==0) { std::cout << "        "; column+=8; }
                     else { std::cout << " "; column+=1; }
-                    std::cout << tn; column += tn.size();
+
+                    /* TODO: Rewrite this such that backspaces are not needed,
+                     *       because they don't work with util-linux's "more"
+                     */
+                    char* endptr = 0;
+                    long val = strtol(tn.c_str(), &endptr, 10);
+                    if(!*endptr)
+                    {
+                        if(!counting_tests)
+                            { counting_tests = true; count_length = 1; last_count = val; }
+                        else if(val == last_count+1)
+                            { ++count_length;
+                              last_count = val; std::cout << "\b"; --column; continue; }
+                        else if(count_length > 1)
+                            { std::ostringstream tmp; tmp << "\b-" << last_count << " ";
+                              std::cout << tmp.str(); column += tmp.str().size();
+                              counting_tests = false; }
+                        else counting_tests = false;
+                    }
+                    else if(counting_tests && count_length > 1)
+                        { std::ostringstream tmp; tmp << "\b-" << last_count << " ";
+                          std::cout << tmp.str(); column += tmp.str().size();
+                          counting_tests = false; }
+                    else counting_tests = false;
+
+                    std::cout << tn;
+                    column += tn.size();
                 }
                 if(column) std::cout << std::endl;
                 return 0;
