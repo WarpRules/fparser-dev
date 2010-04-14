@@ -303,7 +303,8 @@ clean:
 	rm -f	testbed testbed_release speedtest speedtest_release \
 		example example2 ftest powi_speedtest \
 		fpoptimizer/grammar_parser \
-		*.o fpoptimizer/*.o .dep \
+		tests/cpp_compress \
+		*.o fpoptimizer/*.o tests/*.o .dep \
 		fpoptimizer/grammar_parser.output
 
 release_clean:
