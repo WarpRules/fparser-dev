@@ -1,5 +1,0 @@
-T=d
-V=x
-R=-4,-4,0.5
-F= cosh(x) + exp(x)
-C= fp_cosh(x) + fp_exp(x)

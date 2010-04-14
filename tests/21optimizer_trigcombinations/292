@@ -1,5 +1,0 @@
-T=d
-V=x
-R=-4,-4,0.5
-F= 1 / tanh(x)
-C= 1 / fp_tanh(x)

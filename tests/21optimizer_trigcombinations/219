@@ -1,5 +1,0 @@
-T=d
-V=x
-R=-4,-4,0.5
-F= cos(x*x) * sinh(x*x)
-C= fp_cos(x*x) * fp_sinh(x*x)

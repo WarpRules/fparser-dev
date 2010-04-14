@@ -9,12 +9,14 @@ function CreateTest($f, $file)
   #if(strpos($f, '(x)') !== false) $vars[] = 'x';
   #if(strpos($f, '(y)') !== false) $vars[] = 'y';
   
-  file_put_contents($file, 
+  print "$F\n";
+  
+/*  file_put_contents($file, 
     "T=d\n".
     "V=".join(',', $vars)."\n".
-    "R=-4,-4,0.5\n".
+    "R=-4,4,0.5\n".
     "F= $F\n".
-    "C= $C\n");
+    "C= $C\n");*/
 }
 
 $functions = Array('sin','cos','tan','sinh','cosh','tanh','exp');

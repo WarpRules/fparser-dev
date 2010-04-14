@@ -1,5 +1,0 @@
-T=d
-V=x
-R=-4,-4,0.5
-F= 1 / sinh(x)
-C= 1 / fp_sinh(x)

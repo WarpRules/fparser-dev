@@ -1,5 +1,0 @@
-T=d
-V=x
-R=-4,-4,0.5
-F= cosh(x*x) * tanh(x*x)
-C= fp_cosh(x*x) * fp_tanh(x*x)
