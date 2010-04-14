@@ -1,12 +1,13 @@
 #define q1 ByteCodePtr[
 #define q3 data->ByteCode.
+#define qL pop_back();
 #define q81 unsigned
-#define q9 for(q81 tmp=2;tmp-->0;)q3 pop_back();
+#define q9 for(q81 tmp=2;tmp-->0;)q3 qL
 #define qM AddFunctionOpcode
 #define qQ :ImmedPtr[
 #define q2 qQ 0]=-x;q9 qM(cMul);opcode=
-#define qL pop_back();
-#define q4 :q3 qL AddFunctionOpcode
+#define qD1 :q3 qL qM
+#define q4 qD1
 #define qF =ImmedPtr[
 #define qJ cImmed
 #define qF1 q1-2]==
@@ -15,24 +16,24 @@
 #define q6 x qF 0];if(x qU){
 #define q7 if(IsNeverNegativeValueOpcode(A)){
 #define q8 :B=q1-2];if(IsNeverNegativeValueOpcode(B)){
-#define qP data->Immed.
-#define qK :qP pop_back();
-#define qA qK q3 qL goto
-#define qB &&!HasInvalidRangesOpcode
-#define qC q3 qL qM(cMul);
 #define qD goto
-#define qE ;case qJ:x qF 0];
+#define qP data->Immed.
+#define qK :qP qL
+#define qA qK q3 qL qD
+#define qB &&!HasInvalidRangesOpcode
+#define qI ;qM(cMul);
+#define qC q3 pop_back()qI
+#define qV qJ:x qF 0];
+#define qE ;case qV
 #define qH1 Default0
 #define qG }}qD qH1;
-#define qH q4(cNeg);AddFunctionOpcode
-#define qI ;qM(cMul);
+#define qH q4(cNeg);qM
 #define qN ;qD Llh;
 #define qO }qD Default1;case
 #define qR q1 0]
 #define qS }break;case
 #define qB1 ;}break;
 #define qT qB1}qD qH1;
-#define qV qJ:x qF 0];
 #define qW {case cDup:
 #define qX (x);qD Lnq;
 #define qY ;qD Lbd;
@@ -48,7 +49,6 @@
 #define q91 ;}qS cSqr:
 #define qA1 y qF-1];
 #define qC1 qP qL for
-#define qD1 :q3 qL qM
 #define qE1 ;Value_t
 #define qG1 Default5
 #define qI1 fp_log10

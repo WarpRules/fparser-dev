@@ -166,7 +166,7 @@ public:
                     {
                         std::vector<token>& tmp = Defines[a].second;
                         bool changed = false;
-                        for(size_t b=0; b+rec.num_tokens < tmp.size(); ++b)
+                        for(size_t b=0; b+rec.num_tokens <= tmp.size(); ++b)
                             if(std::equal(sequence.begin(),
                                           sequence.end(),
                                           tmp.begin()+b))
@@ -227,7 +227,7 @@ private:
         {
             if(input[a]==' ' || input[a]=='\t'
             || input[a]=='\n' || input[a]=='\r') { ++a; continue; }
-            
+
             if(input[a]=='/' && input[a+1]=='*')
             {
                 a += 2;
@@ -239,7 +239,7 @@ private:
                 while(a < b && input[a]!='\n') ++a;
                 continue;
             }
-            
+
             if(input[a]=='_' || (input[a]>='a' && input[a]<='z')
                              || (input[a]>='A' && input[a]<='Z'))
             {

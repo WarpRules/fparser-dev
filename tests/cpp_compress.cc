@@ -8,11 +8,10 @@ int main(int argc, char* argv[])
     {
         char Buf[32768];
         if(!std::fgets(Buf, sizeof(Buf), stdin)) break;
-        Buf[32767] = '\0';
+        Buf[(sizeof Buf)-1] = '\0';
         out += Buf;
     }
     CPPcompressor Compressor;
 
-    //outStream << out.str();
     std::cout << Compressor.Compress(out);
 }
