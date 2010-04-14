@@ -165,11 +165,21 @@ fpoptimizer/bytecoderules_parser: \
 		fpoptimizer/bytecoderules_parser.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-fp_opcode_add.inc: fpoptimizer/bytecoderules_parser fpoptimizer/fparser_bytecoderules.dat
-	fpoptimizer/bytecoderules_parser < fpoptimizer/fparser_bytecoderules.dat > $@
+fp_opcode_add.inc: \
+		fpoptimizer/bytecoderules_parser \
+		fpoptimizer/fparser_bytecoderules.dat \
+		tests/cpp_compress
+	fpoptimizer/bytecoderules_parser \
+		< fpoptimizer/fparser_bytecoderules.dat \
+		| tests/cpp_compress \
+		> $@
 
 tests/make_tests: \
 		tests/make_tests.o
+	$(LD) -o $@ $^ $(LDFLAGS)
+
+tests/cpp_compress: \
+		tests/cpp_compress.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 testbed_tests.inc: tests/make_tests
@@ -204,10 +214,11 @@ fpoptimizer.cc: \
 		fpoptimizer/fpoptimizer_rangeestimation.cc \
 		fpoptimizer/fpoptimizer_transformations.cc \
 		fpoptimizer/fpoptimizer_header.txt \
-		fpoptimizer/fpoptimizer_footer.txt
+		fpoptimizer/fpoptimizer_footer.txt \
+		tests/cpp_compress
 	rm -f fpoptimizer.cc
+	cat fpoptimizer/fpoptimizer_header.txt  > $@
 	for file in \
-	    fpoptimizer/fpoptimizer_header.txt \
 	    fpoptimizer/fpoptimizer_hash.hh \
 	    fpoptimizer/fpoptimizer_autoptr.hh \
 	    fpoptimizer/fpoptimizer_codetree.hh \
@@ -234,12 +245,12 @@ fpoptimizer.cc: \
 	    fpoptimizer/fpoptimizer_rangeestimation.cc \
 	    fpoptimizer/fpoptimizer_transformations.cc \
 	    fpoptimizer/fpoptimizer_main.cc \
-	    fpoptimizer/fpoptimizer_footer.txt \
 	; do \
 		echo "#line 1 \"$$file\""; \
 		sed -r "s@^(#include (\"fpoptimizer|\"crc32).*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
-	done > $@
+	done | tests/cpp_compress >> $@
+	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 VersionChanger: VersionChanger.cc
 	g++ -O3 $^ -s -o $@
@@ -309,6 +320,7 @@ testbed_tests.inc: $(TESTBED_TEST_FILES)
 	echo -n '' > .dep
 	- g++ -MM -MG $(CPPFLAGS) $(wildcard *.cc) >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
+	- g++ -MM $(CPPFLAGS) $(wildcard tests/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
 
 -include .dep
