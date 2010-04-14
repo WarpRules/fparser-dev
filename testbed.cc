@@ -1893,11 +1893,12 @@ bool runRegressionTests(const std::string& valueType)
 //=========================================================================
 namespace OptimizerTests
 {
-    /* Ne testit kattaa seuraavat tapaukset: A(x^B)^C * D(x^E)^F
-       jossa A,D={sin,cos,tan,sinh,cosh,tanh,exp}; B,E={1,2} ja
-       C,F={-2,-1,0,1,2}, sek‰ *:n sijaan +. Miinus ne miss‰ on funktio^1
-       yksin‰‰n, tai exp yhdistettyn‰ sin/cos/tan -funktioiden kanssa.
-     */
+    /* Tests functions of the form "A(x^B)^C op D(x^E)^F", where:
+       - A,D = {sin,cos,tan,sinh,cosh,tanh,exp}
+       - B,E = {1,2}
+       - C,F = {-2,-1,0,1,2}
+       - op = +, *
+    */
     struct MathFuncData
     {
         double (*mathFunc)(double d);
@@ -1915,6 +1916,7 @@ namespace OptimizerTests
     int exponent_B, exponent_E;
     int exponent_C, exponent_F;
     unsigned operatorIndex;
+    unsigned testCounter = 0;
 
     double evaluateFunction(const double* params)
     {
@@ -1933,6 +1935,8 @@ namespace OptimizerTests
 
     bool runCurrentTrigCombinationTest()
     {
+        ++testCounter;
+
         const MathFuncData& data1 = mathFuncs[mathFuncIndexA];
         const MathFuncData& data2 = mathFuncs[mathFuncIndexD];
 
@@ -1998,8 +2002,12 @@ namespace OptimizerTests
 
 bool testOptimizer()
 {
-    std::cout << "- Optimizer tests..." << std::endl;
-    return OptimizerTests::runTrigCombinationTests();
+    std::cout << "- Optimizer tests...";
+    if(!OptimizerTests::runTrigCombinationTests())
+        return false;
+    std::cout << " (" << OptimizerTests::testCounter << " tests)"
+              << std::endl;
+    return true;
 }
 
 
