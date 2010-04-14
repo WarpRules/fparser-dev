@@ -1889,6 +1889,121 @@ bool runRegressionTests(const std::string& valueType)
 }
 
 //=========================================================================
+// Optimizer tests
+//=========================================================================
+namespace OptimizerTests
+{
+    /* Ne testit kattaa seuraavat tapaukset: A(x^B)^C * D(x^E)^F
+       jossa A,D={sin,cos,tan,sinh,cosh,tanh,exp}; B,E={1,2} ja
+       C,F={-2,-1,0,1,2}, sek‰ *:n sijaan +. Miinus ne miss‰ on funktio^1
+       yksin‰‰n, tai exp yhdistettyn‰ sin/cos/tan -funktioiden kanssa.
+     */
+    struct MathFuncData
+    {
+        double (*mathFunc)(double d);
+        const char* funcName;
+    };
+
+    const MathFuncData mathFuncs[] =
+    {
+        { &sin, "sin" }, { &cos, "cos" }, { &tan, "tan" }, { &sinh, "sinh" },
+        { &cosh, "cosh" }, { &tanh, "tanh" }, { &exp, "exp" }
+    };
+    const unsigned mathFuncsAmount = sizeof(mathFuncs) / sizeof(mathFuncs[0]);
+
+    unsigned mathFuncIndexA, mathFuncIndexD;
+    int exponent_B, exponent_E;
+    int exponent_C, exponent_F;
+    unsigned operatorIndex;
+
+    double evaluateFunction(const double* params)
+    {
+        const double x = params[0];
+        const MathFuncData& data1 = mathFuncs[mathFuncIndexA];
+        const MathFuncData& data2 = mathFuncs[mathFuncIndexD];
+
+        const double angle1 = (exponent_B == 1 ? x : pow(x, exponent_B));
+        const double angle2 = (exponent_E == 1 ? x : pow(x, exponent_E));
+        const double part1 = pow(data1.mathFunc(angle1), exponent_C);
+        const double part2 = pow(data2.mathFunc(angle2), exponent_F);
+
+        if(operatorIndex == 0) return part1 + part2;
+        return part1 * part2;
+    }
+
+    bool runCurrentTrigCombinationTest()
+    {
+        const MathFuncData& data1 = mathFuncs[mathFuncIndexA];
+        const MathFuncData& data2 = mathFuncs[mathFuncIndexD];
+
+        std::ostringstream os;
+        os << data1.funcName << "(x^" << exponent_B << ")^" << exponent_C;
+        if(operatorIndex == 0) os << "+";
+        else os << "*";
+        os << data2.funcName << "(x^" << exponent_E << ")^" << exponent_F;
+        const std::string funcString = os.str();
+
+        const TestType<double> testData =
+        {
+            1, -4.0, 4.0, 0.49, false, &evaluateFunction, 0, 0, "x",
+            "'optimizer test'", funcString.c_str()
+        };
+
+        FunctionParser parser;
+        if(parser.Parse(funcString, "x") >= 0)
+        {
+            std::cout << "Oops: Function \"" << funcString
+                      << "\" was malformed." << std::endl;
+            return false;
+        }
+
+        return runRegressionTest(parser, testData,
+                                 "double", Epsilon<double>());
+    }
+
+    bool runTrigCombinationTests()
+    {
+        for(mathFuncIndexA = 0;
+            mathFuncIndexA < mathFuncsAmount;
+            ++mathFuncIndexA)
+        {
+            for(mathFuncIndexD = 0;
+                mathFuncIndexD < mathFuncsAmount;
+                ++mathFuncIndexD)
+            {
+                for(exponent_B = 1; exponent_B <= 2; ++exponent_B)
+                {
+                    for(exponent_E = 1; exponent_E <= 2; ++exponent_E)
+                    {
+                        for(exponent_C = -2; exponent_C <= 2; ++exponent_C)
+                        {
+                            for(exponent_F = -2; exponent_F <= 2; ++exponent_F)
+                            {
+                                for(operatorIndex = 0;
+                                    operatorIndex < 2;
+                                    ++operatorIndex)
+                                {
+                                    if(!runCurrentTrigCombinationTest())
+                                        return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+}
+
+bool testOptimizer()
+{
+    std::cout << "- Optimizer tests..." << std::endl;
+    return OptimizerTests::runTrigCombinationTests();
+}
+
+
+//=========================================================================
 // Main
 //=========================================================================
 int main(int argc, char* argv[])
@@ -2119,13 +2234,14 @@ int main(int argc, char* argv[])
     // Misc. tests
     // -----------
     if(!TestCopying()
-    || !TestErrorSituations()
-    || !WhiteSpaceTest()
-    || !TestIntPow()
-    || (runUTF8Test && !UTF8Test())
-    || !TestIdentifiers()
-    || !testUserDefinedFunctions()
-    || !testMultithreadedEvaluation())
+       || !TestErrorSituations()
+       || !WhiteSpaceTest()
+       || !testOptimizer()
+       || !TestIntPow()
+       || (runUTF8Test && !UTF8Test())
+       || !TestIdentifiers()
+       || !testUserDefinedFunctions()
+       || !testMultithreadedEvaluation())
         return 1;
 
     std::cout << "==================================================\n"
