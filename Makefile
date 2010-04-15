@@ -168,11 +168,13 @@ fpoptimizer/bytecoderules_parser: \
 fp_opcode_add.inc: \
 		fpoptimizer/bytecoderules_parser \
 		fpoptimizer/fparser_bytecoderules.dat \
+		fpoptimizer/fparser_bytecoderules_header.txt \
 		tests/cpp_compress
+	cat fpoptimizer/fparser_bytecoderules_header.txt > $@
 	fpoptimizer/bytecoderules_parser \
 		< fpoptimizer/fparser_bytecoderules.dat \
 		| tests/cpp_compress \
-		> $@
+		>> $@
 
 tests/make_tests: \
 		tests/make_tests.o

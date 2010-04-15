@@ -32,11 +32,11 @@ class CPPcompressor
         void Rehash()
         {
             hash = 0;
-            preproc = value[0] == '#';
+            preproc = value[0] == '#' || value[0] == '\n';
             balance = 0;
             for(size_t a=0; a<value.size(); ++a)
             {
-                hash = hash*0x8088405 + value[a];
+                hash = hash*0x8088405u + value[a];
                 if(value[a]=='(') ++balance;
                 else if(value[a]==')') --balance;
             }
@@ -61,14 +61,18 @@ public:
         static const char cbuf[] =
         "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
         std::vector<token> tokens = Tokenize(input);
-        std::vector<std::pair<std::string, std::vector<token> > > Defines;
+        bool tried_retokenizing = false;
         std::string result;
-        if(1)for(;;)
+        for(;;)
         {
-            static unsigned seq_count = 1;
-            std::string seq_name_buf = "q";
-            {unsigned p=seq_count++;
-            seq_name_buf += cbuf[p%35]; p/=35; // 0-9A-Y
+            bool compressed = false;
+
+            static unsigned seq_count = 0;
+            std::string seq_name_buf = "";
+            {
+            unsigned p=seq_count++;
+            seq_name_buf += "qgh"[(p/36)%3];
+            seq_name_buf += cbuf[p%36]; p/=3*36; // 0-9A-Z
             for(; p!=0; p /= 63)
                 seq_name_buf += cbuf[p%63];}
             size_t seq_name_length = seq_name_buf.size();
@@ -85,7 +89,7 @@ public:
             std::cerr << tokens.size() << " tokens\n";
 
             std::vector<bool> donttest(tokens.size(), false);
-            const size_t lookahead_depth = 70;
+            const size_t lookahead_depth = 75;
             for(size_t a=0; a<tokens.size(); ++a)
             {
                 if(donttest[a]) continue;
@@ -97,19 +101,19 @@ public:
                     size_t max_match_len = std::min(tokens.size()-b, b-a);
                     size_t match_len = 0;
                     unsigned hash = 0;
-                    int balance = 0;
+                    //int balance = 0;
                     while(match_len < max_match_len && tokens[a+match_len] == tokens[b+match_len])
                     {
                         const token& word = tokens[a+match_len];
                         if(word.preproc) break; // Cannot include preprocessing tokens in substrings
-                        balance += word.balance;
-                        if(balance < 0) break;
+                        //balance += word.balance;
+                        //if(balance < 0) break;
 
                         ++match_len;
                         hash = ~hash*0x8088405u + word.hash;
 
                         //donttest[b] = true;
-                        if(balance == 0)
+                        //if(balance == 0)
                         {
                             std::map<unsigned, length_rec>::iterator i
                                 = hash_results.lower_bound(hash);
@@ -156,43 +160,19 @@ public:
                         (tokens.begin()+rec.begin_index,
                          tokens.begin()+rec.begin_index+rec.num_tokens);
                     std::cerr << "#define " << seq_name_buf << " " <<
-                        GetSeq(sequence.begin(), sequence.size(), false)<< "\n";
-
-                    /* If this define is a substring of an existing define,
-                     * move it prior to that and replace the defines.
-                     */
-                    size_t position=Defines.size();
-                    for(size_t a=Defines.size(); a-- > 0; )
-                    {
-                        std::vector<token>& tmp = Defines[a].second;
-                        bool changed = false;
-                        for(size_t b=0; b+rec.num_tokens <= tmp.size(); ++b)
-                            if(std::equal(sequence.begin(),
-                                          sequence.end(),
-                                          tmp.begin()+b))
-                            {
-                                tmp[b] = seq_name_buf;
-                                tmp.erase(tmp.begin()+b+1, tmp.begin()+b+rec.num_tokens);
-                                changed = true;
-                            }
-                        if(changed)
-                        {
-                            std::string r = GetSeq(tmp.begin(), tmp.size(), false);
-                            std::cerr << "#redefine " << Defines[a].first << " " << r << "\n";
-                            position = a;
-                        }
-                    }
-                    Defines.insert(Defines.begin() + position,
-                                   std::make_pair(seq_name_buf, sequence));
+                        GetSeq(sequence.begin(), sequence.size(), false)
+                            //<< " /* " << rec.num_occurrences
+                            //<< " occurrences */"
+                              << std::endl;
 
                     /* Replace all occurrences of the sequence with the sequence name */
                     std::vector<bool> deletemap(tokens.size(), false);
-                    for(size_t a=rec.begin_index+rec.num_tokens;
+                    for(size_t a=0;//rec.begin_index+rec.num_tokens;
                                a+rec.num_tokens<=tokens.size();
                                ++a)
                     {
-                        if(std::equal(tokens.begin() + rec.begin_index,
-                                      tokens.begin() + rec.begin_index + rec.num_tokens,
+                        if(std::equal(sequence.begin(),
+                                      sequence.end(),
                                       tokens.begin()+a))
                         {
                             tokens[a] = seq_name_buf;
@@ -206,25 +186,44 @@ public:
                             tokens[tgt++].swap(tokens[src]);
                     tokens.erase(tokens.begin()+tgt, tokens.end());
 
+                    sequence.insert(sequence.begin(),
+                        token("#define " + seq_name_buf + " "));
+                    sequence.push_back( token("\n") );
+
+                    tokens.insert(tokens.begin(),
+                        sequence.begin(), sequence.end());
+
                     /* Find more repetitions */
-                    continue;
+                    compressed         = true;
+                    tried_retokenizing = false;
                 }
             }
-            break;
+            if(!compressed)
+            {
+                if(tried_retokenizing) break;
+                tried_retokenizing = true;
+
+                std::cerr << "Retokenizing\n";
+                result = GetSeq(tokens.begin(), tokens.size(), true);
+                tokens = Tokenize(result);
+            }
         }
-        for(size_t a=0; a<Defines.size(); ++a)
-            result += "#define " + Defines[a].first + " " +
-                GetSeq(Defines[a].second.begin(), Defines[a].second.size(), false) + "\n";
-        result += GetSeq(tokens.begin(), tokens.size(), true);
         return result;
     }
 private:
-    static std::vector<token> Tokenize(const std::string& input)
+    static std::vector<token> Tokenize(const std::string& input, bool InDefineMode = false)
     {
         std::vector<token> result;
         size_t a=0, b=input.size();
         while(a < b)
         {
+            if(InDefineMode && input[a]=='\n')
+            {
+                InDefineMode = false;
+                result.push_back( token("\n") );
+                ++a;
+                continue;
+            }
             if(input[a]==' ' || input[a]=='\t'
             || input[a]=='\n' || input[a]=='\r') { ++a; continue; }
 
@@ -239,7 +238,6 @@ private:
                 while(a < b && input[a]!='\n') ++a;
                 continue;
             }
-
             if(input[a]=='_' || (input[a]>='a' && input[a]<='z')
                              || (input[a]>='A' && input[a]<='Z'))
             {
@@ -249,18 +247,23 @@ private:
                     if(isnamechar(input[a])) continue;
                     break;
                 }
-                std::string name = input.substr(name_begin, a-name_begin);
+                std::string name(input, name_begin, a-name_begin);
                 result.push_back(name);
                 /* IMPORTANT NOTE: HARDCODED LIST OF ALL PREPROCESSOR
                  * MACROS THAT TAKE PARAMETERS. ANY MACROS NOT LISTED
                  * HERE WILL BE BROKEN AFTER COMPRESSION.
                  */
-                if((name == "P1" || name == "P2" || name == "P3"
+                if(input[a] == '('
+                && (name == "P1" || name == "P2" || name == "P3"
                  || name == "P" || name == "N" || name == "S"
                  || name == "FP_TRACE_BYTECODE_OPTIMIZATION"
-                 || name == "FP_TRACE_OPCODENAME") && input[a] == '(')
+                 || name == "FP_TRACE_OPCODENAME"
+                 || name == "FP_ReDefinePointers"
+                 || name == "FPHASH_CONST" || name == "assert"
+                 || name == "FPO" || name == "DUP_ONE"
+                 || name == "HANDLE_UNARY_CONST_FUNC"))
                 {
-                    std::vector<token> remains = Tokenize(input.substr(a));
+                    std::vector<token> remains = Tokenize(input.substr(a), InDefineMode);
                     int balance = 1;
                     size_t eat = 1;
                     for(; balance != 0; ++eat)
@@ -286,7 +289,7 @@ private:
                     || input[a]=='L' || input[a]=='F') continue;
                     break;
                 }
-                result.push_back(input.substr(value_begin, a-value_begin));
+                result.push_back( std::string(input, value_begin, a-value_begin ));
                 continue;
             }
             if(a+1 < b && input[a] == '>' && input[a+1] == '>')
@@ -312,6 +315,26 @@ private:
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if(input[a] == '#')
             {
+                if(input.substr(a,8) == "#include")
+                {
+                    result.push_back( token("#include") );
+                    InDefineMode = true;
+                    a += 8;
+                    continue;
+                }
+                if(input.substr(a,7) == "#define")
+                {
+                    size_t p = a+7;
+                    while(p < b && std::isspace(input[p])) ++p; // skip blank
+                    while(p < b && isnamechar(input[p])) ++p; // skip term
+                    if(input[p] != '(')
+                    {
+                        InDefineMode = true;
+                        result.push_back(input.substr(a, p-a) + " ");
+                        a = p;
+                        continue;
+                    }
+                }
                 size_t preproc_begin = a;
                 bool in_quotes = false;
                 while(++a < b)
@@ -321,11 +344,12 @@ private:
                     if(in_quotes && input[a]=='"' && input[a-1]!='\\')
                         { in_quotes=false; continue; }
                     if(input[a]=='\\' && input[a+1]=='\n') { ++a; continue; }
-                    if(input[a]=='\n') { ++a; break; }
+                    if(input[a]=='\n') break;
                 }
-                std::string stmt = input.substr(preproc_begin, a-preproc_begin);
+                std::string stmt(input, preproc_begin, a-preproc_begin);
                 if(stmt.substr(0,5) != "#line")
                     result.push_back(stmt);
+                result.push_back( token("\n") );
                 continue;
             }
             if(input[a] == '"')
@@ -335,17 +359,17 @@ private:
                     if(input[a]=='"' &&
                       (input[a-1] != '\\'
                      || input[a-2]=='\\')) { ++a; break; }
-                result.push_back(input.substr(string_begin, a-string_begin));
+                result.push_back( std::string(input, string_begin, a-string_begin) );
                 continue;
             }
             if(input[a] == '\'')
             {
                 size_t char_begin = a; a += 3;
                 if(input[a-2] == '\\') ++a;
-                result.push_back(input.substr(char_begin, a-char_begin));
+                result.push_back( std::string(input, char_begin, a-char_begin) );
                 continue;
             }
-            result.push_back(input.substr(a++,1));
+            result.push_back( std::string(input,a++,1) );
         }
         return result;
     }
@@ -353,29 +377,40 @@ private:
     static std::string GetSeq(std::vector<token>::const_iterator begin, size_t n,
                               bool NewLines)
     {
+        bool InDefineMode = false;
+
         /* Resequence the input */
         std::string result;
         int quotemode = 0;
-        size_t linebegin=0;
         while(n-- > 0)
         {
             const std::string& value = begin->value; ++begin;
          #if 1
-            if(value[0] == '#') result += '\n';
-            if(!result.empty() && isnamechar(value[0])
-            && isnamechar(result[result.size()-1]))
+            if(!result.empty() && result[result.size()-1] != '\n')
             {
-                if(!NewLines/* || result.size() < linebegin+50*/)
-                    result += ' ';
-                else
+                if(value[0] == '#') result += '\n';
+                else if(isnamechar(value[0])
+                     && isnamechar(result[result.size()-1]))
                 {
-                    result += '\n';
-                    linebegin = result.size();
+                    if(!NewLines || InDefineMode)
+                        result += ' ';
+                    else
+                        result += '\n';
                 }
             }
          #else
             result += '!';
          #endif
+            if(value[0] == '#')
+            {
+                if(value.substr(0,7) == "#define") InDefineMode = true;
+                if(value.substr(0,8) == "#include") InDefineMode = true;
+            }
+            if(value == "\n")
+            {
+                if(InDefineMode) { result += "\n"; InDefineMode = false; }
+                continue;
+            }
 
             switch(quotemode)
             {
@@ -383,7 +418,8 @@ private:
                     if(value[0] == '"'
                     && (n>0 && begin->value[0] == '"'))
                         { quotemode = 1;
-                          result += value.substr(0, value.size()-1);
+                          result.append(value, 0, value.size()-1);
+                          //result += value.substr(0, value.size()-1);
                           continue;
                         }
                     else
@@ -391,16 +427,19 @@ private:
                     break;
                 case 1: // prev was a quote, skip this quote
                     if(n>0 && begin->value[0] == '"')
-                        { result += value.substr(1, value.size()-2);
+                        { //result += value.substr(1, value.size()-2);
+                          result.append(value, 1, value.size()-2);
                           continue;
                         }
                     else
                         { quotemode = 0;
-                          result += value.substr(1);
+                          //result += value.substr(1);
+                          result.append(value, 1, value.size()-1);
                         }
                     break;
             }
-            if(NewLines)
+          #if 1
+            if(NewLines && !InDefineMode)
             {
                 if(value[0] == '#'
                 || value[0] == '}'
@@ -408,11 +447,11 @@ private:
                   )
                 {
                     result += '\n';
-                    linebegin = result.size();
                 }
             }
             if(n > 0 && (value == "<" || value == ">") && value == begin->value)
                 result += ' '; // Avoid making < < into <<, similarly for > >
+          #endif
         }
         return result;
     }
