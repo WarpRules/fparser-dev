@@ -282,7 +282,21 @@ set_version_string: VersionChanger
 	fpoptimizer/bytecoderules_parser.cc fparser.html webpage/index.html
 
 pack: $(RELEASE_PACK_FILES) set_version_string
-	zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES)
+	# Use KZIP (advsys.net/ken), if possible, to create a smaller zip file
+	if which kzip; then \
+	  rm -f fparser$(RELEASE_VERSION).zip ;\
+	  for s in 0 128 256 512 1024; do \
+	    kzip -y -b"$$s" fparser$(RELEASE_VERSION)-tmp.zip $(RELEASE_PACK_FILES) ;\
+	    if [ ! -f fparser$(RELEASE_VERSION).zip \
+	        -o 0"`stat -c %s fparser$(RELEASE_VERSION).zip`" \
+	       -gt 0"`stat -c %s fparser$(RELEASE_VERSION)-tmp.zip`" ]; then \
+	      mv -f fparser$(RELEASE_VERSION)-tmp.zip fparser$(RELEASE_VERSION).zip ;\
+	    fi ;\
+	  done; \
+	  rm -f fparser$(RELEASE_VERSION)-tmp.zip; \
+	else \
+	  zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES) ;\
+	fi
 
 devel_pack: set_version_string
 	tar -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
