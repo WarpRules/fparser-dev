@@ -1308,7 +1308,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     return false;
 }
 
-//#include "fpoptimizer/fpoptimizer_opcodename.hh"
+//#include "fpoptimizer/opcodename.hh"
 // ^ needed only if FP_TRACE_BYTECODE_OPTIMIZATION() is used
 
 template<typename Value_t>

@@ -779,7 +779,7 @@ bool natcomp(const std::string& a, const std::string& b)
     return (bp < b.size() && ap >= a.size());
 }
 
-#include "cpp_compress.hh"
+#include "../util/cpp_compress.hh"
 
 int main(int argc, char* argv[])
 {
