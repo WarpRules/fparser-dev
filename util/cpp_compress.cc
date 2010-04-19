@@ -2,16 +2,39 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <iostream>
 
 namespace
 {
+    std::set<std::string> parametric_macro_list;
+
+    void reset_parametric_macro_list()
+    {
+        static const char* const list[] =
+        {
+            /* IMPORTANT NOTE: HARDCODED LIST OF ALL PREPROCESSOR
+             * MACROS THAT TAKE PARAMETERS. ANY EXTERNAL MACROS
+             * NOT LISTED HERE WILL BE BROKEN AFTER COMPRESSION.
+             * MACROS DEFINED WITHIN THE PROCESSED INPUT ARE FINE.
+             */
+            "assert", "getc", "putc"
+        };
+        parametric_macro_list.clear();
+        for(unsigned p=0; p<sizeof(list)/sizeof(*list); ++p)
+            parametric_macro_list.insert(list[p]);
+    }
+
     struct token
     {
         std::string value;
-        unsigned    hash;
-        bool        preproc;
-        int balance;
+        struct token_meta
+        {
+            unsigned    hash;
+            int         balance;
+            unsigned    comma;
+            bool        preproc;
+        } meta;
 
         token(const std::string& v) : value(v)
         {
@@ -22,7 +45,7 @@ namespace
 
         bool operator==(const token& b) const
         {
-            return hash == b.hash && value == b.value;
+            return meta.hash == b.meta.hash && value == b.value;
         }
 
         bool operator!=(const token& b) const
@@ -30,22 +53,25 @@ namespace
 
         void Rehash()
         {
-            hash = 0;
-            preproc = value[0] == '#' || value[0] == '\n';
-            balance = 0;
+            meta.preproc = value[0] == '#' || value[0] == '\n';
+            meta.balance = 0;
+            meta.comma   = 0;
+            meta.hash    = 0;
             for(size_t a=0; a<value.size(); ++a)
             {
-                hash = hash*0x8088405u + value[a];
-                if(value[a]=='(') ++balance;
-                else if(value[a]==')') --balance;
+                meta.hash = meta.hash*0x8088405u + value[a];
+                switch(value[a])
+                {
+                    case '(': ++meta.balance; break;
+                    case ')': --meta.balance; break;
+                    case ',': ++meta.comma; break;
+                }
             }
         }
         void swap(token& b)
         {
             value.swap(b.value);
-            std::swap(hash, b.hash);
-            std::swap(balance, b.balance);
-            std::swap(preproc, b.preproc);
+            std::swap(meta, b.meta);
         }
     };
     struct length_rec
@@ -55,7 +81,23 @@ namespace
         unsigned num_occurrences;
     };
 
-    inline bool isnamechar(char c) { return std::isalnum(c) || c == '_'; }
+    inline bool isnamechar(char c)
+    {
+        switch(c)
+        {
+            case '0':case 'a':case 'b':case 'c':case 'd':case 'e':case 'f':
+            case '1':case 'g':case 'h':case 'i':case 'j':case 'k':case 'l':
+            case '2':case 'm':case 'n':case 'o':case 'p':case 'q':case 'r':
+            case '3':case 's':case 't':case 'u':case 'v':case 'w':case 'x':
+            case '4':case 'y':case 'z':case '_':
+            case '5':case 'A':case 'B':case 'C':case 'D':case 'E':case 'F':
+            case '6':case 'G':case 'H':case 'I':case 'J':case 'K':case 'L':
+            case '7':case 'M':case 'N':case 'O':case 'P':case 'Q':case 'R':
+            case '8':case 'S':case 'T':case 'U':case 'V':case 'W':case 'X':
+            case '9':case 'Y':case 'Z': return true;
+        }
+        return false;
+    }
 
     std::string GetSeq(std::vector<token>::const_iterator begin,
                        size_t n, bool NewLines)
@@ -69,13 +111,13 @@ namespace
         {
             const std::string& value = begin->value; ++begin;
          #if 1
-            if(!result.empty() && result[result.size()-1] != '\n')
+            if (!result.empty() && result[result.size()-1] != '\n')
             {
-                if(value[0] == '#') result += '\n';
-                else if(isnamechar(value[0])
+                if (value[0] == '#') result += '\n';
+                else if (isnamechar(value[0])
                      && isnamechar(result[result.size()-1]))
                 {
-                    if(!NewLines || InDefineMode)
+                    if (!NewLines || InDefineMode)
                         result += ' ';
                     else
                         result += '\n';
@@ -84,21 +126,21 @@ namespace
          #else
             result += '!';
          #endif
-            if(value[0] == '#')
+            if (value[0] == '#')
             {
-                if(value.substr(0,7) == "#define") InDefineMode = true;
-                if(value.substr(0,8) == "#include") InDefineMode = true;
+                if (value.substr(0,7) == "#define") InDefineMode = true;
+                if (value.substr(0,8) == "#include") InDefineMode = true;
             }
-            if(value == "\n")
+            if (value == "\n")
             {
-                if(InDefineMode) { result += "\n"; InDefineMode = false; }
+                if (InDefineMode) { result += "\n"; InDefineMode = false; }
                 continue;
             }
 
             switch(quotemode)
             {
                 case 0: // prev wasn't a quote
-                    if(value[0] == '"'
+                    if (value[0] == '"'
                     && (n>0 && begin->value[0] == '"'))
                         { quotemode = 1;
                           result.append(value, 0, value.size()-1);
@@ -109,7 +151,7 @@ namespace
                         result += value;
                     break;
                 case 1: // prev was a quote, skip this quote
-                    if(n>0 && begin->value[0] == '"')
+                    if (n>0 && begin->value[0] == '"')
                         { //result += value.substr(1, value.size()-2);
                           result.append(value, 1, value.size()-2);
                           continue;
@@ -122,9 +164,9 @@ namespace
                     break;
             }
           #if 1
-            if(NewLines && !InDefineMode)
+            if (NewLines && !InDefineMode)
             {
-                if(value[0] == '#'
+                if (value[0] == '#'
                 || value[0] == '}'
                 || value[0] == '"'
                   )
@@ -132,8 +174,16 @@ namespace
                     result += '\n';
                 }
             }
-            if(n > 0 && (value == "<" || value == ">") && value == begin->value)
-                result += ' '; // Avoid making < < into <<, similarly for > >
+            if (n > 0 && (value.size() == 1 &&
+                           (value[0] == '<'  // < < is not <<
+                         || value[0] == '>'  // > > is not >>
+                         || value[0] == '+'  // + + is not ++
+                         || value[0] == '-'  // - - is not --
+                         || value[0] == '&') // & & is not &&
+                           ) && value == begin->value)
+            {
+                result += ' ';
+            }
           #endif
         }
         return result;
@@ -146,70 +196,60 @@ namespace
         size_t a=0, b=input.size();
         while(a < b)
         {
-            if(InDefineMode && input[a]=='\n')
+            if (InDefineMode && input[a]=='\n')
             {
                 InDefineMode = false;
                 result.push_back( token("\n") );
                 ++a;
                 continue;
             }
-            if(input[a]==' ' || input[a]=='\t'
+            if (input[a]==' ' || input[a]=='\t'
             || input[a]=='\n' || input[a]=='\r') { ++a; continue; }
 
-            if(input[a]=='/' && input[a+1]=='*')
+            if (input[a]=='/' && input[a+1]=='*')
             {
                 a += 2;
                 while(a < b && (input[a-2]!='*' || input[a-1]!='/')) ++a;
                 continue;
             }
-            if(input[a]=='/' && input[a+1]=='/')
+            if (input[a]=='/' && input[a+1]=='/')
             {
                 while(a < b && input[a]!='\n') ++a;
                 continue;
             }
-            if(input[a]=='_' || (input[a]>='a' && input[a]<='z')
+            if (input[a]=='_' || (input[a]>='a' && input[a]<='z')
                              || (input[a]>='A' && input[a]<='Z'))
             {
                 size_t name_begin = a;
                 while(++a < b)
                 {
-                    if(isnamechar(input[a])) continue;
+                    if (isnamechar(input[a])) continue;
                     break;
                 }
                 std::string name(input, name_begin, a-name_begin);
                 result.push_back(name);
-                /* IMPORTANT NOTE: HARDCODED LIST OF ALL PREPROCESSOR
-                 * MACROS THAT TAKE PARAMETERS. ANY MACROS NOT LISTED
-                 * HERE WILL BE BROKEN AFTER COMPRESSION.
-                 */
-                if(input[a] == '('
-                && (name == "P1" || name == "P2" || name == "P3"
-                 || name == "P" || name == "N" || name == "S"
-                 || name == "FP_TRACE_BYTECODE_OPTIMIZATION"
-                 || name == "FP_TRACE_OPCODENAME"
-                 || name == "FP_ReDefinePointers"
-                 || name == "FPHASH_CONST" || name == "assert"
-                 || name == "FPO" || name == "DUP_ONE"
-                 || name == "HANDLE_UNARY_CONST_FUNC"))
+                if (input[a] == '('
+                && parametric_macro_list.find(name)
+                != parametric_macro_list.end())
                 {
                     std::vector<token> remains = Tokenize(input.substr(a), InDefineMode);
                     int balance = 1;
                     size_t eat = 1;
                     for(; balance != 0; ++eat)
-                        balance += remains[eat].balance;
+                        balance += remains[eat].meta.balance;
                     result.back() = result.back().value + GetSeq(remains.begin(), eat, false);
                     result.insert(result.end(), remains.begin()+eat, remains.end());
                     a = b; // done
                 }
                 continue;
             }
-            if(std::isdigit(input[a]) ||
+            if (std::isdigit(input[a]) ||
                (input[a] == '.' && std::isdigit(input[a+1])))
             {
                 size_t value_begin = a;
                 while(++a < b)
                 {
-                    if((input[a]>='0' && input[a]<='9')
+                    if ((input[a]>='0' && input[a]<='9')
                     || input[a]=='.' || input[a]=='+' || input[a]=='-'
                     || input[a]=='x' || (input[a]>='a' && input[a]<='f')
                     || input[a]=='p' || (input[a]>='A' && input[a]<='F')
@@ -221,80 +261,89 @@ namespace
                 result.push_back( std::string(input, value_begin, a-value_begin ));
                 continue;
             }
-            if(a+1 < b && input[a] == '>' && input[a+1] == '>')
+            if (a+1 < b && input[a] == '>' && input[a+1] == '>')
+                { int n = (a+2 < b && input[a+2] == '=') ? 3 : 2;
+                  result.push_back(input.substr(a, n)); a += n; continue; }
+            if (a+1 < b && input[a] == '<' && input[a+1] == '<')
+                { int n = (a+2 < b && input[a+2] == '=') ? 3 : 2;
+                  result.push_back(input.substr(a, n)); a += n; continue; }
+            if (a+1 < b && input[a] == '+' && input[a+1] == '+')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && input[a] == '<' && input[a+1] == '<')
+            if (a+1 < b && input[a] == '-' && input[a+1] == '-')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && input[a] == '+' && input[a+1] == '+')
+            if (a+1 < b && input[a] == '&' && input[a+1] == '&')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && input[a] == '-' && input[a+1] == '-')
+            if (a+1 < b && input[a] == '|' && input[a+1] == '|')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && input[a] == '&' && input[a+1] == '&')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && input[a] == '|' && input[a+1] == '|')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && (input[a] == '>' || input[a] == '<'
+            if (a+1 < b && (input[a] == '>' || input[a] == '<'
                         || input[a] == '!' || input[a] == '='
                         || input[a] == '+' || input[a] == '-'
                         || input[a] == '*' || input[a] == '/'
                         || input[a] == '&' || input[a] == '|'))
-                if(input[a+1] == '=')
+                if (input[a+1] == '=')
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(a+1 < b && (input[a] == ':' && input[a+1] == ':'))
+            if (a+1 < b && (input[a] == ':' && input[a+1] == ':'))
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if(input[a] == '#')
+            if (input[a] == '#')
             {
-                if(input.substr(a,8) == "#include")
+                if (input.substr(a,8) == "#include")
                 {
                     result.push_back( token("#include") );
                     InDefineMode = true;
                     a += 8;
                     continue;
                 }
-                if(input.substr(a,7) == "#define")
+                if (input.substr(a,7) == "#define")
                 {
                     size_t p = a+7;
                     while(p < b && std::isspace(input[p])) ++p; // skip blank
+                    size_t term_begin = p;
                     while(p < b && isnamechar(input[p])) ++p; // skip term
-                    if(input[p] != '(')
+                    if (input[p] != '(')
                     {
                         InDefineMode = true;
                         result.push_back(input.substr(a, p-a) + " ");
                         a = p;
                         continue;
                     }
+                    else
+                    {
+                        std::string macro(input, term_begin, p-term_begin);
+                        std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
+                        parametric_macro_list.insert(macro);
+                    }
                 }
                 size_t preproc_begin = a;
                 bool in_quotes = false;
                 while(++a < b)
                 {
-                    if(!in_quotes && input[a]=='"')
+                    if (!in_quotes && input[a]=='"')
                         { in_quotes=true; continue; }
-                    if(in_quotes && input[a]=='"' && input[a-1]!='\\')
+                    if (in_quotes && input[a]=='"' && input[a-1]!='\\')
                         { in_quotes=false; continue; }
-                    if(input[a]=='\\' && input[a+1]=='\n') { ++a; continue; }
-                    if(input[a]=='\n') break;
+                    if (input[a]=='\\' && input[a+1]=='\n') { ++a; continue; }
+                    if (input[a]=='\n') break;
                 }
                 std::string stmt(input, preproc_begin, a-preproc_begin);
-                if(stmt.substr(0,5) != "#line")
+                if (stmt.substr(0,5) != "#line")
                     result.push_back(stmt);
                 result.push_back( token("\n") );
                 continue;
             }
-            if(input[a] == '"')
+            if (input[a] == '"')
             {
                 size_t string_begin = a;
                 while(++a < b)
-                    if(input[a]=='"' &&
+                    if (input[a]=='"' &&
                       (input[a-1] != '\\'
                      || input[a-2]=='\\')) { ++a; break; }
                 result.push_back( std::string(input, string_begin, a-string_begin) );
                 continue;
             }
-            if(input[a] == '\'')
+            if (input[a] == '\'')
             {
                 size_t char_begin = a; a += 3;
-                if(input[a-2] == '\\') ++a;
+                if (input[a-2] == '\\') ++a;
                 result.push_back( std::string(input, char_begin, a-char_begin) );
                 continue;
             }
@@ -305,26 +354,22 @@ namespace
 
     static const char cbuf[] =
     "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
-}
 
-std::string CPPcompressor::Compress(const std::string& input)
-{
-    std::vector<token> tokens = Tokenize(input);
-    bool tried_retokenizing = false;
-    std::string result;
-    for(;;)
+    unsigned macro_counter = 0;
+
+    std::string GenerateMacroName()
     {
-        bool compressed = false;
+        std::string result;
+        unsigned p=macro_counter++;
+        result += "qgh"[(p/36)%3];
+        result += cbuf[p%36]; p/=3*36; // 0-9A-Z
+        for(; p!=0; p /= 63)
+            result += cbuf[p%63];
+        return result;
+    }
 
-        static unsigned seq_count = 0;
-        std::string seq_name_buf = "";
-        {// scope for creating seq_name_buf
-            unsigned p=seq_count++;
-            seq_name_buf += "qgh"[(p/36)%3];
-            seq_name_buf += cbuf[p%36]; p/=3*36; // 0-9A-Z
-            for(; p!=0; p /= 63)
-                seq_name_buf += cbuf[p%63];
-        }
+    bool CompressWithNonparametricMacros(std::vector<token>& tokens, const std::string& seq_name_buf)
+    {
         size_t seq_name_length = seq_name_buf.size();
 
         /* Find a sub-sequence of tokens for which
@@ -342,7 +387,7 @@ std::string CPPcompressor::Compress(const std::string& input)
         const size_t lookahead_depth = 75;
         for(size_t a=0; a<tokens.size(); ++a)
         {
-            if(donttest[a]) continue;
+            if (donttest[a]) continue;
 
             //std::cerr << a << '\t' << best_score << '\t' << best_score_length << '\r' << std::flush;
             size_t cap = a+lookahead_depth;
@@ -355,19 +400,19 @@ std::string CPPcompressor::Compress(const std::string& input)
                 while(match_len < max_match_len && tokens[a+match_len] == tokens[b+match_len])
                 {
                     const token& word = tokens[a+match_len];
-                    if(word.preproc) break; // Cannot include preprocessing tokens in substrings
-                    //balance += word.balance;
-                    //if(balance < 0) break;
+                    if (word.meta.preproc) break; // Cannot include preprocessing tokens in substrings
+                    //balance += word.meta.balance;
+                    //if (balance < 0) break;
 
                     ++match_len;
-                    hash = ~hash*0x8088405u + word.hash;
+                    hash = ~hash*0x8088405u + word.meta.hash;
 
                     //donttest[b] = true;
-                    //if(balance == 0)
+                    //if (balance == 0)
                     {
                         std::map<unsigned, length_rec>::iterator i
                             = hash_results.lower_bound(hash);
-                        if(i == hash_results.end() || i->first != hash)
+                        if (i == hash_results.end() || i->first != hash)
                         {
                             length_rec rec;
                             rec.begin_index = a;
@@ -376,9 +421,9 @@ std::string CPPcompressor::Compress(const std::string& input)
                             hash_results.insert(i, std::make_pair(hash,rec));
                             cap = std::max(cap, b+match_len+lookahead_depth);
                         }
-                        else if(i->second.begin_index == a)
+                        else if (i->second.begin_index == a)
                         {
-                            if(std::equal(
+                            if (std::equal(
                                 tokens.begin()+a, tokens.begin()+a+match_len,
                                 tokens.begin() + i->second.begin_index))
                             {
@@ -387,7 +432,7 @@ std::string CPPcompressor::Compress(const std::string& input)
                                 long define_length = seq_name_length + 9 - long(string_len);
                                 long replace_length = long(string_len) - (long(seq_name_length)+1);
                                 long score = replace_length * n - define_length;
-                                if(score > best_score)
+                                if (score > best_score)
                                 {
                                     best_score        = score;
                                     best_score_length = string_len;
@@ -400,10 +445,10 @@ std::string CPPcompressor::Compress(const std::string& input)
                 }
             }
         }
-        if(best_score > 0)
+        if (best_score > 0)
         {
             const length_rec& rec = hash_results[best_hash];
-            if(rec.num_occurrences > 0)
+            if (rec.num_occurrences > 0)
             {
                 /* Found a practical saving */
                 std::vector<token> sequence
@@ -421,7 +466,7 @@ std::string CPPcompressor::Compress(const std::string& input)
                            a+rec.num_tokens<=tokens.size();
                            ++a)
                 {
-                    if(std::equal(sequence.begin(),
+                    if (std::equal(sequence.begin(),
                                   sequence.end(),
                                   tokens.begin()+a))
                     {
@@ -432,7 +477,7 @@ std::string CPPcompressor::Compress(const std::string& input)
                 }
                 size_t tgt=0, src=0;
                 for(; src < tokens.size(); ++src)
-                    if(!deletemap[src])
+                    if (!deletemap[src])
                         tokens[tgt++].swap(tokens[src]);
                 tokens.erase(tokens.begin()+tgt, tokens.end());
 
@@ -444,13 +489,88 @@ std::string CPPcompressor::Compress(const std::string& input)
                     sequence.begin(), sequence.end());
 
                 /* Find more repetitions */
-                compressed         = true;
-                tried_retokenizing = false;
+                return true;
             }
         }
-        if(!compressed)
+        return false;
+    }
+
+    bool CompressWithParametricMacros(
+        std::vector<token>& /*tokens*/,
+        const std::string& /*seq_name_buf*/)
+    {
+        /* TODO: Someone invent an algorithm for this?
+         *
+         * Find e.g.
+         *
+         * Cmpeq_i qI x == y ; } q1
+         * Cmpge_d qI x >= y ; } q1
+         * Cmpge_i qI x >= y ; } q1
+         * Cmpgt_d qI x >  y ; } q1
+         * Cmpgt_i qI x >  y ; } q1
+         * Cmple_d qI x <= y ; } q1
+         * Cmple_i qI x <= y ; } q1
+         * Cmplt_d qI x <  y ; } q1
+         * Cmplt_i qI x <  y ; } q1
+         * Cmpne_d qI x != y ; } q1
+         * Cmpne_i qI x != y ; } q1
+         *
+         * Substitute with:
+         *
+         * #define Zzz(A,B) A qI x B y ; } q1
+         * Zzz(Cmpeq_i,==)
+         * Zzz(Cmpge_d,>=)
+         * Zzz(Cmpge_i,>=)
+         * Zzz(Cmpgt_d,>)
+         * Zzz(Cmpgt_i,>)
+         * Zzz(Cmple_d,<=)
+         * Zzz(Cmple_i,<=)
+         * Zzz(Cmplt_d,<)
+         * Zzz(Cmplt_i,<)
+         * Zzz(Cmpne_d,!=)
+         * Zzz(Cmpne_i,!=)
+         *
+         * Which can be further turned into (well, theoretically):
+         *
+         * #define Zzz(A,B) A qI x B y ; } q1
+         * #define Zxy(A,B) Zzz(Cmp##A##_d,B) Zzz(Cmp##A##_i,B)
+         * Zzz(Cmpeq_i,==)
+         * Zxy(ge,>=)
+         * Zxy(gt,>)
+         * Zxy(le,<=)
+         * Zxy(lt,<)
+         * Zxy(ne,!=)
+         */
+        return false;
+    }
+}
+
+std::string CPPcompressor::Compress(const std::string& input)
+{
+    reset_parametric_macro_list();
+    macro_counter = 0;
+
+    std::vector<token> tokens = Tokenize(input);
+
+    bool tried_retokenizing = false;
+    std::string seq_name_buf = GenerateMacroName();
+
+    std::string result;
+    while (true)
+    {
+        if (CompressWithNonparametricMacros(tokens, seq_name_buf))
         {
-            if(tried_retokenizing) break;
+            tried_retokenizing = false;
+            seq_name_buf = GenerateMacroName();
+        }
+        else if (CompressWithParametricMacros(tokens, seq_name_buf))
+        {
+            tried_retokenizing = false;
+            seq_name_buf = GenerateMacroName();
+        }
+        else
+        {
+            if (tried_retokenizing) break;
             tried_retokenizing = true;
 
             std::cerr << "Retokenizing\n";
