@@ -7,6 +7,8 @@
 
 namespace
 {
+    static const std::string macro_prefix_chars = "qgh";
+
     std::set<std::string> parametric_macro_list;
 
     void reset_parametric_macro_list()
@@ -25,55 +27,6 @@ namespace
             parametric_macro_list.insert(list[p]);
     }
 
-    struct token
-    {
-        std::string value;
-        struct token_meta
-        {
-            unsigned    hash;
-            int         balance;
-            unsigned    comma;
-            bool        preproc;
-        } meta;
-
-        token(const std::string& v) : value(v)
-        {
-            Rehash();
-        }
-
-        void operator=(const std::string& v) { value=v; Rehash(); }
-
-        bool operator==(const token& b) const
-        {
-            return meta.hash == b.meta.hash && value == b.value;
-        }
-
-        bool operator!=(const token& b) const
-            { return !operator==(b); }
-
-        void Rehash()
-        {
-            meta.preproc = value[0] == '#' || value[0] == '\n';
-            meta.balance = 0;
-            meta.comma   = 0;
-            meta.hash    = 0;
-            for(size_t a=0; a<value.size(); ++a)
-            {
-                meta.hash = meta.hash*0x8088405u + value[a];
-                switch(value[a])
-                {
-                    case '(': ++meta.balance; break;
-                    case ')': --meta.balance; break;
-                    case ',': ++meta.comma; break;
-                }
-            }
-        }
-        void swap(token& b)
-        {
-            value.swap(b.value);
-            std::swap(meta, b.meta);
-        }
-    };
     struct length_rec
     {
         unsigned begin_index;
@@ -99,17 +52,133 @@ namespace
         return false;
     }
 
-    std::string GetSeq(std::vector<token>::const_iterator begin,
-                       size_t n, bool NewLines)
+    class StringSeq: private std::string
+    {
+    private:
+        std::vector<bool> sticky;
+    public:
+        StringSeq()
+            : std::string(), sticky() { }
+
+        StringSeq(const std::string& s)
+            : std::string(s), sticky() { }
+
+        const std::string& GetString() const { return *this; }
+
+        template<typename T>
+        void operator += (const T& k)
+        {
+            std::string::operator+=(k);
+        }
+        char operator[] (size_t pos) const
+        {
+            return std::string::operator[] (pos);
+        }
+
+        void SetSticky(size_t n_last_chars)
+        {
+            if(sticky.size() < size()) sticky.resize(size());
+            for(size_t p = size() - n_last_chars; p < size(); ++p)
+                sticky[p] = true;
+        }
+        bool IsSticky(size_t index) const
+        {
+            return index < sticky.size() && sticky[index];
+        }
+        bool HasSticky() const { return !sticky.empty(); }
+
+        StringSeq substr(size_t begin, size_t count = std::string::npos) const
+        {
+            StringSeq result;
+            result.std::string::assign(*this, begin,count);
+            result.sticky.assign(
+                begin < sticky.size()
+                    ? sticky.begin() + begin
+                    : sticky.end(),
+                (count != std::string::npos && begin+count < sticky.size())
+                    ? sticky.begin() + begin + count
+                    : sticky.end());
+            while(!result.sticky.empty() && !result.sticky.back())
+                result.sticky.pop_back();
+            return result;
+        }
+
+        using std::string::empty;
+        using std::string::size;
+        using std::string::append;
+    };
+
+    struct token
+    {
+        std::string value;
+        struct token_meta
+        {
+            unsigned    hash;
+            int         balance;
+            unsigned    comma;
+            bool        preproc;
+        } meta;
+
+        token(const std::string& v) : value(v)
+        {
+            Rehash();
+        }
+
+        token(const StringSeq& v) : value(v.GetString())
+        {
+            Rehash();
+            if(v.HasSticky())
+                meta.preproc = true;
+        }
+
+        void operator=(const std::string& v) { value=v; Rehash(); }
+
+        bool operator==(const token& b) const
+        {
+            return meta.hash == b.meta.hash
+                && value == b.value
+                && meta.preproc == b.meta.preproc;
+        }
+
+        bool operator!=(const token& b) const
+            { return !operator==(b); }
+
+        void Rehash()
+        {
+            meta.preproc = (value[0] == '#' || value[0] == '\n');
+            meta.balance = 0;
+            meta.comma   = 0;
+            meta.hash    = 0;
+            for(size_t a=0; a<value.size(); ++a)
+            {
+                meta.hash = meta.hash*0x8088405u + value[a];
+                switch(value[a])
+                {
+                    case '(': ++meta.balance; break;
+                    case ')': --meta.balance; break;
+                    case ',': ++meta.comma; break;
+                }
+            }
+        }
+        void swap(token& b)
+        {
+            value.swap(b.value);
+            std::swap(meta, b.meta);
+        }
+    };
+    StringSeq GetSeq(std::vector<token>::const_iterator begin,
+                     size_t n, bool NewLines)
     {
         bool InDefineMode = false;
 
         /* Resequence the input */
-        std::string result;
+        StringSeq result;
         int quotemode = 0;
         while(n-- > 0)
         {
-            const std::string& value = begin->value; ++begin;
+            const token&       tok = *begin;
+            const std::string& value = tok.value; ++begin;
+
          #if 1
             if (!result.empty() && result[result.size()-1] != '\n')
             {
@@ -139,16 +208,23 @@ namespace
 
             switch(quotemode)
             {
-                case 0: // prev wasn't a quote
+                case 0: // prev wasn't a quote, or this is not a quote
                     if (value[0] == '"'
-                    && (n>0 && begin->value[0] == '"'))
+                    && (n>0 && begin->value[0] == '"')) // this and next are quotes
                         { quotemode = 1;
                           result.append(value, 0, value.size()-1);
                           //result += value.substr(0, value.size()-1);
                           continue;
                         }
                     else
+                    {
                         result += value;
+                        if(tok.meta.preproc || (value[0] == '(' && value.size() > 1))
+                        {
+                            /* A macro parameter list is an undivisible entity */
+                            result.SetSticky(value.size());
+                        }
+                    }
                     break;
                 case 1: // prev was a quote, skip this quote
                     if (n>0 && begin->value[0] == '"')
@@ -190,12 +266,23 @@ namespace
     }
 
     std::vector<token>
-        Tokenize(const std::string& input, bool InDefineMode = false)
+        Tokenize(const StringSeq& input,
+                 bool InDefineMode = false,
+                 bool SplitMacros = false)
     {
         std::vector<token> result;
         size_t a=0, b=input.size();
         while(a < b)
         {
+            /*if(input.IsSticky(a))
+            {
+                size_t eat = 1;
+                while(input.IsSticky(a+eat)) ++eat;
+                result.push_back( input.substr(a, eat) );
+                a += eat;
+                continue;
+            }*/
+
             if (InDefineMode && input[a]=='\n')
             {
                 InDefineMode = false;
@@ -226,19 +313,34 @@ namespace
                     if (isnamechar(input[a])) continue;
                     break;
                 }
-                std::string name(input, name_begin, a-name_begin);
+
+                std::string name(input.GetString(), name_begin, a-name_begin);
                 result.push_back(name);
+
                 if (input[a] == '('
                 && parametric_macro_list.find(name)
                 != parametric_macro_list.end())
                 {
-                    std::vector<token> remains = Tokenize(input.substr(a), InDefineMode);
+                    std::vector<token> remains = Tokenize(input.substr(a), InDefineMode, SplitMacros);
                     int balance = 1;
                     size_t eat = 1;
                     for(; balance != 0; ++eat)
                         balance += remains[eat].meta.balance;
-                    result.back() = result.back().value + GetSeq(remains.begin(), eat, false);
-                    result.insert(result.end(), remains.begin()+eat, remains.end());
+                    if(SplitMacros)
+                    {
+                        for(size_t c=0; c<eat; ++c)
+                            if(remains[c].meta.balance != 0
+                            || remains[c].meta.comma != 0)
+                                remains[c].meta.preproc = true;
+                        result.insert(result.end(), remains.begin(), remains.end());
+                    }
+                    else
+                    {
+                        //result.push_back( GetSeq(remains.begin(), eat, false) );
+                        StringSeq tmp = GetSeq(remains.begin(), eat, false);
+                        result.back() = result.back().value + tmp.GetString();
+                        result.insert(result.end(), remains.begin()+eat, remains.end());
+                    }
                     a = b; // done
                 }
                 continue;
@@ -258,7 +360,7 @@ namespace
                     || input[a]=='L' || input[a]=='F') continue;
                     break;
                 }
-                result.push_back( std::string(input, value_begin, a-value_begin ));
+                result.push_back( input.substr(value_begin, a-value_begin ));
                 continue;
             }
             if (a+1 < b && input[a] == '>' && input[a+1] == '>')
@@ -270,6 +372,8 @@ namespace
             if (a+1 < b && input[a] == '+' && input[a+1] == '+')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '-' && input[a+1] == '-')
+                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+            if (a+1 < b && input[a] == '-' && input[a+1] == '>')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '&' && input[a+1] == '&')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
@@ -286,14 +390,14 @@ namespace
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (input[a] == '#')
             {
-                if (input.substr(a,8) == "#include")
+                if (input.substr(a,8).GetString() == "#include")
                 {
                     result.push_back( token("#include") );
                     InDefineMode = true;
                     a += 8;
                     continue;
                 }
-                if (input.substr(a,7) == "#define")
+                if (input.substr(a,7).GetString() == "#define")
                 {
                     size_t p = a+7;
                     while(p < b && std::isspace(input[p])) ++p; // skip blank
@@ -302,15 +406,21 @@ namespace
                     if (input[p] != '(')
                     {
                         InDefineMode = true;
-                        result.push_back(input.substr(a, p-a) + " ");
+                        std::string def = input.substr(a, p-a).GetString();
+                        if(input[p] != '\n') def += ' ';
+                        result.push_back(def);
                         a = p;
                         continue;
                     }
                     else
                     {
-                        std::string macro(input, term_begin, p-term_begin);
-                        std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
-                        parametric_macro_list.insert(macro);
+                        std::string macro(input.GetString(), term_begin, p-term_begin);
+                        if(parametric_macro_list.find(macro)
+                        == parametric_macro_list.end())
+                        {
+                            std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
+                            parametric_macro_list.insert(macro);
+                        }
                     }
                 }
                 size_t preproc_begin = a;
@@ -324,7 +434,7 @@ namespace
                     if (input[a]=='\\' && input[a+1]=='\n') { ++a; continue; }
                     if (input[a]=='\n') break;
                 }
-                std::string stmt(input, preproc_begin, a-preproc_begin);
+                std::string stmt(input.GetString(), preproc_begin, a-preproc_begin);
                 if (stmt.substr(0,5) != "#line")
                     result.push_back(stmt);
                 result.push_back( token("\n") );
@@ -337,17 +447,19 @@ namespace
                     if (input[a]=='"' &&
                       (input[a-1] != '\\'
                      || input[a-2]=='\\')) { ++a; break; }
-                result.push_back( std::string(input, string_begin, a-string_begin) );
+                if(input.GetString() == "\"\"") continue; // Don't add an empty string token
+                result.push_back( std::string(input.GetString(), string_begin, a-string_begin) );
                 continue;
             }
             if (input[a] == '\'')
             {
                 size_t char_begin = a; a += 3;
                 if (input[a-2] == '\\') ++a;
-                result.push_back( std::string(input, char_begin, a-char_begin) );
+                result.push_back( std::string(input.GetString(), char_begin, a-char_begin) );
                 continue;
             }
-            result.push_back( std::string(input,a++,1) );
+
+            result.push_back( input.substr(a++, 1) );
         }
         return result;
     }
@@ -360,15 +472,18 @@ namespace
     std::string GenerateMacroName()
     {
         std::string result;
-        unsigned p=macro_counter++;
-        result += "qgh"[(p/36)%3];
-        result += cbuf[p%36]; p/=3*36; // 0-9A-Z
-        for(; p!=0; p /= 63)
+        unsigned p = macro_counter++;
+        result += macro_prefix_chars[(p/36)%macro_prefix_chars.size()];
+        result += cbuf[p%36];
+        p/=(macro_prefix_chars.size()*36); // 0-9A-Z
+        for(; p != 0; p /= 63)
             result += cbuf[p%63];
         return result;
     }
 
-    bool CompressWithNonparametricMacros(std::vector<token>& tokens, const std::string& seq_name_buf)
+    bool CompressWithNonparametricMacros
+        (std::vector<token>& tokens,
+         const std::string& seq_name_buf)
     {
         size_t seq_name_length = seq_name_buf.size();
 
@@ -397,18 +512,25 @@ namespace
                 size_t match_len = 0;
                 unsigned hash = 0;
                 //int balance = 0;
+
                 while(match_len < max_match_len && tokens[a+match_len] == tokens[b+match_len])
                 {
                     const token& word = tokens[a+match_len];
-                    if (word.meta.preproc) break; // Cannot include preprocessing tokens in substrings
+                    if (word.meta.preproc)
+                    {
+                        // Cannot include preprocessing tokens in substrings
+                        break;
+                    }
+
                     //balance += word.meta.balance;
-                    //if (balance < 0) break;
+                    //if (preserve_params
+                    // && (balance < 0 || (word.meta.comma && balance==0))) break;
 
                     ++match_len;
                     hash = ~hash*0x8088405u + word.meta.hash;
 
-                    //donttest[b] = true;
-                    //if (balance == 0)
+                    donttest[b] = true;
+                    //if  (!balance == 0)
                     {
                         std::map<unsigned, length_rec>::iterator i
                             = hash_results.lower_bound(hash);
@@ -455,7 +577,7 @@ namespace
                     (tokens.begin()+rec.begin_index,
                      tokens.begin()+rec.begin_index+rec.num_tokens);
                 std::cerr << "#define " << seq_name_buf << " " <<
-                    GetSeq(sequence.begin(), sequence.size(), false)
+                    GetSeq(sequence.begin(), sequence.size(), false).GetString()
                         //<< " /* " << rec.num_occurrences
                         //<< " occurrences */"
                           << std::endl;
@@ -550,33 +672,40 @@ std::string CPPcompressor::Compress(const std::string& input)
     reset_parametric_macro_list();
     macro_counter = 0;
 
-    std::vector<token> tokens = Tokenize(input);
+    std::vector<token> tokens = Tokenize(input, false, true);
 
     bool tried_retokenizing = false;
+    bool tried_retokenizing2 = false;
     std::string seq_name_buf = GenerateMacroName();
 
-    std::string result;
+    bool preserve_parens = false;
+
+    StringSeq result;
     while (true)
     {
         if (CompressWithNonparametricMacros(tokens, seq_name_buf))
         {
             tried_retokenizing = false;
+            tried_retokenizing2 = false;
             seq_name_buf = GenerateMacroName();
         }
         else if (CompressWithParametricMacros(tokens, seq_name_buf))
         {
             tried_retokenizing = false;
+            tried_retokenizing2 = false;
             seq_name_buf = GenerateMacroName();
         }
         else
         {
-            if (tried_retokenizing) break;
+            if (tried_retokenizing && tried_retokenizing2) break;
+            if (tried_retokenizing) tried_retokenizing2 = true;
             tried_retokenizing = true;
+            preserve_parens = true;
 
             std::cerr << "Retokenizing\n";
             result = GetSeq(tokens.begin(), tokens.size(), true);
-            tokens = Tokenize(result);
+            tokens = Tokenize(result, false, tried_retokenizing2);
         }
     }
-    return result;
+    return result.GetString();
 }

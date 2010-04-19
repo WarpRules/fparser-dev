@@ -505,10 +505,10 @@ namespace
         outstream << '"';
         for(size_t a=so_far.size(); a-- > 0; )
         {
-            if(a+1 != so_far.size()) outstream << ' ';
+            if(a+1 != so_far.size()) outstream << "\"\" \"\"";
             outstream << so_far[a].name;
             if(!so_far[a].condition.empty())
-                outstream << '[' << so_far[a].condition << ']';
+                outstream << "[" << so_far[a].condition << "]";
         }
         if(n_with_lines > 0)
             outstream << "\",\n" << Indent(indent+1) << "\"";
