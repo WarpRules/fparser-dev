@@ -22,21 +22,60 @@ namespace
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
         return std::string();
     }
-    std::string NumConst(const std::string& type, const std::string& value)
+    std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
     {
-        if(type == "long")        return value + "l";
+        if(direct_cast)
+        {
+            if(type == "long")        return value + "l";
 
-        std::string fltvalue = value;
+            std::string fltvalue = value;
 
-        char* endptr = 0;
-        strtol(value.c_str(), &endptr, 10);
-        if(endptr && !*endptr)
-            fltvalue += ".0";
+            char* endptr = 0;
+            strtol(value.c_str(), &endptr, 10);
+            if(endptr && !*endptr)
+                fltvalue += ".0";
 
-        if(type == "float")       return fltvalue + "f";
-        if(type == "long double") return fltvalue + "l";
-        if(type == "double")      return fltvalue;
-        return value;
+            if(type == "float")       return fltvalue + "f";
+            if(type == "long double") return fltvalue + "l";
+            if(type == "double")      return fltvalue;
+            return value;
+        }
+        else
+        {
+            size_t n_trailing_zeros = 0;
+            while(n_trailing_zeros < value.size()
+               && value[value.size()-1-n_trailing_zeros] == '0')
+                ++n_trailing_zeros;
+            if(n_trailing_zeros < value.size()
+               && value[value.size()-1-n_trailing_zeros] == '.')
+            {
+                return NumConst(type, value.substr(0,  value.size()-1-n_trailing_zeros));
+            }
+
+            char* endptr = 0;
+            long longval = strtol(value.c_str(), &endptr, 10);
+            if(endptr && !*endptr)
+            {
+                if(longval == (long)(float)(longval)) return value;
+                //if(longval >= -32768 && longval < 32767) return value;
+                return "P(" + value + ")";
+            }
+            return "N(" + value + ")";
+        }
+    }
+    std::string NumConstDefines(const std::string& type)
+    {
+        if(type == "MpfrFloat") return "#define N(x) Value_t::parseString(#x)\n#define P(x) N(x)\n";
+        if(type == "long" || type == "GmpInt") return "#define P(x) APP(x,l)\n";
+        std::string result = "x";
+        if(type == "float")       result = "APP(x,f)";
+        if(type == "long double") result = "APP(x,l)";
+        return "#define N(x) " + result + "\n#define P(x) N(x##.0)\n";
+    }
+    std::string NumConstUndefines(const std::string& type)
+    {
+        if(type == "long" || type == "GmpInt") return "#undef P\n";
+        return "#undef N\n#undef P\n";
     }
     std::string GetTypeFor(const std::string& typecode)
     {
@@ -107,7 +146,7 @@ void ListTests(std::ostream& outStream)
         if(!defines.empty())
             outStream << "#ifdef " << defines << "\n";
         outStream << "#define Value_t " << type << "\n";
-
+        outStream << NumConstDefines(type) << "\n";
         outStream <<
             "template<>\n"
             "struct RegressionTests<Value_t>\n"
@@ -192,6 +231,7 @@ void ListTests(std::ostream& outStream)
         }
 
         outStream << "#undef Value_t\n";
+        outStream << NumConstUndefines(type);
         if(!defines.empty())
             outStream << "#endif /*" << defines << " */\n";
     }
@@ -322,7 +362,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                     if(limited_to_datatype.empty())
                         codebuf << "Value_t(" << num << "l)";
                     else
-                        codebuf << NumConst(limited_to_datatype, num);
+                        codebuf << NumConst(limited_to_datatype, num, true);
                     /*
                     if(*endptr == 'f' || *endptr == 'l')
                         num += *endptr++;
@@ -374,8 +414,9 @@ std::string TranslateString(const std::string& str)
     str_replace_inplace(val, std::string("+"), std::string("\"\"+\"\""));
     str_replace_inplace(val, std::string("*"), std::string("\"\"*\"\""));
     str_replace_inplace(val, std::string("x"), std::string("\"\"x\"\""));
-    str_replace_inplace(val, std::string("|"), std::string("\"\"|\"\""));
     str_replace_inplace(val, std::string("&"), std::string("\"\"&\"\""));
+    str_replace_inplace(val, std::string("("), std::string("\"\"(\"\""));
+    str_replace_inplace(val, std::string(")"), std::string("\"\")\"\""));
     str_replace_inplace(val, std::string("pow"), std::string("\"\"pow\"\""));
     str_replace_inplace(val, std::string("sin"), std::string("\"\"sin\"\""));
     if(val[0] == '"') val.erase(0,1); else val.insert(val.begin(), '"');
@@ -836,6 +877,7 @@ int main(int argc, char* argv[])
     }
 
     out << "namespace { using namespace FUNCTIONPARSERTYPES;\n";
+    out << "#define APP(x,y) x##y\n";
 
     for(std::map<std::string, std::string>::const_iterator
         i = class_declarations.begin();

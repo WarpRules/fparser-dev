@@ -7,7 +7,11 @@
 
 namespace
 {
-    static const std::string macro_prefix_chars = "qgh";
+    static const std::string macro_prefix_chars = "qghdowma";
+    /* ^List of characters that are _least_ likely to form
+     *  a legitimate identifier name in the input code when
+     *  a [0-9A-Z] (case sensitive) is appended to it.
+     */
 
     std::set<std::string> parametric_macro_list;
 
@@ -20,7 +24,9 @@ namespace
              * NOT LISTED HERE WILL BE BROKEN AFTER COMPRESSION.
              * MACROS DEFINED WITHIN THE PROCESSED INPUT ARE FINE.
              */
-            "assert", "getc", "putc"
+            "assert", "getc", "putc",
+            "FP_TRACE_OPCODENAME",
+            "FP_TRACE_BYTECODE_OPTIMIZATION"
         };
         parametric_macro_list.clear();
         for(unsigned p=0; p<sizeof(list)/sizeof(*list); ++p)
@@ -182,7 +188,7 @@ namespace
          #if 1
             if (!result.empty() && result[result.size()-1] != '\n')
             {
-                if (value[0] == '#') result += '\n';
+                if (!InDefineMode && NewLines && value[0] == '#') result += '\n';
                 else if (isnamechar(value[0])
                      && isnamechar(result[result.size()-1]))
                 {
@@ -193,7 +199,7 @@ namespace
                 }
             }
          #else
-            result += '!';
+            result += (InDefineMode ? "?" : "!");
          #endif
             if (value[0] == '#')
             {
@@ -243,8 +249,8 @@ namespace
             if (NewLines && !InDefineMode)
             {
                 if (value[0] == '#'
-                || value[0] == '}'
-                || value[0] == '"'
+                 || value[0] == '}'
+                 || value[0] == '"'
                   )
                 {
                     result += '\n';
@@ -265,10 +271,22 @@ namespace
         return result;
     }
 
+    struct DefineParsingMode
+    {
+        bool Active;
+        std::set<std::string> ParamList;
+
+        DefineParsingMode() : Active(false), ParamList() { }
+
+        void Activate() { Active=true; }
+        void Deactivate() { Active=false; ParamList.clear(); }
+    };
+
     std::vector<token>
         Tokenize(const StringSeq& input,
-                 bool InDefineMode = false,
-                 bool SplitMacros = false)
+                 DefineParsingMode& defmode,
+                 bool SplitMacros,
+                 bool SplitStrings)
     {
         std::vector<token> result;
         size_t a=0, b=input.size();
@@ -282,10 +300,14 @@ namespace
                 a += eat;
                 continue;
             }*/
-
-            if (InDefineMode && input[a]=='\n')
+            if (defmode.Active && input[a]=='\\' && input[a+1] == '\n')
             {
-                InDefineMode = false;
+                a += 2;
+                continue;
+            }
+            if (defmode.Active && input[a]=='\n')
+            {
+                defmode.Deactivate();
                 result.push_back( token("\n") );
                 ++a;
                 continue;
@@ -317,11 +339,18 @@ namespace
                 std::string name(input.GetString(), name_begin, a-name_begin);
                 result.push_back(name);
 
+                if (defmode.Active && defmode.ParamList.find(name)
+                                   != defmode.ParamList.end())
+                {
+                    // Define params are immutable.
+                    result.back().meta.preproc = true;
+                }
+
                 if (input[a] == '('
                 && parametric_macro_list.find(name)
                 != parametric_macro_list.end())
                 {
-                    std::vector<token> remains = Tokenize(input.substr(a), InDefineMode, SplitMacros);
+                    std::vector<token> remains = Tokenize(input.substr(a), defmode, SplitMacros, SplitStrings);
                     int balance = 1;
                     size_t eat = 1;
                     for(; balance != 0; ++eat)
@@ -375,6 +404,8 @@ namespace
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '-' && input[a+1] == '>')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
+            if (a+1 < b && input[a] == '#' && input[a+1] == '#')
+                { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '&' && input[a+1] == '&')
                 { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '|' && input[a+1] == '|')
@@ -388,12 +419,12 @@ namespace
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && (input[a] == ':' && input[a+1] == ':'))
                     { result.push_back(input.substr(a, 2)); a += 2; continue; }
-            if (input[a] == '#')
+            if (!defmode.Active && input[a] == '#')
             {
                 if (input.substr(a,8).GetString() == "#include")
                 {
                     result.push_back( token("#include") );
-                    InDefineMode = true;
+                    defmode.Activate();
                     a += 8;
                     continue;
                 }
@@ -405,10 +436,10 @@ namespace
                     while(p < b && isnamechar(input[p])) ++p; // skip term
                     if (input[p] != '(')
                     {
-                        InDefineMode = true;
+                        defmode.Activate();
                         std::string def = input.substr(a, p-a).GetString();
                         if(input[p] != '\n') def += ' ';
-                        result.push_back(def);
+                        result.push_back(def); /* #define, term name and a space */
                         a = p;
                         continue;
                     }
@@ -421,6 +452,30 @@ namespace
                             std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
                             parametric_macro_list.insert(macro);
                         }
+
+                        size_t param_list_begin = p, param_begin = p+1;
+                        int balance = 1;
+                        for (++p; true; ++p)
+                        {
+                            if(input[p]=='(') ++balance;
+                            if(input[p]==',' || input[p]==')')
+                            {
+                                std::string paramname = input.substr(param_begin,p-param_begin).GetString();
+                                //std::cerr << "Param name<" << paramname << ">\n";
+                                defmode.ParamList.insert(paramname);
+                                param_begin = p+1;
+                            }
+                            if(input[p]==')') { if(--balance == 0) { ++p; break; } }
+                        }
+                        size_t param_list_end = p;
+                        while(input[p] != '\n' && std::isspace(input[p])) ++p;
+
+                        defmode.Activate();
+                        std::string def = input.substr(a, param_list_end-a).GetString();
+                        if(input[p] != '\n') def += ' ';
+                        result.push_back(def); /* #define, term name, params and a space */
+                        a = p;
+                        continue;
                     }
                 }
                 size_t preproc_begin = a;
@@ -448,7 +503,19 @@ namespace
                       (input[a-1] != '\\'
                      || input[a-2]=='\\')) { ++a; break; }
                 if(input.GetString() == "\"\"") continue; // Don't add an empty string token
-                result.push_back( std::string(input.GetString(), string_begin, a-string_begin) );
+
+                std::string stringconst(input.GetString(), string_begin+1, a-string_begin-2);
+                if (SplitMacros)
+                    while (true)
+                    {
+                        size_t p = stringconst.find_first_of(" ,+-()", 0, 1);
+                        if(p == stringconst.npos) break;
+                        if(p > 0)
+                            result.push_back( "\""+std::string(stringconst,0,p)+"\"" );
+                        result.push_back( "\""+std::string(stringconst,p,1)+"\"" );
+                        stringconst.erase(0, p+1);
+                    }
+                if(!stringconst.empty()) result.push_back("\""+stringconst+"\"");
                 continue;
             }
             if (input[a] == '\'')
@@ -672,10 +739,10 @@ std::string CPPcompressor::Compress(const std::string& input)
     reset_parametric_macro_list();
     macro_counter = 0;
 
-    std::vector<token> tokens = Tokenize(input, false, true);
+    DefineParsingMode defmode;
+    std::vector<token> tokens = Tokenize(input, defmode, false, false);
 
-    bool tried_retokenizing = false;
-    bool tried_retokenizing2 = false;
+    int tried_retoken_rounds = 0;
     std::string seq_name_buf = GenerateMacroName();
 
     bool preserve_parens = false;
@@ -685,26 +752,25 @@ std::string CPPcompressor::Compress(const std::string& input)
     {
         if (CompressWithNonparametricMacros(tokens, seq_name_buf))
         {
-            tried_retokenizing = false;
-            tried_retokenizing2 = false;
+            tried_retoken_rounds = 0;
             seq_name_buf = GenerateMacroName();
         }
         else if (CompressWithParametricMacros(tokens, seq_name_buf))
         {
-            tried_retokenizing = false;
-            tried_retokenizing2 = false;
+            tried_retoken_rounds = 0;
             seq_name_buf = GenerateMacroName();
         }
         else
         {
-            if (tried_retokenizing && tried_retokenizing2) break;
-            if (tried_retokenizing) tried_retokenizing2 = true;
-            tried_retokenizing = true;
+            if (tried_retoken_rounds >= 3) break;
+            ++tried_retoken_rounds;
             preserve_parens = true;
 
             std::cerr << "Retokenizing\n";
             result = GetSeq(tokens.begin(), tokens.size(), true);
-            tokens = Tokenize(result, false, tried_retokenizing2);
+
+            DefineParsingMode defmode;
+            tokens = Tokenize(result, defmode, tried_retoken_rounds == 2, tried_retoken_rounds < 3);
         }
     }
     return result.GetString();

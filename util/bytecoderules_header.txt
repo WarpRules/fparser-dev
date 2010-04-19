@@ -9,3 +9,10 @@
    enough for it to be in the same directory as fparser.cc. This
    file is internally #included by fparser.cc.
 */
+#define FP_TRACE_BYTECODE_OPTIMIZATION(srcline,from,to,with) \
+    /*std::cout << "Changing \"" from "\"\t(line " #srcline ")\n" \
+                   "    into \"" to "\"\n" with*/
+#define FP_TRACE_OPCODENAME(op) \
+    (op < VarBegin \
+        ? FP_GetOpcodeName(OPCODE(op)) \
+        : findName(data->namePtrs,op,NameData<Value_t>::VARIABLE))

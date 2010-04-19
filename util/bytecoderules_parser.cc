@@ -505,7 +505,7 @@ namespace
         outstream << '"';
         for(size_t a=so_far.size(); a-- > 0; )
         {
-            if(a+1 != so_far.size()) outstream << "\"\" \"\"";
+            if(a+1 != so_far.size()) outstream << " ";
             outstream << so_far[a].name;
             if(!so_far[a].condition.empty())
                 outstream << "[" << so_far[a].condition << "]";
@@ -1271,14 +1271,6 @@ int main()
     std::ostream& out = std::cout;
 
     out <<
-        "#define FP_TRACE_OPCODENAME(op) \\\n"
-        "    (op < VarBegin \\\n"
-        "        ? FP_GetOpcodeName(OPCODE(op)) \\\n"
-        "        : findName(data->namePtrs,op,NameData<Value_t>::VARIABLE))\n"
-        "#define FP_TRACE_BYTECODE_OPTIMIZATION(srcline,from,to,with) \\\n"
-        "    /*std::cout << \"Changing \\\"\" from \"\\\"\\t(line \" #srcline \")\\n\" \\\n"
-        "                   \"    into \\\"\" to \"\\\"\\n\" with*/"
-        "\n\n"
     //  "template<typename Value_t>\n"
     //  "inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)\n"
     //  "{\n"
