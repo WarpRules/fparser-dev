@@ -99,8 +99,6 @@ namespace FPoptimizer_Grammar
 # define PACKED_GRAMMAR_ATTRIBUTE
 #endif
 
-    enum { PARAM_INDEX_BITS = 10 };
-
     /* A ParamSpec object describes
      * either a parameter (leaf, node) that must be matched,
      * or a parameter (leaf, node) that must be synthesized.

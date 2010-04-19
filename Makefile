@@ -205,9 +205,10 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 	cat fpoptimizer/fpoptimizer_header.txt  > $@
 	for file in $(FPOPTIMIZER_CC_FILES); do \
 		echo "#line 1 \"$$file\""; \
-		sed -r "s@^(#include \".*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
+		sed -r "s@^(#include \".*|#.*def.*grammar_optimize)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
-	done | util/cpp_compress >> $@
+	done | grep -v "^#...?def.?.?.? grammar_optimize" \
+	     | util/cpp_compress >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 util/tree_grammar_parser: \

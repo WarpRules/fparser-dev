@@ -31,6 +31,8 @@
 # define unlikely(x) (x)
 #endif
 
+static const unsigned PARAM_INDEX_BITS = 10;
+
 /*********/
 using namespace FPoptimizer_Grammar;
 
@@ -794,7 +796,11 @@ public:
             const ParamSpec_ParamHolder& a,
             const ParamSpec_ParamHolder& b) const
         {
-            if(a.index != b.index) return a.index < b.index;
+            if((a.index^2) != (b.index^2)) return (a.index^2) < (b.index^2);
+            // xor-2 is here to tweak the sorting order such that
+            // the most used parameters (x,y) are first in the list,
+            // resulting in smaller numbers for the parameter indexes,
+            // and thus a smaller source code size for grammar data.
             return false;
         } };
         struct n_compare { bool operator() (
@@ -808,8 +814,26 @@ public:
             const ParamSpec_SubFunction& a,
             const ParamSpec_SubFunction& b) const
         {
-            if(a.data.subfunc_opcode != b.data.subfunc_opcode)
-                return a.data.subfunc_opcode < b.data.subfunc_opcode;
+            unsigned a_opcode = a.data.subfunc_opcode;
+            unsigned b_opcode = b.data.subfunc_opcode;
+
+            if(a_opcode == FUNCTIONPARSERTYPES::cAdd) a_opcode = 2;
+            else if(a_opcode == FUNCTIONPARSERTYPES::cMul) a_opcode = 3;
+            else if(a_opcode == FUNCTIONPARSERTYPES::cPow) a_opcode = 4;
+            else if(a_opcode == FUNCTIONPARSERTYPES::cNeg) a_opcode = 0;
+            else if(a_opcode == FUNCTIONPARSERTYPES::cInv) a_opcode = 1;
+            else a_opcode += 5;
+            if(b_opcode == FUNCTIONPARSERTYPES::cAdd) b_opcode = 2;
+            else if(b_opcode == FUNCTIONPARSERTYPES::cMul) b_opcode = 3;
+            else if(b_opcode == FUNCTIONPARSERTYPES::cPow) b_opcode = 4;
+            else if(b_opcode == FUNCTIONPARSERTYPES::cNeg) b_opcode = 0;
+            else if(b_opcode == FUNCTIONPARSERTYPES::cInv) b_opcode = 1;
+            else b_opcode += 5;
+
+            if(a_opcode != b_opcode)
+                return a_opcode < b_opcode;
+            if(a.constraints != b.constraints)
+                return a.constraints < b.constraints;
             if(a.data.match_type != b.data.match_type)
                 return a.data.match_type < b.data.match_type;
             size_t min_param_count = a.data.param_count;
@@ -852,53 +876,52 @@ public:
             std::stable_sort(plist_s.begin(), plist_s.end(), s_compare());
         }
 
-        std::string ParamPtrToString(unsigned paramlist, unsigned index) const
+        unsigned ParamPtrToParamIndex(unsigned paramlist, unsigned index) const
         {
             const ParamSpec& p = ParamSpec_Extract(paramlist, index);
-            if(!p.second) return "0";
-            #define set(when, list, c) \
-                case when: \
-                    for(size_t a=0; a<list.size(); ++a) \
-                        if(ParamSpec_Compare(p.second, (const void*)&list[a], when)) \
-                        { \
-                            std::ostringstream result; \
-                            result << #c "(" << a << ")"; \
-                            return result.str(); \
-                        } \
-                    break;
-            switch(p.first)
+            if(p.second)
             {
-                set(ParamHolder, plist_p, P);
-                set(NumConstant, plist_n, N);
-                set(SubFunction, plist_s, S);
+                #define set(when, list, c) \
+                    case when: \
+                        for(size_t a=0; a<list.size(); ++a) \
+                            if(ParamSpec_Compare(p.second, (const void*)&list[a], when)) \
+                                return (a + c##offset); \
+                        break;
+                unsigned Poffset = 0;
+                unsigned Noffset = plist_p.size();
+                unsigned Soffset = plist_n.size() + Noffset;
+                switch(p.first)
+                {
+                    set(ParamHolder, plist_p, P);
+                    set(NumConstant, plist_n, N);
+                    set(SubFunction, plist_s, S);
+                }
+                #undef set
             }
-            #undef set
-            return "?"+FP_GetOpcodeName(p.first);
+            return (1 << 10)-1;
         }
 
         std::string ParamListToString(unsigned paramlist, unsigned paramcount) const
         {
-            std::ostringstream result;
-            switch(paramcount)
+            std::ostringstream result, comment;
+            unsigned value = 0;
+            for(unsigned p=0; p<paramcount; ++p)
             {
-                case 0: result << "0"; break;
-                case 1: result << "P1(" << ParamPtrToString(paramlist,0) << ")"; break;
-                case 2: result << "P2(" << ParamPtrToString(paramlist,0) << ','
-                                                   << ParamPtrToString(paramlist,1)
-                                                   << ")"; break;
-                case 3: result << "P3(" << ParamPtrToString(paramlist,0) << ','
-                                                     << ParamPtrToString(paramlist,1) << ','
-                                                     << ParamPtrToString(paramlist,2)
-                                                     << ")"; break;
-                default:
-                    result << "?";
+                unsigned index = ParamPtrToParamIndex(paramlist, p);
+                if(p) comment << ',';
+                comment << index;
+                value += index << (p*PARAM_INDEX_BITS);
             }
-            //result << ',' << param_count;
+            std::string commentstr = comment.str();
+            commentstr.resize(3*3+2, ' ');
+            result << "/*" << commentstr << "*/" << value;
+
             std::string res = result.str();
-            while(res.size() < 24) res += ' ';
+            if(res.size() < 25) res.resize(25, ' ');
+            /* 999*x+999*x+999 = 15 characters */
+            /* (*999,999,999*)1048551399 = 25 characters */
             return res;
         }
-
         std::string ParamHolderToString(const ParamSpec_ParamHolder& i) const
         {
             std::ostringstream result;
@@ -945,9 +968,10 @@ public:
         }
     };
 
+    ParamCollection collection;
+
     void Flush()
     {
-        ParamCollection collection;
         for(size_t a=0; a<rlist.size(); ++a)
         {
             for(unsigned b=0; b < rlist[a].match_tree.param_count; ++b)
@@ -972,44 +996,32 @@ public:
             "using namespace FUNCTIONPARSERTYPES;\n"
             "\n"
             "namespace\n"
-            "{\n"
-            "    const struct ParamSpec_List\n"
-            "    {\n";
+            "{\n";
 
-        std::ostringstream undef_buf;
-        { std::ostringstream buf;
-        std::ostringstream base;
+        {
 
         #define set(type, list, c) \
             std::cout << \
-            "        ParamSpec_" #type " " #list "[" << collection.list.size() << "];\n" \
-            "#define " #c "(n) (n" << base.str() << ")\n"; \
-            base << '+' << collection.list.size(); \
-            undef_buf << \
-            "#undef " #c "\n"; \
-            buf << \
-            "        { /* " << #list << " - ParamSpec_" #type "[" << collection.list.size() << "] */\n"; \
+            "    const ParamSpec_" #type " " #list "[" << collection.list.size() << "] =\n" \
+            "    {\n"; \
             for(size_t a=0; a<collection.list.size(); ++a) \
             { \
-                buf << "        /* " << a << "\t*/ " \
-                    << collection.type##ToString(collection.list[a]) \
-                    << ", /* "; \
-                FPoptimizer_Grammar::DumpParam( ParamSpec(type, (const void*) &collection.list[a]), buf); \
-                buf << " */\n"; \
+                std::cout << "    /* " << offset++ << "\t*/ " \
+                          << collection.type##ToString(collection.list[a]) \
+                          << ", /* "; \
+                FPoptimizer_Grammar::DumpParam( ParamSpec(type, (const void*) &collection.list[a]), std::cout); \
+                std::cout << " */\n"; \
             } \
-            buf << \
-            "        },\n" \
+            std::cout << \
+            "    };\n" \
             "\n";
 
-        set(ParamHolder,   plist_p, P)
+        unsigned offset = 0;
+        set(ParamHolder,   plist_p, P) // Must be first one
         set(NumConstant,   plist_n, N)
         set(SubFunction,   plist_s, S)
 
         std::cout <<
-            "    } /*PACKED_GRAMMAR_ATTRIBUTE*/ plist =\n"
-            "    {\n"
-            << buf.str() <<
-            "    };\n"
             "}\n";
         }
 
@@ -1059,7 +1071,6 @@ public:
         }
         std::cout <<
             "    };\n"
-            << undef_buf.str()
             <<
             "\n";
         for(std::map<std::string, Grammar>::const_iterator
@@ -1737,10 +1748,6 @@ int main()
         "#include \"fpconfig.hh\"\n"
         "#include \"fptypes.hh\"\n"
         "#include <algorithm>\n"
-        "\n"
-        "#define P1(a) a\n"
-        "#define P2(a,b) (P1(a) | (b << PARAM_INDEX_BITS))\n"
-        "#define P3(a,b,c) (P2(a,b) | (c << (PARAM_INDEX_BITS*2)))\n"
         "\n";
 
     std::vector<GrammarData::Grammar> components;
@@ -1766,29 +1773,21 @@ int main()
     }
     dumper.Flush();
 
+    unsigned mask = (1 << PARAM_INDEX_BITS)-1;
+    const unsigned p_begin = 0;
+    const unsigned n_begin = p_begin + dumper.collection.plist_p.size();
+    const unsigned s_begin = n_begin + dumper.collection.plist_n.size();
     std::cout <<
-        "#undef P1\n"
-        "#undef P2\n"
-        "#undef P3\n"
-        "\n"
         "namespace FPoptimizer_Grammar\n"
         "{\n"
         "    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)\n"
         "    {\n"
-        "        index = (paramlist >> (index * PARAM_INDEX_BITS)) % (1 << PARAM_INDEX_BITS);\n"
-        "        const unsigned p_begin = 0;\n"
-        "        const unsigned n_begin = p_begin + sizeof(plist.plist_p)/sizeof(*plist.plist_p);\n"
-        "        const unsigned s_begin = n_begin + sizeof(plist.plist_n)/sizeof(*plist.plist_n);\n"
-        "      /*const unsigned     end = s_begin + sizeof(plist.plist_s)/sizeof(*plist.plist_s);*/\n"
-        "        if(index < s_begin)\n"
-        "        {\n"
-        "            if(index < n_begin)\n"
-        "                return ParamSpec(ParamHolder,(const void*)&plist.plist_p[index-p_begin]);\n"
-        "            else\n"
-        "                return ParamSpec(NumConstant,(const void*)&plist.plist_n[index-n_begin]);\n"
-        "        }\n"
-        "        else\n"
-        "            return ParamSpec(SubFunction,(const void*)&plist.plist_s[index-s_begin]);\n"
+        "        index = (paramlist >> (index * " << PARAM_INDEX_BITS << ")) & " << mask << " /* % (1 << " << PARAM_INDEX_BITS << ") */;\n"
+        "        if(index >= " << s_begin << ")\n"
+        "            return ParamSpec(SubFunction,(const void*)&plist_s[index-" << s_begin << "]);\n"
+        "        if(index >= " << n_begin << ")\n"
+        "            return ParamSpec(NumConstant,(const void*)&plist_n[index-" << n_begin << "]);\n"
+        "        return ParamSpec(ParamHolder,(const void*)&plist_p[index"/*"-" << p_begin << */"]);\n"
         "    }\n"
         "}\n";
 

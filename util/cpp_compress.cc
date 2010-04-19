@@ -389,7 +389,9 @@ namespace
                     || input[a]=='L' || input[a]=='F') continue;
                     break;
                 }
-                result.push_back( input.substr(value_begin, a-value_begin ));
+                StringSeq s = input.substr(value_begin, a-value_begin );
+                /* TODO: Convert hex to decimal */
+                result.push_back( s );
                 continue;
             }
             if (a+1 < b && input[a] == '>' && input[a+1] == '>')
@@ -423,9 +425,12 @@ namespace
             {
                 if (input.substr(a,8).GetString() == "#include")
                 {
-                    result.push_back( token("#include") );
-                    defmode.Activate();
-                    a += 8;
+                    size_t p = a;
+                    while(p < b && input[p] != '\n') ++p;
+                    result.push_back( input.substr(a, p-a) );
+                    result.back().meta.preproc = true;
+                    result.push_back( token("\n") );
+                    a = p;
                     continue;
                 }
                 if (input.substr(a,7).GetString() == "#define")
@@ -566,7 +571,12 @@ namespace
         std::cerr << tokens.size() << " tokens\n";
 
         std::vector<bool> donttest(tokens.size(), false);
-        const size_t lookahead_depth = 75;
+
+        const size_t lookahead_depth = 6000000 / tokens.size();
+        // ^Lookahead limit. The value chosen is an arbitrary value
+        //  to shield against exponential runtime. A larger value
+        //  yields better compression, but is slower.
+
         for(size_t a=0; a<tokens.size(); ++a)
         {
             if (donttest[a]) continue;
@@ -580,14 +590,11 @@ namespace
                 unsigned hash = 0;
                 //int balance = 0;
 
-                while(match_len < max_match_len && tokens[a+match_len] == tokens[b+match_len])
+                while(match_len < max_match_len
+                   && tokens[a+match_len] == tokens[b+match_len]
+                   && tokens[a+match_len].meta.preproc == false)
                 {
                     const token& word = tokens[a+match_len];
-                    if (word.meta.preproc)
-                    {
-                        // Cannot include preprocessing tokens in substrings
-                        break;
-                    }
 
                     //balance += word.meta.balance;
                     //if (preserve_params
