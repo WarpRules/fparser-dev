@@ -607,6 +607,7 @@ namespace
                     hash = ~hash*0x8088405u + word.meta.hash;
 
                     donttest[b] = true;
+
                     //if  (!balance == 0)
                     {
                         std::map<unsigned, length_rec>::iterator i

@@ -22,6 +22,15 @@ namespace
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
         return std::string();
     }
+    std::string GetTypeForDefine(const std::string& def)
+    {
+        if(def == "FP_SUPPORT_FLOAT_TYPE") return "float";
+        if(def == "FP_SUPPORT_LONG_DOUBLE_TYPE") return "long double";
+        if(def == "FP_SUPPORT_LONG_INT_TYPE") return "long";
+        if(def == "FP_SUPPORT_MPFR_FLOAT_TYPE") return "MpfrFloat";
+        if(def == "FP_SUPPORT_GMP_INT_TYPE") return "GmpInt";
+        return "double";
+    }
     std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
     {
         if(direct_cast)
@@ -98,6 +107,14 @@ namespace
             return ("GmpInt");
         return typecode;
     }
+    std::string test_declaration(const std::string& name)
+    {
+        return "template<typename Value_t> static Value_t "+name+"(const Value_t* vars)";
+    }
+    std::string test_specialization(const std::string& name)
+    {
+        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars)";
+    }
 }
 
 
@@ -129,9 +146,16 @@ std::map<std::string/*datatype*/,
 
 std::set<std::string> mpfrconst_set;
 
-std::map<std::string, std::string> define_sections;
+struct section_data
+{
+    std::string test_list;
+    std::string definitions;
+    std::map<std::string, std::string> namespace_functions;
+};
+std::map<std::string, section_data> define_sections;
+
 std::string default_function_section;
-std::map<std::string, std::string> class_declarations;
+std::map<std::string, std::pair<std::string, std::string> > class_declarations;
 
 std::string TranslateString(const std::string& str);
 
@@ -159,22 +183,20 @@ void ListTests(std::ostream& outStream)
     unsigned DefineCounter=0;
     std::map<std::string, std::string> TestDefines;
 
-    std::ostringstream listbuffer;
-
     for(std::map<std::string, TestCollection>::const_iterator
         i = tests.begin();
         i != tests.end();
         ++i)
     {
+        std::ostringstream listbuffer;
+
         const std::string& type = i->first;
         std::string defines = GetDefinesFor(type);
         size_t n_tests         = i->second.size();
 
         listbuffer << "\n";
 
-        if(!defines.empty())
-            listbuffer << "#ifdef " << defines << "\n";
-        listbuffer << "#define Value_t " << type << "\n";
+        //listbuffer << "#define Value_t " << type << "\n";
         listbuffer << NumConstDefines(type) << "\n";
         listbuffer <<
             "template<>\n"
@@ -271,7 +293,6 @@ void ListTests(std::ostream& outStream)
                 {
                     --n_duplicates;
                 }
-                bool has_duplicates = n_duplicates > 1;
 
                 if(!testdata.IfDef.empty())
                     listbuffer << "#if " << testdata.IfDef << "\n";
@@ -285,7 +306,7 @@ void ListTests(std::ostream& outStream)
                     {
                         char MacroName[32], *m = MacroName;
                         unsigned p = DefineCounter++;
-                        *m++ = "STUVW"[p%5]; p/=5;
+                        *m++ = "STUWY"[p%5]; p/=5;
                         for(; p != 0; p /= 63)
                             *m++ = cbuf[p % 63];
                         *m++ = '\0';
@@ -294,7 +315,10 @@ void ListTests(std::ostream& outStream)
 
                         str_replace_inplace(teststr,
                             std::string("\n"), std::string(" "));
-
+                        /*while(!teststr.empty() && (teststr[teststr.size()-1]==' '
+                                                || teststr[teststr.size()-1]==','))
+                            teststr.erase(teststr.size()-1);
+                        */
                         outStream << "#define " << MacroName << " " << teststr << "\n";
                         listbuffer << MacroName << "\n";
                     }
@@ -312,13 +336,11 @@ void ListTests(std::ostream& outStream)
             listbuffer << "    TestType<Value_t>()\n};\n";
         }
 
-        listbuffer << "#undef Value_t\n";
+        //listbuffer << "#undef Value_t\n";
         listbuffer << NumConstUndefines(type);
-        if(!defines.empty())
-            listbuffer << "#endif /*" << defines << " */\n";
-    }
 
-    outStream << listbuffer.str();
+        define_sections[defines].test_list += listbuffer.str();
+    }
 }
 
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
@@ -396,13 +418,14 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 {
                     std::string num(funcstr, endptr-funcstr);
                     char* endptr2 = 0;
-                    strtol(funcstr, &endptr2, 10);
-                    /*if(endptr2 && std::strcmp(endptr2, ".0") == 0)
+                    strtol(funcstr, &endptr2, 0);
+                    //fprintf(stderr, "<%s>:<%s>\n", funcstr, endptr2);
+                    if(endptr2==endptr-2 && std::strncmp(endptr2, ".0", 2) == 0)
                     {
-                        num.erase(num.size()-2, num.size()); // made-int
+                        num.erase(num.size()-2, 2); // made-int
                         codebuf << "Value_t(" << num << ")";
                     }
-                    else*/ if(endptr2 && endptr2 == endptr) // an int or long
+                    else if(endptr2 && endptr2 == endptr) // an int or long
                     {
                         codebuf << "Value_t(" << num << ")";
                     }
@@ -415,7 +438,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
 
                         if(mpfrconst_set.insert(mpfrconst_name).second)
                         {
-                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"]
+                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"].definitions
                                 += "static const Value_t " + mpfrconst_name
                                  + "\n    = Value_t::parseString(\"" + num + "\", 0);\n";
                         }
@@ -556,7 +579,7 @@ std::pair<std::string, std::string>
     if(isdigit(methodname[0]))
         methodname.insert(0, "t");
     else
-        methodname[0] = std::toupper(methodname[0]);
+        methodname[0] = (char)std::toupper(methodname[0]);
     return std::make_pair(classname, methodname);
 #endif
 }
@@ -748,8 +771,6 @@ void CompileTest(const std::string& testname, FILE* fp)
                     bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
                     bool unitype = DataTypes.size() == 1;
 
-                    std::ostringstream out;
-
                     if(!unitype || !includes_mpfr)
                     {
                         std::ostringstream declbuf1, codebuf1;
@@ -760,53 +781,34 @@ void CompileTest(const std::string& testname, FILE* fp)
                         CompileFunction(valuepos_1, funcname.second, declbuf1, codebuf1,
                                         limited_to_datatype);
 
-                        std::ostringstream body;
-
-                        body <<
-                            "{\n" <<
-                            declbuf1.str();
-                        //out << "#line " << linenumber << " \"" << testname << "\"\n";
-                        body <<
-                            "    return " << codebuf1.str() << ";\n"
+                        std::string code = codebuf1.str();
+                        std::string bodystr =
+                            "{\n" +
+                            declbuf1.str() +
+                            "    return " + code + ";\n"
                             "}\n";
-
-                        std::ostringstream decl;
 
                         if(limited_to_datatype.empty() || limited_to_datatype == "double")
                         {
-                            std::string bodystr = body.str();
-                            str_replace_inplace(bodystr, std::string("\n"), std::string("\n    "));
-                            decl <<
-                                "    template<typename Value_t> static Value_t " << funcname.second
-                                           << "(const Value_t* vars)\n"
-                                           << "    " << bodystr << "\n";
-                            class_declarations[funcname.first] += decl.str();
+                            class_declarations[funcname.first].second +=
+                                test_declaration(funcname.second) + "\n" + bodystr;
                         }
                         else
                         {
-                            decl <<
-                                "    template<typename Value_t> static Value_t " << funcname.second
-                                           << "(const Value_t* vars);\n";
-                            class_declarations[funcname.first] += decl.str();
+                            class_declarations[funcname.first].first +=
+                                test_declaration(funcname.second) + ";\n";
 
-                            out <<
-                                "template<typename Value_t>\n"
-                                "Value_t " << funcname.first << "::" << funcname.second
-                                           << "(const Value_t* vars)\n"
-                                           << body.str();
+                            define_sections[GetDefinesFor(limited_to_datatype)]
+                                .namespace_functions[funcname.first] +=
+                                    test_specialization(funcname.second) + "\n" + bodystr;
                         }
                     }
                     else
                     {
-                        std::ostringstream decl;
-                        decl <<
-                            "    template<typename Value_t> static Value_t " << funcname.second << "(const Value_t* vars);\n";
-                        class_declarations[funcname.first] += decl.str();
+                        // When it's mpfr-only
+                        class_declarations[funcname.first].first +=
+                            test_declaration(funcname.second) + ";\n";
                     }
-
-                    ((limited_to_datatype.empty() || limited_to_datatype == "double")
-                        ? default_function_section
-                        : define_sections[GetDefinesFor(limited_to_datatype)]) += out.str();
 
                     if(includes_mpfr)
                     {
@@ -820,28 +822,28 @@ void CompileTest(const std::string& testname, FILE* fp)
                         if(codebuf2.str().find("mflit") != codebuf2.str().npos
                         || unitype)
                         {
+                            std::string code = codebuf2.str();
+                            str_replace_inplace(code, std::string("MpfrFloat"), std::string("Value_t"));
+
+                            std::string bodystr2 =
+                                "{\n" +
+                                declbuf2.str() +
+                                "    return " + code + ";\n"
+                                "}\n";
+
                             std::ostringstream out2;
 
                             if(!test.IfDef.empty())
                                 out2 << "#if " << test.IfDef << "\n";
 
-                            out2 <<
-                                "template<>\n"
-                                "Value_t " << funcname.first << "::" << funcname.second
-                                             << "<Value_t> (const Value_t* vars)\n"
-                                "{\n"
-                                << declbuf2.str();
-                            //out2 << "#line " << linenumber << " \"" << testname << "\"\n";
-                            std::string code = codebuf2.str();
-                            str_replace_inplace(code, std::string("MpfrFloat"), std::string("Value_t"));
-                            out2 <<
-                                "    return " << code << ";\n"
-                                "}\n";
+                            out2 << test_specialization(funcname.second) << "\n"
+                                 << bodystr2;
 
                             if(!test.IfDef.empty())
                                 out2 << "#endif /* " << test.IfDef << " */\n";
 
-                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"] += out2.str();
+                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"]
+                                .namespace_functions[funcname.first] += out2.str();
                         }
                     }
                 }
@@ -925,7 +927,7 @@ int main(int argc, char* argv[])
     }
 
     std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
-    const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
+    //const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
 
     std::sort(files.begin(), files.end(), natcomp);
 
@@ -941,40 +943,50 @@ int main(int argc, char* argv[])
         fclose(fp);
     }
 
-    out << "namespace { using namespace FUNCTIONPARSERTYPES;\n";
     out << "#define APP(x,y) x##y\n";
-
-    for(std::map<std::string, std::string>::const_iterator
+    for(std::map<std::string, std::pair<std::string,std::string> >::const_iterator
         i = class_declarations.begin();
         i != class_declarations.end();
         ++i)
     {
-        out << "struct " << i->first << "\n"
-            << "{\n"
-            << i->second
-            << "};\n";
+        std::string decls = i->second.first + i->second.second;
+        define_sections[""].namespace_functions[i->first].insert(0, decls);
     }
-    out << default_function_section;
-
-    for(std::map<std::string, std::string>::const_iterator
-        i = define_sections.begin(); i != define_sections.end(); ++i)
-    {
-        if(i->first != "FP_SUPPORT_MPFR_FLOAT_TYPE")
-            out << "\n#ifdef " << i->first << "\n" << i->second
-                << "#endif /*" << i->first << " */\n";
-    }
-    std::map<std::string, std::string>::const_iterator
-        i = define_sections.find("FP_SUPPORT_MPFR_FLOAT_TYPE");
-    out << "\n#ifdef " << i->first << "\n"
-        << "#define Value_t MpfrFloat\n"
-        << i->second
-        << "#undef Value_t\n"
-        << "#endif /*" << i->first << " */\n";
-
-    out << "}\n";
 
     ListTests(out);
 
+    for(std::map<std::string, section_data>::const_iterator
+        i = define_sections.begin(); i != define_sections.end(); ++i)
+    {
+        if(!i->first.empty())
+            out << "\n#ifdef " << i->first << "\n";
+
+        out << i->second.definitions;
+
+        if(i->first != "") out << "#define Value_t " + GetTypeForDefine(i->first) + "\n";
+
+        for(std::map<std::string, std::string>::const_iterator
+            j = i->second.namespace_functions.begin();
+            j != i->second.namespace_functions.end();
+            ++j)
+        {
+            std::string nscontent = j->second;
+            str_replace_inplace(nscontent, std::string("\n"), std::string("\n    "));
+
+            out << "namespace " << j->first << "\n"
+                   "{\n"
+                   "    using namespace FUNCTIONPARSERTYPES;\n    "
+                << nscontent << "\n}\n";
+        }
+
+        if(i->first == "") out << "#define Value_t " + GetTypeForDefine(i->first) + "\n";
+
+        out << i->second.test_list;
+        out << "#undef Value_t\n";
+
+        if(!i->first.empty())
+            out << "#endif /*" << i->first << " */\n";
+    }
 
     //MakeStringBuffer(out);
     //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";
