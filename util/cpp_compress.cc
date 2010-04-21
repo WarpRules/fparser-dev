@@ -26,7 +26,8 @@ namespace
              */
             "assert", "getc", "putc",
             "FP_TRACE_OPCODENAME",
-            "FP_TRACE_BYTECODE_OPTIMIZATION"
+            "FP_TRACE_BYTECODE_OPTIMIZATION",
+            "N","P"
         };
         parametric_macro_list.clear();
         for(unsigned p=0; p<sizeof(list)/sizeof(*list); ++p)
@@ -172,6 +173,7 @@ namespace
             std::swap(meta, b.meta);
         }
     };
+    bool Debug = false;
     StringSeq GetSeq(std::vector<token>::const_iterator begin,
                      size_t n, bool NewLines)
     {
@@ -185,8 +187,11 @@ namespace
             const token&       tok = *begin;
             const std::string& value = tok.value; ++begin;
 
-         #if 1
-            if (!result.empty() && result[result.size()-1] != '\n')
+            if(Debug)
+                result += tok.meta.preproc
+                           ? (InDefineMode ? "¿" : "¡")
+                           : (InDefineMode ? "?" : "!");
+            else if (!result.empty() && result[result.size()-1] != '\n')
             {
                 if (!InDefineMode && NewLines && value[0] == '#') result += '\n';
                 else if (isnamechar(value[0])
@@ -198,9 +203,6 @@ namespace
                         result += '\n';
                 }
             }
-         #else
-            result += (InDefineMode ? "?" : "!");
-         #endif
             if (value[0] == '#')
             {
                 if (value.substr(0,7) == "#define") InDefineMode = true;
@@ -245,28 +247,29 @@ namespace
                         }
                     break;
             }
-          #if 1
-            if (NewLines && !InDefineMode)
+            if (!Debug)
             {
-                if (value[0] == '#'
-                 || value[0] == '}'
-                 || value[0] == '"'
-                  )
+                if (NewLines && !InDefineMode)
                 {
-                    result += '\n';
+                    if (value[0] == '#'
+                     || value[0] == '}'
+                     || value[0] == '"'
+                      )
+                    {
+                        result += '\n';
+                    }
+                }
+                if (n > 0 && (value.size() == 1 &&
+                               (value[0] == '<'  // < < is not <<
+                             || value[0] == '>'  // > > is not >>
+                             || value[0] == '+'  // + + is not ++
+                             || value[0] == '-'  // - - is not --
+                             || value[0] == '&') // & & is not &&
+                               ) && value == begin->value)
+                {
+                    result += ' ';
                 }
             }
-            if (n > 0 && (value.size() == 1 &&
-                           (value[0] == '<'  // < < is not <<
-                         || value[0] == '>'  // > > is not >>
-                         || value[0] == '+'  // + + is not ++
-                         || value[0] == '-'  // - - is not --
-                         || value[0] == '&') // & & is not &&
-                           ) && value == begin->value)
-            {
-                result += ' ';
-            }
-          #endif
         }
         return result;
     }
@@ -353,7 +356,7 @@ namespace
                     std::vector<token> remains = Tokenize(input.substr(a), defmode, SplitMacros, SplitStrings);
                     int balance = 1;
                     size_t eat = 1;
-                    for(; balance != 0; ++eat)
+                    for(; eat < remains.size() && balance != 0; ++eat)
                         balance += remains[eat].meta.balance;
                     if(SplitMacros)
                     {
@@ -513,7 +516,7 @@ namespace
                 if (SplitMacros)
                     while (true)
                     {
-                        size_t p = stringconst.find_first_of(" ,+-()", 0, 1);
+                        size_t p = stringconst.find_first_of(" ,+-", 0, 1);
                         if(p == stringconst.npos) break;
                         if(p > 0)
                             result.push_back( "\""+std::string(stringconst,0,p)+"\"" );
@@ -774,7 +777,10 @@ std::string CPPcompressor::Compress(const std::string& input)
             preserve_parens = true;
 
             std::cerr << "Retokenizing\n";
+            //static int counter=0; ++counter;
+            //if(counter>=1) {Debug=true;}
             result = GetSeq(tokens.begin(), tokens.size(), true);
+            //if(counter>=1) break;
 
             DefineParsingMode defmode;
             tokens = Tokenize(result, defmode, tried_retoken_rounds == 2, tried_retoken_rounds < 3);

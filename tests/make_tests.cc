@@ -135,112 +135,8 @@ std::map<std::string, std::string> class_declarations;
 
 std::string TranslateString(const std::string& str);
 
-void ListTests(std::ostream& outStream)
-{
-    for(std::map<std::string, TestCollection>::const_iterator
-        i = tests.begin();
-        i != tests.end();
-        ++i)
-    {
-        const std::string& type = i->first;
-        std::string defines = GetDefinesFor(type);
-        size_t n_tests         = i->second.size();
-
-        outStream << "\n";
-
-        if(!defines.empty())
-            outStream << "#ifdef " << defines << "\n";
-        outStream << "#define Value_t " << type << "\n";
-        outStream << NumConstDefines(type) << "\n";
-        outStream <<
-            "template<>\n"
-            "struct RegressionTests<Value_t>\n"
-            "{\n"
-            "    static const TestType<Value_t> Tests[];\n"
-            "};\n"
-            //"template<>\n"
-            "const TestType<Value_t>\n"
-            "    RegressionTests<Value_t>::Tests[]";
-        if(n_tests == 0)
-        {
-            outStream <<
-                " = { TestType<Value_t>() };\n";
-        }
-        else
-        {
-            outStream << " =\n{\n";
-            for(size_t a=0; a<n_tests; ++a)
-            {
-                const TestData& testdata = i->second[a];
-
-                if(!testdata.IfDef.empty())
-                    outStream << "#if " << testdata.IfDef << "\n";
-
-                std::ostringstream ranges;
-                const char* rangesdata = testdata.ParamValueRanges.c_str();
-                while(*rangesdata)
-                {
-                    char* endptr = 0;
-                    std::strtod(rangesdata, &endptr);
-                    if(endptr && endptr != rangesdata)
-                    {
-                        ranges << NumConst(type, std::string(rangesdata,endptr-rangesdata));
-                        rangesdata = endptr;
-                    }
-                    else
-                        ranges << *rangesdata++;
-                }
-
-                outStream
-                    << "    { " << testdata.ParamAmount
-                    << ", " << ranges.str()
-                    << ", " << (testdata.UseDegrees ? "true" : "false")
-                    << ", " << testdata.TestFuncName << "<Value_t>";
-                if(type == "MpfrFloat"
-                && testdata.DataTypes.find("double")
-                != testdata.DataTypes.end())
-                {
-                    // If the same test is defined for both "double" and
-                    // "MpfrFloat", include an extra pointer to the "double"
-                    // test in the "MpfrFloat" test.
-                    outStream
-                        << ", " << testdata.TestFuncName << "<double>";
-                }
-                else
-                    outStream
-                        << ", 0";
-
-                if(type == "GmpInt"
-                && testdata.DataTypes.find("long")
-                != testdata.DataTypes.end())
-                {
-                    // If the same test is defined for both "long" and
-                    // "GmpInt", include an extra pointer to the "long"
-                    // test in the "GmpInt" test.
-                    outStream
-                        << ", " << testdata.TestFuncName << "<long>,";
-                }
-                else
-                    outStream
-                        << ", 0,";
-
-                outStream
-                    << "\n      " << TranslateString(testdata.ParamString)
-                    << ", " << TranslateString(testdata.TestName)
-                    << ", " << TranslateString(testdata.FuncString)
-                    << " },\n";
-                if(!testdata.IfDef.empty())
-                    outStream << "#endif /*" << testdata.IfDef << " */\n";
-            }
-            outStream << "    TestType<Value_t>()\n};\n";
-        }
-
-        outStream << "#undef Value_t\n";
-        outStream << NumConstUndefines(type);
-        if(!defines.empty())
-            outStream << "#endif /*" << defines << " */\n";
-    }
-}
+static const char cbuf[] =
+"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
 
 template<typename CharT>
 void
@@ -257,6 +153,173 @@ str_replace_inplace(std::basic_string<CharT>& where,
     }
 }
 
+
+void ListTests(std::ostream& outStream)
+{
+    unsigned DefineCounter=0;
+    std::map<std::string, std::string> TestDefines;
+
+    std::ostringstream listbuffer;
+
+    for(std::map<std::string, TestCollection>::const_iterator
+        i = tests.begin();
+        i != tests.end();
+        ++i)
+    {
+        const std::string& type = i->first;
+        std::string defines = GetDefinesFor(type);
+        size_t n_tests         = i->second.size();
+
+        listbuffer << "\n";
+
+        if(!defines.empty())
+            listbuffer << "#ifdef " << defines << "\n";
+        listbuffer << "#define Value_t " << type << "\n";
+        listbuffer << NumConstDefines(type) << "\n";
+        listbuffer <<
+            "template<>\n"
+            "struct RegressionTests<Value_t>\n"
+            "{\n"
+            "    static const TestType<Value_t> Tests[];\n"
+            "};\n"
+            //"template<>\n"
+            "const TestType<Value_t>\n"
+            "    RegressionTests<Value_t>::Tests[]";
+        if(n_tests == 0)
+        {
+            listbuffer <<
+                " = { TestType<Value_t>() };\n";
+        }
+        else
+        {
+            listbuffer << " =\n{\n";
+            for(size_t a=0; a<n_tests; ++a)
+            {
+                const TestData& testdata = i->second[a];
+
+                std::ostringstream linebuf;
+
+                std::ostringstream ranges;
+                const char* rangesdata = testdata.ParamValueRanges.c_str();
+                while(*rangesdata)
+                {
+                    char* endptr = 0;
+                    std::strtod(rangesdata, &endptr);
+                    if(endptr && endptr != rangesdata)
+                    {
+                        ranges << NumConst(type, std::string(rangesdata,endptr-rangesdata));
+                        rangesdata = endptr;
+                    }
+                    else
+                        ranges << *rangesdata++;
+                }
+
+                int n_duplicates = (int)testdata.DataTypes.size();
+
+                linebuf
+                    << "    { " << testdata.ParamAmount
+                    << ", " << ranges.str()
+                    << ", " << (testdata.UseDegrees ? "true" : "false")
+                    << ", " << testdata.TestFuncName << "<Value_t>";
+                if(type == "MpfrFloat"
+                && testdata.DataTypes.find("double")
+                != testdata.DataTypes.end())
+                {
+                    // If the same test is defined for both "double" and
+                    // "MpfrFloat", include an extra pointer to the "double"
+                    // test in the "MpfrFloat" test.
+                    linebuf
+                        << ", " << testdata.TestFuncName << "<double>";
+                    n_duplicates = 1;
+                }
+                else
+                    linebuf
+                        << ", 0";
+
+                if(type == "GmpInt"
+                && testdata.DataTypes.find("long")
+                != testdata.DataTypes.end())
+                {
+                    // If the same test is defined for both "long" and
+                    // "GmpInt", include an extra pointer to the "long"
+                    // test in the "GmpInt" test.
+                    linebuf
+                        << ", " << testdata.TestFuncName << "<long>,";
+                    n_duplicates = 1;
+                }
+                else
+                    linebuf
+                        << ", 0,";
+
+                linebuf
+                    << "\n      " << TranslateString(testdata.ParamString)
+                    << ", " << TranslateString(testdata.TestName)
+                    << ", " << TranslateString(testdata.FuncString)
+                    << " },\n";
+
+                if(testdata.DataTypes.find("double")
+                != testdata.DataTypes.end()
+                && testdata.DataTypes.find("MpfrFloat")
+                != testdata.DataTypes.end())
+                {
+                    --n_duplicates;
+                }
+                if(testdata.DataTypes.find("long")
+                != testdata.DataTypes.end()
+                && testdata.DataTypes.find("GmpInt")
+                != testdata.DataTypes.end())
+                {
+                    --n_duplicates;
+                }
+                bool has_duplicates = n_duplicates > 1;
+
+                if(!testdata.IfDef.empty())
+                    listbuffer << "#if " << testdata.IfDef << "\n";
+
+                if(n_duplicates > 1)
+                {
+                    std::string teststr(linebuf.str());
+                    std::map<std::string, std::string>::iterator
+                        i = TestDefines.lower_bound(teststr);
+                    if(i == TestDefines.end() || i->first != teststr)
+                    {
+                        char MacroName[32], *m = MacroName;
+                        unsigned p = DefineCounter++;
+                        *m++ = "STUVW"[p%5]; p/=5;
+                        for(; p != 0; p /= 63)
+                            *m++ = cbuf[p % 63];
+                        *m++ = '\0';
+                        TestDefines.insert(i, std::pair<std::string,std::string>
+                            (teststr, MacroName));
+
+                        str_replace_inplace(teststr,
+                            std::string("\n"), std::string(" "));
+
+                        outStream << "#define " << MacroName << " " << teststr << "\n";
+                        listbuffer << MacroName << "\n";
+                    }
+                    else
+                        listbuffer << i->second << "\n";
+                }
+                else
+                {
+                    listbuffer << linebuf.str();
+                }
+
+                if(!testdata.IfDef.empty())
+                    listbuffer << "#endif /*" << testdata.IfDef << " */\n";
+            }
+            listbuffer << "    TestType<Value_t>()\n};\n";
+        }
+
+        listbuffer << "#undef Value_t\n";
+        listbuffer << NumConstUndefines(type);
+        if(!defines.empty())
+            listbuffer << "#endif /*" << defines << " */\n";
+    }
+
+    outStream << listbuffer.str();
+}
 
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
                      std::ostream& declbuf,
@@ -470,9 +533,6 @@ void MakeStringBuffer(std::ostream& out)
     if(quote) out << '"';
     out << ";\n";
 }*/
-
-static const char cbuf[] =
-"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
 
 std::pair<std::string, std::string>
     MakeFuncName(const std::string& testname)
