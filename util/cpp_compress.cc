@@ -7,7 +7,8 @@
 
 namespace
 {
-    static const std::string macro_prefix_chars = "qghdowma";
+    std::string macro_prefix_chars = "qghdowma";
+
     /* ^List of characters that are _least_ likely to form
      *  a legitimate identifier name in the input code when
      *  a [0-9A-Z] (case sensitive) is appended to it.
@@ -793,4 +794,12 @@ std::string CPPcompressor::Compress(const std::string& input)
         }
     }
     return result.GetString();
+}
+
+std::string CPPcompressor::Compress
+    (const std::string& input,
+     const std::string& m)
+{
+    macro_prefix_chars = m;
+    return Compress(input);
 }

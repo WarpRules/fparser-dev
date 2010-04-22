@@ -230,10 +230,10 @@ util/bytecoderules_parser: util/bytecoderules_parser.o
 
 
 util/version_changer: util/version_changer.cc
-	g++ -O3 $^ -s -o $@
+	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
-util/make_function_name_parser: util/make_function_name_parser.cc
-	g++ -O3 $^ -s -o $@
+util/make_function_name_parser: util/make_function_name_parser.cc util/cpp_compress.o
+	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
 util/powi_opt: \
 		util/powi_opt.o \
@@ -241,14 +241,14 @@ util/powi_opt: \
 		fpoptimizer/constantfolding.o \
 		fpoptimizer/codetree.o \
 		fpoptimizer/rangeestimation.o
-	g++ -O3 $^ -s -o $@
+	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
 util/create_testrules_for_optimization_rules: \
 		util/create_testrules_for_optimization_rules.cc \
 		fpoptimizer/grammar_data.o \
 		fpoptimizer/opcodename.o \
 		fpoptimizer/grammar.o
-	g++ -O3 $^ -s -o $@
+	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
 fpoptimizer_tests.sh: util/create_testrules_for_optimization_rules
 	./$< > $@

@@ -11,6 +11,7 @@
 
 #include <set>
 #include <iostream>
+#include <sstream>
 #include <string.h>
 
 #include "fparser.hh"
@@ -18,23 +19,24 @@
 #include "fptypes.hh"
 
 #include "../fpoptimizer/opcodename.cc"
+#include "../util/cpp_compress.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
-static void Compile(const std::string& prefix, size_t length)
+static void Compile(std::ostream& outStream, const std::string& prefix, size_t length)
 {
     // if the prefix matches, check what we've got
-    std::cout << "/* prefix " << prefix << " */";
+    outStream << "/* prefix " << prefix << " */";
 
     for(size_t a=0; a<FUNC_AMOUNT; ++a)
         if(prefix == Functions[a].name
         && length == strlen(Functions[a].name))
         {
             std::string o = FP_GetOpcodeName(OPCODE(a));
-            std::cout << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
-            std::cout << std::hex << (0x80000000U | length);
-            std::cout << std::dec << "U : " << length << ";";
-            std::cout << "\n    ";
+            outStream << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+            outStream << std::hex << (0x80000000U | length);
+            outStream << std::dec << "U : " << length << ";";
+            outStream << "\n    ";
             return;
         }
 
@@ -60,36 +62,36 @@ static void Compile(const std::string& prefix, size_t length)
                     size_t tmpbytes = length - prefix.size();
                     if(tmpbytes > 2)
                     {
-                        std::cout << "{";
-                        std::cout << "static const char tmp[" << tmpbytes << "] = {";
+                        outStream << "{";
+                        outStream << "static const char tmp[" << tmpbytes << "] = {";
                         for(size_t b=prefix.size(); b<length; ++b)
                         {
-                            if(b > prefix.size()) std::cout << ',';
-                            std::cout << "'" << Functions[a].name[b] << "'";
+                            if(b > prefix.size()) outStream << ',';
+                            outStream << "'" << Functions[a].name[b] << "'";
                         }
-                        std::cout << "};\n    ";
+                        outStream << "};\n    ";
                     }
 
                     if(tmpbytes > 2)
-                        std::cout << "if(std::memcmp(uptr+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
+                        outStream << "if(std::memcmp(uptr+" << prefix.size() << ", tmp, " << tmpbytes << ") == 0) ";
                     else
                     {
-                        std::cout << "if(";
+                        outStream << "if(";
                         for(size_t b=prefix.size(); b<length; ++b)
                         {
-                            if(b != prefix.size()) std::cout << "\n    && ";
-                            std::cout << "'" << Functions[a].name[b] << "' == uptr[" << b << "]";
+                            if(b != prefix.size()) outStream << "\n    && ";
+                            outStream << "'" << Functions[a].name[b] << "' == uptr[" << b << "]";
                         }
-                        std::cout << ") ";
+                        outStream << ") ";
                     }
 
                     std::string o = FP_GetOpcodeName(OPCODE(a));
-                    std::cout << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
-                    std::cout << std::hex << (0x80000000U | length);
-                    std::cout << std::dec << "U : " << length << ";";
-                    std::cout << "\n    return " << length << ";";
-                    if(tmpbytes > 2) std::cout << " }";
-                    std::cout << "\n    ";
+                    outStream << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+                    outStream << std::hex << (0x80000000U | length);
+                    outStream << std::dec << "U : " << length << ";";
+                    outStream << "\n    return " << length << ";";
+                    if(tmpbytes > 2) outStream << " }";
+                    outStream << "\n    ";
                 }
             }
         }
@@ -110,7 +112,7 @@ static void Compile(const std::string& prefix, size_t length)
 
     if(possible_children.empty())
     {
-        std::cout << "return " << length << ";\n    ";
+        outStream << "return " << length << ";\n    ";
     }
     else
     {
@@ -121,35 +123,37 @@ static void Compile(const std::string& prefix, size_t length)
                 i != possible_children.end();
                 ++i)
             {
-                std::cout << "if('" << *i << "' == uptr[" << prefix.size() << "]) {\n    ";
+                outStream << "if('" << *i << "' == uptr[" << prefix.size() << "]) {\n    ";
                 std::string tmp(prefix);
                 tmp += *i;
-                Compile(tmp, length);
-                std::cout << "}";
+                Compile(outStream, tmp, length);
+                outStream << "}";
             }
-            std::cout << "return " << length << ";";
+            outStream << "return " << length << ";";
         }
         else
         {
-            std::cout << "switch(uptr[" << prefix.size() << "]) {\n    ";
+            outStream << "switch(uptr[" << prefix.size() << "]) {\n    ";
             for(std::set<char>::const_iterator
                 i = possible_children.begin();
                 i != possible_children.end();
                 ++i)
             {
-                std::cout << "case '" << *i << "':\n    ";
+                outStream << "case '" << *i << "':\n    ";
                 std::string tmp(prefix);
                 tmp += *i;
-                Compile(tmp, length);
+                Compile(outStream, tmp, length);
             }
-            std::cout << "default: return " << length << "; }\n    ";
+            outStream << "default: return " << length << "; }\n    ";
         }
     }
 }
 
 int main()
 {
-    std::cout <<
+    std::ostringstream outStream;
+
+    outStream <<
 "        switch(nameLength)\n"
 "        {\n    ";
     std::set<unsigned> lengthSet;
@@ -158,12 +162,16 @@ int main()
     for(std::set<unsigned>::iterator
         i = lengthSet.begin(); i != lengthSet.end(); ++i)
     {
-        std::cout << "         case " << *i << ":\n    ";
-        Compile("", *i);
-        std::cout << "\n    ";
+        outStream << "         case " << *i << ":\n    ";
+        Compile(outStream, "", *i);
+        outStream << "\n    ";
     }
-    std::cout <<
+    outStream <<
 "        default: break;\n"
 "        }\n"
 "        return nameLength;\n";
+
+    CPPcompressor Compressor;
+    //std::cout << outStream.str();
+    std::cout << Compressor.Compress(outStream.str(), "l");
 }
