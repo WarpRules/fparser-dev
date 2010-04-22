@@ -7,6 +7,8 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
+static const char* const kVersionNumber = "1.0.0.0";
+
 //#define TEST_JIT
 //#define MEASURE_PARSING_SPEED_ONLY
 
@@ -315,7 +317,8 @@ int main(int argc, char* argv[])
              || std::strcmp(argv[i], "/?") == 0)
         {
             std::cout <<
-                "Usage: " << argv[0] << " [<option> ...]\n"
+                "FunctionParser speedtest " << kVersionNumber <<
+                "\n\nUsage: " << argv[0] << " [<option> ...]\n"
                 "\n"
                 "    -f                Test float datatype\n"
                 "    -ld               Test long double datatype\n"

@@ -7,6 +7,8 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
+static const char* const kVersionNumber = "2.0.0.0";
+
 #include "fpconfig.hh"
 #include "fparser.hh"
 
@@ -2164,7 +2166,8 @@ int main(int argc, char* argv[])
              || std::strcmp(argv[i], "/?") == 0)
         {
             std::cout <<
-                "Usage: " << argv[0] << " [<option> ...]\n"
+                "FunctionParser testbed " << kVersionNumber <<
+                "\n\nUsage: " << argv[0] << " [<option> ...]\n"
                 "\n"
                 "    -noUTF8Test       Skip UTF-8 testing\n"
                 "    -tests <tests>    Select tests to perform, wildcards ok\n"

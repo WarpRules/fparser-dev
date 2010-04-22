@@ -7,6 +7,8 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
+static const char* const kVersionNumber = "1.0.0.0";
+
 #include "fparser.hh"
 #include "fparser_gmpint.hh"
 #include <iostream>
@@ -770,7 +772,8 @@ namespace
     int printHelp(const char* programName)
     {
         std::cerr <<
-            "Usage: " << programName <<
+            "FunctionParser functioninfo utility " << kVersionNumber <<
+            "\n\nUsage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
             "  -f                 : Use FunctionParser_f.\n"

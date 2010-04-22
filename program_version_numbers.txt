@@ -1,0 +1,36 @@
+The version numbers reported by the utility programs is set at the beginning
+of their source code. This version number is maintained manually and should
+be update every time the source code is modified in any way. The version
+number is of the form:
+
+    A.B.C.D
+
+  The meaning of the four values are:
+
+A: The main version number, 0 for an alpha version which is not yet
+   completely functional, 1 or larger for a working program.
+
+   This number should be incremented only if a major rewrite or
+   refactoring is done which changes the entire structure of the
+   program very significantly. Thus this will often be 1 forever.
+
+   Incrementing this number zeroes B and C (but not D).
+
+B: Major subversion number, starting from 0 forwards. Should be incremented
+   if a significant addition or modification is done to the program (such
+   as adding new significant command-line options, or support for a new
+   parser type).
+
+   Incrementing this number zeroes C (but not D).
+
+C: Minor subversion number, starting from 0 forwards. Should be incremented
+   if a minor (but non-cosmetic) addition or modification is done to the
+   program. Purely cosmetic changes (such as changing indentation or the
+   wording of a printed sentence, or adding a few comments) does not warrant
+   increasing this number.
+
+D: Modification counter. This should be incremented every time a new
+   modified version of the source code is committed into the project
+   (and regardless of whether A, B or C were modified), no matter how
+   insignificant (even if it's just indentation). This number never
+   decreases.

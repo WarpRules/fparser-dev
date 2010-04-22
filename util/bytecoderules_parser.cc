@@ -1,3 +1,5 @@
+static const char* const kVersionNumber = "1.0.0.0";
+
 #include <ctype.h>
 #include <cstdio>
 #include <cstdlib>
