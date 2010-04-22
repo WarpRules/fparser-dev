@@ -75,7 +75,7 @@ namespace
     std::string NumConstDefines(const std::string& type)
     {
         if(type == "MpfrFloat")
-            return "#define N(x) Value_t::parseString(#x)\n"
+            return "#define N(x) Value_t(#x,0)\n"
                    "#define P(x) N(x)\n";
         if(type == "long" || type == "GmpInt")
             return "#define P(x) APP(x,l)\n";
@@ -111,9 +111,13 @@ namespace
     {
         return "template<typename Value_t> static Value_t "+name+"(const Value_t* vars)";
     }
-    std::string test_specialization(const std::string& name)
+    std::string test_specialization(const std::string& name, const std::string& type)
     {
-        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars)";
+        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars) /* " + type + " */";
+    }
+    std::string test_specialized_declaration(const std::string& name, const std::string& type)
+    {
+        return "Value_t "+name+"(const Value_t* vars) /* " + type + " */";
     }
 }
 
@@ -197,14 +201,8 @@ void ListTests(std::ostream& outStream)
         listbuffer << "\n";
 
         //listbuffer << "#define Value_t " << type << "\n";
-        listbuffer << NumConstDefines(type) << "\n";
         listbuffer <<
             "template<>\n"
-            "struct RegressionTests<Value_t>\n"
-            "{\n"
-            "    static const TestType<Value_t> Tests[];\n"
-            "};\n"
-            //"template<>\n"
             "const TestType<Value_t>\n"
             "    RegressionTests<Value_t>::Tests[]";
         if(n_tests == 0)
@@ -242,44 +240,42 @@ void ListTests(std::ostream& outStream)
                     << "    { " << testdata.ParamAmount
                     << ", " << ranges.str()
                     << ", " << (testdata.UseDegrees ? "true" : "false")
-                    << ", " << testdata.TestFuncName << "<Value_t>";
-                if(type == "MpfrFloat"
-                && testdata.DataTypes.find("double")
+                    << ", " << testdata.TestFuncName;
+                if(/*type == "MpfrFloat"
+                &&*/ testdata.DataTypes.find("double")
                 != testdata.DataTypes.end())
                 {
                     // If the same test is defined for both "double" and
                     // "MpfrFloat", include an extra pointer to the "double"
                     // test in the "MpfrFloat" test.
-                    linebuf
-                        << ", " << testdata.TestFuncName << "<double>";
-                    n_duplicates = 1;
+                    linebuf << ", " << testdata.TestFuncName;
+                    //n_duplicates = 1;
                 }
                 else
                     linebuf
                         << ", 0";
 
-                if(type == "GmpInt"
-                && testdata.DataTypes.find("long")
+                if(/*type == "GmpInt"
+                &&*/ testdata.DataTypes.find("long")
                 != testdata.DataTypes.end())
                 {
                     // If the same test is defined for both "long" and
                     // "GmpInt", include an extra pointer to the "long"
                     // test in the "GmpInt" test.
-                    linebuf
-                        << ", " << testdata.TestFuncName << "<long>,";
-                    n_duplicates = 1;
+                    linebuf << ", " << testdata.TestFuncName;
+                    //n_duplicates = 1;
                 }
                 else
                     linebuf
-                        << ", 0,";
+                        << ", 0";
 
                 linebuf
-                    << "\n      " << TranslateString(testdata.ParamString)
+                    << ",\n      " << TranslateString(testdata.ParamString)
                     << ", " << TranslateString(testdata.TestName)
                     << ", " << TranslateString(testdata.FuncString)
                     << " },\n";
 
-                if(testdata.DataTypes.find("double")
+                /*if(testdata.DataTypes.find("double")
                 != testdata.DataTypes.end()
                 && testdata.DataTypes.find("MpfrFloat")
                 != testdata.DataTypes.end())
@@ -292,7 +288,7 @@ void ListTests(std::ostream& outStream)
                 != testdata.DataTypes.end())
                 {
                     --n_duplicates;
-                }
+                }*/
 
                 if(!testdata.IfDef.empty())
                     listbuffer << "#if " << testdata.IfDef << "\n";
@@ -337,8 +333,6 @@ void ListTests(std::ostream& outStream)
         }
 
         //listbuffer << "#undef Value_t\n";
-        listbuffer << NumConstUndefines(type);
-
         define_sections[defines].test_list += listbuffer.str();
     }
 }
@@ -438,11 +432,16 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
 
                         if(mpfrconst_set.insert(mpfrconst_name).second)
                         {
-                            define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"].definitions
-                                += "static const Value_t " + mpfrconst_name
-                                 + "\n    = Value_t::parseString(\"" + num + "\", 0);\n";
+                            std::string& defs = define_sections["FP_SUPPORT_MPFR_FLOAT_TYPE"].definitions;
+                            if(defs.empty())
+                                defs += "static const Value_t ";
+                            else
+                            {
+                                defs.erase(defs.size()-2, 2); /* Remove ";\n" */
+                                defs += ",\n                     ";
+                            }
+                            defs += mpfrconst_name + "(\"" + num + "\", 0);\n";
                         }
-
                         codebuf << mpfrconst_name;
                     }
                     //if(*endptr == 'f' || *endptr == 'l') ++endptr;
@@ -771,6 +770,8 @@ void CompileTest(const std::string& testname, FILE* fp)
                     bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
                     bool unitype = DataTypes.size() == 1;
 
+                    bool has_generic = false;
+
                     if(!unitype || !includes_mpfr)
                     {
                         std::ostringstream declbuf1, codebuf1;
@@ -790,24 +791,24 @@ void CompileTest(const std::string& testname, FILE* fp)
 
                         if(limited_to_datatype.empty() || limited_to_datatype == "double")
                         {
-                            class_declarations[funcname.first].second +=
-                                test_declaration(funcname.second) + "\n" + bodystr;
+                            define_sections[""]
+                                .namespace_functions[funcname.first]
+                                  += test_declaration(funcname.second) + "\n" + bodystr;
+                            has_generic = true;
                         }
                         else
                         {
-                            class_declarations[funcname.first].first +=
-                                test_declaration(funcname.second) + ";\n";
-
                             define_sections[GetDefinesFor(limited_to_datatype)]
                                 .namespace_functions[funcname.first] +=
-                                    test_specialization(funcname.second) + "\n" + bodystr;
+                                    test_specialized_declaration(funcname.second, limited_to_datatype)
+                                    + "\n" + bodystr;
                         }
                     }
                     else
                     {
                         // When it's mpfr-only
-                        class_declarations[funcname.first].first +=
-                            test_declaration(funcname.second) + ";\n";
+                        //class_declarations[funcname.first].first +=
+                        //    test_declaration(funcname.second) + ";\n";
                     }
 
                     if(includes_mpfr)
@@ -836,8 +837,11 @@ void CompileTest(const std::string& testname, FILE* fp)
                             if(!test.IfDef.empty())
                                 out2 << "#if " << test.IfDef << "\n";
 
-                            out2 << test_specialization(funcname.second) << "\n"
-                                 << bodystr2;
+                            /*if(has_generic)
+                                out2 << test_specialization(funcname.second, "MpfrFloat") << "\n";
+                            else*/
+                            out2 << test_specialized_declaration(funcname.second, "MpfrFloat") << "\n";
+                            out2 << bodystr2;
 
                             if(!test.IfDef.empty())
                                 out2 << "#endif /* " << test.IfDef << " */\n";
@@ -958,12 +962,15 @@ int main(int argc, char* argv[])
     for(std::map<std::string, section_data>::const_iterator
         i = define_sections.begin(); i != define_sections.end(); ++i)
     {
+        const std::string type = GetTypeForDefine(i->first);
         if(!i->first.empty())
             out << "\n#ifdef " << i->first << "\n";
 
-        out << i->second.definitions;
+        out << NumConstDefines(type) << "\n";
 
-        if(i->first != "") out << "#define Value_t " + GetTypeForDefine(i->first) + "\n";
+        if(i->first != "") out << "#define Value_t " + type + "\n";
+
+        out << i->second.definitions;
 
         for(std::map<std::string, std::string>::const_iterator
             j = i->second.namespace_functions.begin();
@@ -979,10 +986,11 @@ int main(int argc, char* argv[])
                 << nscontent << "\n}\n";
         }
 
-        if(i->first == "") out << "#define Value_t " + GetTypeForDefine(i->first) + "\n";
+        if(i->first == "") out << "#define Value_t " + type + "\n";
 
         out << i->second.test_list;
         out << "#undef Value_t\n";
+        out << NumConstUndefines(type);
 
         if(!i->first.empty())
             out << "#endif /*" << i->first << " */\n";

@@ -41,7 +41,7 @@ class MpfrFloat
     MpfrFloat(long double value);
     MpfrFloat(long value);
     MpfrFloat(int value);
-    //MpfrFloat(const char* value);
+    MpfrFloat(const char* value, char** endptr);
 
     ~MpfrFloat();
 

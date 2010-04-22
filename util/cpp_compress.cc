@@ -152,14 +152,16 @@ namespace
 
         void Rehash()
         {
-            meta.preproc = (value[0] == '#' || value[0] == '\n');
+            const char* v = value.data();
+            meta.preproc = (v[0] == '#' || v[0] == '\n');
             meta.balance = 0;
             meta.comma   = 0;
             meta.hash    = 0;
             for(size_t a=0; a<value.size(); ++a)
             {
-                meta.hash = meta.hash*0x8088405u + value[a];
-                switch(value[a])
+                //meta.hash = meta.hash*0x8088405u + v[a];
+                meta.hash = ((meta.hash << (1)) | (meta.hash >> (32-1))) - v[a];
+                switch(v[a])
                 {
                     case '(': ++meta.balance; break;
                     case ')': --meta.balance; break;
@@ -461,7 +463,7 @@ namespace
                             parametric_macro_list.insert(macro);
                         }
 
-                        size_t param_list_begin = p, param_begin = p+1;
+                        size_t /*param_list_begin = p,*/ param_begin = p+1;
                         int balance = 1;
                         for (++p; true; ++p)
                         {
@@ -550,7 +552,7 @@ namespace
         unsigned p = macro_counter++;
         result += macro_prefix_chars[(p/36)%macro_prefix_chars.size()];
         result += cbuf[p%36];
-        p/=(macro_prefix_chars.size()*36); // 0-9A-Z
+        p /= unsigned(macro_prefix_chars.size()*36); // 0-9A-Z
         for(; p != 0; p /= 63)
             result += cbuf[p%63];
         return result;
@@ -575,7 +577,7 @@ namespace
 
         std::vector<bool> donttest(tokens.size(), false);
 
-        const size_t lookahead_depth = 6000000 / tokens.size();
+        const size_t lookahead_depth = (12*1000000) / tokens.size();
         // ^Lookahead limit. The value chosen is an arbitrary value
         //  to shield against exponential runtime. A larger value
         //  yields better compression, but is slower.
@@ -604,7 +606,10 @@ namespace
                     // && (balance < 0 || (word.meta.comma && balance==0))) break;
 
                     ++match_len;
-                    hash = ~hash*0x8088405u + word.meta.hash;
+                    hash = ((hash << (1+0*(match_len&31)))
+                          ^ (hash >> (31-0*(match_len&31))))
+                          ^ word.meta.hash;
+                    //hash = ~hash*0x8088405u + word.meta.hash;
 
                     donttest[b] = true;
 
@@ -615,13 +620,13 @@ namespace
                         if (i == hash_results.end() || i->first != hash)
                         {
                             length_rec rec;
-                            rec.begin_index = a;
-                            rec.num_tokens  = match_len;
+                            rec.begin_index = (unsigned)a;
+                            rec.num_tokens  = (unsigned)match_len;
                             rec.num_occurrences = 1;
                             hash_results.insert(i, std::make_pair(hash,rec));
                             cap = std::max(cap, b+match_len+lookahead_depth);
                         }
-                        else if (i->second.begin_index == a)
+                        else if (i->second.begin_index == (unsigned)a)
                         {
                             if (std::equal(
                                 tokens.begin()+a, tokens.begin()+a+match_len,
@@ -773,8 +778,7 @@ std::string CPPcompressor::Compress(const std::string& input)
         }
         else
         {
-            if (tried_retoken_rounds >= 3) break;
-            ++tried_retoken_rounds;
+            if (tried_retoken_rounds >= 4) break;
             preserve_parens = true;
 
             std::cerr << "Retokenizing\n";
@@ -784,7 +788,8 @@ std::string CPPcompressor::Compress(const std::string& input)
             //if(counter>=1) break;
 
             DefineParsingMode defmode;
-            tokens = Tokenize(result, defmode, tried_retoken_rounds == 2, tried_retoken_rounds < 3);
+            tokens = Tokenize(result, defmode, tried_retoken_rounds&1, tried_retoken_rounds&2);
+            ++tried_retoken_rounds;
         }
     }
     return result.GetString();

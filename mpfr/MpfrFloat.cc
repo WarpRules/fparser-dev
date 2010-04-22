@@ -259,13 +259,11 @@ MpfrFloat::MpfrFloat(int value)
     }
 }
 
-/*
-MpfrFloat::MpfrFloat(const char* value):
+MpfrFloat::MpfrFloat(const char* value, char** endptr):
     mData(mpfrFloatDataContainer().allocateMpfrFloatData(false))
 {
-    mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
+    mpfr_strtofr(mData->mFloat, value, endptr, 0, GMP_RNDN);
 }
-*/
 
 MpfrFloat::~MpfrFloat()
 {
