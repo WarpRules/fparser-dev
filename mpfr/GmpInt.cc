@@ -628,13 +628,21 @@ void GmpInt::parseValue(const char* value, char** endptr)
     if(value[endIndex] == '-') ++endIndex;
     if(!std::isdigit(value[endIndex]))
     { *endptr = const_cast<char*>(value); return; }
-    while(std::isdigit(value[++endIndex])) {}
+    if(value[endIndex] == '0' && value[endIndex+1] == 'x')
+    {
+        endIndex += 1;
+        while(std::isxdigit(value[++endIndex])) {}
+    }
+    else
+    {
+        while(std::isdigit(value[++endIndex])) {}
+    }
 
     str.reserve(endIndex - startIndex + 1);
     str.assign(value + startIndex, value + endIndex);
     str.push_back(0);
 
-    mpz_set_str(mData->mInteger, &str[0], 10);
+    mpz_set_str(mData->mInteger, &str[0], 0);
     *endptr = const_cast<char*>(value + endIndex);
 }
 
