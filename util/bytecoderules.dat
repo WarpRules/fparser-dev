@@ -88,6 +88,7 @@ x cNot			-> [fp_not(x)]
 IF(FP_FLOAT_VERSION) B [B >= VarBegin] cRDiv A [A >= VarBegin] cDiv -> A cMul  B cRDiv
 IF(FP_FLOAT_VERSION) x                 cRDiv A [A >= VarBegin] cDiv -> A cMul [x] cRDiv
 IF(FP_FLOAT_VERSION) x                 cRDiv A [A >= VarBegin] cMul -> [DO_STACKPLUS1] A [x] cMul cRDiv
+x [x==Value_t(1)] cRDiv -> cInv
 
 # a/b/c = a/(b*c)
 IF(FP_FLOAT_VERSION) B [B >= VarBegin] cDiv A [A >= VarBegin] cDiv -> [DO_STACKPLUS1] B A cMul cDiv
