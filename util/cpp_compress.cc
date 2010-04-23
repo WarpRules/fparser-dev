@@ -8,6 +8,7 @@
 namespace
 {
     std::string macro_prefix_chars = "qghdowma";
+    bool verbose = false;
 
     /* ^List of characters that are _least_ likely to form
      *  a legitimate identifier name in the input code when
@@ -460,7 +461,7 @@ namespace
                         if(parametric_macro_list.find(macro)
                         == parametric_macro_list.end())
                         {
-                            std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
+                            if(verbose) std::cerr << "Detected parametric macro: " << macro << " (ok)\n";
                             parametric_macro_list.insert(macro);
                         }
 
@@ -574,7 +575,7 @@ namespace
         size_t best_score_length=0;
         unsigned best_hash=0;
 
-        std::cerr << tokens.size() << " tokens\n";
+        if(verbose) std::cerr << tokens.size() << " tokens\n";
 
         std::vector<bool> donttest(tokens.size(), false);
 
@@ -660,7 +661,7 @@ namespace
                 std::vector<token> sequence
                     (tokens.begin()+rec.begin_index,
                      tokens.begin()+rec.begin_index+rec.num_tokens);
-                std::cerr << "#define " << seq_name_buf << " " <<
+                if(verbose) std::cerr << "#define " << seq_name_buf << " " <<
                     GetSeq(sequence.begin(), sequence.size(), false).GetString()
                         //<< " /* " << rec.num_occurrences
                         //<< " occurrences */"
@@ -782,7 +783,7 @@ std::string CPPcompressor::Compress(const std::string& input)
             if (tried_retoken_rounds >= 4) break;
             preserve_parens = true;
 
-            std::cerr << "Retokenizing\n";
+            if(verbose) std::cerr << "Retokenizing\n";
             //static int counter=0; ++counter;
             //if(counter>=1) {Debug=true;}
             result = GetSeq(tokens.begin(), tokens.size(), true);
