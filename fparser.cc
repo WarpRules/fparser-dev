@@ -1773,39 +1773,144 @@ template<typename Value_t>
 inline const char*
 FunctionParserBase<Value_t>::CompileMult(const char* function)
 {
-    unsigned op = 0;
+    function = CompileUnaryMinus(function);
+    if(!function) return 0;
+
+    Value_t pending_immed(1);
+    #define FP_FlushImmed(do_reset) \
+        if(pending_immed != Value_t(1)) \
+        { \
+            unsigned op = cMul; \
+            if(!IsIntType<Value_t>::result && data->ByteCode.back() == cInv) \
+            { \
+                /* (...) cInv 5 cMul -> (...) 5 cRDiv */ \
+                /*           ^               ^      | */ \
+                data->ByteCode.pop_back(); \
+                op = cRDiv; \
+            } \
+            AddImmedOpcode(pending_immed); \
+            incStackPtr(); \
+            AddFunctionOpcode(op); \
+            --StackPtr; \
+            if(do_reset) pending_immed = Value_t(1); \
+        }
     while(true)
     {
-        function = CompileUnaryMinus(function);
-        if(!function) return 0;
-
-        // add opcode
-        if(op)
+        char c = *function;
+        if(c == '%')
         {
-            AddFunctionOpcode(op);
-            if(op != cInv) --StackPtr;
+            FP_FlushImmed(true);
+            ++function;
+            SkipSpace(function);
+            function = CompileUnaryMinus(function);
+            if(!function) return 0;
+            AddFunctionOpcode(cMod);
+            --StackPtr;
+            continue;
         }
-        switch(*function)
+        if(c != '*' && c != '/') break;
+
+        bool safe_cumulation = (c == '*' || !IsIntType<Value_t>::result);
+        if(!safe_cumulation)
         {
-            case '*': op = cMul; break;
-            case '/': op = cDiv; break;
-            case '%': op = cMod; break;
-            default: return function;
+            FP_FlushImmed(true);
         }
 
         ++function;
         SkipSpace(function);
-
-        if(op != cMod &&
-           data->ByteCode.back() == cImmed &&
-           data->Immed.back() == Value_t(1))
+        if(data->ByteCode.back() == cImmed
+        && (safe_cumulation
+         || data->Immed.back() == Value_t(1)))
         {
-            op = (op == cDiv ? cInv : 0);
+            // 5 (...) cMul --> (...)      ||| 5 cMul
+            // 5 (...) cDiv --> (...) cInv ||| 5 cMul
+            //  ^          |              ^
+            pending_immed *= data->Immed.back();
             data->Immed.pop_back();
             data->ByteCode.pop_back();
             --StackPtr;
+            function = CompileUnaryMinus(function);
+            if(!function) return 0;
+            if(c == '/')
+                AddFunctionOpcode(cInv);
+            continue;
+        }
+        if(safe_cumulation
+        && data->ByteCode.back() == cMul
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) 5 cMul (...) cMul -> (:::) (...) cMul  ||| 5 cMul
+            // (:::) 5 cMul (...) cDiv -> (:::) (...) cDiv  ||| 5 cMul
+            //             ^                   ^
+            pending_immed *= data->Immed.back();
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        // cDiv is not tested here because the bytecode
+        // optimizer will convert this kind of cDivs into cMuls.
+        bool lhs_inverted = false;
+        if(!IsIntType<Value_t>::result && c == '*'
+        && data->ByteCode.back() == cInv)
+        {
+            // (:::) cInv (...) cMul -> (:::) (...) cRDiv
+            // (:::) cInv (...) cDiv -> (:::) (...) cMul cInv
+            //           ^                   ^            |
+            data->ByteCode.pop_back();
+            lhs_inverted = true;
+        }
+        function = CompileUnaryMinus(function);
+        if(!function) return 0;
+        if(safe_cumulation
+        && data->ByteCode.back() == cMul
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) (...) 5 cMul cMul -> (:::) (...) cMul  |||  5 Mul
+            // (:::) (...) 5 cMul cDiv -> (:::) (...) cDiv  ||| /5 Mul
+            //                   ^                        ^
+            if(c == '*')
+                pending_immed *= data->Immed.back();
+            else
+                pending_immed /= data->Immed.back();
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        else
+        if(safe_cumulation
+        && data->ByteCode.back() == cRDiv
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) (...) 5 cRDiv cMul -> (:::) (...) cDiv  |||  5 cMul
+            // (:::) (...) 5 cRDiv cDiv -> (:::) (...) cMul  ||| /5 cMul
+            //                    ^                   ^
+            if(c == '*')
+                { c = '/'; pending_immed *= data->Immed.back(); }
+            else
+                { c = '*'; pending_immed /= data->Immed.back(); }
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        if(!lhs_inverted) // if (/x/y) was changed to /(x*y), add missing cInv
+        {
+            AddFunctionOpcode(c == '*' ? cMul : cDiv);
+            --StackPtr;
+        }
+        else if(c == '*') // (/x)*y -> rdiv(x,y)
+        {
+            AddFunctionOpcode(cRDiv);
+            --StackPtr;
+        }
+        else // (/x)/y -> /(x*y)
+        {
+            AddFunctionOpcode(cMul);
+            --StackPtr;
+            AddFunctionOpcode(cInv);
         }
     }
+    FP_FlushImmed(false);
+    #undef FP_FlushImmed
     return function;
 }
 
@@ -1813,37 +1918,120 @@ template<typename Value_t>
 inline const char*
 FunctionParserBase<Value_t>::CompileAddition(const char* function)
 {
-    unsigned op=0;
+    function = CompileMult(function);
+    if(!function) return 0;
+
+    Value_t pending_immed(0);
+    #define FP_FlushImmed(do_reset) \
+        if(pending_immed != Value_t(0)) \
+        { \
+            unsigned op = cAdd; \
+            if(data->ByteCode.back() == cNeg) \
+            { \
+                /* (...) cNeg 5 cAdd -> (...) 5 cRSub */ \
+                /*           ^               ^      | */ \
+                data->ByteCode.pop_back(); \
+                op = cRSub; \
+            } \
+            AddImmedOpcode(pending_immed); \
+            incStackPtr(); \
+            AddFunctionOpcode(op); \
+            --StackPtr; \
+            if(do_reset) pending_immed = Value_t(0); \
+        }
     while(true)
     {
-        function = CompileMult(function);
-        if(!function) return 0;
-
-        // add opcode
-        if(op)
-        {
-            AddFunctionOpcode(op);
-            if(op != cNeg) --StackPtr;
-        }
-        switch(*function)
-        {
-            case '+': op = cAdd; break;
-            case '-': op = cSub; break;
-            default: return function;
-        }
-
+        char c = *function;
+        if(c != '+' && c != '-') break;
         ++function;
         SkipSpace(function);
-
-        if(data->ByteCode.back() == cImmed &&
-           data->Immed.back() == Value_t(0))
+        if(data->ByteCode.back() == cImmed)
         {
-            op = (op == cSub ? cNeg : 0);
+            // 5 (...) cAdd --> (...)      ||| 5 cAdd
+            // 5 (...) cSub --> (...) cNeg ||| 5 cAdd
+            //  ^          |              ^
+            pending_immed += data->Immed.back();
             data->Immed.pop_back();
             data->ByteCode.pop_back();
             --StackPtr;
+            function = CompileMult(function);
+            if(!function) return 0;
+            if(c == '-')
+                AddFunctionOpcode(cNeg);
+            continue;
+        }
+        if(data->ByteCode.back() == cAdd
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) 5 cAdd (...) cAdd -> (:::) (...) cAdd  ||| 5 cAdd
+            // (:::) 5 cAdd (...) cSub -> (:::) (...) cSub  ||| 5 cAdd
+            //             ^                   ^
+            pending_immed += data->Immed.back();
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        // cSub is not tested here because the bytecode
+        // optimizer will convert this kind of cSubs into cAdds.
+        bool lhs_negated = false;
+        if(data->ByteCode.back() == cNeg)
+        {
+            // (:::) cNeg (...) cAdd -> (:::) (...) cRSub
+            // (:::) cNeg (...) cSub -> (:::) (...) cAdd cNeg
+            //           ^                   ^            |
+            data->ByteCode.pop_back();
+            lhs_negated = true;
+        }
+        function = CompileMult(function);
+        if(!function) return 0;
+        if(data->ByteCode.back() == cAdd
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) (...) 5 cAdd cAdd -> (:::) (...) cAdd  |||  5 Add
+            // (:::) (...) 5 cAdd cSub -> (:::) (...) cSub  ||| -5 Add
+            //                   ^                        ^
+            if(c == '+')
+                pending_immed += data->Immed.back();
+            else
+                pending_immed -= data->Immed.back();
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        else
+        if(data->ByteCode.back() == cRSub
+        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        {
+            // (:::) (...) 5 cRSub cAdd -> (:::) (...) cSub  |||  5 cAdd
+            // (:::) (...) 5 cRSub cSub -> (:::) (...) cAdd  ||| -5 cAdd
+            //                    ^                   ^
+            if(c == '+')
+                { c = '-'; pending_immed += data->Immed.back(); }
+            else
+                { c = '+'; pending_immed -= data->Immed.back(); }
+            data->Immed.pop_back();
+            data->ByteCode.pop_back();
+            data->ByteCode.pop_back();
+        }
+        if(!lhs_negated) // if (-x-y) was changed to -(x+y), add missing cNeg
+        {
+            AddFunctionOpcode(c == '+' ? cAdd : cSub);
+            --StackPtr;
+        }
+        else if(c == '+') // (-x)+y -> rsub(x,y)
+        {
+            AddFunctionOpcode(cRSub);
+            --StackPtr;
+        }
+        else // (-x)-y -> -(x+y)
+        {
+            AddFunctionOpcode(cAdd);
+            --StackPtr;
+            AddFunctionOpcode(cNeg);
         }
     }
+    FP_FlushImmed(false);
+    #undef FP_FlushImmed
     return function;
 }
 

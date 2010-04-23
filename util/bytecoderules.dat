@@ -84,6 +84,45 @@ IF(FP_FLOAT_VERSION) y x cAtan2		-> [fp_atan2(y,x)]
 IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)]
 x cNot			-> [fp_not(x)]
 
+# rdiv(x,y)/z --> rdiv(x*z,y)   (y/x/z = y/(x*z))
+IF(FP_FLOAT_VERSION) B [B >= VarBegin] cRDiv A [A >= VarBegin] cDiv -> A cMul  B cRDiv
+IF(FP_FLOAT_VERSION) x                 cRDiv A [A >= VarBegin] cDiv -> A cMul [x] cRDiv
+IF(FP_FLOAT_VERSION) x                 cRDiv A [A >= VarBegin] cMul -> [DO_STACKPLUS1] A [x] cMul cRDiv
+x [x==Value_t(1)] cRDiv -> cInv
+
+# a/b/c = a/(b*c)
+IF(FP_FLOAT_VERSION) B [B >= VarBegin] cDiv A [A >= VarBegin] cDiv -> [DO_STACKPLUS1] B A cMul cDiv
+
+# a/b*c = a*b/c  (increases chances of doing the div grouping if more divs come later)
+IF(FP_FLOAT_VERSION) B [B >= VarBegin] cDiv A [A >= VarBegin] cMul -> [DO_STACKPLUS1]   A cMul B cDiv
+# The three rules below: same as above, but with immed instead of var A
+# (do only when there is an explicit optimization; otherwise we get an infinite loop)
+IF(FP_FLOAT_VERSION) y      B [B >= VarBegin] cDiv x cMul -> [y*x]      B cDiv
+IF(FP_FLOAT_VERSION) y cMul B [B >= VarBegin] cDiv x cMul -> [y*x] cMul B cDiv
+IF(FP_FLOAT_VERSION) cNeg   B [B >= VarBegin] cDiv x cMul ->  [-x] cMul B cDiv
+
+IF(FP_FLOAT_VERSION) cRDiv A [A >= VarBegin] cMul -> [DO_STACKPLUS1]   A cMul cRDiv
+# The three rules below: same as above, but with immed instead of var A
+# (do only when there is an explicit optimization; otherwise we get an infinite loop)
+IF(FP_FLOAT_VERSION) y      cRDiv x cMul -> [y*x]      cRDiv
+IF(FP_FLOAT_VERSION) y cMul cRDiv x cMul -> [y*x] cMul cRDiv
+IF(FP_FLOAT_VERSION) cNeg   cRDiv x cMul ->  [-x] cMul cRDiv
+
+# These below are just Add/Sub analogies of the above rules.
+x cRSub A [A >= VarBegin] cSub -> A cAdd [x] cRSub
+x cRSub A [A >= VarBegin] cAdd -> [DO_STACKPLUS1] A [x] cAdd cRSub
+y      B [B >= VarBegin] cSub x cAdd -> [ y+x]      B cSub
+y cAdd B [B >= VarBegin] cSub x cAdd -> [ y+x] cAdd B cSub
+cNeg   B [B >= VarBegin] cSub x cAdd ->   [-x] cAdd B cSub
+
+cRSub A [A >= VarBegin] cAdd -> [DO_STACKPLUS1]   A cAdd cRSub
+cRSub A [A >= VarBegin] cSub -> [DO_STACKPLUS1]   A cSub cRSub
+y      cRSub x cAdd -> [ y+x]      cRSub
+y cAdd cRSub x cAdd -> [ y+x] cAdd cRSub
+cNeg   cRSub x cAdd ->  [-x] cAdd cRSub
+
+A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul
+
 # Multiplications by zero: Undo as many operands as possible by peeling.
 # Some of these optimimizations can be disabled due to law of diminishing returns.
 A [A >= VarBegin]                                                                                       x [x==Value_t(0)] cMul ->        [x]
@@ -239,11 +278,9 @@ IF(FP_FLOAT_VERSION)                 cSinh x A [IsComparisonOpcode(A)] -> [fp_as
 IF(FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsComparisonOpcode(A)] -> [fp_atanh(x)] A
 
 # (x+3)*4 -> x*4 + 12
-                  y      cAdd x cMul -> [x]   cMul   [y*x]      cAdd
-  A [A>=VarBegin] y cMul cAdd x cMul -> [x]   cMul A [y*x] cMul cAdd
-  A [A>=VarBegin] y cMul cSub x cMul -> [x]   cMul A [y*x] cMul cSub
-x A [A>=VarBegin] y      cAdd   cMul -> [x] A cMul   [y*x]      cAdd
-
+                y      cAdd x cMul -> [x] cMul   [y*x]      cAdd
+A [A>=VarBegin] y cMul cAdd x cMul -> [x] cMul A [y*x] cMul cAdd
+A [A>=VarBegin] y cMul cSub x cMul -> [x] cMul A [y*x] cMul cSub
 
 cNeg  cNot -> cNot
 cAbs  cNot -> cNot
