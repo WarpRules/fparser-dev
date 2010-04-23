@@ -1850,7 +1850,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
         // cDiv is not tested here because the bytecode
         // optimizer will convert this kind of cDivs into cMuls.
         bool lhs_inverted = false;
-        if(safe_cumulation
+        if(!IsIntType<Value_t>::result && c == '*'
         && data->ByteCode.back() == cInv)
         {
             // (:::) cInv (...) cMul -> (:::) (...) cRDiv
