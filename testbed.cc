@@ -63,21 +63,25 @@ namespace
 
 
     template<typename Value_t>
-    Value_t Epsilon() { return Value_t(1e-9); }
+    inline Value_t Epsilon() { return Value_t(1e-9); }
 
 #ifdef FP_SUPPORT_FLOAT_TYPE
     template<>
-    float Epsilon<float>() { return 1e-3f; }
+    inline float Epsilon<float>() { return 1e-3f; }
 #endif
 
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     template<>
-    long double Epsilon<long double>() { return 1e-10l; }
+    inline long double Epsilon<long double>() { return 1e-10l; }
 #endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    MpfrFloat Epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
+    inline MpfrFloat Epsilon<MpfrFloat>()
+    {
+        static const MpfrFloat eps(2e-20);
+        return eps;
+    }
 #endif
 
 #ifndef _MSC_VER

@@ -1,4 +1,4 @@
-#include "fpoptimizer/fpoptimizer_grammar.hh"
+#include "fpoptimizer/grammar.hh"
 #include <algorithm>
 #include <sstream>
 #include <cmath>

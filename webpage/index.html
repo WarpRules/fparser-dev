@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.0.5  </h1>
+<h1>Function Parser for C++ v4.1    </h1>
 
 <h2>What is this library?</h2>
 
@@ -47,11 +47,11 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.0.5.zip">fparser4.0.5.zip</a> v4.0.5
-(released 19 Feb 2010)
+<p>Download <a href="fparser4.1.zip">fparser4.1.zip</a> v4.1
+(released 24 Apr 2010)
 
 <p>(Older versions:
-<a href="fparser4.0.3.zip">v4.0.3</a>,
+<a href="fparser4.0.5.zip">v4.0.5</a>,
 <a href="fparser3.3.2.zip">v3.3.2</a>,
 <a href="fparser3.2.1.zip">v3.2.1</a>,
 <a href="fparser3.1.5.zip">v3.1.5</a>,
@@ -86,40 +86,24 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.0.5_devel.tar.bz2">fparser4.0.5_devel.tar.bz2</a>
+<a href="fparser4.1_devel.tar.bz2">fparser4.1_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
 
-<p>What's new in v4.0.5
+<p>What's new in v4.1
   <ul>
-    <li>Fixed bugs and deficiencies in the <code>MpfrFloat</code> class:
-      <ul>
-	<li>All existing values became NaN if the
-	  <code>MpfrFloat::setDefaultMantissaBits()</code> was called.
-	<li><code>MpfrFloat::const_e()</code> was incorrectly calculated.
-	<li>The value of <code>MpfrFloat::someEpsilon()</code> is more
-	  sensible now (more proportional to the precision of the mantissa).
-      </ul>
-  </ul>
-
-<p>What's new in v4.0.4
-  <ul>
-    <li>Some new optimization rules in both <code>Parse()</code> and
-      <code>Optimize()</code>.
-    <li>Fixed some optimizer bugs (among others, functions of the form
-      <code>"a()|b()|c()"</code>, where <code>a</code>, <code>b</code>
-      and <code>c</code> are user-defined functions, were wrongly optimized.)
-    <li>The utility programs in the development package are now separately
-      licensed under the GPL. (This doesn't affect the library itself, which
-      is still LGPL.)
+    <li>Official support for hexadecimal literals (for all the parser types).
+      Previously there was support only if the <code>strto...()</code> C
+      library functions happened to support them (which is a non-standard
+      extension of those functions). See documentation for details.</li>
+    <li>Significant amount of new optimizations performed by
+      <code>Parse()</code>.</li>
+    <li>Minor bugfixes.
   </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.
 
-<h2>Some software which uses this library</h2>
-
-<p><a href="../FuncViewer/">Function Viewer</a>: A small program I made to
-demonstrate the function parser.
+<h2>Some software which use this library</h2>
 
 <ul>
  <li><a href="http://www.ribbonsoft.com/qcad.html">QCad</a>: A GPL CAD software
@@ -128,5 +112,8 @@ demonstrate the function parser.
      calculator for both 2D and 3D graphs.
  <li><a href="http://www.scribus.net/">Scribus - Open Source Desktop Publishing</a>
 </ul>
+
+<p><a href="../FuncViewer/">Function Viewer</a>: A small program I made to
+demonstrate the function parser.
 
 </body></html>
