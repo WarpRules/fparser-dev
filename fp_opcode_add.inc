@@ -16,3733 +16,3807 @@
     (op < VarBegin \
         ? FP_GetOpcodeName(OPCODE(op)) \
         : findName(data->namePtrs,op,NameData<Value_t>::VARIABLE))
-#define qI1 cInv:oJ
-#define qH1 m7","a9
-#define qG1 "cSub"
-#define qF1 q41 a9
-#define qE1 qG A);qC
-#define qD1 <<q21 a9
-#define qC1 m4 oN" "
-#define qB1 qQ oC oJ
-#define qA1 q8 g8 oJ
-#define q91 qL o4 oJ
-#define q81 qG dB gJ
-#define q71 <<q21 aA
-#define q61 q41 wM
-#define q51 <<", C"m6
-#define q41 <<","
-#define q31 m7","aB
-#define q21 ", "oL","
-#define q11 "[DO_STACKPLUS1] "
-#define q01 m7","aA
-#define aZ g5==qR
-#define aY "cNot"
-#define aX "[x] "
-#define aW "= "<<
-#define aV qR oJ
-#define aU w8" "
-#define aT h7 oJ
-#define aS qA q1
-#define aR w7 w0
-#define aQ cExp:oJ
-#define aP }if(gE
-#define aO "y "
-#define aN "y"oN" "
-#define aM }gF}qM
-#define aL "cSin"
-#define aK "cCsc"
-#define aJ "cTan"
-#define aI "cCot"
-#define aH "cSec"
-#define aG "cCeil"
-#define aF ]q7 oJ
-#define aE "[-x] "
-#define aD )){oJ
-#define aC hV oJ
-#define aB " "w2
-#define aA " "oO
-#define a9 " "a7
-#define a8 qK g8 oJ
-#define a7 "B"m6
-#define a6 w0" "
-#define a5 o0 d6 qC
-#define a4 x==aT
-#define a3 q8 gX oJ
-#define a2 qK hH oJ
-#define a1 w1 oN" "
-#define a0 hE oC oJ
-#define mZ "cFloor"
-#define mY "A"oN" "
-#define mX "cExp"
-#define mW qL g8 oJ
-#define mV ==dY){oJ
-#define mU q9-1)&&x
-#define mT "A "wA
-#define mS "cInv"
-#define mR "cDiv"
-#define mQ "B cSub"
-#define mP "cRDiv"
-#define mO wD" "
-#define mN "cLess"
-#define mM dT oJ
-#define mL mP wN
-#define mK "cMin"
-#define mJ "cMax"
-#define mI "cSqr "
-#define mH " "oQ
-#define mG ]q7 mM
-#define mF oS" "
-#define mE wC" x "w0
-#define mD "cSqrt"
-#define mC "B "mR
-#define mB qU;qH oJ
-#define mA qU;if(gH oJ
-#define m9 mX" "
-#define m8 oM w2
-#define m7 oM oL
-#define m6 " "oK
-#define m5 "B cSqr"
-#define m4 "[y*x]"
-#define m3 "cNeg"
-#define m2 m3" "
-#define m1 qU=q6;
-#define m0 "cLog"
-#define wZ "cCos"
-#define wY "cGreater"
-#define wX " cPow"
-#define wW "cAbsNot"
-#define wV "cLessOrEq"
-#define wU "cNotNot"
-#define wT " "aY
-#define wS "[ y+x] "
-#define wR "x"wX
-#define wQ m4 wX
-#define wP "cAbs"
-#define wO "cLog2"
-#define wN " "w8
-#define wM " "oL"\n"
-#define wL q6:x=qE;oJ
-#define wK "cExp2"
-#define wJ "cCosh"
-#define wI "cLog10"
-#define wH aO a6
-#define wG "cGreaterOrEq"
-#define wF "cEqual"
-#define wE dS==dB dU oJ
-#define wD "B[B==A]"
-#define wC "cRSub"
-#define wB "[-x]"oN" "
-#define wA "[x]"oN
-#define w9 x);g7
-#define w8 "x"oN
-#define w7 "cDup "
-#define w6 "cNEqual"
-#define w5 "x[x!=Value_t(0)] "
-#define w4 "B[B>=VarBegin] cSub x "w0
-#define w3 "A[A>=VarBegin] "
-#define w2 "A"m6
-#define w1 "x[x>Value_t(0)]"
-#define w0 "cAdd"
-#define oZ "B[IsNeverNegativeValueOpcode(B)] "
-#define oY "x[IsIntegerConst(x)]"wX
-#define oX "x[x==Value_t(1)] "
-#define oW "A[A>=VarBegin]"oN
-#define oV <<"\n"
-#define oU "B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "oP
-#define oT "A[IsNeverNegativeValueOpcode(A)] "
-#define oS "x[x==Value_t(0)]"
-#define oR m7"\n"
-#define oQ "x A[IsComparisonOpcode(A)]"
-#define oP "A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "oS oN
-#define oO aO aW y oV
-#define oN " cMul"
-#define oM "    with "
-#define oL "x "aW x<<
-#define oK aW FP_TRACE_OPCODENAME
-#define oJ FP_TRACE_BYTECODE_OPTIMIZATION
-#define oI cLog10
-#define oH cTanh:
-#define oG cSinh:
-#define oF opcode
-#define oE gP 4];
-#define oD cAbs){
-#define oC dI>qR
-#define oB dI!=qR
-#define oA for gA
-#define o9 B hW
-#define o8 Immed
-#define o7 Lao;
-#define o6 fp_pow(
-#define o5 h0 gS qN
-#define o4 q6:g2
-#define o3 q1 A gJ
-#define o2 cRDiv:
-#define o1 gR 1;qP
-#define o0 qB q1
-#define dZ 4 qB qP
+#define qF1 x)gI Lnm;
+#define qE1 wF"x"mD
+#define qD1 wM","aF
+#define qC1 qR y*x
+#define qB1 "cSub"
+#define qA1 mG"x "
+#define q91 ", "wS q41
+#define q81 qI h9 w1
+#define q71 wM","mE
+#define q61 ", "wS<<","m7
+#define q51 "B[B>=VarBegin]"aG
+#define q41 <<","aF
+#define q31 wM","m7
+#define q21 if(x>gN w1
+#define q11 "[x]"wF
+#define q01 ==h8 w1
+#define aZ wP wJ
+#define aY cExp:w1
+#define aX "cSin"
+#define aW "cCsc"
+#define aV "cTan"
+#define aU "cCot"
+#define aT "cSec"
+#define aS ==dY a8
+#define aR "C "w3
+#define aQ hW w1
+#define aP if(gB w1
+#define aO " cSub"
+#define aN "cSinh"
+#define aM "A[IsAlwaysIntegerOpcode(A)] "
+#define aL "    "wN
+#define aK " "mF
+#define aJ " "wA w7
+#define aI qJ hH w1
+#define aH " "w6
+#define aG " "mY
+#define aF " "a2
+#define aE gC cInv:
+#define aD "cFloor"
+#define aC "cExp"
+#define aB qD h4 w1
+#define aA "cInv"
+#define a9 m1 qB1
+#define a8 ){w1
+#define a7 "cRDiv"
+#define a6 "cCeil"
+#define a5 wQ" "
+#define a4 "cLess"
+#define a3 a7 wT
+#define a2 m1 w3
+#define a1 =qS;qG w1
+#define a0 "cMin"
+#define mZ "cMax"
+#define mY "cDiv"
+#define mX x);g7
+#define mW wY" x "wJ
+#define mV qF d6 gI
+#define mU "cSqrt"
+#define mT aC" "
+#define mS "[y*x]"
+#define mR qW q21
+#define mQ wJ" "
+#define mP "cLog"
+#define mO "cGreater"
+#define mN g8 w1
+#define mM wF wO mY
+#define mL "cAbsNot"
+#define mK "cLessOrEq"
+#define mJ "cNotNot"
+#define mI "[ y+x] "
+#define mH " "wS wE
+#define mG "y "
+#define mF "cNeg"
+#define mE " "wD
+#define mD " "w7
+#define mC "cCos"
+#define mB "cAbs"
+#define mA "cCosh"
+#define m9 "[-x]"wF
+#define m8 "cLog10"
+#define m7 " "w4
+#define m6 " cNot"
+#define m5 "A "wU w7
+#define m4 "cLog2"
+#define m3 "cExp2"
+#define m2 "cGreaterOrEq"
+#define m1 "B "
+#define m0 "cEqual"
+#define wZ hP==d6 hQ w1
+#define wY "cRSub"
+#define wX "cSqr"
+#define wW hP qL w1
+#define wV " cPow"
+#define wU "[x] "
+#define wT " x"mD
+#define wS "x = "<<x
+#define wR "cNEqual"
+#define wQ "B[B==A]"
+#define wP "cDup "
+#define wO "x[x!=Value_t(0)] "
+#define wN "with"mE
+#define wM "  "w2
+#define wL "B[B>=VarBegin]"aO" x "wJ
+#define wK "x[x>Value_t(0)]"
+#define wJ "cAdd"
+#define wI "B[IsNeverNegativeValueOpcode(B)] "
+#define wH "x[IsIntegerConst(x)]"wV
+#define wG "x[x==Value_t(1)] "
+#define wF mD" "
+#define wE <<"\n"
+#define wD "A "w3
+#define wC "B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "w5
+#define wB "A[IsNeverNegativeValueOpcode(A)] "
+#define wA "A[A>=VarBegin] "
+#define w9 wM"\n"
+#define w8 "x[x==Value_t(0)] "
+#define w7 "cMul"
+#define w6 "x A[IsComparisonOpcode(A)]"
+#define w5 "A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "w8 w7
+#define w4 mG"= "<<y wE
+#define w3 "= "<<FP_TRACE_OPCODENAME
+#define w2 "  with "wS<<
+#define w1 FP_TRACE_BYTECODE_OPTIMIZATION
+#define w0 cLog10
+#define oZ cLog2
+#define oY cSqrt:
+#define oX cTanh
+#define oW cAbs){
+#define oV cSinh
+#define oU qB y*x
+#define oT qB x);
+#define oS for q9
+#define oR qP q6
+#define oQ Immed
+#define oP }if(
+#define oO Lcm;oP
+#define oN Lbo;
+#define oM Laq;
+#define oL ==A){
+#define oK Default5
+#define oJ Lao;
+#define oI cAdd
+#define oH fp_pow(
+#define oG hF q1
+#define oF q5 qP q1 d6
+#define oE q5:x=qE;
+#define oD q1 A gI
+#define oC cRDiv:
+#define oB qM q5);
+#define oA TailCall_cAdd
+#define o9 q1 A);
+#define o8 cNEqual
+#define o7 q3 Lcj;
+#define o6 cLess:
+#define o5 FP_ReDefinePointers();
+#define o4 cSub:
+#define o3 g7 qK
+#define o2 .size()
+#define o1 =q5;
+#define o0 TailCall_cDiv
+#define dZ q7 q4
 #define dY cDup
-#define dX dB);gG
-#define dW cPow:
-#define dV gC qR
-#define dU ){hJ q7
-#define dT dS qF
-#define dS qI-1]
-#define dR gS dS==dL dU
-#define dQ qD q6);
-#define dP q0[0]=
-#define dO cNEqual
-#define dN cLess:
-#define dM cEqual
-#define dL cRSub
-#define dK .size()
-#define dJ 0.5)){
-#define dI if(x
-#define dH h0 if(gB
-#define dG Default7
-#define dF Default6
-#define dE Default3
-#define dD Default1
-#define dC qK g9 2]
-#define dB cMul
-#define dA fp_log(
-#define d9 cExp2
-#define d8 cNotNot
-#define d7 fp_log10(
-#define d6 cAbs);
-#define d5 gP 3]
-#define d4 fp_abs(x)
-#define d3 qP q4
-#define d2 o0 A);
-#define d1 qG cAdd);
-#define d0 cLessOrEq
+#define dX fp_exp(x
+#define dW opcode
+#define dV TailCall_cEqual
+#define dU ;if(
+#define dT TailCall_cAbs
+#define dS dM 3]dU
+#define dR dM 3]){gC
+#define dQ TailCall_cTan
+#define dP q0 qO
+#define dO q0 gF q3
+#define dN TailCall_cSin
+#define dM q0[-
+#define dL g9 1]qC
+#define dK dM 4]
+#define dJ q5:qZ
+#define dI qJ dJ
+#define dH fp_exp2(x
+#define dG qB qA(
+#define dF Default7
+#define dE Default6
+#define dD Default3
+#define dC Default1
+#define dB fp_log(
+#define dA cExp2
+#define d9 cNotNot
+#define d8 cEqual:
+#define d7 cPow:
+#define d6 cMul
+#define d5 fp_log10(
+#define d4 cAbs);
+#define d3 [-3]o1 g2 q4 q3
+#define d2 fp_abs(x)
+#define d1 qF oI);
+#define d0 break;
 #define hZ fp_log2(
-#define hY q9 1)
-#define hX incStackPtr();qZ
-#define hW ==A){
-#define hV hM o9
-#define hU hM B qY
-#define hT q0 qT
-#define hS qD q6 gJ
-#define hR cGreater
-#define hQ Value_t
-#define hP cAbs:
-#define hO q3 dZ
-#define hN hQ>()
-#define hM B qX
-#define hL Default5 qL
-#define hK d5;if(
-#define hJ qI-2]
-#define hI qV y+x;
+#define hY q6 g2 q4
+#define hX B oL
+#define hW hL hX
+#define hV hL B qY
+#define hU qM q5 gI
+#define hT 0.5)){
+#define hS cGreater
+#define hR qH-2]
+#define hQ ){hR qC
+#define hP qH-1]
+#define hO h1 hP==cRSub hQ
+#define hN g6 0)){
+#define hM incStackPtr();qX
+#define hL B qV
+#define hK oK;gC
+#define hJ qE=-x;
+#define hI oS 4 q8
 #define hH cSqr:
-#define hG qN gW hJ
-#define hF switch(
-#define hE qL g9 1]q7
-#define hD q3 3 qB qP
-#define hC case
-#define hB TailCall_cSub
-#define hA TailCall_cNeg
-#define h9 unsigned
-#define h8 data qO
-#define h7 hY){
-#define h6 g5==h7
+#define hG switch(
+#define hF data->
+#define hE TailCall_cSub
+#define hD TailCall_cNeg
+#define hC cLessOrEq
+#define hB unsigned
+#define hA o1 q0
+#define h9 cAbs:
+#define h8 qA(1)){
+#define h7 g5==h8
+#define h6 ,x gI oJ
 #define h5 cGreaterOrEq
-#define h4 q0-=1;d3
-#define h3 GetDegreesToRadiansFactor gT
-#define h2 GetRadiansToDegreesFactor gT
-#define h1 =q0[0];
-#define h0 g4 A h1
-#define gZ ,x gJ o7
-#define gY q3 2 qB qP
-#define gX dY:
-#define gW cAdd:
-#define gV TailCall_cNotNot
-#define gU gJ Lmm;
-#define gT <hN){
-#define gS if(A qY
-#define gR =q6;q0-=
-#define gQ gP 2]gR 2;
-#define gP q0[-
-#define gO ,x gJ Laq;
-#define gN ,y gJ Laq;
-#define gM qE=-x;
-#define gL isEvenInteger(
-#define gK o0 dB);
-#define gJ );q4
-#define gI ,y gJ o7
-#define gH IsLogicalOpcode(A)){
-#define gG oF=
-#define gF break;
+#define h4 dY:
+#define h3 TailCall_cNotNot
+#define h2 gI Lmm;
+#define h1 if(A qY
+#define h0 ,x gI oM
+#define gZ ,y gI oM
+#define gY gS hA-=2;dZ
+#define gX oI:qH-
+#define gW qI gX 2]
+#define gV =q0[0];
+#define gU q7 q1 d6);
+#define gT g4 A gV
+#define gS dM 2]
+#define gR isEvenInteger(
+#define gQ d0}
+#define gP GetDegreesToRadiansFactor<qA>()){
+#define gO GetRadiansToDegreesFactor<qA>()){
+#define gN qA(0)){
+#define gM gC dL if(x>gN
+#define gL qR y+x oR
+#define gK hF q4 q3
+#define gJ dW=
+#define gI );q3
+#define gH ,y gI oJ
+#define gG IsLogicalOpcode(A)){
+#define gF -=1 qP q4
 #define gE IsUnaryOpcode(
-#define gD data->ByteCode
-#define gC dI==
+#define gD hF ByteCode
+#define gC case
 #define gB IsAlwaysIntegerOpcode(A)){
-#define gA (h9 tmp=
-#define g9 dB:qI-
+#define gA hI q1 d6);
+#define g9 d6:qH-
 #define g8 cNeg:
 #define g7 return;
-#define g6 oA 3 qB
-#define g5 qI 0]q7 dI
+#define g6 if(x==qA(
+#define g5 qH 0]qC if(x
 #define g4 default:
-#define g3 >=VarBegin&&gD dK>
-#define g2 y=q2[-1];
-#define g1 hF gP 2]){hC
+#define g3 >=VarBegin&&gD o2>
+#define g2 oS 3 q8
+#define g1 hG gS){gC
 #define g0 &&!HasInvalidRangesOpcode(
-#define qZ --StackPtr;q4
+#define qZ y=q2[-1];
 #define qY >=VarBegin){
-#define qX =gP 2];if(
-#define qW hM IsNeverNegativeValueOpcode(B)){
-#define qV q2[-1]=
-#define qU gP 1]
-#define qT -=1;qP gG
-#define qS FP_ReDefinePointers();q4
-#define qR q9 0)){
-#define qQ qL q6:x=qE;
-#define qP data->q5
-#define qO ->o8.pop_back();
-#define qN hF qU){hC
-#define qM q4 Default0;
-#define qL ;hC
-#define qK }break qL
-#define qJ }}qM
-#define qI if(q0[
-#define qH if(IsNeverNegativeValueOpcode(A)){
-#define qG AddFunctionOpcode(
-#define qF ==q6){g2
+#define qX --StackPtr;q3
+#define qW gC oE
+#define qV =gS dU
+#define qU hL IsNeverNegativeValueOpcode(B)){
+#define qT hF q6
+#define qS dM 1]
+#define qR q2[-1]=
+#define qQ o5 q3
+#define qP ;hF
+#define qO gF gJ
+#define qN q3 Default0;
+#define qM gD.push_back(
+#define qL ==q5){qZ
+#define qK }}qN
+#define qJ }d0 gC
+#define qI hG qS){gC
+#define qH if(q0[
+#define qG if(IsNeverNegativeValueOpcode(A)){
+#define qF AddFunctionOpcode(
 #define qE q2[0]
-#define qD gD.push_back(
-#define qC data->o8.push_back(
-#define qB ;tmp-->0;)
-#define qA oA 2 qB
-#define q9 hQ(
-#define q8 hF q0[0]){hC
-#define q7 ==q6){x=qE;
-#define q6 cImmed
-#define q5 ByteCode.pop_back();
-#define q4 goto
-#define q3 h8 oA
+#define qD hG q0[0]){gC
+#define qC ==q5){x=qE;
+#define qB hF oQ.push_back(
+#define qA Value_t
+#define q9 (hB tmp=
+#define q8 ;tmp-->0;)hF
+#define q7 oS 2 q8
+#define q6 oQ.pop_back();
+#define q5 cImmed
+#define q4 ByteCode.pop_back();
+#define q3 goto
 #define q2 ImmedPtr
-#define q1 qP qG
+#define q1 q4 qF
 #define q0 ByteCodePtr
-h9*q0;hQ*q2;
-#define FP_ReDefinePointers() q0=!gD.empty()?&gD[0]+gD dK-1:0;q2=!data->o8.empty()?&data->o8[0]+data->o8 dK-1:0;
-FP_ReDefinePointers();
+hB*q0;qA*q2;
+#define FP_ReDefinePointers() q0=!gD.empty()?&gD[0]+gD o2-1:0;q2=!hF oQ.empty()?&hF oQ[0]+hF oQ o2-1:0;
+o5
 #if(!FP_FLOAT_VERSION)
-hQ
-x;h9
-A;hQ
-y;h9
-B;h9
-C;h9
-D;hF
-oF){TailCall_cAbs:hC
-hP
-qA1(236,m2
-wP,wP,);q4
-Laa
-qQ
-oJ(40,"x "
-wP,"[fp_abs(x)]"
-,oR);q4
-Lab;h0
-qH
-oJ(295,oT
-wP,"A"
-,m8(A)oV);g7
-qJ
-TailCall_cAdd:hC
+qA
+x;hB
+A;qA
+y;hB
+B;hB
+C;hB
+D;hG
+dW){dT:gC
+h9
+qD
+mN(236,mF" "
+mB,mB,);q3
+Laa;qW
+w1(40,"x "
+mB,"[fp_abs(x)]"
+,w9);q3
+Lab;gT
+qG
+w1(295,wB
+mB,"A"
+,aL(A)wE);o3
+oA:gC
+oI:qD
+h4
 gW
-q8
-gX
-hG
-mV(186,w7
-a6
-aR,"[Value_t(4)]"
-oN,);q4
-Lac;dC==cAdd){qI-3]mV(187,aR
-oN" "
-aR,"cMul [Value_t(4)]"
-oN,);q4
+aS(186,wP
+mQ
+aZ,"[Value_t(4)]"
+mD,);q3
+Lac;qJ
+g9
+2]==oI){qH-3]aS(187,aZ
+wF
+aZ,w7" [Value_t(4)]"
+mD,);q3
 Lad;}
 }
-gF}
-q4
-dD
-hE
-hJ
-mV(189,w7
-aU
-w0,"[x+Value_t(1)]"
-oN,oR);q4
+gQ
+q3
+dC;gC
+dL
+hR
+aS(189,wP"x"
+wF
+wJ,"[x+Value_t(1)]"
+mD,w9);q3
 Lae;}
 }
-q4
-dD
-mW(243,m2
-w0,qG1,);q4
-Laf
-qQ
-hG
-qF
-oJ(180,wH"x "
-w0,"[y+x] "
-w0,q01);q4
-Lag;qK
-dL:g1
+q3
+dC;gC
+mN(243,mF" "
+wJ,qB1,);q3
+Laf;qW
 gW
-qI-3]qF
-oJ(121,wH
-mE,wS
-a6
-wC,q01);q4
-Lah;a8(122,m2
-mE,aE
-a6
-wC,oR);q4
-Lai
-q91(120,aO
-mE,wS
-wC,q01);q4
-Laj;qK
-cSub:hU
-hF
-d5){hC
-gW
-qI-4]qF
-oJ(115,wH
-w4,wS
-a6
-mQ,qH1(B)q41
-aA);q4
-Lak;a8(116,m2
-w4,aE
-a6
-mQ,qH1(B)oV);q4
-Lal
-q91(114,aO
-w4,wS
-mQ,qH1(B)q41
-aA);q4
-Lam;}
-qK
+qL
+w1(180,mG
+mQ"x "
+wJ,"[y+x] "
+wJ,q31);q3
+Lag;qJ
+cRSub:g1
+gX
+3]qL
+w1(121,mG
+mQ
+mW,mI
+mQ
+wY,q31);q3
+Lah;qJ
+mN(122,mF" "
+mW,"[-x] "
+mQ
+wY,w9);q3
+Lai;gC
+dJ
+w1(120,mG
+mW,mI
+wY,q31);q3
+Laj;qJ
 o4
-oJ(76,aO"x "
-w0,"[y+x]"
-,q01);q4
-Lan;}
-dV
-oJ(75,mF
-w0,,oR);q4
-o7}
-gF
-g4
-dD:;A
-h1
+hV
+hG
 dR
-oJ(113,"x "
-wC" "
-w3
-w0,"[DO_STACKPLUS1] A "
-aX
-a6
-wC,m8(A)q61);hX
+gX
+4]qL
+w1(115,mG
+mQ
+wL,mI
+mQ
+a9,qD1(B)<<","
+m7);q3
+Lak;qJ
+mN(116,mF" "
+wL,"[-x] "
+mQ
+a9,qD1(B)wE);q3
+Lal;gC
+dJ
+w1(114,mG
+wL,mI
+a9,qD1(B)<<","
+m7);q3
+Lam;}
+dI
+w1(76,qA1
+wJ,"[y+x]"
+,q31);q3
+Lan;}
+hN
+w1(75,w8
+wJ,,w9);q3
+oJ}
+d0
+g4
+dC:;A
+gV
+hO
+w1(113,"x "
+wY" "
+wA
+wJ,"[DO_STACKPLUS1] A "
+wU
+mQ
+wY,aL(A)<<","
+mH);hM
 Lap;}
-oJ(118,wC" "
-w3
-w0,"[DO_STACKPLUS1] A "
-a6
-wC,m8(A)oV);hX
-Laq;}
-qJ
-TailCall_cAnd:hC
-cAnd:qI
-0
-mG(169,aO"x cAnd"
+w1(118,wY" "
+wA
+wJ,"[DO_STACKPLUS1] A "
+mQ
+wY,aL(A)wE);hM
+oM}
+qK
+TailCall_cAnd:gC
+cAnd:qH
+0]qC
+wW(169,mG"x cAnd"
 ,"[fp_and(x,y)]"
-,q01);q4
-Lba;qJ
-TailCall_cDiv:hC
-cDiv:a3(159,w7
-mR,"[Value_t(0)]"
-oN" [Value_t(1)] "
-w0,);q4
-Lbb
-qQ
-oB
-qN
-g8
-oJ(177,m2
-w5
-mR,aE
-mR,oR);q4
-Lbc
-q91(73,aO
-w5
-mR,"[y/x]"
-,q01);q4
+,q31);q3
+Lba;qK
+o0:gC
+cDiv:aB(159,wP
+mY,"[Value_t(0)]"
+wF"[Value_t(1)] "
+wJ,);q3
+Lbb;qW
+if(x!=gN
+qI
+mN(177,mF" "
+wO
+mY,"[-x]"
+aG,w9);q3
+Lbc;gC
+dJ
+w1(73,mG
+wO
+mY,"[y/x]"
+,q31);q3
 Lbd;}
 }
-gC
-aT(72,oX
-mR,,oR);q4
-o7
-aM
-TailCall_cEqual:hC
-dM:h6
-A=mA(323,"A[IsLogicalOpcode(A)] "
-oX
-wF,"A"
-,q31(A)oV);q4
-o7}
-}
-mM(167,aO"x "
-wF,"[fp_equal(y,x)]"
-,q01);q4
-Lbe;}
-dV
+g6
+1)a8(72,wG
+mY,,w9);q3
+oJ}
+gQ
 qN
-hP
-oJ(255,wP" "
-mF
-wF,aX
-wF,oR);q4
-Lbf
-qL
-hH
-oJ(257,mI
-mF
-wF,aX
-wF,oR);q4
-Lbf;}
-oJ(313,mF
-wF,aY,oR);q4
-Lbg;qJ
-TailCall_cGreater:hC
-hR:aZ
-qN
-hP
-oJ(315,wP" "
-mF
-wY,wU,oR);q4
-Lbh;g4
-A=mB(319,oT
-mF
-wY,"A "
-wU,q31(A)oV);q4
-Lbi;}
-}
-}
-mM(165,aO"x "
-wY,"[fp_less(x,y)]"
-,q01);q4
-Lbj;qJ
-TailCall_cGreaterOrEq:hC
-h5:h6
-qN
-hP
-oJ(316,wP" "
-oX
-wG,wU,oR);q4
-Lbh;g4
-A=mB(320,oT
-oX
-wG,"A "
-wU,q31(A)oV);q4
-Lbi;}
-}
-}
-mM(166,aO"x "
-wG,"[fp_lessOrEq(x,y)]"
-,q01);q4
-Lbk;qJ
-TailCall_cInv:hC
-cInv:q8
-qI1(237,mS" "
-mS,,);q4
-Lbl
-qL
-cSqrt:oJ(67,mD" "
-mS,"cRSqrt"
-,);q4
-Lbm
-qQ
-oB
-oJ(69,w5
-mS,"[Value_t(1)/x]"
-,oR);q4
-Lbn;aM
-TailCall_cLess:hC
-dN
-aZ
-A=mB(124,oT
-mF
-mN,mT,q31(A)oV);q4
-Lbo;}
-}
-gC
+dV:gC
+d8
 h7
+A=qS
+dU
+gG
+w1(323,"A[IsLogicalOpcode(A)] "
+wG
+m0,"A"
+,q71(A)wE);q3
+oJ}
+}
+wW(167,qA1
+m0,"[fp_equal(y,x)]"
+,q31);q3
+Lbe;}
+hN
+q81(255,mB" "
+w8
+m0,wU
+m0,w9);q3
+Lbf;gC
+hH
+w1(257,wX" "
+w8
+m0,wU
+m0,w9);q3
+Lbf;}
+w1(313,w8
+m0,"cNot"
+,w9);q3
+Lbg;qK
+TailCall_cGreater:gC
+hS:g5==gN
+q81(315,mB" "
+w8
+mO,mJ,w9);q3
+Lbh;g4
+A
+a1(319,wB
+w8
+mO,"A "
+mJ,q71(A)wE);q3
+Lbi;}
+}
+}
+wW(165,qA1
+mO,"[fp_less(x,y)]"
+,q31);q3
+Lbj;qK
+TailCall_cGreaterOrEq:gC
+h5:h7
+q81(316,mB" "
+wG
+m2,mJ,w9);q3
+Lbh;g4
+A
+a1(320,wB
+wG
+m2,"A "
+mJ,q71(A)wE);q3
+Lbi;}
+}
+}
+wW(166,qA1
+m2,"[fp_lessOrEq(x,y)]"
+,q31);q3
+Lbk;qK
+TailCall_cInv:aE
+qD
+cInv:w1(237,aA" "
+aA,,);q3
+Lbl;gC
+oY
+w1(67,mU" "
+aA,"cRSqrt"
+,);q3
+Lbm;qW
+if(x!=gN
+w1(69,wO
+aA,"[Value_t(1)/x]"
+,w9);q3
+Lbn;}
+gQ
 qN
-hP
-oJ(317,wP" "
-oX
-mN,aY,oR);q4
+TailCall_cLess:gC
+o6
+g5==gN
+A
+a1(124,wB
+w8
+a4,m5,q71(A)wE);q3
+oN}
+}
+g6
+1)){q81(317,mB" "
+wG
+a4,"cNot"
+,w9);q3
 Lbp;g4
-A=mB(321,oT
-oX
-mN,"A"
-wT,q31(A)oV);q4
+A
+a1(321,wB
+wG
+a4,"A"
+m6,q71(A)wE);q3
 Lbg;}
 }
 }
-mM(163,aO"x "
-mN,"[fp_less(y,x)]"
-,q01);q4
-Lbq;qJ
-TailCall_cLessOrEq:hC
-d0:aZ
-qN
-hP
-oJ(318,wP" "
-mF
-wV,aY,oR);q4
+wW(163,qA1
+a4,"[fp_less(y,x)]"
+,q31);q3
+Lbq;qK
+TailCall_cLessOrEq:gC
+hC:g5==gN
+q81(318,mB" "
+w8
+mK,"cNot"
+,w9);q3
 Lbp;g4
-A=mB(322,oT
-mF
-wV,"A"
-wT,q31(A)oV);q4
+A
+a1(322,wB
+w8
+mK,"A"
+m6,q71(A)wE);q3
 Lbg;}
 }
 }
-mM(164,aO"x "
-wV,"[fp_lessOrEq(y,x)]"
-,q01);q4
-Lca;qJ
-TailCall_cMax:hC
-cMax:a3(149,w7
-mJ,,);q4
-Lbl
-qQ
-mM(82,aO"x "
-mJ,"[fp_max(x,y)]"
-,q01);q4
+wW(164,qA1
+mK,"[fp_lessOrEq(y,x)]"
+,q31);q3
+Lca;qK
+TailCall_cMax:gC
+cMax:aB(149,wP
+mZ,,);q3
+Lbl;qW
+wW(82,qA1
+mZ,"[fp_max(x,y)]"
+,q31);q3
 Lcb;}
-gF
-o5
-gX
-aC(151,mO
-w7
-w3
-mJ,"B cDup"
-,m8(A)qF1(B)oV);q4
-Lbl;qK
-cMax:aC(153,mO
-mJ" "
-w3
-mJ,"B "
-mJ,m8(A)qF1(B)oV);q4
+d0
+gT
+h1
+qI
+h4
+aQ(151,a5
+wP
+wA
+mZ,m1"cDup"
+,aL(A)q41(B)wE);q3
+Lbl;qJ
+cMax:aQ(153,a5
+mZ" "
+wA
+mZ,m1
+mZ,aL(A)q41(B)wE);q3
 Lbl;}
-gF}
-qJ
-TailCall_cMin:hC
-cMin:a3(148,w7
-mK,,);q4
-Lbl
-qQ
-mM(81,aO"x "
-mK,"[fp_min(x,y)]"
-,q01);q4
+gQ
+qK
+TailCall_cMin:gC
+cMin:aB(148,wP
+a0,,);q3
+Lbl;qW
+wW(81,qA1
+a0,"[fp_min(x,y)]"
+,q31);q3
 Lcc;}
-gF
-o5
-gX
-aC(150,mO
-w7
-w3
-mK,"B cDup"
-,m8(A)qF1(B)oV);q4
-Lbl;qK
-cMin:aC(152,mO
-mK" "
-w3
-mK,"B "
-mK,m8(A)qF1(B)oV);q4
+d0
+gT
+h1
+qI
+h4
+aQ(150,a5
+wP
+wA
+a0,m1"cDup"
+,aL(A)q41(B)wE);q3
+Lbl;qJ
+cMin:aQ(152,a5
+a0" "
+wA
+a0,m1
+a0,aL(A)q41(B)wE);q3
 Lbl;}
-gF}
-qJ
-TailCall_cMod:hC
-cMod:g5!=qR
-mM(74,aO
-w5"cMod"
+gQ
+qK
+TailCall_cMod:gC
+cMod:g5!=gN
+wW(74,mG
+wO"cMod"
 ,"[fp_mod(y,x)]"
-,q01);q4
+,q31);q3
 Lcd;}
-qJ
-TailCall_cMul:hC
-dB:a3(396,"cDup"
-oN,"cSqr"
-,);q4
-Lce
-qL
-qI1(242,mS
-oN,mR,);q4
-Lcf
-qL
+qK
+TailCall_cMul:gC
+d6:aB(396,wP
+w7,wX,);q3
+Lce;aE
+w1(242,aA
+mD,mY,);q3
+Lcf;gC
 g8
-A=qU;gS
+A=qS;h1
 g1
-dB:B=hK
-o9
-oJ(388,wD
-oN" "
-w3
-m3
-oN,m5
-oN" "
-m3,m8(A)qF1(B)oV);q4
+d6:B=dS
+hX
+w1(388,wQ
+wF
+wA
+mF
+mD,m1
+wX
+wF
+mF,aL(A)q41(B)wE);q3
 Lcg;}
-q4
+q3
 Default2;g4
-Default2:;aC(382,mO
-w3
-m3
-oN,m5" "
-m3,m8(A)qF1(B)oV);q4
+Default2:;aQ(382,a5
+wA
+mF
+mD,m1
+wX
+aK,aL(A)q41(B)wE);q3
 Lch;}
 }
 }
-q4
-dE
-qL
-dW
-dS
-q7
-hJ
-mV(190,w7
-wR
-oN,"[x+Value_t(1)]"
-wX,oR);q4
+q3
+dD;gC
+d7
+hP
+qC
+hR
+aS(190,wP"x"
+wV
+mD,"[x+Value_t(1)]"
+wV,w9);q3
 Lci;}
 }
-q4
-dE
-qQ
-dV
-qN
-dB:A
-qX
+q3
+dD;qW
+hN
+qI
+d6:A
+qV
 A
 qY
-oJ(133,oW" "
-oS
-oN,wA,q31(A)oV);q4
-Lcj;}
-q4
+w1(133,wA
+w7" "
+w8
+w7,wU
+w7,q71(A)wE);o7}
+q3
 Default4;g4
-Default4:;A=qU;if(IsBinaryOpcode(A)g0
+Default4:;A=qS
+dU
+IsBinaryOpcode(A)g0
 A)){g1
-o4
-oJ(132,aO
-oP,wA,q31(A)q41
-aA);q4
+dJ
+w1(132,mG
+w5,wU
+w7,q71(A)<<","
+m7);q3
 Lck;g4
-hM
+hL
 IsBinaryOpcode(B)g0
-B)){hF
-d5){hC
-o4
-oJ(136,aO
-oU,mT,q31(A)qF1(B)q41
-aA);q4
+B)){hG
+dR
+dJ
+w1(136,mG
+wC,m5,q71(A)q41(B)<<","
+m7);q3
 Lcl;g4
-C=hK
+C=dS
 C
 qY
-oJ(134,"C[C>=VarBegin] "
-oU,mT,q31(A)qF1(B)q51(C)oV);q4
-Lcm;aP
+w1(134,"C[C>=VarBegin] "
+wC,m5,q71(A)q41(B)<<", "
+aR(C)wE);q3
+oO
+gE
 C)g0
-C
-aD(135,"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] "
-oU,"B "
-mT,q31(A)qF1(B)q51(C)oV);q4
+C)a8(135,"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] "
+wC,m1
+m5,q71(A)q41(B)<<", "
+aR(C)wE);q3
 Lcn;}
 }
-}
-if(B
-qY
-oJ(130,"B[B>=VarBegin] "
-oP,wA,q31(A)qF1(B)oV);q4
-Lcj;aP
-B)g0
+oP
 B
-aD(131,"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "
-oP,mT,q31(A)qF1(B)oV);q4
+qY
+w1(130,"B[B>=VarBegin] "
+w5,wU
+w7,q71(A)q41(B)wE);o7
+oP
+gE
+B)g0
+B)a8(131,"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "
+w5,m5,q71(A)q41(B)wE);q3
 Lco;}
 }
 }
-gS
-oJ(128,w3
-oS
-oN,"[x]"
-,q31(A)oV);q4
-Lcp;aP
+h1
+w1(128,wA
+w8
+w7,"[x]"
+,q71(A)wE);q3
+Lcp;oP
+gE
 A)g0
-A
-aD(129,"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "
-oS
-oN,wA,q31(A)oV);q4
+A)a8(129,"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "
+w8
+w7,wU
+w7,q71(A)wE);q3
 Lcq;}
 }
 }
-qN
-gW
-g1
-gX
-oJ(194,aR
-wN,"[x+x]"
-oN,oR);q4
-Lda
-qL
+qI
+oI:g1
+h4
+w1(194,aZ
+wT,"[x+x]"
+mD,w9);q3
+Lda;gC
 g9
-3]qF
-A=oE
-gS
-oJ(282,w3
-aN
-w0
-wN,wA" A "
-qC1
-w0,m7", "
-aO
-aW
-y
-q41
-aB(A)oV);q4
+3]qL
+A=dK;h1
+w1(282,wA"y"
+wF
+wJ
+wT,q11"A "
+mS
+wF
+wJ,wM", "
+mG"= "
+<<y<<","
+mE(A)wE);q3
 Ldb;}
-qK
-o4
-oJ(281,wH
-w8,wA" "
-m4" "
-w0,q01);q4
-Ldc;qK
-dB:g1
-gW
-qI-3]mV(196,aR
-oN
-wN,"cMul [x+x]"
-oN,oR);q4
-Ldd;qK
-o4
-if(y*a4(184,"y[y*x==Value_t(1)]"
-oN
-wN,,q01);q4
+dI
+w1(281,mG
+wJ
+wT,q11
+mS" "
+wJ,q31);q3
+Ldc;qJ
+d6:g1
+gX
+3]aS(196,aZ
+qE1,w7" [x+x]"
+mD,w9);q3
+Ldd;dI
+if(y*x
+q01(184,"y[y*x==Value_t(1)]"
+qE1,,q31);q3
 Lde;}
-oJ(185,"y"
-oN
-wN,m4
-oN,q01);q4
-Ldf;a8(174,m3
-wN,"[-x]"
-oN,oR);q4
-Ldg
-qL
-cSub:hJ==dB){qI-3]qF
-A=oE
-gS
-oJ(283,w3
-aN
-qG1
-wN,wA" A "
-m4
-oN" cSub"
-,m7", "
-aO
-aW
-y
-q41
-aB(A)oV);q4
+w1(185,"y"
+qE1,mS
+mD,q31);q3
+Ldf;qJ
+mN(174,mF
+wT,"[-x]"
+mD,w9);q3
+Ldg;gC
+o4
+hR==d6){qH-3]qL
+A=dK;h1
+w1(283,wA"y"
+wF
+qB1
+wT,q11"A "
+mS
+wF
+qB1,wM", "
+mG"= "
+<<y<<","
+mE(A)wE);q3
 Ldh;}
 }
-qK
-o4
-oJ(71,"y"
-wN,m4,q01);q4
+dI
+w1(71,"y"
+wT,mS,q31);q3
 Ldi;}
-gC
-aT(70,"x[x==Value_t(1)]"
-oN,,oR);q4
-o7}
-gC
-q9
-2
-aD(139,"x[x==Value_t(2)]"
-oN,aR,oR);q4
+g6
+1)a8(70,wG
+w7,,w9);q3
+oJ}
+g6
+2)a8(139,"x[x==Value_t(2)]"
+mD,aZ,w9);q3
 Ldj;}
-gC
-q9-1
-aD(176,"x[x==Value_t(-1)]"
-oN,m3,oR);q4
+g6-1)a8(176,"x[x==Value_t(-1)]"
+mD,mF,w9);q3
 Ldk;}
-gF
+d0
 g4
-dE:;A
+dD:;A
+gV
 h1
-gS
-qN
-dB:g1
+qI
+d6:g1
 g8
-B=hK
-o9
-oJ(385,mO
-m3
-oN" "
-oW,m5
-oN" "
-m3,m8(A)qF1(B)oV);q4
+B=dS
+hX
+w1(385,a5
+mF
+wF
+wA
+w7,m1
+wX
+wF
+mF,aL(A)q41(B)wE);q3
 Lcg;}
-q4
-Default5;g4
-Default5:;aC(376,wD
-oN" "
-oW,m5
-oN,m8(A)qF1(B)oV);q4
+q3
+oK;g4
+oK:;aQ(376,wQ
+wF
+wA
+w7,m1
+wX
+mD,aL(A)q41(B)wE);q3
 Ldl;}
 }
-q4
-dF
-qL
+q3
+dE;gC
 g8
-aC(379,mO
-m2
-oW,m5" "
-m3,m8(A)qF1(B)oV);q4
+aQ(379,a5
+mF
+aJ,m1
+wX
+aK,aL(A)q41(B)wE);q3
 Lch;}
-q4
-dF;g4
-dF:;B=qU;if(o9
-oJ(373,mO
-oW,m5,m8(A)qF1(B)oV);q4
+q3
+dE;g4
+dE:;B=qS
+dU
+hX
+w1(373,a5
+wA
+w7,m1
+wX,aL(A)q41(B)wE);q3
 Lce;}
 }
-aP
-A)){B=qU;if(B
+oP
+gE
+A)){B=qS
+dU
+B
 g3
-1){hJ==dB){C=hK
+1){hR==d6){C=dS
 C
-hW
-D=oE
-if(D==B){oJ(395,"D[D==B] C[C==A]"
-oN" B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
-oN,"D C cSqr"
-oN,m8(A)qF1(B)q51(C)<<", D"
-m6(D)oV);q4
+oL
+D=dK
+dU
+D==B
+a8(395,"D[D==B] C[C==A]"
+wF"B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
+mD,"D C "
+wX
+mD,aL(A)q41(B)<<", "
+aR(C)<<", D "
+w3(D)wE);q3
 Ldm;}
 }
 }
 }
-qJ
-TailCall_cNEqual:hC
-dO:h6
-A=mA(324,"A[IsLogicalOpcode(A)] "
-oX
-w6,"A"
-wT,q31(A)oV);q4
+qK
+TailCall_cNEqual:gC
+o8:h7
+A=qS
+dU
+gG
+w1(324,"A[IsLogicalOpcode(A)] "
+wG
+wR,"A"
+m6,q71(A)wE);q3
 Lbg;}
 }
-mM(168,aO"x "
-w6,"[fp_nequal(y,x)]"
-,q01);q4
+wW(168,qA1
+wR,"[fp_nequal(y,x)]"
+,q31);q3
 Ldn;}
-dV
-qN
-hP
-oJ(256,wP" "
-mF
-w6,aX
-w6,oR);q4
-Ldo
-qL
+hN
+q81(256,mB" "
+w8
+wR,wU
+wR,w9);q3
+Ldo;gC
 hH
-oJ(258,mI
-mF
-w6,aX
-w6,oR);q4
+w1(258,wX" "
+w8
+wR,wU
+wR,w9);q3
 Ldo;}
-oJ(314,mF
-w6,wU,oR);q4
-Lbi;qJ
-hA:hC
+w1(314,w8
+wR,mJ,w9);q3
+Lbi;qK
+hD:gC
 g8
-q8
-g9
-1
-aF(175,aU
-m3,"[-x]"
-oN,oR);q4
-Ldp;a8(238,m2
-m3,,);q4
-Lbl
-qQ
-oJ(68,"x "
-m3,"[-x]"
-,oR);q4
+qD
+dL
+w1(175,"x"
+wF
+mF,"[-x]"
+mD,w9);q3
+Ldp;qJ
+mN(238,mF
+aK,,);q3
+Lbl;qW
+w1(68,"x"
+aK,"[-x]"
+,w9);q3
 Ldq;}
-qM
-TailCall_cNot:hC
-cNot:q8
-hP
-oJ(286,wP
-wT,aY,);q4
-Lea
-qL
-cAbsNot:A=mA(291,"A[IsLogicalOpcode(A)] "
-wW
-wT,"A"
-,m8(A)oV);q4
-Lbl;}
-if(A!=q6){oJ(292,"A[A!=cImmed] "
-wW
-wT,"A cAbsNotNot"
-,m8(A)oV);q4
+qN
+TailCall_cNot:gC
+cNot:qD
+h9
+w1(286,mB
+m6,"cNot"
+,);q3
+Lea;gC
+cAbsNot:A=qS
+dU
+gG
+w1(291,"A[IsLogicalOpcode(A)] "
+mL
+m6,"A"
+,aL(A)wE);q3
+Lbl;oP
+A!=q5
+a8(292,"A[A!=cImmed] "
+mL
+m6,"A cAbsNotNot"
+,aL(A)wE);q3
 Leb;}
-q4
-dG
-qL
-cAbsNotNot:oJ(289,"cAbsNotNot"
-wT,wW,);q4
-Lec
-qL
-gW
-dS
-q7
-oJ(326,"x "
-w0
-wT,aX
-wF,oR);q4
+q3
+dF;gC
+cAbsNotNot:w1(289,"cAbsNotNot"
+m6,mL,);q3
+Lec;gC
+gX
+1]qC
+w1(326,"x "
+wJ
+m6,wU
+m0,w9);q3
 Led;}
-q4
-dG
-qL
-dM:oJ(252,wF
-wT,w6,);q4
-Lee
-qL
-hR:oJ(250,wY
-wT,wV,);q4
-Lef
-qL
-h5:oJ(251,wG
-wT,mN,);q4
-Leg
-qL
-dN
-oJ(248,mN
-wT,wG,);q4
-Leh
-qL
-d0:oJ(249,wV
-wT,wY,);q4
-Lei
-qL
-dO:oJ(253,w6
-wT,wF,);q4
-Lej
-mW(285,m3
-wT,aY,);q4
-Lea
-qL
-cNot:oJ(287,aY
-wT,wU,);q4
-Lek
-qL
-d8:oJ(288,wU
-wT,aY,);q4
-Lea
-qQ
-oJ(85,"x"
-wT,"[fp_not(x)]"
-,oR);q4
+q3
+dF;gC
+d8
+w1(252,m0
+m6,wR,);q3
+Lee;gC
+hS:w1(250,mO
+m6,mK,);q3
+Lef;gC
+h5:w1(251,m2
+m6,a4,);q3
+Leg;gC
+o6
+w1(248,a4
+m6,m2,);q3
+Leh;gC
+hC:w1(249,mK
+m6,mO,);q3
+Lei;gC
+o8:w1(253,wR
+m6,m0,);q3
+Lej;gC
+mN(285,mF
+m6,"cNot"
+,);q3
+Lea;gC
+cNot:w1(287,"cNot"
+m6,mJ,);q3
+Lek;gC
+d9:w1(288,mJ
+m6,"cNot"
+,);q3
+Lea;qW
+w1(85,"x"
+m6,"[fp_not(x)]"
+,w9);q3
 Lel;g4
-dG:;A
-h1
-qH
-oJ(293,oT
-aY,"A "
-wW,m8(A)oV);q4
-Lem;qJ
-gV:hC
-d8:qI
-0]==cAdd){dS
-q7
-oJ(325,"x "
-a6
-wU,aX
-w6,oR);q4
-Len;qJ
-TailCall_cOr:hC
-cOr:qI
-0
-mG(170,aO"x cOr"
+dF:;A
+gV
+qG
+w1(293,wB"cNot"
+,"A "
+mL,aL(A)wE);q3
+Lem;qK
+h3:gC
+d9:qH
+0]==oI){hP
+qC
+w1(325,"x "
+mQ
+mJ,wU
+wR,w9);q3
+Len;qK
+TailCall_cOr:gC
+cOr:qH
+0]qC
+wW(170,mG"x cOr"
 ,"[fp_or(x,y)]"
-,q01);q4
-Leo;qJ
-TailCall_cRDiv:hC
-o2
-h6
-oJ(91,oX
-mP,mS,oR);q4
-Lep;qJ
-TailCall_cSqr:hC
+,q31);q3
+Leo;qK
+TailCall_cRDiv:gC
+oC
+h7
+w1(91,wG
+a7,aA,w9);q3
+Lep;qK
+TailCall_cSqr:gC
 hH
-q8
-hP
-oJ(391,wP" cSqr"
-,"cSqr"
-,);q4
-Leq
-mW(390,m2"cSqr"
-,"cSqr"
-,);q4
+qD
+h9
+w1(391,mB" "
+wX,wX,);q3
+Leq;gC
+mN(390,mF" "
+wX,wX,);q3
 Leq;}
-qM
-hB:hC
-cSub:a3(191,w7
-qG1,"[Value_t(0)]"
-oN,);q4
-Lfa
-mW(244,m2
-qG1,w0,);q4
-Lfb
-qQ
-dV
-oJ(77,mF
-qG1,,oR);q4
-o7}
-mM(78,aO"x cSub"
-,"[y-x]"
-,q01);q4
+qN
+hE:gC
+o4
+aB(191,wP
+qB1,"[Value_t(0)]"
+mD,);q3
+Lfa;gC
+mN(244,mF
+aO,wJ,);q3
+Lfb;qW
+hN
+w1(77,w8
+qB1,,w9);q3
+oJ}
+wW(78,mG"x"
+aO,"[y-x]"
+,q31);q3
 Lfc;}
-oJ(207,"x cSub"
-,aE
-w0,oR);q4
-Lfd;h0
-dR
-oJ(112,"x "
-wC" "
-w3
-qG1,"A "
-a6
-aX
-wC,m8(A)q61);q4
+w1(207,"x"
+aO,"[-x] "
+wJ,w9);q3
+Lfd;gT
+hO
+w1(112,"x "
+wY" "
+wA
+qB1,"A "
+mQ
+wU
+wY,aL(A)<<","
+mH);q3
 Lfe;}
-oJ(119,wC" "
-w3
-qG1,"[DO_STACKPLUS1] A cSub "
-wC,m8(A)oV);hX
+w1(119,wY" "
+wA
+qB1,"[DO_STACKPLUS1] A"
+aO" "
+wY,aL(A)wE);hM
 Lff;}
-qJ
+qK
 g4
-Default0:;A=oF;if(IsComparisonOpcode(A)){qI
-0]q7
-hG
-qF
-oJ(260,wH
-oQ,"[x-y] A"
-,m8(A)q71);q4
-Lfg;a8(261,m2
-oQ,aE"{OppositeComparisonOpcode(A)}"
-,m8(A)q61);q4
+Default0:;A=dW
+dU
+IsComparisonOpcode(A)){qH
+0]qC
+gW
+qL
+w1(260,mG
+mQ
+w6,"[x-y] A"
+,aL(A)<<q61);q3
+Lfg;qJ
+mN(261,mF
+aH,"[-x] {OppositeComparisonOpcode(A)}"
+,aL(A)<<","
+mH);q3
 Lfh;}
 }
-}
-if(A
+oP
+A
 g3
 0){B
-h1
-if(o9
-oJ(393,mO"A[A>=VarBegin&&data->ByteCode.size()>0]"
-,"B cDup"
-,m8(A)qF1(B)oV);q4
+gV
+if(hX
+w1(393,a5"A[A>=VarBegin&&data->ByteCode.size()>0]"
+,m1"cDup"
+,aL(A)q41(B)wE);q3
 Lfi;}
-aP
+oP
+gE
 A)){B
-h1
+gV
 if(B
 g3
-1){C=qU;if(C
-hW
+1){C=qS
+dU
+C
+oL
 D
-qX
-D==B){oJ(394,"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
+qV
+D==B
+a8(394,"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
 ,"D C cDup"
-,m8(A)qF1(B)q51(C)<<", D"
-m6(D)oV);q4
+,aL(A)q41(B)<<", "
+aR(C)<<", D "
+w3(D)wE);q3
 Lfj;}
 }
 }
 }
 }
-q4
-Lfk;Laa:h4
-TailCall_cAbs;Lab:qE=d4;g7
-Lac:qC
-q9
-4));gQ
-qA
-qP
-Lfl:gG
-dB;Lfm:FP_ReDefinePointers();Lfn:q4
-TailCall_cMul;Lad:oA
-4
-gK
-qC
-q9
-4));hS
-Lfl;Lae:qE=x+hY;gQ
-qA
-qP
-Lbo:gG
-dB;q4
-Lfn;Laf:hT
-cSub;Lfo:q4
-hB;Lag:hI
-gY
-Lfp:FP_ReDefinePointers();Lfq:q4
-TailCall_cAdd;Lah:hI
-hD
-Lga:d1
-Lgb:qG
-dL);g7
-Lai:gM
-gP
-2]=q6;qA
-d3
-Lga;Laj:hI
-gY
-q4
-Lgb;Lak:hI
-hO
-Lgc:d1
-Lgd:qG
-B);Lge:gG
-cSub;qS
-Lfo;Lal:gM
-d5=q6;g6
-d3
-Lgc;Lam:hI
-hD
-q4
-Lgd;Lan:hI
-Lao:h8
-Lbl:qP
-g7
-Lap:q3
-3
-d2
-qC
-x);hS
-Lga;Laq:qA
-o3
-Lga;Lba:qV
-fp_and(x
-gI
-Lbb:qC
-q9
-0));dP
-q6;qG
-dB);qC
-hY);Lgf:dQ
-Lgg:gG
-cAdd;q4
-Lfp;Lbc:gM
-qU
-o1
-Lgh:q4
-TailCall_cDiv;Lbd:qV
-y/x;q4
-o7
-Lbe:qV
-fp_equal(y
-gZ
-Lbf:qU
-o1
-Lgi:q4
-TailCall_cEqual;Lbg:h8
-qP
-Lgj:gG
-cNot;FP_ReDefinePointers();Lgk:q4
-TailCall_cNot;Lbh:gY
-Lgl:gG
-d8;FP_ReDefinePointers();Lgm:q4
-gV;Lbi:h8
-d3
-Lgl;Lbj:qV
-fp_less(x
-gI
-Lbk:qV
-fp_lessOrEq(x
-gI
-Lbm:q1
-cRSqrt);g7
-Lbn:qE=hY/x;g7
-Lbp:gY
-q4
-Lgj;Lbq:qV
-fp_less(y
-gZ
-Lca:qV
-fp_lessOrEq(y
-gZ
-Lcb:qV
-fp_max(x
-gI
-Lcc:qV
-fp_min(x
-gI
-Lcd:qV
-fp_mod(y
-gZ
-Lce:hT
-cSqr;Lgn:q4
-TailCall_cSqr;Lcf:hT
-cDiv;q4
-Lgh;Lcg:g6
-q1
-cSqr);qG
-dB);Lgo:gG
-cNeg;qS
-hA;Lch:aS
-cSqr
-gJ
-Lgo;Lci:qE=x+hY;gP
-2]=q6;aS
-cPow);g7
-Lcj:gQ
-qA
-d3
-Lfn;Lck:qV
-x;Lgp:gY
-q4
-Lfm;Lcl:qA
-h8
-Lgq:oA
+q3
+Lfk;Laa:dO
+dT;Lab:qE=d2;g7
+Lac:dG
+4));gY
+Lfl:gJ
+d6;Lfm:o5
+Lfn:q3
+TailCall_cMul;Lad:gA
+dG
+4));hU
+Lfl;Lae:qE=x+qA(1);gY
+Lbo:gJ
+d6;q3
+Lfn;Laf:dP
+cSub;Lfo:q3
+hE;Lag:gL
 dZ
-Lha:qE1
-x);Lhb:hS
-Lfm;Lcm:h8
+Lfp:o5
+Lfq:q3
+oA;Lah:gL
+g2
 q4
-Lgq;Lcn:q3
-4
-o0
-B
-gJ
-Lha;Lco:hD
-q4
-Lha;Lcp:m1
-q4
-Lbl;Lcq:qU
-gR
-1;d3
-Lfn;Lda:qE=x+x;q4
-Lcj;Ldb:qV
-x;gP
-4]=q6;q3
-4
-gK
-qE1
-y*x);dQ
-q81
-Lgg;Ldc:qV
-x;q3
-2
-gK
-qC
-y*x
-gJ
-Lgf;Ldd:q3
-4
-gK
-qC
-x+x
-gJ
-Lhb;Lde:qA
-hD
-g7
-Ldf:qV
-y*x;q4
-Lgp;Ldg:gM
-q4
-Lcq;Ldh:qV
-x;gP
-4]=q6;q3
-4
-gK
-qE1
-y*x);dQ
-q81
-Lge;Ldi:qV
-y*x;q4
-o7
-Ldj:dP
-dY;q2-=1;h8
-Lhc:gG
-cAdd;q4
-Lfq;Ldk:h8
-d3
-Lgo;Ldl:qA
-qP
-Lhd:qG
-cSqr
-gJ
-Lfm;Ldm:g6
-d3
-Lhd;Ldn:qV
-fp_nequal(y
-gZ
-Ldo:qU
+Lga:d1
+Lgb:qF
+cRSub);g7
+Lai:hJ
+gS
 o1
-Lhe:q4
-TailCall_cNEqual;Ldp:gM
-h4
-Lbo;Ldq:gM
-g7
-Lea:h4
-Lgk;Leb:q1
-cAbsNotNot);g7
-Lec:qP
-Lem:qG
-cAbsNot);g7
-Led:qE=x;Lej:hT
-dM;q4
-Lgi;Lee:hT
-dO;q4
-Lhe;Lef:hT
-d0;q4
-TailCall_cLessOrEq;Leg:hT
-cLess;q4
-TailCall_cLess;Leh:hT
-h5;q4
-TailCall_cGreaterOrEq;Lei:hT
-hR;q4
-TailCall_cGreater;Lek:hT
-d8;q4
-Lgm;Lel:qE=fp_not(w9
-Len:qE=x;q4
-Lee;Leo:qV
-fp_or(x
-gI
-Lep:h8
-qP
-gG
-cInv;qS
-TailCall_cInv;Leq:h4
-Lgn;Lfa:qC
-q9
-0));dP
-q6;q4
-Lfl;Lfb:h4
-Lhc;Lfc:qV
-y-x;q4
-o7
-Lfd:gM
+dZ
+q3
+Lga;Laj:gL
+dZ
+q3
+Lgb;Lak:gL
+hI
 q4
-Lhc;Lfe:q3
-3
-d2
-d1
-qC
-x);hS
-Lgb;Lff:aS
-A);qG
-cSub
-gJ
-Lgb;Lfg:qV
-x-y;q3
-2
-d2
+Lgc:d1
+Lgd:qF
+B);Lge:gJ
+cSub;qQ
+Lfo;Lal:hJ
+q0
+d3
+Lgc;Lam:gL
+g2
+q4
+q3
+Lgd;Lan:qR
+y+x;Lao:qT
+Lbl:hF
+q4
 g7
-Lfh:gM
-m1
+Lap:qT
+g2
+o9
+oT
+hU
+Lga;Laq:q7
+oD
+Lga;Lba:qR
+fp_and(x
+gH
+Lbb:dG
+0));q0[0]o1
+qF
+d6);dG
+1));Lgf:oB
+Lgg:gJ
+oI;q3
+Lfp;Lbc:hJ
+qS
+hA
+gF
+Lgh:q3
+o0;Lbd:qR
+y/x;q3
+oJ
+Lbe:qR
+fp_equal(y
+h6
+Lbf:qS
+hA
+gF
+Lgi:q3
+dV;Lbg:qT
+hF
+q4
+Lgj:gJ
+cNot;o5
+Lgk:q3
+TailCall_cNot;Lbh:qT
+dZ
+Lgl:gJ
+d9;o5
+Lgm:q3
+h3;Lbi:qT
+gK
+Lgl;Lbj:qR
+fp_less(x
+gH
+Lbk:qR
+fp_lessOrEq(x
+gH
+Lbm:oG
+cRSqrt);g7
+Lbn:qE=qA(1)/x;g7
+Lbp:qT
+dZ
+q3
+Lgj;Lbq:qR
+fp_less(y
+h6
+Lca:qR
+fp_lessOrEq(y
+h6
+Lcb:qR
+fp_max(x
+gH
+Lcc:qR
+fp_min(x
+gH
+Lcd:qR
+fp_mod(y
+h6
+Lce:dP
+cSqr;Lgn:q3
+TailCall_cSqr;Lcf:dP
+cDiv;q3
+Lgh;Lcg:g2
+q1
+cSqr);qF
+d6);Lgo:gJ
+cNeg;qQ
+hD;Lch:q7
+q1
+cSqr
+gI
+Lgo;Lci:qE=x+qA(1);gS
+o1
+q7
+q1
+cPow);g7
+Lcj:gY
+q3
+Lfn;Lck:qR
+x;Lgp:qT
+dZ
+q3
+Lfm;Lcl:q7
+q6
+Lgq:hI
+q4
+Lha:qF
+A);oT
+Lhb:hU
+Lfm;Lcm:qT
+q3
+Lgq;Lcn:qT
+hI
+q1
+B
+gI
+Lha;Lco:qT
+g2
+q4
+q3
+Lha;Lcp:qS
+o1
+q3
+Lbl;Lcq:qS
+hA
+gF
+q3
+Lfn;Lda:qE=x+x;o7
+Ldb:qR
+x;dK=q5
+oR
+gA
+qF
+A);oU);oB
+mV
+Lgg;Ldc:qR
+x
+oR
+gU
+oU
+gI
+Lgf;Ldd:qT
+gA
+qB
+x+x
+gI
+Lhb;Lde:q7
+hY
+g7
+Ldf:qC1;q3
+Lgp;Ldg:hJ
+q3
+Lcq;Ldh:qR
+x;dK=q5
+oR
+gA
+qF
+A);oU);oB
+mV
+Lge;Ldi:qC1;q3
+oJ
+Ldj:q0[0]=dY;q2-=1
+oR
+Lhc:gJ
+oI;q3
+Lfq;Ldk:qT
+gK
+Lgo;Ldl:dZ
+Lhd:qF
+cSqr
+gI
+Lfm;Ldm:g2
+q4
+q3
+Lhd;Ldn:qR
+fp_nequal(y
+h6
+Ldo:qS
+hA
+gF
+Lhe:q3
+TailCall_cNEqual;Ldp:hJ
+dO
+oN
+Ldq:hJ
+g7
+Lea:dO
+Lgk;Leb:oG
+cAbsNotNot);g7
+Lec:hF
+q4
+Lem:qF
+cAbsNot);g7
+Led:qE=x;Lej:dP
+cEqual;q3
+Lgi;Lee:dP
+o8;q3
+Lhe;Lef:dP
+hC;q3
+TailCall_cLessOrEq;Leg:dP
+cLess;q3
+TailCall_cLess;Leh:dP
+h5;q3
+TailCall_cGreaterOrEq;Lei:dP
+hS;q3
+TailCall_cGreater;Lek:dP
+d9;q3
+Lgm;Lel:qE=fp_not(mX
+Len:qE=x;q3
+Lee;Leo:qR
+fp_or(x
+gH
+Lep:qT
+hF
+q4
+gJ
+cInv;qQ
+TailCall_cInv;Leq:dO
+Lgn;Lfa:dG
+0));q0[0]o1
+q3
+Lfl;Lfb:dO
+Lhc;Lfc:qR
+y-x;q3
+oJ
+Lfd:hJ
+q3
+Lhc;Lfe:qT
+g2
+o9
+d1
+oT
+hU
+Lgb;Lff:q7
+o9
+qF
+cSub
+gI
+Lgb;Lfg:qR
+x-y
+oR
+q7
+o9
+g7
+Lfh:hJ
+qS=q5
+qP
 q1
 OppositeComparisonOpcode(A));g7
-Lfi:qD
+Lfi:qM
 dY);g7
-Lfj:dP
-dY;g7
-Lfk:qD
-oF);g7
+Lfj:q0[0]=dY;g7
+Lfk:qM
+dW);g7
 g7
-q4
-TailCall_cAnd;q4
-TailCall_cMax;q4
-TailCall_cMin;q4
-TailCall_cMod;q4
-hA;q4
-gV;q4
-TailCall_cOr;q4
-TailCall_cRDiv;q4
-hB;
+q3
+TailCall_cAnd;q3
+TailCall_cMax;q3
+TailCall_cMin;q3
+TailCall_cMod;q3
+hD;q3
+h3;q3
+TailCall_cOr;q3
+TailCall_cRDiv;q3
+hE;
 #endif
 #if(FP_FLOAT_VERSION)
-hQ
-x;h9
-A;hQ
-y;h9
-B;h9
-C;h9
-D;hF
-oF){TailCall_cAbs:hC
-hP
-qA1(236,m2
-wP,wP,);q4
-Laa
-qQ
-oJ(40,"x "
-wP,"[fp_abs(x)]"
-,oR);q4
-Lab;h0
-qH
-oJ(295,oT
-wP,"A"
-,m8(A)oV);g7
-qJ
-TailCall_cAcos:hC
-cAcos:g5>=mU<=aT(44,"x[x>=Value_t(-1)&&x<=Value_t(1)] cAcos"
+qA
+x;hB
+A;qA
+y;hB
+B;hB
+C;hB
+D;hG
+dW){dT:gC
+h9
+qD
+mN(236,mF" "
+mB,mB,);q3
+Laa;qW
+w1(40,"x "
+mB,"[fp_abs(x)]"
+,w9);q3
+Lab;gT
+qG
+w1(295,wB
+mB,"A"
+,aL(A)wE);o3
+TailCall_cAcos:gC
+cAcos:g5>=qA(-1)&&x<=h8
+w1(44,"x[x>=Value_t(-1)&&x<=Value_t(1)] cAcos"
 ,"[fp_acos(x)]"
-,oR);q4
-Lac;qJ
-TailCall_cAcosh:hC
-cAcosh:g5>=aT(41,"x[x>=Value_t(1)] cAcosh"
+,w9);q3
+Lac;qK
+TailCall_cAcosh:gC
+cAcosh:g5>=h8
+w1(41,"x[x>=Value_t(1)] cAcosh"
 ,"[fp_acosh(x)]"
-,oR);q4
-Lad;qJ
-TailCall_cAdd:hC
+,w9);q3
+Lad;qK
+oA:gC
+oI:qD
+h4
 gW
-q8
-gX
-hG
-mV(186,w7
-a6
-aR,"[Value_t(4)]"
-oN,);q4
-Lae;dC==cAdd){qI-3]mV(187,aR
-oN" "
-aR,"cMul [Value_t(4)]"
-oN,);q4
+aS(186,wP
+mQ
+aZ,"[Value_t(4)]"
+mD,);q3
+Lae;qJ
+g9
+2]==oI){qH-3]aS(187,aZ
+wF
+aZ,w7" [Value_t(4)]"
+mD,);q3
 Laf;}
 }
-gF}
-q4
-dD
-hE
-hJ
-mV(189,w7
-aU
-w0,"[x+Value_t(1)]"
-oN,oR);q4
+gQ
+q3
+dC;gC
+dL
+hR
+aS(189,wP"x"
+wF
+wJ,"[x+Value_t(1)]"
+mD,w9);q3
 Lag;}
 }
-q4
-dD
-mW(243,m2
-w0,qG1,);q4
-Lah
-qQ
-hG
-qF
-oJ(180,wH"x "
-w0,"[y+x] "
-w0,q01);q4
-Lai;qK
-dL:g1
+q3
+dC;gC
+mN(243,mF" "
+wJ,qB1,);q3
+Lah;qW
 gW
-qI-3]qF
-oJ(121,wH
-mE,wS
-a6
-wC,q01);q4
-Laj;a8(122,m2
-mE,aE
-a6
-wC,oR);q4
-Lak
-q91(120,aO
-mE,wS
-wC,q01);q4
-Lal;qK
-cSub:hU
-hF
-d5){hC
-gW
-qI-4]qF
-oJ(115,wH
-w4,wS
-a6
-mQ,qH1(B)q41
-aA);q4
-Lam;a8(116,m2
-w4,aE
-a6
-mQ,qH1(B)oV);q4
-Lan
-q91(114,aO
-w4,wS
-mQ,qH1(B)q41
-aA);q4
-o7}
-qK
-o4
-oJ(76,aO"x "
-w0,"[y+x]"
-,q01);q4
-Lap;}
-dV
-oJ(75,mF
-w0,,oR);q4
-Laq;}
-gF
-g4
-dD:;A
-h1
-dR
-oJ(113,"x "
-wC" "
-w3
-w0,"[DO_STACKPLUS1] A "
-aX
-a6
-wC,m8(A)q61);hX
-Lba;}
-oJ(118,wC" "
-w3
-w0,"[DO_STACKPLUS1] A "
-a6
-wC,m8(A)oV);hX
-Lbb;}
-qJ
-TailCall_cAnd:hC
-cAnd:qI
-0
-mG(169,aO"x cAnd"
-,"[fp_and(x,y)]"
-,q01);q4
-Lbc;qJ
-TailCall_cAsin:hC
-cAsin:g5>=mU<=aT(45,"x[x>=Value_t(-1)&&x<=Value_t(1)] cAsin"
-,"[fp_asin(x)]"
-,oR);q4
-Lbd;qJ
-TailCall_cAsinh:hC
-cAsinh:qI
-0
-aF(42,"x cAsinh"
-,"[fp_asinh(x)]"
-,oR);q4
-Lbe;}
-qM
-TailCall_cAtan:hC
-cAtan:qI
-0
-aF(46,"x cAtan"
-,"[fp_atan(x)]"
-,oR);q4
-Lbf;}
-qM
-TailCall_cAtan2:hC
-cAtan2:qI
-0
-mG(83,aO"x cAtan2"
-,"[fp_atan2(y,x)]"
-,q01);q4
-Lbg;qJ
-TailCall_cAtanh:hC
-cAtanh:g5>mU<aT(43,"x[x>Value_t(-1)&&x<Value_t(1)] cAtanh"
-,"[fp_atanh(x)]"
-,oR);q4
-Lbh;qJ
-TailCall_cCbrt:hC
-cCbrt:qI
-0
-aF(47,"x cCbrt"
-,"[fp_cbrt(x)]"
-,oR);q4
-Lbi;}
-qM
-TailCall_cCeil:hC
-cCeil:qA1(304,m2
-aG,mZ" "
-m3,);q4
-Lbj
-qQ
-oJ(48,"x "
-aG,"[fp_ceil(x)]"
-,oR);q4
-Lbk;dH
-oJ(298,"A[IsAlwaysIntegerOpcode(A)] "
-aG,"A"
-,m8(A)oV);g7
-qJ
-TailCall_cCos:hC
-cCos:q8
-hP
-oJ(339,wP" "
-wZ,wZ,);q4
-Lbl
-mW(341,m2
-wZ,wZ,);q4
-Lbl
-qQ
-oJ(49,"x "
-wZ,"[fp_cos(x)]"
-,oR);q4
-Lbm;}
-qM
-TailCall_cCosh:hC
-cCosh:q8
-hP
-oJ(340,wP" "
-wJ,wJ,);q4
-Lbn
 qL
-cAcosh:oJ(232,"cAcosh "
-wJ,,);q4
-Lbo
-qL
-cAsinh:oJ(353,"cAsinh "
-wJ,q11
-mI"[Value_t(1)] "
-a6
-mD,);hX
-Lbp
-mW(342,m2
-wJ,wJ,);q4
-Lbn
-qQ
-oJ(50,"x "
-wJ,"[fp_cosh(x)]"
-,oR);q4
-Lbq;}
-qM
-TailCall_cDeg:hC
-cDeg:qI
-0
-aF(65,"x cDeg"
-,"[RadiansToDegrees(x)]"
-,oR);q4
-Lca;}
-qM
-TailCall_cDiv:hC
-cDiv:q8
-cCos:oJ(356,wZ" "
-mR,aH
-oN,);q4
-Lcb
-qL
-cCot:oJ(360,aI" "
-mR,aJ
-oN,);q4
-Lcc
-qL
-cCsc:oJ(358,aK" "
-mR,aL
-oN,);q4
-Lcd
-qL
+w1(180,mG
+mQ"x "
+wJ,"[y+x] "
+wJ,q31);q3
+Lai;qJ
+cRSub:g1
 gX
-oJ(159,w7
-mR,"[Value_t(0)]"
-oN" [Value_t(1)] "
-w0,);q4
-Lce
-qL
-aQ(310,m9
-mR,m2
-mX
-oN,);q4
-Lcf
-qL
-d9:oJ(311,wK" "
-mR,m2
-wK
-oN,);q4
-Lcg
-qL
-qI1(241,mS" "
-mR,"cMul"
-,);q4
-Lch
-qL
-dW
-oJ(309,"cPow "
-mR,m3
-wX
-oN,);q4
-Lci
-qL
-cSec:oJ(359,aH" "
-mR,wZ
-oN,);q4
-Lcj
-qL
-cSin:oJ(355,aL" "
-mR,aK
-oN,);q4
-Lck
-qL
-cTan:oJ(357,aJ" "
-mR,aI
-oN,);q4
-Lcl
-qQ
-gC
-aT(72,oX
-mR,,oR);q4
-Laq;}
-oB
+3]qL
+w1(121,mG
+mQ
+mW,mI
+mQ
+wY,q31);q3
+Laj;qJ
+mN(122,mF" "
+mW,"[-x] "
+mQ
+wY,w9);q3
+Lak;gC
+dJ
+w1(120,mG
+mW,mI
+wY,q31);q3
+Lal;qJ
+o4
+hV
+hG
+dR
+gX
+4]qL
+w1(115,mG
+mQ
+wL,mI
+mQ
+a9,qD1(B)<<","
+m7);q3
+Lam;qJ
+mN(116,mF" "
+wL,"[-x] "
+mQ
+a9,qD1(B)wE);q3
+Lan;gC
+dJ
+w1(114,mG
+wL,mI
+a9,qD1(B)<<","
+m7);q3
+oJ}
+dI
+w1(76,qA1
+wJ,"[y+x]"
+,q31);q3
+Lap;}
+hN
+w1(75,w8
+wJ,,w9);q3
+oM}
+d0
+g4
+dC:;A
+gV
+hO
+w1(113,"x "
+wY" "
+wA
+wJ,"[DO_STACKPLUS1] A "
+wU
+mQ
+wY,aL(A)<<","
+mH);hM
+Lba;}
+w1(118,wY" "
+wA
+wJ,"[DO_STACKPLUS1] A "
+mQ
+wY,aL(A)wE);hM
+Lbb;}
+qK
+TailCall_cAnd:gC
+cAnd:qH
+0]qC
+wW(169,mG"x cAnd"
+,"[fp_and(x,y)]"
+,q31);q3
+Lbc;qK
+TailCall_cAsin:gC
+cAsin:g5>=qA(-1)&&x<=h8
+w1(45,"x[x>=Value_t(-1)&&x<=Value_t(1)] cAsin"
+,"[fp_asin(x)]"
+,w9);q3
+Lbd;qK
+TailCall_cAsinh:gC
+cAsinh:qH
+0]qC
+w1(42,"x cAsinh"
+,"[fp_asinh(x)]"
+,w9);q3
+Lbe;}
 qN
+TailCall_cAtan:gC
+cAtan:qH
+0]qC
+w1(46,"x cAtan"
+,"[fp_atan(x)]"
+,w9);q3
+Lbf;}
+qN
+TailCall_cAtan2:gC
+cAtan2:qH
+0]qC
+wW(83,mG"x cAtan2"
+,"[fp_atan2(y,x)]"
+,q31);q3
+Lbg;qK
+TailCall_cAtanh:gC
+cAtanh:g5>qA(-1)&&x<h8
+w1(43,"x[x>Value_t(-1)&&x<Value_t(1)] cAtanh"
+,"[fp_atanh(x)]"
+,w9);q3
+Lbh;qK
+TailCall_cCbrt:gC
+cCbrt:qH
+0]qC
+w1(47,"x cCbrt"
+,"[fp_cbrt(x)]"
+,w9);q3
+Lbi;}
+qN
+TailCall_cCeil:gC
+cCeil:qD
+mN(304,mF" "
+a6,aD
+aK,);q3
+Lbj;qW
+w1(48,"x "
+a6,"[fp_ceil(x)]"
+,w9);q3
+Lbk;gT
+aP(298,aM
+a6,"A"
+,aL(A)wE);o3
+TailCall_cCos:gC
+cCos:qD
+h9
+w1(339,mB" "
+mC,mC,);q3
+Lbl;gC
+mN(341,mF" "
+mC,mC,);q3
+Lbl;qW
+w1(49,"x "
+mC,"[fp_cos(x)]"
+,w9);q3
+Lbm;}
+qN
+TailCall_cCosh:gC
+cCosh:qD
+h9
+w1(340,mB" "
+mA,mA,);q3
+Lbn;gC
+cAcosh:w1(232,"cAcosh "
+mA,,);q3
+oN
+gC
+cAsinh:w1(353,"cAsinh "
+mA,"[DO_STACKPLUS1] "
+wX" [Value_t(1)] "
+mQ
+mU,);hM
+Lbp;gC
+mN(342,mF" "
+mA,mA,);q3
+Lbn;qW
+w1(50,"x "
+mA,"[fp_cosh(x)]"
+,w9);q3
+Lbq;}
+qN
+TailCall_cDeg:gC
+cDeg:qH
+0]qC
+w1(65,"x cDeg"
+,"[RadiansToDegrees(x)]"
+,w9);q3
+Lca;}
+qN
+o0:gC
+cDiv:qD
+cCos:w1(356,mC
+aG,aT
+mD,);q3
+Lcb;gC
+cCot:w1(360,aU
+aG,aV
+mD,);q3
+Lcc;gC
+cCsc:w1(358,aW
+aG,aX
+mD,);q3
+Lcd;gC
+h4
+w1(159,wP
+mY,"[Value_t(0)]"
+wF"[Value_t(1)] "
+wJ,);q3
+Lce;gC
+aY(310,mT
+mY,mF" "
+aC
+mD,);q3
+Lcf;gC
+dA:w1(311,m3
+aG,mF" "
+m3
+mD,);q3
+Lcg;aE
+w1(241,aA
+aG,w7,);q3
+Lch;gC
+d7
+w1(309,"cPow"
+aG,mF
+wV
+mD,);q3
+Lci;gC
+cSec:w1(359,aT
+aG,mC
+mD,);o7
+gC
+cSin:w1(355,aX
+aG,aW
+mD,);q3
+Lck;gC
+cTan:w1(357,aV
+aG,aU
+mD,);q3
+Lcl;qW
+g6
+1)a8(72,wG
+mY,,w9);q3
+oM
+oP
+x!=gN
+qI
 g9
-2]qF
-if((y/x)==h2
-oJ(198,"y[(y/x)==GetRadiansToDegreesFactor<Value_t>()]"
-oN" "
-w5
-mR,"cDeg"
-,q01);q4
-Lcm;}
-if((y/x)==h3
-oJ(199,"y[(y/x)==GetDegreesToRadiansFactor<Value_t>()]"
-oN" "
-w5
-mR,"cRad"
-,q01);q4
+2]qL
+if((y/x)==gO
+w1(198,"y[(y/x)==GetRadiansToDegreesFactor<Value_t>()]"
+mM,"cDeg"
+,q31);q3
+oO(y/x)==gP
+w1(199,"y[(y/x)==GetDegreesToRadiansFactor<Value_t>()]"
+mM,"cRad"
+,q31);q3
 Lcn;}
-oJ(200,aN
-w5
-mR,"[y/x]"
-oN,q01);q4
-Lco;a8(177,m2
-w5
-mR,aE
-mR,oR);q4
-Lcp
-q91(73,aO
-w5
-mR,"[y/x]"
-,q01);q4
+w1(200,"y"
+mM,"[y/x]"
+mD,q31);q3
+Lco;qJ
+mN(177,mF" "
+wO
+mY,"[-x]"
+aG,w9);q3
+Lcp;gC
+dJ
+w1(73,mG
+wO
+mY,"[y/x]"
+,q31);q3
 Lcq;}
-oJ(202,w5
-mR,"[Value_t(1)/x]"
-oN,oR);q4
+w1(202,wO
+mY,"[Value_t(1)/x]"
+mD,w9);q3
 Lda;}
-gF
-o5
-cDiv:hU
-oJ(94,"B[B>=VarBegin] "
-mR" "
-w3
-mR,"[DO_STACKPLUS1] B "
-mY
-mR,m8(A)qF1(B)oV);hX
-Ldb;qK
-o2
-g1
-wL(89,"x "
-mP" "
-w3
-mR,mY
-aX
-mP,m8(A)q61);q4
+d0
+gT
+h1
+qI
+cDiv:hV
+w1(94,q51" "
+wA
+mY,"[DO_STACKPLUS1] "
+m1"A"
+wF
+mY,aL(A)q41(B)wE);hM
+Ldb;qJ
+oC
+hG
+gS){qW
+w1(89,"x "
+a7" "
+wA
+mY,"A"
+wF
+wU
+a7,aL(A)<<","
+mH);q3
 Ldc;g4
-hU
-oJ(88,"B[B>=VarBegin] "
-mP" "
-w3
-mR,mY"B "
-mP,m8(A)qF1(B)oV);q4
+hV
+w1(88,"B[B>=VarBegin] "
+a7" "
+wA
+mY,"A"
+wF
+m1
+a7,aL(A)q41(B)wE);q3
 Ldd;}
 }
-gF}
-qJ
-TailCall_cEqual:hC
-dM:aZ
-qN
-hP
-oJ(255,wP" "
-mF
-wF,aX
-wF,oR);q4
-Lde
-qL
+gQ
+qK
+dV:gC
+d8
+g5==gN
+q81(255,mB" "
+w8
+m0,wU
+m0,w9);q3
+Lde;gC
 hH
-oJ(257,mI
-mF
-wF,aX
-wF,oR);q4
+w1(257,wX" "
+w8
+m0,wU
+m0,w9);q3
 Lde;}
 }
-mM(167,aO"x "
-wF,"[fp_equal(y,x)]"
-,q01);q4
-Ldf;qJ
-TailCall_cExp:hC
-cExp:q8
-gW
-dS
-q7
-oJ(306,"x "
-a6
-mX,m9"[fp_exp(x)]"
-oN,oR);q4
-Ldg;qK
-cLog:A=mB(222,oT
-m0" "
-mX,"A"
-,m8(A)oV);q4
-Lbo;qK
-wL(51,"x "
-mX,"[fp_exp(x)]"
-,oR);q4
-Ldh;}
-qM
-TailCall_cExp2:hC
-d9:q8
-gW
-dS
-q7
-oJ(307,"x "
-a6
-wK,wK" [fp_exp2(x)]"
-oN,oR);q4
-Ldi;qK
-cLog2:A=mB(223,oT
-wO" "
-wK,"A"
-,m8(A)oV);q4
-Lbo;qK
-wL(52,"x "
-wK,"[fp_exp2(x)]"
-,oR);q4
-Ldj;}
-oJ(399,wK,"[DO_STACKPLUS1] [fp_log(Value_t(2))]"
-oN" "
-mX,);hX
-Ldk;TailCall_cFloor:hC
-cFloor:qA1(303,m2
-mZ,aG" "
-m3,);q4
-Ldl
-qQ
-oJ(53,"x "
-mZ,"[fp_floor(x)]"
-,oR);q4
-Ldm;dH
-oJ(297,"A[IsAlwaysIntegerOpcode(A)] "
-mZ,"A"
-,m8(A)oV);g7
+wW(167,qA1
+m0,"[fp_equal(y,x)]"
+,q31);q3
+Ldf;qK
+TailCall_cExp:gC
+cExp:qD
+gX
+1]qC
+w1(306,"x "
+mQ
+aC,mT"[fp_exp(x)]"
+mD,w9);q3
+Ldg;qJ
+cLog:A
+a1(222,wB
+mP" "
+aC,"A"
+,aL(A)wE);q3
+oN
 qJ
-TailCall_cGreater:hC
-hR:qI
-0
-mG(165,aO"x "
-wY,"[fp_less(x,y)]"
-,q01);q4
+oE
+w1(51,"x "
+aC,"[fp_exp(x)]"
+,w9);q3
+Ldh;}
+qN
+TailCall_cExp2:gC
+dA:qD
+gX
+1]qC
+w1(307,"x "
+mQ
+m3,m3" [fp_exp2(x)]"
+mD,w9);q3
+Ldi;qJ
+oZ:A
+a1(223,wB
+m4" "
+m3,"A"
+,aL(A)wE);q3
+oN
+qJ
+oE
+w1(52,"x "
+m3,"[fp_exp2(x)]"
+,w9);q3
+Ldj;}
+w1(399,m3,"[DO_STACKPLUS1] [fp_log(Value_t(2))]"
+wF
+aC,);hM
+Ldk;TailCall_cFloor:gC
+cFloor:qD
+mN(303,mF" "
+aD,a6
+aK,);q3
+Ldl;qW
+w1(53,"x "
+aD,"[fp_floor(x)]"
+,w9);q3
+Ldm;gT
+aP(297,aM
+aD,"A"
+,aL(A)wE);o3
+TailCall_cGreater:gC
+hS:qH
+0]qC
+wW(165,qA1
+mO,"[fp_less(x,y)]"
+,q31);q3
 Ldn;}
-gC
-q9-dJ
-oJ(333,"x[x==Value_t(-0.5)] "
-wY,m2
-wW,oR);q4
-Ldo;qJ
-TailCall_cGreaterOrEq:hC
-h5:g5!=qR
-dS==oD
-oJ(329,wP" "
-w5
-wG,"[Value_t(0.5)/x]"
-oN" "
-wU,oR);q4
+g6-hT
+w1(333,"x[x==Value_t(-0.5)] "
+mO,mF" "
+mL,w9);q3
+Ldo;qK
+TailCall_cGreaterOrEq:gC
+h5:g5!=gN
+hP==oW
+w1(329,mB" "
+wO
+m2,"[Value_t(0.5)/x]"
+wF
+mJ,w9);q3
 Ldp;}
 }
-mM(166,aO"x "
-wG,"[fp_lessOrEq(x,y)]"
-,q01);q4
+wW(166,qA1
+m2,"[fp_lessOrEq(x,y)]"
+,q31);q3
 Ldq;}
-gC
-q9
-dJ
-oJ(332,"x[x==Value_t(0.5)] "
-wG,"cAbsNotNot"
-,oR);q4
-Lea;qJ
-TailCall_cInt:hC
-cInt:q8
-wL(54,"x cInt"
+g6
+hT
+w1(332,"x[x==Value_t(0.5)] "
+m2,"cAbsNotNot"
+,w9);q3
+Lea;qK
+TailCall_cInt:gC
+cInt:qD
+oE
+w1(54,"x cInt"
 ,"[fp_int(x)]"
-,oR);q4
-Leb;dH
-oJ(299,"A[IsAlwaysIntegerOpcode(A)] cInt"
+,w9);q3
+Leb;gT
+aP(299,aM"cInt"
 ,"A"
-,m8(A)oV);g7
-qJ
-TailCall_cInv:hC
-cInv:q8
-cCos:oJ(362,wZ" "
-mS,aH,);q4
-Lec
-qL
-cCot:oJ(366,aI" "
-mS,aJ,);q4
-Led
-qL
-cCsc:oJ(364,aK" "
-mS,aL,);q4
-Lee
-qL
-qI1(237,mS" "
-mS,,);q4
-Lbo
-qL
-dW
-oJ(239,"cPow "
-mS,m3
-wX,);q4
-Lef
-qL
-cSec:oJ(365,aH" "
-mS,wZ,);q4
-Leg
-qL
-cSin:oJ(361,aL" "
-mS,aK,);q4
-Leh
-qL
-cSqrt:oJ(67,mD" "
-mS,"cRSqrt"
-,);q4
-Lei
-qL
-cTan:oJ(363,aJ" "
-mS,aI,);q4
-Lej
-qQ
-oB
-oJ(69,w5
-mS,"[Value_t(1)/x]"
-,oR);q4
-Lek;aM
-TailCall_cLess:hC
-dN
-aZ
-A=mB(124,oT
-mF
-mN,mT,q31(A)oV);q4
-Lel;}
-}
-oB
-dS==oD
-oJ(328,wP" "
-w5
-mN,"[Value_t(0.5)/x]"
+,aL(A)wE);o3
+TailCall_cInv:aE
+qD
+cCos:w1(362,mC" "
+aA,aT,);q3
+Lec;gC
+cCot:w1(366,aU" "
+aA,aV,);q3
+Led;gC
+cCsc:w1(364,aW" "
+aA,aX,);q3
+Lee;aE
+w1(237,aA" "
+aA,,);q3
 oN
-wT,oR);q4
+gC
+d7
+w1(239,"cPow "
+aA,mF
+wV,);q3
+Lef;gC
+cSec:w1(365,aT" "
+aA,mC,);q3
+Leg;gC
+cSin:w1(361,aX" "
+aA,aW,);q3
+Leh;gC
+oY
+w1(67,mU" "
+aA,"cRSqrt"
+,);q3
+Lei;gC
+cTan:w1(363,aV" "
+aA,aU,);q3
+Lej;qW
+if(x!=gN
+w1(69,wO
+aA,"[Value_t(1)/x]"
+,w9);q3
+Lek;}
+gQ
+qN
+TailCall_cLess:gC
+o6
+g5==gN
+A
+a1(124,wB
+w8
+a4,m5,q71(A)wE);q3
+Lel;}
+oP
+x!=gN
+hP==oW
+w1(328,mB" "
+wO
+a4,"[Value_t(0.5)/x]"
+wF"cNot"
+,w9);q3
 Lem;}
 }
-mM(163,aO"x "
-mN,"[fp_less(y,x)]"
-,q01);q4
+wW(163,qA1
+a4,"[fp_less(y,x)]"
+,q31);q3
 Len;}
-gC
-q9
-dJ
-oJ(331,"x[x==Value_t(0.5)] "
-mN,wW,oR);q4
-Leo;qJ
-TailCall_cLessOrEq:hC
-d0:qI
-0
-mG(164,aO"x "
-wV,"[fp_lessOrEq(y,x)]"
-,q01);q4
+g6
+hT
+w1(331,"x[x==Value_t(0.5)] "
+a4,mL,w9);q3
+Leo;qK
+TailCall_cLessOrEq:gC
+hC:qH
+0]qC
+wW(164,qA1
+mK,"[fp_lessOrEq(y,x)]"
+,q31);q3
 Lep;}
-gC
-q9-dJ
-oJ(334,"x[x==Value_t(-0.5)] "
-wV,m2"cAbsNotNot"
-,oR);q4
-Leq;qJ
-TailCall_cLog:hC
-cLog:q8
-aQ(225,m9
-m0,,);q4
-Lbo
-a0(411,a1
-m0,m0" [fp_log(x)] "
-w0,oR);q4
+g6-hT
+w1(334,"x[x==Value_t(-0.5)] "
+mK,mF" cAbsNotNot"
+,w9);q3
+Leq;qK
+TailCall_cLog:gC
+cLog:qD
+aY(225,mT
+mP,,);q3
+oN
+gM
+w1(411,wK
+wF
+mP,mP" [fp_log(x)] "
+wJ,w9);q3
 Lfa;}
-a2(142,mI
-m0,wP" "
-m0" "
-aR,);q4
-Lfb
-qB1(55,w1" "
-m0,"[fp_log(x)]"
-,oR);q4
-Lfc;aM
-TailCall_cLog10:hC
-oI:q8
-aQ(401,m9
-wI,"[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())]"
-oN,);hX
-Lfd
-a0(412,a1
-wI,wI" [fp_log10(x)] "
-w0,oR);q4
+aI(142,wX" "
+mP,mB" "
+mP" "
+aZ,);q3
+Lfb;mR(55,wK" "
+mP,"[fp_log(x)]"
+,w9);q3
+Lfc;}
+gQ
+qN
+TailCall_cLog10:gC
+w0:qD
+aY(401,mT
+m8,"[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())]"
+mD,);hM
+Lfd;gM
+w1(412,wK
+wF
+m8,m8" [fp_log10(x)] "
+wJ,w9);q3
 Lfe;}
-a2(144,mI
-wI,wP" "
-wI" "
-aR,);q4
-Lff
-qB1(56,w1" "
-wI,"[fp_log10(x)]"
-,oR);q4
-Lfg;aM
-TailCall_cLog2:hC
-cLog2:q8
-aQ(400,m9
-wO,"[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())]"
-oN,);hX
-Lfh
-qL
-d9:oJ(226,wK" "
-wO,,);q4
-Lbo
-a0(410,a1
-wO,wO" [fp_log2(x)] "
-w0,oR);q4
+aI(144,wX" "
+m8,mB" "
+m8" "
+aZ,);q3
+Lff;mR(56,wK" "
+m8,"[fp_log10(x)]"
+,w9);q3
+Lfg;}
+gQ
+qN
+TailCall_cLog2:gC
+oZ:qD
+aY(400,mT
+m4,"[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())]"
+mD,);hM
+Lfh;gC
+dA:w1(226,m3" "
+m4,,);q3
+oN
+gM
+w1(410,wK
+wF
+m4,m4" [fp_log2(x)] "
+wJ,w9);q3
 Lfi;}
-a2(143,mI
-wO,wP" "
-wO" "
-aR,);q4
-Lfj
-qB1(57,w1" "
-wO,"[fp_log2(x)]"
-,oR);q4
-Lfk;aM
-TailCall_cMax:hC
-cMax:a3(149,w7
-mJ,,);q4
-Lbo
-qQ
-mM(82,aO"x "
-mJ,"[fp_max(x,y)]"
-,q01);q4
+aI(143,wX" "
+m4,mB" "
+m4" "
+aZ,);q3
+Lfj;mR(57,wK" "
+m4,"[fp_log2(x)]"
+,w9);q3
+Lfk;}
+gQ
+qN
+TailCall_cMax:gC
+cMax:aB(149,wP
+mZ,,);q3
+oN
+qW
+wW(82,qA1
+mZ,"[fp_max(x,y)]"
+,q31);q3
 Lfl;}
-gF
-o5
-gX
-aC(151,mO
-w7
-w3
-mJ,"B cDup"
-,m8(A)qF1(B)oV);q4
-Lbo;qK
-cMax:aC(153,mO
-mJ" "
-w3
-mJ,"B "
-mJ,m8(A)qF1(B)oV);q4
-Lbo;}
-gF}
+d0
+gT
+h1
+qI
+h4
+aQ(151,a5
+wP
+wA
+mZ,m1"cDup"
+,aL(A)q41(B)wE);q3
+oN
 qJ
-TailCall_cMin:hC
-cMin:a3(148,w7
-mK,,);q4
-Lbo
-qQ
-mM(81,aO"x "
-mK,"[fp_min(x,y)]"
-,q01);q4
+cMax:aQ(153,a5
+mZ" "
+wA
+mZ,m1
+mZ,aL(A)q41(B)wE);q3
+oN}
+gQ
+qK
+TailCall_cMin:gC
+cMin:aB(148,wP
+a0,,);q3
+oN
+qW
+wW(81,qA1
+a0,"[fp_min(x,y)]"
+,q31);q3
 Lfm;}
-gF
-o5
-gX
-aC(150,mO
-w7
-w3
-mK,"B cDup"
-,m8(A)qF1(B)oV);q4
-Lbo;qK
-cMin:aC(152,mO
-mK" "
-w3
-mK,"B "
-mK,m8(A)qF1(B)oV);q4
-Lbo;}
-gF}
+d0
+gT
+h1
+qI
+h4
+aQ(150,a5
+wP
+wA
+a0,m1"cDup"
+,aL(A)q41(B)wE);q3
+oN
 qJ
-TailCall_cMod:hC
-cMod:g5!=qR
-mM(74,aO
-w5"cMod"
+cMin:aQ(152,a5
+a0" "
+wA
+a0,m1
+a0,aL(A)q41(B)wE);q3
+oN}
+gQ
+qK
+TailCall_cMod:gC
+cMod:g5!=gN
+wW(74,mG
+wO"cMod"
 ,"[fp_mod(y,x)]"
-,q01);q4
+,q31);q3
 Lfn;}
-qJ
-TailCall_cMul:hC
-dB:a3(396,"cDup"
-oN,"cSqr"
-,);q4
-Lfo
-qL
-qI1(242,mS
-oN,mR,);q4
-Lfp
-qL
+qK
+TailCall_cMul:gC
+d6:aB(396,wP
+w7,wX,);q3
+Lfo;aE
+w1(242,aA
+mD,mY,);q3
+Lfp;gC
 g8
-A=qU;gS
+A=qS;h1
 g1
-dB:B=hK
-o9
-oJ(388,wD
-oN" "
-w3
-m3
-oN,m5
-oN" "
-m3,m8(A)qF1(B)oV);q4
+d6:B=dS
+hX
+w1(388,wQ
+wF
+wA
+mF
+mD,m1
+wX
+wF
+mF,aL(A)q41(B)wE);q3
 Lfq;}
-q4
+q3
 Default2;g4
-Default2:;aC(382,mO
-w3
-m3
-oN,m5" "
-m3,m8(A)qF1(B)oV);q4
+Default2:;aQ(382,a5
+wA
+mF
+mD,m1
+wX
+aK,aL(A)q41(B)wE);q3
 Lga;}
 }
 }
-q4
-dE
-qL
-dW
-dS
-q7
-hJ
-mV(190,w7
-wR
-oN,"[x+Value_t(1)]"
-wX,oR);q4
+q3
+dD;gC
+d7
+hP
+qC
+hR
+aS(190,wP"x"
+wV
+mD,"[x+Value_t(1)]"
+wV,w9);q3
 Lgb;}
 }
-q4
-dE
-qQ
-dV
-qN
-dB:A
-qX
+q3
+dD;qW
+hN
+qI
+d6:A
+qV
 A
 qY
-oJ(133,oW" "
-oS
-oN,wA,q31(A)oV);q4
+w1(133,wA
+w7" "
+w8
+w7,wU
+w7,q71(A)wE);q3
 Lgc;}
-q4
+q3
 Default4;g4
-Default4:;A=qU;if(IsBinaryOpcode(A)g0
+Default4:;A=qS
+dU
+IsBinaryOpcode(A)g0
 A)){g1
-o4
-oJ(132,aO
-oP,wA,q31(A)q41
-aA);q4
+dJ
+w1(132,mG
+w5,wU
+w7,q71(A)<<","
+m7);q3
 Lgd;g4
-hM
+hL
 IsBinaryOpcode(B)g0
-B)){hF
-d5){hC
-o4
-oJ(136,aO
-oU,mT,q31(A)qF1(B)q41
-aA);q4
+B)){hG
+dR
+dJ
+w1(136,mG
+wC,m5,q71(A)q41(B)<<","
+m7);q3
 Lge;g4
-C=hK
+C=dS
 C
 qY
-oJ(134,"C[C>=VarBegin] "
-oU,mT,q31(A)qF1(B)q51(C)oV);q4
-Lgf;aP
+w1(134,"C[C>=VarBegin] "
+wC,m5,q71(A)q41(B)<<", "
+aR(C)wE);q3
+Lgf;oP
+gE
 C)g0
-C
-aD(135,"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] "
-oU,"B "
-mT,q31(A)qF1(B)q51(C)oV);q4
+C)a8(135,"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] "
+wC,m1
+m5,q71(A)q41(B)<<", "
+aR(C)wE);q3
 Lgg;}
 }
-}
-if(B
-qY
-oJ(130,"B[B>=VarBegin] "
-oP,wA,q31(A)qF1(B)oV);q4
-Lgc;aP
-B)g0
+oP
 B
-aD(131,"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "
-oP,mT,q31(A)qF1(B)oV);q4
+qY
+w1(130,"B[B>=VarBegin] "
+w5,wU
+w7,q71(A)q41(B)wE);q3
+Lgc;oP
+gE
+B)g0
+B)a8(131,"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] "
+w5,m5,q71(A)q41(B)wE);q3
 Lgh;}
 }
 }
-gS
-oJ(128,w3
-oS
-oN,"[x]"
-,q31(A)oV);q4
-Lgi;aP
+h1
+w1(128,wA
+w8
+w7,"[x]"
+,q71(A)wE);q3
+Lgi;oP
+gE
 A)g0
-A
-aD(129,"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "
-oS
-oN,wA,q31(A)oV);q4
+A)a8(129,"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] "
+w8
+w7,wU
+w7,q71(A)wE);q3
 Lgj;}
 }
 }
-qN
-gW
-g1
-gX
-dI+a4(193,"cDup[x+x==Value_t(1)] "
-w0
-wN,,oR);q4
+qI
+oI:g1
+h4
+if(x+x
+q01(193,"cDup[x+x==Value_t(1)] "
+wJ
+wT,,w9);q3
 Lgk;}
-oJ(194,aR
-wN,"[x+x]"
-oN,oR);q4
-Lgl
-qL
+w1(194,aZ
+wT,"[x+x]"
+mD,w9);q3
+Lgl;gC
 g9
-3]qF
-A=oE
-gS
-oJ(282,w3
-aN
-w0
-wN,wA" A "
-qC1
-w0,m7", "
-aO
-aW
-y
-q41
-aB(A)oV);q4
+3]qL
+A=dK;h1
+w1(282,wA"y"
+wF
+wJ
+wT,q11"A "
+mS
+wF
+wJ,wM", "
+mG"= "
+<<y<<","
+mE(A)wE);q3
 Lgm;}
-qK
-o4
-oJ(281,wH
-w8,wA" "
-m4" "
-w0,q01);q4
-Lgn;qK
-cDeg:oJ(145,"cDeg"
-wN,"[RadiansToDegrees(x)]"
-oN,oR);q4
-Lgo
-qL
-cDiv:hU
-hF
-d5){hC
+dI
+w1(281,mG
+wJ
+wT,q11
+mS" "
+wJ,q31);q3
+Lgn;qJ
+cDeg:w1(145,"cDeg"
+wT,"[RadiansToDegrees(x)]"
+mD,w9);q3
+Lgo;gC
+cDiv:hV
+hG
+dR
 g9
-4]qF
-oJ(101,aN"B[B>=VarBegin] "
-mR
-wN,qC1
-mC,qH1(B)q41
-aA);q4
-Lgp;a8(102,m2"B[B>=VarBegin] "
-mR
-wN,wB
-mC,qH1(B)oV);q4
-Lgq
-q91(100,aO"B[B>=VarBegin] "
-mR
-wN,m4" "
-mC,qH1(B)q41
-aA);q4
+4]qL
+w1(101,"y"
+wF
+q51
+wT,mS
+wF
+m1
+mY,qD1(B)<<","
+m7);q3
+Lgp;qJ
+mN(102,mF" B[B>=VarBegin]"
+aG
+wT,m9
+m1
+mY,qD1(B)wE);q3
+Lgq;gC
+dJ
+w1(100,mG
+q51
+wT,mS" "
+m1
+mY,qD1(B)<<","
+m7);q3
 Lha;}
-qK
-dB:g1
-gW
-qI-3]==dY){dI+a4(195,"cDup[x+x==Value_t(1)] "
-w0
-oN
-wN,"cMul"
-,oR);q4
+qJ
+d6:g1
+gX
+3]==dY){if(x+x
+q01(195,"cDup[x+x==Value_t(1)] "
+wJ
+qE1,w7,w9);q3
 Lhb;}
-oJ(196,aR
-oN
-wN,"cMul [x+x]"
-oN,oR);q4
-Lhc;qK
-o4
-if((y*x)==h2
-oJ(182,"y[(y*x)==GetRadiansToDegreesFactor<Value_t>()]"
-oN
-wN,"cDeg"
-,q01);q4
-Lcm;}
-if((y*x)==h3
-oJ(183,"y[(y*x)==GetDegreesToRadiansFactor<Value_t>()]"
-oN
-wN,"cRad"
-,q01);q4
-Lcn;}
-if(y*a4(184,"y[y*x==Value_t(1)]"
-oN
-wN,,q01);q4
+w1(196,aZ
+qE1,w7" [x+x]"
+mD,w9);q3
+Lhc;dI
+if((y*x)==gO
+w1(182,"y[(y*x)==GetRadiansToDegreesFactor<Value_t>()]"
+qE1,"cDeg"
+,q31);q3
+oO(y*x)==gP
+w1(183,"y[(y*x)==GetDegreesToRadiansFactor<Value_t>()]"
+qE1,"cRad"
+,q31);q3
+Lcn;oP
+y*x
+q01(184,"y[y*x==Value_t(1)]"
+qE1,,q31);q3
 Lhd;}
-oJ(185,"y"
-oN
-wN,m4
-oN,q01);q4
-Lhe;a8(174,m3
-wN,"[-x]"
-oN,oR);q4
-Lhf
-qL
-o2
+w1(185,"y"
+qE1,mS
+mD,q31);q3
+Lhe;qJ
+mN(174,mF
+wT,"[-x]"
+mD,w9);q3
+Lhf;gC
+oC
 g1
 g9
-3]qF
-oJ(108,aN
-mL,qC1
-mP,q01);q4
-Lhg;a8(109,m2
-mL,wB
-mP,oR);q4
-Lhh
-q91(107,aO
-mL,m4" "
-mP,q01);q4
-Lhi;qK
-cRad:oJ(146,"cRad"
-wN,"[DegreesToRadians(x)]"
-oN,oR);q4
-Lhj
-qL
-cSub:hJ==dB){qI-3]qF
-A=oE
-gS
-oJ(283,w3
-aN
-qG1
-wN,wA" A "
-m4
-oN" cSub"
-,m7", "
-aO
-aW
-y
-q41
-aB(A)oV);q4
+3]qL
+w1(108,"y"
+wF
+a3,mS
+wF
+a7,q31);q3
+Lhg;qJ
+mN(109,mF" "
+a3,m9
+a7,w9);q3
+Lhh;gC
+dJ
+w1(107,mG
+a3,mS" "
+a7,q31);q3
+Lhi;qJ
+cRad:w1(146,"cRad"
+wT,"[DegreesToRadians(x)]"
+mD,w9);q3
+Lhj;gC
+o4
+hR==d6){qH-3]qL
+A=dK;h1
+w1(283,wA"y"
+wF
+qB1
+wT,q11"A "
+mS
+wF
+qB1,wM", "
+mG"= "
+<<y<<","
+mE(A)wE);q3
 Lhk;}
 }
-qK
-o4
-oJ(71,"y"
-wN,m4,q01);q4
+dI
+w1(71,"y"
+wT,mS,q31);q3
 Lhl;}
-gC
-aT(70,"x[x==Value_t(1)]"
-oN,,oR);q4
-Laq;}
-gC
-q9
-2
-aD(139,"x[x==Value_t(2)]"
-oN,aR,oR);q4
-Lhm;}
-gC
-h2
-oJ(140,"x[x==GetRadiansToDegreesFactor<Value_t>()]"
-oN,"cDeg"
-,oR);q4
-Lhn;}
-gC
-h3
-oJ(141,"x[x==GetDegreesToRadiansFactor<Value_t>()]"
-oN,"cRad"
-,oR);q4
+g6
+1)a8(70,wG
+w7,,w9);q3
+oM}
+g6
+2)a8(139,"x[x==Value_t(2)]"
+mD,aZ,w9);q3
+Lhm;oP
+x==gO
+w1(140,"x[x==GetRadiansToDegreesFactor<Value_t>()]"
+mD,"cDeg"
+,w9);q3
+Lhn;oP
+x==gP
+w1(141,"x[x==GetDegreesToRadiansFactor<Value_t>()]"
+mD,"cRad"
+,w9);q3
 Lho;}
-gC
-q9-1
-aD(176,"x[x==Value_t(-1)]"
-oN,m3,oR);q4
+g6-1)a8(176,"x[x==Value_t(-1)]"
+mD,mF,w9);q3
 Lhp;}
-gF
+d0
 g4
-dE:;A
+dD:;A
+gV
 h1
-gS
-qN
-cDiv:hU
-oJ(97,"B[B>=VarBegin] "
-mR" "
-oW,q11
-mY
-mC,m8(A)qF1(B)oV);hX
+qI
+cDiv:hV
+w1(97,q51
+aJ,"[DO_STACKPLUS1] A"
+wF
+m1
+mY,aL(A)q41(B)wE);hM
 Lhq;}
-q4
-hL
-dB:g1
+q3
+hK
+d6:g1
 g8
-B=hK
-o9
-oJ(385,mO
-m3
-oN" "
-oW,m5
-oN" "
-m3,m8(A)qF1(B)oV);q4
+B=dS
+hX
+w1(385,a5
+mF
+wF
+wA
+w7,m1
+wX
+wF
+mF,aL(A)q41(B)wE);q3
 Lfq;}
-q4
-dF;g4
-dF:;aC(376,wD
-oN" "
-oW,m5
-oN,m8(A)qF1(B)oV);q4
+q3
+dE;g4
+dE:;aQ(376,wQ
+wF
+wA
+w7,m1
+wX
+mD,aL(A)q41(B)wE);q3
 Lia;}
 }
-q4
-hL
+q3
+hK
 g8
-aC(379,mO
-m2
-oW,m5" "
-m3,m8(A)qF1(B)oV);q4
+aQ(379,a5
+mF
+aJ,m1
+wX
+aK,aL(A)q41(B)wE);q3
 Lga;}
-q4
-hL
-o2
-hJ
-q7
-oJ(90,"x "
-mP" "
-oW,q11
-mT" "
-mP,m8(A)q61);hX
+q3
+hK
+oC
+hR
+qC
+w1(90,"x "
+a7
+aJ,"[DO_STACKPLUS1] A "
+q11
+a7,aL(A)<<","
+mH);hM
 Lib;}
-oJ(104,mP" "
-oW,q11
-mY
-mP,m8(A)oV);hX
+w1(104,a7
+aJ,"[DO_STACKPLUS1] A"
+wF
+a7,aL(A)wE);hM
 Lic;g4
-Default5:;B=qU;if(o9
-oJ(373,mO
-oW,m5,m8(A)qF1(B)oV);q4
+oK:;B=qS
+dU
+hX
+w1(373,a5
+wA
+w7,m1
+wX,aL(A)q41(B)wE);q3
 Lfo;}
 }
-aP
-A)){B=qU;if(B
+oP
+gE
+A)){B=qS
+dU
+B
 g3
-1){hJ==dB){C=hK
+1){hR==d6){C=dS
 C
-hW
-D=oE
-if(D==B){oJ(395,"D[D==B] C[C==A]"
-oN" B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
-oN,"D C cSqr"
-oN,m8(A)qF1(B)q51(C)<<", D"
-m6(D)oV);q4
+oL
+D=dK
+dU
+D==B
+a8(395,"D[D==B] C[C==A]"
+wF"B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
+mD,"D C "
+wX
+mD,aL(A)q41(B)<<", "
+aR(C)<<", D "
+w3(D)wE);q3
 Lid;}
 }
 }
 }
-qJ
-TailCall_cNEqual:hC
-dO:aZ
-qN
-hP
-oJ(256,wP" "
-mF
-w6,aX
-w6,oR);q4
-Lie
-qL
+qK
+TailCall_cNEqual:gC
+o8:g5==gN
+q81(256,mB" "
+w8
+wR,wU
+wR,w9);q3
+Lie;gC
 hH
-oJ(258,mI
-mF
-w6,aX
-w6,oR);q4
+w1(258,wX" "
+w8
+wR,wU
+wR,w9);q3
 Lie;}
 }
-mM(168,aO"x "
-w6,"[fp_nequal(y,x)]"
-,q01);q4
-Lif;qJ
-hA:hC
+wW(168,qA1
+wR,"[fp_nequal(y,x)]"
+,q31);q3
+Lif;qK
+hD:gC
 g8
-q8
-g9
-1
-aF(175,aU
-m3,"[-x]"
-oN,oR);q4
-Lig;a8(238,m2
-m3,,);q4
-Lbo
-qL
-cSin:wE(347,aU
-aL" "
-m3,wB
-aL,oR);q4
+qD
+dL
+w1(175,"x"
+wF
+mF,"[-x]"
+mD,w9);q3
+Lig;qJ
+mN(238,mF
+aK,,);q3
+oN
+gC
+cSin:wZ(347,"x"
+wF
+aX
+aK,m9
+aX,w9);q3
 Lih;}
-qK
-oG
-wE(348,aU"cSinh "
-m3,wB"cSinh"
-,oR);q4
+qJ
+oV:wZ(348,"x"
+wF
+aN
+aK,m9
+aN,w9);q3
 Lii;}
-qK
-cTan:wE(349,aU
-aJ" "
-m3,wB
-aJ,oR);q4
+qJ
+cTan:wZ(349,"x"
+wF
+aV
+aK,m9
+aV,w9);q3
 Lij;}
-qK
-oH
-wE(350,aU"cTanh "
-m3,wB"cTanh"
-,oR);q4
+qJ
+oX:wZ(350,"x"
+wF"cTanh"
+aK,m9"cTanh"
+,w9);q3
 Lik;}
-qK
-wL(68,"x "
-m3,"[-x]"
-,oR);q4
+qJ
+oE
+w1(68,"x"
+aK,"[-x]"
+,w9);q3
 Lil;}
-qM
-TailCall_cNot:hC
-cNot:q8
-hP
-oJ(286,wP
-wT,aY,);q4
-Lim
-qL
-cAbsNot:A=mA(291,"A[IsLogicalOpcode(A)] "
-wW
-wT,"A"
-,m8(A)oV);q4
-Lbo;}
-if(A!=q6){oJ(292,"A[A!=cImmed] "
-wW
-wT,"A cAbsNotNot"
-,m8(A)oV);q4
+qN
+TailCall_cNot:gC
+cNot:qD
+h9
+w1(286,mB
+m6,"cNot"
+,);q3
+Lim;gC
+cAbsNot:A=qS
+dU
+gG
+w1(291,"A[IsLogicalOpcode(A)] "
+mL
+m6,"A"
+,aL(A)wE);q3
+oN
+oP
+A!=q5
+a8(292,"A[A!=cImmed] "
+mL
+m6,"A cAbsNotNot"
+,aL(A)wE);q3
 Lin;}
-q4
-dG
-qL
-cAbsNotNot:oJ(289,"cAbsNotNot"
-wT,wW,);q4
-Lio
-qL
-dM:oJ(252,wF
-wT,w6,);q4
-Lip
-qL
-hR:oJ(250,wY
-wT,wV,);q4
-Liq
-qL
-h5:oJ(251,wG
-wT,mN,);q4
-Lja
-qL
-dN
-oJ(248,mN
-wT,wG,);q4
-Ljb
-qL
-d0:oJ(249,wV
-wT,wY,);q4
-Ljc
-qL
-dO:oJ(253,w6
-wT,wF,);q4
-Ljd
-mW(285,m3
-wT,aY,);q4
-Lim
-qL
-cNot:oJ(287,aY
-wT,wU,);q4
-Lje
-qL
-d8:oJ(288,wU
-wT,aY,);q4
-Lim
-qQ
-oJ(85,"x"
-wT,"[fp_not(x)]"
-,oR);q4
+q3
+dF;gC
+cAbsNotNot:w1(289,"cAbsNotNot"
+m6,mL,);q3
+Lio;gC
+d8
+w1(252,m0
+m6,wR,);q3
+Lip;gC
+hS:w1(250,mO
+m6,mK,);q3
+Liq;gC
+h5:w1(251,m2
+m6,a4,);q3
+Lja;gC
+o6
+w1(248,a4
+m6,m2,);q3
+Ljb;gC
+hC:w1(249,mK
+m6,mO,);q3
+Ljc;gC
+o8:w1(253,wR
+m6,m0,);q3
+Ljd;gC
+mN(285,mF
+m6,"cNot"
+,);q3
+Lim;gC
+cNot:w1(287,"cNot"
+m6,mJ,);q3
+Lje;gC
+d9:w1(288,mJ
+m6,"cNot"
+,);q3
+Lim;qW
+w1(85,"x"
+m6,"[fp_not(x)]"
+,w9);q3
 Ljf;g4
-dG:;A
-h1
-qH
-oJ(293,oT
-aY,"A "
-wW,m8(A)oV);q4
-Ljg;qJ
-TailCall_cOr:hC
-cOr:qI
-0
-mG(170,aO"x cOr"
+dF:;A
+gV
+qG
+w1(293,wB"cNot"
+,"A "
+mL,aL(A)wE);q3
+Ljg;qK
+TailCall_cOr:gC
+cOr:qH
+0]qC
+wW(170,mG"x cOr"
 ,"[fp_or(x,y)]"
-,q01);q4
-Ljh;qJ
-TailCall_cPow:hC
-dW
-qI
-0]q7
-if(!gL
-x+x)){dS==cSqr){oJ(14,mI"x[!isEvenInteger(x+x)]"
-wX,wP" [x+x]"
-wX,oR);q4
+,q31);q3
+Ljh;qK
+TailCall_cPow:gC
+d7
+qH
+0]qC
+if(!gR
+x+x)){hP==cSqr
+a8(14,wX" x[!isEvenInteger(x+x)]"
+wV,mB" [x+x]"
+wV,w9);q3
 Lji;}
-}
-if(IsIntegerConst(x)){qN
-aQ(35,m9
-oY,wA" "
-mX,oR);q4
-Ljj
+oP
+IsIntegerConst(x)){qI
+aY(35,mT
+wH,q11
+aC,w9);q3
+Ljj;gC
+dA:w1(36,m3" "
+wH,q11
+m3,w9);q3
+Ljk;gC
+d7
+hR
 qL
-d9:oJ(36,wK" "
-oY,wA" "
-wK,oR);q4
-Ljk
-qL
-dW
-hJ
-qF
-if(!IsIntegerConst(y
-aD(34,"y[!IsIntegerConst(y)]"
-wX" "
-oY,wQ,q01);q4
+if(!IsIntegerConst(y)a8(34,"y[!IsIntegerConst(y)]"
+wV" "
+wH,mS
+wV,q31);q3
 Ljl;}
 }
-oJ(37,"cPow "
-oY,wA
-wX,oR);q4
+w1(37,"cPow "
+wH,q11"cPow"
+,w9);q3
 Ljm;}
-}
-if(gL
-x)){qN
-hP
-oJ(336,wP" x[isEvenInteger(x)]"
-wX,"[x]"
-wX,oR);q4
-Ljn
-qL
+oP
+gR
+x)){q81(336,mB" x[isEvenInteger(x)]"
+wV,wU"cPow"
+,w9);q3
+Ljn;gC
 g9
-2]==oD
-oJ(337,wP
-oN" x[isEvenInteger(x)]"
-wX,"cMul [x]"
-wX,oR);q4
+2]==oW
+w1(337,mB
+wF"x[isEvenInteger(x)]"
+wV,w7" "
+wU"cPow"
+,w9);q3
 Ljo;}
-gF}
-}
-dV
-oJ(161,oS
-wX,"[Value_t(0)]"
-oN" [Value_t(1)] "
-w0,oR);q4
+gQ}
+hN
+w1(161,w8"cPow"
+,"[Value_t(0)]"
+wF"[Value_t(1)] "
+wJ,w9);q3
 Ljp;}
-gC
-q9
-dJ
-oJ(214,"x[x==Value_t(0.5)]"
-wX,mD,oR);q4
+g6
+hT
+w1(214,"x[x==Value_t(0.5)]"
+wV,mU,w9);q3
 Ljq;}
-gC
-hY/q9
-3
-aD(215,"x[x==Value_t(1)/Value_t(3)]"
-wX,"cCbrt"
-,oR);q4
+g6
+1)/qA(3)a8(215,"x[x==Value_t(1)/Value_t(3)]"
+wV,"cCbrt"
+,w9);q3
 Lka;}
-gC
-hY/q9-3
-aD(216,"x[x==Value_t(1)/Value_t(-3)]"
-wX,"cCbrt "
-mS,oR);q4
+g6
+1)/qA(-3)a8(216,"x[x==Value_t(1)/Value_t(-3)]"
+wV,"cCbrt "
+aA,w9);q3
 Lkb;}
-gC
-q9-dJ
-oJ(217,"x[x==Value_t(-0.5)]"
-wX,"cRSqrt"
-,oR);q4
+g6-hT
+w1(217,"x[x==Value_t(-0.5)]"
+wV,"cRSqrt"
+,w9);q3
 Lkc;}
-gC
-q9-1
-aD(218,"x[x==Value_t(-1)]"
-wX,mS,oR);q4
+g6-1)a8(218,"x[x==Value_t(-1)]"
+wV,aA,w9);q3
 Lkd;}
-qN
-dW
-hJ
-qF
-if(gL
-y)&&!gL
-x*y
-aD(13,"y[isEvenInteger(y)&&!isEvenInteger(x*y)]"
-wX" "
-wR,wP" "
-wQ,q01);q4
+qI
+d7
+hR
+qL
+if(gR
+y)&&!gR
+x*y)a8(13,"y[isEvenInteger(y)&&!isEvenInteger(x*y)]"
+wV" x"
+wV,mB" "
+mS
+wV,q31);q3
 Lke;}
-oJ(212,"y"
-wX" "
-wR,wQ,q01);q4
-Ljl;a2(38,mI
-wR,"[x+x]"
-wX,oR);q4
-Lkf
-qL
-o4
-if(y!=q9
-0)||x>=aV(84,"y[y!=Value_t(0)||x>=Value_t(0)] "
-wR,"[fp_pow(y,x)]"
-,q01);q4
-Lkg;}
-gF}
-oJ(370,wR,"[DO_POWI]"
-,oR);if(TryCompilePowi(x))g7}
-qM
-TailCall_cRDiv:hC
-o2
-h6
-oJ(91,oX
-mP,mS,oR);q4
-Lkd;qJ
-TailCall_cRad:hC
-cRad:qI
-0
-aF(66,"x cRad"
-,"[DegreesToRadians(x)]"
-,oR);q4
-Lkh;}
-qM
-TailCall_cSin:hC
-cSin:qA1(343,m2
-aL,aL" "
-m3,);q4
-Lki
-qQ
-oJ(58,"x "
-aL,"[fp_sin(x)]"
-,oR);q4
-Lkj;}
-qM
-TailCall_cSinh:hC
-oG
-q8
-cAcosh:oJ(352,"cAcosh cSinh"
-,q11
-mI"[Value_t(-1)] "
-a6
-mD,);hX
-Lkk
-qL
-cAsinh:oJ(231,"cAsinh cSinh"
-,,);q4
-Lbo
-mW(344,m2"cSinh"
-,"cSinh "
-m3,);q4
-Lkl
-qQ
-oJ(59,"x cSinh"
-,"[fp_sinh(x)]"
-,oR);q4
-Lkm;}
-qM
-TailCall_cSqr:hC
-hH
-q8
-hP
-oJ(391,wP" cSqr"
-,"cSqr"
-,);q4
-Lkn
-mW(390,m2"cSqr"
-,"cSqr"
-,);q4
-Lkn
-qL
-cSqrt:A=mB(220,oT
-mD" cSqr"
-,"A"
-,m8(A)oV);q4
-Lbo;aM
-TailCall_cSqrt:hC
-cSqrt:q8
-hH
-oJ(15,mI
-mD,wP,);q4
-Lko
-qQ
-dI>=aV(60,"x[x>=Value_t(0)] "
-mD,"[fp_sqrt(x)]"
-,oR);q4
-Lkp;aM
-hB:hC
-cSub:a3(191,w7
-qG1,"[Value_t(0)]"
-oN,);q4
-Lkq
-mW(244,m2
-qG1,w0,);q4
-Lla
-qQ
-dV
-oJ(77,mF
-qG1,,oR);q4
-Laq;}
-mM(78,aO"x cSub"
-,"[y-x]"
-,q01);q4
-Llb;}
-oJ(207,"x cSub"
-,aE
-w0,oR);q4
-Llc;h0
-dR
-oJ(112,"x "
-wC" "
-w3
-qG1,"A "
-a6
-aX
-wC,m8(A)q61);q4
-Lld;}
-oJ(119,wC" "
-w3
-qG1,"[DO_STACKPLUS1] A cSub "
-wC,m8(A)oV);hX
-Lle;}
-qJ
-TailCall_cTan:hC
-cTan:q8
-cAtan2:oJ(235,"cAtan2 "
-aJ,mR,);q4
-Lfp
-mW(345,m2
-aJ,aJ" "
-m3,);q4
-Llf
-qQ
-oJ(62,"x "
-aJ,"[fp_tan(x)]"
-,oR);q4
-Llg;}
-qM
-TailCall_cTanh:hC
-oH
-qA1(346,m2"cTanh"
-,"cTanh "
-m3,);q4
-Llh
-qQ
-oJ(63,"x cTanh"
-,"[fp_tanh(x)]"
-,oR);q4
-Lli;}
-qM
-TailCall_cTrunc:hC
-cTrunc:q8
-wL(64,"x cTrunc"
-,"[fp_trunc(x)]"
-,oR);q4
-Llj;dH
-oJ(296,"A[IsAlwaysIntegerOpcode(A)] cTrunc"
-,"A"
-,m8(A)oV);g7
-qJ
-g4
-Default0:;A=oF;if(IsComparisonOpcode(A)){qI
-0]q7
-hG
-qF
-oJ(260,wH
-oQ,"[x-y] A"
-,m8(A)q71);q4
-Llk;qK
-cAtan:if(d4<fp_const_pi<hN*q9
+w1(212,"y"
+wV" x"
+wV,mS
+wV,q31);q3
+Ljl;aI(38,wX" x"
+wV,"[x+x]"
+wV,w9);q3
+Lkf;gC
 dJ
-oJ(276,"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)]"
-mH,"[fp_tan(x)] A"
-,m8(A)q61);q4
-Lll;qK
-cExp:oC
-oJ(266,"cExp[x>Value_t(0)]"
-mH,"[fp_log(x)] A"
-,m8(A)q61);q4
-Llm;qK
-d9:oC
-oJ(267,"cExp2[x>Value_t(0)]"
-mH,"[fp_log2(x)] A"
-,m8(A)q61);q4
-Lln;qK
-cLog:qW
-oJ(269,oZ
-m0
-mH,"B [fp_exp(x)] A"
-,m8(A)qD1(B)oV);q4
-Llo;qK
-oI:qW
-oJ(271,oZ
-wI
-mH,"B [fp_pow(Value_t(10),x)] A"
-,m8(A)qD1(B)oV);q4
-Llp;qK
-cLog2:qW
-oJ(270,oZ
-wO
-mH,"B [fp_exp2(x)] A"
-,m8(A)qD1(B)oV);q4
-Llq;dC
-qF
-if(y>aV(262,"y[y>Value_t(0)]"
-oN
-mH,"[x/y] A"
-,m8(A)q71);q4
-Lma;}
-if(y<aV(263,"y[y<Value_t(0)]"
-oN
-mH,"[x/y] {OppositeComparisonOpcode(A)}"
-,m8(A)q71);q4
-Lmb;}
-a8(261,m2
-oQ,aE"{OppositeComparisonOpcode(A)}"
-,m8(A)q61);q4
-Lmc
-qL
-dW
+if(y!=qA(0)||x>=gN
+w1(84,"y[y!=Value_t(0)||x>=Value_t(0)] x"
+wV,"[fp_pow(y,x)]"
+,q31);q3
+Lkg;}
+gQ
+w1(370,"x"
+wV,"[DO_POWI]"
+,w9)dU
+TryCompilePowi(x))g7}
+qN
+TailCall_cRDiv:gC
 oC
-hJ
-qF
-if(y>aV(264,"y[y>Value_t(0)] cPow[x>Value_t(0)]"
-mH,"[fp_pow(x,1/y)] A"
-,m8(A)q71);q4
+h7
+w1(91,wG
+a7,aA,w9);q3
+Lkd;qK
+TailCall_cRad:gC
+cRad:qH
+0]qC
+w1(66,"x cRad"
+,"[DegreesToRadians(x)]"
+,w9);q3
+Lkh;}
+qN
+dN:gC
+cSin:qD
+mN(343,mF" "
+aX,aX
+aK,);q3
+Lki;qW
+w1(58,"x "
+aX,"[fp_sin(x)]"
+,w9);q3
+Lkj;}
+qN
+TailCall_cSinh:gC
+oV:qD
+cAcosh:w1(352,"cAcosh "
+aN,"[DO_STACKPLUS1] "
+wX" [Value_t(-1)] "
+mQ
+mU,);hM
+Lkk;gC
+cAsinh:w1(231,"cAsinh "
+aN,,);q3
+oN
+gC
+mN(344,mF" "
+aN,aN
+aK,);q3
+Lkl;qW
+w1(59,"x "
+aN,"[fp_sinh(x)]"
+,w9);q3
+Lkm;}
+qN
+TailCall_cSqr:gC
+hH
+qD
+h9
+w1(391,mB" "
+wX,wX,);q3
+Lkn;gC
+mN(390,mF" "
+wX,wX,);q3
+Lkn;gC
+oY
+A
+a1(220,wB
+mU" "
+wX,"A"
+,aL(A)wE);q3
+oN}
+gQ
+qN
+TailCall_cSqrt:gC
+oY
+qD
+hH
+w1(15,wX" "
+mU,mB,);q3
+Lko;qW
+if(x>=gN
+w1(60,"x[x>=Value_t(0)] "
+mU,"[fp_sqrt(x)]"
+,w9);q3
+Lkp;}
+gQ
+qN
+hE:gC
+o4
+aB(191,wP
+qB1,"[Value_t(0)]"
+mD,);q3
+Lkq;gC
+mN(244,mF
+aO,wJ,);q3
+Lla;qW
+hN
+w1(77,w8
+qB1,,w9);q3
+oM}
+wW(78,mG"x"
+aO,"[y-x]"
+,q31);q3
+Llb;}
+w1(207,"x"
+aO,"[-x] "
+wJ,w9);q3
+Llc;gT
+hO
+w1(112,"x "
+wY" "
+wA
+qB1,"A "
+mQ
+wU
+wY,aL(A)<<","
+mH);q3
+Lld;}
+w1(119,wY" "
+wA
+qB1,"[DO_STACKPLUS1] A"
+aO" "
+wY,aL(A)wE);hM
+Lle;}
+qK
+dQ:gC
+cTan:qD
+cAtan2:w1(235,"cAtan2 "
+aV,mY,);q3
+Lfp;gC
+mN(345,mF" "
+aV,aV
+aK,);q3
+Llf;qW
+w1(62,"x "
+aV,"[fp_tan(x)]"
+,w9);q3
+Llg;}
+qN
+TailCall_cTanh:gC
+oX:qD
+mN(346,mF" cTanh"
+,"cTanh"
+aK,);q3
+Llh;qW
+w1(63,"x cTanh"
+,"[fp_tanh(x)]"
+,w9);q3
+Lli;}
+qN
+TailCall_cTrunc:gC
+cTrunc:qD
+oE
+w1(64,"x cTrunc"
+,"[fp_trunc(x)]"
+,w9);q3
+Llj;gT
+aP(296,aM"cTrunc"
+,"A"
+,aL(A)wE);o3
+g4
+Default0:;A=dW
+dU
+IsComparisonOpcode(A)){qH
+0]qC
+gW
+qL
+w1(260,mG
+mQ
+w6,"[x-y] A"
+,aL(A)<<q61);q3
+Llk;qJ
+cAtan:if(d2<fp_const_pi<qA>()*qA(hT
+w1(276,"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)]"
+aH,"[fp_tan(x)] A"
+,aL(A)<<","
+mH);q3
+Lll;qJ
+cExp:q21(266,"cExp[x>Value_t(0)]"
+aH,"[fp_log(x)] A"
+,aL(A)<<","
+mH);q3
+Llm;qJ
+dA:q21(267,"cExp2[x>Value_t(0)]"
+aH,"[fp_log2(x)] A"
+,aL(A)<<","
+mH);q3
+Lln;qJ
+cLog:qU
+w1(269,wI
+mP
+aH,m1"[fp_exp(x)] A"
+,aL(A)<<q91(B)wE);q3
+Llo;qJ
+w0:qU
+w1(271,wI
+m8
+aH,m1"[fp_pow(Value_t(10),x)] A"
+,aL(A)<<q91(B)wE);q3
+Llp;qJ
+oZ:qU
+w1(270,wI
+m4
+aH,m1"[fp_exp2(x)] A"
+,aL(A)<<q91(B)wE);q3
+Llq;qJ
+g9
+2]qL
+if(y>gN
+w1(262,"y[y>Value_t(0)]"
+wF
+w6,"[x/y] A"
+,aL(A)<<q61);q3
+Lma;oP
+y<gN
+w1(263,"y[y<Value_t(0)]"
+wF
+w6,"[x/y] {OppositeComparisonOpcode(A)}"
+,aL(A)<<q61);q3
+Lmb;}
+qJ
+mN(261,mF
+aH,"[-x] {OppositeComparisonOpcode(A)}"
+,aL(A)<<","
+mH);q3
+Lmc;gC
+d7
+if(x>gN
+hR
+qL
+if(y>gN
+w1(264,"y[y>Value_t(0)] cPow[x>Value_t(0)]"
+aH,"[fp_pow(x,1/y)] A"
+,aL(A)<<q61);q3
 Lmd;}
 }
-qK
-oG
-oJ(277,"cSinh"
-mH,"[fp_asinh(x)] A"
-,m8(A)q61);q4
-Lme
-qL
+qJ
+oV:w1(277,aN
+aH,"[fp_asinh(x)] A"
+,aL(A)<<","
+mH);q3
+Lme;gC
 hH
-oC
-oJ(265,"cSqr[x>Value_t(0)]"
-mH,wP" [fp_sqrt(x)] A"
-,m8(A)q61);q4
-Lmf;qK
-oH
-if(d4<aT(278,"cTanh[fp_abs(x)<Value_t(1)]"
-mH,"[fp_atanh(x)] A"
-,m8(A)q61);q4
+q21(265,"cSqr[x>Value_t(0)]"
+aH,mB" [fp_sqrt(x)] A"
+,aL(A)<<","
+mH);q3
+Lmf;qJ
+oX:if(d2<h8
+w1(278,"cTanh[fp_abs(x)<Value_t(1)]"
+aH,"[fp_atanh(x)] A"
+,aL(A)<<","
+mH);q3
 Lmg;}
-gF}
-}
-}
-if(A
+gQ}
+oP
+A
 g3
 0){B
-h1
-if(o9
-oJ(393,mO"A[A>=VarBegin&&data->ByteCode.size()>0]"
-,"B cDup"
-,m8(A)qF1(B)oV);q4
+gV
+if(hX
+w1(393,a5"A[A>=VarBegin&&data->ByteCode.size()>0]"
+,m1"cDup"
+,aL(A)q41(B)wE);q3
 Lmh;}
-aP
+oP
+gE
 A)){B
-h1
+gV
 if(B
 g3
-1){C=qU;if(C
-hW
+1){C=qS
+dU
+C
+oL
 D
-qX
-D==B){oJ(394,"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
+qV
+D==B
+a8(394,"D[D==B] C[C==A] B[B>=VarBegin&&data->ByteCode.size()>1] A[IsUnaryOpcode(A)]"
 ,"D C cDup"
-,m8(A)qF1(B)q51(C)<<", D"
-m6(D)oV);q4
+,aL(A)q41(B)<<", "
+aR(C)<<", D "
+w3(D)wE);q3
 Lmi;}
 }
 }
 }
 }
-q4
-Lmj;Laa:q0-=1;qP
-Lmk:q4
-TailCall_cAbs;Lab:qE=d4;g7
-Lac:qE=fp_acos(w9
-Lad:qE=fp_acosh(w9
-Lae:qC
-q9
-4));gQ
-Lml:qA
-qP
-Lmm:gG
-dB;Lmn:FP_ReDefinePointers();Lmo:q4
-TailCall_cMul;Laf:oA
-4
-gK
-qC
-q9
-4));Lmp:qD
-q6
-gU
-Lag:qE=x+hY;gQ
-qA
-qP
-Lel:gG
-dB;q4
-Lmo;Lah:hT
-cSub;Lmq:q4
-hB;Lai:hI
-gY
-Lna:FP_ReDefinePointers();Lnb:q4
-TailCall_cAdd;Laj:hI
-hD
-Lnc:d1
-Lnd:qG
-dL);g7
-Lak:gM
-gP
-2]=q6;qA
-d3
-Lnc;Lal:hI
-gY
-q4
-Lnd;Lam:hI
-hO
-Lne:d1
-Lnf:qG
-B);Lng:gG
-cSub;qS
-Lmq;Lan:gM
-d5=q6;g6
-d3
-Lne;Lao:hI
-hD
-q4
-Lnf;Lap:hI
-Laq:h8
-Lbo:qP
-g7
-Lba:q3
-3
-d2
-qC
-x);hS
-Lnc;Lbb:qA
-o3
-Lnc;Lbc:qV
-fp_and(x
-gN
-Lbd:qE=fp_asin(w9
-Lbe:qE=fp_asinh(w9
-Lbf:qE=fp_atan(w9
-Lbg:qV
-fp_atan2(y
-gO
-Lbh:qE=fp_atanh(w9
-Lbi:qE=fp_cbrt(w9
-Lbj:q1
-cFloor);Lnh:gG
-cNeg;qS
-hA;Lbk:qE=fp_ceil(w9
-Lbl:q0-=1;qP
-Lni:q4
-TailCall_cCos;Lbm:qE=fp_cos(w9
-Lbn:h4
-TailCall_cCosh;Lbp:q1
-cSqr);qC
-hY);Lnj:dQ
-d1
-Lnk:gG
-cSqrt;qS
-TailCall_cSqrt;Lbq:qE=fp_cosh(w9
-Lca:qE=RadiansToDegrees(w9
-Lcb:q1
-cSec
-gU
-Lcc:q1
-cTan
-gU
-Lcd:q1
-cSin
-gU
-Lce:qC
-q9
-0));dP
-q6;Lnl:qG
-dB);qC
-hY);Lnm:dQ
-Lnn:gG
-cAdd;q4
-Lna;Lcf:q1
-cNeg);qG
-cExp
-gU
-Lcg:q1
-cNeg);qG
-d9
-gU
-Lch:h4
-Lel;Lci:q1
-cNeg);qG
-cPow
-gU
-Lcj:q1
-cCos
-gU
-Lck:q1
-cCsc
-gU
-Lcl:q1
-cCot
-gU
-Lcm:qA
-hD
-Lno:gG
-cDeg;qS
-TailCall_cDeg;Lcn:qA
-hD
-Lnp:gG
-cRad;qS
-TailCall_cRad;Lco:qV
-y/x;h8
-q4
-Lml;Lcp:gM
-qU
-o1
-Lnq:q4
-TailCall_cDiv;Lcq:qV
-y/x;q4
-Laq;Lda:qE=hY/x;q4
-Lel;Ldb:aS
-A);qG
-dB);Loa:qS
-Lnq;Ldc:q3
-3
-d2
-qG
-dB);qC
-x);dQ
-Lob:gG
-cRDiv;qS
-TailCall_cRDiv;Ldd:g6
-q1
-A);qG
-dB);qG
-B
-gJ
-Lob;Lde:qU
-o1
-Loc:q4
-TailCall_cEqual;Ldf:qV
-fp_equal(y
-gO
-Ldg:q3
-2
-o0
-cExp);qC
-fp_exp(x)gJ
-Lmp;Ldh:qE=fp_exp(w9
-Ldi:q3
-2
-o0
-d9);qC
-fp_exp2(x)gJ
-Lmp;Ldj:qE=fp_exp2(w9
-Ldk:qC
-dA
-q9
-2)));dQ
-Lod:qG
-dX
-cExp;qS
-TailCall_cExp;Ldl:q1
-cCeil
-gJ
-Lnh;Ldm:qE=fp_floor(w9
-Ldn:qV
-fp_less(x
-gN
-Ldo:h8
-q1
-cNeg);Ljg:qG
-cAbsNot);g7
-Ldp:qE=q9
-0.5)/x;m1
-q1
-dB);Loe:qG
-d8);g7
-Ldq:qV
-fp_lessOrEq(x
-gN
-Lea:h8
-Lin:qP
-Lof:qG
-cAbsNotNot);g7
-Leb:qE=fp_int(w9
-Lec:q1
-cSec);g7
-Led:hT
-cTan;Log:q4
-TailCall_cTan;Lee:hT
-cSin;Loh:q4
-TailCall_cSin;Lef:q1
-cNeg);gG
-cPow;Loi:FP_ReDefinePointers();Loj:q4
-TailCall_cPow;Leg:hT
-cCos;q4
-Lni;Leh:q1
-cCsc);g7
-Lei:q1
-cRSqrt);g7
-Lej:q1
-cCot);g7
-Lek:qE=hY/x;g7
-Lem:qE=q9
-0.5)/x;m1
-q1
-dX
-cNot;FP_ReDefinePointers();Lok:q4
-TailCall_cNot;Len:qV
-fp_less(y
-gO
-Leo:h8
-Lio:d3
-Ljg;Lep:qV
-fp_lessOrEq(y
-gO
-Leq:h8
-q1
-cNeg
-gJ
-Lof;Lfa:q3
-2
-o0
-cLog);qC
-dA
-x)gJ
-Lnm;Lfb:q1
-d6
-qG
-cLog);Lol:qD
-dY
-gJ
-Lnn;Lfc:qE=dA
-w9
-Lfd:qC
-d7
-fp_const_e<hN));Lom:dP
-q6;q4
-Lmm;Lfe:q3
-2
-o0
-oI);qC
-d7
-x)gJ
-Lnm;Lff:q1
-d6
-qG
-oI
-gJ
-Lol;Lfg:qE=d7
-w9
-Lfh:qC
-hZ
-fp_const_e<hN)gJ
-Lom;Lfi:q3
-2
-o0
-cLog2);qC
-hZ
-x)gJ
-Lnm;Lfj:q1
-d6
-qG
-cLog2
-gJ
-Lol;Lfk:qE=hZ
-w9
-Lfl:qV
-fp_max(x
-gN
-Lfm:qV
-fp_min(x
-gN
-Lfn:qV
-fp_mod(y
-gO
-Lfo:hT
-cSqr;Lon:q4
-TailCall_cSqr;Lfp:hT
-cDiv;q4
-Lnq;Lfq:g6
-q1
-cSqr);q81
-Lnh;Lga:aS
-cSqr
-gJ
-Lnh;Lgb:qE=x+hY;gQ
-qA
-qP
-gG
-cPow;q4
-Loj;Lgc:gQ
-qA
-d3
-Lmo;Lgd:qV
-x;Loo:gY
-q4
-Lmn;Lge:qA
-h8
-Lop:oA
-dZ
-Loq:qE1
-x);Lpa:hS
-Lmn;Lgf:h8
-q4
-Lop;Lgg:q3
-4
-o0
-B
-gJ
-Loq;Lgh:hD
-q4
-Loq;Lgi:m1
-q4
-Lbo;Lgj:qU
-gR
-1;d3
-Lmo;Lgk:h8
-Lpb:g6
-qP
-g7
-Lgl:qE=x+x;q4
-Lgc;Lgm:qV
-x;gP
-4]=q6;q3
-4
-gK
-qE1
-y*x);dQ
-q81
-Lnn;Lgn:qV
-x;q3
-2
-gK
-qC
-y*x
-gJ
-Lnm;Lgo:qE=RadiansToDegrees(x
-gJ
-Lgj;Lgp:qV
-y*x;hO
-Lpc:qG
-dB);Lpd:qG
-B);gG
-cDiv;q4
-Loa;Lgq:gM
-d5=q6;g6
-d3
-Lpc;Lha:qV
-y*x;hD
-q4
-Lpd;Lhb:hO
-q4
-Lmn;Lhc:q3
-4
-gK
-qC
-x+x
-gJ
-Lpa;Lhd:qA
-h8
-q4
-Lpb;Lhe:qV
-y*x;q4
-Loo;Lhf:gM
-q4
-Lgj;Lhg:qV
-y*x;hD
-Lpe:q81
-Lob;Lhh:gM
-gP
-2]=q6;qA
-d3
-Lpe;Lhi:qV
-y*x;gY
-q4
-Lob;Lhj:qE=DegreesToRadians(x
-gJ
-Lgj;Lhk:qV
-x;gP
-4]=q6;q3
-4
-gK
-qE1
-y*x);dQ
-q81
-Lng;Lhl:qV
-y*x;q4
-Laq;Lhm:dP
-dY;q2-=1;h8
-Lpf:gG
-cAdd;q4
-Lnb;Lhn:h8
-d3
-Lno;Lho:h8
-d3
-Lnp;Lhp:h8
-d3
-Lnh;Lhq:g6
-o3
-Lpc;Lia:qA
-qP
-Lpg:qG
-cSqr
-gJ
-Lmn;Lib:q3
-3
-d2
-qC
-x);hS
-Lpe;Lic:qA
-o3
-Lpe;Lid:g6
-d3
-Lpg;Lie:qU
-o1
-Lph:q4
-TailCall_cNEqual;Lif:qV
-fp_nequal(y
-gO
-Lig:gM
-q4
-Lch;Lih:gM
-aS
-dX
-cSin;qS
-Loh;Lii:gM
-aS
-dX
-cSinh;qS
-TailCall_cSinh;Lij:gM
-aS
-dX
-cTan;qS
-Log;Lik:gM
-aS
-dX
-cTanh;qS
-TailCall_cTanh;Lil:gM
-g7
-Lim:h4
-Lok;Lip:hT
-dO;q4
-Lph;Liq:hT
-d0;q4
-TailCall_cLessOrEq;Lja:hT
-cLess;q4
-TailCall_cLess;Ljb:hT
-h5;q4
-TailCall_cGreaterOrEq;Ljc:hT
-hR;q4
-TailCall_cGreater;Ljd:hT
-dM;q4
-Loc;Lje:d3
-Loe;Ljf:qE=fp_not(w9
-Ljh:qV
-fp_or(x
-gN
-Lji:q3
-2
-a5
-x+x);Lpi:hS
-Loi;Ljj:m1
-d3
-Lod;Ljk:m1
-q1
-dX
-d9;qS
-TailCall_cExp2;Ljl:qV
-y*x;gY
-q4
-Loi;Ljm:m1
-q1
-dB
-gJ
-Loi;Ljn:qU
-gR
-1;d3
-Loj;Ljo:q3
-3
-gK
-qC
-x
-gJ
-Lpi;Ljp:qE=q9
-0
-gJ
-Lnl;Ljq:h8
-d3
-Lnk;Lka:h8
-qP
-gG
-cCbrt;qS
-TailCall_cCbrt;Lkb:h8
-q1
-cCbrt);Lpj:gG
-cInv;qS
-TailCall_cInv;Lkc:h8
-q4
-Lei;Lkd:h8
-d3
-Lpj;Lke:qA
 q3
-3
-a5
-y*x
-gJ
-Lpi;Lkf:qE=x+x;q4
-Ljn;Lkg:qV
-o6
-y
-gO
-Lkh:qE=DegreesToRadians(w9
-Lki:q1
-cSin
-gJ
-Lnh;Lkj:qE=fp_sin(w9
-Lkk:q1
-cSqr);qC
-q9-1)gJ
-Lnj;Lkl:q1
-cSinh
-gJ
-Lnh;Lkm:qE=fp_sinh(w9
-Lkn:h4
-Lon;Lko:hT
-cAbs;q4
-Lmk;Lkp:qE=fp_sqrt(w9
-Lkq:qC
-q9
-0)gJ
-Lom;Lla:h4
-Lpf;Llb:qV
-y-x;q4
-Laq;Llc:gM
+Lmj;Laa:q0
+gF
+Lmk:q3
+dT;Lab:qE=d2;g7
+Lac:qE=fp_acos(mX
+Lad:qE=fp_acosh(mX
+Lae:dG
+4));gS
+hA-=2;Lml:dZ
+Lmm:gJ
+d6;Lmn:o5
+Lmo:q3
+TailCall_cMul;Laf:gA
+dG
+4));Lmp:qM
+q5
+h2
+Lag:qE=x+qA(1);gY
+Lel:gJ
+d6;q3
+Lmo;Lah:dP
+cSub;Lmq:q3
+hE;Lai:gL
+dZ
+Lna:o5
+Lnb:q3
+oA;Laj:gL
+g2
 q4
-Lpf;Lld:q3
-3
-d2
-d1
-qC
-x);hS
-Lnd;Lle:aS
-A);qG
-cSub
-gJ
-Lnd;Llf:q1
-cTan
-gJ
-Lnh;Llg:qE=fp_tan(w9
-Llh:q1
-cTanh
-gJ
-Lnh;Lli:qE=fp_tanh(w9
-Llj:qE=fp_trunc(w9
-Llk:qV
-x-y;Lpk:gY
-Lpl:qG
-A);g7
-Lll:qE=fp_tan(x);Lpm:m1
+Lnc:d1
+Lnd:qF
+cRSub);g7
+Lak:hJ
+gS
+o1
+dZ
+q3
+Lnc;Lal:gL
+dZ
+q3
+Lnd;Lam:gL
+hI
+q4
+Lne:d1
+Lnf:qF
+B);Lng:gJ
+cSub;qQ
+Lmq;Lan:hJ
+q0
 d3
-Lpl;Llm:qE=dA
-x
+Lne;Lao:gL
+g2
+q4
+q3
+Lnf;Lap:qR
+y+x;Laq:qT
+Lbo:hF
+q4
+g7
+Lba:qT
+g2
+o9
+oT
+hU
+Lnc;Lbb:q7
+oD
+Lnc;Lbc:qR
+fp_and(x
+gZ
+Lbd:qE=fp_asin(mX
+Lbe:qE=fp_asinh(mX
+Lbf:qE=fp_atan(mX
+Lbg:qR
+fp_atan2(y
+h0
+Lbh:qE=fp_atanh(mX
+Lbi:qE=fp_cbrt(mX
+Lbj:oG
+cFloor);Lnh:gJ
+cNeg;qQ
+hD;Lbk:qE=fp_ceil(mX
+Lbl:q0
+gF
+Lni:q3
+TailCall_cCos;Lbm:qE=fp_cos(mX
+Lbn:dO
+TailCall_cCosh;Lbp:oG
+cSqr);dG
+1));Lnj:oB
+d1
+Lnk:gJ
+cSqrt;qQ
+TailCall_cSqrt;Lbq:qE=fp_cosh(mX
+Lca:qE=RadiansToDegrees(mX
+Lcb:oG
+cSec
+h2
+Lcc:oG
+cTan
+h2
+Lcd:oG
+cSin
+h2
+Lce:dG
+0));q0[0]o1
+Lnl:qF
+d6);dG
+1));Lnm:oB
+Lnn:gJ
+oI;q3
+Lna;Lcf:oG
+cNeg);qF
+cExp
+h2
+Lcg:oG
+cNeg);qF
+dA
+h2
+Lch:dO
+Lel;Lci:oG
+cNeg);qF
+cPow
+h2
+Lcj:oG
+cCos
+h2
+Lck:oG
+cCsc
+h2
+Lcl:oG
+cCot
+h2
+Lcm:q7
+hY
+Lno:gJ
+cDeg;qQ
+TailCall_cDeg;Lcn:q7
+hY
+Lnp:gJ
+cRad;qQ
+TailCall_cRad;Lco:qR
+y/x
+oR
+q3
+Lml;Lcp:hJ
+qS
+hA
+gF
+Lnq:q3
+o0;Lcq:qR
+y/x;q3
+oM
+Lda:qE=qA(1)/x;q3
+Lel;Ldb:q7
+o9
+qF
+d6);Loa:qQ
+Lnq;Ldc:qT
+g2
+o9
+qF
+d6);oT
+oB
+Lob:gJ
+cRDiv;qQ
+TailCall_cRDiv;Ldd:g2
+o9
+qF
+d6);qF
+B
+gI
+Lob;Lde:qS
+hA
+gF
+Loc:q3
+dV;Ldf:qR
+fp_equal(y
+h0
+Ldg:qT
+q7
+q1
+cExp);qB
+dX)gI
+Lmp;Ldh:qE=dX);g7
+Ldi:qT
+q7
+q1
+dA);qB
+dH)gI
+Lmp;Ldj:qE=dH);g7
+Ldk:qB
+dB
+qA(2)));oB
+Lod:qF
+d6);gJ
+cExp;qQ
+TailCall_cExp;Ldl:oG
+cCeil
+gI
+Lnh;Ldm:qE=fp_floor(mX
+Ldn:qR
+fp_less(x
+gZ
+Ldo:qT
+oG
+cNeg);Ljg:qF
+cAbsNot);g7
+Ldp:qE=qA(0.5)/x;qS=oF);Loe:qF
+d9);g7
+Ldq:qR
+fp_lessOrEq(x
+gZ
+Lea:qT
+Lin:hF
+q4
+Lof:qF
+cAbsNotNot);g7
+Leb:qE=fp_int(mX
+Lec:oG
+cSec);g7
+Led:dP
+cTan;Log:q3
+dQ;Lee:dP
+cSin;Loh:q3
+dN;Lef:oG
+cNeg);gJ
+cPow;Loi:o5
+Loj:q3
+TailCall_cPow;Leg:dP
+cCos;q3
+Lni;Leh:oG
+cCsc);g7
+Lei:oG
+cRSqrt);g7
+Lej:oG
+cCot);g7
+Lek:qE=qA(1)/x;g7
+Lem:qE=qA(0.5)/x;qS=oF);gJ
+cNot;o5
+Lok:q3
+TailCall_cNot;Len:qR
+fp_less(y
+h0
+Leo:qT
+Lio:gK
+Ljg;Lep:qR
+fp_lessOrEq(y
+h0
+Leq:qT
+oG
+cNeg
+gI
+Lof;Lfa:qT
+q7
+q1
+cLog);qB
+dB
+qF1
+Lfb:oG
+d4
+qF
+cLog);Lol:qM
+dY
+gI
+Lnn;Lfc:qE=dB
+mX
+Lfd:qB
+d5
+fp_const_e<qA>()));Lom:q0[0]o1
+q3
+Lmm;Lfe:qT
+q7
+q1
+w0);qB
+d5
+qF1
+Lff:oG
+d4
+qF
+w0
+gI
+Lol;Lfg:qE=d5
+mX
+Lfh:qB
+hZ
+fp_const_e<qA>())gI
+Lom;Lfi:qT
+q7
+q1
+oZ);qB
+hZ
+qF1
+Lfj:oG
+d4
+qF
+oZ
+gI
+Lol;Lfk:qE=hZ
+mX
+Lfl:qR
+fp_max(x
+gZ
+Lfm:qR
+fp_min(x
+gZ
+Lfn:qR
+fp_mod(y
+h0
+Lfo:dP
+cSqr;Lon:q3
+TailCall_cSqr;Lfp:dP
+cDiv;q3
+Lnq;Lfq:g2
+q1
+cSqr);mV
+Lnh;Lga:q7
+q1
+cSqr
+gI
+Lnh;Lgb:qE=x+qA(1);gY
 gJ
+cPow;q3
+Loj;Lgc:gY
+q3
+Lmo;Lgd:qR
+x;Loo:qT
+dZ
+q3
+Lmn;Lge:q7
+q6
+Lop:hI
+q4
+Loq:qF
+A);oT
+Lpa:hU
+Lmn;Lgf:qT
+q3
+Lop;Lgg:qT
+hI
+q1
+B
+gI
+Loq;Lgh:qT
+g2
+q4
+q3
+Loq;Lgi:qS
+o1
+q3
+oN
+Lgj:qS
+hA
+gF
+q3
+Lmo;Lgk:qT
+Lpb:g2
+q4
+g7
+Lgl:qE=x+x;q3
+Lgc;Lgm:qR
+x;dK=q5
+oR
+gA
+qF
+A);oU);oB
+mV
+Lnn;Lgn:qR
+x
+oR
+gU
+oU
+gI
+Lnm;Lgo:qE=RadiansToDegrees(x
+gI
+Lgj;Lgp:qC1
+oR
+hI
+q4
+Lpc:qF
+d6);Lpd:qF
+B);gJ
+cDiv;q3
+Loa;Lgq:hJ
+q0
+d3
+Lpc;Lha:qC1
+qP
+hY
+q3
+Lpd;Lhb:qT
+hI
+q4
+q3
+Lmn;Lhc:qT
+gA
+qB
+x+x
+gI
+Lpa;Lhd:q7
+q6
+q3
+Lpb;Lhe:qC1;q3
+Loo;Lhf:hJ
+q3
+Lgj;Lhg:qC1
+qP
+hY
+Lpe:mV
+Lob;Lhh:hJ
+gS
+o1
+dZ
+q3
+Lpe;Lhi:qC1
+oR
+dZ
+q3
+Lob;Lhj:qE=DegreesToRadians(x
+gI
+Lgj;Lhk:qR
+x;dK=q5
+oR
+gA
+qF
+A);oU);oB
+mV
+Lng;Lhl:qC1;q3
+oM
+Lhm:q0[0]=dY;q2-=1
+oR
+Lpf:gJ
+oI;q3
+Lnb;Lhn:qT
+gK
+Lno;Lho:qT
+gK
+Lnp;Lhp:qT
+gK
+Lnh;Lhq:g2
+oD
+Lpc;Lia:dZ
+Lpg:qF
+cSqr
+gI
+Lmn;Lib:qT
+g2
+o9
+oT
+hU
+Lpe;Lic:q7
+oD
+Lpe;Lid:g2
+q4
+q3
+Lpg;Lie:qS
+hA
+gF
+Lph:q3
+TailCall_cNEqual;Lif:qR
+fp_nequal(y
+h0
+Lig:hJ
+q3
+Lch;Lih:hJ
+gU
+gJ
+cSin;qQ
+Loh;Lii:hJ
+gU
+gJ
+oV;qQ
+TailCall_cSinh;Lij:hJ
+gU
+gJ
+cTan;qQ
+Log;Lik:hJ
+gU
+gJ
+oX;qQ
+TailCall_cTanh;Lil:hJ
+g7
+Lim:dO
+Lok;Lip:dP
+o8;q3
+Lph;Liq:dP
+hC;q3
+TailCall_cLessOrEq;Lja:dP
+cLess;q3
+TailCall_cLess;Ljb:dP
+h5;q3
+TailCall_cGreaterOrEq;Ljc:dP
+hS;q3
+TailCall_cGreater;Ljd:dP
+cEqual;q3
+Loc;Lje:gK
+Loe;Ljf:qE=fp_not(mX
+Ljh:qR
+fp_or(x
+gZ
+Lji:qT
+q7
+q1
+d4
+qB
+x+x);Lpi:hU
+Loi;Ljj:qS=q5
+qP
+q4
+q3
+Lod;Ljk:qS=oF);gJ
+dA;qQ
+TailCall_cExp2;Ljl:qC1
+oR
+dZ
+q3
+Loi;Ljm:qS=oF
+gI
+Loi;Ljn:qS
+hA
+gF
+q3
+Loj;Ljo:qT
+g2
+q1
+d6);qB
+x
+gI
+Lpi;Ljp:qE=qA(0
+gI
+Lnl;Ljq:qT
+gK
+Lnk;Lka:qT
+hF
+q4
+gJ
+cCbrt;qQ
+TailCall_cCbrt;Lkb:qT
+oG
+cCbrt);Lpj:gJ
+cInv;qQ
+TailCall_cInv;Lkc:qT
+q3
+Lei;Lkd:qT
+gK
+Lpj;Lke:q7
+q6
+g2
+q1
+d4
+oU
+gI
+Lpi;Lkf:qE=x+x;q3
+Ljn;Lkg:qR
+oH
+y
+h0
+Lkh:qE=DegreesToRadians(mX
+Lki:oG
+cSin
+gI
+Lnh;Lkj:qE=fp_sin(mX
+Lkk:oG
+cSqr);dG-1)gI
+Lnj;Lkl:oG
+oV
+gI
+Lnh;Lkm:qE=fp_sinh(mX
+Lkn:dO
+Lon;Lko:dP
+cAbs;q3
+Lmk;Lkp:qE=fp_sqrt(mX
+Lkq:dG
+0)gI
+Lom;Lla:dO
+Lpf;Llb:qR
+y-x;q3
+oM
+Llc:hJ
+q3
+Lpf;Lld:qT
+g2
+o9
+d1
+oT
+hU
+Lnd;Lle:q7
+o9
+qF
+cSub
+gI
+Lnd;Llf:oG
+cTan
+gI
+Lnh;Llg:qE=fp_tan(mX
+Llh:oG
+oX
+gI
+Lnh;Lli:qE=fp_tanh(mX
+Llj:qE=fp_trunc(mX
+Llk:qR
+x-y;Lpk:qT
+dZ
+Lpl:qF
+A);g7
+Lll:qE=fp_tan(x);Lpm:qS=q5
+qP
+q4
+q3
+Lpl;Llm:qE=dB
+x
+gI
 Lpm;Lln:qE=hZ
 x
-gJ
-Lpm;Llo:qE=fp_exp(x
-gJ
-Lpm;Llp:qE=o6
-q9
-10),x
-gJ
-Lpm;Llq:qE=fp_exp2(x
-gJ
-Lpm;Lma:qV
-x/y;q4
-Lpk;Lmb:qV
-x/y;gY
-Lpn:qG
+gI
+Lpm;Llo:qE=dX
+gI
+Lpm;Llp:qE=oH
+qA(10),x
+gI
+Lpm;Llq:qE=dH
+gI
+Lpm;Lma:qR
+x/y;q3
+Lpk;Lmb:qR
+x/y
+oR
+dZ
+Lpn:qF
 OppositeComparisonOpcode(A));g7
-Lmc:gM
-m1
-d3
-Lpn;Lmd:qV
-o6
-x,1/y
-gJ
-Lpk;Lme:qE=fp_asinh(x
-gJ
-Lpm;Lmf:q3
-2
-a5
-fp_sqrt(x));hS
-Lpl;Lmg:qE=fp_atanh(x
-gJ
-Lpm;Lmh:qD
-dY);g7
-Lmi:dP
-dY;g7
-Lmj:qD
-oF);g7
-g7
+Lmc:hJ
+qS=q5
+qP
 q4
-TailCall_cAcos;q4
-TailCall_cAcosh;q4
-TailCall_cAnd;q4
-TailCall_cAsin;q4
-TailCall_cAsinh;q4
-TailCall_cAtan;q4
-TailCall_cAtan2;q4
-TailCall_cAtanh;q4
-TailCall_cCeil;q4
-TailCall_cFloor;q4
-TailCall_cInt;q4
-TailCall_cLog;q4
-TailCall_cLog10;q4
-TailCall_cLog2;q4
-TailCall_cMax;q4
-TailCall_cMin;q4
-TailCall_cMod;q4
-TailCall_cOr;q4
-TailCall_cRDiv;q4
-TailCall_cRad;q4
-TailCall_cSin;q4
-TailCall_cSinh;q4
-TailCall_cSqrt;q4
-hB;q4
-TailCall_cTan;q4
-TailCall_cTanh;q4
+q3
+Lpn;Lmd:qR
+oH
+x,1/y
+gI
+Lpk;Lme:qE=fp_asinh(x
+gI
+Lpm;Lmf:qT
+q7
+q1
+d4
+qB
+fp_sqrt(x));hU
+Lpl;Lmg:qE=fp_atanh(x
+gI
+Lpm;Lmh:qM
+dY);g7
+Lmi:q0[0]=dY;g7
+Lmj:qM
+dW);g7
+g7
+q3
+TailCall_cAcos;q3
+TailCall_cAcosh;q3
+TailCall_cAnd;q3
+TailCall_cAsin;q3
+TailCall_cAsinh;q3
+TailCall_cAtan;q3
+TailCall_cAtan2;q3
+TailCall_cAtanh;q3
+TailCall_cCeil;q3
+TailCall_cFloor;q3
+TailCall_cInt;q3
+TailCall_cLog;q3
+TailCall_cLog10;q3
+TailCall_cLog2;q3
+TailCall_cMax;q3
+TailCall_cMin;q3
+TailCall_cMod;q3
+TailCall_cOr;q3
+TailCall_cRDiv;q3
+TailCall_cRad;q3
+dN;q3
+TailCall_cSinh;q3
+TailCall_cSqrt;q3
+hE;q3
+dQ;q3
+TailCall_cTanh;q3
 TailCall_cTrunc;
 #endif
 #undef FP_ReDefinePointers
