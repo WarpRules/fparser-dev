@@ -199,7 +199,9 @@ namespace
             {
                 if (!InDefineMode && NewLines && value[0] == '#') result += '\n';
                 else if (isnamechar(value[0])
-                     && isnamechar(result[result.size()-1]))
+                     && (isnamechar(result[result.size()-1])
+                                 || result[result.size()-1]==')'
+                        ))
                 {
                     if (!NewLines || InDefineMode)
                         result += ' ';
