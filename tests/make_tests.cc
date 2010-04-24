@@ -75,13 +75,13 @@ namespace
     std::string NumConstDefines(const std::string& type)
     {
         if(type == "MpfrFloat")
-            return "#define N(x) Value_t(#x,0)\n"
+            return "#define N(x) (Value_t(#x,0))\n"
                    "#define P(x) N(x)\n";
         if(type == "long" || type == "GmpInt")
-            return "#define P(x) APP(x,l)\n";
-        std::string result = "x";
-        if(type == "float")       result = "APP(x,f)";
-        if(type == "long double") result = "APP(x,l)";
+            return "#define P(x) (APP(x,l))\n";
+        std::string result = "(x)";
+        if(type == "float")       result = "(APP(x,f))";
+        if(type == "long double") result = "(APP(x,l))";
         return "#define N(x) " + result + "\n"
                "#define P(x) N(x##.0)\n";
     }

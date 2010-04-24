@@ -200,7 +200,14 @@ namespace
                 if (!InDefineMode && NewLines && value[0] == '#') result += '\n';
                 else if (isnamechar(value[0])
                      && (isnamechar(result[result.size()-1])
-                                 || result[result.size()-1]==')'
+                            //     || result[result.size()-1]==')'
+                            /* An identifier preceded by an identifier character
+                             * requires a separator. Also, an identifier
+                             * preceded by a macro that expands to something
+                             * that ends in an identifier character requires a
+                             * separator when using Microsoft C++, thus you may
+                             * need to include the ")" check above sometimes.
+                             */
                         ))
                 {
                     if (!NewLines || InDefineMode)
