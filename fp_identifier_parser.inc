@@ -1,3 +1,13 @@
+/* NOTE:
+  Do not include this file in your project. The fparser.cc file #includes
+this file internally and thus you don't need to do anything (other than keep
+this file in the same directory as fparser.cc).
+
+  Part of this file is generated code (by using the make_function_name_parser
+utility, found in the development version of this library). It's not intended
+to be modified by hand.
+*/
+
         unsigned nameLength = 0;
         const unsigned maximumNameLength = 0x80000000U-8;
         /*
