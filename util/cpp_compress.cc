@@ -588,7 +588,7 @@ namespace
 
         std::vector<bool> donttest(tokens.size(), false);
 
-        const size_t lookahead_depth = (12*1000000) / tokens.size();
+        const size_t lookahead_depth = (105*100000) / tokens.size();
         // ^Lookahead limit. The value chosen is an arbitrary value
         //  to shield against exponential runtime. A larger value
         //  yields better compression, but is slower.
