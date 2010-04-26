@@ -281,7 +281,9 @@ pack: $(RELEASE_PACK_FILES) set_version_string
 	fi
 
 devel_pack: set_version_string
-	tar --exclude='*~' -cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
+	tar --exclude='*~' \
+		--transform="s|^|fparser_$(RELEASE_VERSION)_devel/|" \
+		-cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
 		Makefile example.cc example2.cc fparser.cc \
 		fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 		fpconfig.hh fptypes.hh fpaux.hh \
