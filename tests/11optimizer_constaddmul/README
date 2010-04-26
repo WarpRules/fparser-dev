@@ -1,7 +1,7 @@
 # Test topics:
 #
 # fparser.cc, CompileMul:
-# 
+#
 #    ... cInv 5 cMul      -->      ... 5 cRDiv		TEST 1
 #    5 ... cMul           -->      ... 5 cMul		TEST 2
 #    5 ... cDiv           --> cInv ... 5 cMul		TEST 3
@@ -58,6 +58,9 @@
 #   7 cAdd 5 cMul        --> 5 cMul 35 cAdd		TEST 39
 #   a 7 cMul cAdd 5 cMul --> 5 cMul a 35 cMul cAdd	TEST 40
 #   a 7 cMul cSub 5 cMul --> 5 cMul a 35 cMul cSub	TEST 41
+#
+#   7 cAdd 5 cAdd        --> 12 cAdd                    TEST 42
+#   7 cMul 5 cMul        --> 35 cMul                    TEST 43
 #
 # Tests are done for a floating point type (double)
 # and an integer type (long int).

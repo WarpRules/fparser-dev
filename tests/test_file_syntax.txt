@@ -146,6 +146,11 @@ Which tests go where
 	Unit tests for each bytecode optimization done
 	by the parser itself.
 
+11optimizer_constaddmul:
+	Unit tests for those bytecode optimizations done
+	by the parser itself, which pertain to the grouping
+	of numeric literal values.
+
 20optimizer_optimizations:
 	Testcases for categorigally each fpoptimizer optimization.
 	(Incomplete)

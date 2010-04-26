@@ -4,14 +4,14 @@ function CreateTest($f, $file)
 {
   $F = $f;
   $C = preg_replace('/(sinh?|cosh?|tanh?|pow|exp)/', 'fp_$1', $f);
-  
+
   $vars = Array('x');
   #if(strpos($f, '(x)') !== false) $vars[] = 'x';
   #if(strpos($f, '(y)') !== false) $vars[] = 'y';
-  
+
   print "$F\n";
-  
-/*  file_put_contents($file, 
+
+/*  file_put_contents($file,
     "T=d\n".
     "V=".join(',', $vars)."\n".
     "R=-4,4,0.5\n".
@@ -27,22 +27,22 @@ for($a=0; $a<7; ++$a)
   {
     $f1 = $functions[$a];
     $f2 = $functions[$b];
-    
+
     for($ae=-2; $ae<=2; ++$ae)
       for($be=-2; $be<=2; ++$be)
       {
         if($be == 0 && $ae == 1) continue; // testing the function alone is not very cool
         if($ae == 0 && $be == 1) continue; // testing the function alone is not very cool
-        
+
         if($a < 3 && $f2=='exp') continue; // don't bother mixing exp with sin/cos/tan
         if($b < 3 && $f1=='exp') continue; // don't bother mixing exp with sin/cos/tan
-        
+
         if(!$ae && !$be) continue;
 
         $afunc = "$f1(x)";
         if($ae == 0) $afunc = "1";
         elseif($ae != 1) $afunc = "pow($afunc,{$ae}.0)";
-        
+
         $func = $afunc;
 
         if($be < 0 && $operator==0)
@@ -63,7 +63,7 @@ for($a=0; $a<7; ++$a)
           else $bfunc = "pow($bfunc,{$be}.0)";
           $func .= $bfunc;
         }
-        
+
         static $counter = 0;
         ++$counter;
         $name = $counter;

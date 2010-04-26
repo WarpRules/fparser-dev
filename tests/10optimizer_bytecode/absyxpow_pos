@@ -1,4 +1,4 @@
-# y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow 
+# y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow
 T=d
 V=x
 R=-10,10,0.1
