@@ -14,8 +14,9 @@ using namespace FUNCTIONPARSERTYPES;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 namespace
 {
+    template<typename Value_t>
     void DumpHashesFrom(
-        const FPoptimizer_CodeTree::CodeTree& tree,
+        const FPoptimizer_CodeTree::CodeTree<Value_t>& tree,
         std::map<fphash_t, std::set<std::string> >& done,
         std::ostream& o)
     {
@@ -32,7 +33,8 @@ namespace
 namespace FPoptimizer_CodeTree
 {
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-    void DumpHashes(const CodeTree& tree, std::ostream& o)
+    template<typename Value_t>
+    void DumpHashes(const CodeTree<Value_t>& tree, std::ostream& o)
     {
         std::map<fphash_t, std::set<std::string> > done;
         DumpHashesFrom(tree, done, o);
@@ -57,7 +59,8 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    void DumpTree(const CodeTree& tree, std::ostream& o)
+    template<typename Value_t>
+    void DumpTree(const CodeTree<Value_t>& tree, std::ostream& o)
     {
         //o << "/*" << tree.Depth << "*/";
         const char* sep2 = " ";
@@ -101,7 +104,8 @@ namespace FPoptimizer_CodeTree
         o << ')';
     }
 
-    void DumpTreeWithIndent(const CodeTree& tree, std::ostream& o, const std::string& indent)
+    template<typename Value_t>
+    void DumpTreeWithIndent(const CodeTree<Value_t>& tree, std::ostream& o, const std::string& indent)
     {
         o << '[' << std::hex << (void*)(&tree.GetParams())
                  << std::dec
@@ -130,6 +134,24 @@ namespace FPoptimizer_CodeTree
         }
         o << std::flush;
     }
+#endif
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template void DumpHashes(const CodeTree<double>& tree, std::ostream& o);
+    template void DumpTree(const CodeTree<double>& tree, std::ostream& o);
+    template void DumpTreeWithIndent(const CodeTree<double>& tree, std::ostream& o, const std::string& indent);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template void DumpHashes(const CodeTree<float>& tree, std::ostream& o);
+    template void DumpTree(const CodeTree<float>& tree, std::ostream& o);
+    template void DumpTreeWithIndent(const CodeTree<float>& tree, std::ostream& o, const std::string& indent);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template void DumpHashes(const CodeTree<long double>& tree, std::ostream& o);
+    template void DumpTree(const CodeTree<long double>& tree, std::ostream& o);
+    template void DumpTreeWithIndent(const CodeTree<long double>& tree, std::ostream& o, const std::string& indent);
 #endif
 }
 

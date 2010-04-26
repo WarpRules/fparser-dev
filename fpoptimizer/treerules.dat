@@ -872,8 +872,8 @@ cIf [x 0 y] -> cMul (cNot[x])    y
 
 [BASE2_EXPAND_COMPONENTS]
 
-cLog   [x] -> cMul (cLog2[x]) CONSTANT_L2
-cLog10 [x] -> cMul (cLog2[x]) CONSTANT_L10B
+#cLog   [x] -> cMul (cLog2[x]) CONSTANT_L2
+#cLog10 [x] -> cMul (cLog2[x]) CONSTANT_L10B
 #cExp   [x] -> cExp2 [(cMul CONSTANT_L2I x)]
 #cMul (cLog2by [x y]) <1>    ->  cLog2by [x (cMul y <1>)]
 cAsin  [x] -> cAtan2 x (cSqrt (cSub 1 (cSqr x)))

@@ -12,16 +12,17 @@
 namespace FPoptimizer_Optimize
 {
     /* Synthesize the given grammatic parameter into the codetree */
+    template<typename Value_t>
     void SynthesizeParam(
         const ParamSpec& parampair,
-        CodeTree& tree,
-        MatchInfo& info,
+        CodeTree<Value_t> & tree,
+        MatchInfo<Value_t> & info,
         bool inner = true)
     {
         switch( parampair.first )
         {
             case NumConstant:
-              { const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
+              { const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
                 tree.SetImmed( param.constvalue );
                 if(inner) tree.Rehash(false);
                 break; }
@@ -34,13 +35,14 @@ namespace FPoptimizer_Optimize
                 tree.SetOpcode( param.data.subfunc_opcode );
                 for(unsigned a=0; a < param.data.param_count; ++a)
                 {
-                    CodeTree nparam;
-                    SynthesizeParam( ParamSpec_Extract(param.data.param_list, a), nparam, info, true );
+                    CodeTree<Value_t> nparam;
+                    SynthesizeParam( ParamSpec_Extract<Value_t>(param.data.param_list, a),
+                                     nparam, info, true );
                     tree.AddParamMove(nparam);
                 }
                 if(param.data.restholder_index != 0)
                 {
-                    std::vector<CodeTree> trees
+                    std::vector<CodeTree<Value_t> > trees
                         ( info.GetRestHolderValues( param.data.restholder_index ) );
                     tree.AddParamsMove(trees);
                     // ^note: this fails if the same restholder is synth'd twice
@@ -61,10 +63,10 @@ namespace FPoptimizer_Optimize
                         switch(tree.GetOpcode())
                         {
                             case cAdd: case cOr:
-                                tree = CodeTree(0.0);
+                                tree = CodeTree<Value_t>(0.0);
                                 break;
                             case cMul: case cAnd:
-                                tree = CodeTree(1.0);
+                                tree = CodeTree<Value_t>(1.0);
                             default: break;
                         }
                     }
@@ -74,17 +76,19 @@ namespace FPoptimizer_Optimize
         }
     }
 
+    template<typename Value_t>
     void SynthesizeRule(
         const Rule& rule,
-        CodeTree& tree,
-        MatchInfo& info)
+        CodeTree<Value_t>& tree,
+        MatchInfo<Value_t>& info)
     {
         switch(rule.ruletype)
         {
             case ProduceNewTree:
             {
                 tree.DelParams();
-                SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, 0), tree, info, false );
+                SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, 0),
+                                 tree, info, false );
                 break;
             }
             case ReplaceParams:
@@ -99,8 +103,9 @@ namespace FPoptimizer_Optimize
                 /* Synthesize the replacement params */
                 for(unsigned a=0; a < rule.repl_param_count; ++a)
                 {
-                    CodeTree nparam;
-                    SynthesizeParam( ParamSpec_Extract(rule.repl_param_list, a), nparam, info, true );
+                    CodeTree<Value_t> nparam;
+                    SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, a),
+                                     nparam, info, true );
                     tree.AddParamMove(nparam);
                 }
                 break;
@@ -109,4 +114,27 @@ namespace FPoptimizer_Optimize
     }
 }
 
+// Explicitly instantiate types
+namespace FPoptimizer_Optimize
+{
+    template
+    void SynthesizeRule(
+        const Rule& rule,
+        CodeTree<double>& tree,
+        MatchInfo<double>& info);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template
+    void SynthesizeRule(
+        const Rule& rule,
+        CodeTree<float>& tree,
+        MatchInfo<float>& info);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template
+    void SynthesizeRule(
+        const Rule& rule,
+        CodeTree<long double>& tree,
+        MatchInfo<long double>& info);
+#endif
+}
 #endif

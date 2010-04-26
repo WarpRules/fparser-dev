@@ -12,38 +12,44 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_CodeTree
 {
-    CodeTree::CodeTree()
-        : data(new CodeTreeData)
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree()
+        : data(new CodeTreeData<Value_t> ())
     {
         data->Opcode = cNop;
     }
 
-    CodeTree::CodeTree(double i)
-        : data(new CodeTreeData(i))
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(const Value_t& i)
+        : data(new CodeTreeData<Value_t>(i))
     {
         data->Recalculate_Hash_NoRecursion();
     }
 
-    CodeTree::CodeTree(unsigned v, CodeTree::VarTag)
-        : data(new CodeTreeData)
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(unsigned v, CodeTree<Value_t>::VarTag)
+        : data(new CodeTreeData<Value_t>)
     {
         data->Opcode = VarBegin;
         data->Var    = v;
         data->Recalculate_Hash_NoRecursion();
     }
 
-    CodeTree::CodeTree(const CodeTree& b, CodeTree::CloneTag)
-        : data(new CodeTreeData(*b.data))
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(const CodeTree<Value_t>& b, CodeTree<Value_t>::CloneTag)
+        : data(new CodeTreeData<Value_t>(*b.data))
     {
     }
 
-    CodeTree::~CodeTree()
+    template<typename Value_t>
+    CodeTree<Value_t>::~CodeTree()
     {
     }
 
+    template<typename Value_t>
     struct ParamComparer
     {
-        bool operator() (const CodeTree& a, const CodeTree& b) const
+        bool operator() (const CodeTree<Value_t>& a, const CodeTree<Value_t>& b) const
         {
             if(a.GetDepth() != b.GetDepth())
                 return a.GetDepth() > b.GetDepth();
@@ -51,7 +57,8 @@ namespace FPoptimizer_CodeTree
         }
     };
 
-    void CodeTreeData::Sort()
+    template<typename Value_t>
+    void CodeTreeData<Value_t>::Sort()
     {
         /* If the tree is commutative, order the parameters
          * in a set order in order to make equality tests
@@ -68,22 +75,22 @@ namespace FPoptimizer_CodeTree
             case cHypot:
             case cEqual:
             case cNEqual:
-                std::sort(Params.begin(), Params.end(), ParamComparer());
+                std::sort(Params.begin(), Params.end(), ParamComparer<Value_t>());
                 break;
             case cLess:
-                if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cGreater; }
                 break;
             case cLessOrEq:
-                if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cGreaterOrEq; }
                 break;
             case cGreater:
-                if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLess; }
                 break;
             case cGreaterOrEq:
-                if(ParamComparer() (Params[1], Params[0]))
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLessOrEq; }
                 break;
             default:
@@ -91,39 +98,46 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    void CodeTree::AddParam(const CodeTree& param)
+    template<typename Value_t>
+    void CodeTree<Value_t>::AddParam(const CodeTree<Value_t>& param)
     {
         //std::cout << "AddParam called\n";
         data->Params.push_back(param);
     }
-    void CodeTree::AddParamMove(CodeTree& param)
+    template<typename Value_t>
+    void CodeTree<Value_t>::AddParamMove(CodeTree<Value_t>& param)
     {
-        data->Params.push_back(CodeTree());
+        data->Params.push_back(CodeTree<Value_t>());
         data->Params.back().swap(param);
     }
-    void CodeTree::SetParam(size_t which, const CodeTree& b)
+    template<typename Value_t>
+    void CodeTree<Value_t>::SetParam(size_t which, const CodeTree<Value_t>& b)
     {
         DataP slot_holder ( data->Params[which].data );
         data->Params[which] = b;
     }
-    void CodeTree::SetParamMove(size_t which, CodeTree& b)
+    template<typename Value_t>
+    void CodeTree<Value_t>::SetParamMove(size_t which, CodeTree<Value_t>& b)
     {
         DataP slot_holder ( data->Params[which].data );
         data->Params[which].swap(b);
     }
 
-    void CodeTree::AddParams(const std::vector<CodeTree>& RefParams)
+    template<typename Value_t>
+    void CodeTree<Value_t>::AddParams(const std::vector<CodeTree<Value_t> >& RefParams)
     {
         data->Params.insert(data->Params.end(), RefParams.begin(), RefParams.end());
     }
-    void CodeTree::AddParamsMove(std::vector<CodeTree>& RefParams)
+    template<typename Value_t>
+    void CodeTree<Value_t>::AddParamsMove(std::vector<CodeTree<Value_t> >& RefParams)
     {
         size_t endpos = data->Params.size(), added = RefParams.size();
-        data->Params.resize(endpos + added, CodeTree());
+        data->Params.resize(endpos + added, CodeTree<Value_t>());
         for(size_t p=0; p<added; ++p)
             data->Params[endpos+p].swap( RefParams[p] );
     }
-    void CodeTree::AddParamsMove(std::vector<CodeTree>& RefParams, size_t replacing_slot)
+    template<typename Value_t>
+    void CodeTree<Value_t>::AddParamsMove(std::vector<CodeTree<Value_t> >& RefParams, size_t replacing_slot)
     {
         DataP slot_holder ( data->Params[replacing_slot].data );
         DelParam(replacing_slot);
@@ -160,30 +174,34 @@ namespace FPoptimizer_CodeTree
     */
     }
 
-    void CodeTree::SetParams(const std::vector<CodeTree>& RefParams)
+    template<typename Value_t>
+    void CodeTree<Value_t>::SetParams(const std::vector<CodeTree<Value_t> >& RefParams)
     {
         //std::cout << "SetParams called" << (do_clone ? ", clone" : ", no clone") << "\n";
-        std::vector<CodeTree> tmp(RefParams);
+        std::vector<CodeTree<Value_t> > tmp(RefParams);
         data->Params.swap(tmp);
     }
 
-    void CodeTree::SetParamsMove(std::vector<CodeTree>& RefParams)
+    template<typename Value_t>
+    void CodeTree<Value_t>::SetParamsMove(std::vector<CodeTree<Value_t> >& RefParams)
     {
         data->Params.swap(RefParams);
         RefParams.clear();
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    void CodeTree::SetParams(std::vector<CodeTree>&& RefParams)
+    template<typename Value_t>
+    void CodeTree<Value_t>::SetParams(std::vector<CodeTree<Value_t> >&& RefParams)
     {
         //std::cout << "SetParams&& called\n";
         SetParamsMove(RefParams);
     }
 #endif
 
-    void CodeTree::DelParam(size_t index)
+    template<typename Value_t>
+    void CodeTree<Value_t>::DelParam(size_t index)
     {
-        std::vector<CodeTree>& Params = data->Params;
+        std::vector<CodeTree<Value_t> >& Params = data->Params;
         //std::cout << "DelParam(" << index << ") called\n";
     #ifdef __GXX_EXPERIMENTAL_CXX0X__
         /* rvalue reference semantics makes this optimal */
@@ -198,26 +216,30 @@ namespace FPoptimizer_CodeTree
     #endif
     }
 
-    void CodeTree::DelParams()
+    template<typename Value_t>
+    void CodeTree<Value_t>::DelParams()
     {
         data->Params.clear();
     }
 
     /* Is the value of this tree definitely odd(true) or even(false)? */
-    CodeTree::TriTruthValue CodeTree::GetEvennessInfo() const
+    template<typename Value_t>
+    typename CodeTree<Value_t>::TriTruthValue
+        CodeTree<Value_t>::GetEvennessInfo() const
     {
         if(!IsImmed()) return Unknown;
         if(!IsLongIntegerImmed()) return Unknown;
         return (GetLongIntegerImmed() & 1) ? IsNever : IsAlways;
     }
 
-    bool CodeTree::IsLogicalValue() const
+    template<typename Value_t>
+    bool CodeTree<Value_t>::IsLogicalValue() const
     {
         switch(data->Opcode)
         {
             case cImmed:
-                return FloatEqual(data->Value, 0.0)
-                    || FloatEqual(data->Value, 1.0);
+                return FloatEqual(data->Value, Value_t(0))
+                    || FloatEqual(data->Value, Value_t(1));
             case cAnd:
             case cOr:
             case cNot:
@@ -236,7 +258,7 @@ namespace FPoptimizer_CodeTree
                 return true;
             case cMul:
             {
-                std::vector<CodeTree>& Params = data->Params;
+                std::vector<CodeTree<Value_t> >& Params = data->Params;
                 for(size_t a=0; a<Params.size(); ++a)
                     if(!Params[a].IsLogicalValue())
                         return false;
@@ -245,7 +267,7 @@ namespace FPoptimizer_CodeTree
             case cIf:
             case cAbsIf:
             {
-                std::vector<CodeTree>& Params = data->Params;
+                std::vector<CodeTree<Value_t> >& Params = data->Params;
                 return Params[1].IsLogicalValue()
                     && Params[2].IsLogicalValue();
             }
@@ -255,7 +277,8 @@ namespace FPoptimizer_CodeTree
         return false; // Not a logical value.
     }
 
-    bool CodeTree::IsAlwaysInteger(bool integer) const
+    template<typename Value_t>
+    bool CodeTree<Value_t>::IsAlwaysInteger(bool integer) const
     {
         switch(data->Opcode)
         {
@@ -278,7 +301,7 @@ namespace FPoptimizer_CodeTree
                 return integer==true; /* 0 and 1 are both integers */
             case cIf:
             {
-                std::vector<CodeTree>& Params = data->Params;
+                std::vector<CodeTree<Value_t> >& Params = data->Params;
                 return Params[1].IsAlwaysInteger(integer)
                     && Params[2].IsAlwaysInteger(integer);
                 return true; /* 0 and 1 are both integers */
@@ -297,9 +320,10 @@ namespace FPoptimizer_CodeTree
         return false; /* Don't know whether it's integer. */
     }
 
-    bool CodeTree::IsAlwaysSigned(bool positive) const
+    template<typename Value_t>
+    bool CodeTree<Value_t>::IsAlwaysSigned(bool positive) const
     {
-        MinMaxTree tmp = CalculateResultBoundaries();
+        MinMaxTree<Value_t> tmp = CalculateResultBoundaries();
 
         if(positive)
             return tmp.has_min && tmp.min >= 0.0
@@ -309,14 +333,16 @@ namespace FPoptimizer_CodeTree
               && (!tmp.has_min || tmp.min < 0.0);
     }
 
-    bool CodeTree::IsIdenticalTo(const CodeTree& b) const
+    template<typename Value_t>
+    bool CodeTree<Value_t>::IsIdenticalTo(const CodeTree<Value_t>& b) const
     {
         //if((!&*data) != (!&*b.data)) return false;
         if(&*data == &*b.data) return true;
         return data->IsIdenticalTo(*b.data);
     }
 
-    bool CodeTreeData::IsIdenticalTo(const CodeTreeData& b) const
+    template<typename Value_t>
+    bool CodeTreeData<Value_t>::IsIdenticalTo(const CodeTreeData<Value_t>& b) const
     {
         if(Hash   != b.Hash) return false; // a quick catch-all
         if(Opcode != b.Opcode) return false;
@@ -336,7 +362,8 @@ namespace FPoptimizer_CodeTree
         return true;
     }
 
-    void CodeTree::Become(const CodeTree& b)
+    template<typename Value_t>
+    void CodeTree<Value_t>::Become(const CodeTree<Value_t>& b)
     {
         if(&b != this && &*data != &*b.data)
         {
@@ -346,26 +373,30 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    void CodeTree::CopyOnWrite()
+    template<typename Value_t>
+    void CodeTree<Value_t>::CopyOnWrite()
     {
         if(data->RefCount > 1)
-            data = new CodeTreeData(*data);
+            data = new CodeTreeData<Value_t>(*data);
     }
 
-    CodeTree CodeTree::GetUniqueRef()
+    template<typename Value_t>
+    CodeTree<Value_t> CodeTree<Value_t>::GetUniqueRef()
     {
         if(data->RefCount > 1)
-            return CodeTree(*this, CloneTag());
+            return CodeTree<Value_t>(*this, CloneTag());
         return *this;
     }
 
-    CodeTreeData::CodeTreeData()
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData()
         : RefCount(0),
           Opcode(cNop), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
     }
 
-    CodeTreeData::CodeTreeData(const CodeTreeData& b)
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(const CodeTreeData& b)
         : RefCount(0),
           Opcode(b.Opcode),
           Params(b.Params),
@@ -384,7 +415,8 @@ namespace FPoptimizer_CodeTree
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
-    CodeTreeData::CodeTreeData(CodeTreeData&& b)
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(CodeTreeData<Value_t>&& b)
         : RefCount(0),
           Opcode(b.Opcode),
           Params(b.Params),
@@ -403,11 +435,28 @@ namespace FPoptimizer_CodeTree
     }
 #endif
 
-    CodeTreeData::CodeTreeData(double i)
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(const Value_t& i)
         : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
         Value = i;
     }
 }
 
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template class CodeTree<double>;
+    template class CodeTreeData<double>;
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template class CodeTree<float>;
+    template class CodeTreeData<float>;
 #endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template class CodeTree<long double>;
+    template class CodeTreeData<long double>;
+#endif
+}
+
+#endif
+

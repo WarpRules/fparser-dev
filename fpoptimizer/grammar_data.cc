@@ -64,27 +64,33 @@ namespace
     /* 32	*/ {5, 0, 0x0}, /* a */
     };
 
-    const ParamSpec_NumConstant plist_n[19] =
+    template<typename Value_t>
+    struct plist_n_container
+    {
+        static const ParamSpec_NumConstant<Value_t> plist_n[19];
+    };
+    template<typename Value_t>
+    const ParamSpec_NumConstant <Value_t> plist_n_container<Value_t>::plist_n[19] =
     {
     /* 33	*/ {-2, 0}, /* -2 */
     /* 34	*/ {-1, 0}, /* -1 */
     /* 35	*/ {-0.5, 0}, /* -0.5 */
     /* 36	*/ {0, 0}, /* 0 */
-    /* 37	*/ {CONSTANT_RD, 0}, /* 0.0174532925199 */
-    /* 38	*/ {CONSTANT_EI, 0}, /* 0.367879441171 */
-    /* 39	*/ {CONSTANT_L10I, 0}, /* 0.434294481903 */
+    /* 37	*/ {fp_const_rad_to_deg<Value_t>(), 0}, /* 0.0174532925199 */
+    /* 38	*/ {fp_const_einv<Value_t>(), 0}, /* 0.367879441171 */
+    /* 39	*/ {fp_const_log10inv<Value_t>(), 0}, /* 0.434294481903 */
     /* 40	*/ {0.5, 0}, /* 0.5 */
-    /* 41	*/ {CONSTANT_L2, 0}, /* 0.69314718056 */
+    /* 41	*/ {fp_const_log2<Value_t>(), 0}, /* 0.69314718056 */
     /* 42	*/ {1, 0}, /* 1 */
-    /* 43	*/ {CONSTANT_L2I, 0}, /* 1.44269504089 */
+    /* 43	*/ {fp_const_log2inv<Value_t>(), 0}, /* 1.44269504089 */
     /* 44	*/ {2, 0}, /* 2 */
-    /* 45	*/ {CONSTANT_L10, 0}, /* 2.30258509299 */
-    /* 46	*/ {CONSTANT_E, 0}, /* 2.71828182846 */
-    /* 47	*/ {CONSTANT_DR, 0}, /* 57.2957795131 */
-    /* 48	*/ {-CONSTANT_PIHALF, Modulo_Radians}, /* -1.57079632679 */
+    /* 45	*/ {fp_const_log10<Value_t>(), 0}, /* 2.30258509299 */
+    /* 46	*/ {fp_const_e<Value_t>(), 0}, /* 2.71828182846 */
+    /* 47	*/ {fp_const_deg_to_rad<Value_t>(), 0}, /* 57.2957795131 */
+    /* 48	*/ {-fp_const_pihalf<Value_t>(), Modulo_Radians}, /* -1.57079632679 */
     /* 49	*/ {0, Modulo_Radians}, /* 0 */
-    /* 50	*/ {CONSTANT_PIHALF, Modulo_Radians}, /* 1.57079632679 */
-    /* 51	*/ {CONSTANT_PI, Modulo_Radians}, /* 3.14159265359 */
+    /* 50	*/ {fp_const_pihalf<Value_t>(), Modulo_Radians}, /* 1.57079632679 */
+    /* 51	*/ {fp_const_pi<Value_t>(), Modulo_Radians}, /* 3.14159265359 */
     };
 
     const ParamSpec_SubFunction plist_s[468] =
@@ -1525,13 +1531,17 @@ namespace FPoptimizer_Grammar
 }
 namespace FPoptimizer_Grammar
 {
+    template<typename Value_t>
     ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)
     {
         index = (paramlist >> (index * 10)) & 1023 /* % (1 << 10) */;
         if(index >= 52)
             return ParamSpec(SubFunction,(const void*)&plist_s[index-52]);
         if(index >= 33)
-            return ParamSpec(NumConstant,(const void*)&plist_n[index-33]);
+            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-33]);
         return ParamSpec(ParamHolder,(const void*)&plist_p[index]);
     }
+template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
+template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
+template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
 }

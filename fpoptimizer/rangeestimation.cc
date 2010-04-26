@@ -10,27 +10,29 @@ using namespace FPoptimizer_CodeTree;
 
 namespace FPoptimizer_CodeTree
 {
-    MinMaxTree CodeTree::CalculateResultBoundaries() const
+    template<typename Value_t>
+    MinMaxTree<Value_t> CodeTree<Value_t>::CalculateResultBoundaries() const
 #ifdef DEBUG_SUBSTITUTIONS_extra_verbose
     {
-        MinMaxTree tmp = CalculateResultBoundaries_do();
+        MinMaxTree<Value_t> tmp = CalculateResultBoundaries_do();
         std::cout << "Estimated boundaries: ";
         if(tmp.has_min) std::cout << tmp.min; else std::cout << "-inf";
         std::cout << " .. ";
         if(tmp.has_max) std::cout << tmp.max; else std::cout << "+inf";
         std::cout << ": ";
-        FPoptimizer_CodeTree::DumpTree(*this);
+        FPoptimizer_CodeTree<Value_t>::DumpTree(*this);
         std::cout << std::endl;
         return tmp;
     }
-    MinMaxTree CodeTree::CalculateResultBoundaries_do() const
+    template<typename Value_t>
+    MinMaxTree<Value_t> CodeTree<Value_t>::CalculateResultBoundaries_do() const
 #endif
     {
         using namespace std;
         switch( GetOpcode() )
         {
             case cImmed:
-                return MinMaxTree(GetImmed(), GetImmed()); // a definite value.
+                return MinMaxTree<Value_t>(GetImmed(), GetImmed()); // a definite value.
             case cAnd:
             case cAbsAnd:
             case cOr:
@@ -48,16 +50,16 @@ namespace FPoptimizer_CodeTree
             {
                 /* These operations always produce truth values (0 or 1) */
                 /* Narrowing them down is a matter of performing Constant optimization */
-                return MinMaxTree( 0.0, 1.0 );
+                return MinMaxTree<Value_t>( Value_t(0), Value_t(1) );
             }
             case cAbs:
             {
                 /* cAbs always produces a positive value */
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
 
                 bool spans_across_zero =
-                       (!m.has_min || m.min < 0.0)
-                    && (!m.has_max || m.max >= 0.0);
+                       (!m.has_min || (m.min) < Value_t(0))
+                    && (!m.has_max || m.max >= Value_t(0));
 
                 if(m.has_min) m.min = fabs(m.min);
                 if(m.has_max) m.max = fabs(m.max);
@@ -68,7 +70,7 @@ namespace FPoptimizer_CodeTree
                 if(spans_across_zero)
                 {
                     if(!m.has_min) m.has_max = false;
-                    m.min     = 0.0;
+                    m.min     = Value_t(0);
                     m.has_min = true;
                 }
                 return m;
@@ -76,45 +78,45 @@ namespace FPoptimizer_CodeTree
 
             case cLog: /* Defined for 0.0 < x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log(m.min); } // No boundaries
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log(m.max); }
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) { if((m.min) < Value_t(0)) m.has_min = false; else m.min = fp_log(m.min); } // No boundaries
+                if(m.has_max) { if((m.max) < Value_t(0)) m.has_max = false; else m.max = fp_log(m.max); }
                 return m;
             }
 
             case cLog2: /* Defined for 0.0 < x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log2(m.min); } // No boundaries
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log2(m.max); }
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) { if((m.min) < Value_t(0)) m.has_min = false; else m.min = fp_log2(m.min); } // No boundaries
+                if(m.has_max) { if((m.max) < Value_t(0)) m.has_max = false; else m.max = fp_log2(m.max); }
                 return m;
             }
 
             case cLog10: /* Defined for 0.0 < x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min < 0.0) m.has_min = false; else m.min = fp_log10(m.min); }
-                if(m.has_max) { if(m.max < 0.0) m.has_max = false; else m.max = fp_log10(m.max); }
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) { if((m.min) < Value_t(0)) m.has_min = false; else m.min = fp_log10(m.min); }
+                if(m.has_max) { if((m.max) < Value_t(0)) m.has_max = false; else m.max = fp_log10(m.max); }
                 return m;
             }
 
             case cAcosh: /* defined for             1.0 <  x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) { if(m.min <= 1.0) m.has_min = false; else m.min = fp_acosh(m.min); } // No boundaries
-                if(m.has_max) { if(m.max <= 1.0) m.has_max = false; else m.max = fp_acosh(m.max); }
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) { if((m.min) <= Value_t(1)) m.has_min = false; else m.min = fp_acosh(m.min); } // No boundaries
+                if(m.has_max) { if((m.max) <= Value_t(1)) m.has_max = false; else m.max = fp_acosh(m.max); }
                 return m;
             }
             case cAsinh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_asinh(m.min); // No boundaries
                 if(m.has_max) m.max = fp_asinh(m.max);
                 return m;
             }
             case cAtanh: /* defined for -1.0 <= x < 1, results within -inf..+inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 /* Assuming that x is never outside valid limits */
                 if(m.has_min) m.min = fp_atanh(m.min);
                 if(m.has_max) m.max = fp_atanh(m.max);
@@ -122,77 +124,79 @@ namespace FPoptimizer_CodeTree
             }
             case cAcos: /* defined for -1.0 <= x < 1, results within CONSTANT_PI..0 */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 /* Assuming that x is never outside valid limits */
-                return MinMaxTree(
-                    m.has_max ? fp_acos(m.max) : 0.0,
-                    m.has_min ? fp_acos(m.min) : CONSTANT_PI);
+                return MinMaxTree<Value_t>(
+                    m.has_max ? fp_acos(m.max) : Value_t(0),
+                    m.has_min ? fp_acos(m.min) : fp_const_pi<Value_t>());
             }
             case cAsin: /* defined for -1.0 <= x < 1, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 /* Assuming that x is never outside valid limits */
-                return MinMaxTree(
-                    m.has_min ? fp_asin(m.min) : -CONSTANT_PIHALF,
-                    m.has_max ? fp_asin(m.max) :  CONSTANT_PIHALF);
+                return MinMaxTree<Value_t>(
+                    m.has_min ? fp_asin(m.min) : -fp_const_pihalf<Value_t>(),
+                    m.has_max ? fp_asin(m.max) :  fp_const_pihalf<Value_t>());
             }
             case cAtan: /* defined for all values -inf <= x <= inf, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                return MinMaxTree(
-                    m.has_min ? fp_atan(m.min) : -CONSTANT_PIHALF,
-                    m.has_max ? fp_atan(m.max) :  CONSTANT_PIHALF);
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                return MinMaxTree<Value_t>(
+                    m.has_min ? fp_atan(m.min) : -fp_const_pihalf<Value_t>(),
+                    m.has_max ? fp_atan(m.max) :  fp_const_pihalf<Value_t>());
             }
             case cAtan2: /* too complicated to estimate */
             {
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
+                MinMaxTree<Value_t> p0 = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> p1 = GetParam(1).CalculateResultBoundaries();
                 if(GetParam(0).IsImmed()
-                && FloatEqual(GetParam(0).GetImmed(), 0.0))   // y == 0
+                && fp_equal(GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {
                     // Either 0.0 or CONSTANT_PI
-                    return MinMaxTree(0.0, CONSTANT_PI);
+                    return MinMaxTree<Value_t>(Value_t(0), fp_const_pi<Value_t>());
                 }
                 if(GetParam(1).IsImmed()
-                && FloatEqual(GetParam(1).GetImmed(), 0.0))   // x == 0
+                && fp_equal(GetParam(1).GetImmed(), Value_t(0)))   // x == 0
                 {
                     // EIther -CONSTANT_PIHALF or +CONSTANT_PIHALF
-                    return MinMaxTree(-CONSTANT_PIHALF, CONSTANT_PIHALF);
+                    return MinMaxTree<Value_t>(-fp_const_pihalf<Value_t>(),
+                                               fp_const_pihalf<Value_t>());
                 }
                 // Anything else
                 /* Somewhat complicated to narrow down from this */
                 /* TODO: A resourceful programmer may add it later. */
-                return MinMaxTree(-CONSTANT_PI, CONSTANT_PI);
+                return MinMaxTree<Value_t>(Value_t(-fp_const_pi<Value_t>()),
+                                           fp_const_pi<Value_t>());
             }
 
             case cSin:
             {
                 /* Quite difficult to estimate due to the cyclic nature of the function. */
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 bool covers_full_cycle
                     = !m.has_min || !m.has_max
-                    || (m.max - m.min) >= (2.0*CONSTANT_PI);
+                    || (m.max - m.min) >= (fp_const_twopi<Value_t>());
                 if(covers_full_cycle)
-                    return MinMaxTree(-1.0, 1.0);
-                double min = fmod(m.min, 2.0*CONSTANT_PI); if(min<0) min+=2.0*CONSTANT_PI;
-                double max = fmod(m.max, 2.0*CONSTANT_PI); if(max<0) max+=2.0*CONSTANT_PI;
-                if(max < min) max += 2.0*CONSTANT_PI;
-                bool covers_plus1  = (min <= CONSTANT_PIHALF && max >= CONSTANT_PIHALF);
-                bool covers_minus1 = (min <= 1.5*CONSTANT_PI && max >= 1.5*CONSTANT_PI);
+                    return MinMaxTree<Value_t>(Value_t(-1), Value_t(1));
+                Value_t min = fp_mod(m.min, fp_const_twopi<Value_t>()); if(min<Value_t(0)) min+=fp_const_twopi<Value_t>();
+                Value_t max = fp_mod(m.max, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
+                if(max < min) max += fp_const_twopi<Value_t>();
+                bool covers_plus1  = (min <= fp_const_pihalf<Value_t>() && max >= fp_const_pihalf<Value_t>());
+                bool covers_minus1 = (min <= Value_t(1.5)*fp_const_pi<Value_t>() && max >= Value_t(1.5)*fp_const_pi<Value_t>());
                 if(covers_plus1 && covers_minus1)
-                    return MinMaxTree(-1.0, 1.0);
+                    return MinMaxTree<Value_t>(Value_t(-1), Value_t(1));
                 if(covers_minus1)
-                    return MinMaxTree(-1.0, fp_max(fp_sin(min), fp_sin(max)));
+                    return MinMaxTree<Value_t>(Value_t(-1), fp_max(fp_sin(min), fp_sin(max)));
                 if(covers_plus1)
-                    return MinMaxTree(fp_min(fp_sin(min), fp_sin(max)), 1.0);
-                return MinMaxTree(fp_min(fp_sin(min), fp_sin(max)),
+                    return MinMaxTree<Value_t>(fp_min(fp_sin(min), fp_sin(max)), Value_t(1));
+                return MinMaxTree<Value_t>(fp_min(fp_sin(min), fp_sin(max)),
                                   fp_max(fp_sin(min), fp_sin(max)));
             }
             case cCos:
             {
                 /* Quite difficult to estimate due to the cyclic nature of the function. */
                 /* cos(x) = sin(pi/2 - x) = sin(x + pi/2) */
-                return MinMaxTree(-1.0, 1.0);
+                return MinMaxTree<Value_t>(Value_t(-1), Value_t(1));
             }
             case cTan:
             {
@@ -200,77 +204,77 @@ namespace FPoptimizer_CodeTree
                  * but it's too complicated due to
                  * the cyclic nature of the function */
                 /* TODO: A resourceful programmer may add it later. */
-                return MinMaxTree(); // (CONSTANT_NEG_INF, CONSTANT_POS_INF);
+                return MinMaxTree<Value_t>(); // (CONSTANT_NEG_INF, CONSTANT_POS_INF);
             }
 
             case cCeil:
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_max) m.max = fp_ceil(m.max); // ceil() may increase the value, may not decrease
                 return m;
             }
             case cFloor:
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_floor(m.min); // floor() may decrease the value, may not increase
                 return m;
             }
             case cTrunc:
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_floor(m.min); // trunc() may either increase or decrease the value
                 if(m.has_max) m.max = fp_ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cInt:
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 m.min = fp_floor(m.min); // int() may either increase or decrease the value
                 m.max = fp_ceil(m.max); // for safety, we assume both
                 return m;
             }
             case cSinh: /* defined for all values -inf <= x <= inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min) m.min = fp_sinh(m.min); // No boundaries
                 if(m.has_max) m.max = fp_sinh(m.max);
                 return m;
             }
             case cTanh: /* defined for all values -inf <= x <= inf, results within -1..1 */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
-                if(m.has_min) m.min = fp_tanh(m.min); else { m.has_min = true; m.min =-1.0; }
-                if(m.has_max) m.max = fp_tanh(m.max); else { m.has_max = true; m.max = 1.0; }
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
+                if(m.has_min) m.min = fp_tanh(m.min); else { m.has_min = true; m.min =Value_t(-1); }
+                if(m.has_max) m.max = fp_tanh(m.max); else { m.has_max = true; m.max = Value_t(1); }
                 return m;
             }
             case cCosh: /* defined for all values -inf <= x <= inf, results within 1..inf */
             {
-                MinMaxTree m = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> m = GetParam(0).CalculateResultBoundaries();
                 if(m.has_min)
                 {
                     if(m.has_max) // max, min
                     {
-                        if(m.min >= 0.0 && m.max >= 0.0) // +x .. +y
+                        if(m.min >= Value_t(0) && m.max >= Value_t(0)) // +x .. +y
                             { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max); }
-                        else if(m.min < 0.0 && m.max >= 0.0) // -x .. +y
-                            { double tmp = fp_cosh(m.min); m.max = fp_cosh(m.max);
+                        else if((m.min) < Value_t(0) && m.max >= Value_t(0)) // -x .. +y
+                            { Value_t tmp = fp_cosh(m.min); m.max = fp_cosh(m.max);
                               if(tmp > m.max) m.max = tmp;
-                              m.min = 1.0; }
+                              m.min = Value_t(1); }
                         else // -x .. -y
                             { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max);
                               std::swap(m.min, m.max); }
                     }
                     else // min, no max
                     {
-                        if(m.min >= 0.0) // 0..inf -> 1..inf
+                        if(m.min >= Value_t(0)) // 0..inf -> 1..inf
                             { m.has_max = false; m.min = fp_cosh(m.min); }
                         else
-                            { m.has_max = false; m.min = 1.0; } // Anything between 1..inf
+                            { m.has_max = false; m.min = Value_t(1); } // Anything between 1..inf
                     }
                 }
                 else // no min
                 {
-                    m.has_min = true; m.min = 1.0; // always a lower boundary
+                    m.has_min = true; m.min = Value_t(1); // always a lower boundary
                     if(m.has_max) // max, no min
                     {
                         m.min = fp_cosh(m.max); // n..inf
@@ -286,10 +290,10 @@ namespace FPoptimizer_CodeTree
             case cAbsIf:
             {
                 // No guess which branch is chosen. Produce a spanning min & max.
-                MinMaxTree res1 = GetParam(1).CalculateResultBoundaries();
-                MinMaxTree res2 = GetParam(2).CalculateResultBoundaries();
-                if(!res2.has_min) res1.has_min = false; else if(res1.has_min && res2.min < res1.min) res1.min = res2.min;
-                if(!res2.has_max) res1.has_max = false; else if(res1.has_max && res2.max > res1.max) res1.max = res2.max;
+                MinMaxTree<Value_t> res1 = GetParam(1).CalculateResultBoundaries();
+                MinMaxTree<Value_t> res2 = GetParam(2).CalculateResultBoundaries();
+                if(!res2.has_min) res1.has_min = false; else if(res1.has_min && (res2.min) < res1.min) res1.min = res2.min;
+                if(!res2.has_max) res1.has_max = false; else if(res1.has_max && (res2.max) > res1.max) res1.max = res2.max;
                 return res1;
             }
 
@@ -298,18 +302,18 @@ namespace FPoptimizer_CodeTree
                 bool has_unknown_min = false;
                 bool has_unknown_max = false;
 
-                MinMaxTree result;
+                MinMaxTree<Value_t> result;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
-                    MinMaxTree m = GetParam(a).CalculateResultBoundaries();
+                    MinMaxTree<Value_t> m = GetParam(a).CalculateResultBoundaries();
                     if(!m.has_min)
                         has_unknown_min = true;
-                    else if(!result.has_min || m.min < result.min)
+                    else if(!result.has_min || (m.min) < result.min)
                         result.min = m.min;
 
                     if(!m.has_max)
                         has_unknown_max = true;
-                    else if(!result.has_max || m.max < result.max)
+                    else if(!result.has_max || (m.max) < result.max)
                         result.max = m.max;
                 }
                 if(has_unknown_min) result.has_min = false;
@@ -321,10 +325,10 @@ namespace FPoptimizer_CodeTree
                 bool has_unknown_min = false;
                 bool has_unknown_max = false;
 
-                MinMaxTree result;
+                MinMaxTree<Value_t> result;
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
-                    MinMaxTree m = GetParam(a).CalculateResultBoundaries();
+                    MinMaxTree<Value_t> m = GetParam(a).CalculateResultBoundaries();
                     if(!m.has_min)
                         has_unknown_min = true;
                     else if(!result.has_min || m.min > result.min)
@@ -345,10 +349,10 @@ namespace FPoptimizer_CodeTree
                 /* Note: This also deals with the following opcodes:
                  *       cNeg, cSub, cRSub
                  */
-                MinMaxTree result(0.0, 0.0);
+                MinMaxTree<Value_t> result(Value_t(0), Value_t(0));
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
-                    MinMaxTree item = GetParam(a).CalculateResultBoundaries();
+                    MinMaxTree<Value_t> item = GetParam(a).CalculateResultBoundaries();
 
                     if(item.has_min) result.min += item.min;
                     else             result.has_min = false;
@@ -368,15 +372,15 @@ namespace FPoptimizer_CodeTree
                 {
                     enum ValueType { Finite, MinusInf, PlusInf };
                     ValueType valueType;
-                    double value;
+                    Value_t value;
 
                     Value(ValueType t): valueType(t), value(0) {}
-                    Value(double v): valueType(Finite), value(v) {}
+                    Value(Value_t v): valueType(Finite), value(v) {}
 
                     bool isNegative() const
                     {
                         return valueType == MinusInf ||
-                            (valueType == Finite && value < 0.0);
+                            (valueType == Finite && value < Value_t(0));
                     }
 
                     void operator*=(const Value& rhs)
@@ -414,11 +418,11 @@ namespace FPoptimizer_CodeTree
                     }
                 };
 
-                MinMaxTree result(1.0, 1.0);
+                MinMaxTree<Value_t> result(Value_t(1), Value_t(1));
                 for(size_t a=0; a<GetParamCount(); ++a)
                 {
-                    MinMaxTree item = GetParam(a).CalculateResultBoundaries();
-                    if(!item.has_min && !item.has_max) return MinMaxTree(); // hopeless
+                    MinMaxTree<Value_t> item = GetParam(a).CalculateResultBoundaries();
+                    if(!item.has_min && !item.has_max) return MinMaxTree<Value_t>(); // hopeless
 
                     Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
                     Value maxValue0 = result.has_max ? Value(result.max) : Value(Value::PlusInf);
@@ -449,53 +453,53 @@ namespace FPoptimizer_CodeTree
             {
                 /* TODO: The boundaries of modulo operator could be estimated better. */
 
-                MinMaxTree x = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree y = GetParam(1).CalculateResultBoundaries();
+                MinMaxTree<Value_t> x = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> y = GetParam(1).CalculateResultBoundaries();
 
                 if(y.has_max)
                 {
-                    if(y.max >= 0.0)
+                    if(y.max >= Value_t(0))
                     {
-                        if(!x.has_min || x.min < 0)
-                            return MinMaxTree(-y.max, y.max);
+                        if(!x.has_min || (x.min) < 0)
+                            return MinMaxTree<Value_t>(-y.max, y.max);
                         else
-                            return MinMaxTree(0.0, y.max);
+                            return MinMaxTree<Value_t>(Value_t(0), y.max);
                     }
                     else
                     {
-                        if(!x.has_max || x.max >= 0)
-                            return MinMaxTree(y.max, -y.max);
+                        if(!x.has_max || (x.max) >= 0)
+                            return MinMaxTree<Value_t>(y.max, -y.max);
                         else
-                            return MinMaxTree(y.max, NEGATIVE_MAXIMUM);
+                            return MinMaxTree<Value_t>(y.max, fp_const_negativezero<Value_t>());
                     }
                 }
                 else
-                    return MinMaxTree();
+                    return MinMaxTree<Value_t>();
             }
             case cPow:
             {
-                if(GetParam(1).IsImmed() && GetParam(1).GetImmed() == 0.0)
+                if(GetParam(1).IsImmed() && GetParam(1).GetImmed() == Value_t(0))
                 {
                     // Note: This makes 0^0 evaluate into 1.
-                    return MinMaxTree(1.0, 1.0); // x^0 = 1
+                    return MinMaxTree<Value_t>(Value_t(1), Value_t(1)); // x^0 = 1
                 }
-                if(GetParam(0).IsImmed() && GetParam(0).GetImmed() == 0.0)
+                if(GetParam(0).IsImmed() && GetParam(0).GetImmed() == Value_t(0))
                 {
                     // Note: This makes 0^0 evaluate into 0.
-                    return MinMaxTree(0.0, 0.0); // 0^x = 0
+                    return MinMaxTree<Value_t>(Value_t(0), Value_t(0)); // 0^x = 0
                 }
-                if(GetParam(0).IsImmed() && FloatEqual(GetParam(0).GetImmed(), 1.0))
+                if(GetParam(0).IsImmed() && fp_equal(GetParam(0).GetImmed(), Value_t(1)))
                 {
-                    return MinMaxTree(1.0, 1.0); // 1^x = 1
+                    return MinMaxTree<Value_t>(Value_t(1), Value_t(1)); // 1^x = 1
                 }
                 if(GetParam(1).IsImmed()
                 && GetParam(1).GetImmed() > 0
                 && GetParam(1).IsAlwaysParity(false))
                 {
                     // x ^ even_int_const always produces a non-negative value.
-                    double exponent = GetParam(1).GetImmed();
-                    MinMaxTree tmp = GetParam(0).CalculateResultBoundaries();
-                    MinMaxTree result;
+                    Value_t exponent = GetParam(1).GetImmed();
+                    MinMaxTree<Value_t> tmp = GetParam(0).CalculateResultBoundaries();
+                    MinMaxTree<Value_t> result;
                     result.has_min = true;
                     result.min = 0;
                     if(tmp.has_min && tmp.min >= 0)
@@ -513,11 +517,11 @@ namespace FPoptimizer_CodeTree
                     return result;
                 }
 
-                MinMaxTree p0 = GetParam(0).CalculateResultBoundaries();
-                MinMaxTree p1 = GetParam(1).CalculateResultBoundaries();
+                MinMaxTree<Value_t> p0 = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> p1 = GetParam(1).CalculateResultBoundaries();
                 TriTruthValue p0_positivity =
-                    (p0.has_min && p0.min >= 0.0) ? IsAlways
-                  : (p0.has_max && p0.max < 0.0 ? IsNever
+                    (p0.has_min && (p0.min) >= Value_t(0)) ? IsAlways
+                  : (p0.has_max && (p0.max) < Value_t(0) ? IsNever
                     : Unknown);
                 TriTruthValue p1_evenness = GetParam(1).GetEvennessInfo();
 
@@ -579,7 +583,7 @@ namespace FPoptimizer_CodeTree
                                  */
                                 if(GetParam(1).IsImmed()
                                 && GetParam(1).IsAlwaysInteger(false)
-                                && GetParam(1).GetImmed() >= 0.0)
+                                && GetParam(1).GetImmed() >= Value_t(0))
                                 {
                                     result_positivity = IsAlways;
                                 }
@@ -593,27 +597,27 @@ namespace FPoptimizer_CodeTree
                     {
                         /* The result is always positive.
                          * Figure out whether we know the minimum value. */
-                        double min = 0.0;
+                        Value_t min = Value_t(0);
                         if(p0.has_min && p1.has_min)
                         {
-                            min = pow(p0.min, p1.min);
-                            if(p0.min < 0.0 && (!p1.has_max || p1.max >= 0.0) && min >= 0.0)
-                                min = 0.0;
+                            min = fp_pow(p0.min, p1.min);
+                            if(p0.min < Value_t(0) && (!p1.has_max || p1.max >= Value_t(0)) && min >= Value_t(0))
+                                min = Value_t(0);
                         }
-                        if(p0.has_min && p0.min >= 0.0 && p0.has_max && p1.has_max)
+                        if(p0.has_min && p0.min >= Value_t(0) && p0.has_max && p1.has_max)
                         {
-                            double max = pow(p0.max, p1.max);
+                            Value_t max = pow(p0.max, p1.max);
                             if(min > max) std::swap(min, max);
-                            return MinMaxTree(min, max);
+                            return MinMaxTree<Value_t>(min, max);
                         }
-                        return MinMaxTree(min, false);
+                        return MinMaxTree<Value_t>(min, false);
                     }
                     case IsNever:
                     {
                         /* The result is always negative.
                          * TODO: Figure out whether we know the maximum value.
                          */
-                        return MinMaxTree(false, NEGATIVE_MAXIMUM);
+                        return MinMaxTree<Value_t>(false, fp_const_negativezero<Value_t>());
                     }
                     default:
                     {
@@ -633,15 +637,15 @@ namespace FPoptimizer_CodeTree
              */
             case cNeg:
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cMul);
-                tmp.AddParam(CodeTree(-1.0));
+                tmp.AddParam(CodeTree<Value_t>(Value_t(-1)));
                 tmp.AddParam(GetParam(0));
                 return tmp.CalculateResultBoundaries();
             }
             case cSub: // converted into cMul y -1
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cNeg);
                 tmp2.AddParam(GetParam(1));
                 tmp.SetOpcode(cAdd);
@@ -651,15 +655,15 @@ namespace FPoptimizer_CodeTree
             }
             case cInv: // converted into cPow x -1
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(-1.0));
+                tmp.AddParam(CodeTree<Value_t>(Value_t(-1)));
                 return tmp.CalculateResultBoundaries();
             }
             case cDiv: // converted into cPow y -1
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cInv);
                 tmp2.AddParam(GetParam(1));
                 tmp.SetOpcode(cMul);
@@ -669,41 +673,41 @@ namespace FPoptimizer_CodeTree
             }
             case cRad: // converted into cMul x CONSTANT_RD
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cMul);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(CONSTANT_RD));
+                tmp.AddParam(CodeTree<Value_t>(fp_const_rad_to_deg<Value_t>()));
                 return tmp.CalculateResultBoundaries();
             }
             case cDeg: // converted into cMul x CONSTANT_DR
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cMul);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(CONSTANT_DR));
+                tmp.AddParam(CodeTree<Value_t>(fp_const_deg_to_rad<Value_t>()));
                 return tmp.CalculateResultBoundaries();
             }
             case cSqr: // converted into cMul x x    or cPow x 2
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(2.0));
+                tmp.AddParam(CodeTree<Value_t>(Value_t(2)));
                 return tmp.CalculateResultBoundaries();
             }
             case cExp: // converted into cPow CONSTANT_E x
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
-                tmp.AddParam(CodeTree(CONSTANT_E));
+                tmp.AddParam(CodeTree<Value_t>(fp_const_e<Value_t>()));
                 tmp.AddParam(GetParam(0));
                 return tmp.CalculateResultBoundaries();
             }
             case cExp2: // converted into cPow 2 x
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
-                tmp.AddParam(CodeTree(2.0));
+                tmp.AddParam(CodeTree<Value_t>(Value_t(2)));
                 tmp.AddParam(GetParam(0));
                 return tmp.CalculateResultBoundaries();
             }
@@ -712,31 +716,31 @@ namespace FPoptimizer_CodeTree
                 // However, contrary to x^(1/3), this allows
                 // negative values for x, and produces those
                 // as well.
-                MinMaxTree result = GetParam(0).CalculateResultBoundaries();
+                MinMaxTree<Value_t> result = GetParam(0).CalculateResultBoundaries();
                 if(result.has_min) result.min = fp_cbrt(result.min);
                 if(result.has_max) result.max = fp_cbrt(result.max);
                 return result;
             }
             case cSqrt: // converted into cPow x 0.5
             {
-                MinMaxTree result = GetParam(0).CalculateResultBoundaries();
-                if(result.has_min) result.min = result.min < 0 ? 0 : fp_sqrt(result.min);
-                if(result.has_max) result.max = result.max < 0 ? 0 : fp_sqrt(result.max);
+                MinMaxTree<Value_t> result = GetParam(0).CalculateResultBoundaries();
+                if(result.has_min) result.min = (result.min) < 0 ? 0 : fp_sqrt(result.min);
+                if(result.has_max) result.max = (result.max) < 0 ? 0 : fp_sqrt(result.max);
                 return result;
             }
             case cRSqrt: // converted into cPow x -0.5
             {
-                CodeTree tmp;
+                CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
                 tmp.AddParam(GetParam(0));
-                tmp.AddParam(CodeTree(-0.5));
+                tmp.AddParam(CodeTree<Value_t>(-0.5));
                 return tmp.CalculateResultBoundaries();
             }
             case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))
             {
-                CodeTree xsqr, ysqr, add, sqrt;
-                xsqr.AddParam(GetParam(0)); xsqr.AddParam(CodeTree(2));
-                ysqr.AddParam(GetParam(1)); ysqr.AddParam(CodeTree(2));
+                CodeTree<Value_t> xsqr, ysqr, add, sqrt;
+                xsqr.AddParam(GetParam(0)); xsqr.AddParam(CodeTree<Value_t>(2));
+                ysqr.AddParam(GetParam(1)); ysqr.AddParam(CodeTree<Value_t>(2));
                 xsqr.SetOpcode(cPow); ysqr.SetOpcode(cPow);
                 add.AddParamMove(xsqr); add.AddParamMove(ysqr);
                 add.SetOpcode(cAdd); sqrt.AddParamMove(add);
@@ -745,7 +749,7 @@ namespace FPoptimizer_CodeTree
             }
             case cLog2by: // converted into cMul y CONSTANT_L2I (cLog x)
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cLog2);
                 tmp2.AddParam(GetParam(0));
                 tmp.SetOpcode(cMul);
@@ -755,7 +759,7 @@ namespace FPoptimizer_CodeTree
             }
             case cCot: // converted into 1 / cTan
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cTan);
                 tmp2.AddParam(GetParam(0));
                 tmp.SetOpcode(cInv);
@@ -764,7 +768,7 @@ namespace FPoptimizer_CodeTree
             }
             case cSec: // converted into 1 / cCos
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cCos);
                 tmp2.AddParam(GetParam(0));
                 tmp.SetOpcode(cInv);
@@ -773,7 +777,7 @@ namespace FPoptimizer_CodeTree
             }
             case cCsc: // converted into 1 / cSin
             {
-                CodeTree tmp, tmp2;
+                CodeTree<Value_t> tmp, tmp2;
                 tmp2.SetOpcode(cSin);
                 tmp2.AddParam(GetParam(0));
                 tmp.SetOpcode(cInv);
@@ -806,8 +810,20 @@ namespace FPoptimizer_CodeTree
             case cEval:
                 break; // Cannot deduce
         }
-        return MinMaxTree(); /* Cannot deduce */
+        return MinMaxTree<Value_t>(); /* Cannot deduce */
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template MinMaxTree<double> CodeTree<double>::CalculateResultBoundaries() const;
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template MinMaxTree<float> CodeTree<float>::CalculateResultBoundaries() const;
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template MinMaxTree<long double> CodeTree<long double>::CalculateResultBoundaries() const;
+#endif
 }
 
 #endif

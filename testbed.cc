@@ -2150,7 +2150,7 @@ int main(int argc, char* argv[])
             runAllTypes = false, run_d = true;
         else if(std::strcmp(argv[i], "-f") == 0
              || std::strcmp(argv[i], "-float") == 0)
-            runAllTypes = false, run_d = true;
+            runAllTypes = false, run_f = true;
         else if(std::strcmp(argv[i], "-ld") == 0
              || std::strcmp(argv[i], "-longdouble") == 0)
             runAllTypes = false, run_ld = true;

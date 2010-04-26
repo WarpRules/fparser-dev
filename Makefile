@@ -35,6 +35,7 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 #       -ffunction-sections -fdata-sections
 
 #OPTIMIZATION=-g
+#OPTIMIZATION=-g -O0 -fno-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
 

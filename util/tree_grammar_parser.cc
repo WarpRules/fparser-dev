@@ -572,7 +572,7 @@ public:
 
             for(size_t b = 0; b < plist.size(); ++b)
                 if(plist[b].first == p.first
-                && ParamSpec_Compare(plist[b].second, p.second, p.first))
+                && ParamSpec_Compare<double>(plist[b].second, p.second, p.first))
                 {
                     paramno = (unsigned)b;
                     break;
@@ -610,7 +610,7 @@ public:
             }
             case NumConstant:
             {
-                ParamSpec_NumConstant* result = new ParamSpec_NumConstant;
+                ParamSpec_NumConstant<double>* result = new ParamSpec_NumConstant<double>;
                 result->constvalue     = p.ConstantValue;
                 result->modulo         = p.ImmedConstraint;
                 return std::make_pair(NumConstant, (void*)result);
@@ -810,54 +810,54 @@ public:
         using namespace FUNCTIONPARSERTYPES;
         std::ostringstream result;
         result.precision(50);
+        #define Value_t double
         #define if_const(n) \
             if(FloatEqual(value, n)) result << #n; \
             else if(FloatEqual(value, -n)) result << "-" #n;
-        if_const(CONSTANT_E)
-        else if_const(CONSTANT_EI)
-        else if_const(CONSTANT_2E)
-        else if_const(CONSTANT_2EI)
-        else if_const(CONSTANT_PI)
-        else if_const(CONSTANT_L10)
-        else if_const(CONSTANT_L2)
-        else if_const(CONSTANT_L10I)
-        else if_const(CONSTANT_L2I)
-        else if_const(CONSTANT_L10B)
-        else if_const(CONSTANT_L10BI)
-        else if_const(CONSTANT_DR)
-        else if_const(CONSTANT_RD)
-        else if_const(CONSTANT_PIHALF)
-        else if_const(CONSTANT_TWOPI)
+        if_const(fp_const_e<Value_t>())
+        else if_const(fp_const_einv<Value_t>())
+        else if_const(fp_const_twoe<Value_t>())
+        else if_const(fp_const_twoeinv<Value_t>())
+        else if_const(fp_const_pi<Value_t>())
+        else if_const(fp_const_pihalf<Value_t>())
+        else if_const(fp_const_twopi<Value_t>())
+        else if_const(fp_const_log2<Value_t>())
+        else if_const(fp_const_log2inv<Value_t>())
+        else if_const(fp_const_log10<Value_t>())
+        else if_const(fp_const_log10inv<Value_t>())
+        else if_const(fp_const_rad_to_deg<Value_t>())
+        else if_const(fp_const_deg_to_rad<Value_t>())
         else if_const(FPOPT_NAN_CONST)
         #undef if_const
+        #undef Value_t
         else result << value;
         return result.str();
     }
 
     struct ParamCollection
     {
-        std::vector<ParamSpec_ParamHolder>   plist_p;
-        std::vector<ParamSpec_NumConstant>   plist_n;
-        std::vector<ParamSpec_SubFunction>   plist_s;
+        std::vector<ParamSpec_ParamHolder>           plist_p;
+        std::vector<ParamSpec_NumConstant<double> >  plist_n;
+        std::vector<ParamSpec_SubFunction>           plist_s;
 
         void Populate(const ParamSpec& param)
         {
-            #define set(when, list, code) \
+            #define set(when, type, list, code) \
                 case when: \
                   { for(size_t a=0; a<list.size(); ++a) \
-                        if(ParamSpec_Compare(param.second, (const void*) &list[a], when)) \
+                        if(ParamSpec_Compare<double>(param.second, (const void*) &list[a], when)) \
                             return; \
-                    list.push_back( *(ParamSpec_##when*) param.second ); \
+                    list.push_back( *(type*) param.second ); \
                     code; \
                     break; }
             switch(param.first)
             {
-                set(ParamHolder, plist_p, {} );
-                set(NumConstant, plist_n, {} );
-                set(SubFunction, plist_s,
+                set(ParamHolder, ParamSpec_ParamHolder,         plist_p, {} );
+                set(NumConstant, ParamSpec_NumConstant<double>, plist_n, {} );
+                set(SubFunction, ParamSpec_SubFunction,         plist_s,
                      ParamSpec_SubFunction* p = (ParamSpec_SubFunction*)param.second;
                      for(size_t a=0; a<p->data.param_count; ++a)
-                         Populate( ParamSpec_Extract( p->data.param_list, a) );
+                         Populate( ParamSpec_Extract<double>( p->data.param_list, a) );
                     );
             }
             #undef set
@@ -875,8 +875,8 @@ public:
             return false;
         } };
         struct n_compare { bool operator() (
-            const ParamSpec_NumConstant& a,
-            const ParamSpec_NumConstant& b) const
+            const ParamSpec_NumConstant<double>& a,
+            const ParamSpec_NumConstant<double>& b) const
         {
             if(a.modulo != b.modulo) return a.modulo < b.modulo;
             return a.constvalue < b.constvalue;
@@ -912,8 +912,8 @@ public:
                 min_param_count = b.data.param_count;
             for(size_t c=0; c< min_param_count; ++c)
             {
-                ParamSpec aa = ParamSpec_Extract(a.data.param_list, (unsigned)c);
-                ParamSpec bb = ParamSpec_Extract(b.data.param_list, (unsigned)c);
+                ParamSpec aa = ParamSpec_Extract<double>(a.data.param_list, (unsigned)c);
+                ParamSpec bb = ParamSpec_Extract<double>(b.data.param_list, (unsigned)c);
                 if(aa.first != bb.first)
                     return aa.first < bb.first;
                 switch(aa.first)
@@ -924,8 +924,8 @@ public:
                             return true;
                         break;
                     case NumConstant:
-                        if(n_compare() (*(const ParamSpec_NumConstant*)aa.second,
-                                        *(const ParamSpec_NumConstant*)bb.second))
+                        if(n_compare() (*(const ParamSpec_NumConstant<double>*)aa.second,
+                                        *(const ParamSpec_NumConstant<double>*)bb.second))
                             return true;
                         break;
                     case SubFunction:
@@ -949,13 +949,13 @@ public:
 
         unsigned ParamPtrToParamIndex(unsigned paramlist, unsigned index) const
         {
-            const ParamSpec& p = ParamSpec_Extract(paramlist, index);
+            const ParamSpec& p = ParamSpec_Extract<double> (paramlist, index);
             if(p.second)
             {
                 #define set(when, list, c) \
                     case when: \
                         for(size_t a=0; a<list.size(); ++a) \
-                            if(ParamSpec_Compare(p.second, (const void*)&list[a], when)) \
+                            if(ParamSpec_Compare<double> (p.second, (const void*)&list[a], when)) \
                                 return (a + c##offset); \
                         break;
                 unsigned Poffset = 0;
@@ -1003,7 +1003,7 @@ public:
             return result.str();
         }
 
-        std::string NumConstantToString(const ParamSpec_NumConstant& i) const
+        std::string NumConstantToString(const ParamSpec_NumConstant<double>& i) const
         {
             std::ostringstream result;
             result << "{" << ConstValueToString(i.constvalue)
@@ -1046,9 +1046,9 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             for(unsigned b=0; b < rlist[a].match_tree.param_count; ++b)
-                collection.Populate( ParamSpec_Extract(rlist[a].match_tree.param_list, b) );
+                collection.Populate( ParamSpec_Extract<double>(rlist[a].match_tree.param_list, b) );
             for(unsigned b=0; b < rlist[a].repl_param_count; ++b)
-                collection.Populate( ParamSpec_Extract(rlist[a].repl_param_list, b) );
+                collection.Populate( ParamSpec_Extract<double>(rlist[a].repl_param_list, b) );
         }
         collection.Sort();
 
@@ -1071,16 +1071,16 @@ public:
 
         {
 
-        #define set(type, list, c) \
+        #define set(type, listprefix, list, c) \
             std::cout << \
-            "    const ParamSpec_" #type " " #list "[" << collection.list.size() << "] =\n" \
+            "    const ParamSpec_" #type " " listprefix #list "[" << collection.list.size() << "] =\n" \
             "    {\n"; \
             for(size_t a=0; a<collection.list.size(); ++a) \
             { \
                 std::cout << "    /* " << offset++ << "\t*/ " \
                           << collection.type##ToString(collection.list[a]) \
                           << ", /* "; \
-                FPoptimizer_Grammar::DumpParam( ParamSpec(type, (const void*) &collection.list[a]), std::cout); \
+                FPoptimizer_Grammar::DumpParam<double>( ParamSpec(type, (const void*) &collection.list[a]), std::cout); \
                 std::cout << " */\n"; \
             } \
             std::cout << \
@@ -1088,9 +1088,16 @@ public:
             "\n";
 
         unsigned offset = 0;
-        set(ParamHolder,   plist_p, P) // Must be first one
-        set(NumConstant,   plist_n, N)
-        set(SubFunction,   plist_s, S)
+        set(ParamHolder, "", plist_p, P) // Must be first one
+        std::cout <<
+            "    template<typename Value_t>\n"
+            "    struct plist_n_container\n"
+            "    {\n"
+            "        static const ParamSpec_NumConstant<Value_t> plist_n[" << collection.plist_n.size() << "];\n"
+            "    };\n"
+            "    template<typename Value_t>\n";
+        set(NumConstant, "<Value_t> plist_n_container<Value_t>::", plist_n, N)
+        set(SubFunction, "", plist_s, S)
 
         std::cout <<
             "}\n";
@@ -1110,21 +1117,23 @@ public:
             "        /* " << a << ":\t";
             ParamSpec_SubFunction tmp = {rlist[a].match_tree,0,0};
             if(rlist[a].logical_context) std::cout << "@L ";
-            FPoptimizer_Grammar::DumpParam( ParamSpec(SubFunction, (const void*) &tmp) );
+            FPoptimizer_Grammar::DumpParam<double>
+                ( ParamSpec(SubFunction, (const void*) &tmp) );
             switch(rlist[a].ruletype)
             {
                 case ProduceNewTree:
                     std::cout <<
                     "\n"
                     "         *\t->\t";
-                    FPoptimizer_Grammar::DumpParam(
-                        ParamSpec_Extract(rlist[a].repl_param_list, 0) );
+                    FPoptimizer_Grammar::DumpParam<double>(
+                        ParamSpec_Extract<double>(rlist[a].repl_param_list, 0) );
                     break;
                 case ReplaceParams: default:
                     std::cout <<
                     "\n"
                     "         *\t:\t";
-                    FPoptimizer_Grammar::DumpParams( rlist[a].repl_param_list, rlist[a].repl_param_count);
+                    FPoptimizer_Grammar::DumpParams<double>
+                        ( rlist[a].repl_param_list, rlist[a].repl_param_count);
                     break;
             }
             std::cout <<
@@ -1182,7 +1191,7 @@ static GrammarDumper dumper;
 
 
 /* Line 189 of yacc.c  */
-#line 1186 "util/tree_grammar_parser.cc"
+#line 1195 "util/tree_grammar_parser.cc"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -1231,7 +1240,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 1115 "util/tree_grammar_parser.y"
+#line 1124 "util/tree_grammar_parser.y"
 
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1249,7 +1258,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 1253 "util/tree_grammar_parser.cc"
+#line 1262 "util/tree_grammar_parser.cc"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -1261,7 +1270,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 1265 "util/tree_grammar_parser.cc"
+#line 1274 "util/tree_grammar_parser.cc"
 
 #ifdef short
 # undef short
@@ -1553,9 +1562,9 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,  1153,  1153,  1158,  1170,  1171,  1175,  1184,  1202,  1224,
-    1236,  1244,  1252,  1262,  1266,  1277,  1283,  1287,  1292,  1303,
-    1308,  1313,  1328,  1333,  1339,  1344
+       0,  1162,  1162,  1167,  1179,  1180,  1184,  1193,  1211,  1233,
+    1245,  1253,  1261,  1271,  1275,  1286,  1292,  1296,  1301,  1312,
+    1317,  1322,  1337,  1342,  1348,  1353
 };
 #endif
 
@@ -2489,7 +2498,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 1154 "util/tree_grammar_parser.y"
+#line 1163 "util/tree_grammar_parser.y"
     {
         grammar.AddRule(*(yyvsp[(2) - (2)].r));
         delete (yyvsp[(2) - (2)].r);
@@ -2499,7 +2508,7 @@ yyreduce:
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 1159 "util/tree_grammar_parser.y"
+#line 1168 "util/tree_grammar_parser.y"
     {
         if((yyvsp[(2) - (3)].index) != Value_Logical)
         {
@@ -2516,7 +2525,7 @@ yyreduce:
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 1177 "util/tree_grammar_parser.y"
+#line 1186 "util/tree_grammar_parser.y"
     {
         (yyvsp[(3) - (4)].a)->RecursivelySetDefaultParamMatchingType();
 
@@ -2528,7 +2537,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 1187 "util/tree_grammar_parser.y"
+#line 1196 "util/tree_grammar_parser.y"
     {
         GrammarData::ParamSpec* p = new GrammarData::ParamSpec((yyvsp[(3) - (4)].f));
         p->RecursivelySetDefaultParamMatchingType();
@@ -2548,7 +2557,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 1204 "util/tree_grammar_parser.y"
+#line 1213 "util/tree_grammar_parser.y"
     {
         /*if($1->Params.RestHolderIndex != 0)
         {
@@ -2571,7 +2580,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 1225 "util/tree_grammar_parser.y"
+#line 1234 "util/tree_grammar_parser.y"
     {
            if(!(yyvsp[(1) - (1)].f)->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2585,7 +2594,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 1240 "util/tree_grammar_parser.y"
+#line 1249 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p));
          delete (yyvsp[(3) - (4)].p);
@@ -2595,7 +2604,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 1248 "util/tree_grammar_parser.y"
+#line 1257 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p)->SetType(SelectedParams));
          delete (yyvsp[(3) - (4)].p);
@@ -2605,7 +2614,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 1255 "util/tree_grammar_parser.y"
+#line 1264 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (2)].opcode), *(yyvsp[(2) - (2)].p)->SetType(AnyParams));
          delete (yyvsp[(2) - (2)].p);
@@ -2615,7 +2624,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 1263 "util/tree_grammar_parser.y"
+#line 1272 "util/tree_grammar_parser.y"
     {
           (yyval.p) = (yyvsp[(1) - (2)].p)->AddParam((yyvsp[(2) - (2)].a));
         ;}
@@ -2624,7 +2633,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 1267 "util/tree_grammar_parser.y"
+#line 1276 "util/tree_grammar_parser.y"
     {
           if((yyvsp[(1) - (2)].p)->RestHolderIndex != 0)
           {
@@ -2639,7 +2648,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 1277 "util/tree_grammar_parser.y"
+#line 1286 "util/tree_grammar_parser.y"
     {
           (yyval.p) = new GrammarData::MatchedParams;
         ;}
@@ -2648,7 +2657,7 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 1284 "util/tree_grammar_parser.y"
+#line 1293 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].num), (yyvsp[(2) - (2)].index));
        ;}
@@ -2657,7 +2666,7 @@ yyreduce:
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 1288 "util/tree_grammar_parser.y"
+#line 1297 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index), GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index) | Constness_Const);
@@ -2667,7 +2676,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 1293 "util/tree_grammar_parser.y"
+#line 1302 "util/tree_grammar_parser.y"
     {
          /* Verify that $3 consists of constants */
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (4)].opcode), (yyvsp[(3) - (4)].p)->GetParams() );
@@ -2683,7 +2692,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 1304 "util/tree_grammar_parser.y"
+#line 1313 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index) + 2, GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index));
@@ -2693,7 +2702,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 1309 "util/tree_grammar_parser.y"
+#line 1318 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(2) - (4)].f));
          (yyval.a)->SetConstraint((yyvsp[(4) - (4)].index));
@@ -2703,7 +2712,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 1314 "util/tree_grammar_parser.y"
+#line 1323 "util/tree_grammar_parser.y"
     {
          /* Verify that $2 is constant */
          if(!(yyvsp[(2) - (2)].a)->VerifyIsConstant())
@@ -2720,7 +2729,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 1329 "util/tree_grammar_parser.y"
+#line 1338 "util/tree_grammar_parser.y"
     {
          (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
        ;}
@@ -2729,7 +2738,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 1333 "util/tree_grammar_parser.y"
+#line 1342 "util/tree_grammar_parser.y"
     {
          (yyval.index) = 0;
        ;}
@@ -2738,7 +2747,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 1340 "util/tree_grammar_parser.y"
+#line 1349 "util/tree_grammar_parser.y"
     {
          (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
        ;}
@@ -2747,7 +2756,7 @@ yyreduce:
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 1344 "util/tree_grammar_parser.y"
+#line 1353 "util/tree_grammar_parser.y"
     {
          (yyval.index) = 0;
        ;}
@@ -2756,7 +2765,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 2760 "util/tree_grammar_parser.cc"
+#line 2769 "util/tree_grammar_parser.cc"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2968,7 +2977,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 1348 "util/tree_grammar_parser.y"
+#line 1357 "util/tree_grammar_parser.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER
@@ -3138,21 +3147,21 @@ static int yylex(YYSTYPE* lval)
              */
 
             /* Detect named constants */
-            if(IdBuf == "CONSTANT_E") { lval->num = CONSTANT_E; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_EI") { lval->num = CONSTANT_EI; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2E") { lval->num = CONSTANT_2E; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2EI") { lval->num = CONSTANT_2EI; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_RD") { lval->num = CONSTANT_RD; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_DR") { lval->num = CONSTANT_DR; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_PI") { lval->num = CONSTANT_PI; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_PIHALF") { lval->num = CONSTANT_PIHALF; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_TWOPI") { lval->num = CONSTANT_TWOPI; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L2I") { lval->num = CONSTANT_L2I; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10I") { lval->num = CONSTANT_L10I; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L2") { lval->num = CONSTANT_L2; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10") { lval->num = CONSTANT_L10; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10B") { lval->num = CONSTANT_L10B; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10BI") { lval->num = CONSTANT_L10BI; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_E") { lval->num = FUNCTIONPARSERTYPES::fp_const_e<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_EI") { lval->num = FUNCTIONPARSERTYPES::fp_const_einv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2E") { lval->num = FUNCTIONPARSERTYPES::fp_const_twoe<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2EI") { lval->num = FUNCTIONPARSERTYPES::fp_const_twoeinv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_RD") { lval->num = FUNCTIONPARSERTYPES::fp_const_rad_to_deg<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_DR") { lval->num = FUNCTIONPARSERTYPES::fp_const_deg_to_rad<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_PI") { lval->num = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_PIHALF") { lval->num = FUNCTIONPARSERTYPES::fp_const_pihalf<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_TWOPI") { lval->num = FUNCTIONPARSERTYPES::fp_const_twopi<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L2I") { lval->num = FUNCTIONPARSERTYPES::fp_const_log2inv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10I") { lval->num = FUNCTIONPARSERTYPES::fp_const_log10inv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L2") { lval->num = FUNCTIONPARSERTYPES::fp_const_log2<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10") { lval->num = FUNCTIONPARSERTYPES::fp_const_log10<double>(); return NUMERIC_CONSTANT; }
+            //if(IdBuf == "CONSTANT_L10B") { lval->num = CONSTANT_L10B; return NUMERIC_CONSTANT; }
+            //if(IdBuf == "CONSTANT_L10BI") { lval->num = CONSTANT_L10BI; return NUMERIC_CONSTANT; }
             if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
 
             /* Detect opcodes */
@@ -3286,12 +3295,17 @@ unsigned GrammarData::ParamSpec::BuildDepMask()
 
 namespace FPoptimizer_Grammar
 {
+    template<typename Value_t>
     ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)
     {
         unsigned plist_index = (paramlist >> (index*PARAM_INDEX_BITS))
                                % (1 << PARAM_INDEX_BITS);
         return plist[plist_index];
     }
+
+    template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
+    template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
+    template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
 }
 
 int main()
@@ -3404,15 +3418,19 @@ int main()
     std::cout <<
         "namespace FPoptimizer_Grammar\n"
         "{\n"
+        "    template<typename Value_t>\n"
         "    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)\n"
         "    {\n"
         "        index = (paramlist >> (index * " << PARAM_INDEX_BITS << ")) & " << mask << " /* % (1 << " << PARAM_INDEX_BITS << ") */;\n"
         "        if(index >= " << s_begin << ")\n"
         "            return ParamSpec(SubFunction,(const void*)&plist_s[index-" << s_begin << "]);\n"
         "        if(index >= " << n_begin << ")\n"
-        "            return ParamSpec(NumConstant,(const void*)&plist_n[index-" << n_begin << "]);\n"
+        "            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-" << n_begin << "]);\n"
         "        return ParamSpec(ParamHolder,(const void*)&plist_p[index"/*"-" << p_begin << */"]);\n"
         "    }\n"
+        "template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);\n"
+        "template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);\n"
+        "template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);\n"
         "}\n";
 
     return 0;

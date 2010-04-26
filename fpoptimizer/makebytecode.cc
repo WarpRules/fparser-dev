@@ -17,18 +17,20 @@ namespace
 {
     using namespace FPoptimizer_CodeTree;
 
+    template<typename Value_t>
     bool AssembleSequence(
-                  const CodeTree& tree, long count,
-                  const FPoptimizer_ByteCode::SequenceOpCode<double>& sequencing,
-                  FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
+                  const CodeTree<Value_t>& tree, long count,
+                  const FPoptimizer_ByteCode::SequenceOpCode<Value_t>& sequencing,
+                  FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
                   size_t max_bytecode_grow_length);
 }
 
 namespace FPoptimizer_CodeTree
 {
-    void CodeTree::SynthesizeByteCode(
+    template<typename Value_t>
+    void CodeTree<Value_t>::SynthesizeByteCode(
         std::vector<unsigned>& ByteCode,
-        std::vector<double>&   Immed,
+        std::vector<Value_t>&   Immed,
         size_t& stacktop_max)
     {
     #ifdef DEBUG_SUBSTITUTIONS
@@ -48,7 +50,7 @@ namespace FPoptimizer_CodeTree
         DumpTreeWithIndent(*this);
     #endif
 
-        FPoptimizer_ByteCode::ByteCodeSynth<double> synth;
+        FPoptimizer_ByteCode::ByteCodeSynth<Value_t> synth;
 
         /* Then synthesize the actual expression */
         SynthesizeByteCode(synth, false);
@@ -59,8 +61,9 @@ namespace FPoptimizer_CodeTree
         synth.Pull(ByteCode, Immed, stacktop_max);
     }
 
-    void CodeTree::SynthesizeByteCode(
-        FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
+    template<typename Value_t>
+    void CodeTree<Value_t>::SynthesizeByteCode(
+        FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
         bool MustPopTemps) const
     {
         // If the synth can already locate our operand in the stack,
@@ -130,7 +133,7 @@ namespace FPoptimizer_CodeTree
                             tmp.Rehash();
                             if(AssembleSequence(
                                 tmp, value,
-                                FPoptimizer_ByteCode::SequenceOpcodes<double>::AddSequence,
+                                FPoptimizer_ByteCode::SequenceOpcodes<Value_t>::AddSequence,
                                 synth,
                                 MAX_MULI_BYTECODE_LENGTH))
                             {
@@ -226,7 +229,7 @@ namespace FPoptimizer_CodeTree
                 if(!p1.IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         p0, p1.GetLongIntegerImmed(),
-                        FPoptimizer_ByteCode::SequenceOpcodes<double>::MulSequence,
+                        FPoptimizer_ByteCode::SequenceOpcodes<Value_t>::MulSequence,
                         synth,
                         MAX_POWI_BYTECODE_LENGTH)
                   )
@@ -241,7 +244,7 @@ namespace FPoptimizer_CodeTree
             case cAbsIf:
             {
                 // Assume that the parameter count is 3 as it should.
-                FPoptimizer_ByteCode::ByteCodeSynth<double>::IfData ifdata;
+                typename FPoptimizer_ByteCode::ByteCodeSynth<Value_t>::IfData ifdata;
 
                 GetParam(0).SynthesizeByteCode(synth); // expression
 
@@ -290,15 +293,16 @@ namespace FPoptimizer_CodeTree
 
 namespace
 {
+    template<typename Value_t>
     bool AssembleSequence(
-        const CodeTree& tree, long count,
-        const FPoptimizer_ByteCode::SequenceOpCode<double>& sequencing,
-        FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
+        const CodeTree<Value_t>& tree, long count,
+        const FPoptimizer_ByteCode::SequenceOpCode<Value_t>& sequencing,
+        FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
         size_t max_bytecode_grow_length)
     {
         if(count != 0)
         {
-            FPoptimizer_ByteCode::ByteCodeSynth<double> backup = synth;
+            FPoptimizer_ByteCode::ByteCodeSynth<Value_t> backup = synth;
 
             tree.SynthesizeByteCode(synth);
 
@@ -321,6 +325,27 @@ namespace
             return true;
         }
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template void CodeTree<double>::SynthesizeByteCode(
+        std::vector<unsigned>& ByteCode,
+        std::vector<double>&   Immed,
+        size_t& stacktop_max);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template void CodeTree<float>::SynthesizeByteCode(
+        std::vector<unsigned>& ByteCode,
+        std::vector<float>&   Immed,
+        size_t& stacktop_max);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template void CodeTree<long double>::SynthesizeByteCode(
+        std::vector<unsigned>& ByteCode,
+        std::vector<long double>&   Immed,
+        size_t& stacktop_max);
+#endif
 }
 
 #endif

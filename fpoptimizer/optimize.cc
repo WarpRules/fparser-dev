@@ -101,9 +101,10 @@ namespace
     }
 
     /* A helper for std::equal_range */
+    template<typename Value_t>
     struct OpcodeRuleCompare
     {
-        bool operator() (const CodeTree& tree,
+        bool operator() (const CodeTree<Value_t>& tree,
                          unsigned rulenumber) const
         {
             /* If this function returns true, len=half.
@@ -112,7 +113,7 @@ namespace
             return tree.GetOpcode() < rule.match_tree.subfunc_opcode;
         }
         bool operator() (unsigned rulenumber,
-                         const CodeTree& tree) const
+                         const CodeTree<Value_t>& tree) const
         {
             /* If this function returns true, rule will be excluded from the equal_range
              */
@@ -122,12 +123,13 @@ namespace
     };
 
     /* Test and apply a rule to a given CodeTree */
+    template<typename Value_t>
     bool TestRuleAndApplyIfMatch(
         const Rule& rule,
-        CodeTree& tree,
+        CodeTree<Value_t>& tree,
         bool from_logical_context)
     {
-        MatchInfo info;
+        MatchInfo<Value_t> info;
 
         MatchResultType found(false, MatchPositionSpecBaseP());
 
@@ -171,9 +173,10 @@ namespace
 namespace FPoptimizer_Optimize
 {
     /* Apply the grammar to a given CodeTree */
+    template<typename Value_t>
     bool ApplyGrammar(
         const Grammar& grammar,
-        CodeTree& tree,
+        CodeTree<Value_t>& tree,
         bool from_logical_context)
     {
         if(tree.GetOptimizedUsing() == &grammar)
@@ -230,7 +233,7 @@ namespace FPoptimizer_Optimize
             MyEqualRange(grammar.rule_list,
                          grammar.rule_list + grammar.rule_count,
                          tree,
-                         OpcodeRuleCompare());
+                         OpcodeRuleCompare<Value_t> ());
 
         if(range.first != range.second)
         {
@@ -312,7 +315,8 @@ namespace FPoptimizer_Optimize
         return false;
     }
 
-    void ApplyGrammars(FPoptimizer_CodeTree::CodeTree& tree)
+    template<typename Value_t>
+    void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
     {
     #ifdef FPOPTIMIZER_MERGED_FILE
         #define C *(const Grammar*)&
@@ -391,6 +395,18 @@ namespace FPoptimizer_Optimize
 
         #undef C
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_Optimize
+{
+    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<double>& tree);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<float>& tree);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<long double>& tree);
+#endif
 }
 
 #endif

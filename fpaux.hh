@@ -171,7 +171,7 @@ namespace FUNCTIONPARSERTYPES
 
 
     template<typename Value_t>
-    inline Value_t fp_const_pi()
+    inline Value_t fp_const_pi() // CONSTANT_PI
     {
         return Value_t(3.1415926535897932384626433832795L);
     }
@@ -182,14 +182,54 @@ namespace FUNCTIONPARSERTYPES
 #endif
 
     template<typename Value_t>
-    inline Value_t fp_const_e()
+    inline Value_t fp_const_e() // CONSTANT_E
     {
         return Value_t(2.7182818284590452353602874713526624977572L);
+    }
+    template<typename Value_t>
+    inline Value_t fp_const_einv() // CONSTANT_EI
+    {
+        return Value_t(0.367879441171442321595523770161460867445811131L);
+    }
+    template<typename Value_t>
+    inline Value_t fp_const_log2() // CONSTANT_L2, CONSTANT_L2EI
+    {
+        return Value_t(0.69314718055994530941723212145817656807550013436025525412L);
+    }
+    template<typename Value_t>
+    inline Value_t fp_const_log10() // CONSTANT_L10, CONSTANT_L10EI
+    {
+        return Value_t(2.302585092994045684017991454684364207601101488628772976L);
+    }
+    template<typename Value_t>
+    inline Value_t fp_const_log2inv() // CONSTANT_L2I, CONSTANT_L2E
+    {
+        return Value_t(1.442695040888963407359924681001892137426645954L);
+    }
+    template<typename Value_t>
+    inline Value_t fp_const_log10inv() // CONSTANT_L10I, CONSTANT_L10E
+    {
+        return Value_t(0.434294481903251827651128918916605082294397L);
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
+
+    template<>
+    inline MpfrFloat fp_const_einv<MpfrFloat>() { return MpfrFloat(1) / MpfrFloat::const_e(); }
+
+    template<>
+    inline MpfrFloat fp_const_log2<MpfrFloat>() { return MpfrFloat::const_log2(); }
+
+    template<>
+    inline MpfrFloat fp_const_log10<MpfrFloat>() { return fp_log(MpfrFloat(10)); }
+
+    template<>
+    inline MpfrFloat fp_const_log2inv<MpfrFloat>() { return MpfrFloat(1) / MpfrFloat::const_log2(); }
+
+    template<>
+    inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return fp_log10(MpfrFloat::const_e()); }
 #endif
 
 

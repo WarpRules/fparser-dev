@@ -13,12 +13,6 @@
 #include "hash.hh"
 #include "../lib/autoptr.hh"
 
-#ifdef FP_EPSILON
- #define NEGATIVE_MAXIMUM (-FP_EPSILON)
-#else
- #define NEGATIVE_MAXIMUM (-1e-14)
-#endif
-
 namespace FPoptimizer_Grammar
 {
     struct Grammar;
@@ -32,30 +26,34 @@ namespace FPoptimizer_ByteCode
 
 namespace FPoptimizer_CodeTree
 {
+    template<typename Value_t>
     class CodeTree;
 
+    template<typename Value_t>
     struct MinMaxTree
     {
-        double min,max;
+        Value_t min,max;
         bool has_min, has_max;
         MinMaxTree() : min(),max(),has_min(false),has_max(false) { }
-        MinMaxTree(double mi,double ma): min(mi),max(ma),has_min(true),has_max(true) { }
-        MinMaxTree(bool,double ma): min(),max(ma),has_min(false),has_max(true) { }
-        MinMaxTree(double mi,bool): min(mi),max(),has_min(true),has_max(false) { }
+        MinMaxTree(Value_t mi,Value_t ma): min(mi),max(ma),has_min(true),has_max(true) { }
+        MinMaxTree(bool,Value_t ma): min(),max(ma),has_min(false),has_max(true) { }
+        MinMaxTree(Value_t mi,bool): min(mi),max(),has_min(true),has_max(false) { }
     };
 
+    template<typename Value_t>
     struct CodeTreeData;
+
+    template<typename Value_t>
     class CodeTree
     {
-        typedef FPOPT_autoptr<CodeTreeData> DataP;
+        typedef FPOPT_autoptr<CodeTreeData<Value_t> > DataP;
         DataP data;
 
-    public:
     public:
         CodeTree();
         ~CodeTree();
 
-        explicit CodeTree(double v); // produce an immed
+        explicit CodeTree(const Value_t& v); // produce an immed
         struct VarTag { };
         explicit CodeTree(unsigned varno, VarTag); // produce a var reference
         struct CloneTag { };
@@ -64,28 +62,28 @@ namespace FPoptimizer_CodeTree
         /* Generates a CodeTree from the given bytecode */
         void GenerateFrom(
             const std::vector<unsigned>& byteCode,
-            const std::vector<double>& immed,
-            const FunctionParser::Data& data,
+            const std::vector<Value_t>& immed,
+            const typename FunctionParserBase<Value_t>::Data& data,
             bool keep_powi = false);
 
         void GenerateFrom(
             const std::vector<unsigned>& byteCode,
-            const std::vector<double>& immed,
-            const FunctionParser::Data& data,
+            const std::vector<Value_t>& immed,
+            const typename FunctionParserBase<Value_t>::Data& data,
             const std::vector<CodeTree>& var_trees,
             bool keep_powi = false);
 
         void SynthesizeByteCode(
             std::vector<unsigned>& byteCode,
-            std::vector<double>&   immed,
+            std::vector<Value_t>&   immed,
             size_t& stacktop_max);
 
         void SynthesizeByteCode(
-            FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
+            FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
             bool MustPopTemps=true) const;
 
         size_t SynthCommonSubExpressions(
-            FPoptimizer_ByteCode::ByteCodeSynth<double>& synth) const;
+            FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth) const;
 
         void SetParams(const std::vector<CodeTree>& RefParams);
         void SetParamsMove(std::vector<CodeTree>& RefParams);
@@ -114,20 +112,20 @@ namespace FPoptimizer_CodeTree
         inline void SetOpcode(FUNCTIONPARSERTYPES::OPCODE o);
         inline void SetFuncOpcode(FUNCTIONPARSERTYPES::OPCODE o, unsigned f);
         inline void SetVar(unsigned v);
-        inline void SetImmed(double v);
+        inline void SetImmed(Value_t v);
         inline FUNCTIONPARSERTYPES::OPCODE GetOpcode() const;
         inline FUNCTIONPARSERTYPES::fphash_t GetHash() const;
         inline const std::vector<CodeTree>& GetParams() const;
         inline std::vector<CodeTree>& GetParams();
         inline size_t GetDepth() const;
-        inline const double& GetImmed() const;
+        inline const Value_t& GetImmed() const;
         inline unsigned GetVar() const;
         inline unsigned GetFuncNo() const;
         inline bool IsDefined() const { return GetOpcode() != FUNCTIONPARSERTYPES::cNop; }
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
         inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::VarBegin; }
-        bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (double)GetLongIntegerImmed(); }
+        bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (Value_t)GetLongIntegerImmed(); }
         long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool    IsLogicalValue() const;
         inline unsigned GetRefCount() const;
@@ -135,8 +133,8 @@ namespace FPoptimizer_CodeTree
          * of the tree's result. If an estimate cannot be made,
          * has_min/has_max are indicated as false.
          */
-        MinMaxTree CalculateResultBoundaries_do() const;
-        MinMaxTree CalculateResultBoundaries() const;
+        MinMaxTree<Value_t> CalculateResultBoundaries_do() const;
+        MinMaxTree<Value_t> CalculateResultBoundaries() const;
 
         enum TriTruthValue { IsAlways, IsNever, Unknown };
         TriTruthValue GetEvennessInfo() const;
@@ -175,6 +173,7 @@ namespace FPoptimizer_CodeTree
         void CopyOnWrite();
     };
 
+    template<typename Value_t>
     struct CodeTreeData
     {
         int RefCount;
@@ -183,7 +182,7 @@ namespace FPoptimizer_CodeTree
         FUNCTIONPARSERTYPES::OPCODE Opcode;
         union
         {
-            double   Value;   // In case of cImmed:   value of the immed
+            Value_t   Value;   // In case of cImmed:   value of the immed
             unsigned Var;     // In case of VarBegin: variable number
             unsigned Funcno;  // In case of cFCall or cPCall
         };
@@ -205,7 +204,7 @@ namespace FPoptimizer_CodeTree
         //   For VarBegin, not used
         //   For cIf:  operand 1 = condition, operand 2 = yes-branch, operand 3 = no-branch
         //   For anything else: the parameters required by the operation/function
-        std::vector<CodeTree> Params;
+        std::vector<CodeTree<Value_t> > Params;
 
         /* Internal operation */
         FUNCTIONPARSERTYPES::fphash_t      Hash;
@@ -214,7 +213,7 @@ namespace FPoptimizer_CodeTree
 
         CodeTreeData();
         CodeTreeData(const CodeTreeData& b);
-        explicit CodeTreeData(double i);
+        explicit CodeTreeData(const Value_t& i);
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
         CodeTreeData(CodeTreeData&& b);
 #endif
@@ -224,36 +223,58 @@ namespace FPoptimizer_CodeTree
         void Recalculate_Hash_NoRecursion();
     };
 
-    inline void CodeTree::SetOpcode(FUNCTIONPARSERTYPES::OPCODE o)
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::SetOpcode(FUNCTIONPARSERTYPES::OPCODE o)
         { data->Opcode = o; }
-    inline void CodeTree::SetFuncOpcode(FUNCTIONPARSERTYPES::OPCODE o, unsigned f)
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::SetFuncOpcode(FUNCTIONPARSERTYPES::OPCODE o, unsigned f)
         { SetOpcode(o); data->Funcno = f; }
-    inline void CodeTree::SetVar(unsigned v)
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::SetVar(unsigned v)
         { SetOpcode(FUNCTIONPARSERTYPES::VarBegin); data->Var = v; }
-    inline void CodeTree::SetImmed(double v)
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::SetImmed(Value_t v)
         { SetOpcode(FUNCTIONPARSERTYPES::cImmed); data->Value = v; }
-    inline FUNCTIONPARSERTYPES::OPCODE CodeTree::GetOpcode() const { return data->Opcode; }
-    inline FUNCTIONPARSERTYPES::fphash_t CodeTree::GetHash() const { return data->Hash; }
-    inline const std::vector<CodeTree>& CodeTree::GetParams() const { return data->Params; }
-    inline std::vector<CodeTree>& CodeTree::GetParams() { return data->Params; }
-    inline size_t CodeTree::GetDepth() const { return data->Depth; }
-    inline const double& CodeTree::GetImmed() const { return data->Value; }
-    inline unsigned CodeTree::GetVar() const { return data->Var; }
-    inline unsigned CodeTree::GetFuncNo() const { return data->Funcno; }
+    template<typename Value_t>
+    inline FUNCTIONPARSERTYPES::OPCODE CodeTree<Value_t>::GetOpcode() const { return data->Opcode; }
+    template<typename Value_t>
+    inline FUNCTIONPARSERTYPES::fphash_t CodeTree<Value_t>::GetHash() const { return data->Hash; }
+    template<typename Value_t>
+    inline const std::vector<CodeTree<Value_t> >& CodeTree<Value_t>::GetParams() const { return data->Params; }
+    template<typename Value_t>
+    inline std::vector<CodeTree<Value_t> >& CodeTree<Value_t>::GetParams() { return data->Params; }
+    template<typename Value_t>
+    inline size_t CodeTree<Value_t>::GetDepth() const { return data->Depth; }
+    template<typename Value_t>
+    inline const Value_t& CodeTree<Value_t>::GetImmed() const { return data->Value; }
+    template<typename Value_t>
+    inline unsigned CodeTree<Value_t>::GetVar() const { return data->Var; }
+    template<typename Value_t>
+    inline unsigned CodeTree<Value_t>::GetFuncNo() const { return data->Funcno; }
 
-    inline const FPoptimizer_Grammar::Grammar* CodeTree::GetOptimizedUsing() const
+    template<typename Value_t>
+    inline const FPoptimizer_Grammar::Grammar* CodeTree<Value_t>::GetOptimizedUsing() const
         { return data->OptimizedUsing; }
-    inline void CodeTree::SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g)
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::SetOptimizedUsing(const FPoptimizer_Grammar::Grammar* g)
         { data->OptimizedUsing = g; }
-    inline unsigned CodeTree::GetRefCount() const { return data->RefCount; }
+    template<typename Value_t>
+    inline unsigned CodeTree<Value_t>::GetRefCount() const { return data->RefCount; }
 
-    inline void CodeTree::Mark_Incompletely_Hashed() { data->Depth = 0; }
-    inline bool CodeTree::Is_Incompletely_Hashed() const { return data->Depth == 0; }
+    template<typename Value_t>
+    inline void CodeTree<Value_t>::Mark_Incompletely_Hashed() { data->Depth = 0; }
+    template<typename Value_t>
+    inline bool CodeTree<Value_t>::Is_Incompletely_Hashed() const { return data->Depth == 0; }
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-    void DumpHashes(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-    void DumpTree(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout);
-    void DumpTreeWithIndent(const FPoptimizer_CodeTree::CodeTree& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
+    template<typename Value_t>
+    void DumpHashes(const CodeTree<Value_t>& tree, std::ostream& o = std::cout);
+
+    template<typename Value_t>
+    void DumpTree(const CodeTree<Value_t>& tree, std::ostream& o = std::cout);
+
+    template<typename Value_t>
+    void DumpTreeWithIndent(const CodeTree<Value_t>& tree, std::ostream& o = std::cout, const std::string& indent = "\\");
 #endif
 }
 

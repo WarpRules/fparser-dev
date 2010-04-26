@@ -24,7 +24,7 @@
 #pragma warning(disable : 4661)
 #endif
 
-namespace FPoptimizer_CodeTree { class CodeTree; }
+namespace FPoptimizer_CodeTree { template<typename Value_t> class CodeTree; }
 
 template<typename Value_t>
 class FunctionParserBase
@@ -111,7 +111,7 @@ private:
     ParseErrorType parseErrorType;
     int evalErrorType;
 
-    friend class FPoptimizer_CodeTree::CodeTree;
+    friend class FPoptimizer_CodeTree::CodeTree<Value_t>;
 
     struct Data;
     Data* data;

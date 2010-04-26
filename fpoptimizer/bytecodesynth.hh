@@ -57,7 +57,7 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1);
         }
 
-        void StackTopIs(const FPoptimizer_CodeTree::CodeTree& tree, int offset = 0)
+        void StackTopIs(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree, int offset = 0)
         {
             if((int)StackTop > offset)
             {
@@ -66,7 +66,7 @@ namespace FPoptimizer_ByteCode
             }
         }
 
-        bool IsStackTop(const FPoptimizer_CodeTree::CodeTree& tree, int offset = 0) const
+        bool IsStackTop(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree, int offset = 0) const
         {
             return (int)StackTop > offset
                && StackState[StackTop-1-offset].first
@@ -125,7 +125,7 @@ namespace FPoptimizer_ByteCode
             StackState[StackTop-1] = StackState[src_pos];
         }
 
-        size_t FindPos(const FPoptimizer_CodeTree::CodeTree& tree) const
+        size_t FindPos(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree) const
         {
             /*
             std::cout << "Stack state now(" << StackTop << "):\n";
@@ -144,12 +144,12 @@ namespace FPoptimizer_ByteCode
             return ~size_t(0);
         }
 
-        bool Find(const FPoptimizer_CodeTree::CodeTree& tree) const
+        bool Find(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree) const
         {
             return FindPos(tree) != ~size_t(0);
         }
 
-        bool FindAndDup(const FPoptimizer_CodeTree::CodeTree& tree)
+        bool FindAndDup(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
         {
             size_t pos = FindPos(tree);
             if(pos != ~size_t(0))
@@ -247,7 +247,8 @@ namespace FPoptimizer_ByteCode
         std::vector<Value_t>   Immed;
 
         std::vector<
-            std::pair<bool/*known*/, FPoptimizer_CodeTree::CodeTree/*tree*/>
+            std::pair<bool/*known*/,
+                      FPoptimizer_CodeTree::CodeTree<Value_t>/*tree*/>
                    > StackState;
         size_t StackTop;
         size_t StackMax;

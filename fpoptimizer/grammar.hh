@@ -10,6 +10,7 @@
 
 namespace FPoptimizer_CodeTree
 {
+    template<typename Value_t>
     class CodeTree;
 }
 
@@ -104,8 +105,13 @@ namespace FPoptimizer_Grammar
      * or a parameter (leaf, node) that must be synthesized.
      */
     typedef std::pair<SpecialOpcode, const void*> ParamSpec;
+
+    template<typename Value_t>
     ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index);
+
+    template<typename Value_t>
     bool ParamSpec_Compare(const void* a, const void* b, SpecialOpcode type);
+
     unsigned ParamSpec_GetDepCode(const ParamSpec& b);
 
     struct ParamSpec_ParamHolder
@@ -115,9 +121,10 @@ namespace FPoptimizer_Grammar
         unsigned depcode     :16;
     } PACKED_GRAMMAR_ATTRIBUTE;
 
+    template<typename Value_t>
     struct ParamSpec_NumConstant
     {
-        double      constvalue;        // the value
+        Value_t     constvalue;        // the value
         unsigned    modulo;            // modulo mode
     } PACKED_GRAMMAR_ATTRIBUTE;
 
@@ -228,7 +235,10 @@ namespace FPoptimizer_Grammar
     #endif
     }
 
+    template<typename Value_t>
     void DumpParam(const ParamSpec& p, std::ostream& o = std::cout);
+
+    template<typename Value_t>
     void DumpParams(unsigned paramlist, unsigned count, std::ostream& o = std::cout);
 }
 

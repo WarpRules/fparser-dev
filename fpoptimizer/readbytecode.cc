@@ -19,7 +19,10 @@ namespace
 {
     using namespace FPoptimizer_CodeTree;
 
-    typedef std::vector<double> FactorStack;
+    template<typename Value_t>
+    class FactorStack: public std::vector<Value_t>
+    {
+    };
 
     const struct PowiMuliType
     {
@@ -31,14 +34,15 @@ namespace
     } iseq_powi = {cSqr,cMul,cInv,cSqrt,cRSqrt},
       iseq_muli = {~unsigned(0), cAdd,cNeg, ~unsigned(0),~unsigned(0) };
 
-    double ParsePowiMuli(
+    template<typename Value_t>
+    Value_t ParsePowiMuli(
         const PowiMuliType& opcodes,
         const std::vector<unsigned>& ByteCode, size_t& IP,
         size_t limit,
         size_t factor_stack_base,
-        FactorStack& stack)
+        FactorStack<Value_t>& stack)
     {
-        double result = 1;
+        Value_t result = 1;
         while(IP < limit)
         {
             if(ByteCode[IP] == opcodes.opcode_square)
@@ -58,7 +62,7 @@ namespace
             {
                 if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
                     break;
-                result *= 0.5;
+                result *= Value_t(0.5);
                 ++IP;
                 continue;
             }
@@ -66,13 +70,13 @@ namespace
             {
                 if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
                     break;
-                result *= -0.5;
+                result *= Value_t(-0.5);
                 ++IP;
                 continue;
             }
 
             size_t dup_fetch_pos = IP;
-            double lhs = 1.0;
+            Value_t lhs = 1.0;
 
             if(ByteCode[IP] == cFetch)
             {
@@ -97,7 +101,7 @@ namespace
             dup_or_fetch:
                 stack.push_back(result);
                 ++IP;
-                double subexponent = ParsePowiMuli
+                Value_t subexponent = ParsePowiMuli
                     (opcodes,
                      ByteCode, IP, limit,
                      factor_stack_base, stack);
@@ -117,24 +121,27 @@ namespace
         return result;
     }
 
-    double ParsePowiSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
-                           size_t limit,
-                           size_t factor_stack_base)
+    template<typename Value_t>
+    Value_t ParsePowiSequence
+        (const std::vector<unsigned>& ByteCode, size_t& IP,
+         size_t limit, size_t factor_stack_base)
     {
-        FactorStack stack;
+        FactorStack<Value_t> stack;
         stack.push_back(1.0);
         return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
-    double ParseMuliSequence(const std::vector<unsigned>& ByteCode, size_t& IP,
-                           size_t limit,
-                           size_t factor_stack_base)
+    template<typename Value_t>
+    Value_t ParseMuliSequence
+        (const std::vector<unsigned>& ByteCode, size_t& IP,
+         size_t limit, size_t factor_stack_base)
     {
-        FactorStack stack;
+        FactorStack<Value_t> stack;
         stack.push_back(1.0);
         return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
+    template<typename Value_t>
     class CodeTreeParserData
     {
     public:
@@ -143,10 +150,10 @@ namespace
 
         void Eat(size_t nparams, OPCODE opcode)
         {
-            CodeTree newnode;
+            CodeTree<Value_t> newnode;
             newnode.SetOpcode(opcode);
 
-            std::vector<CodeTree> params = Pop(nparams);
+            std::vector<CodeTree<Value_t> > params = Pop(nparams);
             newnode.SetParamsMove(params);
 
             if(!keep_powi)
@@ -180,13 +187,13 @@ namespace
                 //cTanh [x] -> (cMul (cAdd {(cPow [CONSTANT_2E x]) -1}) (cPow [(cAdd {(cPow [CONSTANT_2E x]) 1}) -1]))
                 case cTanh:
                 {
-                    CodeTree sinh, cosh;
+                    CodeTree<Value_t> sinh, cosh;
                     sinh.SetOpcode(cSinh); sinh.AddParam(newnode.GetParam(0)); sinh.Rehash();
                     cosh.SetOpcode(cCosh); cosh.AddParamMove(newnode.GetParam(0)); cosh.Rehash();
-                    CodeTree pow;
+                    CodeTree<Value_t> pow;
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(cosh);
-                    pow.AddParam(CodeTree(-1.0));
+                    pow.AddParam(CodeTree<Value_t>(-1.0));
                     pow.Rehash();
                     newnode.SetOpcode(cMul);
                     newnode.SetParamMove(0, sinh);
@@ -198,13 +205,13 @@ namespace
                 //cTan [x] -> (cMul (cSin [x]) (cPow [(cCos [x]) -1]))
                 case cTan:
                 {
-                    CodeTree sin, cos;
+                    CodeTree<Value_t> sin, cos;
                     sin.SetOpcode(cSin); sin.AddParam(newnode.GetParam(0)); sin.Rehash();
                     cos.SetOpcode(cCos); cos.AddParamMove(newnode.GetParam(0)); cos.Rehash();
-                    CodeTree pow;
+                    CodeTree<Value_t> pow;
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(cos);
-                    pow.AddParam(CodeTree(-1.0));
+                    pow.AddParam(CodeTree<Value_t>(-1.0));
                     pow.Rehash();
                     newnode.SetOpcode(cMul);
                     newnode.SetParamMove(0, sin);
@@ -214,8 +221,8 @@ namespace
 
                 case cPow:
                 {
-                    const CodeTree& p0 = newnode.GetParam(0);
-                    const CodeTree& p1 = newnode.GetParam(1);
+                    const CodeTree<Value_t>& p0 = newnode.GetParam(0);
+                    const CodeTree<Value_t>& p1 = newnode.GetParam(1);
                     if(p1.GetOpcode() == cAdd)
                     {
                         // convert x^(a + b) into x^a * x^b just so that
@@ -223,10 +230,10 @@ namespace
                         // For instance, exp(log(x)*-61.1 + log(z)*-59.1)
                         // won't be changed into exp(log(x*z)*-61.1)*z^2
                         // unless we do this.
-                        std::vector<CodeTree> mulgroup(p1.GetParamCount());
+                        std::vector<CodeTree<Value_t> > mulgroup(p1.GetParamCount());
                         for(size_t a=0; a<p1.GetParamCount(); ++a)
                         {
-                            CodeTree pow;
+                            CodeTree<Value_t> pow;
                             pow.SetOpcode(cPow);
                             pow.AddParam(p0);
                             pow.AddParam(p1.GetParam(a));
@@ -269,9 +276,9 @@ namespace
 
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
         {
-            CodeTree newnode;
+            CodeTree<Value_t> newnode;
             newnode.SetFuncOpcode(opcode, funcno);
-            std::vector<CodeTree> params = Pop(nparams);
+            std::vector<CodeTree<Value_t> > params = Pop(nparams);
             newnode.SetParamsMove(params);
             newnode.Rehash(false);
         #ifdef DEBUG_SUBSTITUTIONS
@@ -283,16 +290,16 @@ namespace
             stack.push_back(newnode);
         }
 
-        void AddConst(double value)
+        void AddConst(Value_t value)
         {
-            CodeTree newnode(value);
+            CodeTree<Value_t> newnode(value);
             FindClone(newnode);
             Push(newnode);
         }
 
         void AddVar(unsigned varno)
         {
-            CodeTree newnode(varno, CodeTree::VarTag());
+            CodeTree<Value_t> newnode(varno, CodeTree<Value_t>::VarTag());
             FindClone(newnode);
             Push(newnode);
         }
@@ -329,25 +336,33 @@ namespace
             stack.resize(target+1);
         }
 
-        CodeTree PullResult()
+        CodeTree<Value_t> PullResult()
         {
             clones.clear();
-            CodeTree result(stack.back());
+            CodeTree<Value_t> result(stack.back());
             stack.resize(stack.size()-1);
             return result;
         }
-        std::vector<CodeTree> Pop(unsigned n_pop)
+        std::vector<CodeTree<Value_t> > Pop(unsigned n_pop)
         {
-            std::vector<CodeTree> result(n_pop);
+            std::vector<CodeTree<Value_t> > result(n_pop);
             for(unsigned n=0; n<n_pop; ++n)
                 result[n].swap(stack[stack.size()-n_pop+n]);
+        #ifdef DEBUG_SUBSTITUTIONS
+            for(unsigned n=n_pop; n-- > 0; )
+            {
+                std::cout << "POP ";
+                DumpTree(result[n]);
+                std::cout << std::endl;
+            }
+        #endif
             stack.resize(stack.size()-n_pop);
             return result;
         }
 
         size_t GetStackTop() const { return stack.size(); }
     private:
-        void FindClone(CodeTree& /*tree*/, bool /*recurse*/ = true)
+        void FindClone(CodeTree<Value_t> & /*tree*/, bool /*recurse*/ = true)
         {
             // Disabled: Causes problems in optimization when
             // the same subtree is included in logical and non-logical
@@ -369,8 +384,8 @@ namespace
             */
         }
     private:
-        std::vector<CodeTree> stack;
-        std::multimap<fphash_t, CodeTree> clones;
+        std::vector<CodeTree<Value_t> > stack;
+        std::multimap<fphash_t, CodeTree<Value_t> > clones;
 
         bool keep_powi;
 
@@ -379,40 +394,43 @@ namespace
         CodeTreeParserData& operator=(const CodeTreeParserData&);
     };
 
+    template<typename Value_t>
     struct IfInfo
     {
-        CodeTree condition;
-        CodeTree thenbranch;
+        CodeTree<Value_t> condition;
+        CodeTree<Value_t> thenbranch;
         size_t endif_location;
     };
 }
 
 namespace FPoptimizer_CodeTree
 {
-    void CodeTree::GenerateFrom(
+    template<typename Value_t>
+    void CodeTree<Value_t>::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
-        const std::vector<double>& Immed,
-        const FunctionParser::Data& fpdata,
+        const std::vector<Value_t>& Immed,
+        const typename FunctionParserBase<Value_t>::Data& fpdata,
         bool keep_powi)
     {
-        std::vector<CodeTree> var_trees;
+        std::vector<CodeTree<Value_t> > var_trees;
         var_trees.reserve(fpdata.numVariables);
         for(unsigned n=0; n<fpdata.numVariables; ++n)
         {
-            var_trees.push_back( CodeTree(n+VarBegin, CodeTree::VarTag()) );
+            var_trees.push_back( CodeTree<Value_t> (n+VarBegin, CodeTree::VarTag()) );
         }
         GenerateFrom(ByteCode,Immed,fpdata,var_trees,keep_powi);
     }
 
-    void CodeTree::GenerateFrom(
+    template<typename Value_t>
+    void CodeTree<Value_t>::GenerateFrom(
         const std::vector<unsigned>& ByteCode,
-        const std::vector<double>& Immed,
-        const FunctionParser::Data& fpdata,
+        const std::vector<Value_t>& Immed,
+        const typename FunctionParserBase<Value_t>::Data& fpdata,
         const std::vector<CodeTree>& var_trees,
         bool keep_powi)
     {
-        CodeTreeParserData sim(keep_powi);
-        std::vector<IfInfo> if_stack;
+        CodeTreeParserData<Value_t> sim(keep_powi);
+        std::vector<IfInfo<Value_t> > if_stack;
 
         for(size_t IP=0, DP=0; ; ++IP)
         {
@@ -443,7 +461,7 @@ namespace FPoptimizer_CodeTree
             {
                 // Parse a powi sequence
                 size_t was_ip = IP;
-                double exponent = ParsePowiSequence(
+                Value_t exponent = ParsePowiSequence<Value_t>(
                     ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
                 if(exponent != 1.0)
@@ -457,7 +475,7 @@ namespace FPoptimizer_CodeTree
                 || opcode == cFetch
                 || opcode == cNeg)
                 {
-                    double factor = ParseMuliSequence(
+                    Value_t factor = ParseMuliSequence<Value_t>(
                         ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                         sim.GetStackTop()-1);
                     if(factor != 1.0)
@@ -517,7 +535,7 @@ namespace FPoptimizer_CodeTree
                     {
                         unsigned funcno = ByteCode[++IP];
                         assert(funcno < fpdata.FuncParsers.size());
-                        const FunctionParserBase<double>& p =
+                        const FunctionParserBase<Value_t>& p =
                             *fpdata.FuncParsers[funcno].parserPtr;
                         unsigned params = fpdata.FuncParsers[funcno].params;
 
@@ -561,20 +579,20 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow);
                         break;
                     case cCbrt:
-                        sim.AddConst(1.0 / 3.0);
+                        sim.AddConst(Value_t(1.0 / 3.0));
                         sim.Eat(2, cPow);
                         break;
                     case cDeg:
-                        sim.AddConst(CONSTANT_DR);
+                        sim.AddConst(fp_const_deg_to_rad<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cRad:
-                        sim.AddConst(CONSTANT_RD);
+                        sim.AddConst(fp_const_rad_to_deg<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cExp:
                         if(keep_powi) goto default_function_handling;
-                        sim.AddConst(CONSTANT_E);
+                        sim.AddConst(fp_const_e<Value_t>());
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
                         break;
@@ -612,18 +630,18 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cLog10:
                         sim.Eat(1, cLog);
-                        sim.AddConst(CONSTANT_L10I);
+                        sim.AddConst(fp_const_log10inv<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cLog2:
                         sim.Eat(1, cLog);
-                        sim.AddConst(CONSTANT_L2I);
+                        sim.AddConst(fp_const_log2inv<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cLog2by: // x y     -> log(x)*CONSTANT_L2I*y
                         sim.SwapLastTwoInStack();   // y x
                         sim.Eat(1, cLog);           // y log(x)
-                        sim.AddConst(CONSTANT_L2I); // y log(x) CONSTANT_L2I
+                        sim.AddConst(fp_const_log2inv<Value_t>()); // y log(x) CONSTANT_L2I
                         sim.Eat(3, cMul);           // y*log(x)*CONSTANT_L2I
                         break;
                     case cHypot: // x y -> sqrt(x*x + y*y)
@@ -644,7 +662,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     //case cLog:
                     //    sim.Eat(1, cLog2);
-                    //    sim.AddConst(CONSTANT_L2);
+                    //    sim.AddConst(fp_const_log2<Value_t>());
                     //    sim.Eat(2, cMul);
                     //    break;
                     // Binary operators requiring special attention
@@ -727,6 +745,33 @@ namespace FPoptimizer_CodeTree
         DumpTreeWithIndent(*this);
     #endif
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template
+    void CodeTree<double>::GenerateFrom(
+        const std::vector<unsigned>& ByteCode,
+        const std::vector<double>& Immed,
+        const FunctionParserBase<double>::Data& fpdata,
+        bool keep_powi);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template
+    void CodeTree<float>::GenerateFrom(
+        const std::vector<unsigned>& ByteCode,
+        const std::vector<float>& Immed,
+        const FunctionParserBase<float>::Data& fpdata,
+        bool keep_powi);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template
+    void CodeTree<long double>::GenerateFrom(
+        const std::vector<unsigned>& ByteCode,
+        const std::vector<long double>& Immed,
+        const FunctionParserBase<long double>::Data& fpdata,
+        bool keep_powi);
+#endif
 }
 
 #endif

@@ -12,7 +12,8 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    bool MarkIncompletes(FPoptimizer_CodeTree::CodeTree& tree)
+    template<typename Value_t>
+    bool MarkIncompletes(FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
     {
         if(tree.Is_Incompletely_Hashed())
             return true;
@@ -25,7 +26,8 @@ namespace
         return needs_rehash;
     }
 
-    void FixIncompletes(FPoptimizer_CodeTree::CodeTree& tree)
+    template<typename Value_t>
+    void FixIncompletes(FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
     {
         if(tree.Is_Incompletely_Hashed())
         {
@@ -38,7 +40,8 @@ namespace
 
 namespace FPoptimizer_CodeTree
 {
-    void CodeTree::Rehash(bool constantfolding)
+    template<typename Value_t>
+    void CodeTree<Value_t>::Rehash(bool constantfolding)
     {
         if(constantfolding)
             ConstantFolding();
@@ -46,7 +49,8 @@ namespace FPoptimizer_CodeTree
         data->Recalculate_Hash_NoRecursion();
     }
 
-    void CodeTreeData::Recalculate_Hash_NoRecursion()
+    template<typename Value_t>
+    void CodeTreeData<Value_t>::Recalculate_Hash_NoRecursion()
     {
         fphash_t NewHash = { Opcode * FPHASH_CONST(0x3A83A83A83A83A0),
                              Opcode * FPHASH_CONST(0x1131462E270012B)};
@@ -54,6 +58,7 @@ namespace FPoptimizer_CodeTree
         switch(Opcode)
         {
             case cImmed:
+                /* FIXME: Do for other than double type */
                 if(Value != 0.0)
                 {
                     crc32_t crc = crc32::calc( (const unsigned char*) &Value,
@@ -100,11 +105,27 @@ namespace FPoptimizer_CodeTree
         }
     }
 
-    void CodeTree::FixIncompleteHashes()
+    template<typename Value_t>
+    void CodeTree<Value_t>::FixIncompleteHashes()
     {
         MarkIncompletes(*this);
         FixIncompletes(*this);
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_CodeTree
+{
+    template void CodeTree<double>::Rehash(bool);
+    template void CodeTree<double>::FixIncompleteHashes();
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template void CodeTree<float>::Rehash(bool);
+    template void CodeTree<float>::FixIncompleteHashes();
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template void CodeTree<long double>::Rehash(bool);
+    template void CodeTree<long double>::FixIncompleteHashes();
+#endif
 }
 
 #endif

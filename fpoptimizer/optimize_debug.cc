@@ -14,18 +14,20 @@ using namespace FPoptimizer_Optimize;
 
 namespace FPoptimizer_Grammar
 {
+    template<typename Value_t>
     void DumpMatch(const Rule& rule,
-                   const CodeTree& tree,
-                   const MatchInfo& info,
+                   const CodeTree<Value_t>& tree,
+                   const MatchInfo<Value_t>& info,
                    bool DidMatch,
                    std::ostream& o)
     {
         DumpMatch(rule,tree,info,DidMatch?"Found match":"Found mismatch",o);
     }
 
+    template<typename Value_t>
     void DumpMatch(const Rule& rule,
-                   const CodeTree& tree,
-                   const MatchInfo& info,
+                   const CodeTree<Value_t>& tree,
+                   const MatchInfo<Value_t>& info,
                    const char* whydump,
                    std::ostream& o)
     {
@@ -73,7 +75,30 @@ namespace FPoptimizer_Grammar
         }
         o << std::flush;
     }
+}
 
+// Explicitly instantiate types
+namespace FPoptimizer_Grammar
+{
+    template void DumpMatch(const Rule& rule,
+                   const CodeTree<double>& tree,
+                   const MatchInfo<double>& info,
+                   bool DidMatch,
+                   std::ostream& o);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template void DumpMatch(const Rule& rule,
+                   const CodeTree<float>& tree,
+                   const MatchInfo<float>& info,
+                   bool DidMatch,
+                   std::ostream& o);
+#endif
+#ifdef FP_SUPPORT_LONG DOUBLE_TYPE
+    template void DumpMatch(const Rule& rule,
+                   const CodeTree<long double>& tree,
+                   const MatchInfo<long double>& info,
+                   bool DidMatch,
+                   std::ostream& o);
+#endif
 }
 
 #endif

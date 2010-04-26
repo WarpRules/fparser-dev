@@ -13,6 +13,7 @@
 
 #include "grammar.hh"
 #include "optimize.hh"
+#include "consts.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 using namespace FPoptimizer_Grammar;
@@ -22,17 +23,18 @@ using namespace FPoptimizer_Optimize;
 namespace
 {
     /* Test the given constraints to a given CodeTree */
-    bool TestImmedConstraints(unsigned bitmask, const CodeTree& tree)
+    template<typename Value_t>
+    bool TestImmedConstraints(unsigned bitmask, const CodeTree<Value_t>& tree)
     {
         switch(bitmask & ValueMask)
         {
             case Value_AnyNum: case ValueMask: break;
             case Value_EvenInt:
-                if(tree.GetEvennessInfo() != CodeTree::IsAlways)
+                if(tree.GetEvennessInfo() != CodeTree<Value_t>::IsAlways)
                     return false;
                 break;
             case Value_OddInt:
-                if(tree.GetEvennessInfo() != CodeTree::IsNever)
+                if(tree.GetEvennessInfo() != CodeTree<Value_t>::IsNever)
                     return false;
                 break;
             case Value_IsInteger:
@@ -64,11 +66,11 @@ namespace
             case Oneness_Any: case OnenessMask: break;
             case Oneness_One:
                 if(!tree.IsImmed()) return false;
-                if(!FloatEqual(fabs(tree.GetImmed()), 1.0)) return false;
+                if(!fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
                 break;
             case Oneness_NotOne:
                 if(!tree.IsImmed()) return false;
-                if(FloatEqual(fabs(tree.GetImmed()), 1.0)) return false;
+                if(fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
                 break;
         }
         switch(bitmask & ConstnessMask)
@@ -126,6 +128,7 @@ namespace
         }
     };
 
+    template<typename Value_t>
     Needs CreateNeedList_uncached(const ParamSpec_SubFunctionData& params)
     {
         Needs NeedList;
@@ -133,7 +136,7 @@ namespace
         // Figure out what we need
         for(unsigned a = 0; a < params.param_count; ++a)
         {
-            const ParamSpec& parampair = ParamSpec_Extract(params.param_list, a);
+            const ParamSpec& parampair = ParamSpec_Extract<Value_t>(params.param_list, a);
             switch(parampair.first)
             {
                 case SubFunction:
@@ -161,6 +164,7 @@ namespace
         return NeedList;
     }
 
+    template<typename Value_t>
     Needs& CreateNeedList(const ParamSpec_SubFunctionData& params)
     {
         typedef std::map<const ParamSpec_SubFunctionData*, Needs> needlist_cached_t;
@@ -172,20 +176,22 @@ namespace
 
         return
             needlist_cached.insert(i,
-                 std::make_pair(&params, CreateNeedList_uncached(params))
+                 std::make_pair(&params, CreateNeedList_uncached<Value_t> (params))
             )->second;
     }
     /* Construct CodeTree from a GroupFunction, hopefully evaluating to a constant value */
-    CodeTree CalculateGroupFunction(
+
+    template<typename Value_t>
+    CodeTree<Value_t> CalculateGroupFunction(
         const ParamSpec& parampair,
-        const MatchInfo& info)
+        const MatchInfo<Value_t>& info)
     {
         switch( parampair.first )
         {
             case NumConstant:
             {
-                const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
-                return CodeTree( param.constvalue ); // Note: calculates hash too.
+                const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
+                return CodeTree<Value_t>( param.constvalue ); // Note: calculates hash too.
             }
             case ParamHolder:
             {
@@ -201,14 +207,14 @@ namespace
                  * constant-folding our expression. It will also
                  * indicate whether the result is, in fact,
                  * a constant at all. */
-                CodeTree result;
+                CodeTree<Value_t> result;
                 result.SetOpcode( param.data.subfunc_opcode );
                 result.GetParams().reserve(param.data.param_count);
                 for(unsigned a=0; a<param.data.param_count; ++a)
                 {
-                    CodeTree tmp(
+                    CodeTree<Value_t> tmp(
                         CalculateGroupFunction
-                        (ParamSpec_Extract(param.data.param_list, a), info)
+                        (ParamSpec_Extract<Value_t> (param.data.param_list, a), info)
                                 );
                     result.AddParamMove(tmp);
                 }
@@ -217,7 +223,7 @@ namespace
             }
         }
         // Issue an un-calculatable tree. (This should be unreachable)
-        return CodeTree(); // cNop
+        return CodeTree<Value_t>(); // cNop
     }
 }
 
@@ -228,13 +234,14 @@ namespace FPoptimizer_Optimize
      * basic shape of the tree matches what we are expecting
      * i.e. given number of numeric constants, etc.
      */
+    template<typename Value_t>
     bool IsLogisticallyPlausibleParamsMatch(
         const ParamSpec_SubFunctionData& params,
-        const CodeTree& tree)
+        const CodeTree<Value_t>& tree)
     {
         /* First, check if the tree has any chances of matching... */
         /* Figure out what we need. */
-        Needs NeedList ( CreateNeedList(params) );
+        Needs NeedList ( CreateNeedList<Value_t> (params) );
 
         size_t nparams = tree.GetParamCount();
 
@@ -297,11 +304,12 @@ namespace FPoptimizer_Optimize
     }
 
     /* Test the given parameter to a given CodeTree */
+    template<typename Value_t>
     MatchResultType TestParam(
         const ParamSpec& parampair,
-        const CodeTree& tree,
+        const CodeTree<Value_t>& tree,
         const MatchPositionSpecBaseP& start_at,
-        MatchInfo& info)
+        MatchInfo<Value_t>& info)
     {
         /*std::cout << "TestParam(";
         DumpParam(parampair);
@@ -314,21 +322,21 @@ namespace FPoptimizer_Optimize
         {
             case NumConstant: /* A particular numeric value */
             {
-                const ParamSpec_NumConstant& param = *(const ParamSpec_NumConstant*) parampair.second;
+                const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
                 if(!tree.IsImmed()) return false;
-                double imm = tree.GetImmed();
+                Value_t imm = tree.GetImmed();
                 switch(param.modulo)
                 {
                     case Modulo_None: break;
                     case Modulo_Radians:
-                        imm = fp_mod(imm, fp_const_pi<double>()*2.0);
+                        imm = fp_mod(imm, fp_const_twopi<Value_t>());
                         if(imm < 0)
-                            imm += fp_const_pi<double>()*2.0;
-                        if(imm > fp_const_pi<double>())
-                            imm -= fp_const_pi<double>()*2.0;
+                            imm += fp_const_twopi<Value_t>();
+                        if(imm > fp_const_pi<Value_t>())
+                            imm -= fp_const_twopi<Value_t>();
                         break;
                 }
-                return FloatEqual(imm, param.constvalue);
+                return fp_equal(imm, param.constvalue);
             }
             case ParamHolder: /* Any arbitrary node */
             {
@@ -343,7 +351,7 @@ namespace FPoptimizer_Optimize
                 { /* A constant value acquired from this formula */
                     if(!TestImmedConstraints(param.constraints, tree)) return false;
                     /* Construct the formula */
-                    CodeTree  grammar_func = CalculateGroupFunction(parampair, info);
+                    CodeTree<Value_t> grammar_func = CalculateGroupFunction(parampair, info);
         #ifdef DEBUG_SUBSTITUTIONS
                     DumpHashes(grammar_func);
                     std::cout << *(const void**)&grammar_func.GetImmed();
@@ -376,21 +384,24 @@ namespace FPoptimizer_Optimize
         return false;
     }
 
+    template<typename Value_t>
     struct PositionalParams_Rec
     {
         MatchPositionSpecBaseP start_at; /* child's start_at */
-        MatchInfo              info;     /* backup of "info" at start */
+        MatchInfo<Value_t>     info;     /* backup of "info" at start */
 
         PositionalParams_Rec(): start_at(), info() { }
     };
+
+    template<typename Value_t>
     class MatchPositionSpec_PositionalParams
         : public MatchPositionSpecBase,
-          public std::vector<PositionalParams_Rec>
+          public std::vector<PositionalParams_Rec<Value_t> >
     {
     public:
         explicit MatchPositionSpec_PositionalParams(size_t n)
             : MatchPositionSpecBase(),
-              std::vector<PositionalParams_Rec> (n)
+              std::vector<PositionalParams_Rec<Value_t> > (n)
               { }
     };
 
@@ -413,12 +424,13 @@ namespace FPoptimizer_Optimize
               { }
     };
 
+    template<typename Value_t>
     MatchResultType TestParam_AnyWhere(
         const ParamSpec& parampair,
-        const CodeTree& tree,
+        const CodeTree<Value_t>& tree,
         const MatchPositionSpecBaseP& start_at,
-        MatchInfo&         info,
-        std::vector<bool>& used,
+        MatchInfo<Value_t>& info,
+        std::vector<bool>&  used,
         bool TopLevel)
     {
         FPOPT_autoptr<MatchPositionSpec_AnyWhere> position;
@@ -464,32 +476,35 @@ namespace FPoptimizer_Optimize
         return false;
     }
 
+    template<typename Value_t>
     struct AnyParams_Rec
     {
         MatchPositionSpecBaseP start_at; /* child's start_at */
-        MatchInfo              info;     /* backup of "info" at start */
+        MatchInfo<Value_t>     info;     /* backup of "info" at start */
         std::vector<bool>      used;     /* which params are remaining */
 
         explicit AnyParams_Rec(size_t nparams)
             : start_at(), info(), used(nparams) { }
     };
+    template<typename Value_t>
     class MatchPositionSpec_AnyParams
         : public MatchPositionSpecBase,
-          public std::vector<AnyParams_Rec>
+          public std::vector<AnyParams_Rec<Value_t> >
     {
     public:
         explicit MatchPositionSpec_AnyParams(size_t n, size_t m)
             : MatchPositionSpecBase(),
-              std::vector<AnyParams_Rec> (n, AnyParams_Rec(m))
+              std::vector<AnyParams_Rec<Value_t> > (n, AnyParams_Rec<Value_t>(m))
               { }
     };
 
     /* Test the list of parameters to a given CodeTree */
+    template<typename Value_t>
     MatchResultType TestParams(
         const ParamSpec_SubFunctionData& model_tree,
-        const CodeTree& tree,
+        const CodeTree<Value_t>& tree,
         const MatchPositionSpecBaseP& start_at,
-        MatchInfo& info,
+        MatchInfo<Value_t>& info,
         bool TopLevel)
     {
         /* When PositionalParams or SelectedParams, verify that
@@ -514,17 +529,17 @@ namespace FPoptimizer_Optimize
             case PositionalParams:
             {
                 /* Simple: Test all given parameters in succession. */
-                FPOPT_autoptr<MatchPositionSpec_PositionalParams> position;
+                FPOPT_autoptr<MatchPositionSpec_PositionalParams<Value_t> > position;
                 unsigned a;
                 if(&*start_at)
                 {
-                    position = (MatchPositionSpec_PositionalParams*) &*start_at;
+                    position = (MatchPositionSpec_PositionalParams<Value_t> *) &*start_at;
                     a = model_tree.param_count - 1;
                     goto retry_positionalparams_2;
                 }
                 else
                 {
-                    position = new MatchPositionSpec_PositionalParams(model_tree.param_count);
+                    position = new MatchPositionSpec_PositionalParams<Value_t> (model_tree.param_count);
                     a = 0;
                 }
 
@@ -533,7 +548,7 @@ namespace FPoptimizer_Optimize
                     (*position)[a].info = info;
                 retry_positionalparams:
                   { MatchResultType r = TestParam(
-                        ParamSpec_Extract(model_tree.param_list, a),
+                        ParamSpec_Extract<Value_t>(model_tree.param_list, a),
                         tree.GetParam(a),
                         (*position)[a].start_at,
                         info);
@@ -572,13 +587,13 @@ namespace FPoptimizer_Optimize
             {
                 /* Ensure that all given parameters are found somewhere, in any order */
 
-                FPOPT_autoptr<MatchPositionSpec_AnyParams> position;
+                FPOPT_autoptr<MatchPositionSpec_AnyParams<Value_t> > position;
                 std::vector<bool> used( tree.GetParamCount() );
                 std::vector<unsigned> depcodes( model_tree.param_count );
                 std::vector<unsigned> test_order( model_tree.param_count );
                 for(unsigned a=0; a<model_tree.param_count; ++a)
                 {
-                    const ParamSpec parampair = ParamSpec_Extract(model_tree.param_list, a);
+                    const ParamSpec parampair = ParamSpec_Extract<Value_t>(model_tree.param_list, a);
                     depcodes[a] = ParamSpec_GetDepCode(parampair);
                 }
                 { unsigned b=0;
@@ -593,7 +608,7 @@ namespace FPoptimizer_Optimize
                 unsigned a;
                 if(&*start_at)
                 {
-                    position = (MatchPositionSpec_AnyParams*) &*start_at;
+                    position = (MatchPositionSpec_AnyParams<Value_t>*) &*start_at;
                     if(model_tree.param_count == 0)
                     {
                         a = 0;
@@ -604,8 +619,8 @@ namespace FPoptimizer_Optimize
                 }
                 else
                 {
-                    position = new MatchPositionSpec_AnyParams(model_tree.param_count,
-                                                               tree.GetParamCount());
+                    position = new MatchPositionSpec_AnyParams<Value_t>
+                        (model_tree.param_count, tree.GetParamCount());
                     a = 0;
                     if(model_tree.param_count != 0)
                     {
@@ -622,8 +637,8 @@ namespace FPoptimizer_Optimize
                         (*position)[a].used   = used;
                     }
                 retry_anyparams:
-                  { MatchResultType r = TestParam_AnyWhere(
-                        ParamSpec_Extract(model_tree.param_list, test_order[a]),
+                  { MatchResultType r = TestParam_AnyWhere<Value_t>(
+                        ParamSpec_Extract<Value_t>(model_tree.param_list, test_order[a]),
                         tree,
                         (*position)[a].start_at,
                         info,
@@ -663,7 +678,7 @@ namespace FPoptimizer_Optimize
                     if(!TopLevel
                     || !info.HasRestHolder(model_tree.restholder_index))
                     {
-                        std::vector<CodeTree> matches;
+                        std::vector<CodeTree<Value_t> > matches;
                         matches.reserve(tree.GetParamCount());
                         for(unsigned b = 0; b < tree.GetParamCount(); ++b)
                         {
@@ -685,7 +700,7 @@ namespace FPoptimizer_Optimize
                     }
                     else
                     {
-                        const std::vector<CodeTree>& matches
+                        const std::vector<CodeTree<Value_t> >& matches
                             = info.GetRestHolderValues(model_tree.restholder_index);
                         //std::cout << "Testing restholder " << model_tree.restholder_index << std::flush;
                         for(size_t a=0; a<matches.size(); ++a)
@@ -721,6 +736,37 @@ namespace FPoptimizer_Optimize
         }
         return false; // doesn't match
     }
+}
+
+
+// Explicitly instantiate types
+namespace FPoptimizer_Optimize
+{
+    template
+    MatchResultType TestParams(
+        const ParamSpec_SubFunctionData& model_tree,
+        const CodeTree<double> & tree,
+        const MatchPositionSpecBaseP& start_at,
+        MatchInfo<double>& info,
+        bool TopLevel);
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    template
+    MatchResultType TestParams(
+        const ParamSpec_SubFunctionData& model_tree,
+        const CodeTree<float> & tree,
+        const MatchPositionSpecBaseP& start_at,
+        MatchInfo<float>& info,
+        bool TopLevel);
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template
+    MatchResultType TestParams(
+        const ParamSpec_SubFunctionData& model_tree,
+        const CodeTree<long double> & tree,
+        const MatchPositionSpecBaseP& start_at,
+        MatchInfo<long double>& info,
+        bool TopLevel);
+#endif
 }
 
 #endif
