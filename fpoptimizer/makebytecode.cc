@@ -128,7 +128,7 @@ namespace FPoptimizer_CodeTree
                         {
                             long value = GetParam(a).GetLongIntegerImmed();
 
-                            CodeTree tmp(*this, CodeTree::CloneTag());
+                            CodeTree tmp(*this, typename CodeTree::CloneTag());
                             tmp.DelParam(a);
                             tmp.Rehash();
                             if(AssembleSequence(
