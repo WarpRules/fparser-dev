@@ -299,7 +299,7 @@ namespace
 
         void AddVar(unsigned varno)
         {
-            CodeTree<Value_t> newnode(varno, CodeTree<Value_t>::VarTag());
+            CodeTree<Value_t> newnode(varno, typename CodeTree<Value_t>::VarTag());
             FindClone(newnode);
             Push(newnode);
         }

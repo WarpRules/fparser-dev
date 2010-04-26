@@ -1040,7 +1040,7 @@ namespace FPoptimizer_CodeTree
                         = add.FindIdenticalValueTo(mulgroup.GetParam(b));
                     if(add.Found(c))
                     {
-                        CodeTree<Value_t> tmp(mulgroup, CodeTree<Value_t>::CloneTag());
+                        CodeTree<Value_t> tmp(mulgroup, typename CodeTree<Value_t>::CloneTag());
                         tmp.DelParam(b);
                         tmp.Rehash();
                         add.AddCollectionTo(tmp, c);
@@ -1115,7 +1115,7 @@ namespace FPoptimizer_CodeTree
                             for(size_t b=0; b<GetParam(a).GetParamCount(); ++b)
                                 if(group_by.IsIdenticalTo(GetParam(a).GetParam(b)))
                                 {
-                                    CodeTree<Value_t> tmp(GetParam(a), CodeTree<Value_t>::CloneTag());
+                                    CodeTree<Value_t> tmp(GetParam(a), typename CodeTree<Value_t>::CloneTag());
                                     tmp.DelParam(b);
                                     tmp.Rehash();
                                     group_add.AddParamMove(tmp);
