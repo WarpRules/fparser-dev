@@ -103,6 +103,7 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/opcodename.o \
 		fpoptimizer/bytecodesynth.o \
 		fpoptimizer/transformations.o \
+		fpoptimizer/cse.o \
 		fpoptimizer/debug.o \
 		fpoptimizer/hash.o \
 		$(ADDITIONAL_MODULES)
@@ -196,6 +197,7 @@ FPOPTIMIZER_CC_FILES=\
 	    fpoptimizer/constantfolding.cc \
 	    fpoptimizer/rangeestimation.cc \
 	    fpoptimizer/transformations.cc \
+	    fpoptimizer/cse.cc \
 	    fpoptimizer/optimize_main.cc
 
 fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
@@ -209,6 +211,7 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 		sed -r "s@^(#include \".*|#.*def.*grammar_optimize)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
 	done | grep -v "^#...?def.?.?.? grammar_optimize" \
+	     | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
 	     | util/cpp_compress >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 

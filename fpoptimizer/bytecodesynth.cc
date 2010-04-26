@@ -547,7 +547,7 @@ namespace FPoptimizer_ByteCode
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_ByteCode
 {
     template class SequenceOpcodes<double>;
@@ -570,5 +570,6 @@ namespace FPoptimizer_ByteCode
         ByteCodeSynth<long double>& synth);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

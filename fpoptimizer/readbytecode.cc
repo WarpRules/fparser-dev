@@ -747,7 +747,7 @@ namespace FPoptimizer_CodeTree
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template
@@ -773,5 +773,6 @@ namespace FPoptimizer_CodeTree
         bool keep_powi);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

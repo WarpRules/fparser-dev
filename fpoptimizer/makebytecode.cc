@@ -327,7 +327,7 @@ namespace
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template void CodeTree<double>::SynthesizeByteCode(
@@ -347,5 +347,6 @@ namespace FPoptimizer_CodeTree
         size_t& stacktop_max);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

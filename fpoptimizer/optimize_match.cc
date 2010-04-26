@@ -739,7 +739,7 @@ namespace FPoptimizer_Optimize
 }
 
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_Optimize
 {
     template
@@ -768,5 +768,6 @@ namespace FPoptimizer_Optimize
         bool TopLevel);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

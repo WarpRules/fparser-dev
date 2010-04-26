@@ -77,7 +77,7 @@ namespace FPoptimizer_Grammar
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_Grammar
 {
     template void DumpMatch(const Rule& rule,
@@ -100,5 +100,6 @@ namespace FPoptimizer_Grammar
                    std::ostream& o);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

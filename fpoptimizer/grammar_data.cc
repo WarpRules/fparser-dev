@@ -1541,7 +1541,9 @@ namespace FPoptimizer_Grammar
             return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-33]);
         return ParamSpec(ParamHolder,(const void*)&plist_p[index]);
     }
+/* BEGIN_EXPLICIT_INSTANTATION */
 template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
 template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
 template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
+/* END_EXPLICIT_INSTANTATION */
 }

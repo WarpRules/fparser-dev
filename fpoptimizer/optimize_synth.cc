@@ -114,7 +114,7 @@ namespace FPoptimizer_Optimize
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_Optimize
 {
     template
@@ -137,4 +137,6 @@ namespace FPoptimizer_Optimize
         MatchInfo<long double>& info);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
+
 #endif

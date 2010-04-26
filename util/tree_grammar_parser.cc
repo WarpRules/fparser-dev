@@ -3303,9 +3303,11 @@ namespace FPoptimizer_Grammar
         return plist[plist_index];
     }
 
+    /* BEGIN_EXPLICIT_INSTANTATION */
     template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
     template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
     template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
+    /* END_EXPLICIT_INSTANTATION */
 }
 
 int main()
@@ -3428,9 +3430,11 @@ int main()
         "            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-" << n_begin << "]);\n"
         "        return ParamSpec(ParamHolder,(const void*)&plist_p[index"/*"-" << p_begin << */"]);\n"
         "    }\n"
+        "/* BEGIN_EXPLICIT_INSTANTATION */\n"
         "template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);\n"
         "template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);\n"
         "template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);\n"
+        "/* END_EXPLICIT_INSTANTATION */\n"
         "}\n";
 
     return 0;

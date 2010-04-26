@@ -397,7 +397,7 @@ namespace FPoptimizer_Optimize
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_Optimize
 {
     template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<double>& tree);
@@ -408,5 +408,6 @@ namespace FPoptimizer_Optimize
     template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<long double>& tree);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

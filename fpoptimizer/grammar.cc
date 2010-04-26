@@ -161,7 +161,7 @@ namespace FPoptimizer_Grammar
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_Grammar
 {
     template void DumpParams<double>(unsigned, unsigned, std::ostream& );
@@ -175,3 +175,4 @@ namespace FPoptimizer_Grammar
     template bool ParamSpec_Compare<long double>(const void*, const void*, SpecialOpcode);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */

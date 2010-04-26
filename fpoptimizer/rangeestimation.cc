@@ -814,7 +814,7 @@ namespace FPoptimizer_CodeTree
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template MinMaxTree<double> CodeTree<double>::CalculateResultBoundaries() const;
@@ -825,5 +825,6 @@ namespace FPoptimizer_CodeTree
     template MinMaxTree<long double> CodeTree<long double>::CalculateResultBoundaries() const;
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

@@ -443,7 +443,7 @@ namespace FPoptimizer_CodeTree
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template class CodeTree<double>;
@@ -457,6 +457,7 @@ namespace FPoptimizer_CodeTree
     template class CodeTreeData<long double>;
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif
 

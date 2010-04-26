@@ -113,7 +113,7 @@ namespace FPoptimizer_CodeTree
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template void CodeTree<double>::Rehash(bool);
@@ -127,5 +127,6 @@ namespace FPoptimizer_CodeTree
     template void CodeTree<long double>::FixIncompleteHashes();
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

@@ -2654,7 +2654,7 @@ namespace FPoptimizer_CodeTree
     }
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template void CodeTree<double>::ConstantFolding();
@@ -2665,5 +2665,6 @@ namespace FPoptimizer_CodeTree
     template void CodeTree<long double>::ConstantFolding();
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif

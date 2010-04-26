@@ -1,0 +1,23 @@
+Functions / Classes needing explicit instantations, per module:
+
+codetree:		CodeTree<>
+optimize:		ApplyGrammars()
+optimize_debug:		DumpMatch()
+optimize_match:		TestParams()
+optimize_synth:		SynthesizeRule()
+rangeestimation:	CalculateResultBoundaries()
+constantfolding:	ConstantFolding()
+readbytecode:		GenerateFrom()
+makebytecode:		SynthesizeByteCode()
+cse:			SynthCommonSubExpressions()
+transformations:	RecreateInversionsAndNegations()
+bytecodesynth:		SequenceOpcodes
+			AssembleSequence()
+debug:			DumpHashes()
+			DumpTree()
+			DumpTreeWithIndent()
+grammar:		DumpParams()
+			ParamSpec_Compare()
+grammar_data:		ParamSpec_Extract()  - NOTE: FROM .y FILE
+hash:			Rehash()
+			FixIncompleteHashes()

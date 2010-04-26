@@ -137,7 +137,7 @@ namespace FPoptimizer_CodeTree
 #endif
 }
 
-// Explicitly instantiate types
+/* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
     template void DumpHashes(const CodeTree<double>& tree, std::ostream& o);
@@ -154,5 +154,6 @@ namespace FPoptimizer_CodeTree
     template void DumpTreeWithIndent(const CodeTree<long double>& tree, std::ostream& o, const std::string& indent);
 #endif
 }
+/* END_EXPLICIT_INSTANTATION */
 
 #endif
