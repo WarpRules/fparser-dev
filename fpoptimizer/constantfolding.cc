@@ -1409,7 +1409,7 @@ namespace FPoptimizer_CodeTree
                     branch1.DelParam(a);
                     branch1.Rehash();
                     CodeTree<Value_t> branch2_backup = branch2;
-                    branch2 = CodeTree( (op1==cAdd||op1==cOr) ? 0.0 : 1.0 );
+                    branch2 = CodeTree( Value_t( (op1==cAdd||op1==cOr) ? 0 : 1 ) );
                     CodeTree<Value_t> changed_if;
                     changed_if.SetOpcode(GetOpcode());
                     changed_if.SetParamsMove(GetParams());
@@ -1431,7 +1431,7 @@ namespace FPoptimizer_CodeTree
                     branch1.DelParam(a);
                     branch1.Rehash();
                     CodeTree<Value_t> branch2_backup = branch2op;
-                    branch2 = CodeTree( (op1==cOr) ? 0.0 : 1.0 );
+                    branch2 = CodeTree( Value_t( (op1==cOr) ? 0 : 1 ) );
                     CodeTree<Value_t> changed_if;
                     changed_if.SetOpcode(GetOpcode());
                     changed_if.SetParamsMove(GetParams());
@@ -1456,7 +1456,7 @@ namespace FPoptimizer_CodeTree
                     branch2.DelParam(a);
                     branch2.Rehash();
                     CodeTree<Value_t> branch1_backup = branch1;
-                    branch1 = CodeTree( (op2==cAdd||op2==cOr) ? 0.0 : 1.0 );
+                    branch1 = CodeTree( Value_t( (op2==cAdd||op2==cOr) ? 0 : 1 ) );
                     CodeTree<Value_t> changed_if;
                     changed_if.SetOpcode(GetOpcode());
                     changed_if.SetParamsMove(GetParams());
@@ -1478,7 +1478,7 @@ namespace FPoptimizer_CodeTree
                     branch2.DelParam(a);
                     branch2.Rehash();
                     CodeTree<Value_t> branch1_backup = branch1op;
-                    branch1 = CodeTree( (op2==cOr) ? 0.0 : 1.0 );
+                    branch1 = CodeTree( Value_t( (op2==cOr) ? 0 : 1 ) );
                     CodeTree<Value_t> changed_if;
                     changed_if.SetOpcode(GetOpcode());
                     changed_if.SetParamsMove(GetParams());
@@ -1535,7 +1535,8 @@ namespace FPoptimizer_CodeTree
                     //if(imm >= 0.0)
                     {
                         Value_t new_base_immed = fp_pow(base_immed, imm);
-                        if(isinf(new_base_immed) || fp_equal(new_base_immed, Value_t(0)))
+                        if(isinf(new_base_immed)
+                        || fp_equal(new_base_immed, Value_t(0)))
                         {
                             // It produced an infinity. Do not change.
                             break;
@@ -1581,7 +1582,8 @@ namespace FPoptimizer_CodeTree
                     //if(imm >= 0.0)
                     {
                         Value_t new_factor_immed = fp_pow(imm, exponent_immed);
-                        if(isinf(new_factor_immed) || fp_equal(new_factor_immed, Value_t(0)))
+                        if(isinf(new_factor_immed)
+                        || fp_equal(new_factor_immed, Value_t(0)))
                         {
                             // It produced an infinity. Do not change.
                             break;
