@@ -46,8 +46,7 @@ namespace
         return -1;
     }
 
-    template<typename Value_t>
-    struct ComparisonSet /* For optimizing And, Or */
+    struct ComparisonSetBase
     {
         static const int Lt_Mask = 0x1; // 1=less
         static const int Eq_Mask = 0x2; // 2=equal
@@ -58,21 +57,6 @@ namespace
         static int Swap_Mask(int m) { return (m&Eq_Mask)
                                   | ((m&Lt_Mask) ? Gt_Mask : 0)
                                   | ((m&Gt_Mask) ? Lt_Mask : 0); }
-        struct Comparison
-        {
-            CodeTree<Value_t> a;
-            CodeTree<Value_t> b;
-            int relationship;
-        };
-        std::vector<Comparison> relationships;
-        struct Item
-        {
-            CodeTree<Value_t> value;
-            bool negated;
-        };
-        std::vector<Item> plain_set;
-        int const_offset;
-
         enum RelationshipResult
         {
             Ok,
@@ -87,6 +71,25 @@ namespace
             cond_mul,
             cond_add
         };
+    };
+
+    template<typename Value_t>
+    struct ComparisonSet: public ComparisonSetBase /* For optimizing And, Or */
+    {
+        struct Comparison
+        {
+            CodeTree<Value_t> a;
+            CodeTree<Value_t> b;
+            int relationship;
+        };
+        std::vector<Comparison> relationships;
+        struct Item
+        {
+            CodeTree<Value_t> value;
+            bool negated;
+        };
+        std::vector<Item> plain_set;
+        int const_offset;
 
         ComparisonSet():
             relationships(),
@@ -212,8 +215,17 @@ namespace
         }
     };
 
+    struct CollectionSetBase
+    {
+        enum CollectionResult
+        {
+            Ok,
+            Suboptimal
+        };
+    };
+
     template<typename Value_t>
-    struct CollectionSet /* For optimizing Add,  Mul */
+    struct CollectionSet: public CollectionSetBase /* For optimizing Add,  Mul */
     {
         struct Collection
         {
@@ -226,12 +238,6 @@ namespace
                 : value(v), factor(f), factor_needs_rehashing(false) { }
         };
         std::multimap<fphash_t, Collection> collections;
-
-        enum CollectionResult
-        {
-            Ok,
-            Suboptimal
-        };
 
         typedef typename std::multimap<fphash_t, Collection>::iterator
             PositionType;
@@ -472,7 +478,6 @@ namespace
 
     };
 
-    template<typename Value_t>
     struct RangeComparisonData
     {
         enum Decision
@@ -495,12 +500,14 @@ namespace
             Gt0Le1=3, // val>0 && val<=1
             Ge0Lt1=4  // val>=0 && val<1
         };
+
         Decision if_identical; // What to do when operands are identical
         Decision if_always[4]; // What to do if Always <, <=, >, >=
         struct { Decision what : 4; WhatDoWhenCase when : 4; }
             p0_logical_a, p1_logical_a,
             p0_logical_b, p1_logical_b;
 
+        template<typename Value_t>
         Decision Analyze(const CodeTree<Value_t>& a, const CodeTree<Value_t>& b) const
         {
             if(a.IsIdenticalTo(b))
@@ -539,6 +546,8 @@ namespace
             }
             return Unchanged;
         }
+
+        template<typename Value_t>
         static bool TestCase(WhatDoWhenCase when, const MinMaxTree<Value_t>& p)
         {
             if(!p.has_min || !p.has_max) return false;
@@ -553,7 +562,6 @@ namespace
             return false;
         }
     };
-
 }
 
 namespace FPoptimizer_CodeTree
@@ -565,28 +573,28 @@ namespace FPoptimizer_CodeTree
         ComparisonSet<Value_t> comp;
         for(size_t a=0; a<GetParamCount(); ++a)
         {
-            typename ComparisonSet<Value_t>::RelationshipResult
-                change = ComparisonSet<Value_t>::Ok;
+            typename ComparisonSetBase::RelationshipResult
+                change = ComparisonSetBase::Ok;
             const CodeTree<Value_t>& atree = GetParam(a);
             switch(atree.GetOpcode())
             {
                 case cEqual:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Eq_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Eq_Mask, cond_type);
                     break;
                 case cNEqual:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Ne_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Ne_Mask, cond_type);
                     break;
                 case cLess:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Lt_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Lt_Mask, cond_type);
                     break;
                 case cLessOrEq:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Le_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Le_Mask, cond_type);
                     break;
                 case cGreater:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Gt_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Gt_Mask, cond_type);
                     break;
                 case cGreaterOrEq:
-                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSet<Value_t>::Ge_Mask, cond_type);
+                    change = comp.AddRelationship(atree.GetParam(0), atree.GetParam(1), ComparisonSetBase::Ge_Mask, cond_type);
                     break;
                 case cNot:
                     change = comp.AddItem(atree.GetParam(0), true, cond_type);
@@ -606,13 +614,13 @@ namespace FPoptimizer_CodeTree
             ReplaceTreeWithOne:
                     data = new CodeTreeData<Value_t>(1.0);
                     return true;
-                case ComparisonSet<Value_t>::Ok: // ok
+                case ComparisonSetBase::Ok: // ok
                     break;
-                case ComparisonSet<Value_t>::BecomeZero: // whole set was invalidated
+                case ComparisonSetBase::BecomeZero: // whole set was invalidated
                     goto ReplaceTreeWithZero;
-                case ComparisonSet<Value_t>::BecomeOne: // whole set was validated
+                case ComparisonSetBase::BecomeOne: // whole set was validated
                     goto ReplaceTreeWithOne;
-                case ComparisonSet<Value_t>::Suboptimal: // something was changed
+                case ComparisonSetBase::Suboptimal: // something was changed
                     should_regenerate = true;
                     break;
             }
@@ -666,12 +674,12 @@ namespace FPoptimizer_CodeTree
                 r.SetOpcode(cNop); // dummy
                 switch(comp.relationships[a].relationship)
                 {
-                    case ComparisonSet<Value_t>::Lt_Mask: r.SetOpcode( cLess ); break;
-                    case ComparisonSet<Value_t>::Eq_Mask: r.SetOpcode( cEqual ); break;
-                    case ComparisonSet<Value_t>::Gt_Mask: r.SetOpcode( cGreater ); break;
-                    case ComparisonSet<Value_t>::Le_Mask: r.SetOpcode( cLessOrEq ); break;
-                    case ComparisonSet<Value_t>::Ne_Mask: r.SetOpcode( cNEqual ); break;
-                    case ComparisonSet<Value_t>::Ge_Mask: r.SetOpcode( cGreaterOrEq ); break;
+                    case ComparisonSetBase::Lt_Mask: r.SetOpcode( cLess ); break;
+                    case ComparisonSetBase::Eq_Mask: r.SetOpcode( cEqual ); break;
+                    case ComparisonSetBase::Gt_Mask: r.SetOpcode( cGreater ); break;
+                    case ComparisonSetBase::Le_Mask: r.SetOpcode( cLessOrEq ); break;
+                    case ComparisonSetBase::Ne_Mask: r.SetOpcode( cNEqual ); break;
+                    case ComparisonSetBase::Ge_Mask: r.SetOpcode( cGreaterOrEq ); break;
                 }
                 r.AddParamMove(comp.relationships[a].a);
                 r.AddParamMove(comp.relationships[a].b);
@@ -697,22 +705,22 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool CodeTree<Value_t>::ConstantFolding_AndLogic()
     {
-        return ConstantFolding_LogicCommon( ComparisonSet<Value_t>::cond_and, true );
+        return ConstantFolding_LogicCommon( ComparisonSetBase::cond_and, true );
     }
     template<typename Value_t>
     bool CodeTree<Value_t>::ConstantFolding_OrLogic()
     {
-        return ConstantFolding_LogicCommon( ComparisonSet<Value_t>::cond_or, true );
+        return ConstantFolding_LogicCommon( ComparisonSetBase::cond_or, true );
     }
     template<typename Value_t>
     bool CodeTree<Value_t>::ConstantFolding_AddLogicItems()
     {
-        return ConstantFolding_LogicCommon( ComparisonSet<Value_t>::cond_add, false );
+        return ConstantFolding_LogicCommon( ComparisonSetBase::cond_add, false );
     }
     template<typename Value_t>
     bool CodeTree<Value_t>::ConstantFolding_MulLogicItems()
     {
-        return ConstantFolding_LogicCommon( ComparisonSet<Value_t>::cond_mul, false );
+        return ConstantFolding_LogicCommon( ComparisonSetBase::cond_mul, false );
     }
 
     template<typename Value_t>
@@ -813,7 +821,7 @@ namespace FPoptimizer_CodeTree
             else cannot_adopt_mul:
         #endif
             {
-                if(mul.AddCollection(value, exponent) == CollectionSet<Value_t>::Suboptimal)
+                if(mul.AddCollection(value, exponent) == CollectionSetBase::Suboptimal)
                     should_regenerate = true;
             }
         }
@@ -1007,7 +1015,7 @@ namespace FPoptimizer_CodeTree
         for(size_t a=0; a<GetParamCount(); ++a)
         {
             if(GetParam(a).GetOpcode() == cMul) continue;
-            if(add.AddCollection(GetParam(a)) == CollectionSet<Value_t>::Suboptimal)
+            if(add.AddCollection(GetParam(a)) == CollectionSetBase::Suboptimal)
                 should_regenerate = true;
             // This catches x + x and x - x
         }
@@ -1129,7 +1137,7 @@ namespace FPoptimizer_CodeTree
             for(size_t a=0; a<GetParamCount(); ++a)
                 if(remaining[a])
                 {
-                    if(add.AddCollection(GetParam(a)) == CollectionSet<Value_t>::Suboptimal)
+                    if(add.AddCollection(GetParam(a)) == CollectionSetBase::Suboptimal)
                         should_regenerate = true;
                 }
         }
@@ -1626,111 +1634,117 @@ namespace FPoptimizer_CodeTree
         return false; // No changes that require a rerun
     }
 
-    template<typename Value_t>
-    bool CodeTree<Value_t>::ConstantFolding_ComparisonOperations()
+    namespace RangeComparisonsData
     {
-        static const RangeComparisonData<Value_t> Data[6] =
+        static const RangeComparisonData Data[6] =
         {
             // cEqual:
             // Case:      p0 == p1  Antonym: p0 != p1
             // Synonym:   p1 == p0  Antonym: p1 != p0
-            { RangeComparisonData<Value_t>::MakeTrue,  // If identical: always true
-              {RangeComparisonData<Value_t>::MakeFalse,  // If Always p0 < p1: always false
-               RangeComparisonData<Value_t>::Unchanged,
-               RangeComparisonData<Value_t>::MakeFalse,  // If Always p0 > p1: always false
-               RangeComparisonData<Value_t>::Unchanged},
+            { RangeComparisonData::MakeTrue,  // If identical: always true
+              {RangeComparisonData::MakeFalse,  // If Always p0 < p1: always false
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeFalse,  // If Always p0 > p1: always false
+               RangeComparisonData::Unchanged},
              // NotNot(p0) if p1==1    NotNot(p1) if p0==1
              //    Not(p0) if p1==0       Not(p1) if p0==0
-              {RangeComparisonData<Value_t>::MakeNotNotP0, RangeComparisonData<Value_t>::Eq1},
-              {RangeComparisonData<Value_t>::MakeNotNotP1, RangeComparisonData<Value_t>::Eq1},
-              {RangeComparisonData<Value_t>::MakeNotP0, RangeComparisonData<Value_t>::Eq0},
-              {RangeComparisonData<Value_t>::MakeNotP1, RangeComparisonData<Value_t>::Eq0}
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotP0, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotP1, RangeComparisonData::Eq0}
             },
             // cNEqual:
             // Case:      p0 != p1  Antonym: p0 == p1
             // Synonym:   p1 != p0  Antonym: p1 == p0
-            { RangeComparisonData<Value_t>::MakeFalse,  // If identical: always false
-              {RangeComparisonData<Value_t>::MakeTrue,  // If Always p0 < p1: always true
-               RangeComparisonData<Value_t>::Unchanged,
-               RangeComparisonData<Value_t>::MakeTrue,  // If Always p0 > p1: always true
-               RangeComparisonData<Value_t>::Unchanged},
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::MakeTrue,  // If Always p0 < p1: always true
+               RangeComparisonData::Unchanged,
+               RangeComparisonData::MakeTrue,  // If Always p0 > p1: always true
+               RangeComparisonData::Unchanged},
              // NotNot(p0) if p1==0    NotNot(p1) if p0==0
              //    Not(p0) if p1==1       Not(p1) if p0==1
-              {RangeComparisonData<Value_t>::MakeNotNotP0, RangeComparisonData<Value_t>::Eq0},
-              {RangeComparisonData<Value_t>::MakeNotNotP1, RangeComparisonData<Value_t>::Eq0},
-              {RangeComparisonData<Value_t>::MakeNotP0, RangeComparisonData<Value_t>::Eq1},
-              {RangeComparisonData<Value_t>::MakeNotP1, RangeComparisonData<Value_t>::Eq1}
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Eq0},
+              {RangeComparisonData::MakeNotP0, RangeComparisonData::Eq1},
+              {RangeComparisonData::MakeNotP1, RangeComparisonData::Eq1}
             },
             // cLess:
             // Case:      p0 < p1   Antonym: p0 >= p1
             // Synonym:   p1 > p0   Antonym: p1 <= p0
-            { RangeComparisonData<Value_t>::MakeFalse,  // If identical: always false
-              {RangeComparisonData<Value_t>::MakeTrue,  // If Always p0  < p1: always true
-               RangeComparisonData<Value_t>::MakeNEqual,
-               RangeComparisonData<Value_t>::MakeFalse, // If Always p0 > p1: always false
-               RangeComparisonData<Value_t>::MakeFalse},// If Always p0 >= p1: always false
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::MakeTrue,  // If Always p0  < p1: always true
+               RangeComparisonData::MakeNEqual,
+               RangeComparisonData::MakeFalse, // If Always p0 > p1: always false
+               RangeComparisonData::MakeFalse},// If Always p0 >= p1: always false
              // Not(p0)   if p1>0 & p1<=1    --   NotNot(p1) if p0>=0 & p0<1
-              {RangeComparisonData<Value_t>::MakeNotP0,    RangeComparisonData<Value_t>::Gt0Le1},
-              {RangeComparisonData<Value_t>::MakeNotNotP1, RangeComparisonData<Value_t>::Ge0Lt1},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never}
+              {RangeComparisonData::MakeNotP0,    RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cLessOrEq:
             // Case:      p0 <= p1  Antonym: p0 > p1
             // Synonym:   p1 >= p0  Antonym: p1 < p0
-            { RangeComparisonData<Value_t>::MakeTrue,   // If identical: always true
-              {RangeComparisonData<Value_t>::Unchanged, // If Always p0  < p1: ?
-               RangeComparisonData<Value_t>::MakeTrue,  // If Always p0 <= p1: always true
-               RangeComparisonData<Value_t>::MakeFalse, // If Always p0  > p1: always false
-               RangeComparisonData<Value_t>::MakeEqual},// If Never  p0  < p1:  use cEqual
+            { RangeComparisonData::MakeTrue,   // If identical: always true
+              {RangeComparisonData::Unchanged, // If Always p0  < p1: ?
+               RangeComparisonData::MakeTrue,  // If Always p0 <= p1: always true
+               RangeComparisonData::MakeFalse, // If Always p0  > p1: always false
+               RangeComparisonData::MakeEqual},// If Never  p0  < p1:  use cEqual
              // Not(p0)    if p1>=0 & p1<1   --   NotNot(p1) if p0>0 & p0<=1
-              {RangeComparisonData<Value_t>::MakeNotP0,    RangeComparisonData<Value_t>::Ge0Lt1},
-              {RangeComparisonData<Value_t>::MakeNotNotP1, RangeComparisonData<Value_t>::Gt0Le1},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never}
+              {RangeComparisonData::MakeNotP0,    RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::MakeNotNotP1, RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cGreater:
             // Case:      p0 >  p1  Antonym: p0 <= p1
             // Synonym:   p1 <  p0  Antonym: p1 >= p0
-            { RangeComparisonData<Value_t>::MakeFalse,  // If identical: always false
-              {RangeComparisonData<Value_t>::MakeFalse, // If Always p0  < p1: always false
-               RangeComparisonData<Value_t>::MakeFalse, // If Always p0 <= p1: always false
-               RangeComparisonData<Value_t>::MakeTrue,  // If Always p0  > p1: always true
-               RangeComparisonData<Value_t>::MakeNEqual},
+            { RangeComparisonData::MakeFalse,  // If identical: always false
+              {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
+               RangeComparisonData::MakeFalse, // If Always p0 <= p1: always false
+               RangeComparisonData::MakeTrue,  // If Always p0  > p1: always true
+               RangeComparisonData::MakeNEqual},
              // NotNot(p0) if p1>=0 & p1<1   --   Not(p1)   if p0>0 & p0<=1
-              {RangeComparisonData<Value_t>::MakeNotNotP0, RangeComparisonData<Value_t>::Ge0Lt1},
-              {RangeComparisonData<Value_t>::MakeNotP1,    RangeComparisonData<Value_t>::Gt0Le1},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never}
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::MakeNotP1,    RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             },
             // cGreaterOrEq:
             // Case:      p0 >= p1  Antonym: p0 < p1
             // Synonym:   p1 <= p0  Antonym: p1 > p0
-            { RangeComparisonData<Value_t>::MakeTrue,   // If identical: always true
-              {RangeComparisonData<Value_t>::MakeFalse, // If Always p0  < p1: always false
-               RangeComparisonData<Value_t>::MakeEqual, // If Always p0 >= p1: always true
-               RangeComparisonData<Value_t>::Unchanged, // If always p0  > p1: ?
-               RangeComparisonData<Value_t>::MakeTrue}, // If Never  p0  > p1:  use cEqual
+            { RangeComparisonData::MakeTrue,   // If identical: always true
+              {RangeComparisonData::MakeFalse, // If Always p0  < p1: always false
+               RangeComparisonData::MakeEqual, // If Always p0 >= p1: always true
+               RangeComparisonData::Unchanged, // If always p0  > p1: ?
+               RangeComparisonData::MakeTrue}, // If Never  p0  > p1:  use cEqual
              // NotNot(p0) if p1>0 & p1<=1   --   Not(p1)    if p0>=0 & p0<1
-              {RangeComparisonData<Value_t>::MakeNotNotP0, RangeComparisonData<Value_t>::Gt0Le1},
-              {RangeComparisonData<Value_t>::MakeNotP1,    RangeComparisonData<Value_t>::Ge0Lt1},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never},
-              {RangeComparisonData<Value_t>::Unchanged, RangeComparisonData<Value_t>::Never}
+              {RangeComparisonData::MakeNotNotP0, RangeComparisonData::Gt0Le1},
+              {RangeComparisonData::MakeNotP1,    RangeComparisonData::Ge0Lt1},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never},
+              {RangeComparisonData::Unchanged, RangeComparisonData::Never}
             }
         };
+    }
+
+    template<typename Value_t>
+    bool CodeTree<Value_t>::ConstantFolding_ComparisonOperations()
+    {
+        using namespace RangeComparisonsData;
+
         switch(Data[GetOpcode()-cEqual].Analyze(GetParam(0), GetParam(1)))
         {
-            case RangeComparisonData<Value_t>::MakeFalse:
+            case RangeComparisonData::MakeFalse:
                 data = new CodeTreeData<Value_t>(0.0); return true;
-            case RangeComparisonData<Value_t>::MakeTrue:
+            case RangeComparisonData::MakeTrue:
                 data = new CodeTreeData<Value_t>(1.0); return true;
-            case RangeComparisonData<Value_t>::MakeEqual:  SetOpcode(cEqual); return true;
-            case RangeComparisonData<Value_t>::MakeNEqual: SetOpcode(cNEqual); return true;
-            case RangeComparisonData<Value_t>::MakeNotNotP0: SetOpcode(cNotNot); DelParam(1); return true;
-            case RangeComparisonData<Value_t>::MakeNotNotP1: SetOpcode(cNotNot); DelParam(0); return true;
-            case RangeComparisonData<Value_t>::MakeNotP0: SetOpcode(cNot); DelParam(1); return true;
-            case RangeComparisonData<Value_t>::MakeNotP1: SetOpcode(cNot); DelParam(0); return true;
-            case RangeComparisonData<Value_t>::Unchanged:;
+            case RangeComparisonData::MakeEqual:  SetOpcode(cEqual); return true;
+            case RangeComparisonData::MakeNEqual: SetOpcode(cNEqual); return true;
+            case RangeComparisonData::MakeNotNotP0: SetOpcode(cNotNot); DelParam(1); return true;
+            case RangeComparisonData::MakeNotNotP1: SetOpcode(cNotNot); DelParam(0); return true;
+            case RangeComparisonData::MakeNotP0: SetOpcode(cNot); DelParam(1); return true;
+            case RangeComparisonData::MakeNotP1: SetOpcode(cNot); DelParam(0); return true;
+            case RangeComparisonData::Unchanged:;
         }
         return false;
     }

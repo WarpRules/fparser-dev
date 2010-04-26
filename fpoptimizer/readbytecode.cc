@@ -416,7 +416,7 @@ namespace FPoptimizer_CodeTree
         var_trees.reserve(fpdata.numVariables);
         for(unsigned n=0; n<fpdata.numVariables; ++n)
         {
-            var_trees.push_back( CodeTree<Value_t> (n+VarBegin, CodeTree::VarTag()) );
+            var_trees.push_back( CodeTree<Value_t> (n+VarBegin, typename CodeTree::VarTag()) );
         }
         GenerateFrom(ByteCode,Immed,fpdata,var_trees,keep_powi);
     }
