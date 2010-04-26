@@ -18,6 +18,7 @@ enum { MAX_MULI_BYTECODE_LENGTH = 3 };
 
 namespace FPoptimizer_ByteCode
 {
+    template<typename Value_t>
     class ByteCodeSynth
     {
     public:
@@ -31,7 +32,7 @@ namespace FPoptimizer_ByteCode
         }
 
         void Pull(std::vector<unsigned>& bc,
-                  std::vector<double>&   imm,
+                  std::vector<Value_t>&   imm,
                   size_t& StackTop_max)
         {
             ByteCode.swap(bc);
@@ -48,7 +49,7 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop+1);
         }
 
-        void PushImmed(double immed)
+        void PushImmed(Value_t immed)
         {
             using namespace FUNCTIONPARSERTYPES;
             ByteCode.push_back(cImmed);
@@ -243,7 +244,7 @@ namespace FPoptimizer_ByteCode
 
     private:
         std::vector<unsigned> ByteCode;
-        std::vector<double>   Immed;
+        std::vector<Value_t>   Immed;
 
         std::vector<
             std::pair<bool/*known*/, FPoptimizer_CodeTree::CodeTree/*tree*/>
@@ -252,18 +253,26 @@ namespace FPoptimizer_ByteCode
         size_t StackMax;
     };
 
+    template<typename Value_t>
     struct SequenceOpCode;
-    extern const SequenceOpCode AddSequence; /* Multiplication implemented with adds */
-    extern const SequenceOpCode MulSequence; /* Exponentiation implemented with muls */
+    template<typename Value_t>
+    struct SequenceOpcodes
+    {
+        /* Multiplication implemented with adds */
+        static const SequenceOpCode<Value_t> AddSequence;
+        /* Exponentiation implemented with muls */
+        static const SequenceOpCode<Value_t> MulSequence;
+    };
 
     /* Generate a sequence that multiplies or exponentifies the
      * last operand in the stack by the given constant integer
      * amount (positive or negative).
      */
+    template<typename Value_t>
     void AssembleSequence(
         long count,
-        const SequenceOpCode& sequencing,
-        ByteCodeSynth& synth);
+        const SequenceOpCode<Value_t>& sequencing,
+        ByteCodeSynth<Value_t>& synth);
 }
 
 #endif

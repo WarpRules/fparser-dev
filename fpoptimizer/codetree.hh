@@ -26,6 +26,7 @@ namespace FPoptimizer_Grammar
 
 namespace FPoptimizer_ByteCode
 {
+    template<typename Value_t>
     class ByteCodeSynth;
 }
 
@@ -80,11 +81,11 @@ namespace FPoptimizer_CodeTree
             size_t& stacktop_max);
 
         void SynthesizeByteCode(
-            FPoptimizer_ByteCode::ByteCodeSynth& synth,
+            FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
             bool MustPopTemps=true) const;
 
         size_t SynthCommonSubExpressions(
-            FPoptimizer_ByteCode::ByteCodeSynth& synth) const;
+            FPoptimizer_ByteCode::ByteCodeSynth<double>& synth) const;
 
         void SetParams(const std::vector<CodeTree>& RefParams);
         void SetParamsMove(std::vector<CodeTree>& RefParams);

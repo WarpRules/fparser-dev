@@ -6,14 +6,22 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_ByteCode
 {
-    const struct SequenceOpCode
+    template<typename Value_t>
+    struct SequenceOpCode
     {
-        double basevalue;
+        Value_t basevalue;
         unsigned op_flip;
         unsigned op_normal, op_normal_flip;
         unsigned op_inverse, op_inverse_flip;
-    } AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub },
-      MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
+    };
+
+    template<typename Value_t>
+    const SequenceOpCode<Value_t>
+          SequenceOpcodes<Value_t>::AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub };
+
+    template<typename Value_t>
+    const SequenceOpCode<Value_t>
+          SequenceOpcodes<Value_t>::MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
 }
 
 using namespace FPoptimizer_ByteCode;
@@ -155,13 +163,14 @@ namespace
         }
     };
 
-
+    template<typename Value_t>
     size_t AssembleSequence_Subdivide(
         long count,
         PowiCache& cache,
-        const SequenceOpCode& sequencing,
-        ByteCodeSynth& synth);
+        const SequenceOpCode<Value_t>& sequencing,
+        ByteCodeSynth<Value_t>& synth);
 
+    template<typename Value_t>
     void Subdivide_Combine(
         size_t apos, long aval,
         size_t bpos, long bval,
@@ -170,7 +179,7 @@ namespace
         unsigned cumulation_opcode,
         unsigned cimulation_opcode_flip,
 
-        ByteCodeSynth& synth);
+        ByteCodeSynth<Value_t>& synth);
 
     void PlanNtimesCache
         (long value,
@@ -230,11 +239,12 @@ namespace
         cache.Plan_Has(value);
     }
 
+    template<typename Value_t>
     size_t AssembleSequence_Subdivide(
         long value,
         PowiCache& cache,
-        const SequenceOpCode& sequencing,
-        ByteCodeSynth& synth)
+        const SequenceOpCode<Value_t>& sequencing,
+        ByteCodeSynth<Value_t>& synth)
     {
         int cachepos = cache.Find(value);
         if(cachepos >= 0)
@@ -313,13 +323,14 @@ namespace
         return stackpos;
     }
 
+    template<typename Value_t>
     void Subdivide_Combine(
         size_t apos, long aval,
         size_t bpos, long bval,
         PowiCache& cache,
         unsigned cumulation_opcode,
         unsigned cumulation_opcode_flip,
-        ByteCodeSynth& synth)
+        ByteCodeSynth<Value_t>& synth)
     {
         /*FPO(fprintf(stderr, "== making result for (sp=%u, val=%d, needs=%d) and (sp=%u, val=%d, needs=%d), stacktop=%u\n",
             (unsigned)apos, aval, aval>=0 ? cache_needed[aval] : -1,
@@ -453,10 +464,11 @@ namespace
         synth.AddOperation(flipped ? cumulation_opcode_flip : cumulation_opcode, 2);
     }
 
+    template<typename Value_t>
     void LightWeight(
         long count,
-        const SequenceOpCode& sequencing,
-        ByteCodeSynth& synth)
+        const SequenceOpCode<Value_t>& sequencing,
+        ByteCodeSynth<Value_t>& synth)
     {
         while(count < 256)
         {
@@ -486,10 +498,11 @@ namespace
 
 namespace FPoptimizer_ByteCode
 {
+    template<typename Value_t>
     void AssembleSequence(
         long count,
-        const SequenceOpCode& sequencing,
-        ByteCodeSynth& synth)
+        const SequenceOpCode<Value_t>& sequencing,
+        ByteCodeSynth<Value_t>& synth)
     {
         if(count == 0)
             synth.PushImmed(sequencing.basevalue);
@@ -532,6 +545,17 @@ namespace FPoptimizer_ByteCode
                 synth.AddOperation(sequencing.op_flip, 1);
         }
     }
+}
+
+// Explicitly instantiate types
+namespace FPoptimizer_ByteCode
+{
+    template class ByteCodeSynth<double>;
+    template class SequenceOpcodes<double>;
+    template void AssembleSequence(
+        long count,
+        const SequenceOpCode<double>& sequencing,
+        ByteCodeSynth<double>& synth);
 }
 
 #endif

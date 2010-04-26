@@ -19,8 +19,8 @@ namespace
 
     bool AssembleSequence(
                   const CodeTree& tree, long count,
-                  const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
-                  FPoptimizer_ByteCode::ByteCodeSynth& synth,
+                  const FPoptimizer_ByteCode::SequenceOpCode<double>& sequencing,
+                  FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
                   size_t max_bytecode_grow_length);
 }
 
@@ -48,7 +48,7 @@ namespace FPoptimizer_CodeTree
         DumpTreeWithIndent(*this);
     #endif
 
-        FPoptimizer_ByteCode::ByteCodeSynth synth;
+        FPoptimizer_ByteCode::ByteCodeSynth<double> synth;
 
         /* Then synthesize the actual expression */
         SynthesizeByteCode(synth, false);
@@ -60,7 +60,7 @@ namespace FPoptimizer_CodeTree
     }
 
     void CodeTree::SynthesizeByteCode(
-        FPoptimizer_ByteCode::ByteCodeSynth& synth,
+        FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
         bool MustPopTemps) const
     {
         // If the synth can already locate our operand in the stack,
@@ -129,7 +129,8 @@ namespace FPoptimizer_CodeTree
                             tmp.DelParam(a);
                             tmp.Rehash();
                             if(AssembleSequence(
-                                tmp, value, FPoptimizer_ByteCode::AddSequence,
+                                tmp, value,
+                                FPoptimizer_ByteCode::SequenceOpcodes<double>::AddSequence,
                                 synth,
                                 MAX_MULI_BYTECODE_LENGTH))
                             {
@@ -225,7 +226,7 @@ namespace FPoptimizer_CodeTree
                 if(!p1.IsLongIntegerImmed()
                 || !AssembleSequence( /* Optimize integer exponents */
                         p0, p1.GetLongIntegerImmed(),
-                        FPoptimizer_ByteCode::MulSequence,
+                        FPoptimizer_ByteCode::SequenceOpcodes<double>::MulSequence,
                         synth,
                         MAX_POWI_BYTECODE_LENGTH)
                   )
@@ -240,7 +241,7 @@ namespace FPoptimizer_CodeTree
             case cAbsIf:
             {
                 // Assume that the parameter count is 3 as it should.
-                FPoptimizer_ByteCode::ByteCodeSynth::IfData ifdata;
+                FPoptimizer_ByteCode::ByteCodeSynth<double>::IfData ifdata;
 
                 GetParam(0).SynthesizeByteCode(synth); // expression
 
@@ -291,13 +292,13 @@ namespace
 {
     bool AssembleSequence(
         const CodeTree& tree, long count,
-        const FPoptimizer_ByteCode::SequenceOpCode& sequencing,
-        FPoptimizer_ByteCode::ByteCodeSynth& synth,
+        const FPoptimizer_ByteCode::SequenceOpCode<double>& sequencing,
+        FPoptimizer_ByteCode::ByteCodeSynth<double>& synth,
         size_t max_bytecode_grow_length)
     {
         if(count != 0)
         {
-            FPoptimizer_ByteCode::ByteCodeSynth backup = synth;
+            FPoptimizer_ByteCode::ByteCodeSynth<double> backup = synth;
 
             tree.SynthesizeByteCode(synth);
 
