@@ -5,14 +5,13 @@
 #include "codetree.hh"
 #include "optimize.hh"
 
-using namespace FUNCTIONPARSERTYPES;
-
 #ifdef FP_SUPPORT_OPTIMIZER
-using namespace FPoptimizer_CodeTree;
 
 template<typename Value_t>
 void FunctionParserBase<Value_t>::Optimize()
 {
+    using namespace FPoptimizer_CodeTree;
+
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
@@ -46,16 +45,6 @@ void FunctionParserBase<Value_t>::Optimize()
     //PrintByteCode(std::cout);
 }
 
-template void FunctionParserBase<double>::Optimize();
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-template void FunctionParserBase<float>::Optimize();
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-template void FunctionParserBase<long double>::Optimize();
-#endif
-
 #ifdef FP_SUPPORT_LONG_INT_TYPE
 template<>
 void FunctionParserBase<long>::Optimize()
@@ -74,6 +63,6 @@ void FunctionParserBase<GmpInt>::Optimize()
 {}
 #endif
 
-//FUNCTIONPARSER_INSTANTIATE_TYPES
+FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif
