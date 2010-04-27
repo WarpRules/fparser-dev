@@ -25,6 +25,8 @@ namespace FPoptimizer_Optimize
         std::vector<CodeTree<Value_t> > paramholder_matches;
         std::vector<unsigned> matched_params;
     public:
+        MatchInfo(): restholder_matches(), paramholder_matches(), matched_params() {}
+    public:
         /* These functions save data from matching */
         bool SaveOrTestRestHolder(
             unsigned restholder_index,

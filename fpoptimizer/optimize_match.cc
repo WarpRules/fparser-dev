@@ -30,11 +30,11 @@ namespace
         {
             case Value_AnyNum: case ValueMask: break;
             case Value_EvenInt:
-                if(tree.GetEvennessInfo() != CodeTree<Value_t>::IsAlways)
+                if(tree.GetEvennessInfo() != IsAlways)
                     return false;
                 break;
             case Value_OddInt:
-                if(tree.GetEvennessInfo() != CodeTree<Value_t>::IsNever)
+                if(tree.GetEvennessInfo() != IsNever)
                     return false;
                 break;
             case Value_IsInteger:
@@ -191,7 +191,7 @@ namespace
             case NumConstant:
             {
                 const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
-                return CodeTree<Value_t>( param.constvalue ); // Note: calculates hash too.
+                return CodeTreeImmed( param.constvalue ); // Note: calculates hash too.
             }
             case ParamHolder:
             {

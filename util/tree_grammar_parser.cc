@@ -1052,6 +1052,7 @@ public:
         }
         collection.Sort();
 
+        std::cout << "/* BEGIN_EXPLICIT_INSTANTATIONS */\n";
         for(std::map<std::string, Grammar>::const_iterator
              i = glist.begin(); i != glist.end(); ++i)
             std::cout << "#define grammar_" << i->first << " grammar_" << i->first << "_tweak\n";
@@ -1060,6 +1061,7 @@ public:
         for(std::map<std::string, Grammar>::const_iterator
              i = glist.begin(); i != glist.end(); ++i)
             std::cout << "#undef grammar_" << i->first << "\n";
+        std::cout << "/* END_EXPLICIT_INSTANTATIONS */\n";
 
         std::cout <<
             "\n"
@@ -1191,7 +1193,7 @@ static GrammarDumper dumper;
 
 
 /* Line 189 of yacc.c  */
-#line 1195 "util/tree_grammar_parser.cc"
+#line 1197 "util/tree_grammar_parser.cc"
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
@@ -1240,7 +1242,7 @@ typedef union YYSTYPE
 {
 
 /* Line 214 of yacc.c  */
-#line 1124 "util/tree_grammar_parser.y"
+#line 1126 "util/tree_grammar_parser.y"
 
     /* Note: Because bison's token type is an union or a simple type,
      *       anything that has constructors and destructors must be
@@ -1258,7 +1260,7 @@ typedef union YYSTYPE
 
 
 /* Line 214 of yacc.c  */
-#line 1262 "util/tree_grammar_parser.cc"
+#line 1264 "util/tree_grammar_parser.cc"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -1270,7 +1272,7 @@ typedef union YYSTYPE
 
 
 /* Line 264 of yacc.c  */
-#line 1274 "util/tree_grammar_parser.cc"
+#line 1276 "util/tree_grammar_parser.cc"
 
 #ifdef short
 # undef short
@@ -1562,9 +1564,9 @@ static const yytype_int8 yyrhs[] =
 /* YYRLINE[YYN] -- source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,  1162,  1162,  1167,  1179,  1180,  1184,  1193,  1211,  1233,
-    1245,  1253,  1261,  1271,  1275,  1286,  1292,  1296,  1301,  1312,
-    1317,  1322,  1337,  1342,  1348,  1353
+       0,  1164,  1164,  1169,  1181,  1182,  1186,  1195,  1213,  1235,
+    1247,  1255,  1263,  1273,  1277,  1288,  1294,  1298,  1303,  1314,
+    1319,  1324,  1339,  1344,  1350,  1355
 };
 #endif
 
@@ -2498,7 +2500,7 @@ yyreduce:
         case 2:
 
 /* Line 1455 of yacc.c  */
-#line 1163 "util/tree_grammar_parser.y"
+#line 1165 "util/tree_grammar_parser.y"
     {
         grammar.AddRule(*(yyvsp[(2) - (2)].r));
         delete (yyvsp[(2) - (2)].r);
@@ -2508,7 +2510,7 @@ yyreduce:
   case 3:
 
 /* Line 1455 of yacc.c  */
-#line 1168 "util/tree_grammar_parser.y"
+#line 1170 "util/tree_grammar_parser.y"
     {
         if((yyvsp[(2) - (3)].index) != Value_Logical)
         {
@@ -2525,7 +2527,7 @@ yyreduce:
   case 6:
 
 /* Line 1455 of yacc.c  */
-#line 1186 "util/tree_grammar_parser.y"
+#line 1188 "util/tree_grammar_parser.y"
     {
         (yyvsp[(3) - (4)].a)->RecursivelySetDefaultParamMatchingType();
 
@@ -2537,7 +2539,7 @@ yyreduce:
   case 7:
 
 /* Line 1455 of yacc.c  */
-#line 1196 "util/tree_grammar_parser.y"
+#line 1198 "util/tree_grammar_parser.y"
     {
         GrammarData::ParamSpec* p = new GrammarData::ParamSpec((yyvsp[(3) - (4)].f));
         p->RecursivelySetDefaultParamMatchingType();
@@ -2557,7 +2559,7 @@ yyreduce:
   case 8:
 
 /* Line 1455 of yacc.c  */
-#line 1213 "util/tree_grammar_parser.y"
+#line 1215 "util/tree_grammar_parser.y"
     {
         /*if($1->Params.RestHolderIndex != 0)
         {
@@ -2580,7 +2582,7 @@ yyreduce:
   case 9:
 
 /* Line 1455 of yacc.c  */
-#line 1234 "util/tree_grammar_parser.y"
+#line 1236 "util/tree_grammar_parser.y"
     {
            if(!(yyvsp[(1) - (1)].f)->Params.EnsureNoVariableCoverageParams_InPositionalParamLists())
            {
@@ -2594,7 +2596,7 @@ yyreduce:
   case 10:
 
 /* Line 1455 of yacc.c  */
-#line 1249 "util/tree_grammar_parser.y"
+#line 1251 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p));
          delete (yyvsp[(3) - (4)].p);
@@ -2604,7 +2606,7 @@ yyreduce:
   case 11:
 
 /* Line 1455 of yacc.c  */
-#line 1257 "util/tree_grammar_parser.y"
+#line 1259 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (4)].opcode), *(yyvsp[(3) - (4)].p)->SetType(SelectedParams));
          delete (yyvsp[(3) - (4)].p);
@@ -2614,7 +2616,7 @@ yyreduce:
   case 12:
 
 /* Line 1455 of yacc.c  */
-#line 1264 "util/tree_grammar_parser.y"
+#line 1266 "util/tree_grammar_parser.y"
     {
          (yyval.f) = new GrammarData::FunctionType((yyvsp[(1) - (2)].opcode), *(yyvsp[(2) - (2)].p)->SetType(AnyParams));
          delete (yyvsp[(2) - (2)].p);
@@ -2624,7 +2626,7 @@ yyreduce:
   case 13:
 
 /* Line 1455 of yacc.c  */
-#line 1272 "util/tree_grammar_parser.y"
+#line 1274 "util/tree_grammar_parser.y"
     {
           (yyval.p) = (yyvsp[(1) - (2)].p)->AddParam((yyvsp[(2) - (2)].a));
         ;}
@@ -2633,7 +2635,7 @@ yyreduce:
   case 14:
 
 /* Line 1455 of yacc.c  */
-#line 1276 "util/tree_grammar_parser.y"
+#line 1278 "util/tree_grammar_parser.y"
     {
           if((yyvsp[(1) - (2)].p)->RestHolderIndex != 0)
           {
@@ -2648,7 +2650,7 @@ yyreduce:
   case 15:
 
 /* Line 1455 of yacc.c  */
-#line 1286 "util/tree_grammar_parser.y"
+#line 1288 "util/tree_grammar_parser.y"
     {
           (yyval.p) = new GrammarData::MatchedParams;
         ;}
@@ -2657,7 +2659,7 @@ yyreduce:
   case 16:
 
 /* Line 1455 of yacc.c  */
-#line 1293 "util/tree_grammar_parser.y"
+#line 1295 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].num), (yyvsp[(2) - (2)].index));
        ;}
@@ -2666,7 +2668,7 @@ yyreduce:
   case 17:
 
 /* Line 1455 of yacc.c  */
-#line 1297 "util/tree_grammar_parser.y"
+#line 1299 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index), GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index) | Constness_Const);
@@ -2676,7 +2678,7 @@ yyreduce:
   case 18:
 
 /* Line 1455 of yacc.c  */
-#line 1302 "util/tree_grammar_parser.y"
+#line 1304 "util/tree_grammar_parser.y"
     {
          /* Verify that $3 consists of constants */
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (4)].opcode), (yyvsp[(3) - (4)].p)->GetParams() );
@@ -2692,7 +2694,7 @@ yyreduce:
   case 19:
 
 /* Line 1455 of yacc.c  */
-#line 1313 "util/tree_grammar_parser.y"
+#line 1315 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(1) - (2)].index) + 2, GrammarData::ParamSpec::ParamHolderTag());
          (yyval.a)->SetConstraint((yyvsp[(2) - (2)].index));
@@ -2702,7 +2704,7 @@ yyreduce:
   case 20:
 
 /* Line 1455 of yacc.c  */
-#line 1318 "util/tree_grammar_parser.y"
+#line 1320 "util/tree_grammar_parser.y"
     {
          (yyval.a) = new GrammarData::ParamSpec((yyvsp[(2) - (4)].f));
          (yyval.a)->SetConstraint((yyvsp[(4) - (4)].index));
@@ -2712,7 +2714,7 @@ yyreduce:
   case 21:
 
 /* Line 1455 of yacc.c  */
-#line 1323 "util/tree_grammar_parser.y"
+#line 1325 "util/tree_grammar_parser.y"
     {
          /* Verify that $2 is constant */
          if(!(yyvsp[(2) - (2)].a)->VerifyIsConstant())
@@ -2729,7 +2731,7 @@ yyreduce:
   case 22:
 
 /* Line 1455 of yacc.c  */
-#line 1338 "util/tree_grammar_parser.y"
+#line 1340 "util/tree_grammar_parser.y"
     {
          (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
        ;}
@@ -2738,7 +2740,7 @@ yyreduce:
   case 23:
 
 /* Line 1455 of yacc.c  */
-#line 1342 "util/tree_grammar_parser.y"
+#line 1344 "util/tree_grammar_parser.y"
     {
          (yyval.index) = 0;
        ;}
@@ -2747,7 +2749,7 @@ yyreduce:
   case 24:
 
 /* Line 1455 of yacc.c  */
-#line 1349 "util/tree_grammar_parser.y"
+#line 1351 "util/tree_grammar_parser.y"
     {
          (yyval.index) = (yyvsp[(1) - (2)].index) | (yyvsp[(2) - (2)].index);
        ;}
@@ -2756,7 +2758,7 @@ yyreduce:
   case 25:
 
 /* Line 1455 of yacc.c  */
-#line 1353 "util/tree_grammar_parser.y"
+#line 1355 "util/tree_grammar_parser.y"
     {
          (yyval.index) = 0;
        ;}
@@ -2765,7 +2767,7 @@ yyreduce:
 
 
 /* Line 1455 of yacc.c  */
-#line 2769 "util/tree_grammar_parser.cc"
+#line 2771 "util/tree_grammar_parser.cc"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -2977,7 +2979,7 @@ yyreturn:
 
 
 /* Line 1675 of yacc.c  */
-#line 1357 "util/tree_grammar_parser.y"
+#line 1359 "util/tree_grammar_parser.y"
 
 
 #ifndef FP_SUPPORT_OPTIMIZER

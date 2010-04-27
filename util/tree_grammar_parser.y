@@ -981,6 +981,7 @@ public:
         }
         collection.Sort();
 
+        std::cout << "/* BEGIN_EXPLICIT_INSTANTATIONS */\n";
         for(std::map<std::string, Grammar>::const_iterator
              i = glist.begin(); i != glist.end(); ++i)
             std::cout << "#define grammar_" << i->first << " grammar_" << i->first << "_tweak\n";
@@ -989,6 +990,7 @@ public:
         for(std::map<std::string, Grammar>::const_iterator
              i = glist.begin(); i != glist.end(); ++i)
             std::cout << "#undef grammar_" << i->first << "\n";
+        std::cout << "/* END_EXPLICIT_INSTANTATIONS */\n";
 
         std::cout <<
             "\n"

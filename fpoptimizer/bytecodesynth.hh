@@ -23,7 +23,7 @@ namespace FPoptimizer_ByteCode
     {
     public:
         ByteCodeSynth()
-            : ByteCode(), Immed(), StackTop(0), StackMax(0)
+            : ByteCode(), Immed(), StackState(), StackTop(0), StackMax(0)
         {
             /* estimate the initial requirements as such */
             ByteCode.reserve(64);

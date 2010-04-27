@@ -19,10 +19,7 @@ namespace
 {
     using namespace FPoptimizer_CodeTree;
 
-    template<typename Value_t>
-    class FactorStack: public std::vector<Value_t>
-    {
-    };
+    #define FactorStack std::vector /* typedef*/
 
     const struct PowiMuliType
     {
@@ -146,7 +143,7 @@ namespace
     {
     public:
         explicit CodeTreeParserData(bool k_powi)
-            : stack(), keep_powi(k_powi) { }
+            : stack(), clones(), keep_powi(k_powi) { }
 
         void Eat(size_t nparams, OPCODE opcode)
         {
@@ -193,7 +190,7 @@ namespace
                     CodeTree<Value_t> pow;
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(cosh);
-                    pow.AddParam(CodeTree<Value_t>(-1.0));
+                    pow.AddParam(CodeTreeImmed(Value_t(-1)));
                     pow.Rehash();
                     newnode.SetOpcode(cMul);
                     newnode.SetParamMove(0, sinh);
@@ -211,7 +208,7 @@ namespace
                     CodeTree<Value_t> pow;
                     pow.SetOpcode(cPow);
                     pow.AddParamMove(cos);
-                    pow.AddParam(CodeTree<Value_t>(-1.0));
+                    pow.AddParam(CodeTreeImmed(Value_t(-1)));
                     pow.Rehash();
                     newnode.SetOpcode(cMul);
                     newnode.SetParamMove(0, sin);
@@ -276,8 +273,7 @@ namespace
 
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
         {
-            CodeTree<Value_t> newnode;
-            newnode.SetFuncOpcode(opcode, funcno);
+            CodeTree<Value_t> newnode = CodeTreeFuncOp<Value_t> (opcode, funcno);
             std::vector<CodeTree<Value_t> > params = Pop(nparams);
             newnode.SetParamsMove(params);
             newnode.Rehash(false);
@@ -290,16 +286,16 @@ namespace
             stack.push_back(newnode);
         }
 
-        void AddConst(Value_t value)
+        void AddConst(const Value_t& value)
         {
-            CodeTree<Value_t> newnode(value);
+            CodeTree<Value_t> newnode = CodeTreeImmed(value);
             FindClone(newnode);
             Push(newnode);
         }
 
         void AddVar(unsigned varno)
         {
-            CodeTree<Value_t> newnode(varno, typename CodeTree<Value_t>::VarTag());
+            CodeTree<Value_t> newnode = CodeTreeVar<Value_t>(varno);
             FindClone(newnode);
             Push(newnode);
         }
@@ -400,6 +396,8 @@ namespace
         CodeTree<Value_t> condition;
         CodeTree<Value_t> thenbranch;
         size_t endif_location;
+
+        IfInfo(): condition(), thenbranch(), endif_location() { }
     };
 }
 
@@ -416,7 +414,7 @@ namespace FPoptimizer_CodeTree
         var_trees.reserve(fpdata.numVariables);
         for(unsigned n=0; n<fpdata.numVariables; ++n)
         {
-            var_trees.push_back( CodeTree<Value_t> (n+VarBegin, typename CodeTree::VarTag()) );
+            var_trees.push_back( CodeTreeVar<Value_t> (n+VarBegin) );
         }
         GenerateFrom(ByteCode,Immed,fpdata,var_trees,keep_powi);
     }
@@ -579,7 +577,7 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow);
                         break;
                     case cCbrt:
-                        sim.AddConst(Value_t(1.0 / 3.0));
+                        sim.AddConst(Value_t(1) / Value_t(3));
                         sim.Eat(2, cPow);
                         break;
                     case cDeg:

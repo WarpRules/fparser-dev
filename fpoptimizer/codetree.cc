@@ -1,6 +1,7 @@
 #include <list>
 #include <algorithm>
 
+#include "rangeestimation.hh"
 #include "codetree.hh"
 #include "fptypes.hh"
 #include "consts.hh"
@@ -14,24 +15,44 @@ namespace FPoptimizer_CodeTree
 {
     template<typename Value_t>
     CodeTree<Value_t>::CodeTree()
-        : data(new CodeTreeData<Value_t> ())
+        : data(new CodeTreeData<Value_t> ()) // sets opcode to cNop
     {
-        data->Opcode = cNop;
     }
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(const Value_t& i)
+    CodeTree<Value_t>::CodeTree(const Value_t& i, CodeTree<Value_t>::ImmedTag)
         : data(new CodeTreeData<Value_t>(i))
     {
         data->Recalculate_Hash_NoRecursion();
     }
 
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(Value_t&& i, CodeTree<Value_t>::ImmedTag)
+        : data(new CodeTreeData<Value_t>(std::move(i)))
+    {
+        data->Recalculate_Hash_NoRecursion();
+    }
+#endif
+
     template<typename Value_t>
     CodeTree<Value_t>::CodeTree(unsigned v, CodeTree<Value_t>::VarTag)
-        : data(new CodeTreeData<Value_t>)
+        : data(new CodeTreeData<Value_t> (VarBegin, v))
     {
-        data->Opcode = VarBegin;
-        data->Var    = v;
+        data->Recalculate_Hash_NoRecursion();
+    }
+
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, CodeTree<Value_t>::OpcodeTag)
+        : data(new CodeTreeData<Value_t> (o))
+    {
+        data->Recalculate_Hash_NoRecursion();
+    }
+
+    template<typename Value_t>
+    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, unsigned f, CodeTree<Value_t>::FuncOpcodeTag)
+        : data(new CodeTreeData<Value_t> (o, f))
+    {
         data->Recalculate_Hash_NoRecursion();
     }
 
@@ -224,8 +245,7 @@ namespace FPoptimizer_CodeTree
 
     /* Is the value of this tree definitely odd(true) or even(false)? */
     template<typename Value_t>
-    typename CodeTree<Value_t>::TriTruthValue
-        CodeTree<Value_t>::GetEvennessInfo() const
+    TriTruthValue CodeTree<Value_t>::GetEvennessInfo() const
     {
         if(!IsImmed()) return Unknown;
         if(!IsLongIntegerImmed()) return Unknown;
@@ -323,7 +343,7 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool CodeTree<Value_t>::IsAlwaysSigned(bool positive) const
     {
-        MinMaxTree<Value_t> tmp = CalculateResultBoundaries();
+        MinMaxTree<Value_t> tmp = CalculateResultBoundaries(*this);
 
         if(positive)
             return tmp.has_min && tmp.min >= 0.0
@@ -349,9 +369,9 @@ namespace FPoptimizer_CodeTree
         switch(Opcode)
         {
             case cImmed:   return FloatEqual(Value, b.Value);
-            case VarBegin: return Var == b.Var;
+            case VarBegin: return Var_or_Funcno == b.Var_or_Funcno;
             case cFCall:
-            case cPCall:   if(Funcno != b.Funcno) return false; break;
+            case cPCall:   if(Var_or_Funcno != b.Var_or_Funcno) return false; break;
             default: break;
         }
         if(Params.size() != b.Params.size()) return false;
@@ -391,7 +411,9 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     CodeTreeData<Value_t>::CodeTreeData()
         : RefCount(0),
-          Opcode(cNop), Params(), Hash(), Depth(1), OptimizedUsing(0)
+          Opcode(cNop),
+          Value(), Var_or_Funcno(),
+          Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
     }
 
@@ -399,19 +421,22 @@ namespace FPoptimizer_CodeTree
     CodeTreeData<Value_t>::CodeTreeData(const CodeTreeData& b)
         : RefCount(0),
           Opcode(b.Opcode),
+          Value(b.Value),
+          Var_or_Funcno(b.Var_or_Funcno),
           Params(b.Params),
           Hash(b.Hash),
           Depth(b.Depth),
           OptimizedUsing(b.OptimizedUsing)
     {
-        switch(Opcode)
-        {
-            case VarBegin: Var   = b.Var; break;
-            case cImmed:   Value = b.Value; break;
-            case cPCall:
-            case cFCall:   Funcno = b.Funcno; break;
-            default: break;
-        }
+    }
+
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(const Value_t& i)
+        : RefCount(0),
+          Opcode(cImmed),
+          Value(i), Var_or_Funcno(),
+          Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
     }
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
@@ -419,27 +444,41 @@ namespace FPoptimizer_CodeTree
     CodeTreeData<Value_t>::CodeTreeData(CodeTreeData<Value_t>&& b)
         : RefCount(0),
           Opcode(b.Opcode),
-          Params(b.Params),
+          Value(std::move(b.Value)),
+          Var_or_Funcno(b.Var_or_Funcno),
+          Params(std::move(b.Params)),
           Hash(b.Hash),
           Depth(b.Depth),
           OptimizedUsing(b.OptimizedUsing)
     {
-        switch(Opcode)
-        {
-            case VarBegin: Var   = b.Var; break;
-            case cImmed:   Value = b.Value; break;
-            case cPCall:
-            case cFCall:   Funcno = b.Funcno; break;
-            default: break;
-        }
+    }
+
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(Value_t&& i)
+        : RefCount(0),
+          Opcode(cImmed),
+          Value(std::move(i)), Var_or_Funcno(),
+          Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
     }
 #endif
 
     template<typename Value_t>
-    CodeTreeData<Value_t>::CodeTreeData(const Value_t& i)
-        : RefCount(0), Opcode(cImmed), Params(), Hash(), Depth(1), OptimizedUsing(0)
+    CodeTreeData<Value_t>::CodeTreeData(FUNCTIONPARSERTYPES::OPCODE o)
+        : RefCount(0),
+          Opcode(o),
+          Value(), Var_or_Funcno(),
+          Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
-        Value = i;
+    }
+
+    template<typename Value_t>
+    CodeTreeData<Value_t>::CodeTreeData(FUNCTIONPARSERTYPES::OPCODE o, unsigned f)
+        : RefCount(0),
+          Opcode(o),
+          Value(), Var_or_Funcno(f),
+          Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
     }
 }
 

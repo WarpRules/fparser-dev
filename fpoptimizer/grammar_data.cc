@@ -4,6 +4,7 @@
 #include "fptypes.hh"
 #include <algorithm>
 
+/* BEGIN_EXPLICIT_INSTANTATIONS */
 #define grammar_optimize_abslogical grammar_optimize_abslogical_tweak
 #define grammar_optimize_ignore_if_sideeffects grammar_optimize_ignore_if_sideeffects_tweak
 #define grammar_optimize_nonshortcut_logical_evaluation grammar_optimize_nonshortcut_logical_evaluation_tweak
@@ -21,6 +22,7 @@
 #undef grammar_optimize_round3
 #undef grammar_optimize_round4
 #undef grammar_optimize_shortcut_logical_evaluation
+/* END_EXPLICIT_INSTANTATIONS */
 
 using namespace FPoptimizer_Grammar;
 using namespace FUNCTIONPARSERTYPES;

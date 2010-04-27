@@ -34,8 +34,9 @@ endif
 	-fvpt -fomit-frame-pointer -ffunction-cse
 #       -ffunction-sections -fdata-sections
 
-OPTIMIZATION=-g
+#OPTIMIZATION+=-g
 #OPTIMIZATION=-g -O0 -fno-inline
+#OPTIMIZATION=-g -O2 -fno-inline -fno-inline-functions -fno-default-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
 
@@ -50,6 +51,8 @@ CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wconversion -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 #CXXFLAGS += -std=c++0x
+
+#CXXFLAGS += -Weffc++
 
 ifneq (,$(findstring -DFP_SUPPORT_MPFR_FLOAT_TYPE,$(FEATURE_FLAGS)))
 LDFLAGS += -lgmp -lmpfr
@@ -183,6 +186,8 @@ FPOPTIMIZER_CC_FILES=\
 	    fpoptimizer/opcodename.cc \
 	    fpoptimizer/bytecodesynth.hh \
 	    fpoptimizer/bytecodesynth.cc \
+	    fpoptimizer/rangeestimation.hh \
+	    fpoptimizer/constantfolding.hh \
 	    fpoptimizer/codetree.cc \
 	    fpoptimizer/debug.cc \
 	    fpoptimizer/grammar.cc \
@@ -208,11 +213,11 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 	cat fpoptimizer/fpoptimizer_header.txt  > $@
 	for file in $(FPOPTIMIZER_CC_FILES); do \
 		echo "#line 1 \"$$file\""; \
-		sed -r "s@^(#include \".*|#.*def.*grammar_optimize)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
+		sed -r "s@^(#include \".*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
-	done | grep -v "^#...?def.?.?.? grammar_optimize" \
-	     | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
-	     | util/cpp_compress >> $@
+	done | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
+		>> $@
+	#     | util/cpp_compress >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 util/tree_grammar_parser: \
@@ -319,6 +324,7 @@ clean:
 		util/make_function_name_parser \
 		fpoptimizer/*.o \
 		tests/*.o \
+		mpfr/*.o \
 		util/*.o \
 		*.o \
 		.dep \

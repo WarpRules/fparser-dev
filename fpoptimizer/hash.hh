@@ -20,6 +20,10 @@ namespace FUNCTIONPARSERTYPES
     {
         fphash_value_t hash1, hash2;
 
+        fphash_t() : hash1(0), hash2(0) { }
+        fphash_t(const fphash_value_t& a,
+                 const fphash_value_t& b) : hash1(a), hash2(b) { }
+
         bool operator==(const fphash_t& rhs) const
         { return hash1 == rhs.hash1 && hash2 == rhs.hash2; }
 

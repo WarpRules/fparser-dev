@@ -9,13 +9,15 @@
 
 #include "optimize.hh"
 
-namespace FPoptimizer_Optimize
+using namespace FPoptimizer_CodeTree;
+using namespace FPoptimizer_Optimize;
+
+namespace
 {
     /* Synthesize the given grammatic parameter into the codetree */
     template<typename Value_t>
-    void SynthesizeParam(
+    CodeTree<Value_t> SynthesizeParam(
         const ParamSpec& parampair,
-        CodeTree<Value_t> & tree,
         MatchInfo<Value_t> & info,
         bool inner = true)
     {
@@ -23,21 +25,21 @@ namespace FPoptimizer_Optimize
         {
             case NumConstant:
               { const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
-                tree.SetImmed( param.constvalue );
-                if(inner) tree.Rehash(false);
-                break; }
+                return CodeTreeImmed( param.constvalue );
+              }
             case ParamHolder:
               { const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
-                tree.Become( info.GetParamHolderValue( param.index ) );
-                break; }
+                return info.GetParamHolderValue( param.index );
+              }
             case SubFunction:
               { const ParamSpec_SubFunction& param = *(const ParamSpec_SubFunction*) parampair.second;
+                CodeTree<Value_t> tree;
                 tree.SetOpcode( param.data.subfunc_opcode );
                 for(unsigned a=0; a < param.data.param_count; ++a)
                 {
-                    CodeTree<Value_t> nparam;
-                    SynthesizeParam( ParamSpec_Extract<Value_t>(param.data.param_list, a),
-                                     nparam, info, true );
+                    CodeTree<Value_t> nparam =
+                        SynthesizeParam( ParamSpec_Extract<Value_t>(param.data.param_list, a),
+                                         info, true );
                     tree.AddParamMove(nparam);
                 }
                 if(param.data.restholder_index != 0)
@@ -63,19 +65,24 @@ namespace FPoptimizer_Optimize
                         switch(tree.GetOpcode())
                         {
                             case cAdd: case cOr:
-                                tree = CodeTree<Value_t>(0.0);
+                                tree = CodeTreeImmed(Value_t(0));
                                 break;
                             case cMul: case cAnd:
-                                tree = CodeTree<Value_t>(1.0);
+                                tree = CodeTreeImmed(Value_t(1));
                             default: break;
                         }
                     }
                 }
                 if(inner) tree.Rehash();
-                break; }
+                return tree;
+              }
         }
+        return CodeTree<Value_t> ();
     }
+}
 
+namespace FPoptimizer_Optimize
+{
     template<typename Value_t>
     void SynthesizeRule(
         const Rule& rule,
@@ -86,9 +93,9 @@ namespace FPoptimizer_Optimize
         {
             case ProduceNewTree:
             {
-                tree.DelParams();
-                SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, 0),
-                                 tree, info, false );
+                tree.Become(
+                    SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, 0),
+                                     info, false ) );
                 break;
             }
             case ReplaceParams:
@@ -103,9 +110,9 @@ namespace FPoptimizer_Optimize
                 /* Synthesize the replacement params */
                 for(unsigned a=0; a < rule.repl_param_count; ++a)
                 {
-                    CodeTree<Value_t> nparam;
-                    SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, a),
-                                     nparam, info, true );
+                    CodeTree<Value_t> nparam
+                     = SynthesizeParam( ParamSpec_Extract<Value_t>(rule.repl_param_list, a),
+                                        info, true );
                     tree.AddParamMove(nparam);
                 }
                 break;

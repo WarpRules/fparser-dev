@@ -1,8 +1,8 @@
+#include "optimize.hh"
+#ifdef DEBUG_SUBSTITUTIONS
+
 #include "grammar.hh"
 #include "opcodename.hh"
-#include "optimize.hh"
-
-#ifdef DEBUG_SUBSTITUTIONS
 
 #include <sstream>
 #include <cstring>
@@ -42,11 +42,11 @@ namespace FPoptimizer_Grammar
           ParamSpec_SubFunction tmp2;
           tmp2.data = rule.match_tree;
           tmp.second = (const void*) &tmp2;
-          DumpParam(tmp, o);
+          DumpParam<Value_t>(tmp, o);
         }
         o << "\n"
             "  Replacement: ";
-        DumpParams(rule.repl_param_list, rule.repl_param_count, o);
+        DumpParams<Value_t>(rule.repl_param_list, rule.repl_param_count, o);
         o << "\n";
 
         o <<
@@ -92,7 +92,7 @@ namespace FPoptimizer_Grammar
                    bool DidMatch,
                    std::ostream& o);
 #endif
-#ifdef FP_SUPPORT_LONG DOUBLE_TYPE
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     template void DumpMatch(const Rule& rule,
                    const CodeTree<long double>& tree,
                    const MatchInfo<long double>& info,

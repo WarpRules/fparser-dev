@@ -628,6 +628,11 @@ namespace
                 }
             }
 
+            #if 0
+            std::cout << "Code 0\n" << streams[0].str() << std::endl;
+            std::cout << "Code 1\n" << streams[1].str() << std::endl;
+            std::cout << "Code 2\n" << streams[2].str() << std::endl;
+            #else
             std::string streams_wrap_buf[3];
             std::string lines[3];
             while(true)
@@ -703,6 +708,7 @@ namespace
                     std::cout << wall << colors[2] << lines[2];
                 std::cout << newline;
             }
+            #endif
         }
 #endif
     }

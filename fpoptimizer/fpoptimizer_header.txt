@@ -18,6 +18,5 @@
 
 #include "fpconfig.hh"
 #ifdef FP_SUPPORT_OPTIMIZER
-#define FPOPTIMIZER_MERGED_FILE
 #include "fparser.hh"
 #include "fptypes.hh"

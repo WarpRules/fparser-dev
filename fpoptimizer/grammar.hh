@@ -222,7 +222,7 @@ namespace FPoptimizer_Grammar
 
     extern "C" {
         extern const Rule      grammar_rules[];
-    #ifndef FPOPTIMIZER_MERGED_FILE
+        /* BEGIN_EXPLICIT_INSTANTATIONS */
         extern const Grammar   grammar_optimize_round1;
         extern const Grammar   grammar_optimize_round2;
         extern const Grammar   grammar_optimize_round3;
@@ -232,7 +232,7 @@ namespace FPoptimizer_Grammar
         extern const Grammar   grammar_optimize_ignore_if_sideeffects;
         extern const Grammar   grammar_optimize_abslogical;
         extern const Grammar   grammar_optimize_base2_expand;
-    #endif
+        /* END_EXPLICIT_INSTANTATIONS */
     }
 
     template<typename Value_t>

@@ -78,45 +78,84 @@ namespace
         }
     }
 
-    double CalculatePowiFactorCost(long abs_int_exponent)
+    long CalculatePowiFactorCost(long int_exponent)
     {
-        static std::map<long, double> cache;
-        std::map<long,double>::iterator i = cache.lower_bound(abs_int_exponent);
-        if(i != cache.end() && i->first == abs_int_exponent)
+        if(int_exponent < 0)
+        {
+            long cost = 22; // division cost
+            return cost + CalculatePowiFactorCost(-int_exponent);
+        }
+        static std::map<long, long> cache;
+        std::map<long,long>::iterator i = cache.lower_bound(int_exponent);
+        if(i != cache.end() && i->first == int_exponent)
             return i->second;
-        std::pair<long, double> result(abs_int_exponent, 0.0);
-        double& cost = result.second;
+        std::pair<long, long> result(int_exponent, 0.0);
+        long& cost = result.second;
 
-        while(abs_int_exponent > 1)
+        while(int_exponent > 1)
         {
             int factor = 0;
-            if(abs_int_exponent < 256)
+            if(int_exponent < 256)
             {
-                factor = FPoptimizer_ByteCode::powi_table[abs_int_exponent];
+                factor = FPoptimizer_ByteCode::powi_table[int_exponent];
                 if(factor & 128) factor &= 127; else factor = 0;
                 if(factor & 64) factor = -(factor&63) - 1;
             }
             if(factor)
             {
                 cost += CalculatePowiFactorCost(factor);
-                abs_int_exponent /= factor;
+                int_exponent /= factor;
                 continue;
             }
-            if(!(abs_int_exponent & 1))
+            if(!(int_exponent & 1))
             {
-                abs_int_exponent /= 2;
-                cost += 3; // sqr
+                int_exponent /= 2;
+                cost += 6; // sqr
             }
             else
             {
-                cost += 3.5; // dup+mul
-                abs_int_exponent -= 1;
+                cost += 7; // dup+mul
+                int_exponent -= 1;
             }
         }
 
         cache.insert(i, result);
         return cost;
     }
+
+    template<typename Value_t>
+    struct RootPowerTable
+    {
+        static const Value_t RootPowers[(1+4)*(1+3)];
+    };
+    template<typename Value_t>
+    const Value_t RootPowerTable<Value_t>::RootPowers[(1+4)*(1+3)] =
+    {
+        // (sqrt^n(x))
+        Value_t(1),
+        Value_t(1) / Value_t(2),
+        Value_t(1) / Value_t(2*2),
+        Value_t(1) / Value_t(2*2*2),
+        Value_t(1) / Value_t(2*2*2*2),
+        // cbrt^1(sqrt^n(x))
+        Value_t(1) / Value_t(3),
+        Value_t(1) / Value_t(3*2),
+        Value_t(1) / Value_t(3*2*2),
+        Value_t(1) / Value_t(3*2*2*2),
+        Value_t(1) / Value_t(3*2*2*2*2),
+        // cbrt^2(sqrt^n(x))
+        Value_t(1) / Value_t(3*3),
+        Value_t(1) / Value_t(3*3*2),
+        Value_t(1) / Value_t(3*3*2*2),
+        Value_t(1) / Value_t(3*3*2*2*2),
+        Value_t(1) / Value_t(3*3*2*2*2*2),
+        // cbrt^3(sqrt^n(x))
+        Value_t(1) / Value_t(3*3*3),
+        Value_t(1) / Value_t(3*3*3*2),
+        Value_t(1) / Value_t(3*3*3*2*2),
+        Value_t(1) / Value_t(3*3*3*2*2*2),
+        Value_t(1) / Value_t(3*3*3*2*2*2*2)
+    };
 
     struct PowiResolver
     {
@@ -152,63 +191,36 @@ namespace
             int sep_list[MaxSep];
         };
 
-        PowiResult CreatePowiResult(double exponent) const
+        template<typename Value_t>
+        PowiResult CreatePowiResult(Value_t exponent) const
         {
-            static const double RootPowers[(1+4)*(1+3)] =
-            {
-                // (sqrt^n(x))
-                1.0,
-                1.0 / (2),
-                1.0 / (2*2),
-                1.0 / (2*2*2),
-                1.0 / (2*2*2*2),
-                // cbrt^1(sqrt^n(x))
-                1.0 / (3),
-                1.0 / (3*2),
-                1.0 / (3*2*2),
-                1.0 / (3*2*2*2),
-                1.0 / (3*2*2*2*2),
-                // cbrt^2(sqrt^n(x))
-                1.0 / (3*3),
-                1.0 / (3*3*2),
-                1.0 / (3*3*2*2),
-                1.0 / (3*3*2*2*2),
-                1.0 / (3*3*2*2*2*2),
-                // cbrt^3(sqrt^n(x))
-                1.0 / (3*3*3),
-                1.0 / (3*3*3*2),
-                1.0 / (3*3*3*2*2),
-                1.0 / (3*3*3*2*2*2),
-                1.0 / (3*3*3*2*2*2*2)
-            };
-
             PowiResult result;
 
             int best_factor = FindIntegerFactor(exponent);
             if(best_factor == 0)
             {
         #ifdef DEBUG_POWI
-            printf("no factor found for %Lg\n", (long double)exponent);
+                printf("no factor found for %Lg\n", (long double)exponent);
         #endif
                 return result; // Unoptimizable
             }
 
-            double best_cost = EvaluateFactorCost(best_factor, 0, 0, 0)
-                             + CalculatePowiFactorCost(long(exponent*best_factor));
+            long best_cost = EvaluateFactorCost(best_factor, 0, 0, 0)
+                           + CalculatePowiFactorCost(long(exponent*best_factor));
             int s_count = 0;
             int c_count = 0;
             int mul_count = 0;
 
         #ifdef DEBUG_POWI
             printf("orig = %Lg\n", (long double) exponent);
-            printf("plain factor = %d, cost %Lg\n", best_factor, (long double)best_cost);
+            printf("plain factor = %d, cost %ld\n", best_factor, best_cost);
         #endif
 
             for(unsigned n_s=0; n_s<MaxSep; ++n_s)
             {
                 int best_selected_sep = 0;
-                double best_sep_cost     = best_cost;
-                int best_sep_factor   = best_factor;
+                long best_sep_cost  = best_cost;
+                int best_sep_factor = best_factor;
                 for(int s=1; s<5*4; ++s)
                 {
 #ifdef CBRT_IS_SLOW
@@ -220,21 +232,23 @@ namespace
                     int n_cbrt = s/5;
                     if(n_sqrt + n_cbrt > 4) continue;
 
-                    double changed_exponent = exponent;
-                    changed_exponent -= RootPowers[s];
+                    Value_t changed_exponent = exponent;
+                    changed_exponent -= RootPowerTable<Value_t>::RootPowers[s];
 
                     int factor = FindIntegerFactor(changed_exponent);
                     if(factor != 0)
                     {
-                        double cost = EvaluateFactorCost
+                        long int_exponent = (long) fp_int(changed_exponent * factor);
+
+                        long cost = EvaluateFactorCost
                             (factor, s_count + n_sqrt, c_count + n_cbrt, mul_count + 1)
-                          + CalculatePowiFactorCost(long(changed_exponent*factor));
+                          + CalculatePowiFactorCost(int_exponent);
 
         #ifdef DEBUG_POWI
-                        printf("Candidate sep %u (%d*sqrt %d*cbrt)factor = %d, cost %g (for %Lg to %ld)\n",
+                        printf("Candidate sep %u (%d*sqrt %d*cbrt)factor = %d, cost %ld (for %Lg to %ld)\n",
                             s, n_sqrt, n_cbrt, factor, cost,
                             (long double) changed_exponent,
-                            (long)(changed_exponent*factor));
+                            int_exponent);
         #endif
                         if(cost < best_sep_cost)
                         {
@@ -247,16 +261,16 @@ namespace
                 if(!best_selected_sep) break;
 
         #ifdef DEBUG_POWI
-                printf("CHOSEN sep %u (%d*sqrt %d*cbrt)factor = %d, cost %g, exponent %Lg->%Lg\n",
+                printf("CHOSEN sep %u (%d*sqrt %d*cbrt)factor = %d, cost %ld, exponent %Lg->%Lg\n",
                        best_selected_sep,
                        best_selected_sep % 5,
                        best_selected_sep / 5,
                        best_sep_factor, best_sep_cost,
                        (long double)(exponent),
-                       (long double)(exponent-RootPowers[best_selected_sep]));
+                       (long double)(exponent-RootPowerTable<Value_t>::RootPowers[best_selected_sep]));
         #endif
                 result.sep_list[n_s] = best_selected_sep;
-                exponent -= RootPowers[best_selected_sep];
+                exponent -= RootPowerTable<Value_t>::RootPowers[best_selected_sep];
                 s_count += best_selected_sep % 5;
                 c_count += best_selected_sep / 5;
                 best_cost   = best_sep_cost;
@@ -264,7 +278,7 @@ namespace
                 mul_count += 1;
             }
 
-            result.resulting_exponent = (long) (exponent * best_factor + 0.5);
+            result.resulting_exponent = (long) fp_int(exponent * best_factor);
         #ifdef DEBUG_POWI
             printf("resulting exponent is %ld (from exponent=%Lg, best_factor=%Lg)\n",
                 result.resulting_exponent,
@@ -288,14 +302,18 @@ namespace
         // Find the integer that "value" must be multiplied
         // with to produce an integer...
         // Consisting of factors 2 and 3 only.
-        bool MakesInteger(double value, int factor) const
+        template<typename Value_t>
+        static bool MakesInteger(const Value_t& value, int factor)
         {
-            double v = value * double(factor);
-            double diff = fabs(v - (double)(long)(v+0.5));
+            /* Does value, multiplied by factor, result in an integer? */
+            Value_t v = value * Value_t(factor);
+            Value_t diff = fp_abs(v - fp_int(v));
             //printf("factor %d: v=%.20f, diff=%.20f\n", factor,v, diff);
-            return diff < 1e-9;
+            return diff < Value_t(1e-9);
         }
-        int FindIntegerFactor(double value) const
+
+        template<typename Value_t>
+        int FindIntegerFactor(const Value_t& value) const
         {
             int factor = (2*2*2*2);
 #ifdef CBRT_IS_SLOW
@@ -421,7 +439,7 @@ namespace FPoptimizer_CodeTree
                                 CodeTree<Value_t>& log2 = powgroup.GetParam(0);
                                 log2.CopyOnWrite();
                                 log2.SetOpcode(cLog2by);
-                                log2.AddParam( CodeTree<Value_t>(
+                                log2.AddParam( CodeTreeImmed(
                                     fp_pow(immeds, Value_t(1) / log2_exponent) ) );
                                 log2.Rehash();
                                 break;
@@ -449,7 +467,7 @@ namespace FPoptimizer_CodeTree
                             CodeTree<Value_t> edited_powgroup;
                             edited_powgroup.SetOpcode(cPow);
                             edited_powgroup.AddParam(powgroup.GetParam(0));
-                            edited_powgroup.AddParam(CodeTree<Value_t>(-exponent));
+                            edited_powgroup.AddParam(CodeTreeImmed( -exponent ));
                             edited_powgroup.Rehash();
                             div_params.push_back(edited_powgroup);
                             CopyOnWrite();
@@ -567,7 +585,7 @@ namespace FPoptimizer_CodeTree
                                 {
                                     mulgroup.CopyOnWrite();
                                     mulgroup.DelParam(b);
-                                    mulgroup.AddParam( CodeTree<Value_t>(Value_t(2)) );
+                                    mulgroup.AddParam( CodeTreeImmed( Value_t(2) ) );
                                     is_signed = !is_signed;
                                 }
                             }
@@ -737,7 +755,7 @@ namespace FPoptimizer_CodeTree
                             {
                                 pow.SetOpcode(cPow);
                                 pow.AddParamMove(pow_item);
-                                pow.AddParam(CodeTree<Value_t>( Value_t(r.resulting_exponent) ));
+                                pow.AddParam(CodeTreeImmed( Value_t(r.resulting_exponent) ));
                             }
                             else
                                 pow.swap(pow_item);
@@ -801,7 +819,7 @@ namespace FPoptimizer_CodeTree
                                 // exp2(4)^x becomes exp2(4*x)
                                 CodeTree<Value_t> exponent;
                                 exponent.SetOpcode(cMul);
-                                exponent.AddParam( CodeTree<Value_t>( mulvalue ) );
+                                exponent.AddParam( CodeTreeImmed( mulvalue ) );
                                 exponent.AddParam(p1);
                                 exponent.Rehash();
                                 SetParamMove(0, exponent);
@@ -823,7 +841,7 @@ namespace FPoptimizer_CodeTree
                                 // exp(4)^x becomes exp(4*x)
                                 CodeTree<Value_t> exponent;
                                 exponent.SetOpcode(cMul);
-                                exponent.AddParam( CodeTree<Value_t>( mulvalue ) );
+                                exponent.AddParam( CodeTreeImmed( mulvalue ) );
                                 exponent.AddParam(p1);
                                 exponent.Rehash();
                                 SetParamMove(0, exponent);
