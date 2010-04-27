@@ -222,6 +222,7 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline MpfrFloat fp_const_log2<MpfrFloat>() { return MpfrFloat::const_log2(); }
 
+    /*
     template<>
     inline MpfrFloat fp_const_log10<MpfrFloat>() { return fp_log(MpfrFloat(10)); }
 
@@ -230,6 +231,7 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return fp_log10(MpfrFloat::const_e()); }
+    */
 #endif
 
 

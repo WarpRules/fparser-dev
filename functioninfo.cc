@@ -7,10 +7,12 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.0.0.0";
+static const char* const kVersionNumber = "1.1.0.1";
 
 #include "fparser.hh"
+#include "fparser_mpfr.hh"
 #include "fparser_gmpint.hh"
+#include "fpaux.hh"
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -18,6 +20,7 @@ static const char* const kVersionNumber = "1.0.0.0";
 #include <string>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 #include <ctime>
 #include <cmath>
 #include <sstream>
@@ -28,10 +31,25 @@ static const char* const kVersionNumber = "1.0.0.0";
 
 namespace
 {
+    template<typename Value_t>
+    struct TimingConst
+    {
+        static const unsigned kParseLoopsPerUnit = 100000;
+        static const unsigned kEvalLoopsPerUnit = 300000;
+        static const unsigned kOptimizeLoopsPerUnit = 1000;
+    };
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    struct TimingConst<MpfrFloat>
+    {
+        static const unsigned kParseLoopsPerUnit = 100000;
+        static const unsigned kEvalLoopsPerUnit = 10000;
+        static const unsigned kOptimizeLoopsPerUnit = 500;
+    };
+#endif
+
     const unsigned kTestTime = 250; // In milliseconds
-    const unsigned kParseLoopsPerUnit = 100000;
-    const unsigned kEvalLoopsPerUnit = 300000;
-    const unsigned kOptimizeLoopsPerUnit = 1000;
     const bool kPrintTimingProgress = false;
 
     const unsigned kMaxVarValueSetsAmount = 10000;
@@ -44,6 +62,11 @@ namespace
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
     template<> inline float epsilon<float>() { return 1e-5F; }
     template<> inline long epsilon<long>() { return 0; }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<> inline MpfrFloat epsilon<MpfrFloat>()
+    { return MpfrFloat::someEpsilon(); }
+#endif
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<> inline GmpInt epsilon<GmpInt>() { return 0; }
@@ -219,29 +242,36 @@ namespace
 
         printTimingInfo();
         info.mParseTiming =
-            getTimingInfo<doParse<Value_t>, kParseLoopsPerUnit>();
+            getTimingInfo
+            <doParse<Value_t>, TimingConst<Value_t>::kParseLoopsPerUnit>();
 
         printTimingInfo();
         info.mEvalTiming =
-            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
+            getTimingInfo
+            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
 
         printTimingInfo();
         info.mOptimizeTiming = // optimizing a non-optimized func
-            getTimingInfo<doOptimize<Value_t>, kOptimizeLoopsPerUnit>();
+            getTimingInfo
+            <doOptimize<Value_t>,
+            TimingConst<Value_t>::kOptimizeLoopsPerUnit>();
 
         printTimingInfo();
         ParserData<Value_t>::gParser.Optimize();
         info.mDoubleOptimizeTiming = // optimizing an already-optimized func
-            getTimingInfo<doOptimize<Value_t>, kOptimizeLoopsPerUnit>();
+            getTimingInfo<doOptimize<Value_t>,
+            TimingConst<Value_t>::kOptimizeLoopsPerUnit>();
 
         printTimingInfo();
         info.mOptimizedEvalTiming = // evaluating an optimized func
-            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
+            getTimingInfo
+            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
 
         printTimingInfo();
         ParserData<Value_t>::gParser.Optimize();
         info.mDoubleOptimizedEvalTiming = // evaluating a twice-optimized func
-            getTimingInfo<doEval<Value_t>, kEvalLoopsPerUnit>();
+            getTimingInfo
+            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
     }
 
     template<typename Value_t>
@@ -332,19 +362,15 @@ namespace
     }
 
     template<typename Value_t>
-    inline Value_t fpAbs(Value_t value)
-    {
-        return value < Value_t(0) ? -value : value;
-    }
-
-    template<typename Value_t>
     inline Value_t scaledDiff(Value_t v1, Value_t v2)
     {
-        const double scale = pow(10.0, floor(log10(double(fpAbs(v1)))));
+        using namespace FUNCTIONPARSERTYPES;
+        const Value_t scale =
+            fp_pow(Value_t(10), fp_floor(fp_log10(fp_abs(v1))));
         const Value_t sv1 =
-            fpAbs(v1) < epsilon<Value_t>() ? 0 : Value_t(v1/scale);
+            fp_abs(v1) < epsilon<Value_t>() ? 0 : v1/scale;
         const Value_t sv2 =
-            fpAbs(v2) < epsilon<Value_t>() ? 0 : Value_t(v2/scale);
+            fp_abs(v2) < epsilon<Value_t>() ? 0 : v2/scale;
         return sv2 - sv1;
     }
 
@@ -365,7 +391,8 @@ namespace
     template<typename Value_t>
     inline bool notEqual(Value_t v1, Value_t v2)
     {
-        return fpAbs(scaledDiff(v1, v2)) > epsilon<Value_t>();
+        using namespace FUNCTIONPARSERTYPES;
+        return fp_abs(scaledDiff(v1, v2)) > epsilon<Value_t>();
     }
 
     template<>
@@ -776,14 +803,16 @@ namespace
             "\n\nUsage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
-            "  -f                 : Use FunctionParser_f.\n"
-            "  -ld                : Use FunctionParser_ld.\n"
-            "  -li                : Use FunctionParser_li.\n"
-            "  -gi                : Use FunctionParser_gmpint.\n"
-            "  -vars <var string> : Specify a var string.\n"
-            "  -nt                : No timing measurements.\n"
-            "  -ntd               : No timing if functions differ.\n"
-            "  -deg               : Use degrees for trigonometry.\n";
+            "  -f                : Use FunctionParser_f.\n"
+            "  -ld               : Use FunctionParser_ld.\n"
+            "  -mpfr             : Use FunctionParser_mpfr.\n"
+            "  -mpfr_bits <bits> : MpfrFloat mantissa bits (default 80).\n"
+            "  -li               : Use FunctionParser_li.\n"
+            "  -gi               : Use FunctionParser_gmpint.\n"
+            "  -vars <string>    : Specify a var string.\n"
+            "  -nt               : No timing measurements.\n"
+            "  -ntd              : No timing if functions differ.\n"
+            "  -deg              : Use degrees for trigonometry.\n";
         return 1;
     }
 }
@@ -864,16 +893,18 @@ int main(int argc, char* argv[])
 {
     if(argc < 2) return printHelp(argv[0]);
 
-    enum ParserType { FP_D, FP_F, FP_LD, FP_LI, FP_GI };
+    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI };
 
     std::vector<std::string> functionStrings;
     bool measureTimings = true, noTimingIfEqualityErrors = false;
     ParserType parserType = FP_D;
+    unsigned long mantissaBits = 80;
 
     for(int i = 1; i < argc; ++i)
     {
         if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
         else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
+        else if(std::strcmp(argv[i], "-mpfr") == 0) parserType = FP_MPFR;
         else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
         else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
         else if(std::strcmp(argv[i], "-vars") == 0)
@@ -887,6 +918,11 @@ int main(int argc, char* argv[])
             noTimingIfEqualityErrors = true;
         else if(std::strcmp(argv[i], "-deg") == 0)
             gUseDegrees = true;
+        else if(std::strcmp(argv[i], "-mpfr_bits") == 0)
+        {
+            if(++i == argc) return printHelp(argv[0]);
+            mantissaBits = std::atol(argv[i]);
+        }
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0
@@ -929,6 +965,21 @@ int main(int argc, char* argv[])
                measureTimings, noTimingIfEqualityErrors);
 #else
           notCompiledParserType = "long double";
+          break;
+#endif
+
+      case FP_MPFR:
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+          {
+              MpfrFloat::setDefaultMantissaBits(mantissaBits);
+              std::ostringstream typeName;
+              typeName << "MpfrFloat(" << mantissaBits << ")";
+              return functionInfo<MpfrFloat>
+                  (typeName.str().c_str(), functionStrings,
+                   measureTimings, noTimingIfEqualityErrors);
+          }
+#else
+          notCompiledParserType = "MpfrFloat";
           break;
 #endif
 
