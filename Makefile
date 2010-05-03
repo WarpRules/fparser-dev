@@ -30,11 +30,11 @@ else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
-OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
+#OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 	-fvpt -fomit-frame-pointer -ffunction-cse
 #       -ffunction-sections -fdata-sections
 
-#OPTIMIZATION=-g
+OPTIMIZATION=-g
 #OPTIMIZATION=-g -O0 -fno-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg

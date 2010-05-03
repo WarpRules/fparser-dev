@@ -44,11 +44,11 @@ namespace
     // -------------------
     template<typename Value_t>
     inline Value_t r2d(Value_t x)
-        { return x*Value_t(180.0/ FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() ); }
+    { return x * (Value_t(180) / FUNCTIONPARSERTYPES::fp_const_pi<Value_t>()); }
 
     template<typename Value_t>
     inline Value_t d2r(Value_t x)
-        { return x*Value_t(FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() /180.0); }
+    { return x * (FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() / Value_t(180)); }
 
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
@@ -496,11 +496,18 @@ bool WhiteSpaceTest()
 bool compareExpValues(double value, const std::string& funcStr,
                       double v1, double v2, bool isOptimized)
 {
+    /*
     const double scale = pow(10.0, floor(log10(fabs(v1))));
     const double sv1 = fabs(v1) < Epsilon<double>() ? 0 : v1/scale;
     const double sv2 = fabs(v2) < Epsilon<double>() ? 0 : v2/scale;
-    const double diff = sv2-sv1;
-    if(std::fabs(diff) > Epsilon<double>())
+    const double diff = fabs(sv2-sv1);
+    */
+    const double diff =
+        fabs(v1) < Epsilon<double>() ?
+        (fabs(v2) < Epsilon<double>() ? fabs(v1 - v2) :
+         fabs((v1 - v2) / v2)) :
+        fabs((v1 - v2) / v1);
+    if(diff > Epsilon<double>())
     {
         std::cout << "For \"" << funcStr << "\" with x=" << value
                   << " the library (";
@@ -1295,10 +1302,17 @@ class TestingThread
 
                 const double v1 = function(vars);
                 const double v2 = mFp->Eval(vars);
+                /*
                 const double scale = pow(10.0, floor(log10(fabs(v1))));
                 const double sv1 = fabs(v1) < Epsilon<double>() ? 0 : v1/scale;
                 const double sv2 = fabs(v2) < Epsilon<double>() ? 0 : v2/scale;
-                const double diff = sv2-sv1;
+                const double diff = fabs(sv2-sv1);
+                */
+                const double diff =
+                    fabs(v1) < Epsilon<double>() ?
+                    (fabs(v2) < Epsilon<double>() ? fabs(v1 - v2) :
+                     fabs((v1 - v2) / v2)) :
+                    fabs((v1 - v2) / v1);
 
                 if(fabs(diff) > 1e-6)
                 {
@@ -1537,10 +1551,17 @@ namespace
         const double v2 = parserValue.toDouble();
 
         using namespace FUNCTIONPARSERTYPES;
+        /*
         const double scale = fp_pow(10.0, fp_floor(fp_log10(fp_abs(v1))));
         const double sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
         const double sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
         const double diff = fp_abs(sv2-sv1);
+        */
+        const double diff =
+            fabs(v1) < Eps ?
+            (fabs(v2) < Eps ? fabs(v1 - v2) :
+             fabs((v1 - v2) / v2)) :
+            fabs((v1 - v2) / v1);
 
         if(diff > Eps)
         {
@@ -1626,11 +1647,25 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             else
             {
                 using namespace FUNCTIONPARSERTYPES;
+                /*
                 const Value_t scale =
                     fp_pow(Value_t(10.0), fp_floor(fp_log10(fp_abs(v1))));
                 const Value_t sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
                 const Value_t sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
                 const Value_t diff = fp_abs(sv2-sv1);
+                */
+                const Value_t diff =
+                    fp_abs(v1) < Eps ?
+                    (fp_abs(v2) < Eps ? fp_abs(v1 - v2) :
+                     fp_abs((v1 - v2) / v2)) :
+                    fp_abs((v1 - v2) / v1);
+                /*
+                const Value_t diff =
+                    v1 == Value_t(0) ?
+                    (v2 == Value_t(0) ? Value_t(0) :
+                     fp_abs((v1 - v2) / v2)) :
+                    fp_abs((v1 - v2) / v1);
+                */
 
                 if(diff > Eps)
                 {
