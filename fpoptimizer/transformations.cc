@@ -1,7 +1,9 @@
-#include "bytecodesynth.hh"
 #include "codetree.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
+
+#include "bytecodesynth.hh"
+#include "optimize.hh" // For DEBUG_SUBSTITUTIONS
 
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
@@ -12,7 +14,7 @@ using namespace FUNCTIONPARSERTYPES;
 # define CBRT_IS_SLOW
 #endif
 
-#ifdef DEBUG_POWI
+#if defined(DEBUG_POWI) || defined(DEBUG_SUBSTITUTIONS)
 #include <cstdio>
 #endif
 
@@ -568,7 +570,9 @@ namespace FPoptimizer_CodeTree
                     {
                         bool is_signed = false; // if the mul group has a -1 constant...
 
+                    Recheck_RefCount_Mul:;
                         CodeTree<Value_t>& mulgroup = GetParam(a);
+                        bool needs_cow = GetRefCount() > 1;
 
                         for(size_t b=mulgroup.GetParamCount(); b-- > 0; )
                         {
@@ -577,12 +581,14 @@ namespace FPoptimizer_CodeTree
                                 Value_t factor = mulgroup.GetParam(b).GetImmed();
                                 if(fp_equal(factor, Value_t(-1)))
                                 {
+                                    if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_Mul; }
                                     mulgroup.CopyOnWrite();
                                     mulgroup.DelParam(b);
                                     is_signed = !is_signed;
                                 }
                                 else if(fp_equal(factor, Value_t(-2)))
                                 {
+                                    if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_Mul; }
                                     mulgroup.CopyOnWrite();
                                     mulgroup.DelParam(b);
                                     mulgroup.AddParam( CodeTreeImmed( Value_t(2) ) );
@@ -594,18 +600,22 @@ namespace FPoptimizer_CodeTree
                         {
                             mulgroup.Rehash();
                             sub_params.push_back(mulgroup);
-                            CopyOnWrite();
                             DelParam(a);
                         }
                     }
                     else if(GetParam(a).GetOpcode() == cDiv)
                     {
                         bool is_signed = false;
+
+                    Recheck_RefCount_Div:;
                         CodeTree<Value_t>& divgroup = GetParam(a);
+                        bool needs_cow = GetRefCount() > 1;
+
                         if(divgroup.GetParam(0).IsImmed())
                         {
                             if(fp_equal(divgroup.GetParam(0).GetImmed(), Value_t(-1)))
                             {
+                                if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_Div; }
                                 divgroup.CopyOnWrite();
                                 divgroup.DelParam(0);
                                 divgroup.SetOpcode(cInv);
@@ -614,20 +624,25 @@ namespace FPoptimizer_CodeTree
                         }
                         if(is_signed)
                         {
+                            if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_Div; }
                             divgroup.Rehash();
                             sub_params.push_back(divgroup);
-                            CopyOnWrite();
                             DelParam(a);
                         }
                     }
                     else if(GetParam(a).GetOpcode() == cRDiv)
                     {
                         bool is_signed = false;
+
+                    Recheck_RefCount_RDiv:;
                         CodeTree<Value_t>& divgroup = GetParam(a);
+                        bool needs_cow = GetRefCount() > 1;
+
                         if(divgroup.GetParam(1).IsImmed())
                         {
                             if(fp_equal(divgroup.GetParam(1).GetImmed(), Value_t(-1)))
                             {
+                                if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_RDiv; }
                                 divgroup.CopyOnWrite();
                                 divgroup.DelParam(1);
                                 divgroup.SetOpcode(cInv);
@@ -636,14 +651,18 @@ namespace FPoptimizer_CodeTree
                         }
                         if(is_signed)
                         {
+                            if(needs_cow) { CopyOnWrite(); goto Recheck_RefCount_RDiv; }
                             divgroup.Rehash();
                             sub_params.push_back(divgroup);
-                            CopyOnWrite();
                             DelParam(a);
                         }
                     }
                 if(!sub_params.empty())
                 {
+                  #ifdef DEBUG_SUBSTITUTIONS
+                    printf("Will make a Sub conversion in:\n"); fflush(stdout);
+                    DumpTreeWithIndent(*this);
+                  #endif
                     CodeTree<Value_t> subgroup;
                     subgroup.SetOpcode(cAdd);
                     subgroup.SetParamsMove(sub_params);
@@ -698,6 +717,10 @@ namespace FPoptimizer_CodeTree
                             AddParamMove(subgroup);
                         }
                     }
+                  #ifdef DEBUG_SUBSTITUTIONS
+                    printf("After Sub conversion:\n"); fflush(stdout);
+                    DumpTreeWithIndent(*this);
+                  #endif
                 }
                 break;
             }
