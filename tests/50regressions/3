@@ -1,0 +1,9 @@
+# Bug seen in commit 1cd584122ac17db835d35e7d83a57aeca2d29c0d
+#        !x & !!x should be 0, became !!x
+
+T=d f ld mf li gi
+V=x
+R=-2, 2, 1
+F=sub(  (!x & !!x) ,  (!x | !!x)  )
+#C=-1
+C=Sub({  fp_and(fp_not(x), fp_notNot(x)),  fp_or(fp_not(x), fp_notNot(x)) })

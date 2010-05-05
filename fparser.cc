@@ -2089,10 +2089,11 @@ FunctionParserBase<Value_t>::CompileAnd(const char* function)
         {
             if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
 
+          #if 0
             unsigned& param0last = data->ByteCode[param0end-1];
             unsigned& param1last = data->ByteCode.back();
-            if(IsNeverNegativeValueOpcode(param1last) &&
-               IsNeverNegativeValueOpcode(param0last))
+            if(IsNeverNegativeValueOpcode(param1last)
+            && IsNeverNegativeValueOpcode(param0last))
             {
                 /* Change !x & !y into !(x | y). Because y might
                  * contain an cIf, we replace the first cNot/cAbsNot
@@ -2110,6 +2111,7 @@ FunctionParserBase<Value_t>::CompileAnd(const char* function)
                     AddFunctionOpcode(cAbsAnd);
             }
             else
+          #endif
                 AddFunctionOpcode(cAnd);
             --StackPtr;
         }
@@ -2136,6 +2138,7 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
         {
             if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
 
+          #if 0
             unsigned& param0last = data->ByteCode[param0end-1];
             unsigned& param1last = data->ByteCode.back();
             if(IsNeverNegativeValueOpcode(param1last)
@@ -2157,6 +2160,7 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
                     AddFunctionOpcode(cAbsOr);
             }
             else
+          #endif
                 AddFunctionOpcode(cOr);
             --StackPtr;
         }
