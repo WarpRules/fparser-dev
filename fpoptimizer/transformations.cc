@@ -12,6 +12,9 @@ using namespace FUNCTIONPARSERTYPES;
 # define CBRT_IS_SLOW
 #endif
 
+#ifdef DEBUG_POWI
+#include <cstdio>
+#endif
 
 namespace FPoptimizer_ByteCode
 {
@@ -185,7 +188,7 @@ namespace
             if(best_factor == 0)
             {
         #ifdef DEBUG_POWI
-            printf("no factor found for %g\n", exponent);
+            printf("no factor found for %Lg\n", (long double)exponent);
         #endif
                 return result; // Unoptimizable
             }
@@ -197,8 +200,8 @@ namespace
             int mul_count = 0;
 
         #ifdef DEBUG_POWI
-            printf("orig = %g\n", exponent);
-            printf("plain factor = %d, cost %g\n", best_factor, best_cost);
+            printf("orig = %Lg\n", (long double) exponent);
+            printf("plain factor = %d, cost %Lg\n", best_factor, (long double)best_cost);
         #endif
 
             for(unsigned n_s=0; n_s<MaxSep; ++n_s)
@@ -228,8 +231,10 @@ namespace
                           + CalculatePowiFactorCost(long(changed_exponent*factor));
 
         #ifdef DEBUG_POWI
-                        printf("%d sqrt %d cbrt factor = %d, cost %g\n",
-                            n_sqrt, n_cbrt, factor, cost);
+                        printf("Candidate sep %u (%d*sqrt %d*cbrt)factor = %d, cost %g (for %Lg to %ld)\n",
+                            s, n_sqrt, n_cbrt, factor, cost,
+                            (long double) changed_exponent,
+                            (long)(changed_exponent*factor));
         #endif
                         if(cost < best_sep_cost)
                         {
@@ -241,6 +246,15 @@ namespace
                 }
                 if(!best_selected_sep) break;
 
+        #ifdef DEBUG_POWI
+                printf("CHOSEN sep %u (%d*sqrt %d*cbrt)factor = %d, cost %g, exponent %Lg->%Lg\n",
+                       best_selected_sep,
+                       best_selected_sep % 5,
+                       best_selected_sep / 5,
+                       best_sep_factor, best_sep_cost,
+                       (long double)(exponent),
+                       (long double)(exponent-RootPowers[best_selected_sep]));
+        #endif
                 result.sep_list[n_s] = best_selected_sep;
                 exponent -= RootPowers[best_selected_sep];
                 s_count += best_selected_sep % 5;
@@ -251,6 +265,12 @@ namespace
             }
 
             result.resulting_exponent = (long) (exponent * best_factor + 0.5);
+        #ifdef DEBUG_POWI
+            printf("resulting exponent is %ld (from exponent=%Lg, best_factor=%Lg)\n",
+                result.resulting_exponent,
+                (long double) exponent,
+                (long double) best_factor);
+        #endif
             while(best_factor % 2 == 0)
             {
                 ++result.n_int_sqrt;
@@ -687,8 +707,8 @@ namespace FPoptimizer_CodeTree
                             }
 
                         #ifdef DEBUG_POWI
-                            printf("Will resolve powi %g as powi(chain(%d,%d),%ld)",
-                                fabs(p1.GetImmed()),
+                            printf("Will resolve powi %Lg as powi(chain(%d,%d),%ld)",
+                                (long double) fp_abs(p1.GetImmed()),
                                 r.n_int_sqrt,
                                 r.n_int_cbrt,
                                 r.resulting_exponent);
@@ -752,7 +772,7 @@ namespace FPoptimizer_CodeTree
                                 SetParamsMove(mul.GetParams());
                             }
                         #ifdef DEBUG_POWI
-                            DumpTree<Value_t>WithIndent(*this);
+                            DumpTreeWithIndent(*this);
                         #endif
                             changed = true;
                             break;
