@@ -80,51 +80,6 @@ namespace
         }
     }
 
-    long CalculatePowiFactorCost(long int_exponent)
-    {
-        if(int_exponent < 0)
-        {
-            long cost = 22; // division cost
-            return cost + CalculatePowiFactorCost(-int_exponent);
-        }
-        static std::map<long, long> cache;
-        std::map<long,long>::iterator i = cache.lower_bound(int_exponent);
-        if(i != cache.end() && i->first == int_exponent)
-            return i->second;
-        std::pair<long, long> result(int_exponent, 0.0);
-        long& cost = result.second;
-
-        while(int_exponent > 1)
-        {
-            int factor = 0;
-            if(int_exponent < 256)
-            {
-                factor = FPoptimizer_ByteCode::powi_table[int_exponent];
-                if(factor & 128) factor &= 127; else factor = 0;
-                if(factor & 64) factor = -(factor&63) - 1;
-            }
-            if(factor)
-            {
-                cost += CalculatePowiFactorCost(factor);
-                int_exponent /= factor;
-                continue;
-            }
-            if(!(int_exponent & 1))
-            {
-                int_exponent /= 2;
-                cost += 6; // sqr
-            }
-            else
-            {
-                cost += 7; // dup+mul
-                int_exponent -= 1;
-            }
-        }
-
-        cache.insert(i, result);
-        return cost;
-    }
-
     template<typename Value_t>
     struct RootPowerTable
     {
@@ -178,27 +133,32 @@ namespace
          * to zero as possible.
          */
         static const unsigned MaxSep = 4;
+        static const int      MaxOp  = 5;
+
+        typedef int factor_t;
+        typedef long cost_t;
+        typedef long int_exponent_t;
 
         struct PowiResult
         {
             PowiResult() :
                 n_int_sqrt(0),
                 n_int_cbrt(0),
-                resulting_exponent(0),
-                sep_list() { }
+                sep_list(),
+                resulting_exponent(0) { }
 
-            int n_int_sqrt;
-            int n_int_cbrt;
-            long resulting_exponent;
-            int sep_list[MaxSep];
+            int n_int_sqrt; // totals
+            int n_int_cbrt; // totals
+            int sep_list[MaxSep]; // action list. Each element is (n_sqrt + MaxOp * n_cbrt).
+            int_exponent_t resulting_exponent;
         };
 
         template<typename Value_t>
-        PowiResult CreatePowiResult(Value_t exponent) const
+        static PowiResult CreatePowiResult(Value_t exponent)
         {
             PowiResult result;
 
-            int best_factor = FindIntegerFactor(exponent);
+            factor_t best_factor = FindIntegerFactor(exponent);
             if(best_factor == 0)
             {
         #ifdef DEBUG_POWI
@@ -207,50 +167,52 @@ namespace
                 return result; // Unoptimizable
             }
 
-            long best_cost = EvaluateFactorCost(best_factor, 0, 0, 0)
-                           + CalculatePowiFactorCost(long(exponent*best_factor));
+            result.resulting_exponent = MultiplyAndMakeLong(exponent, best_factor);
+            cost_t best_cost =
+                EvaluateFactorCost(best_factor, 0, 0, 0)
+              + CalculatePowiFactorCost( result.resulting_exponent );
             int s_count = 0;
             int c_count = 0;
             int mul_count = 0;
 
         #ifdef DEBUG_POWI
             printf("orig = %Lg\n", (long double) exponent);
-            printf("plain factor = %d, cost %ld\n", best_factor, best_cost);
+            printf("plain factor = %d, cost %ld\n", (int) best_factor, (long) best_cost);
         #endif
 
             for(unsigned n_s=0; n_s<MaxSep; ++n_s)
             {
                 int best_selected_sep = 0;
-                long best_sep_cost  = best_cost;
-                int best_sep_factor = best_factor;
-                for(int s=1; s<5*4; ++s)
+                cost_t best_sep_cost  = best_cost;
+                factor_t best_sep_factor = best_factor;
+                for(int s=1; s<MaxOp*4; ++s)
                 {
 #ifdef CBRT_IS_SLOW
-                    if(s >= 5) break;
+                    if(s >= MaxOp) break;
                     // When cbrt is implemented through exp and log,
                     // there is no advantage over exp(log()), so don't support it.
 #endif
-                    int n_sqrt = s%5;
-                    int n_cbrt = s/5;
+                    int n_sqrt = s%MaxOp;
+                    int n_cbrt = s/MaxOp;
                     if(n_sqrt + n_cbrt > 4) continue;
 
                     Value_t changed_exponent = exponent;
                     changed_exponent -= RootPowerTable<Value_t>::RootPowers[s];
 
-                    int factor = FindIntegerFactor(changed_exponent);
+                    factor_t factor = FindIntegerFactor(changed_exponent);
                     if(factor != 0)
                     {
-                        long int_exponent = (long) fp_int(changed_exponent * factor);
-
-                        long cost = EvaluateFactorCost
-                            (factor, s_count + n_sqrt, c_count + n_cbrt, mul_count + 1)
+                        int_exponent_t int_exponent = MultiplyAndMakeLong(changed_exponent, factor);
+                        cost_t cost =
+                            EvaluateFactorCost(factor, s_count + n_sqrt, c_count + n_cbrt, mul_count + 1)
                           + CalculatePowiFactorCost(int_exponent);
 
         #ifdef DEBUG_POWI
                         printf("Candidate sep %u (%d*sqrt %d*cbrt)factor = %d, cost %ld (for %Lg to %ld)\n",
-                            s, n_sqrt, n_cbrt, factor, cost,
+                            s, n_sqrt, n_cbrt, factor,
+                            (long) cost,
                             (long double) changed_exponent,
-                            int_exponent);
+                            (long) int_exponent);
         #endif
                         if(cost < best_sep_cost)
                         {
@@ -265,22 +227,22 @@ namespace
         #ifdef DEBUG_POWI
                 printf("CHOSEN sep %u (%d*sqrt %d*cbrt)factor = %d, cost %ld, exponent %Lg->%Lg\n",
                        best_selected_sep,
-                       best_selected_sep % 5,
-                       best_selected_sep / 5,
+                       best_selected_sep % MaxOp,
+                       best_selected_sep / MaxOp,
                        best_sep_factor, best_sep_cost,
                        (long double)(exponent),
                        (long double)(exponent-RootPowerTable<Value_t>::RootPowers[best_selected_sep]));
         #endif
                 result.sep_list[n_s] = best_selected_sep;
                 exponent -= RootPowerTable<Value_t>::RootPowers[best_selected_sep];
-                s_count += best_selected_sep % 5;
-                c_count += best_selected_sep / 5;
+                s_count += best_selected_sep % MaxOp;
+                c_count += best_selected_sep / MaxOp;
                 best_cost   = best_sep_cost;
                 best_factor = best_sep_factor;
                 mul_count += 1;
             }
 
-            result.resulting_exponent = (long) fp_int(exponent * best_factor);
+            result.resulting_exponent = MultiplyAndMakeLong(exponent, best_factor);
         #ifdef DEBUG_POWI
             printf("resulting exponent is %ld (from exponent=%Lg, best_factor=%Lg)\n",
                 result.resulting_exponent,
@@ -301,30 +263,82 @@ namespace
         }
 
     private:
+        static cost_t CalculatePowiFactorCost(int_exponent_t int_exponent)
+        {
+            static std::map<int_exponent_t, cost_t> cache;
+            if(int_exponent < 0)
+            {
+                cost_t cost = 22; // division cost
+                return cost + CalculatePowiFactorCost(-int_exponent);
+            }
+            std::map<int_exponent_t,cost_t>::iterator i = cache.lower_bound(int_exponent);
+            if(i != cache.end() && i->first == int_exponent)
+                return i->second;
+            std::pair<int_exponent_t, cost_t> result(int_exponent, 0.0);
+            cost_t& cost = result.second;
+
+            while(int_exponent > 1)
+            {
+                int factor = 0;
+                if(int_exponent < 256)
+                {
+                    factor = FPoptimizer_ByteCode::powi_table[int_exponent];
+                    if(factor & 128) factor &= 127; else factor = 0;
+                    if(factor & 64) factor = -(factor&63) - 1;
+                }
+                if(factor)
+                {
+                    cost += CalculatePowiFactorCost(factor);
+                    int_exponent /= factor;
+                    continue;
+                }
+                if(!(int_exponent & 1))
+                {
+                    int_exponent /= 2;
+                    cost += 6; // sqr
+                }
+                else
+                {
+                    cost += 7; // dup+mul
+                    int_exponent -= 1;
+                }
+            }
+
+            cache.insert(i, result);
+            return cost;
+        }
+
+        template<typename Value_t>
+        static int_exponent_t MultiplyAndMakeLong(const Value_t& value, factor_t multiply_by)
+        {
+            /* FIXME: Do this somehow better */
+            return int_exponent_t( fp_int( value * Value_t(multiply_by) ) );
+        }
+
         // Find the integer that "value" must be multiplied
         // with to produce an integer...
         // Consisting of factors 2 and 3 only.
         template<typename Value_t>
-        static bool MakesInteger(const Value_t& value, int factor)
+        static bool MakesInteger(const Value_t& value, factor_t factor)
         {
             /* Does value, multiplied by factor, result in an integer? */
             Value_t v = value * Value_t(factor);
             Value_t diff = fp_abs(v - fp_int(v));
             //printf("factor %d: v=%.20f, diff=%.20f\n", factor,v, diff);
-            return diff < Value_t(1e-9);
+            return diff < Value_t(1e-9l);
         }
 
         template<typename Value_t>
-        int FindIntegerFactor(const Value_t& value) const
+        static factor_t FindIntegerFactor(const Value_t& value)
         {
-            int factor = (2*2*2*2);
+            factor_t factor = (2*2*2*2);
 #ifdef CBRT_IS_SLOW
             // When cbrt is implemented through exp and log,
             // there is no advantage over exp(log()), so don't support it.
 #else
             factor *= (3*3*3);
 #endif
-            int result = 0;
+            factor_t result = 0;
             if(MakesInteger(value, factor))
             {
                 result = factor;
@@ -354,7 +368,7 @@ namespace
             return result;
         }
 
-        int EvaluateFactorCost(int factor, int s, int c, int nmuls) const
+        static int EvaluateFactorCost(int factor, int s, int c, int nmuls)
         {
             const int sqrt_cost = 6;
 #ifdef CBRT_IS_SLOW
@@ -453,6 +467,7 @@ namespace FPoptimizer_CodeTree
                 for(size_t a = GetParamCount(); a-- > 0; )
                 {
                     const CodeTree<Value_t>& powgroup = GetParam(a);
+
                     if(powgroup.GetOpcode() == cPow
                     && powgroup.GetParam(1).IsImmed())
                     {
@@ -733,7 +748,7 @@ namespace FPoptimizer_CodeTree
                     if(p1.GetImmed() != 0.0 && !p1.IsLongIntegerImmed())
                     {
                         PowiResolver::PowiResult
-                            r = PowiResolver().CreatePowiResult(fp_abs(p1.GetImmed()));
+                            r = PowiResolver::CreatePowiResult(fp_abs(p1.GetImmed()));
 
                         if(r.resulting_exponent != 0)
                         {
@@ -756,8 +771,8 @@ namespace FPoptimizer_CodeTree
                             for(unsigned n=0; n<PowiResolver::MaxSep; ++n)
                             {
                                 if(r.sep_list[n] == 0) break;
-                                int n_sqrt = r.sep_list[n] % 5;
-                                int n_cbrt = r.sep_list[n] / 5;
+                                int n_sqrt = r.sep_list[n] % PowiResolver::MaxOp;
+                                int n_cbrt = r.sep_list[n] / PowiResolver::MaxOp;
                                 printf("*chain(%d,%d)", n_sqrt,n_cbrt);
                             }
                             printf("\n");
@@ -790,8 +805,8 @@ namespace FPoptimizer_CodeTree
                             for(unsigned n=0; n<PowiResolver::MaxSep; ++n)
                             {
                                 if(r.sep_list[n] == 0) break;
-                                int n_sqrt = r.sep_list[n] % 5;
-                                int n_cbrt = r.sep_list[n] / 5;
+                                int n_sqrt = r.sep_list[n] % PowiResolver::MaxOp;
+                                int n_cbrt = r.sep_list[n] / PowiResolver::MaxOp;
 
                                 CodeTree<Value_t> mul_item = source_tree;
                                 mul_item.CopyOnWrite();

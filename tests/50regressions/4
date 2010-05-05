@@ -1,4 +1,4 @@
-# Bug seen in commit fe941aabcc3cc39e6ea25e01cbe0a8ea8badfcbc
+# Bug fixed in commit d0c31571026723d9c5852a4de33bc7a616a4943e
 #        sub(!(x-y), !!(x-y)) bugs when double-optimized
 #        due to buggy CopyOnWrite calling in cSub/cRSub reconstruction
 

@@ -65,10 +65,10 @@ namespace
     {
     };
 
-    /* TODO: Do SinCos optimizations, for example sin(x^2)+cos(x^2) */
     template<typename Value_t>
     void FindTreeCounts(
-        TreeCountType<Value_t>& TreeCounts, const CodeTree<Value_t>& tree,
+        TreeCountType<Value_t>& TreeCounts,
+        const CodeTree<Value_t>& tree,
         OPCODE parent_opcode)
     {
         typename TreeCountType<Value_t>::iterator
@@ -288,7 +288,7 @@ namespace FPoptimizer_CodeTree
 
     #ifdef DEBUG_SUBSTITUTIONS_CSE
                 std::cout << "Score " << score << ":\n";
-                DumpTree<Value_t>WithIndent(tree);
+                DumpTreeWithIndent(tree);
     #endif
 
                 // It must not yet have been synthesized

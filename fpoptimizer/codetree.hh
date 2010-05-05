@@ -126,7 +126,7 @@ namespace FPoptimizer_CodeTree
         bool    IsLogicalValue() const;
         inline unsigned GetRefCount() const { return data->RefCount; }
 
-        void ReplaceWithImmed(const Value_t& i) { data = new CodeTreeData<Value_t> (i); }
+        void ReplaceWithImmed(const Value_t& i);
 
         /* This function calculates the minimum and maximum values
          * of the tree's result. If an estimate cannot be made,

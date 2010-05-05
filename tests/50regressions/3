@@ -1,4 +1,4 @@
-# Bug seen in commit 1cd584122ac17db835d35e7d83a57aeca2d29c0d
+# Bug fixed in commit 6a5cf0e5cbdf96464b17b9784c2b2fd9ff2bd3b9
 #        !x & !!x should be 0, became !!x
 
 T=d f ld mf li gi

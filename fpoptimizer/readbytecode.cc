@@ -339,7 +339,7 @@ namespace
             stack.resize(stack.size()-1);
             return result;
         }
-        std::vector<CodeTree<Value_t> > Pop(unsigned n_pop)
+        std::vector<CodeTree<Value_t> > Pop(size_t n_pop)
         {
             std::vector<CodeTree<Value_t> > result(n_pop);
             for(unsigned n=0; n<n_pop; ++n)
@@ -427,6 +427,9 @@ namespace FPoptimizer_CodeTree
         const std::vector<CodeTree>& var_trees,
         bool keep_powi)
     {
+    #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "ENTERS GenerateFrom()\n";
+    #endif
         CodeTreeParserData<Value_t> sim(keep_powi);
         std::vector<IfInfo<Value_t> > if_stack;
 
@@ -664,27 +667,19 @@ namespace FPoptimizer_CodeTree
                     //    sim.Eat(2, cMul);
                     //    break;
                     // Binary operators requiring special attention
+                    case cRSub: // from fpoptimizer
+                        sim.SwapLastTwoInStack();
+                        // Passthru to cSub
                     case cSub:
                         if(keep_powi) { sim.Eat(2, cSub); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cMul); // -x is x*-1
                         sim.Eat(2, cAdd); // Minus is negative adding
                         break;
-                    case cRSub: // from fpoptimizer
-                        sim.SwapLastTwoInStack();
-                        if(keep_powi) { sim.Eat(2, cSub); break; }
-                        sim.AddConst(-1);
-                        sim.Eat(2, cMul); // -x is x*-1
-                        sim.Eat(2, cAdd);
-                        break;
-                    case cDiv:
-                        if(keep_powi) { sim.Eat(2, cDiv); break; }
-                        sim.AddConst(-1);
-                        sim.Eat(2, cPow); // 1/x is x^-1
-                        sim.Eat(2, cMul); // Divide is inverse multiply
-                        break;
                     case cRDiv: // from fpoptimizer
                         sim.SwapLastTwoInStack();
+                        // Passthru to cDiv
+                    case cDiv:
                         if(keep_powi) { sim.Eat(2, cDiv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1

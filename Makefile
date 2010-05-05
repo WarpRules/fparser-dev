@@ -177,6 +177,7 @@ testbed_tests.inc: tests/make_tests
 FPOPTIMIZER_CC_FILES=\
 	    lib/crc32.hh \
 	    lib/autoptr.hh \
+	    lib/functional.hh \
 	    fpoptimizer/hash.hh \
 	    fpoptimizer/codetree.hh \
 	    fpoptimizer/grammar.hh \
@@ -188,6 +189,11 @@ FPOPTIMIZER_CC_FILES=\
 	    fpoptimizer/bytecodesynth.cc \
 	    fpoptimizer/rangeestimation.hh \
 	    fpoptimizer/constantfolding.hh \
+	    fpoptimizer/logic_boolgroups.hh \
+	    fpoptimizer/logic_collections.hh \
+	    fpoptimizer/logic_ifoperations.hh \
+	    fpoptimizer/logic_powoperations.hh \
+	    fpoptimizer/logic_comparisons.hh \
 	    fpoptimizer/codetree.cc \
 	    fpoptimizer/debug.cc \
 	    fpoptimizer/grammar.cc \
@@ -216,8 +222,7 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 		sed -r "s@^(#include \".*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
 	done | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
-		>> $@
-	#     | util/cpp_compress >> $@
+	     | util/cpp_compress >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 util/tree_grammar_parser: \

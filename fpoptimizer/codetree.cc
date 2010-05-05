@@ -2,6 +2,7 @@
 #include <algorithm>
 
 #include "rangeestimation.hh"
+#include "optimize.hh" // for DEBUG_SUBSTITUTIONS
 #include "codetree.hh"
 #include "fptypes.hh"
 #include "consts.hh"
@@ -10,6 +11,31 @@
 
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
+
+namespace
+{
+#ifdef DEBUG_SUBSTITUTIONS
+    void OutFloatHex(std::ostream& o, double d)
+    {
+        union { double d; uint_least64_t h; } data;
+        data.d = d;
+        o << "(" << std::hex << data.h << std::dec << ")";
+    }
+    void OutFloatHex(std::ostream& o, float f)
+    {
+        union { float f; uint_least32_t h; } data;
+        data.f = f;
+        o << "(" << std::hex << data.h << std::dec << ")";
+    }
+    void OutFloatHex(std::ostream& o, long double ld)
+    {
+        union { long double ld;
+                struct { uint_least64_t a; unsigned short b; } s; } data;
+        data.ld = ld;
+        o << "(" << std::hex << data.s.b << data.s.a << std::dec << ")";
+    }
+#endif
+}
 
 namespace FPoptimizer_CodeTree
 {
@@ -65,6 +91,20 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     CodeTree<Value_t>::~CodeTree()
     {
+    }
+
+    template<typename Value_t>
+    void CodeTree<Value_t>::ReplaceWithImmed(const Value_t& i)
+    {
+      #ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "Replacing "; DumpTree(*this);
+        if(IsImmed())
+            OutFloatHex(std::cout, tree.GetImmed());
+        std::cout << " with const value " << i;
+        OutFloatHex(std::cout, i);
+        std::cout << "\n";
+      #endif
+        data = new CodeTreeData<Value_t> (i);
     }
 
     template<typename Value_t>

@@ -33,7 +33,7 @@ void FunctionParserBase<Value_t>::Optimize()
 
     if(data->StackSize != stacktop_max)
     {
-        data->StackSize = stacktop_max; // note: gcc warning is meaningful
+        data->StackSize = unsigned(stacktop_max); // Note: Ignoring GCC warning here.
 #ifndef FP_USE_THREAD_SAFE_EVAL
         data->Stack.resize(stacktop_max);
 #endif
