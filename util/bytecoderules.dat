@@ -296,6 +296,8 @@ cAbs  cNot -> cNot         # TEST 10/absnot
 cNot  cNot -> cNotNot      # TEST 10/notnot
 cNotNot cNot    -> cNot    # TEST 10/notnotnot
 cAbsNotNot cNot -> cAbsNot # TEST 10/absnotnotnot
+cNot cNotNot    -> cNot    # TEST 10/notnotnot2
+# ^ Impossible as it seems, it is triggered by (!x & !x) -> !!(!x)
 
 A [IsLogicalOpcode(A)]            cAbsNot cNot -> A
 A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot
@@ -419,3 +421,6 @@ IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd
+
+cDup cOr   -> cNotNot  # TEST 99/3
+cDup cAnd  -> cNotNot  # TEST 99/3
