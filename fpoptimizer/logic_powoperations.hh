@@ -128,6 +128,7 @@ namespace
                 CodeTree<Value_t> newpow;
                 newpow.SetOpcode(cPow);
                 newpow.SetParamsMove(tree.GetParams());
+                newpow.Rehash(false);
                 tree.SetOpcode(cMul);
                 tree.AddParamMove(newpow);
                 tree.AddParam( CodeTreeImmed(factor_immed) );

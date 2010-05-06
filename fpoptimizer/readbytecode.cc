@@ -267,6 +267,7 @@ namespace
                       << ": PUSH ";
             DumpTree(newnode);
             std::cout <<std::endl;
+            DumpHashes(newnode);
         #endif
             stack.push_back(newnode);
         }
@@ -281,6 +282,7 @@ namespace
             std::cout << "POP " << nparams << ", PUSH ";
             DumpTree(newnode);
             std::cout << std::endl;
+            DumpHashes(newnode);
         #endif
             FindClone(newnode);
             stack.push_back(newnode);
@@ -322,6 +324,7 @@ namespace
             std::cout << "PUSH ";
             DumpTree(tree);
             std::cout << std::endl;
+            DumpHashes(tree);
         #endif
             stack.push_back(tree);
         }
@@ -350,6 +353,7 @@ namespace
                 std::cout << "POP ";
                 DumpTree(result[n]);
                 std::cout << std::endl;
+                DumpHashes(result[n]);
             }
         #endif
             stack.resize(stack.size()-n_pop);

@@ -99,7 +99,7 @@ namespace FPoptimizer_CodeTree
       #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Replacing "; DumpTree(*this);
         if(IsImmed())
-            OutFloatHex(std::cout, tree.GetImmed());
+            OutFloatHex(std::cout, GetImmed());
         std::cout << " with const value " << i;
         OutFloatHex(std::cout, i);
         std::cout << "\n";
