@@ -363,18 +363,18 @@ IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh
 IF(FP_FLOAT_VERSION) cAcosh cSinh -> [DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt
 IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSqrt
 
-IF(FP_FLOAT_VERSION) cSin cDiv -> cCsc cMul
-IF(FP_FLOAT_VERSION) cCos cDiv -> cSec cMul
-IF(FP_FLOAT_VERSION) cTan cDiv -> cCot cMul
-IF(FP_FLOAT_VERSION) cCsc cDiv -> cSin cMul
-IF(FP_FLOAT_VERSION) cSec cDiv -> cCos cMul
-IF(FP_FLOAT_VERSION) cCot cDiv -> cTan cMul
-IF(FP_FLOAT_VERSION) cSin cInv -> cCsc
-IF(FP_FLOAT_VERSION) cCos cInv -> cSec
-IF(FP_FLOAT_VERSION) cTan cInv -> cCot
-IF(FP_FLOAT_VERSION) cCsc cInv -> cSin
-IF(FP_FLOAT_VERSION) cSec cInv -> cCos
-IF(FP_FLOAT_VERSION) cCot cInv -> cTan
+IF(FP_FLOAT_VERSION) cSin cDiv -> cCsc cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCos cDiv -> cSec cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cTan cDiv -> cCot cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCsc cDiv -> cSin cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSec cDiv -> cCos cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCot cDiv -> cTan cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSin cInv -> cCsc        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCos cInv -> cSec        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cTan cInv -> cCot        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCsc cInv -> cSin        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSec cInv -> cCos        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCot cInv -> cTan        # TEST 10/invsincostan
 
 # Hardcoded optimizations that are too complex or
 # impossible to convey using this rule file:
@@ -418,9 +418,23 @@ IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t
 # -> expr0 expr1 cMul cLog
 # similar.
 
-IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd
-IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd
-IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd # TEST 10/logmul2
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd # TEST 10/logmul
+IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd # TEST 10/logmul10
 
 cDup cOr   -> cNotNot  # TEST 99/3
 cDup cAnd  -> cNotNot  # TEST 99/3
+
+B [B==A] cSin A [A>=VarBegin] cCos -> B cSinCos         # TEST 10/sincos_sc
+B [B==A] cSin A [A>=VarBegin] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
+B [B==A] cSin A [A>=VarBegin] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
+B [B==A] cCos A [A>=VarBegin] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
+B [B==A] cTan A [A>=VarBegin] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
+B [B==A] cCsc A [A>=VarBegin] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
+B [B==A] cSec A [A>=VarBegin] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
+B [B==A] cCot A [A>=VarBegin] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
+cSinCos cDiv  -> cTan  # TEST 10/sincos_tan
+cSinCos cRDiv -> cCot
+
+cSqr A [A>=VarBegin]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
+cSqr A [A>=VarBegin] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot

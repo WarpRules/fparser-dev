@@ -529,7 +529,7 @@ cCos [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cSin[(cMul -1 (cAdd <1>))]
 cSin [(cAdd  CONSTANT_PI@R <1>)]                -> cMul -1 (cSin[(cAdd <1>)])
 # cos(x + pi) = -cos(x)
 cCos [(cAdd  CONSTANT_PI@R    <1>)]             -> cMul -1 (cCos[(cAdd <1>)])
-# 
+#
 cCos [(cAdd 0@R <1>)]             -> cCos[(cAdd <1>)]
 cSin [(cAdd 0@R <1>)]             -> cSin[(cAdd <1>)]
 
