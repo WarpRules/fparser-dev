@@ -1144,6 +1144,8 @@ inline void FunctionParserBase<Value_t>::CompilePowi(int abs_int_exponent)
         {
             abs_int_exponent /= 2;
             data->ByteCode.push_back(cSqr);
+            // ^ Don't put AddFunctionOpcode here,
+            //   it would slow down a great deal.
         }
         else
         {
@@ -1190,6 +1192,13 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
                 }
                 data->ByteCode.push_back(opcode);
                 --sqrt_count;
+            }
+            if((abs_int_exponent & 1) == 0)
+            {
+                // This special rule fixes the optimization
+                // shortcoming of (-x)^2 with minimal overhead.
+                AddFunctionOpcode(cSqr);
+                abs_int_exponent >>= 1;
             }
             CompilePowi(abs_int_exponent);
             if(int_exponent < 0) data->ByteCode.push_back(cInv);
