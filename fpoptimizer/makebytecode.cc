@@ -23,6 +23,41 @@ namespace
                   const FPoptimizer_ByteCode::SequenceOpCode<Value_t>& sequencing,
                   FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
                   size_t max_bytecode_grow_length);
+
+    static const struct SinCosTanDataType
+    {
+        OPCODE whichopcode;
+        OPCODE inverse_opcode;
+        enum { nominator,
+               denominator,
+               inverse_nominator,
+               inverse_denominator };
+        OPCODE codes[4];
+    } SinCosTanData[12] =
+    {
+        { cTan, cCot, { cSin,cCos, cCsc,cSec } },
+        { cCot, cCot, { cCos,cSin, cSec,cCsc } },
+        // tan(x) = 1/cot(x)
+        //        = sin(x) / cos(x)
+        //        = sin(x) * sec(x)
+        //        = (1/csc(x)) / cos(x)
+        //        = sec(x) / csc(x)
+
+        { cCos, cSec, { cSin,cTan, cCsc,cCot } },
+        { cSec, cCos, { cTan,cSin, cCot,cCsc } },
+        // cos(x) = 1/sec(x) = sin(x) / tan(x)
+
+        { cSin, cCsc, { cCos,cCot, cSec,cTan } },
+        { cCsc, cSin, { cCot,cCos, cTan,cSec } },
+        // sin(x) = 1/csc(x) = cos(x)/cot(x)
+
+        { cTanh, cNop, { cSinh,cCosh, cNop,cNop } },
+        { cSinh, cNop, { cTanh,cNop,  cNop,cCosh } },
+        { cCosh, cNop, { cSinh,cTanh, cNop,cNop } },
+        { cNop, cTanh, { cCosh,cSinh, cNop,cNop } },
+        { cNop, cSinh, { cNop, cTanh, cCosh,cNop } },
+        { cNop, cCosh, { cTanh,cSinh, cNop,cNop } }
+    };
 }
 
 namespace FPoptimizer_CodeTree
@@ -73,42 +108,106 @@ namespace FPoptimizer_CodeTree
             return;
         }
 
-        // FIXME: Fix ugly code repetition
-        if(GetOpcode() == cSec)
+        for(size_t a=0; a<12; ++a)
         {
-            CodeTree invtree; invtree.SetParams(GetParams());
-            invtree.SetOpcode(cCos); invtree.Rehash(false);
-            if(synth.FindAndDup(invtree))
-                { synth.AddOperation(cInv,1,1);
-                  synth.StackTopIs(*this);
-                  return; }
-        }
-        if(GetOpcode() == cSin)
-        {
-            CodeTree invtree; invtree.SetParams(GetParams());
-            invtree.SetOpcode(cCsc); invtree.Rehash(false);
-            if(synth.FindAndDup(invtree))
-                { synth.AddOperation(cInv,1,1);
-                  synth.StackTopIs(*this);
-                  return; }
-        }
-        if(GetOpcode() == cCsc)
-        {
-            CodeTree invtree; invtree.SetParams(GetParams());
-            invtree.SetOpcode(cSin); invtree.Rehash(false);
-            if(synth.FindAndDup(invtree))
-                { synth.AddOperation(cInv,1,1);
-                  synth.StackTopIs(*this);
-                  return; }
-        }
-        if(GetOpcode() == cCos)
-        {
-            CodeTree invtree; invtree.SetParams(GetParams());
-            invtree.SetOpcode(cSec); invtree.Rehash(false);
-            if(synth.FindAndDup(invtree))
-                { synth.AddOperation(cInv,1,1);
-                  synth.StackTopIs(*this);
-                  return; }
+            const SinCosTanDataType& data = SinCosTanData[a];
+            if(data.whichopcode != cNop)
+            {
+                if(GetOpcode() != data.whichopcode) continue;
+
+                CodeTree invtree;
+                invtree.SetParams(GetParams());
+                invtree.SetOpcode( data.inverse_opcode );
+                invtree.Rehash(false);
+                if(synth.FindAndDup(invtree))
+                {
+                    synth.AddOperation(cInv,1,1);
+                    synth.StackTopIs(*this);
+                    return;
+                }
+            }
+            else
+            {
+                // cNop indicates that there's no dedicated
+                // opcode that indicates an inverted function.
+                // For example, we have inv(cosh(x)).
+                if(GetOpcode() != cInv) continue;
+                if(GetParam(0).GetOpcode() != data.inverse_opcode) continue;
+                if(synth.FindAndDup(GetParam(0)))
+                {
+                    synth.AddOperation(cInv,1,1);
+                    synth.StackTopIs(*this);
+                    return;
+                }
+            }
+
+            // Check which trees we can find
+            size_t   found[4];
+            for(size_t b=0; b<4; ++b)
+            {
+                CodeTree tree;
+                if(data.codes[b] == cNop)
+                {
+                    tree.SetOpcode(cInv);
+                    CodeTree subtree;
+                    subtree.SetParams(GetParams());
+                    subtree.SetOpcode(data.codes[b ^ 2]);
+                    subtree.Rehash(false);
+                    tree.AddParamMove(subtree);
+                }
+                else
+                {
+                    tree.SetParams(GetParams());
+                    tree.SetOpcode(data.codes[b]);
+                }
+                tree.Rehash(false);
+                found[b] = synth.FindPos(tree);
+            }
+
+            if(found[ data.nominator ]   != ~size_t(0)
+            && found[ data.denominator ] != ~size_t(0))
+            {
+                // tan(x) = sin(x) / cos(x)
+                synth.DoDup( found[data.nominator] );
+                synth.DoDup( found[data.denominator] );
+                synth.AddOperation(cDiv,2,1);
+                synth.StackTopIs(*this);
+                return;
+            }
+
+            if(found[ data.nominator ]           != ~size_t(0)
+            && found[ data.inverse_denominator ] != ~size_t(0))
+            {
+                // tan(x) = sin(x) * sec(x)
+                synth.DoDup( found[data.nominator] );
+                synth.DoDup( found[data.inverse_denominator] );
+                synth.AddOperation(cMul,2,1);
+                synth.StackTopIs(*this);
+                return;
+            }
+
+            if(found[ data.inverse_nominator ]   != ~size_t(0)
+            && found[ data.inverse_denominator ] != ~size_t(0))
+            {
+                // tan(x) = 1 / (csc(x) / sec(x)) = sec(x) / csc(x)
+                synth.DoDup( found[data.inverse_nominator] );
+                synth.DoDup( found[data.inverse_denominator] );
+                synth.AddOperation(cRDiv,2,1);
+                synth.StackTopIs(*this);
+                return;
+            }
+
+            if(found[ data.inverse_nominator ]   != ~size_t(0)
+            && found[ data.denominator ]         != ~size_t(0))
+            {
+                // tan(x) = 1 / csc(x) / cos(x) = 1 / (csc(x) * cos(x))
+                synth.DoDup( found[data.inverse_nominator] );
+                synth.DoDup( found[data.denominator] );
+                synth.AddOperation(cMul,2,1);
+                synth.AddOperation(cInv,1,1);
+                synth.StackTopIs(*this);
+                return;
+            }
         }
 
         size_t n_subexpressions_synthesized = SynthCommonSubExpressions(synth);

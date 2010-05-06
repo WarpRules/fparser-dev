@@ -808,9 +808,10 @@ cMul (cPow [(cLog [x]) -1]) CONSTANT_L10   : (cPow [(cLog10 [x]) -1])
 cMul        (cLog [x])      CONSTANT_L2I  :        (cLog2 [x])
 cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
 
-cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
-cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
-cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
+#cPow [ (cSin[x]) %@N ] : (cCsc[x]) -%
+#cPow [ (cCos[x]) %@N ] : (cSec[x]) -%
+#cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
+#  ^ DONE BY MAKEBYTECODE
 
 cPow [ (cAdd [(cPow [x %@E])  (cPow [y &@E])] ) 0.5 ] -> (cHypot [(cPow [x *(% 0.5)]) (cPow [y *(& 0.5)])])
 

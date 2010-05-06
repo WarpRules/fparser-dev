@@ -17,11 +17,13 @@ namespace
         size_t n_occurrences;
         size_t n_as_cos_param;
         size_t n_as_sin_param;
+        size_t n_as_tan_param;
     public:
         TreeCountItem() :
             n_occurrences(0),
             n_as_cos_param(0),
-            n_as_sin_param(0) { }
+            n_as_sin_param(0),
+            n_as_tan_param(0) { }
 
         void AddFrom(OPCODE op)
         {
@@ -30,6 +32,8 @@ namespace
             if(op == cSin) ++n_as_sin_param;
             if(op == cSec) ++n_as_cos_param;
             if(op == cCsc) ++n_as_sin_param;
+            if(op == cTan) ++n_as_tan_param;
+            if(op == cCot) ++n_as_tan_param;
         }
 
         size_t GetCSEscore() const
@@ -39,11 +43,21 @@ namespace
             return result;
         }
 
+        /* Calculate whether a sincos() would be useful.
+         * Return values: 0 = not useful
+         *                1,2 = yes
+         * 1 = the tree is always a sin/cos parameter,
+         *     so once a sincos() is synthesized, the
+         *     tree itself does not need to be synthesized
+         */
         int NeedsSinCos() const
         {
-            if(n_as_cos_param > 0 && n_as_sin_param > 0)
+            bool always_sincostan =
+                (n_occurrences == (n_as_cos_param + n_as_sin_param + n_as_tan_param));
+            if((n_as_tan_param && (n_as_sin_param || n_as_cos_param))
+            || (n_as_sin_param && n_as_cos_param))
             {
-                if(n_occurrences == n_as_cos_param + n_as_sin_param)
+                if(always_sincostan)
                     return 1;
                 return 2;
             }
