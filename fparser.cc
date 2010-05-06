@@ -40,6 +40,149 @@ using namespace FUNCTIONPARSERTYPES;
 //=========================================================================
 // Utility functions
 //=========================================================================
+bool FUNCTIONPARSERTYPES::IsLogicalOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAnd: case cAbsAnd:
+      case cOr:  case cAbsOr:
+      case cNot: case cAbsNot:
+      case cNotNot: case cAbsNotNot:
+      case cEqual: case cNEqual:
+      case cLess: case cLessOrEq:
+      case cGreater: case cGreaterOrEq:
+          return true;
+      default: break;
+    }
+    return false;
+}
+
+bool FUNCTIONPARSERTYPES::IsComparisonOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cEqual: case cNEqual:
+      case cLess: case cLessOrEq:
+      case cGreater: case cGreaterOrEq:
+          return true;
+      default: break;
+    }
+    return false;
+}
+
+unsigned FUNCTIONPARSERTYPES::OppositeComparisonOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cLess: return cGreater;
+      case cGreater: return cLess;
+      case cLessOrEq: return cGreaterOrEq;
+      case cGreaterOrEq: return cLessOrEq;
+    }
+    return op;
+}
+
+bool FUNCTIONPARSERTYPES::IsNeverNegativeValueOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAnd: case cAbsAnd:
+      case cOr:  case cAbsOr:
+      case cNot: case cAbsNot:
+      case cNotNot: case cAbsNotNot:
+      case cEqual: case cNEqual:
+      case cLess: case cLessOrEq:
+      case cGreater: case cGreaterOrEq:
+      case cSqrt: case cRSqrt: case cSqr:
+      case cHypot:
+      case cAbs:
+      case cAcos: case cCosh:
+          return true;
+      default: break;
+    }
+    return false;
+}
+
+bool FUNCTIONPARSERTYPES::IsAlwaysIntegerOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAnd: case cAbsAnd:
+      case cOr:  case cAbsOr:
+      case cNot: case cAbsNot:
+      case cNotNot: case cAbsNotNot:
+      case cEqual: case cNEqual:
+      case cLess: case cLessOrEq:
+      case cGreater: case cGreaterOrEq:
+      case cInt: case cFloor: case cCeil: case cTrunc:
+          return true;
+      default: break;
+    }
+    return false;
+}
+
+bool FUNCTIONPARSERTYPES::IsUnaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cInv: case cNeg:
+      case cNot: case cAbsNot:
+      case cNotNot: case cAbsNotNot:
+      case cSqr: case cRSqrt:
+      case cDeg: case cRad:
+          return true;
+    }
+    return (op < FUNC_AMOUNT && Functions[op].params == 1);
+}
+
+bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAdd: case cSub: case cRSub:
+      case cMul: case cDiv: case cRDiv:
+      case cMod:
+      case cEqual: case cNEqual: case cLess:
+      case cLessOrEq: case cGreater: case cGreaterOrEq:
+      case cAnd: case cAbsAnd:
+      case cOr: case cAbsOr:
+          return true;
+    }
+    return (op < FUNC_AMOUNT && Functions[op].params == 2);
+}
+
+bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
+{
+#ifndef FP_NO_EVALUATION_CHECKS
+    // Returns true, if the given opcode has a range of
+    // input values that gives an error.
+    switch(op)
+    {
+      case cAcos: // allowed range: |x| <= 1
+      case cAsin: // allowed range: |x| <= 1
+      case cAcosh: // allowed range: x >= 1
+      case cAtanh: // allowed range: |x| < 1
+          //case cCot: // note: no range, just separate values
+          //case cCsc: // note: no range, just separate values
+      case cLog: // allowed range: x > 0
+      case cLog2: // allowed range: x > 0
+      case cLog10: // allowed range: x > 0
+#ifdef FP_SUPPORT_OPTIMIZER
+      case cLog2by: // allowed range: x > 0
+#endif
+          //case cPow: // note: no range, just separate values
+          //case cSec: // note: no range, just separate values
+      case cSqrt: // allowed range: x >= 0
+      case cRSqrt: // allowed range: x > 0
+          //case cDiv: // note: no range, just separate values
+          //case cRDiv: // note: no range, just separate values
+          //case cInv: // note: no range, just separate values
+          return true;
+    }
+#endif
+    return false;
+}
+
 namespace
 {
     template<typename Value_t>
