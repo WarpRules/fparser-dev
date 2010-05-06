@@ -144,6 +144,19 @@ namespace FPoptimizer_Grammar
             case Oneness_One:     o << "@1"; break;
             case Oneness_NotOne:  o << "@M"; break;
         }
+        switch( ImmedConstraint_Constness(constraints & ConstnessMask) )
+        {
+            //case ConstnessMask:
+            case Constness_Const:
+                if(parampair.first == ParamHolder)
+                {
+                    const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
+                    if(param.index < 2) break;
+                }
+                o << "@C";
+                break;
+            case Oneness_Any: break;
+        }
     }
 
     template<typename Value_t>

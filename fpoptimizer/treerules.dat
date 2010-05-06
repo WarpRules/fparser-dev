@@ -813,7 +813,9 @@ cMul (cPow [(cLog [x]) -1]) CONSTANT_L2   : (cPow [(cLog2 [x]) -1])
 #cPow [ (cTan[x]) %@N ] : (cCot[x]) -%
 #  ^ DONE BY MAKEBYTECODE
 
-cPow [ (cAdd [(cPow [x %@E])  (cPow [y &@E])] ) 0.5 ] -> (cHypot [(cPow [x *(% 0.5)]) (cPow [y *(& 0.5)])])
+cPow [ (cAdd [(           cPow [x %@E]  )  (           cPow [y &@E]  )] ) 0.5 ] -> (cHypot [(cPow [      x              *(% 0.5)]) (cPow [      y              *(& 0.5)])])
+cPow [ (cAdd {(           cPow [x %@E]  )  (cMul {z@C (cPow [y &@E])})} ) 0.5 ] -> (cHypot [(cPow [      x              *(% 0.5)]) (cPow [(cMul y POW(z@C /&)) *(& 0.5)])])
+cPow [ (cAdd {(cMul {a@C (cPow [x %@E])})  (cMul {z@C (cPow [y &@E])})} ) 0.5 ] -> (cHypot [(cPow [(cMul x POW(a@C /%)) *(% 0.5)]) (cPow [(cMul y POW(z@C /&)) *(& 0.5)])])
 
 [ABS_LOGICAL]
 
