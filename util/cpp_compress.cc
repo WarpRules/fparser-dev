@@ -29,6 +29,7 @@ namespace
             "assert", "getc", "putc",
             "FP_TRACE_OPCODENAME",
             "FP_TRACE_BYTECODE_OPTIMIZATION",
+            "FP_TRACE_BYTECODE_ADD",
             "N","P"
         };
         parametric_macro_list.clear();

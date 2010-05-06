@@ -419,8 +419,6 @@ namespace
                 for(; n > 0; --n)
                     OutLine(Out)  << "data->ByteCode.pop_back();";
         #else
-            if(know_bytecode_offset)
-                OutLine(Out)  << "ByteCodePtr -= " << n << ";";
           #if 0
             for(; n > 0; --n)
                 OutLine(Out)  << "data->ByteCode.pop_back();";
@@ -432,6 +430,11 @@ namespace
                 OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->ByteCode.pop_back();";
             }
           #endif
+            if(know_bytecode_offset)
+            {
+                //OutLine(Out)  << "if(data->ByteCode.empty()) ByteCodePtr = 0; else ByteCodePtr -= " << n << ";";
+                OutLine(Out)  << "ByteCodePtr -= " << n << ";";
+            }
         #endif
         }
 
@@ -669,14 +672,10 @@ namespace
                     #endif
                     }
 
-                    if(offset_synth.KnowOffsets())
-                        OutLine(Out)  << "goto TailCall_" << opcode << ";";
-                    else
-                    {
+                    if(!offset_synth.KnowOffsets())
                         OutLine(Out)  << "FP_ReDefinePointers();";
-                        OutLine(Out)  << "goto TailCall_" << opcode << ";";
-                        //OutLine(Out)  << "AddFunctionOpcode(opcode);";
-                    }
+                    OutLine(Out) << "FP_TRACE_BYTECODE_ADD(" << opcode << ");";
+                    OutLine(Out)  << "goto TailCall_" << opcode << ";";
                     PossiblyUnusedLabelList.erase("TailCall_" + opcode);
                     return true;
                 }
@@ -805,6 +804,15 @@ namespace
                     {
                         code << Indent(indent) << "TailCall_" << op << ":\n";
                         PossiblyUnusedLabelList.insert("TailCall_" + op);
+
+                        /* If ByteCodePtr is null, just add the opcode. */
+                        code << Indent(indent) << "if(!ByteCodePtr)\n";
+                        code << Indent(indent) << "{\n";
+                        { OutCode Out(code, indent+other_indent);
+                          Synther(Out, indent+other_indent).ResetBoth(0,0);
+                          OutLine(Out) << "data->ByteCode.push_back(opcode);";
+                        }
+                        code << Indent(indent) << "}\n";
                     }
                 #endif
                     if(needs_switchcase)
@@ -1285,6 +1293,8 @@ int main()
         "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
         "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
         "  FP_ReDefinePointers();\n";
+
+    out << "  FP_TRACE_BYTECODE_ADD(opcode);\n";
 
     for(size_t n=0; n<n_different_parsers; ++n)
     {
