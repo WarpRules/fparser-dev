@@ -486,13 +486,24 @@ namespace
             parser2.Parse
                 (functions[ind1].mFunctionString, gVarString, gUseDegrees);
             // parser 1 is not optimized
+
+            // Printing the bytecode right _here_ is useful
+            // for debugging situations where fparser crashes
+            // before printByteCodes() is reached, such as
+            // within Optimize() or Eval().
+
+            ////std::cout << "Not optimized:\n"; parser2.PrintByteCode(std::cout);
             parser2.Optimize(); // parser 2 is optimized once
+
+            ////std::cout << "Is optimized:\n"; parser2.PrintByteCode(std::cout);
 
             if(!compareFunctions(ind1, ind1, parser1, not_optimized,
                                  parser2, optimized))
                 errors = true;
 
             parser2.Optimize(); // parser 2 is optimized twice
+            ////std::cout << "Twice optimized:\n"; parser2.PrintByteCode(std::cout);
+
             if(!compareFunctions(ind1, ind1, parser1, not_optimized,
                                  parser2, optimized2))
                 errors = had_double_optimization_problems = true;
