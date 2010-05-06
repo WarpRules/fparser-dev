@@ -35,6 +35,15 @@ namespace FPoptimizer_ByteCode
                   std::vector<Value_t>&   imm,
                   size_t& StackTop_max)
         {
+            /* The bitmask 0x80000000u was added to each non-opcode
+             * value within ByteCode[] (opcode parameters) to prevent
+             * them being interpreted as opcodes by fp_opcode_add.inc.
+             * fparser uses cNop for the same purpose.
+             */
+            for(unsigned a=0; a<ByteCode.size(); ++a)
+            {
+                ByteCode[a] &= ~0x80000000u;
+            }
             ByteCode.swap(bc);
             Immed.swap(imm);
             StackTop_max = StackMax;
@@ -73,9 +82,9 @@ namespace FPoptimizer_ByteCode
                && StackState[StackTop-1-offset].second.IsIdenticalTo(tree);
         }
 
-        void EatNParams(unsigned eat_count)
+        inline void EatNParams(unsigned eat_count)
         {
-            SetStackTop(StackTop - eat_count);
+            StackTop -= eat_count;
         }
 
         void ProducedNParams(unsigned produce_count)
@@ -89,10 +98,7 @@ namespace FPoptimizer_ByteCode
 
             using namespace FUNCTIONPARSERTYPES;
 
-            if(!ByteCode.empty() && opcode == cMul && ByteCode.back() == cDup)
-                ByteCode.back() = cSqr;
-            else
-                ByteCode.push_back(opcode);
+            AddFunctionOpcode(opcode);
 
             ProducedNParams(produce_count);
         }
@@ -101,8 +107,8 @@ namespace FPoptimizer_ByteCode
         {
             using namespace FUNCTIONPARSERTYPES;
             ByteCode.push_back(cPopNMov);
-            ByteCode.push_back( (unsigned) targetpos);
-            ByteCode.push_back( (unsigned) srcpos);
+            ByteCode.push_back( 0x80000000u | (unsigned) targetpos);
+            ByteCode.push_back( 0x80000000u | (unsigned) srcpos);
 
             SetStackTop(srcpos+1);
             StackState[targetpos] = StackState[srcpos];
@@ -119,7 +125,7 @@ namespace FPoptimizer_ByteCode
             else
             {
                 ByteCode.push_back(cFetch);
-                ByteCode.push_back( (unsigned) src_pos);
+                ByteCode.push_back( 0x80000000u | (unsigned) src_pos);
             }
             SetStackTop(StackTop + 1);
             StackState[StackTop-1] = StackState[src_pos];
@@ -177,29 +183,33 @@ namespace FPoptimizer_ByteCode
 
             ifdata.ofs = ByteCode.size();
             ByteCode.push_back(op);
-            ByteCode.push_back(0); // code index
-            ByteCode.push_back(0); // Immed index
+            ByteCode.push_back(0x80000000u); // code index
+            ByteCode.push_back(0x80000000u); // Immed index
         }
         void SynthIfStep2(IfData& ifdata)
         {
             using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // ignore the pushed then-branch result.
 
-            ByteCode[ifdata.ofs+1] = unsigned( ByteCode.size()+2 );
-            ByteCode[ifdata.ofs+2] = unsigned( Immed.size()      );
+            ByteCode[ifdata.ofs+1] = 0x80000000u | unsigned( ByteCode.size()+2 );
+            ByteCode[ifdata.ofs+2] = 0x80000000u | unsigned( Immed.size()      );
 
             ifdata.ofs = ByteCode.size();
             ByteCode.push_back(cJump);
-            ByteCode.push_back(0); // code index
-            ByteCode.push_back(0); // Immed index
+            ByteCode.push_back(0x80000000u); // code index
+            ByteCode.push_back(0x80000000u); // Immed index
         }
         void SynthIfStep3(IfData& ifdata)
         {
             using namespace FUNCTIONPARSERTYPES;
             SetStackTop(StackTop-1); // ignore the pushed else-branch result.
 
-            ByteCode[ifdata.ofs+1] = unsigned( ByteCode.size()-1 );
-            ByteCode[ifdata.ofs+2] = unsigned( Immed.size()      );
+            ByteCode.back() |= 0x80000000u;
+            // ^Necessary for guarding against if(x,1,2)+1 being changed
+            //  into if(x,1,3) by fp_opcode_add.inc
+
+            ByteCode[ifdata.ofs+1] = 0x80000000u | unsigned( ByteCode.size()-1 );
+            ByteCode[ifdata.ofs+2] = 0x80000000u | unsigned( Immed.size()      );
 
             SetStackTop(StackTop+1); // one or the other was pushed.
 
@@ -212,10 +222,10 @@ namespace FPoptimizer_ByteCode
             for(size_t a=0; a<ifdata.ofs; ++a)
             {
                 if(ByteCode[a]   == cJump
-                && ByteCode[a+1] == ifdata.ofs-1)
+                && ByteCode[a+1] == (0x80000000u | (ifdata.ofs-1)))
                 {
-                    ByteCode[a+1] = unsigned( ByteCode.size()-1 );
-                    ByteCode[a+2] = unsigned( Immed.size()      );
+                    ByteCode[a+1] = 0x80000000u | unsigned( ByteCode.size()-1 );
+                    ByteCode[a+2] = 0x80000000u | unsigned( Immed.size()      );
                 }
                 switch(ByteCode[a])
                 {
@@ -241,6 +251,8 @@ namespace FPoptimizer_ByteCode
                 StackState.resize(StackMax);
             }
         }
+
+        void AddFunctionOpcode(unsigned opcode);
 
     private:
         std::vector<unsigned> ByteCode;

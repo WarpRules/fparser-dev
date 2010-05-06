@@ -266,7 +266,7 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<GetParamCount(); ++a)
                     GetParam(a).SynthesizeByteCode(synth);
                 synth.AddOperation(GetOpcode(), (unsigned) GetParamCount());
-                synth.AddOperation(GetFuncNo(), 0, 0);
+                synth.AddOperation(0x80000000u | GetFuncNo(), 0, 0);
                 break;
             }
             default:

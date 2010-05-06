@@ -811,6 +811,6 @@ std::string CPPcompressor::Compress
     (const std::string& input,
      const std::string& m)
 {
-    macro_prefix_chars = m;
+    if(!m.empty()) macro_prefix_chars = m;
     return Compress(input);
 }

@@ -14,5 +14,7 @@ int main(int argc, char* argv[])
     }
     CPPcompressor Compressor;
 
-    std::cout << Compressor.Compress(out);
+    std::string prefix;
+    if(argc == 2 && argv[1][0] != '-') prefix = argv[1];
+    std::cout << Compressor.Compress(out, prefix);
 }

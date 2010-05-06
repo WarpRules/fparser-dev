@@ -1,4 +1,5 @@
 #include "bytecodesynth.hh"
+#include "opcodename.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
@@ -22,6 +23,27 @@ namespace FPoptimizer_ByteCode
     template<typename Value_t>
     const SequenceOpCode<Value_t>
           SequenceOpcodes<Value_t>::MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode)
+    {
+        /*ByteCode.push_back(opcode);
+        return;*/
+
+        int StackPtr=0;
+#define incStackPtr() do { \
+        if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
+    } while(0)
+#define findName(a,b,c) "var"
+#define TryCompilePowi(o) false
+#define data this
+# define FP_FLOAT_VERSION 1
+# include "fp_opcode_add.inc"
+# undef FP_FLOAT_VERSION
+#undef data
+#undef TryCompilePowi
+#undef incStackPtr
+    }
 }
 
 using namespace FPoptimizer_ByteCode;
