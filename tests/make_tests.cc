@@ -1001,8 +1001,8 @@ int main(int argc, char* argv[])
 
     CPPcompressor Compressor;
 
-    outStream << out.str();
-    //outStream << Compressor.Compress(out.str());
+    //outStream << out.str();
+    outStream << Compressor.Compress(out.str());
 
     return 0;
 }
