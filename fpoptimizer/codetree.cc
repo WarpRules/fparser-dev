@@ -438,14 +438,14 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     void CodeTree<Value_t>::CopyOnWrite()
     {
-        if(data->RefCount > 1)
+        if(GetRefCount() > 1)
             data = new CodeTreeData<Value_t>(*data);
     }
 
     template<typename Value_t>
     CodeTree<Value_t> CodeTree<Value_t>::GetUniqueRef()
     {
-        if(data->RefCount > 1)
+        if(GetRefCount() > 1)
             return CodeTree<Value_t>(*this, CloneTag());
         return *this;
     }

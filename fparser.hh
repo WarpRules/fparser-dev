@@ -134,7 +134,7 @@ private:
     void AddFunctionOpcode(unsigned);
     void AddImmedOpcode(Value_t v);
     void incStackPtr();
-    void CompilePowi(int);
+    void CompilePowi(long);
     bool TryCompilePowi(Value_t);
 
     const char* CompileIf(const char*);

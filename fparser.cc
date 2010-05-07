@@ -378,7 +378,7 @@ namespace
     {
         for(unsigned p=0; p<n_limbs; ++p)
         {
-            unsigned carry = buffer[p] >> (elem_t)(limb_bits-4);
+            unsigned carry = unsigned( buffer[p] >> (elem_t)(limb_bits-4) );
             buffer[p] = (buffer[p] << 4) | nibble;
             nibble = carry;
         }
@@ -1151,7 +1151,7 @@ namespace
         0,0,3,5,0,9,0,7, 3,11,0,3,0,5,3,0,/* 112 - 127 */
     };
 
-    inline int get_powi_factor(int abs_int_exponent)
+    inline int get_powi_factor(long abs_int_exponent)
     {
         if(abs_int_exponent >= int(sizeof(powi_factor_table))) return 0;
         return powi_factor_table[abs_int_exponent];
@@ -1185,10 +1185,10 @@ namespace
     }
 #endif
 
-    bool IsEligibleIntPowiExponent(int int_exponent)
+    bool IsEligibleIntPowiExponent(long int_exponent)
     {
         if(int_exponent == 0) return false;
-        int abs_int_exponent = int_exponent;
+        long abs_int_exponent = int_exponent;
     #if 0
         int cost = 0;
 
@@ -1227,12 +1227,12 @@ inline void FunctionParserBase<Value_t>::AddImmedOpcode(Value_t value)
 }
 
 template<typename Value_t>
-inline void FunctionParserBase<Value_t>::CompilePowi(int abs_int_exponent)
+inline void FunctionParserBase<Value_t>::CompilePowi(long abs_int_exponent)
 {
     int num_muls=0;
     while(abs_int_exponent > 1)
     {
-        int factor = get_powi_factor(abs_int_exponent);
+        long factor = get_powi_factor(abs_int_exponent);
         if(factor)
         {
             CompilePowi(factor);

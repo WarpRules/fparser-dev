@@ -237,9 +237,9 @@ namespace FPoptimizer_CodeTree
                     bool did_muli = false;
                     for(size_t a=0; a<GetParamCount(); ++a)
                     {
-                        if(GetParam(a).IsLongIntegerImmed())
+                        if(GetParam(a).IsImmed() && isLongInteger(GetParam(a).GetImmed()))
                         {
-                            long value = GetParam(a).GetLongIntegerImmed();
+                            long value = makeLongInteger(GetParam(a).GetImmed());
 
                             CodeTree tmp(*this, typename CodeTree::CloneTag());
                             tmp.DelParam(a);
@@ -339,9 +339,10 @@ namespace FPoptimizer_CodeTree
                 const CodeTree& p0 = GetParam(0);
                 const CodeTree& p1 = GetParam(1);
 
-                if(!p1.IsLongIntegerImmed()
+                if(!p1.IsImmed()
+                || !isLongInteger(p1.GetImmed())
                 || !AssembleSequence( /* Optimize integer exponents */
-                        p0, p1.GetLongIntegerImmed(),
+                        p0, makeLongInteger(p1.GetImmed()),
                         FPoptimizer_ByteCode::SequenceOpcodes<Value_t>::MulSequence,
                         synth,
                         MAX_POWI_BYTECODE_LENGTH)

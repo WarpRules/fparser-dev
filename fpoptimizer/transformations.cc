@@ -309,10 +309,9 @@ namespace
         }
 
         template<typename Value_t>
-        static int_exponent_t MultiplyAndMakeLong(const Value_t& value, factor_t multiply_by)
+        static int_exponent_t MultiplyAndMakeLong(const Value_t& value, factor_t factor)
         {
-            /* FIXME: Do this somehow better */
-            return int_exponent_t( fp_int( value * Value_t(multiply_by) ) );
+            return makeLongInteger( value * Value_t(factor) );
         }
 
         // Find the integer that "value" must be multiplied
@@ -323,9 +322,12 @@ namespace
         {
             /* Does value, multiplied by factor, result in an integer? */
             Value_t v = value * Value_t(factor);
+            return isLongInteger(v);
+            /*
             Value_t diff = fp_abs(v - fp_int(v));
             //printf("factor %d: v=%.20f, diff=%.20f\n", factor,v, diff);
             return diff < Value_t(1e-9l);
+            */
         }
 
         template<typename Value_t>
@@ -837,8 +839,9 @@ namespace FPoptimizer_CodeTree
                     }
                 }
                 if(GetOpcode() == cPow
-                && (!p1.IsLongIntegerImmed()
-                 || !IsOptimizableUsingPowi<Value_t>(p1.GetLongIntegerImmed())))
+                && (!p1.IsImmed()
+                 || !isLongInteger(p1.GetImmed())
+                 || !IsOptimizableUsingPowi<Value_t>( makeLongInteger(p1.GetImmed()) )))
                 {
                     if(p0.IsImmed() && p0.GetImmed() > 0.0)
                     {

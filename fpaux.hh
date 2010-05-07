@@ -675,7 +675,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline long makeLongInteger(Value_t value)
     {
-        return (long) value;
+        return (long) fp_int(value);
     }
 
 #ifdef FP_SUPPORT_LONG_INT_TYPE
@@ -690,6 +690,12 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline bool isLongInteger(long) { return true; }
+
+    template<>
+    inline long makeLongInteger(long value)
+    {
+        return value;
+    }
 #endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE

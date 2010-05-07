@@ -121,8 +121,6 @@ namespace FPoptimizer_CodeTree
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
         inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::VarBegin; }
-        bool    IsLongIntegerImmed() const { return IsImmed() && GetImmed() == (Value_t)GetLongIntegerImmed(); }
-        long   GetLongIntegerImmed() const { return (long)GetImmed(); }
         bool    IsLogicalValue() const;
         inline unsigned GetRefCount() const { return data->RefCount; }
 
