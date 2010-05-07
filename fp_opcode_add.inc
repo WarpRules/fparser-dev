@@ -79,12 +79,12 @@ is available in the development package.
 #define mY "cMin"
 #define mX "cMax"
 #define mW "cInv"
-#define mV wL" "aQ w9
+#define mV wL" "aQ w8
 #define mU aF" "
 #define mT hH mK qK h6 qY
 #define mS hH mK qZ
 #define mR "[y*x]"
-#define mQ w9" "
+#define mQ w8" "
 #define mP mN" "
 #define mO A wP qP oQ
 #define mN "cNeg"
@@ -133,13 +133,13 @@ is available in the development package.
 #define wG oV" "
 #define wF " "oS
 #define wE "x[x!=Value_t(0)] "
-#define wD "B[B>=VarBegin] cSub "aQ w9
+#define wD "B[B>=VarBegin] cSub "aQ w8
 #define wC aZ" "
 #define wB m1 oV
-#define wA "x[x>Value_t(0)]"
-#define w9 "cAdd"
-#define w8 "B[IsNeverNegativeValueOpcode(B)] "
-#define w7 "x[IsIntegerConst(x)]"wQ
+#define wA "x[isInteger(x)]"wQ
+#define w9 "x[x>Value_t(0)]"
+#define w8 "cAdd"
+#define w7 "B[IsNeverNegativeValueOpcode(B)] "
 #define w6 "x[x==Value_t(1)] "
 #define w5 oR"\n"
 #define w4 " "aQ aV x
@@ -252,8 +252,8 @@ is available in the development package.
 #define h5 ,x gI o5
 #define h4 cAdd
 #define h3 dS qE
-#define h2 GetDegreesToRadiansFactor<hO>()){
-#define h1 GetRadiansToDegreesFactor<hO>()){
+#define h2 fp_const_deg_to_rad<hO>()){
+#define h1 fp_const_rad_to_deg<hO>()){
 #define h0 q8:gJ;
 #define gZ hN h0
 #define gY hN g5
@@ -362,14 +362,14 @@ hT
 oQ(194,wC
 mQ
 wC
-w9,"[Value_t(4)]"
+w8,"[Value_t(4)]"
 oV,);q5
 Lad;dX==h4){if(q0[-hM
 oQ(195,wC
-w9
+w8
 wG
 wC
-w9,"cMul [Value_t(4)]"
+w8,"cMul [Value_t(4)]"
 oV,);q5
 Lae;}
 gE}
@@ -379,22 +379,22 @@ gT
 hT
 oQ(197,wC"x"
 wG
-w9,"[x+Value_t(1)]"
+w8,"[x+Value_t(1)]"
 oV,w5);q5
 Laf;}
 }
 q5
 dL;gY
 oQ(252,mP
-w9,q61,);q5
+w8,q61,);q5
 Lag;qD
 hK
 qS
 oQ(187,wY
 mQ
 aQ
-w9,"[y+x] "
-w9,q11);q5
+w8,"[y+x] "
+w8,q11);q5
 Lah;qG
 cRSub:hJ
 hL
@@ -438,12 +438,12 @@ qG
 h0
 oQ(84,wY
 aQ
-w9,"[y+x]"
+w8,"[y+x]"
 ,q11);q5
 Lao;dS
 qU
 oQ(83,oX" "
-w9,,w5);q5
+w8,,w5);q5
 o5
 gE
 g2
@@ -454,7 +454,7 @@ gS
 oQ(121,aQ
 wL
 m0
-w9,"[DO_STACKPLUS1] A "
+w8,"[DO_STACKPLUS1] A "
 a2
 mQ
 wL,w0(A)q21
@@ -463,7 +463,7 @@ w3);incStackPtr();gB
 Laq;}
 oQ(126,wL
 m0
-w9,"[DO_STACKPLUS1] A "
+w8,"[DO_STACKPLUS1] A "
 mQ
 wL,w0(A)w3);incStackPtr();gB
 Lba;}
@@ -531,7 +531,7 @@ TailCall_cDiv:qJ
 cDiv:aI(167,wC
 mE,"[Value_t(0)]"
 wG"[Value_t(1)] "
-w9,);q5
+w8,);q5
 Lbf;hN
 hU:oQ(436,"cSinCos "
 mE,aX,);q5
@@ -880,7 +880,7 @@ aP,wK
 wG"A "
 mR
 wG
-w9,oR", "
+w8,oR", "
 wY
 aV
 y
@@ -893,13 +893,13 @@ oQ(290,wY
 aP,wK
 wG
 mR" "
-w9,q11);q5
+w8,q11);q5
 Ldh;qG
 dR:hJ
 hL
 hM
 oQ(204,wC
-w9
+w8
 wG"x"
 oV,"cMul [x+x]"
 oV,w5);q5
@@ -948,7 +948,7 @@ o5
 h3
 2)){oQ(147,"x[x==Value_t(2)]"
 oV,wC
-w9,w5);q5
+w8,w5);q5
 Ldo;h3-1)){oQ(184,"x[x==Value_t(-1)]"
 oV,mN,w5);q5
 Ldp;gE
@@ -1100,7 +1100,7 @@ h4
 dG
 qC
 oQ(337,aQ
-w9
+w8
 m9,a2
 wN,w5);q5
 Lei;}
@@ -1255,7 +1255,7 @@ q61,"[Value_t(0)]"
 oV,);q5
 Lfi;gY
 oQ(253,mP
-q61,w9,);q5
+q61,w8,);q5
 Lfj;qD
 if(x==qU
 oQ(85,oX" cSub"
@@ -1268,7 +1268,7 @@ q61,"[y-x]"
 Lfk;}
 oQ(215,aQ
 q61,aL
-w9,w5);q5
+w8,w5);q5
 Lfl;gL
 dC){oN
 oI
@@ -1307,7 +1307,7 @@ qC
 hK
 qS
 oQ(269,wY
-w9
+w8
 w1,"[x-y] A"
 ,w0(A)q41
 mL);q5
@@ -1755,14 +1755,14 @@ hT
 oQ(194,wC
 mQ
 wC
-w9,"[Value_t(4)]"
+w8,"[Value_t(4)]"
 oV,);q5
 Laf;dX==h4){if(q0[-hM
 oQ(195,wC
-w9
+w8
 wG
 wC
-w9,"cMul [Value_t(4)]"
+w8,"cMul [Value_t(4)]"
 oV,);q5
 Lag;}
 gE}
@@ -1772,22 +1772,22 @@ gT
 hT
 oQ(197,wC"x"
 wG
-w9,"[x+Value_t(1)]"
+w8,"[x+Value_t(1)]"
 oV,w5);q5
 Lah;}
 }
 q5
 dL;gY
 oQ(252,mP
-w9,q61,);q5
+w8,q61,);q5
 Lai;qD
 hK
 qS
 oQ(187,wY
 mQ
 aQ
-w9,"[y+x] "
-w9,q11);q5
+w8,"[y+x] "
+w8,q11);q5
 Laj;qG
 cRSub:hJ
 hL
@@ -1831,12 +1831,12 @@ qG
 h0
 oQ(84,wY
 aQ
-w9,"[y+x]"
+w8,"[y+x]"
 ,q11);q5
 Laq;dS
 qU
 oQ(83,oX" "
-w9,,w5);q5
+w8,,w5);q5
 Lba;gE
 g2
 dL:;A
@@ -1846,7 +1846,7 @@ gS
 oQ(121,aQ
 wL
 m0
-w9,"[DO_STACKPLUS1] A "
+w8,"[DO_STACKPLUS1] A "
 a2
 mQ
 wL,w0(A)q21
@@ -1855,7 +1855,7 @@ w3);incStackPtr();gB
 Lbb;}
 oQ(126,wL
 m0
-w9,"[DO_STACKPLUS1] A "
+w8,"[DO_STACKPLUS1] A "
 mQ
 wL,w0(A)w3);incStackPtr();gB
 Lbc;}
@@ -2041,7 +2041,7 @@ gU
 oQ(167,wC
 mE,"[Value_t(0)]"
 wG"[Value_t(1)] "
-w9,);q5
+w8,);q5
 Lch;hN
 aT(321,mU
 mE,mP
@@ -2086,13 +2086,13 @@ aU
 qW
 g8[-2]qS
 if((y/x)==h1
-oQ(206,"y[(y/x)==GetRadiansToDegreesFactor<Value_t>()]"
+oQ(206,"y[(y/x)==fp_const_rad_to_deg<Value_t>()]"
 wG
 wE
 mE,"cDeg"
 ,q11);q5
 Lcq;d9(y/x)==h2
-oQ(207,"y[(y/x)==GetDegreesToRadiansFactor<Value_t>()]"
+oQ(207,"y[(y/x)==fp_const_deg_to_rad<Value_t>()]"
 wG
 wE
 mE,"cRad"
@@ -2356,18 +2356,18 @@ TailCall_cLog:qJ
 cLog:qB
 aT(233,mU
 mG,,);hF
-mH(422,wA
+mH(422,w9
 wG
 mG,mG" [fp_log(x)] "
-w9,w5);q5
+w8,w5);q5
 Lfe;}
 aH(150,aO
 mG,aK" "
 mG" "
 wC
-w9,);q5
+w8,);q5
 Lff;qD
-aR(63,wA" "
+aR(63,w9" "
 mG,"[fp_log(x)]"
 ,w5);q5
 Lfg;gE}
@@ -2377,18 +2377,18 @@ oP:qB
 aT(412,mU
 wV,"[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())]"
 oV,);incStackPtr();gB
-Lfh;mH(423,wA
+Lfh;mH(423,w9
 wG
 wV,wV" [fp_log10(x)] "
-w9,w5);q5
+w8,w5);q5
 Lfi;}
 aH(152,aO
 wV,aK" "
 wV" "
 wC
-w9,);q5
+w8,);q5
 Lfj;qD
-aR(64,wA" "
+aR(64,w9" "
 wV,"[fp_log10(x)]"
 ,w5);q5
 Lfk;gE}
@@ -2401,18 +2401,18 @@ oV,);incStackPtr();gB
 Lfl;hN
 dF:oQ(234,wS" "
 wT,,);hF
-mH(421,wA
+mH(421,w9
 wG
 wT,wT" [fp_log2(x)] "
-w9,w5);q5
+w8,w5);q5
 Lfm;}
 aH(151,aO
 wT,aK" "
 wT" "
 wC
-w9,);q5
+w8,);q5
 Lfn;qD
-aR(65,wA" "
+aR(65,w9" "
 wT,"[fp_log2(x)]"
 ,w5);q5
 Lfo;gE}
@@ -2617,7 +2617,7 @@ aP,wK
 wG"A "
 mR
 wG
-w9,oR", "
+w8,oR", "
 wY
 aV
 y
@@ -2630,7 +2630,7 @@ oQ(290,wY
 aP,wK
 wG
 mR" "
-w9,q11);q5
+w8,q11);q5
 Lha;qG
 cDeg:oQ(153,"cDeg x"
 oV,"[RadiansToDegrees(x)]"
@@ -2668,25 +2668,25 @@ hL
 hM
 if(x+hA
 oQ(203,"cDup[x+x==Value_t(1)] "
-w9
+w8
 wG"x"
 oV,"cMul"
 ,w5);q5
 Lhf;}
 oQ(204,wC
-w9
+w8
 wG"x"
 oV,"cMul [x+x]"
 oV,w5);q5
 Lhg;qG
 h0
 if((y*x)==h1
-oQ(189,"y[(y*x)==GetRadiansToDegreesFactor<Value_t>()]"
+oQ(189,"y[(y*x)==fp_const_rad_to_deg<Value_t>()]"
 wG"x"
 oV,"cDeg"
 ,q11);q5
 Lcq;d9(y*x)==h2
-oQ(190,"y[(y*x)==GetDegreesToRadiansFactor<Value_t>()]"
+oQ(190,"y[(y*x)==fp_const_deg_to_rad<Value_t>()]"
 wG"x"
 oV,"cRad"
 ,q11);q5
@@ -2752,15 +2752,15 @@ oV,,w5);q5
 Lba;h3
 2)){oQ(147,"x[x==Value_t(2)]"
 oV,wC
-w9,w5);q5
+w8,w5);q5
 Lhq;dS
 h1
-oQ(148,"x[x==GetRadiansToDegreesFactor<Value_t>()]"
+oQ(148,"x[x==fp_const_rad_to_deg<Value_t>()]"
 oV,"cDeg"
 ,w5);q5
 Lia;dS
 h2
-oQ(149,"x[x==GetDegreesToRadiansFactor<Value_t>()]"
+oQ(149,"x[x==fp_const_deg_to_rad<Value_t>()]"
 oV,"cRad"
 ,w5);q5
 Lib;h3-1)){oQ(184,"x[x==Value_t(-1)]"
@@ -3020,28 +3020,28 @@ wQ,aK" [x+x]"
 wQ,w5);q5
 Ljl;}
 d9
-IsIntegerConst(x)){qW
+isInteger(x)){qW
 aT(43,mU
-w7,wK
+wA,wK
 wG
 aF,w5);q5
 Ljm;hN
 dF:oQ(44,wS" "
-w7,wK
+wA,wK
 wG
 wS,w5);q5
 Ljn;hN
 o6
 o1
 qS
-if(!IsIntegerConst(y)){oQ(42,"y[!IsIntegerConst(y)]"
+if(!isInteger(y)){oQ(42,"y[!isInteger(y)]"
 wQ" "
-w7,mR
+wA,mR
 wQ,q11);q5
 Ljo;}
 }
 oQ(45,"cPow "
-w7,wK
+wA,wK
 wG"cPow"
 ,w5);q5
 Ljp;}
@@ -3065,7 +3065,7 @@ qU
 oQ(169,oX
 wQ,"[Value_t(0)]"
 wG"[Value_t(1)] "
-w9,w5);q5
+w8,w5);q5
 Lkb;dA
 oQ(222,"x[x==Value_t(0.5)]"
 wQ,a4,w5);q5
@@ -3254,7 +3254,7 @@ q61,"[Value_t(0)]"
 oV,);q5
 Llf;gY
 oQ(253,mP
-q61,w9,);q5
+q61,w8,);q5
 Llg;qD
 if(x==qU
 oQ(85,oX" cSub"
@@ -3267,7 +3267,7 @@ q61,"[y-x]"
 Llh;}
 oQ(215,aQ
 q61,aL
-w9,w5);q5
+w8,w5);q5
 Lli;gL
 dC){oN
 oI
@@ -3342,7 +3342,7 @@ qC
 hK
 qS
 oQ(269,wY
-w9
+w8
 w1,"[x-y] A"
 ,w0(A)q41
 mL);q5
@@ -3366,19 +3366,19 @@ w1,"[fp_log2(x)] A"
 w4
 w3);q5
 Lmc;qG
-cLog:mI(278,w8
+cLog:mI(278,w7
 mG
 w1,"B [fp_exp(x)] A"
 ,w0(A)q41
 a0(B)w3);q5
 Lmd;qG
-oP:mI(280,w8
+oP:mI(280,w7
 wV
 w1,"B [fp_pow(Value_t(10),x)] A"
 ,w0(A)q41
 a0(B)w3);q5
 Lme;qG
-cLog2:mI(279,w8
+cLog2:mI(279,w7
 wT
 w1,"B [fp_exp2(x)] A"
 ,w0(A)q41

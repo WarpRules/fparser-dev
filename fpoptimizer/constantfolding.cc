@@ -834,12 +834,12 @@ namespace FPoptimizer_CodeTree
                 break;
             case cRad: // converted into cMul x CONSTANT_RD
                 if(tree.GetParam(0).IsImmed())
-                    { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() * fp_const_rad_to_deg<Value_t>() );
+                    { tree.ReplaceWithImmed( RadiansToDegrees( tree.GetParam(0).GetImmed() ) );
                       return; }
                 break;
             case cDeg: // converted into cMul x CONSTANT_DR
                 if(tree.GetParam(0).IsImmed())
-                    { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() * fp_const_deg_to_rad<Value_t>() );
+                    { tree.ReplaceWithImmed( DegreesToRadians( tree.GetParam(0).GetImmed() ) );
                       return; }
                 break;
             case cSqr: // converted into cMul x x

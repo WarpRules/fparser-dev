@@ -102,12 +102,6 @@ namespace
     };
 
     template<typename Value_t>
-    bool IsEvenIntegerConst(const Value_t& v)
-    {
-        return IsIntegerConst(v) && ((long)v % 2) == 0;
-    }
-
-    template<typename Value_t>
     struct ConstantExponentCollection
     {
         typedef std::vector<CodeTree<Value_t> > TreeSet;
@@ -185,8 +179,8 @@ namespace
                     Value_t exp_diff = exp_b - exp_a;
                     if(exp_diff >= fp_abs(exp_a)) break;
                     Value_t exp_diff_still_probable_integer = exp_diff * Value_t(16);
-                    if(IsIntegerConst(exp_diff_still_probable_integer)
-                    && !(IsIntegerConst(exp_b) && !IsIntegerConst(exp_diff))
+                    if(isInteger(exp_diff_still_probable_integer)
+                    && !(isInteger(exp_b) && !isInteger(exp_diff))
                       )
                     {
                         /* When input is x^3 * z^2,
@@ -202,10 +196,9 @@ namespace
                         std::cout << "Before ConstantExponentCollection iteration:\n";
                         Dump(std::cout);
           #endif
-                        if(IsIntegerConst(exp_b)
-                        && IsEvenIntegerConst(exp_b)
-                        //&& !IsEvenIntegerConst(exp_diff)
-                        && !IsEvenIntegerConst(exp_diff+exp_a))
+                        if(isEvenInteger(exp_b)
+                        //&& !isEvenInteger(exp_diff)
+                        && !isEvenInteger(exp_diff+exp_a))
                         {
                             CodeTree<Value_t> tmp2;
                             tmp2.SetOpcode( cMul );
@@ -324,7 +317,7 @@ namespace
                     //          (x*z)^0.5 * z^2
                     // into     x^0.5 * z^2.5
                     // It should be x^0.5 * abs(z)^2.5, but this is not a good conversion.
-                    bool exponent_is_even = exponent.IsImmed() && IsEvenIntegerConst(exponent.GetImmed());
+                    bool exponent_is_even = exponent.IsImmed() && isEvenInteger(exponent.GetImmed());
 
                     for(size_t b=0; b<value.GetParamCount(); ++b)
                     {
@@ -332,14 +325,14 @@ namespace
                         CodeTree<Value_t> val(value.GetParam(b));
                         CodeTree<Value_t> exp(CollectMulGroup_Item(val, tmp));
                         if(exponent_is_even
-                        || (exp.IsImmed() && IsEvenIntegerConst(exp.GetImmed())))
+                        || (exp.IsImmed() && isEvenInteger(exp.GetImmed())))
                         {
                             CodeTree<Value_t> new_exp;
                             new_exp.SetOpcode(cMul);
                             new_exp.AddParam(exponent);
                             new_exp.AddParamMove(exp);
                             new_exp.ConstantFolding();
-                            if(!new_exp.IsImmed() || !IsEvenIntegerConst(new_exp.GetImmed()))
+                            if(!new_exp.IsImmed() || !isEvenInteger(new_exp.GetImmed()))
                             {
                                 goto cannot_adopt_mul;
                             }

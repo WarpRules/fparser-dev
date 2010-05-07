@@ -792,11 +792,11 @@ cLog  [(cMul {(cAdd {1 x}) (cPow [(cAdd {1 (cMul {-1 x})}) -1])})] -> cMul [(cAt
 
 [REGENERATE_HIGHLEVEL_OPCODES]
 
-# x * CONSTANT_DR = cDeg(x)
-cMul  CONSTANT_DR <1> -> cDeg [(cMul <1>)]
+# x * CONSTANT_RD = cDeg(x)
+cMul  CONSTANT_RD <1> -> cDeg [(cMul <1>)]
 
-# x * CONSTANT_RD = cRad(x)
-cMul  CONSTANT_RD <1> -> cRad [(cMul <1>)]
+# x * CONSTANT_DR = cRad(x)
+cMul  CONSTANT_DR <1> -> cRad [(cMul <1>)]
 
 cFloor [(cAdd 0.5 <1>)] -> cInt [(cAdd <1>)]
 

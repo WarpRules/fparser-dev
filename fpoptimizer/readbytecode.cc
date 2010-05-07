@@ -39,12 +39,12 @@ namespace
         size_t factor_stack_base,
         FactorStack<Value_t>& stack)
     {
-        Value_t result = 1;
+        Value_t result(1);
         while(IP < limit)
         {
             if(ByteCode[IP] == opcodes.opcode_square)
             {
-                if(!IsIntegerConst(result)) break;
+                if(!isInteger(result)) break;
                 result *= 2;
                 ++IP;
                 continue;
@@ -57,7 +57,7 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_half)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(result > Value_t(0) && isEvenInteger(result))
                     break;
                 result *= Value_t(0.5);
                 ++IP;
@@ -65,7 +65,7 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_invhalf)
             {
-                if(IsIntegerConst(result) && result > 0 && ((long)result) % 2 == 0)
+                if(result > Value_t(0) && isEvenInteger(result))
                     break;
                 result *= Value_t(-0.5);
                 ++IP;
@@ -73,7 +73,7 @@ namespace
             }
 
             size_t dup_fetch_pos = IP;
-            Value_t lhs = 1.0;
+            Value_t lhs(1);
 
             if(ByteCode[IP] == cFetch)
             {
@@ -124,7 +124,7 @@ namespace
          size_t limit, size_t factor_stack_base)
     {
         FactorStack<Value_t> stack;
-        stack.push_back(1.0);
+        stack.push_back( Value_t(1) );
         return ParsePowiMuli(iseq_powi, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
@@ -134,7 +134,7 @@ namespace
          size_t limit, size_t factor_stack_base)
     {
         FactorStack<Value_t> stack;
-        stack.push_back(1.0);
+        stack.push_back( Value_t(1) );
         return ParsePowiMuli(iseq_muli, ByteCode, IP, limit, factor_stack_base, stack);
     }
 
@@ -588,11 +588,11 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow);
                         break;
                     case cDeg:
-                        sim.AddConst(fp_const_deg_to_rad<Value_t>());
+                        sim.AddConst(fp_const_rad_to_deg<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cRad:
-                        sim.AddConst(fp_const_rad_to_deg<Value_t>());
+                        sim.AddConst(fp_const_deg_to_rad<Value_t>());
                         sim.Eat(2, cMul);
                         break;
                     case cExp:

@@ -234,6 +234,7 @@ util/tree_grammar_parser: \
 util/tree_grammar_parser.cc: \
 		util/tree_grammar_parser.y
 	bison --output=$@ $<
+	sed -i 's/ *$$//' $@
 
 util/cpp_compress: \
 		util/cpp_compress.o util/cpp_compress_main.o

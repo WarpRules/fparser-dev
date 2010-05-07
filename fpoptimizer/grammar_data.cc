@@ -80,7 +80,7 @@ namespace
     /* 36	*/ {-1, 0}, /* -1 */
     /* 37	*/ {-0.5, 0}, /* -0.5 */
     /* 38	*/ {0, 0}, /* 0 */
-    /* 39	*/ {fp_const_rad_to_deg<Value_t>(), 0}, /* 0.0174532925199 */
+    /* 39	*/ {fp_const_deg_to_rad<Value_t>(), 0}, /* 0.0174532925199 */
     /* 40	*/ {fp_const_einv<Value_t>(), 0}, /* 0.367879441171 */
     /* 41	*/ {fp_const_log10inv<Value_t>(), 0}, /* 0.434294481903 */
     /* 42	*/ {0.5, 0}, /* 0.5 */
@@ -90,7 +90,7 @@ namespace
     /* 46	*/ {2, 0}, /* 2 */
     /* 47	*/ {fp_const_log10<Value_t>(), 0}, /* 2.30258509299 */
     /* 48	*/ {fp_const_e<Value_t>(), 0}, /* 2.71828182846 */
-    /* 49	*/ {fp_const_deg_to_rad<Value_t>(), 0}, /* 57.2957795131 */
+    /* 49	*/ {fp_const_rad_to_deg<Value_t>(), 0}, /* 57.2957795131 */
     /* 50	*/ {-fp_const_pihalf<Value_t>(), Modulo_Radians}, /* -1.57079632679 */
     /* 51	*/ {0, Modulo_Radians}, /* 0 */
     /* 52	*/ {fp_const_pihalf<Value_t>(), Modulo_Radians}, /* 1.57079632679 */

@@ -53,102 +53,8 @@ namespace FUNCTIONPARSERTYPES
 //==========================================================================
 // Math funcs
 //==========================================================================
-    /* fp_pow() is a wrapper for std::pow()
-     * that produces an identical value for
-     * exp(1) ^ 2.0  (0x4000000000000000)
-     * as exp(2.0)   (0x4000000000000000)
-     * - std::pow() on x86_64
-     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
-     * See comments below for other special traits.
-     */
     template<typename ValueT>
-    inline ValueT fp_pow_with_exp_log(const ValueT& x, const ValueT& y)
-    {
-        // Requirements: x > 0.
-        return fp_exp(fp_log(x) * y);
-    }
-
-    template<typename ValueT>
-    inline ValueT fp_powi(ValueT x, unsigned long y)
-    {
-        // Requirements: y is non-negative integer.
-        ValueT result(1);
-        while(y != 0)
-        {
-            if(y & 1) { result *= x; y -= 1; }
-            else      { x *= x;      y /= 2; }
-        }
-        return result;
-    }
-
-    template<typename ValueT>
-    ValueT fp_pow(const ValueT& x, const ValueT& y)
-    {
-        if(x == ValueT(1)) return ValueT(1);
-        // y is now zero or positive
-        if(IsIntegerConst(y))
-        {
-            // Use fast binary exponentiation algorithm
-            // See http://en.wikipedia.org/wiki/Exponentiation_by_squaring
-            if(y >= ValueT(0))
-                return fp_powi(x,              (long)y);
-            else
-                return ValueT(1) / fp_powi(x, -(long)y);
-        }
-        if(y >= ValueT(0))
-        {
-            // y is now positive. Calculate using exp(log(x)*y).
-            // See http://en.wikipedia.org/wiki/Exponentiation#Real_powers
-            if(x > ValueT(0)) return fp_pow_with_exp_log(x, y);
-            if(x == ValueT(0)) return ValueT(0);
-            // At this point, y > 0.0 and x is known to be < 0.0,
-            // because positive and zero cases are already handled.
-            //
-            if(!IsIntegerConst(y*ValueT(16)))
-                return -fp_pow_with_exp_log(-x, y);
-            // ^This is not technically correct, but it allows
-            // functions such as cbrt(x^5), that is, x^(5/3),
-            // to be evaluated when x is negative.
-            // It is too complicated (and slow) to test whether y
-            // is a formed from a ratio of an integer to an odd integer.
-            // (And due to floating point inaccuracy, pointless too.)
-            // For example, x^1.30769230769... is
-            // actually x^(17/13), i.e. (x^17) ^ (1/13).
-            // (-5)^(17/13) gives us now -8.204227562330453.
-            // To see whether the result is right, we can test the given
-            // root: (-8.204227562330453)^13 gives us the value of (-5)^17,
-            // which proves that the expression was correct.
-            //
-            // The y*16 check prevents e.g. (-4)^(3/2) from being calculated,
-            // as it would confuse functioninfo when pow() returns no error
-            // but sqrt() does when the formula is converted into sqrt(x)*x.
-            //
-            // The errors in this approach are:
-            //     (-2)^sqrt(2) should produce NaN
-            //                  or actually sqrt(2)I + 2^sqrt(2),
-            //                  produces -(2^sqrt(2)) instead.
-            //                  (Impact: Neglible)
-            // Thus, at worst, we're changing a NaN (or complex)
-            // result into a negative real number result.
-        }
-        else
-        {
-            // y is negative. Utilize the x^y = 1/(x^-y) identity.
-            if(x > ValueT(0)) return fp_pow_with_exp_log(ValueT(1) / x, -y);
-            if(x < ValueT(0))
-            {
-                if(!IsIntegerConst(y*ValueT(-16)))
-                    return -fp_pow_with_exp_log(ValueT(-1) / x, -y);
-                // ^ See comment above.
-            }
-            // Remaining case: 0.0 ^ negative number
-        }
-        // This is reached when:
-        //      x=0 and y<0
-        //      x<0 and y*16 is either positive or negative integer
-        // It is used for producing error values and as a safe fallback.
-        return fp_pow_base(x, y);
-    }
+    ValueT fp_pow(const ValueT& x, const ValueT& y);
 
     template<typename Value_t>
     inline void fp_sinCos(Value_t& sin, Value_t& cos, const Value_t& a)
@@ -175,7 +81,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_const_pi() // CONSTANT_PI
     {
-        return Value_t(3.1415926535897932384626433832795L);
+        return Value_t(3.1415926535897932384626433832795028841971693993751L);
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -212,6 +118,20 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_const_log10inv() // CONSTANT_L10I, CONSTANT_L10E
     {
         return Value_t(0.434294481903251827651128918916605082294397L);
+    }
+
+    template<typename Value_t>
+    inline const Value_t& fp_const_deg_to_rad() // CONSTANT_DR
+    {
+        static const Value_t factor = fp_const_pi<Value_t>() / Value_t(180); // to rad from deg
+        return factor;
+    }
+
+    template<typename Value_t>
+    inline const Value_t& fp_const_rad_to_deg() // CONSTANT_RD
+    {
+        static const Value_t factor = Value_t(180) / fp_const_pi<Value_t>(); // to deg from rad
+        return factor;
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -307,9 +227,6 @@ namespace FUNCTIONPARSERTYPES
     { return a == b; }
 #endif // FP_EPSILON
 
-    inline bool IsIntegerConst(double a)
-    { return FloatEqual(a, (double)(long)a); }
-
   #ifdef _GNU_SOURCE
     template<>
     inline void fp_sinCos<double>(double& sin, double& cos, const double& a)
@@ -390,8 +307,6 @@ namespace FUNCTIONPARSERTYPES
     { return a == b; }
 #endif // FP_EPSILON
 
-    inline bool IsIntegerConst(float a)
-    { return FloatEqual(a, (float)(long)a); }
 #endif // FP_SUPPORT_FLOAT_TYPE
   #ifdef _GNU_SOURCE
     template<>
@@ -471,8 +386,6 @@ namespace FUNCTIONPARSERTYPES
     { return a == b; }
 #endif // FP_EPSILON
 
-    inline bool IsIntegerConst(long double a)
-    { return FloatEqual(a, (long double)(long)a); }
 #endif // FP_SUPPORT_LONG_DOUBLE_TYPE
 
   #ifdef _GNU_SOURCE
@@ -519,8 +432,6 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline long fp_epsilon<long>() { return 0; }
 
-    inline bool IsIntegerConst(long) { return true; }
-
 
 // -------------------------------------------------------------------------
 // MpfrFloat
@@ -566,8 +477,6 @@ namespace FUNCTIONPARSERTYPES
         MpfrFloat::sincos(a, sin, cos);
     }
 
-    inline bool IsIntegerConst(const MpfrFloat& a) { return a.isInteger(); }
-
     template<>
     inline MpfrFloat fp_epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif // FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -609,8 +518,6 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline GmpInt fp_epsilon<GmpInt>() { return 0; }
-
-    inline bool IsIntegerConst(GmpInt) { return true; }
 #endif // FP_SUPPORT_GMP_INT_TYPE
 
 
@@ -734,29 +641,15 @@ namespace FUNCTIONPARSERTYPES
     bool HasInvalidRangesOpcode(unsigned op);
 
     template<typename Value_t>
-    inline const Value_t& GetDegreesToRadiansFactor()
-    {
-        static const Value_t factor = fp_const_pi<Value_t>() / Value_t(180);
-        return factor;
-    }
-
-    template<typename Value_t>
     inline Value_t DegreesToRadians(Value_t degrees)
     {
-        return degrees * GetDegreesToRadiansFactor<Value_t>();
-    }
-
-    template<typename Value_t>
-    inline const Value_t& GetRadiansToDegreesFactor()
-    {
-        static const Value_t factor = Value_t(180) / fp_const_pi<Value_t>();
-        return factor;
+        return degrees * fp_const_deg_to_rad<Value_t>();
     }
 
     template<typename Value_t>
     inline Value_t RadiansToDegrees(Value_t radians)
     {
-        return radians * GetRadiansToDegreesFactor<Value_t>();
+        return radians * fp_const_rad_to_deg<Value_t>();
     }
 
     template<typename Value_t>
@@ -766,19 +659,53 @@ namespace FUNCTIONPARSERTYPES
         return fp_equal(halfValue, fp_floor(halfValue));
     }
 
+    template<typename Value_t>
+    inline bool isInteger(Value_t value)
+    {
+        return fp_equal(value, fp_floor(value));
+    }
+
+    // Is value an integer that fits in "long" datatype?
+    template<typename Value_t>
+    inline bool isLongInteger(Value_t value)
+    {
+        return value == Value_t( makeLongInteger(value) );
+    }
+
+    template<typename Value_t>
+    inline long makeLongInteger(Value_t value)
+    {
+        return (long) value;
+    }
+
 #ifdef FP_SUPPORT_LONG_INT_TYPE
     template<>
     inline bool isEvenInteger(long value)
     {
         return value%2 == 0;
     }
+
+    template<>
+    inline bool isInteger(long) { return true; }
+
+    template<>
+    inline bool isLongInteger(long) { return true; }
 #endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
+    inline bool isInteger(MpfrFloat value) { return value.isInteger(); }
+
+    template<>
     inline bool isEvenInteger(MpfrFloat value)
     {
-        return value.isInteger() && value%2 == 0;
+        return isInteger(value) && value%2 == 0;
+    }
+
+    template<>
+    inline long makeLongInteger(MpfrFloat value)
+    {
+        return (long) value.toInt();
     }
 #endif
 
@@ -787,6 +714,15 @@ namespace FUNCTIONPARSERTYPES
     inline bool isEvenInteger(GmpInt value)
     {
         return value%2 == 0;
+    }
+
+    template<>
+    inline bool isInteger(GmpInt) { return true; }
+
+    template<>
+    inline long makeLongInteger(GmpInt value)
+    {
+        return (long) value.toInt();
     }
 #endif
 

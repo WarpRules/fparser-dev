@@ -38,7 +38,7 @@ using namespace FUNCTIONPARSERTYPES;
 #endif
 
 //=========================================================================
-// Utility functions
+// Opcode analysis functions
 //=========================================================================
 bool FUNCTIONPARSERTYPES::IsLogicalOpcode(unsigned op)
 {
@@ -183,63 +183,115 @@ bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
     return false;
 }
 
+//=========================================================================
+// Mathematical template functions
+//=========================================================================
+/* fp_pow() is a wrapper for std::pow()
+ * that produces an identical value for
+ * exp(1) ^ 2.0  (0x4000000000000000)
+ * as exp(2.0)   (0x4000000000000000)
+ * - std::pow() on x86_64
+ * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
+ * See comments below for other special traits.
+ */
 namespace
 {
-    template<typename Value_t>
-    bool addNewNameData(namePtrsType<Value_t>& namePtrs,
-                        std::pair<NamePtr, NameData<Value_t> >& newName,
-                        bool isVar)
+    template<typename ValueT>
+    inline ValueT fp_pow_with_exp_log(const ValueT& x, const ValueT& y)
     {
-        typename namePtrsType<Value_t>::iterator nameIter =
-            namePtrs.lower_bound(newName.first);
-
-        if(nameIter != namePtrs.end() && newName.first == nameIter->first)
-        {
-            // redefining a var is not allowed.
-            if(isVar)
-                return false;
-
-            // redefining other tokens is allowed, if the type stays the same.
-            if(nameIter->second.type != newName.second.type)
-                return false;
-
-            // update the data
-            nameIter->second = newName.second;
-            return true;
-        }
-
-        if(!isVar)
-        {
-            // Allocate a copy of the name (pointer stored in the map key)
-            // However, for VARIABLEs, the pointer points to VariableString,
-            // which is managed separately. Thusly, only done when !IsVar.
-            char* namebuf = new char[newName.first.nameLength];
-            memcpy(namebuf, newName.first.name, newName.first.nameLength);
-            newName.first.name = namebuf;
-        }
-
-        namePtrs.insert(nameIter, newName);
-        return true;
+        // Exponentiation using exp(log(x)*y).
+        // See http://en.wikipedia.org/wiki/Exponentiation#Real_powers
+        // Requirements: x > 0.
+        return fp_exp(fp_log(x) * y);
     }
 
-    template<typename Value_t>
-    std::string findName(const namePtrsType<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
+    template<typename ValueT>
+    inline ValueT fp_powi(ValueT x, unsigned long y)
     {
-        for(typename namePtrsType<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
+        // Fast binary exponentiation algorithm
+        // See http://en.wikipedia.org/wiki/Exponentiation_by_squaring
+        // Requirements: y is non-negative integer.
+        ValueT result(1);
+        while(y != 0)
         {
-            if(iter->second.type != type) continue;
-            if(iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
+            if(y & 1) { result *= x; y -= 1; }
+            else      { x *= x;      y /= 2; }
         }
-        return "?";
+        return result;
     }
+}
 
+template<typename ValueT>
+ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
+{
+    if(x == ValueT(1)) return ValueT(1);
+    // y is now zero or positive
+    if(isLongInteger(y))
+    {
+        // Use fast binary exponentiation algorithm
+        if(y >= ValueT(0))
+            return fp_powi(x,              makeLongInteger(y));
+        else
+            return ValueT(1) / fp_powi(x, -makeLongInteger(y));
+    }
+    if(y >= ValueT(0))
+    {
+        // y is now positive. Calculate using exp(log(x)*y).
+        if(x > ValueT(0)) return fp_pow_with_exp_log(x, y);
+        if(x == ValueT(0)) return ValueT(0);
+        // At this point, y > 0.0 and x is known to be < 0.0,
+        // because positive and zero cases are already handled.
+        if(!isInteger(y*ValueT(16)))
+            return -fp_pow_with_exp_log(-x, y);
+        // ^This is not technically correct, but it allows
+        // functions such as cbrt(x^5), that is, x^(5/3),
+        // to be evaluated when x is negative.
+        // It is too complicated (and slow) to test whether y
+        // is a formed from a ratio of an integer to an odd integer.
+        // (And due to floating point inaccuracy, pointless too.)
+        // For example, x^1.30769230769... is
+        // actually x^(17/13), i.e. (x^17) ^ (1/13).
+        // (-5)^(17/13) gives us now -8.204227562330453.
+        // To see whether the result is right, we can test the given
+        // root: (-8.204227562330453)^13 gives us the value of (-5)^17,
+        // which proves that the expression was correct.
+        //
+        // The y*16 check prevents e.g. (-4)^(3/2) from being calculated,
+        // as it would confuse functioninfo when pow() returns no error
+        // but sqrt() does when the formula is converted into sqrt(x)*x.
+        //
+        // The errors in this approach are:
+        //     (-2)^sqrt(2) should produce NaN
+        //                  or actually sqrt(2)I + 2^sqrt(2),
+        //                  produces -(2^sqrt(2)) instead.
+        //                  (Impact: Neglible)
+        // Thus, at worst, we're changing a NaN (or complex)
+        // result into a negative real number result.
+    }
+    else
+    {
+        // y is negative. Utilize the x^y = 1/(x^-y) identity.
+        if(x > ValueT(0)) return fp_pow_with_exp_log(ValueT(1) / x, -y);
+        if(x < ValueT(0))
+        {
+            if(!isInteger(y*ValueT(-16)))
+                return -fp_pow_with_exp_log(ValueT(-1) / x, -y);
+            // ^ See comment above.
+        }
+        // Remaining case: 0.0 ^ negative number
+    }
+    // This is reached when:
+    //      x=0, and y<0
+    //      x<0, and y*16 is either positive or negative integer
+    // It is used for producing error values and as a safe fallback.
+    return fp_pow_base(x, y);
+}
+
+//=========================================================================
+// Elementary (atom) parsing functions
+//=========================================================================
+namespace
+{
     unsigned readOpcodeForFloatType(const char* input)
     {
     /*
@@ -282,20 +334,6 @@ namespace
         if(name.empty()) return false;
         return readOpcode<Value_t>(name.c_str()) == (unsigned) name.size();
     }
-
-
-    template<typename Value_t>
-    inline int valueToInt(Value_t value) { return int(value); }
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    template<>
-    inline int valueToInt(MpfrFloat value) { return int(value.toInt()); }
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline int valueToInt(GmpInt value) { return int(value.toInt()); }
-#endif
 
     template<typename Value_t>
     inline Value_t fp_parseLiteral(const char* str, char** endptr)
@@ -438,6 +476,67 @@ namespace
         return strtol(str, endptr, 16);
     }
 #endif
+}
+
+//=========================================================================
+// Utility functions
+//=========================================================================
+namespace
+{
+    template<typename Value_t>
+    bool addNewNameData(namePtrsType<Value_t>& namePtrs,
+                        std::pair<NamePtr, NameData<Value_t> >& newName,
+                        bool isVar)
+    {
+        typename namePtrsType<Value_t>::iterator nameIter =
+            namePtrs.lower_bound(newName.first);
+
+        if(nameIter != namePtrs.end() && newName.first == nameIter->first)
+        {
+            // redefining a var is not allowed.
+            if(isVar)
+                return false;
+
+            // redefining other tokens is allowed, if the type stays the same.
+            if(nameIter->second.type != newName.second.type)
+                return false;
+
+            // update the data
+            nameIter->second = newName.second;
+            return true;
+        }
+
+        if(!isVar)
+        {
+            // Allocate a copy of the name (pointer stored in the map key)
+            // However, for VARIABLEs, the pointer points to VariableString,
+            // which is managed separately. Thusly, only done when !IsVar.
+            char* namebuf = new char[newName.first.nameLength];
+            memcpy(namebuf, newName.first.name, newName.first.nameLength);
+            newName.first.name = namebuf;
+        }
+
+        namePtrs.insert(nameIter, newName);
+        return true;
+    }
+
+    template<typename Value_t>
+    std::string findName(const namePtrsType<Value_t>& nameMap,
+                         unsigned index,
+                         typename NameData<Value_t>::DataType type)
+    {
+        for(typename namePtrsType<Value_t>::const_iterator
+                iter = nameMap.begin();
+            iter != nameMap.end();
+            ++iter)
+        {
+            if(iter->second.type != type) continue;
+            if(iter->second.index == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
+    }
 }
 
 
@@ -1168,11 +1267,10 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     Value_t changed_immed = original_immed;
     for(int sqrt_count=0; /**/; ++sqrt_count)
     {
-        int int_exponent = valueToInt(changed_immed);
-        if(changed_immed == Value_t(int_exponent) &&
-           IsEligibleIntPowiExponent(int_exponent))
+        long int_exponent = makeLongInteger(changed_immed);
+        if(isLongInteger(changed_immed) && IsEligibleIntPowiExponent(int_exponent))
         {
-            int abs_int_exponent = int_exponent;
+            long abs_int_exponent = int_exponent;
             if(abs_int_exponent < 0)
                 abs_int_exponent = -abs_int_exponent;
 
@@ -1213,7 +1311,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     // x^y can be safely converted into exp(y * log(x))
     // when y is _not_ integer, because we know that x >= 0.
     // Otherwise either expression will give a NaN.
-    if(/*!IsIntegerConst(original_immed) ||*/
+    if(/*!isInteger(original_immed) ||*/
        IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2]))
     {
         data->Immed.pop_back();
@@ -2295,8 +2393,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               // x:Negative ^ y:NonInteger is failure,
               // except when the reciprocal of y forms an integer
               /*if(Stack[SP-1] < Value_t(0) &&
-                 !IsIntegerConst(Stack[SP]) &&
-                 !IsIntegerConst(1.0 / Stack[SP]))
+                 !isInteger(Stack[SP]) &&
+                 !isInteger(1.0 / Stack[SP]))
               { evalErrorType=3; return Value_t(0); }*/
               // x:0 ^ y:negative is failure
               if(Stack[SP-1] == Value_t(0) &&
@@ -2683,7 +2781,7 @@ namespace
         {
             if(ByteCode[IP] == opcodes.opcode_square)
             {
-                if(!IsIntegerConst(result)) break;
+                if(!isInteger(result)) break;
                 result *= Value_t(2);
                 ++IP;
                 continue;
@@ -2697,20 +2795,18 @@ namespace
             }
             if(ByteCode[IP] == opcodes.opcode_half)
             {
-                if(IsIntegerConst(result) && result > Value_t(0) &&
-                   (valueToInt(result)) % 2 == 0)
+                if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                if(IsIntegerConst(result * Value_t(0.5))) break;
+                if(isInteger(result * Value_t(0.5))) break;
                 result *= Value_t(0.5);
                 ++IP;
                 continue;
             }
             if(ByteCode[IP] == opcodes.opcode_invhalf)
             {
-                if(IsIntegerConst(result) && result > Value_t(0) &&
-                   (valueToInt(result)) % 2 == 0)
+                if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                if(IsIntegerConst(result * Value_t(-0.5))) break;
+                if(isInteger(result * Value_t(-0.5))) break;
                 result *= Value_t(-0.5);
                 ++IP;
                 continue;

@@ -288,18 +288,20 @@ namespace FPoptimizer_CodeTree
     TriTruthValue CodeTree<Value_t>::GetEvennessInfo() const
     {
         if(!IsImmed()) return Unknown;
-        if(!IsLongIntegerImmed()) return Unknown;
-        return (GetLongIntegerImmed() & 1) ? IsNever : IsAlways;
+        const Value_t& value = GetImmed();
+        if(isEvenInteger(value)) return IsAlways;
+        if(isOddInteger(value)) return IsNever;
+        return Unknown;
     }
 
     template<typename Value_t>
     bool CodeTree<Value_t>::IsLogicalValue() const
     {
-        switch(data->Opcode)
+        switch(GetOpcode())
         {
             case cImmed:
-                return FloatEqual(data->Value, Value_t(0))
-                    || FloatEqual(data->Value, Value_t(1));
+                return FloatEqual(GetImmed(), Value_t(0))
+                    || FloatEqual(GetImmed(), Value_t(1));
             case cAnd:
             case cOr:
             case cNot:
@@ -340,10 +342,10 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool CodeTree<Value_t>::IsAlwaysInteger(bool integer) const
     {
-        switch(data->Opcode)
+        switch(GetOpcode())
         {
             case cImmed:
-                return IsLongIntegerImmed() ? integer==true : integer==false;
+                return isInteger(GetImmed()) ? integer==true : integer==false;
             case cFloor:
             case cInt:
                 return integer==true;

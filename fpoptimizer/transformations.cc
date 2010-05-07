@@ -479,7 +479,7 @@ namespace FPoptimizer_CodeTree
                             div_params.push_back(GetParam(a).GetParam(0));
                             DelParam(a); // delete the pow group
                         }
-                        else if(exponent < 0 && IsIntegerConst(exponent))
+                        else if(exponent < 0 && isInteger(exponent))
                         {
                             CodeTree<Value_t> edited_powgroup;
                             edited_powgroup.SetOpcode(cPow);
@@ -745,7 +745,8 @@ namespace FPoptimizer_CodeTree
                 const CodeTree<Value_t>& p1 = GetParam(1);
                 if(p1.IsImmed())
                 {
-                    if(p1.GetImmed() != 0.0 && !p1.IsLongIntegerImmed())
+                    if(p1.GetImmed() != Value_t(0)
+                    && !isInteger(p1.GetImmed()))
                     {
                         PowiResolver::PowiResult
                             r = PowiResolver::CreatePowiResult(fp_abs(p1.GetImmed()));

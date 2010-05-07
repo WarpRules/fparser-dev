@@ -53,15 +53,4 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(-1e-14);
 #endif
     }
-
-    template<typename Value_t>
-    inline Value_t fp_const_rad_to_deg() // CONSTANT_RD
-    {
-        return fp_const_pi<Value_t>() / Value_t(180);
-    }
-    template<typename Value_t>
-    inline Value_t fp_const_deg_to_rad() // CONSTANT_DR
-    {
-        return Value_t(180) / fp_const_pi<Value_t>();
-    }
 }

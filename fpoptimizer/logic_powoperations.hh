@@ -145,8 +145,8 @@ namespace
             Value_t a = tree.GetParam(0).GetParam(1).GetImmed();
             Value_t b = tree.GetParam(1).GetImmed();
             Value_t c = a * b; // new exponent
-            if(IsEvenIntegerConst(a) // a is an even int?
-            && !IsEvenIntegerConst(c)) // c is not?
+            if(isEvenInteger(a) // a is an even int?
+            && !isEvenInteger(c)) // c is not?
             {
                 CodeTree<Value_t> newbase;
                 newbase.SetOpcode(cAbs);

@@ -36,13 +36,13 @@ IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs         # TEST 10/sqrsqrt
  #              f(-2) = nan  <- ok because of this
  #              f'(-2) = -8
  #
-#y [!IsIntegerConst(y)] cExp  x	[IsIntegerConst(x)] cPow -> [y*x] cExp
-#y [!IsIntegerConst(y)] cExp2 x	[IsIntegerConst(x)] cPow -> [y*x] cExp2
+#y [!isInteger(y)] cExp  x	[isInteger(x)] cPow -> [y*x] cExp
+#y [!isInteger(y)] cExp2 x	[isInteger(x)] cPow -> [y*x] cExp2
 #  ^ y cExp never occurs (already optimized to literal)
-IF(FP_FLOAT_VERSION) y [!IsIntegerConst(y)] cPow  x	[IsIntegerConst(x)] cPow -> [y*x] cPow # TEST 10/ypowxpow
-IF(FP_FLOAT_VERSION) cExp  x	[IsIntegerConst(x)] cPow -> [x] cMul cExp   # TEST 10/expxpow
-IF(FP_FLOAT_VERSION) cExp2 x	[IsIntegerConst(x)] cPow -> [x] cMul cExp2  # TEST 10/exp2xpow
-IF(FP_FLOAT_VERSION) cPow  x	[IsIntegerConst(x)] cPow -> [x] cMul cPow   # TEST 10/powxpow
+IF(FP_FLOAT_VERSION) y [!isInteger(y)] cPow  x	[isInteger(x)] cPow -> [y*x] cPow # TEST 10/ypowxpow
+IF(FP_FLOAT_VERSION) cExp  x	[isInteger(x)] cPow -> [x] cMul cExp   # TEST 10/expxpow
+IF(FP_FLOAT_VERSION) cExp2 x	[isInteger(x)] cPow -> [x] cMul cExp2  # TEST 10/exp2xpow
+IF(FP_FLOAT_VERSION) cPow  x	[isInteger(x)] cPow -> [x] cMul cPow   # TEST 10/powxpow
 IF(FP_FLOAT_VERSION) cSqr x cPow -> [x+x] cPow  #TEST 10/sqrxpow, 10/sqrxpow_nonint
 
 x cAbs	 		-> [fp_abs(x)]
@@ -145,8 +145,8 @@ y                                                B [IsBinaryOpcode(B)&&!HasInval
 
 
 x [x==Value_t(2)] cMul -> cDup cAdd
-IF(FP_FLOAT_VERSION) x [x==GetRadiansToDegreesFactor<Value_t>()] cMul -> cDeg #TEST 10/deg
-IF(FP_FLOAT_VERSION) x [x==GetDegreesToRadiansFactor<Value_t>()] cMul -> cRad #TEST 10/rad
+IF(FP_FLOAT_VERSION) x [x==fp_const_rad_to_deg<Value_t>()] cMul -> cDeg #TEST 10/deg
+IF(FP_FLOAT_VERSION) x [x==fp_const_deg_to_rad<Value_t>()] cMul -> cRad #TEST 10/rad
 IF(FP_FLOAT_VERSION) cSqr cLog   -> cAbs cLog   cDup cAdd  # TEST 10/sqrlog
 IF(FP_FLOAT_VERSION) cSqr cLog2  -> cAbs cLog2  cDup cAdd  # TEST 10/sqrlog2
 IF(FP_FLOAT_VERSION) cSqr cLog10 -> cAbs cLog10 cDup cAdd  # TEST 10/sqrlog10
@@ -186,8 +186,8 @@ cNeg x [x!=Value_t(0)] cDiv	-> [-x] cDiv    # TEST 10/negdiv
 
 y cAdd x cAdd		-> [y+x] cAdd           # TEST 11/42
 
-IF(FP_FLOAT_VERSION) y [(y*x)==GetRadiansToDegreesFactor<Value_t>()] cMul x cMul -> cDeg
-IF(FP_FLOAT_VERSION) y [(y*x)==GetDegreesToRadiansFactor<Value_t>()] cMul x cMul -> cRad
+IF(FP_FLOAT_VERSION) y [(y*x)==fp_const_rad_to_deg<Value_t>()] cMul x cMul -> cDeg
+IF(FP_FLOAT_VERSION) y [(y*x)==fp_const_deg_to_rad<Value_t>()] cMul x cMul -> cRad
 
 y [y*x==Value_t(1)] cMul x cMul ->              # TEST 10/mul1b
 y                   cMul x cMul -> [y*x] cMul   # TEST 11/43
@@ -203,8 +203,8 @@ IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd cMul x cMul -> cMul
                      cDup                   cAdd cMul x cMul -> cMul [x+x] cMul
 
-IF(FP_FLOAT_VERSION) y [(y/x)==GetRadiansToDegreesFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
-IF(FP_FLOAT_VERSION) y [(y/x)==GetDegreesToRadiansFactor<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
+IF(FP_FLOAT_VERSION) y [(y/x)==fp_const_rad_to_deg<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cDeg
+IF(FP_FLOAT_VERSION) y [(y/x)==fp_const_deg_to_rad<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
 IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
 
 IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul  # TEST 10/multodiv
