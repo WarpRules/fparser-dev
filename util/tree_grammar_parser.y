@@ -1144,7 +1144,7 @@ static GrammarDumper dumper;
 %token <index>     RESTHOLDER_TOKEN
 %token <index>     IMMEDHOLDER_TOKEN
 %token <opcode>    BUILTIN_FUNC_NAME
-%token <opcode>    OPCODE
+%token <opcode>    OPCODE_TOKEN
 %token <opcode>    UNARY_TRANSFORMATION
 %token <index>     PARAM_CONSTRAINT
 %token <index>     CONST_CONSTRAINT
@@ -1244,7 +1244,7 @@ static GrammarDumper dumper;
     ;
 
     function:
-       OPCODE '[' paramlist ']'
+       OPCODE_TOKEN '[' paramlist ']'
        /* Match a function with opcode=opcode,
         * and the exact parameter list as specified
         */
@@ -1252,7 +1252,7 @@ static GrammarDumper dumper;
          $$ = new GrammarData::FunctionType($1, *$3);
          delete $3;
        }
-    |  OPCODE '{' paramlist '}'
+    |  OPCODE_TOKEN '{' paramlist '}'
        /* Match a function with opcode=opcode,
         * and the exact parameter list in any order
         */
@@ -1260,7 +1260,7 @@ static GrammarDumper dumper;
          $$ = new GrammarData::FunctionType($1, *$3->SetType(SelectedParams));
          delete $3;
        }
-    |  OPCODE paramlist
+    |  OPCODE_TOKEN paramlist
        /* Match a function with opcode=opcode and the given way of matching params */
        /* There may be more parameters, don't care about them */
        {
@@ -1543,39 +1543,39 @@ static int yylex(YYSTYPE* lval)
             if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
 
             /* Detect opcodes */
-            if(IdBuf == "cAdd") { lval->opcode = FUNCTIONPARSERTYPES::cAdd; return OPCODE; }
-            if(IdBuf == "cAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAnd; return OPCODE; }
-            if(IdBuf == "cMul") { lval->opcode = FUNCTIONPARSERTYPES::cMul; return OPCODE; }
-            if(IdBuf == "cOr")  { lval->opcode = FUNCTIONPARSERTYPES::cOr; return OPCODE; }
+            if(IdBuf == "cAdd") { lval->opcode = FUNCTIONPARSERTYPES::cAdd; return OPCODE_TOKEN; }
+            if(IdBuf == "cAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAnd; return OPCODE_TOKEN; }
+            if(IdBuf == "cMul") { lval->opcode = FUNCTIONPARSERTYPES::cMul; return OPCODE_TOKEN; }
+            if(IdBuf == "cOr")  { lval->opcode = FUNCTIONPARSERTYPES::cOr; return OPCODE_TOKEN; }
 
-            if(IdBuf == "cNeg") { lval->opcode = FUNCTIONPARSERTYPES::cNeg; return OPCODE; }
-            if(IdBuf == "cSub") { lval->opcode = FUNCTIONPARSERTYPES::cSub; return OPCODE; }
-            if(IdBuf == "cDiv") { lval->opcode = FUNCTIONPARSERTYPES::cDiv; return OPCODE; }
-            if(IdBuf == "cMod") { lval->opcode = FUNCTIONPARSERTYPES::cMod; return OPCODE; }
-            if(IdBuf == "cEqual") { lval->opcode = FUNCTIONPARSERTYPES::cEqual; return OPCODE; }
-            if(IdBuf == "cNEqual") { lval->opcode = FUNCTIONPARSERTYPES::cNEqual; return OPCODE; }
-            if(IdBuf == "cLess") { lval->opcode = FUNCTIONPARSERTYPES::cLess; return OPCODE; }
-            if(IdBuf == "cLessOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cLessOrEq; return OPCODE; }
-            if(IdBuf == "cGreater") { lval->opcode = FUNCTIONPARSERTYPES::cGreater; return OPCODE; }
-            if(IdBuf == "cGreaterOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cGreaterOrEq; return OPCODE; }
-            if(IdBuf == "cNot") { lval->opcode = FUNCTIONPARSERTYPES::cNot; return OPCODE; }
-            if(IdBuf == "cNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cNotNot; return OPCODE; }
-            if(IdBuf == "cAbsNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNot; return OPCODE; }
-            if(IdBuf == "cAbsNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNotNot; return OPCODE; }
-            if(IdBuf == "cAbsAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAbsAnd; return OPCODE; }
-            if(IdBuf == "cAbsOr") { lval->opcode = FUNCTIONPARSERTYPES::cAbsOr; return OPCODE; }
-            if(IdBuf == "cAbsIf") { lval->opcode = FUNCTIONPARSERTYPES::cAbsIf; return OPCODE; }
-            if(IdBuf == "cDeg")  { lval->opcode = FUNCTIONPARSERTYPES::cDeg; return OPCODE; }
-            if(IdBuf == "cRad")  { lval->opcode = FUNCTIONPARSERTYPES::cRad; return OPCODE; }
-            if(IdBuf == "cInv")  { lval->opcode = FUNCTIONPARSERTYPES::cInv; return OPCODE; }
-            if(IdBuf == "cSqr")  { lval->opcode = FUNCTIONPARSERTYPES::cSqr; return OPCODE; }
-            if(IdBuf == "cRDiv") { lval->opcode = FUNCTIONPARSERTYPES::cRDiv; return OPCODE; }
-            if(IdBuf == "cRSub") { lval->opcode = FUNCTIONPARSERTYPES::cRSub; return OPCODE; }
-            if(IdBuf == "cRSqrt") { lval->opcode = FUNCTIONPARSERTYPES::cRSqrt; return OPCODE; }
+            if(IdBuf == "cNeg") { lval->opcode = FUNCTIONPARSERTYPES::cNeg; return OPCODE_TOKEN; }
+            if(IdBuf == "cSub") { lval->opcode = FUNCTIONPARSERTYPES::cSub; return OPCODE_TOKEN; }
+            if(IdBuf == "cDiv") { lval->opcode = FUNCTIONPARSERTYPES::cDiv; return OPCODE_TOKEN; }
+            if(IdBuf == "cMod") { lval->opcode = FUNCTIONPARSERTYPES::cMod; return OPCODE_TOKEN; }
+            if(IdBuf == "cEqual") { lval->opcode = FUNCTIONPARSERTYPES::cEqual; return OPCODE_TOKEN; }
+            if(IdBuf == "cNEqual") { lval->opcode = FUNCTIONPARSERTYPES::cNEqual; return OPCODE_TOKEN; }
+            if(IdBuf == "cLess") { lval->opcode = FUNCTIONPARSERTYPES::cLess; return OPCODE_TOKEN; }
+            if(IdBuf == "cLessOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cLessOrEq; return OPCODE_TOKEN; }
+            if(IdBuf == "cGreater") { lval->opcode = FUNCTIONPARSERTYPES::cGreater; return OPCODE_TOKEN; }
+            if(IdBuf == "cGreaterOrEq") { lval->opcode = FUNCTIONPARSERTYPES::cGreaterOrEq; return OPCODE_TOKEN; }
+            if(IdBuf == "cNot") { lval->opcode = FUNCTIONPARSERTYPES::cNot; return OPCODE_TOKEN; }
+            if(IdBuf == "cNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cNotNot; return OPCODE_TOKEN; }
+            if(IdBuf == "cAbsNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNot; return OPCODE_TOKEN; }
+            if(IdBuf == "cAbsNotNot") { lval->opcode = FUNCTIONPARSERTYPES::cAbsNotNot; return OPCODE_TOKEN; }
+            if(IdBuf == "cAbsAnd") { lval->opcode = FUNCTIONPARSERTYPES::cAbsAnd; return OPCODE_TOKEN; }
+            if(IdBuf == "cAbsOr") { lval->opcode = FUNCTIONPARSERTYPES::cAbsOr; return OPCODE_TOKEN; }
+            if(IdBuf == "cAbsIf") { lval->opcode = FUNCTIONPARSERTYPES::cAbsIf; return OPCODE_TOKEN; }
+            if(IdBuf == "cDeg")  { lval->opcode = FUNCTIONPARSERTYPES::cDeg; return OPCODE_TOKEN; }
+            if(IdBuf == "cRad")  { lval->opcode = FUNCTIONPARSERTYPES::cRad; return OPCODE_TOKEN; }
+            if(IdBuf == "cInv")  { lval->opcode = FUNCTIONPARSERTYPES::cInv; return OPCODE_TOKEN; }
+            if(IdBuf == "cSqr")  { lval->opcode = FUNCTIONPARSERTYPES::cSqr; return OPCODE_TOKEN; }
+            if(IdBuf == "cRDiv") { lval->opcode = FUNCTIONPARSERTYPES::cRDiv; return OPCODE_TOKEN; }
+            if(IdBuf == "cRSub") { lval->opcode = FUNCTIONPARSERTYPES::cRSub; return OPCODE_TOKEN; }
+            if(IdBuf == "cRSqrt") { lval->opcode = FUNCTIONPARSERTYPES::cRSqrt; return OPCODE_TOKEN; }
 #ifdef FP_SUPPORT_OPTIMIZER
-            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cLog2by; return OPCODE; }
+            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cLog2by; return OPCODE_TOKEN; }
 #else
-            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cNop; return OPCODE; }
+            if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cNop; return OPCODE_TOKEN; }
 #endif
 
             /* Detect other function opcodes */
@@ -1590,12 +1590,12 @@ static int yylex(YYSTYPE* lval)
                 {
                     lval->opcode = FUNCTIONPARSERTYPES::OPCODE(
                         (nameLength >> 16) & 0x7FFF );
-                    return OPCODE;
+                    return OPCODE_TOKEN;
                 }
                 std::cerr <<
                     "Warning: Unrecognized opcode '" << IdBuf << "' interpreted as cNop\n";
                 lval->opcode = FUNCTIONPARSERTYPES::cNop;
-                return OPCODE;
+                return OPCODE_TOKEN;
             }
 
             // If it is typed entirely in capitals, it has a chance of being

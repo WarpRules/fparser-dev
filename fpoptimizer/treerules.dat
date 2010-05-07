@@ -35,7 +35,7 @@
 # %token RESTHOLDER_TOKEN     # placeholders such as <1>, <2>, <7>
 # %token IMMEDHOLDER_TOKEN    # placeholders % and &
 # %token BUILTIN_FUNC_NAME    # such as COS, CEIL, POW, +, *, MIN, MAX
-# %token OPCODE               # opcodes such as cCos, cMul
+# %token OPCODE_TOKEN         # opcodes such as cCos, cMul
 # %token UNARY_TRANSFORMATION # /, -, !  # inverts/negates/inverts the param
 # %token PARAM_CONSTRAINT     # parameter constraint specifier:
 #                                 @E  = Even integer only
@@ -78,15 +78,15 @@
 #     ;
 #
 #     function:
-#        OPCODE '[' paramlist ']'
+#        OPCODE_TOKEN '[' paramlist ']'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list as specified
 #         */
-#        OPCODE '{' paramlist '}'
+#        OPCODE_TOKEN '{' paramlist '}'
 #        /* Match a function with opcode=opcode,
 #         * and the exact parameter list in any order
 #         */
-#     |  OPCODE paramlist
+#     |  OPCODE_TOKEN paramlist
 #        /* Match a function with opcode=opcode and the given way of matching params */
 #        /* There may be more parameters, don't care about them */
 #     ;
