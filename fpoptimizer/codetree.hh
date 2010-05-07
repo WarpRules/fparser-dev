@@ -32,8 +32,6 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     struct CodeTreeData;
 
-    enum TriTruthValue { IsAlways, IsNever, Unknown };
-
     template<typename Value_t>
     class CodeTree
     {
@@ -121,22 +119,9 @@ namespace FPoptimizer_CodeTree
 
         inline bool    IsImmed() const { return GetOpcode() == FUNCTIONPARSERTYPES::cImmed; }
         inline bool      IsVar() const { return GetOpcode() == FUNCTIONPARSERTYPES::VarBegin; }
-        bool    IsLogicalValue() const;
         inline unsigned GetRefCount() const { return data->RefCount; }
 
         void ReplaceWithImmed(const Value_t& i);
-
-        /* This function calculates the minimum and maximum values
-         * of the tree's result. If an estimate cannot be made,
-         * has_min/has_max are indicated as false.
-         */
-        TriTruthValue GetEvennessInfo() const;
-
-        bool IsAlwaysSigned(bool positive) const;
-        bool IsAlwaysParity(bool odd) const
-            { return GetEvennessInfo() == (odd?IsNever:IsAlways); }
-        bool IsAlwaysInteger(bool integer) const;
-
         void Rehash(bool constantfolding = true);
         inline void Mark_Incompletely_Hashed() { data->Depth=0; }
         inline bool Is_Incompletely_Hashed() const { return data->Depth == 0; }

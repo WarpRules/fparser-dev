@@ -228,7 +228,7 @@ namespace
                     change = comp.AddItem(atree.GetParam(0), false, cond_type);
                     break;
                 default:
-                    if(is_logical || atree.IsLogicalValue())
+                    if(is_logical || IsLogicalValue(atree))
                         change = comp.AddItem(atree, false, cond_type);
             }
             switch(change)
@@ -267,7 +267,7 @@ namespace
                 for(size_t a=tree.GetParamCount(); a-- > 0; )
                 {
                     const CodeTree<Value_t>& atree = tree.GetParam(a);
-                    if(atree.IsLogicalValue())
+                    if(IsLogicalValue(atree))
                         tree.DelParam(a);
                 }
             }

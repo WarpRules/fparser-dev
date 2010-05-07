@@ -32,6 +32,20 @@ namespace
             }
             else break;
         }
+
+        // If the sub-expression evaluates to approx. zero, yield param3.
+        // If the sub-expression evaluates to approx. nonzero, yield param2.
+        switch(GetLogicalValue(tree.GetParam(0), tree.GetOpcode()==cAbsIf))
+        {
+            case IsAlways: // true
+                tree.Become(tree.GetParam(1));
+                return true; // rerun optimization (opcode changed)
+            case IsNever: // false
+                tree.Become(tree.GetParam(2));
+                return true; // rerun optimization (opcode changed)
+            case Unknown: default: ;
+        }
+
         if(tree.GetParam(0).GetOpcode() == cIf
         || tree.GetParam(0).GetOpcode() == cAbsIf)
         {
@@ -141,20 +155,6 @@ namespace
             }
         }
 
-        // If the sub-expression evaluates to approx. zero, yield param3.
-        // If the sub-expression evaluates to approx. nonzero, yield param2.
-        MinMaxTree<Value_t> p = CalculateResultBoundaries( tree.GetParam(0) );
-        switch(GetLogicalValue(p, tree.GetOpcode()==cAbsIf))
-        {
-            case 1: // true
-                tree.Become(tree.GetParam(1));
-                return true; // rerun optimization (opcode changed)
-            case 0: // false
-                tree.Become(tree.GetParam(2));
-                return true; // rerun optimization (opcode changed)
-            default: ;
-        }
-
         CodeTree<Value_t>& branch1 = tree.GetParam(1);
         CodeTree<Value_t>& branch2 = tree.GetParam(2);
 
@@ -224,8 +224,8 @@ namespace
         // if(x, y+z, y) -> if(x, z,0)+y
         if(op1 == cAdd
         || op1 == cMul
-        || (op1 == cAnd && branch2.IsLogicalValue())
-        || (op1 == cOr  && branch2.IsLogicalValue())
+        || (op1 == cAnd && IsLogicalValue(branch2))
+        || (op1 == cOr  && IsLogicalValue(branch2))
           )
         {
             for(size_t a=branch1.GetParamCount(); a-- > 0; )
@@ -271,8 +271,8 @@ namespace
         // if(x, y, y+z) -> if(x, 0,z)+y
         if(op2 == cAdd
         || op2 == cMul
-        || (op2 == cAnd && branch1.IsLogicalValue())
-        || (op2 == cOr  && branch1.IsLogicalValue())
+        || (op2 == cAnd && IsLogicalValue(branch1))
+        || (op2 == cOr  && IsLogicalValue(branch1))
           )
         {
             for(size_t a=branch2.GetParamCount(); a-- > 0; )

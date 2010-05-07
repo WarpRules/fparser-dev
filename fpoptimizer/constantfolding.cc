@@ -153,14 +153,12 @@ namespace FPoptimizer_CodeTree
                 bool has_nonlogical_values = false;
                 for(size_t a=tree.GetParamCount(); a-- > 0; )
                 {
-                    if(!tree.GetParam(a).IsLogicalValue()) has_nonlogical_values = true;
-                    switch(GetLogicalValue(
-                        CalculateResultBoundaries( tree.GetParam(a) ),
-                        tree.GetOpcode()==cAbsAnd))
+                    if(!IsLogicalValue(tree.GetParam(a))) has_nonlogical_values = true;
+                    switch(GetLogicalValue(tree.GetParam(a), tree.GetOpcode()==cAbsAnd))
                     {
-                        case 0: goto ReplaceTreeWithZero;
-                        case 1: tree.DelParam(a); break; // x & y & 1 = x & y;  x & 1 = !!x
-                        default: ;
+                        case IsNever: goto ReplaceTreeWithZero;
+                        case IsAlways: tree.DelParam(a); break; // x & y & 1 = x & y;  x & 1 = !!x
+                        case Unknown: default: ;
                     }
                 }
                 switch(tree.GetParamCount())
@@ -180,14 +178,12 @@ namespace FPoptimizer_CodeTree
                 bool has_nonlogical_values = false;
                 for(size_t a=tree.GetParamCount(); a-- > 0; )
                 {
-                    if(!tree.GetParam(a).IsLogicalValue()) has_nonlogical_values = true;
-                    switch(GetLogicalValue(
-                        CalculateResultBoundaries( tree.GetParam(a) ),
-                        tree.GetOpcode()==cAbsOr))
+                    if(!IsLogicalValue(tree.GetParam(a))) has_nonlogical_values = true;
+                    switch(GetLogicalValue(tree.GetParam(a), tree.GetOpcode()==cAbsOr))
                     {
-                        case 1: goto ReplaceTreeWithOne;
-                        case 0: tree.DelParam(a); break;
-                        default: ;
+                        case IsAlways: goto ReplaceTreeWithOne;
+                        case IsNever: tree.DelParam(a); break;
+                        case Unknown: default: ;
                     }
                 }
                 switch(tree.GetParamCount())
@@ -227,14 +223,13 @@ namespace FPoptimizer_CodeTree
 
                 // If the sub-expression evaluates to approx. zero, yield one.
                 // If the sub-expression evaluates to approx. nonzero, yield zero.
-                switch(GetLogicalValue(CalculateResultBoundaries( tree.GetParam(0) ),
-                                       tree.GetOpcode()==cAbsNot))
+                switch(GetLogicalValue(tree.GetParam(0), tree.GetOpcode()==cAbsNot))
                 {
-                    case 1: goto ReplaceTreeWithZero;
-                    case 0: goto ReplaceTreeWithOne;
-                    default: ;
+                    case IsAlways: goto ReplaceTreeWithZero;
+                    case IsNever: goto ReplaceTreeWithOne;
+                    case Unknown: default: ;
                 }
-                if(tree.GetOpcode() == cNot && tree.GetParam(0).IsAlwaysSigned(true))
+                if(tree.GetOpcode() == cNot && GetPositivityInfo(tree.GetParam(0)) == IsAlways)
                     tree.SetOpcode(cAbsNot);
 
                 if(tree.GetParam(0).GetOpcode() == cIf
@@ -288,19 +283,18 @@ namespace FPoptimizer_CodeTree
                 // The function of cNotNot is to protect a logical value from
                 // changing. If the parameter is already a logical value,
                 // then the cNotNot opcode is redundant.
-                if(tree.GetParam(0).IsLogicalValue())
+                if(IsLogicalValue(tree.GetParam(0)))
                     goto ReplaceTreeWithParam0;
 
                 // If the sub-expression evaluates to approx. zero, yield zero.
                 // If the sub-expression evaluates to approx. nonzero, yield one.
-                switch(GetLogicalValue(CalculateResultBoundaries( tree.GetParam(0) ),
-                                       tree.GetOpcode()==cAbsNotNot))
+                switch(GetLogicalValue(tree.GetParam(0), tree.GetOpcode()==cAbsNotNot))
                 {
-                    case 0: goto ReplaceTreeWithZero;
-                    case 1: goto ReplaceTreeWithOne;
-                    default: ;
+                    case IsNever: goto ReplaceTreeWithZero;
+                    case IsAlways: goto ReplaceTreeWithOne;
+                    case Unknown: default: ;
                 }
-                if(tree.GetOpcode() == cNotNot && tree.GetParam(0).IsAlwaysSigned(true))
+                if(tree.GetOpcode() == cNotNot && GetPositivityInfo(tree.GetParam(0)) == IsAlways)
                     tree.SetOpcode(cAbsNotNot);
 
                 if(tree.GetParam(0).GetOpcode() == cIf
@@ -643,7 +637,7 @@ namespace FPoptimizer_CodeTree
                 if(tree.GetParam(0).GetOpcode() == cPow)
                 {
                     CodeTree<Value_t> pow = tree.GetParam(0);
-                    if(pow.GetParam(0).IsAlwaysSigned(true))  // log(posi ^ y) = y*log(posi)
+                    if(GetPositivityInfo(pow.GetParam(0)) == IsAlways)  // log(posi ^ y) = y*log(posi)
                     {
                         pow.CopyOnWrite();
                         pow.SetOpcode(cLog);
@@ -654,7 +648,7 @@ namespace FPoptimizer_CodeTree
                         tree.SetParamMove(0, pow);
                         goto NowWeAreMulGroup;
                     }
-                    if(pow.GetParam(1).IsAlwaysParity(false)) // log(x ^ even) = even*log(abs(x))
+                    if(GetEvennessInfo(pow.GetParam(1)) == IsAlways) // log(x ^ even) = even*log(abs(x))
                     {
                         pow.CopyOnWrite();
                         CodeTree<Value_t> abs;
@@ -706,16 +700,16 @@ namespace FPoptimizer_CodeTree
             case cCos: HANDLE_UNARY_CONST_FUNC(fp_cos); break;
             case cTan: HANDLE_UNARY_CONST_FUNC(fp_tan); break;
             case cCeil:
-                if(tree.GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                if(GetIntegerInfo(tree.GetParam(0)) == IsAlways) goto ReplaceTreeWithParam0;
                 HANDLE_UNARY_CONST_FUNC(fp_ceil); break;
             case cTrunc:
-                if(tree.GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                if(GetIntegerInfo(tree.GetParam(0)) == IsAlways) goto ReplaceTreeWithParam0;
                 HANDLE_UNARY_CONST_FUNC(fp_trunc); break;
             case cFloor:
-                if(tree.GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                if(GetIntegerInfo(tree.GetParam(0)) == IsAlways) goto ReplaceTreeWithParam0;
                 HANDLE_UNARY_CONST_FUNC(fp_floor); break;
             case cInt:
-                if(tree.GetParam(0).IsAlwaysInteger(true)) goto ReplaceTreeWithParam0;
+                if(GetIntegerInfo(tree.GetParam(0)) == IsAlways) goto ReplaceTreeWithParam0;
                 HANDLE_UNARY_CONST_FUNC(fp_int); break;
             case cCbrt: HANDLE_UNARY_CONST_FUNC(fp_cbrt); break; // converted into cPow x 0.33333
             case cSqrt: HANDLE_UNARY_CONST_FUNC(fp_sqrt); break; // converted into cPow x 0.5

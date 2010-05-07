@@ -13,6 +13,7 @@
 
 #include "grammar.hh"
 #include "optimize.hh"
+#include "rangeestimation.hh"
 #include "consts.hh"
 
 using namespace FUNCTIONPARSERTYPES;
@@ -30,35 +31,34 @@ namespace
         {
             case Value_AnyNum: case ValueMask: break;
             case Value_EvenInt:
-                if(tree.GetEvennessInfo() != IsAlways)
+                if(GetEvennessInfo(tree) != IsAlways)
                     return false;
                 break;
             case Value_OddInt:
-                if(tree.GetEvennessInfo() != IsNever)
+                if(GetEvennessInfo(tree) != IsNever)
                     return false;
                 break;
             case Value_IsInteger:
-                if(!tree.IsAlwaysInteger(true)) return false;
+                if(GetIntegerInfo(tree) != IsAlways) return false;
                 break;
             case Value_NonInteger:
-                if(!tree.IsAlwaysInteger(false)) return false;
+                if(GetIntegerInfo(tree) != IsNever) return false;
                 break;
             case Value_Logical:
-                if(!tree.IsLogicalValue()) return false;
+                if(!IsLogicalValue(tree)) return false;
                 break;
         }
         switch(bitmask & SignMask)
         {
             case Sign_AnySign: /*case SignMask:*/ break;
             case Sign_Positive:
-                if(!tree.IsAlwaysSigned(true)) return false;
+                if(GetPositivityInfo(tree) != IsAlways) return false;
                 break;
             case Sign_Negative:
-                if(!tree.IsAlwaysSigned(false)) return false;
+                if(GetPositivityInfo(tree) != IsNever) return false;
                 break;
             case Sign_NoIdea:
-                if(tree.IsAlwaysSigned(true)) return false;
-                if(tree.IsAlwaysSigned(false)) return false;
+                if(GetPositivityInfo(tree) != Unknown) return false;
                 break;
         }
         switch(bitmask & OnenessMask)

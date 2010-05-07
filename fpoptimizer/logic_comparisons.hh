@@ -61,14 +61,14 @@ namespace
                     return if_always[3]; // p0 >= p1
             }
 
-            if(a.IsLogicalValue())
+            if(IsLogicalValue(a))
             {
                 if(p0_logical_a.what != Unchanged)
                     if(TestCase(p0_logical_a.when, p1)) return p0_logical_a.what;
                 if(p0_logical_b.what != Unchanged)
                     if(TestCase(p0_logical_b.when, p1)) return p0_logical_b.what;
             }
-            if(b.IsLogicalValue())
+            if(IsLogicalValue(b))
             {
                 if(p1_logical_a.what != Unchanged)
                     if(TestCase(p1_logical_a.when, p0)) return p1_logical_a.what;

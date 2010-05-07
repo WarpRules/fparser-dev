@@ -154,6 +154,24 @@ namespace FPoptimizer_CodeTree
                 if(ParamComparer<Value_t>() (Params[1], Params[0]))
                     { std::swap(Params[0], Params[1]); Opcode = cLessOrEq; }
                 break;
+            /*
+            case cDiv:
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cRDiv; }
+                break;
+            case cRDiv:
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cDiv; }
+                break;
+            case cSub:
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cRSub; }
+                break;
+            case cRSub:
+                if(ParamComparer<Value_t>() (Params[1], Params[0]))
+                    { std::swap(Params[0], Params[1]); Opcode = cSub; }
+                break;
+            */
             default:
                 break;
         }
@@ -281,118 +299,6 @@ namespace FPoptimizer_CodeTree
     void CodeTree<Value_t>::DelParams()
     {
         data->Params.clear();
-    }
-
-    /* Is the value of this tree definitely odd(true) or even(false)? */
-    template<typename Value_t>
-    TriTruthValue CodeTree<Value_t>::GetEvennessInfo() const
-    {
-        if(!IsImmed()) return Unknown;
-        const Value_t& value = GetImmed();
-        if(isEvenInteger(value)) return IsAlways;
-        if(isOddInteger(value)) return IsNever;
-        return Unknown;
-    }
-
-    template<typename Value_t>
-    bool CodeTree<Value_t>::IsLogicalValue() const
-    {
-        switch(GetOpcode())
-        {
-            case cImmed:
-                return FloatEqual(GetImmed(), Value_t(0))
-                    || FloatEqual(GetImmed(), Value_t(1));
-            case cAnd:
-            case cOr:
-            case cNot:
-            case cNotNot:
-            case cAbsAnd:
-            case cAbsOr:
-            case cAbsNot:
-            case cAbsNotNot:
-            case cEqual:
-            case cNEqual:
-            case cLess:
-            case cLessOrEq:
-            case cGreater:
-            case cGreaterOrEq:
-                /* These operations always produce truth values (0 or 1) */
-                return true;
-            case cMul:
-            {
-                std::vector<CodeTree<Value_t> >& Params = data->Params;
-                for(size_t a=0; a<Params.size(); ++a)
-                    if(!Params[a].IsLogicalValue())
-                        return false;
-                return true;
-            }
-            case cIf:
-            case cAbsIf:
-            {
-                std::vector<CodeTree<Value_t> >& Params = data->Params;
-                return Params[1].IsLogicalValue()
-                    && Params[2].IsLogicalValue();
-            }
-            default:
-                break;
-        }
-        return false; // Not a logical value.
-    }
-
-    template<typename Value_t>
-    bool CodeTree<Value_t>::IsAlwaysInteger(bool integer) const
-    {
-        switch(GetOpcode())
-        {
-            case cImmed:
-                return isInteger(GetImmed()) ? integer==true : integer==false;
-            case cFloor:
-            case cInt:
-                return integer==true;
-            case cAnd:
-            case cOr:
-            case cNot:
-            case cNotNot:
-            case cEqual:
-            case cNEqual:
-            case cLess:
-            case cLessOrEq:
-            case cGreater:
-            case cGreaterOrEq:
-                /* These operations always produce truth values (0 or 1) */
-                return integer==true; /* 0 and 1 are both integers */
-            case cIf:
-            {
-                std::vector<CodeTree<Value_t> >& Params = data->Params;
-                return Params[1].IsAlwaysInteger(integer)
-                    && Params[2].IsAlwaysInteger(integer);
-                return true; /* 0 and 1 are both integers */
-            }
-            case cAdd:
-            case cMul:
-            {
-                for(size_t a=GetParamCount(); a-- > 0; )
-                    if(!GetParam(a).IsAlwaysInteger(integer))
-                        return false;
-                return true;
-            }
-            default:
-                break;
-        }
-        return false; /* Don't know whether it's integer. */
-    }
-
-    template<typename Value_t>
-    bool CodeTree<Value_t>::IsAlwaysSigned(bool positive) const
-    {
-        MinMaxTree<Value_t> tmp = CalculateResultBoundaries(*this);
-
-        if(positive)
-            return tmp.has_min && tmp.min >= 0.0
-              && (!tmp.has_max || tmp.max >= 0.0);
-        else
-            return tmp.has_max && tmp.max < 0.0
-              && (!tmp.has_min || tmp.min < 0.0);
     }
 
     template<typename Value_t>

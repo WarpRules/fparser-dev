@@ -3,6 +3,7 @@
 #ifdef FP_SUPPORT_OPTIMIZER
 
 #include "bytecodesynth.hh"
+#include "rangeestimation.hh"
 #include "optimize.hh" // For DEBUG_SUBSTITUTIONS
 
 using namespace FUNCTIONPARSERTYPES;
@@ -893,7 +894,7 @@ namespace FPoptimizer_CodeTree
                             changed = true;
                         }
                     }
-                    else if(p0.IsAlwaysSigned(true))
+                    else if(GetPositivityInfo(p0) == IsAlways)
                     {
                         if(prefer_base2)
                         {
