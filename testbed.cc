@@ -2318,8 +2318,8 @@ int main(int argc, char* argv[])
         "    -f                Test float datatype\n"
         "    -ld               Test long double datatype\n"
         "    -li               Test long int datatype\n"
-        "    -mf, -mpfr        Test mpfrFloat datatype\n"
-        "    -gi, -gmpint      Test gmpInt datatype\n"
+        "    -mf, -mpfr        Test MpfrFloat datatype\n"
+        "    -gi, -gmpint      Test GmpInt datatype\n"
         "    -algo <n>         Run only algorithmic test <n> (implies -v)\n"
         "    -noUTF8Test       Skip UTF-8 testing\n"
         "    -h, --help        This help\n";
@@ -2520,6 +2520,9 @@ int main(int argc, char* argv[])
 
     const unsigned algorithmicTestsAmount =
         sizeof(algorithmicTests) / sizeof(algorithmicTests[0]);
+
+    if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount)
+        verbosityLevel = 2;
 
     for(unsigned i = 0; i < algorithmicTestsAmount; ++i)
     {
