@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.0.0.0";
+static const char* const kVersionNumber = "2.1.0.1";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -36,7 +36,14 @@ static const char* const kVersionNumber = "2.0.0.0";
 
 namespace
 {
-    const bool verbose = false;
+    /* Verbosity level:
+       0 = No progress output. Error reporting as in verbosity level 1.
+       1 = Very brief progress and error output.
+       2 = More verbose progress output, full error reporting.
+       3 = Very verbose progress output, full error reporting.
+    */
+    int verbosityLevel = 1;
+
 
     std::vector<const char*> selectedRegressionTests;
 
@@ -118,11 +125,15 @@ bool TestCopyingNoDeepCopy(FunctionParser p)
 
     if(std::fabs(p.Eval(vars) - 13) > Epsilon<double>())
     {
-        std::cout << "- Giving as function parameter (no deep copy): ";
-        std::cout << "Failed." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout
+                << "\n - Giving as function parameter (no deep copy) failed."
+                << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p.PrintByteCode(std::cout);
+            p.PrintByteCode(std::cout);
 #endif
+        }
         return false;
     }
     return true;
@@ -136,11 +147,15 @@ bool TestCopyingDeepCopy(FunctionParser p)
 
     if(std::fabs(p.Eval(vars) - 14) > Epsilon<double>())
     {
-        std::cout << "- Giving as function parameter (deep copy): ";
-        std::cout << "Failed." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout
+                << "\n - Giving as function parameter (deep copy) failed."
+                << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p.PrintByteCode(std::cout);
+            p.PrintByteCode(std::cout);
 #endif
+        }
         return false;
     }
     return true;
@@ -148,8 +163,6 @@ bool TestCopyingDeepCopy(FunctionParser p)
 
 bool TestCopying()
 {
-    std::cout << "- Testing copy constructor and assignment..." << std::endl;
-
     bool retval = true;
     double vars[2] = { 2, 5 };
 
@@ -159,45 +172,57 @@ bool TestCopying()
     FunctionParser p2(p1);
     if(std::fabs(p2.Eval(vars) - 8) > Epsilon<double>())
     {
-        std::cout << "- Copy constructor with no deep copy: ";
-        std::cout << "Failed." << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p2.PrintByteCode(std::cout);
-#endif
         retval = false;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - Copy constructor with no deep copy failed."
+                      << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+            p2.PrintByteCode(std::cout);
+#endif
+        }
     }
 
     p2.Parse("x*y-1", "x,y");
     if(std::fabs(p2.Eval(vars) - 9) > Epsilon<double>())
     {
         retval = false;
-        std::cout << "- Copy constructor with deep copy: ";
-        std::cout << "Failed." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - Copy constructor with deep copy failed."
+                      << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p2.PrintByteCode(std::cout);
+            p2.PrintByteCode(std::cout);
 #endif
+        }
     }
 
     p3 = p1;
     if(std::fabs(p3.Eval(vars) - 8) > Epsilon<double>())
     {
         retval = false;
-        std::cout << "- Assignment with no deep copy: ";
-        std::cout << "Failed." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - Assignment with no deep copy failed."
+                      << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p3.PrintByteCode(std::cout);
- #endif
+            p3.PrintByteCode(std::cout);
+#endif
+        }
     }
 
     p3.Parse("x*y-1", "x,y");
     if(std::fabs(p3.Eval(vars) - 9) > Epsilon<double>())
     {
         retval = false;
-        std::cout << "- Assignment with deep copy: ";
-        std::cout << "Failed." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - Assignment with deep copy failed."
+                      << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p3.PrintByteCode(std::cout);
+            p3.PrintByteCode(std::cout);
 #endif
+        }
     }
 
     if(!TestCopyingNoDeepCopy(p1))
@@ -206,8 +231,9 @@ bool TestCopying()
     // Final test to check that p1 still works:
     if(std::fabs(p1.Eval(vars) - 8) > Epsilon<double>())
     {
-        std::cout << "Failed: p1 was corrupted." << std::endl;
         retval = false;
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Failed: p1 was corrupted." << std::endl;
     }
 
     if(!TestCopyingDeepCopy(p1))
@@ -216,11 +242,14 @@ bool TestCopying()
     // Final test to check that p1 still works:
     if(std::fabs(p1.Eval(vars) - 8) > Epsilon<double>())
     {
-        std::cout << "Failed: p1 was corrupted." << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-        p1.PrintByteCode(std::cout);
-#endif
         retval = false;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - Failed: p1 was corrupted." << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+            p1.PrintByteCode(std::cout);
+#endif
+        }
     }
 
     return retval;
@@ -232,8 +261,6 @@ bool TestCopying()
 //=========================================================================
 bool TestErrorSituations()
 {
-    std::cout << "- Testing error situations..." << std::endl;
-
     bool retval = true;
     FunctionParser fp, tmpfp;
     fp.AddUnit("unit", 2);
@@ -318,31 +345,37 @@ bool TestErrorSituations()
         int parse_result = fp.Parse(invalidFuncs[i].function_string, "x");
         if(parse_result < 0)
         {
-            std::cout << "Parsing the invalid function \""
-                      << invalidFuncs[i].function_string
-                      << "\" didn't fail\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-            fp.PrintByteCode(std::cout);
-#endif
             retval = false;
+            if(verbosityLevel >= 2)
+            {
+                std::cout << "\n - Parsing the invalid function \""
+                          << invalidFuncs[i].function_string
+                          << "\" didn't fail\n";
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+                fp.PrintByteCode(std::cout);
+#endif
+            }
         }
         else if(fp.GetParseErrorType() != invalidFuncs[i].expected_error
              || parse_result != invalidFuncs[i].expected_error_position)
         {
-            std::cout << "Parsing the invalid function \""
-                      << invalidFuncs[i].function_string
-                      << "\" produced ";
-            if(fp.GetParseErrorType() != invalidFuncs[i].expected_error)
-                std::cout << "wrong error code (" << fp.ErrorMsg() << ")";
-            if(parse_result != invalidFuncs[i].expected_error_position)
-                std::cout << "wrong pointer (expected "
-                          << invalidFuncs[i].expected_error_position
-                          << ", got " << parse_result << ")";
-            std::cout << "\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-            fp.PrintByteCode(std::cout);
-#endif
             retval = false;
+            if(verbosityLevel >= 2)
+            {
+                std::cout << "\n - Parsing the invalid function \""
+                          << invalidFuncs[i].function_string
+                          << "\" produced ";
+                if(fp.GetParseErrorType() != invalidFuncs[i].expected_error)
+                    std::cout << "wrong error code (" << fp.ErrorMsg() << ")";
+                if(parse_result != invalidFuncs[i].expected_error_position)
+                    std::cout << "wrong pointer (expected "
+                              << invalidFuncs[i].expected_error_position
+                              << ", got " << parse_result << ")";
+                std::cout << "\n";
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+                fp.PrintByteCode(std::cout);
+#endif
+            }
         }
     }
 
@@ -355,27 +388,31 @@ bool TestErrorSituations()
         const char* const n = invalidNames[i];
         if(fp.AddConstant(n, 1))
         {
-            std::cout << "Adding an invalid name (\"" << n
-                      << "\") as constant didn't fail" << std::endl;
             retval = false;
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Adding an invalid name (\"" << n
+                          << "\") as constant didn't fail" << std::endl;
         }
         if(fp.AddFunction(n, Sqr<double>, 1))
         {
-            std::cout << "Adding an invalid name (\"" << n
-                      << "\") as funcptr didn't fail" << std::endl;
             retval = false;
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Adding an invalid name (\"" << n
+                          << "\") as funcptr didn't fail" << std::endl;
         }
         if(fp.AddFunction(n, tmpfp))
         {
-            std::cout << "Adding an invalid name (\"" << n
-                      << "\") as funcparser didn't fail" << std::endl;
             retval = false;
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Adding an invalid name (\"" << n
+                          << "\") as funcparser didn't fail" << std::endl;
         }
         if(fp.Parse("0", n) < 0)
         {
-            std::cout << "Using an invalid name (\"" << n
-                      << "\") as variable name didn't fail" << std::endl;
             retval = false;
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Using an invalid name (\"" << n
+                          << "\") as variable name didn't fail" << std::endl;
         }
     }
 
@@ -385,24 +422,24 @@ bool TestErrorSituations()
 
     if(fp.AddConstant("PTR", 1))
     {
-        std::cout <<
-            "Adding a userdef function (\"PTR\") as constant didn't fail"
-                  << std::endl;
         retval = false;
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Adding a userdef function (\"PTR\") as "
+                      << "constant didn't fail" << std::endl;
     }
     if(fp.AddFunction("CONST", Sqr<double>, 1))
     {
-        std::cout <<
-            "Adding a userdef constant (\"CONST\") as funcptr didn't fail"
-                  << std::endl;
         retval = false;
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Adding a userdef constant (\"CONST\") as "
+                      << "funcptr didn't fail" << std::endl;
     }
     if(fp.AddFunction("CONST", tmpfp))
     {
-        std::cout <<
-            "Adding a userdef constant (\"CONST\") as funcparser didn't fail"
-                  << std::endl;
         retval = false;
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Adding a userdef constant (\"CONST\") as "
+                      << "funcparser didn't fail" << std::endl;
     }
 
     return retval;
@@ -423,9 +460,10 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
     int res = fp.Parse(function, "x");
     if(res > -1)
     {
-        std::cout << "Parsing function:\n\"" << function
-                  << "\"\nfailed at char " << res
-                  << ": " << fp.ErrorMsg() << std::endl;
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Parsing function:\n\"" << function
+                      << "\"\nfailed at char " << res
+                      << ": " << fp.ErrorMsg() << std::endl;
         return false;
     }
 
@@ -433,7 +471,6 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
     for(vars[0] = -2.0; vars[0] <= 2.0; vars[0] += .1)
         if(fabs(fp.Eval(vars) - wsFunc(vars[0])) > Epsilon<double>())
         {
-            std::cout << "Failed.\n";
             return false;
         }
     return true;
@@ -441,8 +478,6 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
 
 bool WhiteSpaceTest()
 {
-    std::cout << "- Testing whitespaces..." << std::endl;
-
     FunctionParser fp;
     fp.AddConstant("const", 1.5);
     fp.AddUnit("unit", 2.0);
@@ -468,7 +503,8 @@ bool WhiteSpaceTest()
         { 3, 0xE2,0x80,0xAF }, { 3, 0xE2,0x81,0x9F }, // U+202F and U+205F
         { 3, 0xE3,0x80,0x80 } // U+3000
     };
-    const unsigned n_whitespaces = sizeof(WhiteSpaceTables)/sizeof(*WhiteSpaceTables);
+    const unsigned n_whitespaces =
+        sizeof(WhiteSpaceTables)/sizeof(*WhiteSpaceTables);
 
     for(unsigned i = 0; i < function.size(); ++i)
     {
@@ -509,12 +545,15 @@ bool compareExpValues(double value, const std::string& funcStr,
         fabs((v1 - v2) / v1);
     if(diff > Epsilon<double>())
     {
-        std::cout << "For \"" << funcStr << "\" with x=" << value
-                  << " the library (";
-        if(!isOptimized) std::cout << "not ";
-        std::cout << "optimized) returned\n"
-                  << std::setprecision(18) << v2
-                  << " instead of " << v1 << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n - For \"" << funcStr << "\" with x=" << value
+                      << " the library (";
+            if(!isOptimized) std::cout << "not ";
+            std::cout << "optimized) returned\n"
+                      << std::setprecision(18) << v2
+                      << " instead of " << v1 << std::endl;
+        }
         return false;
     }
     return true;
@@ -549,8 +588,9 @@ bool runFractionalPowTest(const std::string& funcStr, double exponent)
     FunctionParser fp;
     if(fp.Parse(funcStr, "x") != -1)
     {
-        std::cout << "Parsing \"" << funcStr <<"\" failed: "
-                  << fp.ErrorMsg() << "\n";
+        if(verbosityLevel >= 2)
+            std::cout << "\n - Parsing \"" << funcStr <<"\" failed: "
+                      << fp.ErrorMsg() << "\n";
         return false;
     }
 
@@ -575,8 +615,6 @@ bool runFractionalPowTest(const std::string& funcStr, double exponent)
 
 bool TestIntPow()
 {
-    std::cout << "- Testing integral powers..." << std::endl;
-
     FunctionParser fp;
 
     for(int exponent = -1300; exponent <= 1300; ++exponent)
@@ -586,8 +624,9 @@ bool TestIntPow()
         const std::string func = os.str();
         if(fp.Parse(func, "x") != -1)
         {
-            std::cout << "Parsing \"" << func <<"\" failed: "
-                      << fp.ErrorMsg() << "\n";
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Parsing \"" << func <<"\" failed: "
+                          << fp.ErrorMsg() << "\n";
             return false;
         }
 
@@ -811,27 +850,31 @@ namespace
                             const CharIter* iters, unsigned length,
                             const std::string& identifier)
     {
-        std::printf("\n%s failed with identifier ", testType);
-        for(unsigned i = 0; i < length; ++i)
-            iters[i].print();
-        std::printf(": \"%s\"\n", identifier.c_str());
+        if(verbosityLevel >= 2)
+        {
+            std::printf("\n - %s failed with identifier ", testType);
+            for(unsigned i = 0; i < length; ++i)
+                iters[i].print();
+            std::printf(": \"%s\"\n", identifier.c_str());
+        }
         return false;
     }
 
     bool printUTF8TestError2(const CharIter* iters, unsigned length)
     {
-        std::printf("\nParsing didn't fail with invalid identifier ");
-        for(unsigned i = 0; i < length; ++i)
-            iters[(length-1)-i].print();
-        std::printf("\n");
+        if(verbosityLevel >= 2)
+        {
+            std::printf("\n - Parsing didn't fail with invalid identifier ");
+            for(unsigned i = 0; i < length; ++i)
+                iters[(length-1)-i].print();
+            std::printf("\n");
+        }
         return false;
     }
 }
 
 bool UTF8Test()
 {
-    std::cout << "- Testing UTF8..." << std::flush;
-
     CharIter iters[4] =
         { CharIter(true, false),
           CharIter(false, true),
@@ -843,7 +886,8 @@ bool UTF8Test()
 
     for(unsigned length = 1; length <= 4; ++length)
     {
-        std::cout << " " << length << std::flush;
+        if(verbosityLevel >= 1)
+            std::cout << " " << length << std::flush;
         bool cont = true;
         while(cont)
         {
@@ -869,14 +913,16 @@ bool UTF8Test()
         }
     }
 
-    CharIter invalidIters[3] = { CharIter(), CharIter(true, false), CharIter() };
+    CharIter invalidIters[3] =
+        { CharIter(), CharIter(true, false), CharIter() };
     // test 5: inv
     // test 6: inv + normal
     // test 7: normal + inv
 
     for(unsigned length = 1; length <= 3; ++length)
     {
-        std::cout << " " << 4+length << std::flush;
+        if(verbosityLevel >= 1)
+            std::cout << " " << 4+length << std::flush;
         unsigned numchars = length < 3 ? length : 2;
         unsigned firstchar = length < 3 ? 0 : 1;
         bool cont = true;
@@ -901,7 +947,6 @@ bool UTF8Test()
         }
     }
 
-    std::cout << std::endl;
     return true;
 }
 
@@ -931,8 +976,6 @@ bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
 
 bool TestIdentifiers()
 {
-    std::cout << "- Testing identifiers..." << std::endl;
-
     FunctionParser fParser;
     std::vector<std::string> identifierNames(26*26, std::string("AA"));
 
@@ -946,8 +989,9 @@ bool TestIdentifiers()
 
             if(!AddIdentifier(fParser, identifierNames[nameInd], (i1+26*i2)%3))
             {
-                std::cout << "Failed to add identifier '"
-                          << identifierNames[nameInd] << "'\n";
+                if(verbosityLevel >= 2)
+                    std::cout << "\n - Failed to add identifier '"
+                              << identifierNames[nameInd] << "'\n";
                 return false;
             }
 
@@ -963,16 +1007,19 @@ bool TestIdentifiers()
         {
             if(!AddIdentifier(fParser, identifierNames[removedInd], 3))
             {
-                std::cout << "Failure: Identifier '"
-                          << identifierNames[removedInd]
-                          << "' was still reserved even after removing it.\n";
+                if(verbosityLevel >= 2)
+                    std::cout
+                        << "\n - Failure: Identifier '"
+                        << identifierNames[removedInd]
+                        << "' was still reserved even after removing it.\n";
                 return false;
             }
             if(!fParser.RemoveIdentifier(identifierNames[removedInd]))
             {
-                std::cout << "Failure: Removing the identifier '"
-                          << identifierNames[removedInd]
-                          << "' after adding it again failed.\n";
+                if(verbosityLevel >= 2)
+                    std::cout << "\n - Failure: Removing the identifier '"
+                              << identifierNames[removedInd]
+                              << "' after adding it again failed.\n";
                 return false;
             }
         }
@@ -982,9 +1029,10 @@ bool TestIdentifiers()
         {
             if(AddIdentifier(fParser, identifierNames[existingInd], 3))
             {
-                std::cout << "Failure: Trying to add identifier '"
-                          << identifierNames[existingInd]
-                          << "' for a second time didn't fail.\n";
+                if(verbosityLevel >= 2)
+                    std::cout << "\n - Failure: Trying to add identifier '"
+                              << identifierNames[existingInd]
+                              << "' for a second time didn't fail.\n";
                 return false;
             }
         }
@@ -993,15 +1041,17 @@ bool TestIdentifiers()
         {
             if(!fParser.RemoveIdentifier(identifierNames[nameInd]))
             {
-                std::cout << "Failure: Trying to remove identifier '"
-                          << identifierNames[nameInd] << "' failed.\n";
+                if(verbosityLevel >= 2)
+                    std::cout << "\n - Failure: Trying to remove identifier '"
+                              << identifierNames[nameInd] << "' failed.\n";
                 return false;
             }
             if(fParser.RemoveIdentifier(identifierNames[nameInd]))
             {
-                std::cout << "Failure: Trying to remove identifier '"
-                          << identifierNames[nameInd]
-                          << "' for a second time didn't fail.\n";
+                if(verbosityLevel >= 2)
+                    std::cout << "\n - Failure: Trying to remove identifier '"
+                              << identifierNames[nameInd]
+                              << "' for a second time didn't fail.\n";
                 return false;
             }
         }
@@ -1055,8 +1105,6 @@ namespace
 
 bool testUserDefinedFunctions()
 {
-    std::cout << "- Testing user-defined functions..." << std::endl;
-
     FunctionParser nestedParser1, nestedParser2, nestedParser3;
     nestedParser1.Parse("x + 2.0*y + 3.0*z", "x, y, z");
     nestedParser2.AddFunction("nestedFunc1", nestedParser1);
@@ -1083,14 +1131,16 @@ bool testUserDefinedFunctions()
                     const double v2 = nestedFunc3(nestedFuncParams);
                     if(fabs(v1-v2) > 1e-10)
                     {
-                        std::cout << "Nested function test failed with "
-                                  << "parameter values ("
-                                  << nestedFuncParams[0] << ","
-                                  << nestedFuncParams[1]
-                                  << ").\nThe library "
-                                  << (iteration > 0 ? "(optimized) " : "")
-                                  << "returned " << v1
-                                  << " instead of " << v2 << "." << std::endl;
+                        if(verbosityLevel >= 2)
+                            std::cout
+                                << "\n - Nested function test failed with "
+                                << "parameter values ("
+                                << nestedFuncParams[0] << ","
+                                << nestedFuncParams[1]
+                                << ").\nThe library "
+                                << (iteration > 0 ? "(optimized) " : "")
+                                << "returned " << v1
+                                << " instead of " << v2 << "." << std::endl;
                         return false;
                     }
                 }
@@ -1127,10 +1177,11 @@ bool testUserDefinedFunctions()
            (userFunctionParserFunctions[funcInd],
             userFunctionParserParameters[funcInd]) >= 0)
         {
-            std::cout << "Failed to parse function\n\""
-                      << functionString.str() << "\"\nwith parameters: \""
-                      << paramString.str() << "\":\n"
-                      << userFunctionParsers[funcInd].ErrorMsg() << "\n";
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Failed to parse function\n\""
+                          << functionString.str() << "\"\nwith parameters: \""
+                          << paramString.str() << "\":\n"
+                          << userFunctionParsers[funcInd].ErrorMsg() << "\n";
             return false;
         }
 
@@ -1143,15 +1194,18 @@ bool testUserDefinedFunctions()
                 userFunctionParsers[funcInd].Eval(funcParams);
             if(fabs(result - parserResult) > 1e-8)
             {
-                std::cout << "Function\n\"" << functionString.str()
-                          << "\"\nwith parameters (";
-                for(unsigned paramInd = 0; paramInd < testInd; ++paramInd)
+                if(verbosityLevel >= 2)
                 {
-                    if(paramInd > 0) std::cout << ',';
-                    std::cout << funcParams[paramInd];
+                    std::cout << "\n - Function\n\"" << functionString.str()
+                              << "\"\nwith parameters (";
+                    for(unsigned paramInd = 0; paramInd < testInd; ++paramInd)
+                    {
+                        if(paramInd > 0) std::cout << ',';
+                        std::cout << funcParams[paramInd];
+                    }
+                    std::cout << ")\nreturned " << parserResult
+                              << " instead of " << result << "\n";
                 }
-                std::cout << ")\nreturned " << parserResult
-                          << " instead of " << result << "\n";
                 return false;
             }
         }
@@ -1166,15 +1220,18 @@ bool testUserDefinedFunctions()
         if(!parser1.AddFunction(funcNames[funcInd], userFunctions[funcInd],
                                 funcInd))
         {
-            std::cout << "Failed to add user-defined function \""
-                      << funcNames[funcInd] << "\".\n";
+            if(verbosityLevel >= 2)
+                std::cout << "\n - Failed to add user-defined function \""
+                          << funcNames[funcInd] << "\".\n";
             return false;
         }
         if(!parser2.AddFunction(funcNames[funcInd],
                                 userFunctionParsers[funcInd]))
         {
-            std::cout << "Failed to add user-defined function parser \""
-                      << funcNames[funcInd] << "\".\n";
+            if(verbosityLevel >= 2)
+                std::cout
+                    << "\n - Failed to add user-defined function parser \""
+                    << funcNames[funcInd] << "\".\n";
             return false;
         }
 
@@ -1195,16 +1252,18 @@ bool testUserDefinedFunctions()
 
         if(parser1.Parse(functionString.str(), "x") >= 0)
         {
-            std::cout << "parser1 failed to parse function\n\""
-                      << functionString.str() << "\":\n"
-                      << parser1.ErrorMsg() << "\n";
+            if(verbosityLevel >= 2)
+                std::cout << "\n - parser1 failed to parse function\n\""
+                          << functionString.str() << "\":\n"
+                          << parser1.ErrorMsg() << "\n";
             return false;
         }
         if(parser2.Parse(functionString.str(), "x") >= 0)
         {
-            std::cout << "parser2 failed to parse function\n\""
-                      << functionString.str() << "\":\n"
-                      << parser2.ErrorMsg() << "\n";
+            if(verbosityLevel >= 2)
+                std::cout << "\n - parser2 failed to parse function\n\""
+                          << functionString.str() << "\":\n"
+                          << parser2.ErrorMsg() << "\n";
             return false;
         }
 
@@ -1232,26 +1291,30 @@ bool testUserDefinedFunctions()
 
                 if(parser1Failed || parser2Failed)
                 {
-                    std::cout << "For function:\n\"" << functionString.str()
-                              << "\"";
-                    if(optimizeInd > 0)
-                        std::cout << "\n(Optimized " << optimizeInd
-                                  << (optimizeInd > 1 ? " times)" : " time)");
-                    std::cout << "\nwith x=" << x
-                              << " parser";
-                    if(parser1Failed)
-                        std::cout << "1 returned " << parser1Result;
-                    else
-                        std::cout << "2 returned " << parser2Result;
-                    std::cout << " instead of " << result << ".\n";
-
-                    if(parser2Failed)
+                    if(verbosityLevel >= 2)
                     {
-                        std::cout << "The user-defined functions are:\n";
-                        for(unsigned i = 0; i <= funcInd; ++i)
-                            std::cout << funcNames[i] << "=\""
-                                      << userFunctionParserFunctions[i]
-                                      << "\"\n";
+                        std::cout << "\n - For function:\n\""
+                                  << functionString.str() << "\"";
+                        if(optimizeInd > 0)
+                            std::cout << "\n(Optimized " << optimizeInd
+                                      << (optimizeInd > 1 ?
+                                          " times)" : " time)");
+                        std::cout << "\nwith x=" << x
+                                  << " parser";
+                        if(parser1Failed)
+                            std::cout << "1 returned " << parser1Result;
+                        else
+                            std::cout << "2 returned " << parser2Result;
+                        std::cout << " instead of " << result << ".\n";
+
+                        if(parser2Failed)
+                        {
+                            std::cout << "The user-defined functions are:\n";
+                            for(unsigned i = 0; i <= funcInd; ++i)
+                                std::cout << funcNames[i] << "=\""
+                                          << userFunctionParserFunctions[i]
+                                          << "\"\n";
+                        }
                     }
 
                     return false;
@@ -1269,7 +1332,8 @@ bool testUserDefinedFunctions()
 //=========================================================================
 // Multithreaded test
 //=========================================================================
-#if defined(FP_USE_THREAD_SAFE_EVAL) || defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+#if defined(FP_USE_THREAD_SAFE_EVAL) || \
+    defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
 #include <boost/thread.hpp>
 
 class TestingThread
@@ -1317,10 +1381,11 @@ class TestingThread
                 if(fabs(diff) > 1e-6)
                 {
                     mOk = false;
-                    std::cout << "\nThread " << mThreadNumber
-                              << " failed ([" << vars[0] << "," << vars[1]
-                              << "] -> " << v2 << " vs. " << v1 << ")"
-                              << std::endl;
+                    if(verbosityLevel >= 2)
+                        std::cout << "\n - Thread " << mThreadNumber
+                                  << " failed ([" << vars[0] << "," << vars[1]
+                                  << "] -> " << v2 << " vs. " << v1 << ")"
+                                  << std::endl;
                     return;
                 }
             }
@@ -1332,17 +1397,18 @@ volatile bool TestingThread::mOk = true;
 
 bool testMultithreadedEvaluation()
 {
-    std::cout << "- Testing multithreaded evaluation... 1" << std::flush;
-
     FunctionParser fp;
     fp.Parse("sin(sqrt(x*x+y*y)) + 2*cos(2*sqrt(2*x*x+2*y*y))", "x,y");
 
+    if(verbosityLevel >= 1)
+        std::cout << " 1" << std::flush;
     boost::thread t1(TestingThread(1, &fp)), t2(TestingThread(2, &fp));
     t1.join();
     t2.join();
     if(!TestingThread::ok()) return false;
 
-    std::cout << " 2" << std::flush;
+    if(verbosityLevel >= 1)
+        std::cout << " 2" << std::flush;
     boost::thread
         t3(TestingThread(3, &fp)), t4(TestingThread(4, &fp)),
         t5(TestingThread(5, &fp)), t6(TestingThread(6, &fp));
@@ -1352,7 +1418,8 @@ bool testMultithreadedEvaluation()
     t6.join();
     if(!TestingThread::ok()) return false;
 
-    std::cout << " 3" << std::flush;
+    if(verbosityLevel >= 1)
+        std::cout << " 3" << std::flush;
     fp.Optimize();
     boost::thread
         t7(TestingThread(7, &fp)), t8(TestingThread(8, &fp)),
@@ -1362,16 +1429,14 @@ bool testMultithreadedEvaluation()
     t9.join();
     if(!TestingThread::ok()) return false;
 
-    std::cout << std::endl;
     return true;
 }
 
-#else
-
-bool testMultithreadedEvaluation() { return true; }
-
 #endif
 
+//=========================================================================
+// Test variable deduction
+//=========================================================================
 template<typename Value_t>
 struct TestType
 {
@@ -1389,15 +1454,13 @@ struct TestType
 };
 
 
-//=========================================================================
-// Test variable deduction
-//=========================================================================
 template<typename Value_t>
 bool checkVarString(const char* idString,
                     FunctionParserBase<Value_t> & fp,
                     const TestType<Value_t>& testData,
                     int errorIndex,
-                    int variablesAmount, const std::string& variablesString)
+                    int variablesAmount, const std::string& variablesString,
+                    std::ostream& briefErrorMessages)
 {
     const bool stringsMatch =
         (variablesString == testData.paramString);
@@ -1405,22 +1468,30 @@ bool checkVarString(const char* idString,
        variablesAmount != int(testData.paramAmount) ||
        !stringsMatch)
     {
-        std::cout << "\n" << idString
-                  << " ParseAndDeduceVariables() failed with function:\n\""
-                  << testData.funcString << "\"\n";
-        if(errorIndex >= 0)
-            std::cout << "Error index: " << errorIndex
-                      << ": " << fp.ErrorMsg() << std::endl;
-        else if(!stringsMatch)
-            std::cout << "Deduced var string was \"" << variablesString
-                      << "\" instead of \""
-                      << testData.paramString
-                      << "\"." << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout << "\n" << idString
+                      << " ParseAndDeduceVariables() failed with function:\n\""
+                      << testData.funcString << "\"\n";
+            if(errorIndex >= 0)
+                std::cout << "Error index: " << errorIndex
+                          << ": " << fp.ErrorMsg() << std::endl;
+            else if(!stringsMatch)
+                std::cout << "Deduced var string was \"" << variablesString
+                          << "\" instead of \""
+                          << testData.paramString
+                          << "\"." << std::endl;
+            else
+                std::cout << "Deduced variables amount was "
+                          << variablesAmount << " instead of "
+                          << testData.paramAmount << "."
+                          << std::endl;
+        }
         else
-            std::cout << "Deduced variables amount was "
-                      << variablesAmount << " instead of "
-                      << testData.paramAmount << "."
-                      << std::endl;
+        {
+            briefErrorMessages << "- " << testData.testName
+                               << ": Failed ParseAndDeduceVariables().\n";
+        }
         return false;
     }
     return true;
@@ -1428,12 +1499,13 @@ bool checkVarString(const char* idString,
 
 template<typename Value_t>
 bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
-                           const TestType<Value_t>& testData)
+                           const TestType<Value_t>& testData,
+                           std::ostream& briefErrorMessages)
 {
     static std::string variablesString;
     static std::vector<std::string> variables;
 
-    if(verbose)
+    if(verbosityLevel >= 3)
         std::cout << "(Variable deduction)" << std::flush;
 
     int variablesAmount = -1;
@@ -1443,17 +1515,25 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
     if(retval >= 0 || variablesAmount !=
        int(testData.paramAmount))
     {
-        std::cout <<
-            "\nFirst ParseAndDeduceVariables() failed with function:\n\""
-                  << testData.funcString << "\"\n";
-        if(retval >= 0)
-            std::cout << "Error index: " << retval
-                      << ": " << fp.ErrorMsg() << std::endl;
+        if(verbosityLevel >= 2)
+        {
+            std::cout <<
+                "\nFirst ParseAndDeduceVariables() failed with function:\n\""
+                      << testData.funcString << "\"\n";
+            if(retval >= 0)
+                std::cout << "Error index: " << retval
+                          << ": " << fp.ErrorMsg() << std::endl;
+            else
+                std::cout << "Deduced variables amount was "
+                          << variablesAmount << " instead of "
+                          << testData.paramAmount << "."
+                          << std::endl;
+        }
         else
-            std::cout << "Deduced variables amount was "
-                      << variablesAmount << " instead of "
-                      << testData.paramAmount << "."
-                      << std::endl;
+        {
+            briefErrorMessages << "- " << testData.testName
+                               << ": Failed ParseAndDeduceVariables().\n";
+        }
         return false;
     }
 
@@ -1464,7 +1544,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
          &variablesAmount,
          testData.useDegrees);
     if(!checkVarString("Second", fp, testData, retval, variablesAmount,
-                       variablesString))
+                       variablesString, briefErrorMessages))
         return false;
 
     retval = fp.ParseAndDeduceVariables(testData.funcString,
@@ -1478,7 +1558,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
         variablesString += variables[i];
     }
     return checkVarString("Third", fp, testData, retval, variablesAmount,
-                          variablesString);
+                          variablesString, briefErrorMessages);
 }
 
 
@@ -1565,15 +1645,24 @@ namespace
 
         if(diff > Eps)
         {
-            error << std::setprecision(16) << v2 << " instead of "
-                  << std::setprecision(16) << v1
-                  << "\n(Difference: "
-                  << std::setprecision(16) << v2-v1
-                  << ", epsilon: "
-                  << std::setprecision(16) << Eps
-                  << "; scaled diff "
-                  << std::setprecision(16) << diff
-                  << ")\nwhen tested against the double function.";
+            if(verbosityLevel >= 2)
+                error << std::setprecision(16) << v2 << " instead of "
+                      << std::setprecision(16) << v1
+                      << "\n(Difference: "
+                      << std::setprecision(16) << v2-v1
+                      << ", epsilon: "
+                      << std::setprecision(16) << Eps
+                      << "; scaled diff "
+                      << std::setprecision(16) << diff
+                      << ")\nwhen tested against the double function.";
+            else
+                error << std::setprecision(16) << v2 << " vs "
+                      << std::setprecision(16) << v1
+                      << " (diff: "
+                      << std::setprecision(16) << v2-v1
+                      << ", sdiff "
+                      << std::setprecision(16) << diff
+                      << ") against double.";
         }
     }
 #endif
@@ -1595,8 +1684,12 @@ namespace
         const long longValue = testData.longFuncPtr(longVars);
         if(longValue != parserValue)
         {
-            error << parserValue << " instead of " << longValue
-                  << "\nwhen tested against the long int function.";
+            if(verbosityLevel >= 2)
+                error << parserValue << " instead of " << longValue
+                      << "\nwhen tested against the long int function.";
+            else
+                error << parserValue << " vs " << longValue
+                      << " against long.";
         }
     }
 #endif
@@ -1606,7 +1699,8 @@ template<typename Value_t>
 bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                        const TestType<Value_t>& testData,
                        const std::string& valueType,
-                       const Value_t Eps)
+                       const Value_t Eps,
+                       std::ostream& briefErrorMessages)
 {
     Value_t vars[10];
     Value_t fp_vars[10];
@@ -1639,7 +1733,10 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             {
                 if(v1 != v2)
                 {
-                    error << v2 << " instead of " << v1;
+                    if(verbosityLevel >= 2)
+                        error << v2 << " instead of " << v1;
+                    else
+                        error << v2 << " vs " << v1;
                 }
                 else
                     testAgainstLongInt(vars, v2, testData, error);
@@ -1669,15 +1766,24 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
                 if(diff > Eps)
                 {
-                    error << std::setprecision(28) << v2 << " instead of "
-                          << std::setprecision(28) << v1
-                          << "\n(Difference: "
-                          << std::setprecision(28) << v2-v1
-                          << ", epsilon: "
-                          << std::setprecision(28) << Eps
-                          << "; scaled diff "
-                          << std::setprecision(28) << diff
-                          << ")";
+                    if(verbosityLevel >= 2)
+                        error << std::setprecision(28) << v2 << " instead of "
+                              << std::setprecision(28) << v1
+                              << "\n(Difference: "
+                              << std::setprecision(28) << v2-v1
+                              << ", epsilon: "
+                              << std::setprecision(28) << Eps
+                              << "; scaled diff "
+                              << std::setprecision(28) << diff
+                              << ")";
+                    else
+                        error << std::setprecision(16) << v2 << " vs "
+                              << std::setprecision(16) << v1
+                              << " (diff: "
+                              << std::setprecision(16) << v2-v1
+                              << ", sdiff "
+                              << std::setprecision(16) << diff
+                              << ")";
                 }
                 else
                     testAgainstDouble(vars, v2, testData, error);
@@ -1685,20 +1791,30 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
             if(!error.str().empty())
             {
-                if(!verbose)
+                if(verbosityLevel == 2)
                     std::cout << "\n****************************\nTest "
                               << testData.testName
                               << ", function:\n\"" << testData.funcString
                               << "\"\n(" << valueType << ")";
 
-                std::cout << std::endl << "Error: For (";
-                for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                    std::cout << (ind>0 ? ", " : "") << vars[ind];
-                std::cout << ")\nthe library returned " << error.str()
-                          << std::endl;
+                if(verbosityLevel >= 2)
+                {
+                    std::cout << std::endl << "Error: For (";
+                    for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                        std::cout << (ind>0 ? ", " : "") << vars[ind];
+                    std::cout << ")\nthe library returned " << error.str()
+                              << std::endl;
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-                fp.PrintByteCode(std::cout);
+                    fp.PrintByteCode(std::cout);
 #endif
+                }
+                else
+                {
+                    briefErrorMessages << "- " << testData.testName << " (";
+                    for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                        briefErrorMessages << (ind>0 ? "," : "") << vars[ind];
+                    briefErrorMessages << "): " << error.str() << "\n";
+                }
                 return false;
             }
         } /* test Eval() */
@@ -1769,10 +1885,13 @@ bool runRegressionTests(const std::string& valueType)
     // -------------------------------------
     FunctionParserBase<Value_t> fp;
 
-    setAnsiBold();
-    std::cout << "======================== Parser type \"" << valueType
-              << "\" ========================" << std::endl;
-    resetAnsiColor();
+    if(verbosityLevel >= 1)
+    {
+        setAnsiBold();
+        std::cout << "==================== Parser type \"" << valueType
+                  << "\" ====================" << std::endl;
+        resetAnsiColor();
+    }
 
     bool ret = fp.AddConstant("pi",
                               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
@@ -1803,15 +1922,13 @@ bool runRegressionTests(const std::string& valueType)
     }
 
     FunctionParserBase<Value_t> SqrFun, SubFun, ValueFun;
-    if(verbose) std::cout << "Parsing SqrFun... ";
+    if(verbosityLevel >= 3) std::cout << "Parsing SqrFun... ";
     SqrFun.Parse("x*x", "x");
-    if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing SubFun... ";
+    if(verbosityLevel >= 3) std::cout << "\nParsing SubFun... ";
     SubFun.Parse("x-y", "x,y");
-    if(verbose) std::cout << std::endl;
-    if(verbose) std::cout << "Parsing ValueFun... ";
+    if(verbosityLevel >= 3) std::cout << "\nParsing ValueFun... ";
     ValueFun.Parse("5", "");
-    if(verbose) std::cout << std::endl;
+    if(verbosityLevel >= 3) std::cout << std::endl;
 
     ret = fp.AddFunction("psqr", SqrFun);
     ret = ret && fp.AddFunction("psub", SubFun);
@@ -1841,6 +1958,9 @@ bool runRegressionTests(const std::string& valueType)
         }
     }
 
+    bool allRegressionTestsOk = true;
+    std::ostringstream briefErrorMessages;
+
     std::string prev_test_prefix;
     const unsigned maxtests = ~0U; // unknown
     /*    sizeof(RegressionTests<Value_t>::Tests)
@@ -1867,16 +1987,19 @@ bool runRegressionTests(const std::string& valueType)
         }
 
         //fp.PrintByteCode(std::cout);
-        if(verbose)
-            std::cout << /*std::right <<*/ std::setw(2)
-                      << testData.testName << ": \""
-                      << testData.funcString << "\" (" <<
-                FUNCTIONPARSERTYPES::fp_pow((testData.paramMax -
-                     testData.paramMin) /
-                    testData.paramStep,
-                    Value_t( (int) testData.paramAmount))
-                      << " param. combinations): " << std::flush;
-        else
+        if(verbosityLevel >= 3)
+        {
+            std::cout
+                << /*std::right <<*/ std::setw(2)
+                << testData.testName << ": \""
+                << testData.funcString << "\" ("
+                << FUNCTIONPARSERTYPES::fp_pow
+                ((testData.paramMax - testData.paramMin) /
+                 testData.paramStep,
+                 Value_t( (int) testData.paramAmount))
+                << " param. combinations): " << std::flush;
+        }
+        else if(verbosityLevel == 2)
         {
             const char* tn = testData.testName;
             const char* p = std::strrchr(tn, '/');
@@ -1895,47 +2018,79 @@ bool runRegressionTests(const std::string& valueType)
             std::cout << std::flush << " ";
         }
 
-        if(!runRegressionTest(fp, testData, valueType + ", not optimized",
-                              Epsilon<Value_t>()))
-            return false;
+        bool thisTestOk =
+            runRegressionTest(fp, testData, valueType + ", not optimized",
+                              Epsilon<Value_t>(), briefErrorMessages);
 
-        if(verbose) std::cout << "Ok." << std::endl;
+        if(thisTestOk)
+        {
+            if(verbosityLevel >= 3) std::cout << "Ok." << std::endl;
 
-        fp.Optimize();
-        //fp.PrintByteCode(std::cout);
-
-        if(verbose) std::cout << "    Optimized: " << std::flush;
-        if(!runRegressionTest(fp, testData, valueType + ", after optimization",
-                              Epsilon<Value_t>()))
-            return false;
-
-        if(verbose)
-            std::cout << "(Calling Optimize() several times) " << std::flush;
-
-        for(int j = 0; j < 20; ++j)
             fp.Optimize();
+            //fp.PrintByteCode(std::cout);
 
-        /* Sometimes literals drift when the optimizer is run many times,
-           which can become significant with floats. The only purpose to
-           test running the optimizer several times is just to see that it
-           doesn't break. It's not intended to be called several times
-           normally. Hence just skip testing with floats, because the drift
-           just causes differences larger than epsilon...
-        */
-        if(valueType != "float" &&
-           !runRegressionTest(fp, testData,
-                              valueType + ", after several optimization runs",
-                              Epsilon<Value_t>()))
-            return false;
+            if(verbosityLevel >= 3)
+                std::cout << "    Optimized: " << std::flush;
 
-        if(!testVariableDeduction(fp, testData)) return false;
+            thisTestOk =
+                runRegressionTest(fp, testData,
+                                  valueType + ", after optimization",
+                                  Epsilon<Value_t>(), briefErrorMessages);
+            if(thisTestOk)
+            {
+                if(verbosityLevel >= 3)
+                    std::cout << "(Calling Optimize() several times) "
+                              << std::flush;
 
-        if(verbose) std::cout << "Ok." << std::endl;
+                for(int j = 0; j < 20; ++j)
+                    fp.Optimize();
+
+                /* Sometimes literals drift when the optimizer is run many
+                   times, which can become significant with floats. The only
+                   purpose to test running the optimizer several times is just
+                   to see that it doesn't break. It's not intended to be called
+                   several times normally. Hence just skip testing with floats,
+                   because the drift just causes differences larger than
+                   epsilon...
+                */
+                if(valueType != "float")
+                {
+                    thisTestOk =
+                        runRegressionTest
+                        (fp, testData,
+                         valueType + ", after several optimization runs",
+                         Epsilon<Value_t>(), briefErrorMessages);
+                }
+
+                if(thisTestOk)
+                {
+                    thisTestOk =
+                        testVariableDeduction(fp, testData, briefErrorMessages);
+
+                    if(thisTestOk && verbosityLevel >= 3)
+                        std::cout << "Ok." << std::endl;
+                }
+            }
+        } // if(thisTestOk)
+
+        if(!thisTestOk) allRegressionTestsOk = false;
+
+        if(verbosityLevel == 1)
+            std::cout << (thisTestOk ? "." : "!") << std::flush;
+    } // for(unsigned i = 0; i < maxtests; ++i)
+
+    if(allRegressionTestsOk)
+    {
+        if(verbosityLevel == 1 || verbosityLevel == 2)
+            std::cout << std::endl;
+    }
+    else if(verbosityLevel <= 1)
+    {
+        if(verbosityLevel == 1) std::cout << "\n";
+        std::cout << briefErrorMessages.str() << std::flush;
     }
 
-    if(!verbose) std::cout << std::endl;
-
-    return true;
+    return allRegressionTestsOk;
 }
 
 //=========================================================================
@@ -2011,8 +2166,16 @@ namespace OptimizerTests
             return false;
         }
 
-        return runRegressionTest(parser, testData,
-                                 "double", Epsilon<double>());
+        std::ostringstream briefErrorMessages;
+
+        if(!runRegressionTest(parser, testData, "double", Epsilon<double>(),
+                              briefErrorMessages))
+        {
+            if(verbosityLevel == 1)
+                std::cout << "\n - " << briefErrorMessages.str() << std::flush;
+            return false;
+        }
+        return true;
     }
 
     bool runTrigCombinationTests()
@@ -2052,20 +2215,115 @@ namespace OptimizerTests
 
 bool testOptimizer()
 {
-    std::cout << "- Optimizer tests...";
     if(!OptimizerTests::runTrigCombinationTests())
         return false;
-    std::cout << " (" << OptimizerTests::testCounter << " tests)"
-              << std::endl;
+    if(verbosityLevel >= 1)
+        std::cout << " (" << OptimizerTests::testCounter << " tests)";
     return true;
 }
 
+
+//=========================================================================
+// Help output
+//=========================================================================
+void printAvailableTests(std::vector<std::string>& tests)
+{
+    std::cout << "Available tests:\n";
+    size_t column=0;
+    std::string prev_test_prefix;
+
+    bool counting_tests = false;
+    long last_count     = 0, count_length = 0;
+
+    for(size_t a=0; a<tests.size(); ++a)
+    {
+        std::string tn = tests[a];
+        size_t p = tn.rfind('/');
+        if(p == tn.npos)
+            prev_test_prefix = "";
+        else
+        {
+            {
+                std::string path_prefix(tn, 0, p);
+                if(path_prefix != prev_test_prefix)
+                {
+                    if(counting_tests && count_length > 1)
+                    {
+                        std::ostringstream tmp; tmp << "-" << last_count;
+                        std::cout << tmp.str(); column += tmp.str().size();
+                    }
+                    counting_tests = false;
+                    if(column) { std::cout << std::endl; column=0; }
+                    prev_test_prefix = path_prefix;
+                    std::cout << "    " << path_prefix << "/\n";
+                }
+            }
+            tn.erase(0, p+1);
+        }
+        if(column+tn.size() >= 76) { column=0; std::cout << "\n"; }
+        if(column==0) { std::cout << "        "; column+=8; }
+        else { std::cout << " "; column+=1; }
+
+        /* TODO: Rewrite this such that backspaces are not needed,
+         *       because they don't work with util-linux's "more"
+         */
+        char* endptr = 0;
+        long val = strtol(tn.c_str(), &endptr, 10);
+        if(!*endptr)
+        {
+            if(!counting_tests)
+            {
+                counting_tests = true; count_length = 1; last_count = val;
+            }
+            else if(val == last_count+1)
+            {
+                ++count_length;
+                last_count = val; std::cout << "\b"; --column; continue;
+            }
+            else if(count_length > 1)
+            {
+                std::ostringstream tmp; tmp << "\b-" << last_count << " ";
+                std::cout << tmp.str(); column += tmp.str().size();
+                counting_tests = false;
+            }
+            else counting_tests = false;
+        }
+        else if(counting_tests && count_length > 1)
+        {
+            std::ostringstream tmp; tmp << "\b-" << last_count << " ";
+            std::cout << tmp.str(); column += tmp.str().size();
+            counting_tests = false;
+        }
+        else counting_tests = false;
+
+        std::cout << tn;
+        column += tn.size();
+    }
+    if(column) std::cout << std::endl;
+}
 
 //=========================================================================
 // Main
 //=========================================================================
 int main(int argc, char* argv[])
 {
+    const char* const optionsHelpText =
+        "    -q                Quiet (no progress, brief error reports)\n"
+        "    -v                Verbose (progress, full error reports)\n"
+        "    -vv               Very verbose\n"
+        "    -tests <tests>    Select tests to perform, wildcards ok\n"
+        "                      Example: -tests 'cmp*'\n"
+        "    -tests help       List available tests\n"
+        "    -d                Test double datatype\n"
+        "    -f                Test float datatype\n"
+        "    -ld               Test long double datatype\n"
+        "    -li               Test long int datatype\n"
+        "    -mf, -mpfr        Test MpfrFloat datatype\n"
+        "    -gi, -gmpint      Test GmpInt datatype\n"
+        "    -algo <n>         Run only algorithmic test <n> (implies -v)\n"
+        "    -noUTF8Test       Skip UTF-8 testing\n"
+        "    -h, --help        This help\n";
+
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     MpfrFloat::setDefaultMantissaBits(80);
 #endif
@@ -2077,11 +2335,19 @@ int main(int argc, char* argv[])
     bool runAllTypes = true;
     bool run_d = false, run_f = false, run_ld = false;
     bool run_li = false, run_mf = false, run_gi = false;
+    unsigned runAlgoTest = 0;
 
     for(int i = 1; i < argc; ++i)
     {
-        if(std::strcmp(argv[i], "-noUTF8Test") == 0)
+        if(std::strcmp(argv[i], "-q") == 0) verbosityLevel = 0;
+        else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel = 2;
+        else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel = 3;
+        else if(std::strcmp(argv[i], "-noUTF8Test") == 0)
             runUTF8Test = false;
+        else if(std::strcmp(argv[i], "-algo") == 0)
+        {
+            if(i+1 < argc) runAlgoTest = std::atoi(argv[++i]);
+        }
         else if(std::strcmp(argv[i], "-tests") == 0)
         {
             std::vector<std::string> tests;
@@ -2112,66 +2378,7 @@ int main(int argc, char* argv[])
 
             if(std::strcmp(argv[i+1], "help") == 0)
             {
-                std::cout << "Available tests:\n";
-                size_t column=0;
-                std::string prev_test_prefix;
-
-                bool counting_tests = false;
-                long last_count     = 0, count_length = 0;
-
-                for(size_t a=0; a<tests.size(); ++a)
-                {
-                    std::string tn = tests[a];
-                    size_t p = tn.rfind('/');
-                    if(p == tn.npos)
-                        prev_test_prefix = "";
-                    else
-                    {
-                        {std::string path_prefix(tn, 0, p);
-                        if(path_prefix != prev_test_prefix)
-                        {
-                            if(counting_tests && count_length > 1)
-                            { std::ostringstream tmp; tmp << "-" << last_count;
-                              std::cout << tmp.str(); column += tmp.str().size(); }
-                            counting_tests = false;
-                            if(column) { std::cout << std::endl; column=0; }
-                            prev_test_prefix = path_prefix;
-                            std::cout << "    " << path_prefix << "/\n";
-                        }}
-                        tn.erase(0, p+1);
-                    }
-                    if(column+tn.size() >= 76) { column=0; std::cout << "\n"; }
-                    if(column==0) { std::cout << "        "; column+=8; }
-                    else { std::cout << " "; column+=1; }
-
-                    /* TODO: Rewrite this such that backspaces are not needed,
-                     *       because they don't work with util-linux's "more"
-                     */
-                    char* endptr = 0;
-                    long val = strtol(tn.c_str(), &endptr, 10);
-                    if(!*endptr)
-                    {
-                        if(!counting_tests)
-                            { counting_tests = true; count_length = 1; last_count = val; }
-                        else if(val == last_count+1)
-                            { ++count_length;
-                              last_count = val; std::cout << "\b"; --column; continue; }
-                        else if(count_length > 1)
-                            { std::ostringstream tmp; tmp << "\b-" << last_count << " ";
-                              std::cout << tmp.str(); column += tmp.str().size();
-                              counting_tests = false; }
-                        else counting_tests = false;
-                    }
-                    else if(counting_tests && count_length > 1)
-                        { std::ostringstream tmp; tmp << "\b-" << last_count << " ";
-                          std::cout << tmp.str(); column += tmp.str().size();
-                          counting_tests = false; }
-                    else counting_tests = false;
-
-                    std::cout << tn;
-                    column += tn.size();
-                }
-                if(column) std::cout << std::endl;
+                printAvailableTests(tests);
                 return 0;
             }
             while(i+1 < argc && argv[i+1][0] != '-')
@@ -2179,11 +2386,13 @@ int main(int argc, char* argv[])
                 const char* t = argv[++i];
                 bool ok = false;
                 for(size_t a=0; a<tests.size(); ++a)
-                    if(WildMatch_Dirmask(t, tests[a].c_str())) { ok=true; break; }
+                    if(WildMatch_Dirmask(t, tests[a].c_str()))
+                    { ok=true; break; }
                 if(!ok)
                 {
                     std::cout << "No such test: " << t
-                              << "\n\"testbed -tests help\" to list available tests.\n";
+                              << "\n\"testbed -tests help\" to list "
+                              << "available tests.\n";
                     return -1;
                 }
                 selectedRegressionTests.push_back(t);
@@ -2216,19 +2425,7 @@ int main(int argc, char* argv[])
             std::cout <<
                 "FunctionParser testbed " << kVersionNumber <<
                 "\n\nUsage: " << argv[0] << " [<option> ...]\n"
-                "\n"
-                "    -noUTF8Test       Skip UTF-8 testing\n"
-                "    -tests <tests>    Select tests to perform, wildcards ok\n"
-                "                      Example: -tests 'cmp*'\n"
-                "    -tests help       List available tests\n"
-                "    -d                Test double datatype\n"
-                "    -f                Test float datatype\n"
-                "    -ld               Test long double datatype\n"
-                "    -li               Test long int datatype\n"
-                "    -mf, -mpfr        Test mpfrFloat datatype\n"
-                "    -gi, -gmpint      Test gmpInt datatype\n"
-                "    -h, --help        This help\n"
-                "\n";
+                "\n" << optionsHelpText;
             return 0;
         }
     }
@@ -2259,31 +2456,39 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    //bool err = false;
+    bool allTestsOk = true;
 
-    if(runAllTypes || run_d)
-        if(!runRegressionTests<double> ("double")) return 1;
+    if(!runAllTypes || runAlgoTest == 0)
+    {
+        if(runAllTypes || run_d)
+            if(!runRegressionTests<double>("double"))
+                allTestsOk = false;
 #ifdef FP_SUPPORT_FLOAT_TYPE
-    if(runAllTypes || run_f)
-        if(!runRegressionTests<float> ("float")) return 1;
+        if(runAllTypes || run_f)
+            if(!runRegressionTests<float>("float"))
+                allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    if(runAllTypes || run_ld)
-        if(!runRegressionTests<long double> ("long double")) return 1;
+        if(runAllTypes || run_ld)
+            if(!runRegressionTests<long double>("long double"))
+                allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-    if(runAllTypes || run_li)
-        if(!runRegressionTests<long> ("long int")) return 1;
+        if(runAllTypes || run_li)
+            if(!runRegressionTests<long>("long int"))
+                allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(runAllTypes || run_mf)
-        if(!runRegressionTests<MpfrFloat> ("MpfrFloat")) return 1;
+        if(runAllTypes || run_mf)
+            if(!runRegressionTests<MpfrFloat>("MpfrFloat"))
+                allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-    if(runAllTypes || run_gi)
-        if(!runRegressionTests<GmpInt> ("GmpInt")) return 1;
+        if(runAllTypes || run_gi)
+            if(!runRegressionTests<GmpInt>("GmpInt"))
+                allTestsOk = false;
 #endif
-    // if(err) return 1;
+    }
 
 ////////////////////////////
 ////////////////////////////
@@ -2292,20 +2497,68 @@ int main(int argc, char* argv[])
 
     // Misc. tests
     // -----------
-    if(!TestCopying()
-       || !TestErrorSituations()
-       || !WhiteSpaceTest()
-       || !testOptimizer()
-       || !TestIntPow()
-       || (runUTF8Test && !UTF8Test())
-       || !TestIdentifiers()
-       || !testUserDefinedFunctions()
-       || !testMultithreadedEvaluation())
+    const struct
+    {
+        const char* const testName;
+        bool(*testFunction)();
+    }
+    algorithmicTests[] =
+    {
+        { "Copy constructor and assignment", &TestCopying },
+        { "Error situations", &TestErrorSituations },
+        { "Whitespaces", &WhiteSpaceTest },
+        { "Optimizer tests", &testOptimizer },
+        { "Integral powers",  &TestIntPow },
+        { "UTF8 test", runUTF8Test ? &UTF8Test : 0 },
+        { "Identifier test", &TestIdentifiers },
+        { "Used-defined functions", &testUserDefinedFunctions }
+#if defined(FP_USE_THREAD_SAFE_EVAL) || \
+    defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+        ,{ "Multithreading", &testMultithreadedEvaluation }
+#endif
+    };
+
+    const unsigned algorithmicTestsAmount =
+        sizeof(algorithmicTests) / sizeof(algorithmicTests[0]);
+
+    if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount)
+        verbosityLevel = 2;
+
+    for(unsigned i = 0; i < algorithmicTestsAmount; ++i)
+    {
+        if(!algorithmicTests[i].testFunction) continue;
+
+        if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount &&
+           runAlgoTest != i+1)
+            continue;
+
+        if(verbosityLevel >= 1)
+            std::cout << "Algo test " << i+1 << ": "
+                      << algorithmicTests[i].testName << std::flush;
+
+        if(!algorithmicTests[i].testFunction())
+        {
+            allTestsOk = false;
+            if(verbosityLevel == 0)
+                std::cout << "Algo test " << i+1 << ": "
+                          << algorithmicTests[i].testName;
+            if(verbosityLevel <= 1)
+                std::cout << ": FAILED." << std::endl;
+        }
+        else if(verbosityLevel >= 1)
+            std::cout << std::endl;
+    }
+
+    if(!allTestsOk)
+    {
+        std::cout << "Some tests failed." << std::endl;
         return 1;
-
-    std::cout << "==================================================\n"
-              << "================== All tests OK ==================\n"
-              << "==================================================\n";
-
+    }
+    if(verbosityLevel == 1)
+        std::cout << "================= All tests OK =================\n";
+    else if(verbosityLevel >= 2)
+        std::cout << "================================================\n"
+                  << "================= All tests OK =================\n"
+                  << "================================================\n";
     return 0;
 }
