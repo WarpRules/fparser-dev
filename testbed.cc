@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.1.0.1";
+static const char* const kVersionNumber = "2.1.1.3";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -2315,7 +2315,7 @@ int main(int argc, char* argv[])
         "    -q                Quiet (no progress, brief error reports)\n"
         "    -v                Verbose (progress, full error reports)\n"
         "    -vv               Very verbose\n"
-        "    -tests <tests>    Select tests to perform, wildcards ok\n"
+        "    -tests <tests>    Select tests to perform, wildcards ok (implies -noalgo)\n"
         "                      Example: -tests 'cmp*'\n"
         "    -tests help       List available tests\n"
         "    -d                Test double datatype\n"
@@ -2325,6 +2325,7 @@ int main(int argc, char* argv[])
         "    -mf, -mpfr        Test MpfrFloat datatype\n"
         "    -gi, -gmpint      Test GmpInt datatype\n"
         "    -algo <n>         Run only algorithmic test <n> (implies -v)\n"
+        "    -noalgo           Skip all algorithmic tests\n"
         "    -noUTF8Test       Skip UTF-8 testing\n"
         "    -h, --help        This help\n";
 
@@ -2337,6 +2338,7 @@ int main(int argc, char* argv[])
 
     bool runUTF8Test = true;
     bool runAllTypes = true;
+    bool runAlgoTests = true;
     bool run_d = false, run_f = false, run_ld = false;
     bool run_li = false, run_mf = false, run_gi = false;
     unsigned runAlgoTest = 0;
@@ -2346,14 +2348,18 @@ int main(int argc, char* argv[])
         if(std::strcmp(argv[i], "-q") == 0) verbosityLevel = 0;
         else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel = 2;
         else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel = 3;
+        else if(std::strcmp(argv[i], "-noalgo") == 0) runAlgoTests = false;
         else if(std::strcmp(argv[i], "-noUTF8Test") == 0)
             runUTF8Test = false;
         else if(std::strcmp(argv[i], "-algo") == 0)
         {
             if(i+1 < argc) runAlgoTest = std::atoi(argv[++i]);
+            runAlgoTests = true;
         }
         else if(std::strcmp(argv[i], "-tests") == 0)
         {
+            runAlgoTests = false;
+
             std::vector<std::string> tests;
             for(unsigned a=0; RegressionTests<double>::Tests[a].testName; ++a)
                 tests.push_back(RegressionTests<double>::Tests[a].testName);
@@ -2528,29 +2534,32 @@ int main(int argc, char* argv[])
     if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount)
         verbosityLevel = 2;
 
-    for(unsigned i = 0; i < algorithmicTestsAmount; ++i)
+    if(runAlgoTests)
     {
-        if(!algorithmicTests[i].testFunction) continue;
-
-        if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount &&
-           runAlgoTest != i+1)
-            continue;
-
-        if(verbosityLevel >= 1)
-            std::cout << "Algo test " << i+1 << ": "
-                      << algorithmicTests[i].testName << std::flush;
-
-        if(!algorithmicTests[i].testFunction())
+        for(unsigned i = 0; i < algorithmicTestsAmount; ++i)
         {
-            allTestsOk = false;
-            if(verbosityLevel == 0)
+            if(!algorithmicTests[i].testFunction) continue;
+
+            if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount &&
+               runAlgoTest != i+1)
+                continue;
+
+            if(verbosityLevel >= 1)
                 std::cout << "Algo test " << i+1 << ": "
-                          << algorithmicTests[i].testName;
-            if(verbosityLevel <= 1)
-                std::cout << ": FAILED." << std::endl;
+                          << algorithmicTests[i].testName << std::flush;
+
+            if(!algorithmicTests[i].testFunction())
+            {
+                allTestsOk = false;
+                if(verbosityLevel == 0)
+                    std::cout << "Algo test " << i+1 << ": "
+                              << algorithmicTests[i].testName;
+                if(verbosityLevel <= 1)
+                    std::cout << ": FAILED." << std::endl;
+            }
+            else if(verbosityLevel >= 1)
+                std::cout << std::endl;
         }
-        else if(verbosityLevel >= 1)
-            std::cout << std::endl;
     }
 
     if(!allTestsOk)
