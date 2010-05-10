@@ -391,7 +391,7 @@ B [B==A]      cMul A [A >= VarBegin] cMul  -> B cSqr cMul      # TEST 10/sqr_yxx
 B [B==A] cNeg      A [A >= VarBegin] cMul  -> B cSqr      cNeg # TEST 10/sqr_nxx
 
 # x*-x = -(x^2)
-B [B==A]      A [A >= VarBegin] cNeg cMul  -> B cSqr      cNeg # TEST 10/sqr_xnx
+cDup cNeg cMul                             ->   cSqr      cNeg # TEST 10/sqr_xnx
 
 # ...*-x*x = ...*-(x^2)
 B [B==A] cNeg cMul A [A >= VarBegin] cMul  -> B cSqr cMul cNeg # TEST 10/sqr_ynxx

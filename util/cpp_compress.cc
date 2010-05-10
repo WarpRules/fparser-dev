@@ -30,7 +30,8 @@ namespace
             "FP_TRACE_OPCODENAME",
             "FP_TRACE_BYTECODE_OPTIMIZATION",
             "FP_TRACE_BYTECODE_ADD",
-            "N","P"
+            "N","P",
+            "incStackPtr", "TryCompilePowi","findName"
         };
         parametric_macro_list.clear();
         for(unsigned p=0; p<sizeof(list)/sizeof(*list); ++p)
