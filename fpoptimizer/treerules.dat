@@ -274,12 +274,12 @@ cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
 
 # Instead of x, generate (x^%)^(1/%) to further
 # delegate the possible responsibility of adding an abs() call.
-cLess        [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cLessOrEq    [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreater     [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreaterOrEq [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cEqual       [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cNEqual      [(cPow [x %]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cLess        [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cLessOrEq    [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cGreater     [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cGreaterOrEq [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cEqual       [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cNEqual      [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
 
 cLess        [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
 cLessOrEq    [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
