@@ -42,13 +42,19 @@ namespace
 namespace FPoptimizer_CodeTree
 {
     template<typename Value_t>
+    void CodeTree<Value_t>::Sort()
+    {
+        data->Sort();
+    }
+
+    template<typename Value_t>
     void CodeTree<Value_t>::Rehash(bool constantfolding)
     {
         if(constantfolding)
-        {
-            ConstantFolding(*this);
-        }
-        data->Sort();
+            ConstantFolding(*this); // also runs Sort()
+        else
+            Sort();
+
         data->Recalculate_Hash_NoRecursion();
     }
 
@@ -159,15 +165,18 @@ namespace FPoptimizer_CodeTree
 /* BEGIN_EXPLICIT_INSTANTATION */
 namespace FPoptimizer_CodeTree
 {
+    template void CodeTree<double>::Sort();
     template void CodeTree<double>::Rehash(bool);
     template void CodeTree<double>::FixIncompleteHashes();
     template void CodeTreeData<double>::Recalculate_Hash_NoRecursion();
 #ifdef FP_SUPPORT_FLOAT_TYPE
+    template void CodeTree<float>::Sort();
     template void CodeTree<float>::Rehash(bool);
     template void CodeTree<float>::FixIncompleteHashes();
     template void CodeTreeData<float>::Recalculate_Hash_NoRecursion();
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    template void CodeTree<long double>::Sort();
     template void CodeTree<long double>::Rehash(bool);
     template void CodeTree<long double>::FixIncompleteHashes();
     template void CodeTreeData<long double>::Recalculate_Hash_NoRecursion();

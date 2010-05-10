@@ -93,8 +93,18 @@ namespace FPoptimizer_CodeTree
         std::cout << "\n";
         DumpHashes(tree);
     #endif
-        using namespace std;
+        tree.Sort(); // Otherwise "0 <= acos(x)" does not get properly optimized
+        if(false)
+        {
     redo:;
+            tree.Sort();
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "Re-runs ConstantFolding: ";
+            DumpTree(tree);
+            std::cout << "\n";
+            DumpHashes(tree);
+        #endif
+        }
 
         // Insert here any hardcoded constant-folding optimizations
         // that you want to be done whenever a new subtree is generated.

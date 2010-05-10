@@ -123,6 +123,7 @@ namespace FPoptimizer_CodeTree
 
         void ReplaceWithImmed(const Value_t& i);
         void Rehash(bool constantfolding = true);
+        void Sort();
         inline void Mark_Incompletely_Hashed() { data->Depth=0; }
         inline bool Is_Incompletely_Hashed() const { return data->Depth == 0; }
 
