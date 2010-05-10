@@ -1897,6 +1897,10 @@ bool runRegressionTests(const std::string& valueType)
                               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
     ret = ret && fp.AddConstant("naturalnumber",
                                 FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
+    ret = ret && fp.AddConstant("logtwo",
+                                FUNCTIONPARSERTYPES::fp_const_log2<Value_t>()  );
+    ret = ret && fp.AddConstant("logten",
+                                FUNCTIONPARSERTYPES::fp_const_log10<Value_t>()  );
     ret = ret && fp.AddConstant("CONST", Value_t(CONST));
     if(!ret)
     {

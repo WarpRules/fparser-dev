@@ -7,7 +7,7 @@
 
 namespace
 {
-    std::string macro_prefix_chars = "qghdowma";
+    std::string macro_prefix_chars = "qghdowam";
     bool verbose = false;
 
     /* ^List of characters that are _least_ likely to form
@@ -344,7 +344,7 @@ namespace
                 continue;
             }
             if (input[a]=='_' || (input[a]>='a' && input[a]<='z')
-                             || (input[a]>='A' && input[a]<='Z'))
+                              || (input[a]>='A' && input[a]<='Z'))
             {
                 size_t name_begin = a;
                 while(++a < b)

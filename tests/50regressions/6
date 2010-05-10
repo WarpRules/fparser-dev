@@ -1,6 +1,6 @@
 # Bug: !(x+4) fails on integer types
-# Introduced in commit ?
-# Fixed in commit ?
+# Introduced in commit ________
+# Fixed in commit 6461cac2dab474ea091befd3782717ccd573b385
 T=d li gi
 V=x
 R=-5,5,1
