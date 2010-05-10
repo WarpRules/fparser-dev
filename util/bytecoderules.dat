@@ -45,7 +45,7 @@ IF(FP_FLOAT_VERSION) cExp2 x	[isInteger(x)] cPow -> [x] cMul cExp2  # TEST 10/ex
 IF(FP_FLOAT_VERSION) cPow  x	[isInteger(x)] cPow -> [x] cMul cPow   # TEST 10/powxpow
 IF(FP_FLOAT_VERSION) cSqr x cPow -> [x+x] cPow  #TEST 10/sqrxpow, 10/sqrxpow_nonint
 
-x cAbs	 		-> [fp_abs(x)]
+x cAbs	 		-> [fp_abs(x)]                                         # TEST 10/abs
 IF(FP_FLOAT_VERSION) x [x>=Value_t(1)]                 cAcosh -> [fp_acosh(x)] # TEST 10/acosh*
 IF(FP_FLOAT_VERSION) x                                 cAsinh -> [fp_asinh(x)] # TEST 10/asinh*
 IF(FP_FLOAT_VERSION) x [x> Value_t(-1)&&x< Value_t(1)] cAtanh -> [fp_atanh(x)] # TEST 10/atanh*
@@ -59,7 +59,7 @@ IF(FP_FLOAT_VERSION) x cCosh	 		-> [fp_cosh(x)]                # TEST 10/cosh*
 IF(FP_FLOAT_VERSION) x cExp	 		-> [fp_exp(x)]                 # TEST 10/exp*
 IF(FP_FLOAT_VERSION) x cExp2	 		-> [fp_exp2(x)]                # TEST 10/exp2*
 IF(FP_FLOAT_VERSION) x cFloor 			-> [fp_floor(x)]               # TEST 10/floor*
-IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]
+IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]                 # TEST 10/int
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog	-> [fp_log(x)]                 # TEST 10/log*
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog10	-> [fp_log10(x)]               # TEST 10/log10*
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog2	-> [fp_log2(x)]                # TEST 10/log2*
@@ -195,8 +195,8 @@ y                   cMul x cMul -> [y*x] cMul   # TEST 11/43
 cDup cAdd      cDup cAdd -> [Value_t(4)] cMul
 cDup cAdd cMul cDup cAdd -> cMul [Value_t(4)] cMul
 
-cDup x cMul cAdd -> [x+Value_t(1)] cMul
-cDup x cPow cMul -> [x+Value_t(1)] cPow
+cDup x cMul cAdd -> [x+Value_t(1)] cMul         # TEST 10/dupxmuladd
+cDup x cPow cMul -> [x+Value_t(1)] cPow         # TEST 10/dupxpowmul
 cDup cSub        -> [Value_t(0)] cMul           # TEST 10/subxx
 
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->
@@ -300,15 +300,15 @@ cAbsNotNot cNot -> cAbsNot # TEST 10/absnotnotnot
 cNot cNotNot    -> cNot    # TEST 10/notnotnot2
 # ^ Impossible as it seems, it is triggered by (!x & !x) -> !!(!x)
 
-A [IsLogicalOpcode(A)]            cAbsNot cNot -> A
-A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot
-A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot
+A [IsLogicalOpcode(A)]            cAbsNot cNot -> A              # TEST 10/absnot3
+A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot   # TEST 10/absnot4
+A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot              # TEST 10/absnot2
 
-A [IsNeverNegativeValueOpcode(A)] cAbs   -> A
-IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cTrunc-> A  # TEST 10/inttrunc
-IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cFloor-> A  # TEST 10/intfloor
-IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cCeil -> A  # TEST 10/intceil
-IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]	  cInt  -> A  # TEST 10/intint
+A [IsNeverNegativeValueOpcode(A)] cAbs   -> A                    # TEST 10/absneverneg
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cTrunc-> A  # TEST 10/inttrunc
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cFloor-> A  # TEST 10/intfloor
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cCeil -> A  # TEST 10/intceil
+IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cInt  -> A  # TEST 10/intint
 
 #IF(FP_FLOAT_VERSION) x cMul cFloor cNeg -> [-x] cMul cCeil
 #IF(FP_FLOAT_VERSION) x cMul cCeil  cNeg -> [-x] cMul cFloor

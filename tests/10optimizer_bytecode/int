@@ -1,0 +1,5 @@
+T=d f ld mf
+V=x
+R=0,1,1
+F=x+sub(sub(sub(sub(sub(int(1.1), int(1.6)), int(1.5)), int(-1.1)), int(-1.6)), int(-1.5))
+C=x + fp_floor(1.1+0.5) - fp_floor(1.6+0.5) - fp_floor(1.5+0.5) - fp_floor(-1.1+0.5) - fp_floor(-1.6+0.5) - fp_floor(-1.5+0.5)
