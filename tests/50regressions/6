@@ -1,0 +1,8 @@
+# Bug: !(x+4) fails on integer types
+# Introduced in commit ?
+# Fixed in commit ?
+T=d li gi
+V=x
+R=-5,5,1
+F=sub(!(x+4), !!(x+3))
+C=Sub({fp_not(x+4), fp_notNot(x+3)})

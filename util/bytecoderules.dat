@@ -333,8 +333,8 @@ IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cLess 
 IF(!FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLessOrEq -> A cNot
 IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cEqual  -> A      # TEST 10/eq1
 IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot # TEST 10/neq1
-IF(!FP_FLOAT_VERSION) x cAdd cNotNot -> [x] cNEqual
-IF(!FP_FLOAT_VERSION) x cAdd cNot    -> [x] cEqual
+IF(!FP_FLOAT_VERSION) x cAdd cNotNot -> [-x] cNEqual
+IF(!FP_FLOAT_VERSION) x cAdd cNot    -> [-x] cEqual
 
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot
 IF(FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot
