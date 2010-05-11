@@ -113,7 +113,7 @@ namespace FPoptimizer_CodeTree
         bool operator() (const CodeTree<Value_t>& a, const CodeTree<Value_t>& b) const
         {
             if(a.GetDepth() != b.GetDepth())
-                return a.GetDepth() > b.GetDepth();
+                return a.GetDepth() < b.GetDepth();
             return a.GetHash() < b.GetHash();
         }
     };
