@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.1.1.3";
+static const char* const kVersionNumber = "2.1.2.4";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -44,6 +44,18 @@ namespace
     */
     int verbosityLevel = 1;
 
+
+    const char* getEvalErrorName(int errorCode)
+    {
+        static const char* const evalErrorNames[6] =
+        {
+            "no error", "division by zero", "sqrt error", "log error",
+            "trigonometric error", "max eval recursion level reached"
+        };
+        if(errorCode >= 0 && errorCode < 6)
+            return evalErrorNames[errorCode];
+        return "unknown";
+    }
 
     std::vector<const char*> selectedRegressionTests;
 
@@ -1729,7 +1741,12 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
             std::ostringstream error;
 
-            if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+            if(fp.EvalError() > 0)
+            {
+                error << "EvalError " << fp.EvalError() << " ("
+                      << getEvalErrorName(fp.EvalError()) << ")";
+            }
+            else if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
             {
                 if(v1 != v2)
                 {
@@ -1894,13 +1911,13 @@ bool runRegressionTests(const std::string& valueType)
     }
 
     bool ret = fp.AddConstant("pi",
-                              FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() );
+                              FUNCTIONPARSERTYPES::fp_const_pi<Value_t>());
     ret = ret && fp.AddConstant("naturalnumber",
-                                FUNCTIONPARSERTYPES::fp_const_e<Value_t>()  );
+                                FUNCTIONPARSERTYPES::fp_const_e<Value_t>());
     ret = ret && fp.AddConstant("logtwo",
-                                FUNCTIONPARSERTYPES::fp_const_log2<Value_t>()  );
+                                FUNCTIONPARSERTYPES::fp_const_log2<Value_t>());
     ret = ret && fp.AddConstant("logten",
-                                FUNCTIONPARSERTYPES::fp_const_log10<Value_t>()  );
+                                FUNCTIONPARSERTYPES::fp_const_log10<Value_t>());
     ret = ret && fp.AddConstant("CONST", Value_t(CONST));
     if(!ret)
     {
