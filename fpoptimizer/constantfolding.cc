@@ -87,13 +87,13 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     void ConstantFolding(CodeTree<Value_t>& tree)
     {
+        tree.Sort(); // Otherwise "0 <= acos(x)" does not get properly optimized
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Runs ConstantFolding for: ";
         DumpTree(tree);
         std::cout << "\n";
         DumpHashes(tree);
     #endif
-        tree.Sort(); // Otherwise "0 <= acos(x)" does not get properly optimized
         if(false)
         {
     redo:;
