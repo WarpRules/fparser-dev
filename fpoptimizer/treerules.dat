@@ -814,13 +814,14 @@ cPow [ (cAdd {(cMul {a@C (cPow [x %@E])})  (cMul {z@C (cPow [y &@E])})} ) 0.5 ] 
 
 cNot    [x@P] -> cAbsNot [x]
 cNotNot [x@P] -> cAbsNotNot [x]
-cAnd x@P y@P <1> -> cAbsAnd x y (cAnd <1>)
-cOr x@P y@P <1>  -> cAbsOr x y (cOr <1>)
+cAnd x@P y@P   : (cAbsAnd x y)
+cOr x@P y@P    : (cAbsOr  x y)
 cIf [x@P y z]    -> cAbsIf x y z
 
-@L cAbsNotNot [x]   -> x
-@L cIf [x (cAbsNotNot[y]) z] : x y z
-@L cIf [x y (cAbsNotNot[z])] : x y z
+#@L cAbsNotNot [x]   -> x
+#@L cIf [x (cAbsNotNot[y]) z] : x y z
+#@L cIf [x y (cAbsNotNot[z])] : x y z
+# ^ These are mistakes; (x>=0.5 & y) is not same as (x & y)
 
 cAbsIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
