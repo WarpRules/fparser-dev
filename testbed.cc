@@ -2269,14 +2269,14 @@ namespace OptimizerTests
             { "< ", "<=", "= ", "!=", "> ", ">=" };
         static const char* const value[] =
             { "-1 ", "0  ", "1  ", ".5 ", "-.5" };
-        static char expression[] = "x<=-.5";
+        static char expression[] = "(x<=-.5)";
 
-        expression[0] = varName;
-        expression[1] = comp[compIndex][0];
-        expression[2] = comp[compIndex][1];
-        expression[3] = value[valueIndex][0];
-        expression[4] = value[valueIndex][1];
-        expression[5] = value[valueIndex][2];
+        expression[1] = varName;
+        expression[2] = comp[compIndex][0];
+        expression[3] = comp[compIndex][1];
+        expression[4] = value[valueIndex][0];
+        expression[5] = value[valueIndex][1];
+        expression[6] = value[valueIndex][2];
         return expression;
     }
 
@@ -2396,6 +2396,8 @@ namespace OptimizerTests
 
             if(fp_nequal(parserValue, correctValue))
             {
+                const bool isIntegral =
+                    FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
                 if(verbosityLevel >= 2)
                 {
                     std::cout
@@ -2404,8 +2406,6 @@ namespace OptimizerTests
                     for(unsigned i = 0; i < operands; ++i)
                         std::cout << (i>0 ? "," : "")
                                   << variableValues[i];
-                    const bool isIntegral =
-                        FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
                     std::cout
                         << "): Parser<"
                         << (isIntegral ? "long" : "double")
@@ -2417,6 +2417,19 @@ namespace OptimizerTests
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
                     fparser.PrintByteCode(std::cout);
 #endif
+                }
+                else if(verbosityLevel >= 1)
+                {
+                    std::cout << "<" << (isIntegral ? "long" : "double");
+                    std::cout << (optimized ? ",optimized" : "");
+                    std::cout << ">\"" << functionString
+                              << "\"(";
+                    for(unsigned i = 0; i < operands; ++i)
+                        std::cout << (i>0 ? "," : "")
+                                  << variableValues[i];
+                    std::cout << "): ";
+                    std::cout << parserValue << " vs " << correctValue;
+                    std::cout << "\n";
                 }
                 return false;
             }
@@ -2448,6 +2461,8 @@ namespace OptimizerTests
 
         unsigned testCounter = 0;
         FunctionParserBase<Value_t> fparser;
+        
+        bool errors = false;
 
         for(unsigned operands = 2; operands <= varsAmount; ++operands)
         {
@@ -2482,20 +2497,27 @@ namespace OptimizerTests
                 if(!runBooleanComparisonEvaluation<Value_t, varsAmount>
                    (operandIndices, exprIndices, operands,
                     fparser, functionString, false))
-                    return false;
+                {
+                    if (verbosityLevel < 1) return false;
+                    errors = true;
+                }
 
                 fparser.Optimize();
 
                 if(!runBooleanComparisonEvaluation<Value_t, varsAmount>
                    (operandIndices, exprIndices, operands,
                     fparser, functionString, true))
-                    return false;
+                {
+                    if (verbosityLevel < 1) return false;
+                    errors = true;
+                }
 
                 ++testCounter;
             }
             while(updateIndices(operandIndices, exprIndices,
                                 operands, maxOperandIndex));
         }
+        if(errors) return false;
 
         if(verbosityLevel >= 1)
             std::cout << " (" << testCounter << ")" << std::flush;
@@ -2616,7 +2638,7 @@ int main(int argc, char* argv[])
         "    -li               Test long int datatype\n"
         "    -mf, -mpfr        Test MpfrFloat datatype\n"
         "    -gi, -gmpint      Test GmpInt datatype\n"
-        "    -algo <n>         Run only algorithmic test <n> (implies -v)\n"
+        "    -algo <n>         Run only algorithmic test <n>\n"
         "    -noalgo           Skip all algorithmic tests\n"
         "    -noUTF8Test       Skip UTF-8 testing\n"
         "    -h, --help        This help\n";
@@ -2822,9 +2844,6 @@ int main(int argc, char* argv[])
 
     const unsigned algorithmicTestsAmount =
         sizeof(algorithmicTests) / sizeof(algorithmicTests[0]);
-
-    if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount)
-        verbosityLevel = 2;
 
     if(runAlgoTests)
     {
