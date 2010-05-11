@@ -188,22 +188,15 @@ cAbsIf [x 0 1] -> cAbsNot [x]
 @L cNotNot [x]         -> x
 @L cAbs [x]            -> x
 
-cAnd    (cGreater[x %]) (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAnd    (cGreater[x %]) (cAbsNot[x])    : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
-cAnd    (cGreater[x %]) (cGreater[& x]) : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAnd    (cLess[% x])    (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsAnd (cGreater[x %]) (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsAnd (cGreater[x %]) (cAbsNot[x])    : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
-cAbsAnd (cGreater[x %]) (cGreater[& x]) : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsAnd (cLess[% x])    (cLess[x &])    : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cOr    (cLessOrEq[x %]) (cGreaterOrEq[x &])    : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cOr    (cLessOrEq[x %]) (cAbsNotNot[x])        : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
-cOr    (cLessOrEq[x %]) (cLessOrEq[& x])       : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cOr    (cGreaterOrEq[% x]) (cGreaterOrEq[x &]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsOr (cLessOrEq[x %]) (cGreaterOrEq[x &])    : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsOr (cLessOrEq[x %]) (cAbsNotNot[x])        : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
-cAbsOr (cLessOrEq[x %]) (cLessOrEq[& x])       : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
-cAbsOr (cGreaterOrEq[% x]) (cGreaterOrEq[x &]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+#cAnd    (cLess[% x]) (cAbsNot[x])           : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+#cAnd    (cLess[% x]) (cGreater[& x])        : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+#cAbsAnd (cLess[% x]) (cGreater[& x])        : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+#cAbsAnd (cLess[% x]) (cAbsNot[x])           : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+#cOr    (cGreaterOrEq[% x]) (cLessOrEq[& x]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+#cOr    (cGreaterOrEq[% x]) (cAbsNotNot[x])  : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+#cAbsOr (cGreaterOrEq[% x]) (cLessOrEq[& x]) : (cNotNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
+#cAbsOr (cGreaterOrEq[% x]) (cAbsNotNot[x])  : (cNotNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
+# ^ these rules only work if & > %, and currently there's no way to verify it
 
 #cOr    (cAbsNot[x]) (cAbsNot[(cMul{x -1})])  : (cNot[x])
 #cAbsOr (cAbsNot[x]) (cAbsNot[(cMul{x -1})])  : (cNot[x])
