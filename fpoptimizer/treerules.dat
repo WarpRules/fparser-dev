@@ -125,19 +125,19 @@
 cIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 #cIf [(cNEqual[x y]) z a]   : (cEqual[y x]) a z
 
-cIf [(cLess[x y]) x y] -> cMin x y
-cIf [(cLess[x y]) y x] -> cMax x y
-cIf [(cLessOrEq[x y]) x y] -> cMin x y
-cIf [(cLessOrEq[x y]) y x] -> cMax x y
-cIf [(cGreater[x y]) y x] -> cMin x y
-cIf [(cGreater[x y]) x y] -> cMax x y
-cIf [(cGreaterOrEq[x y]) y x] -> cMin x y
-cIf [(cGreaterOrEq[x y]) x y] -> cMax x y
+cIf [(cLess[x y]) x y] -> cMin x y             # TEST 20/ifminmax
+cIf [(cLess[x y]) y x] -> cMax x y             # TEST 20/ifminmax
+cIf [(cLessOrEq[x y]) x y] -> cMin x y         # TEST 20/ifminmax
+cIf [(cLessOrEq[x y]) y x] -> cMax x y         # TEST 20/ifminmax
+cIf [(cGreater[x y]) y x] -> cMin x y          # TEST 20/ifminmax
+cIf [(cGreater[x y]) x y] -> cMax x y          # TEST 20/ifminmax
+cIf [(cGreaterOrEq[x y]) y x] -> cMin x y      # TEST 20/ifminmax
+cIf [(cGreaterOrEq[x y]) x y] -> cMax x y      # TEST 20/ifminmax
 
-cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x
-cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x
-cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x
-cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x
+cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
+cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
+cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
+cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
 
 cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)])
 cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)])
@@ -170,23 +170,23 @@ cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # !x = abs(x) < 0.5
 # Thus, !(x*2) = abs(x) < 0.5/2
 # Note: Due to range-based optimizations, % can never be 0 here. These are safe.
-cLess        [(cAbs[x]) %] -> cNot[(cMul x 0.5 /%)]
-cLessOrEq    [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]
+cGreater  [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]      # TEST 10/absnzlt (no fpoptimizer test)
+cLessOrEq [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]   # TEST 10/absnzge (no fpoptimizer test)
 
 # abs(x) > 0  -->  abs(x) != 0  -->  x != 0
-cEqual       [(cAbs[x]) 0] : x 0
-cNEqual      [(cAbs[x]) 0] : x 0
+cEqual    [0 (cAbs[x])] : x 0              # TEST 10/abseq0 (no fpoptimizer test)
+cNEqual   [0 (cAbs[x])] : x 0              # TEST 10/absneq0 (no fpoptimizer test)
 
-cIf [x 1 0] -> cNotNot [x]
-cIf [x 0 1] -> cNot [x]
-cAbsIf [x 1 0] -> cAbsNotNot [x]
-cAbsIf [x 0 1] -> cAbsNot [x]
+cIf [x 1 0] -> cNotNot [x]         # TEST 20/if10 (factor 1)
+cIf [x 0 1] -> cNot [x]            # TEST 20/if10 (factor 10)
+cAbsIf [x 1 0] -> cAbsNotNot [x]   # TEST 20/if10 (factor 100)
+cAbsIf [x 0 1] -> cAbsNot [x]      # TEST 20/if10 (factor 1000)
 
 # In logical contexts:
-@L cMul %@N            : -%
-@L cMul (cAbs[x])      : x
-@L cNotNot [x]         -> x
-@L cAbs [x]            -> x
+@L cMul %@N            : -%   # TEST 20/l_mulneg
+@L cMul (cAbs[x])      : x    # TEST 20/l_mulabs
+@L cNotNot [x]         -> x   # TEST 20/l_notnot
+@L cAbs [x]            -> x   # TEST 20/l_abs
 
 #cAnd    (cLess[% x]) (cAbsNot[x])           : (cNot (cMul /+(0.5 -%) (cAdd x *(+(% 0.5) -0.5))))
 #cAnd    (cLess[% x]) (cGreater[& x])        : (cNot (cMul /+(& -%) (cAdd x *(+(% &) -0.5))))
@@ -208,24 +208,24 @@ cAbsNotNot (cMul %@N <1>) -> (cLessOrEq[(cMul <1>)    *(0.5 /%)])
 
 # min(x, max(x, ...)) = x
 # max(x, min(x, ...)) = x
-cMin x (cMax x <1>)  : x
-cMax x (cMin x <1>)  : x
+cMin x (cMax x <1>)  : x    # TEST 20/mixedminmax
+cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 
 [SIMPLIFY_EQUATION]
 
-cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
-cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
-cGreater     [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
-cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
-cEqual       [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
-cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %)
+cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cGreater     [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cEqual       [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
 
-cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cGreater     [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cEqual       [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
-cNEqual      [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%)
+cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cGreater     [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cEqual       [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cNEqual      [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
 
 cLess        [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cLessOrEq    [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
@@ -234,28 +234,28 @@ cGreaterOrEq [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
 
-cLess        [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
-cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
-cGreater     [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
-cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %)
-cLess        [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
-cLessOrEq    [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
-cGreater     [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
-cGreaterOrEq [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>)
-cEqual       [(cMul % <1>) &]  : (cMul <1>) DIV(& %)
-cNEqual      [(cMul % <1>) &]  : (cMul <1>) DIV(& %)
+cLess        [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
+cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
+cGreater     [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
+cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
+cLess        [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cLessOrEq    [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cGreater     [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cGreaterOrEq [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cEqual       [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp_mul_imm_pos
+cNEqual      [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp_mul_imm_pos
 
-cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
-cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
-cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
-cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
-cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
-cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
-cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
-cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>)
+cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
 
-cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
-cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %))
+cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
 
 #cLess        [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cLessOrEq    [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
@@ -507,21 +507,21 @@ cCos [(cMul -1 <1>)] : (cMul <1>)
 cCos [(cAbs [x])] : x
 
 # cos(pi/2 - x) = sin(x)
-cCos [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]
+cCos [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]         # TEST 20/trig_modulo
 # sin(pi/2 - x) = cos(x)
-cSin [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cCos[(cMul -% <1>)]
+cSin [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cCos[(cMul -% <1>)]         # TEST 20/trig_modulo
 # cos(x - pi/2) = cos(pi/2 - x) = sin(x)
-cCos [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cSin[(cAdd <1>)]
+cCos [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cSin[(cAdd <1>)]             # TEST 20/trig_modulo
 # sin(x - pi/2) = -sin(pi/2 - x) = -cos(x)
-cSin [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cMul -1 (cCos[(cAdd <1>)])
+cSin [(cAdd -CONSTANT_PIHALF@R <1>)]            -> cMul -1 (cCos[(cAdd <1>)])   # TEST 20/trig_modulo
 # sin(x + pi/2) = cos(x)
-cSin [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cCos[(cAdd <1>)]
+cSin [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cCos[(cAdd <1>)]             # TEST 20/trig_modulo
 # cos(x + pi/2) = sin(-x)
-cCos [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cSin[(cMul -1 (cAdd <1>))]
+cCos [(cAdd  CONSTANT_PIHALF@R <1>)]            -> cSin[(cMul -1 (cAdd <1>))]   # TEST 20/trig_modulo
 # sin(x + pi) = -sin(x)
-cSin [(cAdd  CONSTANT_PI@R <1>)]                -> cMul -1 (cSin[(cAdd <1>)])
+cSin [(cAdd  CONSTANT_PI@R <1>)]                -> cMul -1 (cSin[(cAdd <1>)])   # TEST 20/trig_modulo
 # cos(x + pi) = -cos(x)
-cCos [(cAdd  CONSTANT_PI@R    <1>)]             -> cMul -1 (cCos[(cAdd <1>)])
+cCos [(cAdd  CONSTANT_PI@R    <1>)]             -> cMul -1 (cCos[(cAdd <1>)])   # TEST 20/trig_modulo
 #
 cCos [(cAdd 0@R <1>)]             -> cCos[(cAdd <1>)]
 cSin [(cAdd 0@R <1>)]             -> cSin[(cAdd <1>)]

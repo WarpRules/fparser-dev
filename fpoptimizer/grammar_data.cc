@@ -1040,9 +1040,9 @@ namespace FPoptimizer_Grammar
         /* 160:	@L (cMul %@N)
          *	:	-%@C
          */		 {ReplaceParams , true , 1,/*54         */54        , {1,/*13         */13        , cMul        ,AnyParams       ,0}},
-        /* 161:	(cEqual [(cAbs [x]) 0])
+        /* 161:	(cEqual [0 (cAbs [x])])
          *	:	x 0
-         */		 {ReplaceParams , false, 2,/*0,38       */38912     , {2,/*342,38     */39254     , cEqual      ,PositionalParams,0}},
+         */		 {ReplaceParams , false, 2,/*0,38       */38912     , {2,/*38,342     */350246    , cEqual      ,PositionalParams,0}},
         /* 162:	(cEqual [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
          */		 {ReplaceParams , false, 2,/*110,445    */455790    , {2,/*121,24     */24697     , cEqual      ,PositionalParams,0}},
@@ -1070,9 +1070,9 @@ namespace FPoptimizer_Grammar
         /* 170:	(cEqual [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
          */		 {ReplaceParams , false, 2,/*0,6        */6144      , {2,/*252,254    */260348    , cEqual      ,PositionalParams,0}},
-        /* 171:	(cNEqual [(cAbs [x]) 0])
+        /* 171:	(cNEqual [0 (cAbs [x])])
          *	:	x 0
-         */		 {ReplaceParams , false, 2,/*0,38       */38912     , {2,/*342,38     */39254     , cNEqual     ,PositionalParams,0}},
+         */		 {ReplaceParams , false, 2,/*0,38       */38912     , {2,/*38,342     */350246    , cNEqual     ,PositionalParams,0}},
         /* 172:	(cNEqual [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
          */		 {ReplaceParams , false, 2,/*110,445    */455790    , {2,/*121,24     */24697     , cNEqual     ,PositionalParams,0}},
@@ -1103,78 +1103,78 @@ namespace FPoptimizer_Grammar
         /* 181:	(cLess [x 0.5])
          *	->	(cAbsNot [x])
          */		 {ProduceNewTree, false, 1,/*500        */500       , {2,/*0,42       */43008     , cLess       ,PositionalParams,0}},
-        /* 182:	(cLess [(cAbs [x]) %])
-         *	->	(cNot [(cMul {x 0.5 /%@C})])
-         */		 {ProduceNewTree, false, 1,/*469        */469       , {2,/*342,14     */14678     , cLess       ,PositionalParams,0}},
-        /* 183:	(cLess [(cMul %@P <1>) &])
+        /* 182:	(cLess [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
          */		 {ReplaceParams , false, 2,/*207,446    */456911    , {2,/*216,24     */24792     , cLess       ,PositionalParams,0}},
-        /* 184:	(cLess [(cMul %@N <1>) &])
+        /* 183:	(cLess [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
          */		 {ReplaceParams , false, 2,/*446,207    */212414    , {2,/*215,24     */24791     , cLess       ,PositionalParams,0}},
-        /* 185:	(cLess [(cAdd % <1>) &])
+        /* 184:	(cLess [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
          */		 {ReplaceParams , false, 2,/*110,445    */455790    , {2,/*121,24     */24697     , cLess       ,PositionalParams,0}},
-        /* 186:	(cLess [(cPow [x %@P]) &])
+        /* 185:	(cLess [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
          */		 {ReplaceParams , false, 2,/*295,339    */347431    , {2,/*255,24     */24831     , cLess       ,PositionalParams,0}},
-        /* 187:	(cLess [(cAdd % <1>) (cAdd & <2>)])
+        /* 186:	(cLess [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
          */		 {ReplaceParams , false, 2,/*110,124    */127086    , {2,/*121,123    */126073    , cLess       ,PositionalParams,0}},
-        /* 188:	(cLess [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+        /* 187:	(cLess [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
          */		 {ReplaceParams , false, 2,/*110,111    */113774    , {2,/*117,118    */120949    , cLess       ,PositionalParams,0}},
-        /* 189:	(cLess [(cMul %@P <1>) (cMul & <2>)])
+        /* 188:	(cLess [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
          */		 {ReplaceParams , false, 2,/*207,237    */242895    , {2,/*216,220    */225496    , cLess       ,PositionalParams,0}},
-        /* 190:	(cLess [(cMul %@N <1>) (cMul & <2>)])
+        /* 189:	(cLess [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
          */		 {ReplaceParams , false, 2,/*237,207    */212205    , {2,/*215,220    */225495    , cLess       ,PositionalParams,0}},
-        /* 191:	(cLess [(cPow [%@P x]) &@P])
+        /* 190:	(cLess [(cPow [%@P x]) &@P])
          *	:	x DIV( LOG( & )@C LOG( % )@C )@C
          */		 {ReplaceParams , false, 2,/*0,447      */457728    , {2,/*260,27     */27908     , cLess       ,PositionalParams,0}},
-        /* 192:	(cLess [(cPow [x %@P]) (cPow [y &@P])])
+        /* 191:	(cLess [(cPow [x %@P]) (cPow [y &@P])])
          *	:	(cPow [(cPow [x %]) /MIN( % & )@C@C]) (cPow [(cPow [y &]) /MIN( % & )@C@C])
          */		 {ReplaceParams , false, 2,/*296,297    */304424    , {2,/*255,257    */263423    , cLess       ,PositionalParams,0}},
-        /* 193:	(cLess [(cPow [% x])@D1 (cPow [% y])@D1])
+        /* 192:	(cLess [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
          */		 {ReplaceParams , false, 2,/*0,6        */6144      , {2,/*252,254    */260348    , cLess       ,PositionalParams,0}},
-        /* 194:	(cLessOrEq [% (cAbs [x])])
+        /* 193:	(cLessOrEq [% (cAbs [x])])
          *	->	(cNotNot [(cMul {x 0.5 /%@C})])
          */		 {ProduceNewTree, false, 1,/*494        */494       , {2,/*14,342     */350222    , cLessOrEq   ,PositionalParams,0}},
-        /* 195:	(cLessOrEq [(cMul %@P <1>) &])
+        /* 194:	(cLessOrEq [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
          */		 {ReplaceParams , false, 2,/*207,446    */456911    , {2,/*216,24     */24792     , cLessOrEq   ,PositionalParams,0}},
-        /* 196:	(cLessOrEq [(cMul %@N <1>) &])
+        /* 195:	(cLessOrEq [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
          */		 {ReplaceParams , false, 2,/*446,207    */212414    , {2,/*215,24     */24791     , cLessOrEq   ,PositionalParams,0}},
-        /* 197:	(cLessOrEq [(cAdd % <1>) &])
+        /* 196:	(cLessOrEq [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
          */		 {ReplaceParams , false, 2,/*110,445    */455790    , {2,/*121,24     */24697     , cLessOrEq   ,PositionalParams,0}},
-        /* 198:	(cLessOrEq [(cPow [x %@P]) &])
+        /* 197:	(cLessOrEq [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
          */		 {ReplaceParams , false, 2,/*295,339    */347431    , {2,/*255,24     */24831     , cLessOrEq   ,PositionalParams,0}},
-        /* 199:	(cLessOrEq [(cAdd % <1>) (cAdd & <2>)])
+        /* 198:	(cLessOrEq [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
          */		 {ReplaceParams , false, 2,/*110,124    */127086    , {2,/*121,123    */126073    , cLessOrEq   ,PositionalParams,0}},
-        /* 200:	(cLessOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+        /* 199:	(cLessOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
          */		 {ReplaceParams , false, 2,/*110,111    */113774    , {2,/*117,118    */120949    , cLessOrEq   ,PositionalParams,0}},
-        /* 201:	(cLessOrEq [(cMul %@P <1>) (cMul & <2>)])
+        /* 200:	(cLessOrEq [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
          */		 {ReplaceParams , false, 2,/*207,237    */242895    , {2,/*216,220    */225496    , cLessOrEq   ,PositionalParams,0}},
-        /* 202:	(cLessOrEq [(cMul %@N <1>) (cMul & <2>)])
+        /* 201:	(cLessOrEq [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
          */		 {ReplaceParams , false, 2,/*237,207    */212205    , {2,/*215,220    */225495    , cLessOrEq   ,PositionalParams,0}},
-        /* 203:	(cLessOrEq [(cPow [%@P x]) &@P])
+        /* 202:	(cLessOrEq [(cPow [%@P x]) &@P])
          *	:	x DIV( LOG( & )@C LOG( % )@C )@C
          */		 {ReplaceParams , false, 2,/*0,447      */457728    , {2,/*260,27     */27908     , cLessOrEq   ,PositionalParams,0}},
-        /* 204:	(cLessOrEq [(cPow [x %@P]) (cPow [y &@P])])
+        /* 203:	(cLessOrEq [(cPow [x %@P]) (cPow [y &@P])])
          *	:	(cPow [(cPow [x %]) /MIN( % & )@C@C]) (cPow [(cPow [y &]) /MIN( % & )@C@C])
          */		 {ReplaceParams , false, 2,/*296,297    */304424    , {2,/*255,257    */263423    , cLessOrEq   ,PositionalParams,0}},
-        /* 205:	(cLessOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
+        /* 204:	(cLessOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
          */		 {ReplaceParams , false, 2,/*0,6        */6144      , {2,/*252,254    */260348    , cLessOrEq   ,PositionalParams,0}},
+        /* 205:	(cGreater [% (cAbs [x])])
+         *	->	(cNot [(cMul {x 0.5 /%@C})])
+         */		 {ProduceNewTree, false, 1,/*469        */469       , {2,/*14,342     */350222    , cGreater    ,PositionalParams,0}},
         /* 206:	(cGreater [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
          */		 {ReplaceParams , false, 2,/*207,446    */456911    , {2,/*216,24     */24792     , cGreater    ,PositionalParams,0}},
@@ -1344,7 +1344,7 @@ namespace FPoptimizer_Grammar
             { 0,19,21,22,23,24,25,26,27,28,
               29,30,31,32,33,34,35,36,37,38,
               39,40,47,48,49,50,88,121,122,123,
-              124,159,160,161,171,182,194,232,233,234,
+              124,159,160,161,171,193,205,232,233,234,
               235,236,239,240,241,242,245,246,247,250,
               251
     }   };  }
@@ -1360,8 +1360,8 @@ namespace FPoptimizer_Grammar
             48,
             { 0,25,27,28,29,30,31,32,33,34,
               35,36,37,38,39,40,47,48,49,50,
-              88,121,122,123,124,159,160,161,171,182,
-              194,230,232,233,234,235,236,238,239,240,
+              88,121,122,123,124,159,160,161,171,193,
+              205,230,232,233,234,235,236,238,239,240,
               241,242,243,245,246,247,250,251
     }   };  }
     struct grammar_optimize_round1_type
@@ -1383,7 +1383,7 @@ namespace FPoptimizer_Grammar
               88,89,90,91,92,93,94,95,96,97,
               98,99,100,101,117,120,121,122,123,124,
               125,126,127,128,129,130,131,156,157,159,
-              160,161,171,182,194,232,233,234,235,236,
+              160,161,171,193,205,232,233,234,235,236,
               239,240,241,242,245,246,247,250,251
     }   };  }
     struct grammar_optimize_round2_type
@@ -1403,7 +1403,7 @@ namespace FPoptimizer_Grammar
               85,86,87,88,102,103,104,105,106,107,
               108,109,110,111,112,113,114,115,116,120,
               121,122,123,124,125,128,129,130,132,156,
-              157,158,159,160,161,171,182,194,232,233,
+              157,158,159,160,161,171,193,205,232,233,
               234,235,236,239,240,241,242,245,246,247,
               250,251
     }   };  }
@@ -1421,9 +1421,9 @@ namespace FPoptimizer_Grammar
               139,140,141,142,143,144,145,146,147,148,
               149,150,151,162,163,164,165,166,167,168,
               169,170,172,173,174,175,176,177,178,179,
-              180,183,184,185,186,187,188,189,190,191,
-              192,193,195,196,197,198,199,200,201,202,
-              203,204,205,206,207,208,209,210,211,212,
+              180,182,183,184,185,186,187,188,189,190,
+              191,192,194,195,196,197,198,199,200,201,
+              202,203,204,206,207,208,209,210,211,212,
               213,214,215,216,218,219,220,221,222,223,
               224,225,226,227,228
     }   };  }
@@ -1451,8 +1451,8 @@ namespace FPoptimizer_Grammar
             45,
             { 0,25,27,28,29,30,31,32,33,34,
               35,36,37,38,39,40,47,48,49,50,
-              88,121,122,123,124,159,160,161,171,182,
-              194,232,233,234,235,236,239,240,241,242,
+              88,121,122,123,124,159,160,161,171,193,
+              205,232,233,234,235,236,239,240,241,242,
               245,246,247,250,251
     }   };  }
 }
