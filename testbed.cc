@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.1.2.4";
+static const char* const kVersionNumber = "2.2.0.5";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -28,6 +28,7 @@ static const char* const kVersionNumber = "2.1.2.4";
 #include <sstream>
 #include <algorithm>
 #include <cstring>
+#include <cassert>
 
 #define CONST 1.5
 
@@ -2119,6 +2120,9 @@ bool runRegressionTests(const std::string& valueType)
 //=========================================================================
 namespace OptimizerTests
 {
+    // --------------------------------------------------------------------
+    // Optimizer test 1
+    // --------------------------------------------------------------------
     /* Tests functions of the form "A(x^B)^C op D(x^E)^F", where:
        - A,D = {sin,cos,tan,sinh,cosh,tanh,exp}
        - B,E = {1,2}
@@ -2142,7 +2146,6 @@ namespace OptimizerTests
     int exponent_B, exponent_E;
     int exponent_C, exponent_F;
     unsigned operatorIndex;
-    unsigned testCounter = 0;
 
     double evaluateFunction(const double* params)
     {
@@ -2161,8 +2164,6 @@ namespace OptimizerTests
 
     bool runCurrentTrigCombinationTest()
     {
-        ++testCounter;
-
         const MathFuncData& data1 = mathFuncs[mathFuncIndexA];
         const MathFuncData& data2 = mathFuncs[mathFuncIndexD];
 
@@ -2176,7 +2177,7 @@ namespace OptimizerTests
         const TestType<double> testData =
         {
             1, -4.0, 4.0, 0.49, false, &evaluateFunction, 0, 0, "x",
-            "'optimizer test'", funcString.c_str()
+            "'trig. combo optimizer test'", funcString.c_str()
         };
 
         FunctionParser parser;
@@ -2201,6 +2202,8 @@ namespace OptimizerTests
 
     bool runTrigCombinationTests()
     {
+        unsigned testCounter = 0;
+
         for(mathFuncIndexA = 0;
             mathFuncIndexA < mathFuncsAmount;
             ++mathFuncIndexA)
@@ -2221,6 +2224,7 @@ namespace OptimizerTests
                                     operatorIndex < 2;
                                     ++operatorIndex)
                                 {
+                                    ++testCounter;
                                     if(!runCurrentTrigCombinationTest())
                                         return false;
                                 }
@@ -2230,16 +2234,287 @@ namespace OptimizerTests
                 }
             }
         }
+
+        if(verbosityLevel >= 1)
+            std::cout << " (" << testCounter << ")" << std::flush;
         return true;
+    }
+
+
+    // --------------------------------------------------------------------
+    // Optimizer test 2
+    // --------------------------------------------------------------------
+    /* Tests functions of the form "A op B [op C]", where
+       A, B, C = { var, !var, !!var, var comp value }
+       var = A -> x, B -> y, C -> z
+       comp = { <, <=, =, !=, >, >= }
+       value = { -1, -.5, 0, .5, 1 }
+       op = { and, or, not and, not or }
+    */
+    // opIndex = 0-32 for doubles, 0-20 for ints
+    const char* getOperandString(char varName, unsigned opIndex)
+    {
+        if(opIndex <= 2)
+        {
+            static char operand[] = "!!x";
+            operand[2] = varName;
+            return operand + (2 - opIndex);
+        }
+
+        opIndex -= 3;
+        const unsigned compIndex = opIndex % 6, valueIndex = opIndex / 6;
+        assert(valueIndex <= 4);
+
+        static const char* const comp[] =
+            { "< ", "<=", "= ", "!=", "> ", ">=" };
+        static const char* const value[] =
+            { "-1 ", "0  ", "1  ", ".5 ", "-.5" };
+        static char expression[] = "x<=-.5";
+
+        expression[0] = varName;
+        expression[1] = comp[compIndex][0];
+        expression[2] = comp[compIndex][1];
+        expression[3] = value[valueIndex][0];
+        expression[4] = value[valueIndex][1];
+        expression[5] = value[valueIndex][2];
+        return expression;
+    }
+
+    template<typename Value_t>
+    Value_t getOperandValue(Value_t varValue, unsigned opIndex)
+    {
+        switch(opIndex)
+        {
+          case 0: return varValue;
+          case 1: return FUNCTIONPARSERTYPES::fp_not(varValue);
+          case 2: return FUNCTIONPARSERTYPES::fp_notNot(varValue);
+        }
+
+        opIndex -= 3;
+        const unsigned compIndex = opIndex % 6, valueIndex = opIndex / 6;
+
+        static const Value_t value[] =
+            { -1, 0, 1, Value_t(.5), Value_t(-.5) };
+
+        switch(compIndex)
+        {
+          case 0: return fp_less(varValue, value[valueIndex]);
+          case 1: return fp_lessOrEq(varValue, value[valueIndex]);
+          case 2: return fp_equal(varValue, value[valueIndex]);
+          case 3: return fp_nequal(varValue, value[valueIndex]);
+          case 4: return fp_greater(varValue, value[valueIndex]);
+          case 5: return fp_greaterOrEq(varValue, value[valueIndex]);
+        }
+        assert(false);
+        return 0;
+    }
+
+    // exprIndex = 0-3
+    std::string getBooleanExpression(const std::string& operand1,
+                                     const std::string& operand2,
+                                     unsigned exprIndex)
+    {
+        switch(exprIndex)
+        {
+          case 0: return operand1 + "&" + operand2;
+          case 1: return operand1 + "|" + operand2;
+          case 2: return "!(" + operand1 + "&" + operand2 + ")";
+          case 3: return "!(" + operand1 + "|" + operand2 + ")";
+        }
+        assert(false);
+        return "";
+    }
+
+    template<typename Value_t>
+    Value_t getBooleanValue(Value_t operand1Value, Value_t operand2Value,
+                            unsigned exprIndex)
+    {
+        using namespace FUNCTIONPARSERTYPES;
+        switch(exprIndex)
+        {
+          case 0: return fp_and(operand1Value, operand2Value);
+          case 1: return fp_or(operand1Value, operand2Value);
+          case 2: return fp_not(fp_and(operand1Value, operand2Value));
+          case 3: return fp_not(fp_or(operand1Value, operand2Value));
+        }
+        assert(false);
+        return 0;
+    }
+
+    bool updateIndices(unsigned* operandIndices, unsigned* exprIndices,
+                       unsigned operands, const unsigned maxOperandIndex)
+    {
+        for(unsigned oi = 0; oi < operands; ++oi)
+        {
+            if(++operandIndices[oi] <= maxOperandIndex)
+                return true;
+            operandIndices[oi] = 0;
+        }
+        for(unsigned ei = 0; ei < operands-1; ++ei)
+        {
+            if(++exprIndices[ei] <= 3) return true;
+            exprIndices[ei] = 0;
+        }
+        return false;
+    }
+
+    template<typename Value_t, unsigned varsAmount>
+    bool runBooleanComparisonEvaluation(const unsigned* operandIndices,
+                                        const unsigned* exprIndices,
+                                        const unsigned operands,
+                                        FunctionParserBase<Value_t>& fparser,
+                                        const std::string& functionString,
+                                        bool optimized)
+    {
+        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+        const unsigned varValuesToTest = isIntegral ? 3 : 4;
+
+        static const Value_t values[] =
+            { -1, 0, 1, Value_t(0.5), Value_t(-0.5) };
+        static unsigned valueIndices[varsAmount];
+        static Value_t variableValues[varsAmount];
+
+        for(unsigned i = 0; i < operands; ++i) valueIndices[i] = 0;
+
+        bool stop = false;
+        while(!stop)
+        {
+            for(unsigned i = 0; i < operands; ++i)
+                variableValues[i] = values[valueIndices[i]];
+
+            const Value_t parserValue = fparser.Eval(variableValues);
+
+            Value_t correctValue = getOperandValue(variableValues[0],
+                                                   operandIndices[0]);
+
+            for(unsigned i = 1; i < operands; ++i)
+                correctValue =
+                    getBooleanValue(correctValue,
+                                    getOperandValue(variableValues[i],
+                                                    operandIndices[i]),
+                                    exprIndices[i-1]);
+
+            if(fp_nequal(parserValue, correctValue))
+            {
+                if(verbosityLevel >= 2)
+                {
+                    std::cout
+                        << "\nFor function \"" << functionString
+                        << "\" (";
+                    for(unsigned i = 0; i < operands; ++i)
+                        std::cout << (i>0 ? "," : "")
+                                  << variableValues[i];
+                    const bool isIntegral =
+                        FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+                    std::cout
+                        << "): Parser<"
+                        << (isIntegral ? "long" : "double")
+                        << ">"
+                        << (optimized ? " (optimized)" : "")
+                        << "\nreturned " << parserValue
+                        << " instead of " << correctValue
+                        << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+                    fparser.PrintByteCode(std::cout);
+#endif
+                }
+                return false;
+            }
+
+            stop = true;
+            for(unsigned i = 0; i < operands; ++i)
+            {
+                if(++valueIndices[i] < varValuesToTest)
+                { stop = false; break; }
+                valueIndices[i] = 0;
+            }
+        }
+
+        return true;
+    }
+
+    template<typename Value_t>
+    bool runBooleanComparisonTestsForType()
+    {
+        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+        const unsigned maxOperandIndex = isIntegral ? 20 : 32;
+
+        const char varNames[] = { 'x', 'y', 'z' };
+        const char* const varString = "x,y,z";
+        const unsigned varsAmount = sizeof(varNames) / sizeof(varNames[0]);
+
+        unsigned operandIndices[varsAmount];
+        unsigned exprIndices[varsAmount - 1];
+
+        unsigned testCounter = 0;
+        FunctionParserBase<Value_t> fparser;
+
+        for(unsigned operands = 2; operands <= varsAmount; ++operands)
+        {
+            for(unsigned i = 0; i < operands; ++i) operandIndices[i] = 0;
+            for(unsigned i = 0; i < operands-1; ++i) exprIndices[i] = 0;
+
+            do
+            {
+                // Generate function string:
+                std::string functionString =
+                    getOperandString(varNames[0], operandIndices[0]);
+
+                for(unsigned i = 1; i < operands; ++i)
+                    functionString =
+                        getBooleanExpression
+                        (i == 1 ? functionString : "(" + functionString + ")",
+                         getOperandString(varNames[i], operandIndices[i]),
+                         exprIndices[i-1]);
+
+                //std::cout << '"' << functionString << "\"\n";
+
+                // Parse function string:
+                int errorIndex = fparser.Parse(functionString, varString);
+                if(errorIndex >= 0)
+                {
+                    std::cout << "\nOops! Function \"" << functionString
+                              << "\" was malformed.\n";
+                    return false;
+                }
+
+                // Evaluate function and test for correctness:
+                if(!runBooleanComparisonEvaluation<Value_t, varsAmount>
+                   (operandIndices, exprIndices, operands,
+                    fparser, functionString, false))
+                    return false;
+
+                fparser.Optimize();
+
+                if(!runBooleanComparisonEvaluation<Value_t, varsAmount>
+                   (operandIndices, exprIndices, operands,
+                    fparser, functionString, true))
+                    return false;
+
+                ++testCounter;
+            }
+            while(updateIndices(operandIndices, exprIndices,
+                                operands, maxOperandIndex));
+        }
+
+        if(verbosityLevel >= 1)
+            std::cout << " (" << testCounter << ")" << std::flush;
+
+        return true;
+    }
+
+    bool runBooleanComparisonTests()
+    {
+        return
+            runBooleanComparisonTestsForType<double>() &&
+            runBooleanComparisonTestsForType<long>();
     }
 }
 
 bool testOptimizer()
 {
-    if(!OptimizerTests::runTrigCombinationTests())
-        return false;
-    if(verbosityLevel >= 1)
-        std::cout << " (" << OptimizerTests::testCounter << " tests)";
+    if(!OptimizerTests::runTrigCombinationTests()) return false;
+    if(!OptimizerTests::runBooleanComparisonTests()) return false;
     return true;
 }
 
