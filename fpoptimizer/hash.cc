@@ -76,10 +76,11 @@ namespace FPoptimizer_CodeTree
                 /* TODO: For non-POD types, convert the value
                  * into a base-62 string (or something) and hash that.
                  */
+                NewHash.hash1 = 0; // Try to ensure immeds gets always sorted first
               #if 0
                 long double value = Value;
                 fphash_value_t key = crc32::calc((const unsigned char*)&value, sizeof(value));
-                key |= (key << 24);
+                key ^= (key << 24);
               #elif 0
                 union
                 {
@@ -102,10 +103,14 @@ namespace FPoptimizer_CodeTree
                 int exponent;
                 Value_t fraction = std::frexp(Value, &exponent);
                 fphash_value_t key = (unsigned(exponent+0x8000) & 0xFFFF);
-                if(fraction < 0) { fraction = -fraction; key = ~key; } else key += 0x10000;
+                if(fraction < 0)
+                    { fraction = -fraction; key = key^0xFFFF; }
+                else
+                    key += 0x10000;
                 fraction -= Value_t(0.5);
-                key <<= 40;
+                key <<= 39; // covers bits 39..55 now
                 key |= fphash_value_t((fraction+fraction) * Value_t(1u<<31)) << 8;
+                // fraction covers bits 8..39 now
               #endif
                 /* Key = 56-bit unsigned integer value
                  *       that is directly proportional
