@@ -27,6 +27,7 @@ namespace
     template<typename Value_t>
     bool fPExponentIsTooLarge(Value_t base, Value_t exponent)
     {
+        if(base <= Value_t(0) || fp_equal(base, Value_t(1))) return true;
         return exponent >= Value_t(maxFPExponent<Value_t>()) / fp_log2(base);
     }
 
