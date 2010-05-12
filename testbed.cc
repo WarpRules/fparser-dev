@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.2.0.5";
+static const char* const kVersionNumber = "2.2.1.7";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -2640,7 +2640,7 @@ int main(int argc, char* argv[])
         "    -gi, -gmpint      Test GmpInt datatype\n"
         "    -algo <n>         Run only algorithmic test <n>\n"
         "    -noalgo           Skip all algorithmic tests\n"
-        "    -noUTF8Test       Skip UTF-8 testing\n"
+        "    -skipSlowAlgo     Skip slow algorithmic tests\n"
         "    -h, --help        This help\n";
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -2650,7 +2650,7 @@ int main(int argc, char* argv[])
     GmpInt::setDefaultNumberOfBits(80);
 #endif
 
-    bool runUTF8Test = true;
+    bool skipSlowAlgo = false;
     bool runAllTypes = true;
     bool runAlgoTests = true;
     bool run_d = false, run_f = false, run_ld = false;
@@ -2663,8 +2663,7 @@ int main(int argc, char* argv[])
         else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel = 2;
         else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel = 3;
         else if(std::strcmp(argv[i], "-noalgo") == 0) runAlgoTests = false;
-        else if(std::strcmp(argv[i], "-noUTF8Test") == 0)
-            runUTF8Test = false;
+        else if(std::strcmp(argv[i], "-skipSlowAlgo") == 0) skipSlowAlgo = true;
         else if(std::strcmp(argv[i], "-algo") == 0)
         {
             if(i+1 < argc) runAlgoTest = std::atoi(argv[++i]);
@@ -2752,6 +2751,11 @@ int main(int argc, char* argv[])
                 "\n" << optionsHelpText;
             return 0;
         }
+        else
+        {
+            std::cout << "Unknown option: " << argv[i] << "\n";
+            return 1;
+        }
     }
 
     if(selectedRegressionTests.empty())
@@ -2831,9 +2835,9 @@ int main(int argc, char* argv[])
         { "Copy constructor and assignment", &TestCopying },
         { "Error situations", &TestErrorSituations },
         { "Whitespaces", &WhiteSpaceTest },
-        { "Optimizer tests", &testOptimizer },
+        { "Optimizer tests", skipSlowAlgo ? 0 : &testOptimizer },
         { "Integral powers",  &TestIntPow },
-        { "UTF8 test", runUTF8Test ? &UTF8Test : 0 },
+        { "UTF8 test", skipSlowAlgo ? 0 : &UTF8Test },
         { "Identifier test", &TestIdentifiers },
         { "Used-defined functions", &testUserDefinedFunctions }
 #if defined(FP_USE_THREAD_SAFE_EVAL) || \
