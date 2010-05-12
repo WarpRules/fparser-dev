@@ -1,9 +1,13 @@
 #include "codetree.hh"
 
+#include <limits>
+
+/****
 #ifdef _MSC_VER
 #include <float.h>
 #define isinf(x) (!_finite(x))
 #endif
+*/
 
 namespace
 {
@@ -13,6 +17,18 @@ namespace
     /**************************************/
     /* OPERATIONS DONE TO POW()           */
     /**************************************/
+
+    template<typename Value_t>
+    int maxFPExponent()
+    {
+        return std::numeric_limits<Value_t>::max_exponent;
+    }
+
+    template<typename Value_t>
+    bool fPExponentIsTooLarge(Value_t base, Value_t exponent)
+    {
+        return exponent >= Value_t(maxFPExponent<Value_t>()) / fp_log2(base);
+    }
 
     template<typename Value_t>
     bool ConstantFolding_PowOperations(CodeTree<Value_t>& tree)
@@ -58,6 +74,7 @@ namespace
                     Value_t imm = mulgroup.GetParam(a).GetImmed();
                     //if(imm >= 0.0)
                     {
+                        /****
                         Value_t new_base_immed = fp_pow(base_immed, imm);
                         if(isinf(new_base_immed)
                         || fp_equal(new_base_immed, Value_t(0)))
@@ -65,6 +82,13 @@ namespace
                             // It produced an infinity. Do not change.
                             break;
                         }
+                        */
+                        if(fPExponentIsTooLarge(base_immed, imm))
+                            break;
+
+                        Value_t new_base_immed = fp_pow(base_immed, imm);
+                        if(fp_equal(new_base_immed, Value_t(0)))
+                            break;
 
                         if(!changes)
                         {
@@ -105,6 +129,7 @@ namespace
                     Value_t imm = mulgroup.GetParam(a).GetImmed();
                     //if(imm >= 0.0)
                     {
+                        /****
                         Value_t new_factor_immed = fp_pow(imm, exponent_immed);
                         if(isinf(new_factor_immed)
                         || fp_equal(new_factor_immed, Value_t(0)))
@@ -112,6 +137,14 @@ namespace
                             // It produced an infinity. Do not change.
                             break;
                         }
+                        */
+                        if(fPExponentIsTooLarge(imm, exponent_immed))
+                            break;
+
+                        Value_t new_factor_immed = fp_pow(imm, exponent_immed);
+                        if(fp_equal(new_factor_immed, Value_t(0)))
+                            break;
+
                         if(!changes)
                         {
                             changes = true;
