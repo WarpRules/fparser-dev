@@ -2560,13 +2560,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
               --SP;
               break;
+#endif // FP_SUPPORT_OPTIMIZER
 
           case cSinCos:
               fp_sinCos(Stack[SP], Stack[SP+1], Stack[SP]);
               ++SP;
               break;
 
-#endif // FP_SUPPORT_OPTIMIZER
           case cAbsNot:
               Stack[SP] = fp_absNot(Stack[SP]); break;
           case cAbsNotNot:
@@ -3223,6 +3223,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                             produces = 0;
                             break;
                         }
+    #endif
                         case cSinCos:
                         {
                             if(showExpression)
@@ -3239,7 +3240,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                             produces = 0;
                             break;
                         }
-    #endif
                         case cAbsAnd: n = "abs_and"; break;
                         case cAbsOr:  n = "abs_or"; break;
                         case cAbsNot: n = "abs_not"; params = 1; break;

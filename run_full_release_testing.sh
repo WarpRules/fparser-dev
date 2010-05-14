@@ -5,6 +5,7 @@ runTest()
     make release_clean
     FP_FEATURE_FLAGS="$1" make testbed_release
     if [ "$?" -ne "0" ]; then exit 1; fi
+    echo "Running: ./testbed_release $2"
     ./testbed_release "$2"
     if [ "$?" -ne "0" ]; then exit 1; fi
 }

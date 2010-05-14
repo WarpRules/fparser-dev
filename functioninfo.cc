@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.1.0.1";
+static const char* const kVersionNumber = "1.1.1.2";
 
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
@@ -58,6 +58,8 @@ namespace
     const double kVarValuesDeltaFactor1 = 1.25;
     const double kVarValuesDeltaFactor2 = 10.0;
     const double kVarValuesDeltaFactor2Threshold = 10.0;
+
+    bool gPrintByteCodeExpressions = true;
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
     template<> inline float epsilon<float>() { return 1e-5F; }
@@ -609,7 +611,7 @@ namespace
             streams[0] <<
                 "Function " << i+1 << " original\n"
                 "-------------------\n";
-            parser.PrintByteCode(streams[0]);
+            parser.PrintByteCode(streams[0], gPrintByteCodeExpressions);
 
             streams[1] <<
                 "Optimized\n"
@@ -617,13 +619,15 @@ namespace
             parser.Optimize();
             {
                 std::ostringstream streams2_bytecodeonly;
-                parser.PrintByteCode(streams2_bytecodeonly);
+                parser.PrintByteCode(streams2_bytecodeonly,
+                                     gPrintByteCodeExpressions);
                 streams[1] << streams2_bytecodeonly.str();
 
                 parser.Optimize();
                 {
                     std::ostringstream streams3_bytecodeonly;
-                    parser.PrintByteCode(streams3_bytecodeonly);
+                    parser.PrintByteCode(streams3_bytecodeonly,
+                                         gPrintByteCodeExpressions);
 
                     if(had_double_optimization_problems ||
                        streams2_bytecodeonly.str() !=
@@ -829,7 +833,8 @@ namespace
             "  -vars <string>    : Specify a var string.\n"
             "  -nt               : No timing measurements.\n"
             "  -ntd              : No timing if functions differ.\n"
-            "  -deg              : Use degrees for trigonometry.\n";
+            "  -deg              : Use degrees for trigonometry.\n"
+            "  -noexpr           : Don't print byte code expressions.\n";
         return 1;
     }
 }
@@ -940,6 +945,8 @@ int main(int argc, char* argv[])
             if(++i == argc) return printHelp(argv[0]);
             mantissaBits = std::atol(argv[i]);
         }
+        else if(std::strcmp(argv[i], "-noexpr") == 0)
+            gPrintByteCodeExpressions = false;
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0

@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.2.1.7";
+static const char* const kVersionNumber = "2.2.2.8";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -174,7 +174,7 @@ bool TestCopyingDeepCopy(FunctionParser p)
     return true;
 }
 
-bool TestCopying()
+int TestCopying()
 {
     bool retval = true;
     double vars[2] = { 2, 5 };
@@ -272,7 +272,7 @@ bool TestCopying()
 //=========================================================================
 // Test error situations
 //=========================================================================
-bool TestErrorSituations()
+int TestErrorSituations()
 {
     bool retval = true;
     FunctionParser fp, tmpfp;
@@ -489,7 +489,7 @@ bool testWsFunc(FunctionParser& fp, const std::string& function)
     return true;
 }
 
-bool WhiteSpaceTest()
+int WhiteSpaceTest()
 {
     FunctionParser fp;
     fp.AddConstant("const", 1.5);
@@ -626,7 +626,7 @@ bool runFractionalPowTest(const std::string& funcStr, double exponent)
     return true;
 }
 
-bool TestIntPow()
+int TestIntPow()
 {
     FunctionParser fp;
 
@@ -886,7 +886,7 @@ namespace
     }
 }
 
-bool UTF8Test()
+int UTF8Test()
 {
     CharIter iters[4] =
         { CharIter(true, false),
@@ -987,7 +987,7 @@ bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
     return false;
 }
 
-bool TestIdentifiers()
+int TestIdentifiers()
 {
     FunctionParser fParser;
     std::vector<std::string> identifierNames(26*26, std::string("AA"));
@@ -1116,7 +1116,7 @@ namespace
     }
 }
 
-bool testUserDefinedFunctions()
+int testUserDefinedFunctions()
 {
     FunctionParser nestedParser1, nestedParser2, nestedParser3;
     nestedParser1.Parse("x + 2.0*y + 3.0*z", "x, y, z");
@@ -1408,7 +1408,7 @@ class TestingThread
 
 volatile bool TestingThread::mOk = true;
 
-bool testMultithreadedEvaluation()
+int testMultithreadedEvaluation()
 {
     FunctionParser fp;
     fp.Parse("sin(sqrt(x*x+y*y)) + 2*cos(2*sqrt(2*x*x+2*y*y))", "x,y");
@@ -1443,6 +1443,13 @@ bool testMultithreadedEvaluation()
     if(!TestingThread::ok()) return false;
 
     return true;
+}
+
+#else
+
+int testMultithreadedEvaluation()
+{
+    return -1;
 }
 
 #endif
@@ -2461,7 +2468,7 @@ namespace OptimizerTests
 
         unsigned testCounter = 0;
         FunctionParserBase<Value_t> fparser;
-        
+
         bool errors = false;
 
         for(unsigned operands = 2; operands <= varsAmount; ++operands)
@@ -2524,20 +2531,25 @@ namespace OptimizerTests
 
         return true;
     }
-
-    bool runBooleanComparisonTests()
-    {
-        return
-            runBooleanComparisonTestsForType<double>() &&
-            runBooleanComparisonTestsForType<long>();
-    }
 }
 
-bool testOptimizer()
+int testOptimizer1()
 {
-    if(!OptimizerTests::runTrigCombinationTests()) return false;
-    if(!OptimizerTests::runBooleanComparisonTests()) return false;
-    return true;
+    return OptimizerTests::runTrigCombinationTests();
+}
+
+int testOptimizer2()
+{
+    return OptimizerTests::runBooleanComparisonTestsForType<double>();
+}
+
+int testOptimizer3()
+{
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    return OptimizerTests::runBooleanComparisonTestsForType<long>();
+#else
+    return -1;
+#endif
 }
 
 
@@ -2751,9 +2763,9 @@ int main(int argc, char* argv[])
                 "\n" << optionsHelpText;
             return 0;
         }
-        else
+        else if(std::strlen(argv[i]) > 0)
         {
-            std::cout << "Unknown option: " << argv[i] << "\n";
+            std::cout << "Unknown option: '" << argv[i] << "'\n";
             return 1;
         }
     }
@@ -2828,22 +2840,22 @@ int main(int argc, char* argv[])
     const struct
     {
         const char* const testName;
-        bool(*testFunction)();
+        int(*testFunction)();
     }
     algorithmicTests[] =
     {
         { "Copy constructor and assignment", &TestCopying },
         { "Error situations", &TestErrorSituations },
         { "Whitespaces", &WhiteSpaceTest },
-        { "Optimizer tests", skipSlowAlgo ? 0 : &testOptimizer },
+        { "Optimizer test 1 (trig. combinations)", &testOptimizer1 },
+        { "Optimizer test 2 (bool combinations, double)",
+          skipSlowAlgo ? 0 : &testOptimizer2 },
+        { "Optimizer test 3 (bool combinations, long)", &testOptimizer3 },
         { "Integral powers",  &TestIntPow },
         { "UTF8 test", skipSlowAlgo ? 0 : &UTF8Test },
         { "Identifier test", &TestIdentifiers },
-        { "Used-defined functions", &testUserDefinedFunctions }
-#if defined(FP_USE_THREAD_SAFE_EVAL) || \
-    defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
-        ,{ "Multithreading", &testMultithreadedEvaluation }
-#endif
+        { "Used-defined functions", &testUserDefinedFunctions },
+        { "Multithreading", &testMultithreadedEvaluation }
     };
 
     const unsigned algorithmicTestsAmount =
@@ -2853,8 +2865,6 @@ int main(int argc, char* argv[])
     {
         for(unsigned i = 0; i < algorithmicTestsAmount; ++i)
         {
-            if(!algorithmicTests[i].testFunction) continue;
-
             if(runAlgoTest >= 1 && runAlgoTest <= algorithmicTestsAmount &&
                runAlgoTest != i+1)
                 continue;
@@ -2863,7 +2873,16 @@ int main(int argc, char* argv[])
                 std::cout << "Algo test " << i+1 << ": "
                           << algorithmicTests[i].testName << std::flush;
 
-            if(!algorithmicTests[i].testFunction())
+            if(!algorithmicTests[i].testFunction)
+            {
+                if(verbosityLevel >= 1)
+                    std::cout << ": Skipped." << std::endl;
+                continue;
+            }
+
+            int result = algorithmicTests[i].testFunction();
+
+            if(result == 0)
             {
                 allTestsOk = false;
                 if(verbosityLevel == 0)
@@ -2873,7 +2892,12 @@ int main(int argc, char* argv[])
                     std::cout << ": FAILED." << std::endl;
             }
             else if(verbosityLevel >= 1)
-                std::cout << std::endl;
+            {
+                if(result < 0 )
+                    std::cout << ": (No support)" << std::endl;
+                else
+                    std::cout << ": Ok." << std::endl;
+            }
         }
     }
 
