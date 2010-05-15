@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.1    </h1>
+<h1>Function Parser for C++ v4.2    </h1>
 
 <h2>What is this library?</h2>
 
@@ -47,10 +47,11 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.1.zip">fparser4.1.zip</a> v4.1
-(released 24 Apr 2010)
+<p>Download <a href="fparser4.2.zip">fparser4.2.zip</a> v4.2
+(released 15 May 2010)
 
 <p>(Older versions:
+<a href="fparser4.1.zip">v4.1</a>,
 <a href="fparser4.0.5.zip">v4.0.5</a>,
 <a href="fparser3.3.2.zip">v3.3.2</a>,
 <a href="fparser3.2.1.zip">v3.2.1</a>,
@@ -86,9 +87,20 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.1_devel.tar.bz2">fparser4.1_devel.tar.bz2</a>
+<a href="fparser4.2_devel.tar.bz2">fparser4.2_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v4.2
+  <ul>
+    <li>The <code>Optimize()</code> method now works also with the
+      <code>float</code> and <code>long double</code> versions of the library.
+    </li>
+    <li>Some new optimizations added.</li>
+    <li>There was a call to the C99/C++0x function <code>isinf()</code> in the
+      optimizer which made it not compile with some compilers. This call has
+      been removed.</li>
+  </ul>
 
 <p>What's new in v4.1
   <ul>

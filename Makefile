@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison.
 #===========================================================================
 
-RELEASE_VERSION=4.1
+RELEASE_VERSION=4.2
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -278,7 +278,9 @@ set_version_string: util/version_changer
 		util/bytecoderules_header.txt \
 		fparser.html webpage/index.html
 
-pack: $(RELEASE_PACK_FILES) set_version_string
+pack: set_version_string distro_pack devel_pack
+
+distro_pack: $(RELEASE_PACK_FILES)
 	# Use KZIP (advsys.net/ken), if possible, to create a smaller zip file
 	if which kzip; then \
 	  rm -f fparser$(RELEASE_VERSION).zip ;\
@@ -295,7 +297,7 @@ pack: $(RELEASE_PACK_FILES) set_version_string
 	  zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES) ;\
 	fi
 
-devel_pack: set_version_string
+devel_pack:
 	tar --exclude='*~' \
 		--transform="s|^|fparser_$(RELEASE_VERSION)_devel/|" \
 		-cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \

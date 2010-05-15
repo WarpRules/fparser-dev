@@ -9,6 +9,17 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.2
+  <ul>
+    <li>The <code>Optimize()</code> method now works also with the
+      <code>float</code> and <code>long double</code> versions of the library.
+    </li>
+    <li>Some new optimizations added.</li>
+    <li>There was a call to the C99/C++0x function <code>isinf()</code> in the
+      optimizer which made it not compile with some compilers. This call has
+      been removed.</li>
+  </ul>
+
 <p>What's new in v4.1
   <ul>
     <li>Official support for hexadecimal literals (for all the parser types).
@@ -17,7 +28,7 @@
       extension of those functions). See documentation for details.</li>
     <li>Significant amount of new optimizations performed by
       <code>Parse()</code>.</li>
-    <li>Minor bugfixes.
+    <li>Minor bugfixes.</li>
   </ul>
 
 <p>What's new in v4.0.5
