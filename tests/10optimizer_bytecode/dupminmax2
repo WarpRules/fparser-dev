@@ -4,4 +4,4 @@ T=d f ld li gi
 V=x
 R=-10,10,1
 F=sub(x+min(x,x), x+max(x,x))
-C=Sub({x+fp_min(x,x), x+fp_max(x,x)})
+C=userDefFuncSub({x+fp_min(x,x), x+fp_max(x,x)})

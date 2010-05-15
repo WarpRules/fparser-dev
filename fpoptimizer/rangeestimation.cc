@@ -225,7 +225,7 @@ namespace FPoptimizer_CodeTree
             case cAsinh: /* defined for all values -inf <= x <= inf */
             {
                 MinMaxTree<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_max(fp_asinh); // No boundaries
+                m.set_min_max(fp_asinh); // No boundaries
                 return m;
             }
             case cAtanh: /* defined for -1.0 <= x < 1, results within -inf..+inf */

@@ -46,7 +46,7 @@ namespace FPoptimizer_CodeTree
     }
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(const Value_t& i, CodeTree<Value_t>::ImmedTag)
+    CodeTree<Value_t>::CodeTree(const Value_t& i, typename CodeTree<Value_t>::ImmedTag)
         : data(new CodeTreeData<Value_t>(i))
     {
         data->Recalculate_Hash_NoRecursion();
@@ -54,7 +54,7 @@ namespace FPoptimizer_CodeTree
 
 #ifdef __GXX_EXPERIMENTAL_CXX0X__
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(Value_t&& i, CodeTree<Value_t>::ImmedTag)
+    CodeTree<Value_t>::CodeTree(Value_t&& i, typename CodeTree<Value_t>::ImmedTag)
         : data(new CodeTreeData<Value_t>(std::move(i)))
     {
         data->Recalculate_Hash_NoRecursion();
@@ -62,28 +62,28 @@ namespace FPoptimizer_CodeTree
 #endif
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(unsigned v, CodeTree<Value_t>::VarTag)
+    CodeTree<Value_t>::CodeTree(unsigned v, typename CodeTree<Value_t>::VarTag)
         : data(new CodeTreeData<Value_t> (VarBegin, v))
     {
         data->Recalculate_Hash_NoRecursion();
     }
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, CodeTree<Value_t>::OpcodeTag)
+    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, typename CodeTree<Value_t>::OpcodeTag)
         : data(new CodeTreeData<Value_t> (o))
     {
         data->Recalculate_Hash_NoRecursion();
     }
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, unsigned f, CodeTree<Value_t>::FuncOpcodeTag)
+    CodeTree<Value_t>::CodeTree(FUNCTIONPARSERTYPES::OPCODE o, unsigned f, typename CodeTree<Value_t>::FuncOpcodeTag)
         : data(new CodeTreeData<Value_t> (o, f))
     {
         data->Recalculate_Hash_NoRecursion();
     }
 
     template<typename Value_t>
-    CodeTree<Value_t>::CodeTree(const CodeTree<Value_t>& b, CodeTree<Value_t>::CloneTag)
+    CodeTree<Value_t>::CodeTree(const CodeTree<Value_t>& b, typename CodeTree<Value_t>::CloneTag)
         : data(new CodeTreeData<Value_t>(*b.data))
     {
     }

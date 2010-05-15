@@ -6,4 +6,4 @@ T=d f ld mf
 V=x
 R=-0.7, 0.7, 0.28
 F=sub(sin(x)+csc(x),cos(x))
-C=Sub({fp_sin(x)+1/fp_sin(x),fp_cos(x)})
+C=userDefFuncSub({fp_sin(x)+1/fp_sin(x),fp_cos(x)})

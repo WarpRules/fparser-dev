@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.2.2.8";
+static const char* const kVersionNumber = "2.2.2.9";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -73,13 +73,13 @@ namespace
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
     template<typename Value_t>
-    Value_t Sqr(const Value_t* p) { return p[0]*p[0]; }
+    Value_t userDefFuncSqr(const Value_t* p) { return p[0]*p[0]; }
 
     template<typename Value_t>
-    Value_t Sub(const Value_t* p) { return p[0]-p[1]; }
+    Value_t userDefFuncSub(const Value_t* p) { return p[0]-p[1]; }
 
     template<typename Value_t>
-    Value_t Value(const Value_t*) { return 10; }
+    Value_t userDefFuncValue(const Value_t*) { return 10; }
 
 
     template<typename Value_t>
@@ -277,9 +277,9 @@ int TestErrorSituations()
     bool retval = true;
     FunctionParser fp, tmpfp;
     fp.AddUnit("unit", 2);
-    fp.AddFunction("Value", Value<double>, 0);
-    fp.AddFunction("Sqr", Sqr<double>, 1);
-    fp.AddFunction("Sub", Sub<double>, 2);
+    fp.AddFunction("Value", userDefFuncValue<double>, 0);
+    fp.AddFunction("Sqr", userDefFuncSqr<double>, 1);
+    fp.AddFunction("Sub", userDefFuncSub<double>, 2);
     tmpfp.Parse("0", "x");
 
     static const struct
@@ -406,7 +406,7 @@ int TestErrorSituations()
                 std::cout << "\n - Adding an invalid name (\"" << n
                           << "\") as constant didn't fail" << std::endl;
         }
-        if(fp.AddFunction(n, Sqr<double>, 1))
+        if(fp.AddFunction(n, userDefFuncSqr<double>, 1))
         {
             retval = false;
             if(verbosityLevel >= 2)
@@ -430,7 +430,7 @@ int TestErrorSituations()
     }
 
     fp.AddConstant("CONST", 1);
-    fp.AddFunction("PTR", Sqr<double>, 1);
+    fp.AddFunction("PTR", userDefFuncSqr<double>, 1);
     fp.AddFunction("PARSER", tmpfp);
 
     if(fp.AddConstant("PTR", 1))
@@ -440,7 +440,7 @@ int TestErrorSituations()
             std::cout << "\n - Adding a userdef function (\"PTR\") as "
                       << "constant didn't fail" << std::endl;
     }
-    if(fp.AddFunction("CONST", Sqr<double>, 1))
+    if(fp.AddFunction("CONST", userDefFuncSqr<double>, 1))
     {
         retval = false;
         if(verbosityLevel >= 2)
@@ -981,7 +981,7 @@ bool AddIdentifier(FunctionParser& fp, const std::string& name, int type)
     {
       case 0: return fp.AddConstant(name, 123);
       case 1: return fp.AddUnit(name, 456);
-      case 2: return fp.AddFunction(name, Sqr<double>, 1);
+      case 2: return fp.AddFunction(name, userDefFuncSqr<double>, 1);
       case 3: return fp.AddFunction(name, anotherParser);
     }
     return false;
@@ -1608,7 +1608,7 @@ namespace
      * the testing functions require that they produce Value_t's. */
     #define BoolProxy(Fname) \
     template<typename Value_t> \
-    Value_t Fname(const Value_t& a, const Value_t& b) \
+    Value_t tb_##Fname(const Value_t& a, const Value_t& b) \
         { return Value_t(FUNCTIONPARSERTYPES::Fname(a,b)); }
     BoolProxy(fp_less)
     BoolProxy(fp_lessOrEq)
@@ -1620,6 +1620,14 @@ namespace
     Value_t fp_truth(const Value_t& a)
         { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
 
+// Maybe these should be used in the test files instead...
+#define fp_less tb_fp_less
+#define fp_lessOrEq tb_fp_lessOrEq
+#define fp_greater tb_fp_greater
+#define fp_greaterOrEq tb_fp_greaterOrEq
+#define fp_equal tb_fp_equal
+#define fp_nequal tb_fp_nequal
+
 #if defined(FP_SUPPORT_GMP_INT_TYPE) && !defined(FP_SUPPORT_LONG_INT_TYPE)
 #define FP_SUPPORT_LONG_INT_TYPE
 #include "testbed_tests.inc"
@@ -1627,6 +1635,13 @@ namespace
 #else
 #include "testbed_tests.inc"
 #endif
+
+#undef fp_less
+#undef fp_lessOrEq
+#undef fp_greater
+#undef fp_greaterOrEq
+#undef fp_equal
+#undef fp_nequal
 }
 
 namespace
@@ -1650,8 +1665,8 @@ namespace
         const double v1 = testData.doubleFuncPtr(doubleVars);
         const double v2 = parserValue.toDouble();
 
-        using namespace FUNCTIONPARSERTYPES;
         /*
+        using namespace FUNCTIONPARSERTYPES;
         const double scale = fp_pow(10.0, fp_floor(fp_log10(fp_abs(v1))));
         const double sv1 = fp_abs(v1) < Eps ? 0 : v1/scale;
         const double sv2 = fp_abs(v2) < Eps ? 0 : v2/scale;
@@ -1941,9 +1956,9 @@ bool runRegressionTests(const std::string& valueType)
         return false;
     }
 
-    ret = fp.AddFunction("sub", Sub<Value_t>, 2);
-    ret = ret && fp.AddFunction("sqr", Sqr<Value_t>, 1);
-    ret = ret && fp.AddFunction("value", Value<Value_t>, 0);
+    ret = fp.AddFunction("sub", userDefFuncSub<Value_t>, 2);
+    ret = ret && fp.AddFunction("sqr", userDefFuncSqr<Value_t>, 1);
+    ret = ret && fp.AddFunction("value", userDefFuncValue<Value_t>, 0);
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
@@ -2290,11 +2305,13 @@ namespace OptimizerTests
     template<typename Value_t>
     Value_t getOperandValue(Value_t varValue, unsigned opIndex)
     {
+        using namespace FUNCTIONPARSERTYPES;
+
         switch(opIndex)
         {
           case 0: return varValue;
-          case 1: return FUNCTIONPARSERTYPES::fp_not(varValue);
-          case 2: return FUNCTIONPARSERTYPES::fp_notNot(varValue);
+          case 1: return fp_not(varValue);
+          case 2: return fp_notNot(varValue);
         }
 
         opIndex -= 3;
@@ -2401,7 +2418,7 @@ namespace OptimizerTests
                                                     operandIndices[i]),
                                     exprIndices[i-1]);
 
-            if(fp_nequal(parserValue, correctValue))
+            if(FUNCTIONPARSERTYPES::fp_nequal(parserValue, correctValue))
             {
                 const bool isIntegral =
                     FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
