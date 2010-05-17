@@ -283,9 +283,12 @@ pack: set_version_string distro_pack devel_pack
 distro_pack: $(RELEASE_PACK_FILES)
 	# Use KZIP (advsys.net/ken), if possible, to create a smaller zip file
 	if which kzip; then \
-	  rm -f fparser$(RELEASE_VERSION).zip ;\
+	  rm -rf fparser$(RELEASE_VERSION).zip fparser-$(RELEASE_VERSION);\
+	  mkdir fparser-$(RELEASE_VERSION); \
+	  tar cf - $(RELEASE_PACK_FILES) | tar -x -v -C fparser-$(RELEASE_VERSION) -f -; \
 	  for s in 0 128 256 512 1024; do \
-	    kzip -y -b"$$s" fparser$(RELEASE_VERSION)-tmp.zip $(RELEASE_PACK_FILES) ;\
+	    (cd fparser-$(RELEASE_VERSION); \
+	    kzip -r -y -b"$$s" ../fparser$(RELEASE_VERSION)-tmp.zip * );\
 	    if [ ! -f fparser$(RELEASE_VERSION).zip \
 	        -o 0"`stat -c %s fparser$(RELEASE_VERSION).zip`" \
 	       -gt 0"`stat -c %s fparser$(RELEASE_VERSION)-tmp.zip`" ]; then \
