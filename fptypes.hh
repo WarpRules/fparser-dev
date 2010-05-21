@@ -216,11 +216,9 @@ namespace FUNCTIONPARSERTYPES
     };
 
     template<typename Value_t>
-    class namePtrsType: public
-    std::map<
-        FUNCTIONPARSERTYPES::NamePtr,
-        FUNCTIONPARSERTYPES::NameData<Value_t>
-    >
+    class NamePtrsMap: public
+    std::map<FUNCTIONPARSERTYPES::NamePtr,
+             FUNCTIONPARSERTYPES::NameData<Value_t> >
     {
     };
 
@@ -238,7 +236,7 @@ struct FunctionParserBase<Value_t>::Data
 
     unsigned numVariables;
     std::string variablesString;
-    FUNCTIONPARSERTYPES::namePtrsType<Value_t> namePtrs;
+    FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> namePtrs;
 
     struct FuncPtrData
     {
@@ -255,7 +253,8 @@ struct FunctionParserBase<Value_t>::Data
 
     std::vector<unsigned> ByteCode;
     std::vector<Value_t> Immed;
-#ifndef FP_USE_THREAD_SAFE_EVAL
+#if !defined(FP_USE_THREAD_SAFE_EVAL) && \
+    !defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
     std::vector<Value_t> Stack;
     // Note: When Stack exists,
     //       Stack.size() and StackSize are mutually redundant.

@@ -37,9 +37,13 @@ using namespace FUNCTIONPARSERTYPES;
 # define unlikely(x) (x)
 #endif
 
+
 //=========================================================================
 // Opcode analysis functions
 //=========================================================================
+// These functions are used by the Parse() bytecode optimizer (mostly from
+// code in fp_opcode_add.inc).
+
 bool FUNCTIONPARSERTYPES::IsLogicalOpcode(unsigned op)
 {
     switch(op)
@@ -183,6 +187,7 @@ bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
     return false;
 }
 
+
 //=========================================================================
 // Mathematical template functions
 //=========================================================================
@@ -287,33 +292,38 @@ ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
     return fp_pow_base(x, y);
 }
 
+
 //=========================================================================
 // Elementary (atom) parsing functions
 //=========================================================================
 namespace
 {
-    unsigned readOpcodeForFloatType(const char* input)
-    {
-    /*
-     Assuming unsigned = 32 bits:
-        76543210 76543210 76543210 76543210
-     Return value if built-in function:
-        1PPPPPPP PPPPPPPP LLLLLLLL LLLLLLLL
-          P = function opcode      (15 bits)
-          L = function name length (16 bits)
-     Return value if not built-in function:
-        0LLLLLLL LLLLLLLL LLLLLLLL LLLLLLLL
-          L = function name length (31 bits)
-     If unsigned has more than 32 bits, the other
-     higher order bits are to be assumed zero.
+    /* Reads an UTF8-encoded sequence which forms a valid identifier name from
+       the given input string and returns its length. If bit 31 is set, the
+       return value also contains the internal function opcode (defined in
+       fptypes.hh) that matches the name.
     */
+    unsigned readIdentifierForFloatType(const char* input)
+    {
+        /* Assuming unsigned = 32 bits:
+              76543210 76543210 76543210 76543210
+           Return value if built-in function:
+              1PPPPPPP PPPPPPPP LLLLLLLL LLLLLLLL
+                P = function opcode      (15 bits)
+                L = function name length (16 bits)
+           Return value if not built-in function:
+              0LLLLLLL LLLLLLLL LLLLLLLL LLLLLLLL
+                L = identifier length (31 bits)
+           If unsigned has more than 32 bits, the other
+           higher order bits are to be assumed zero.
+        */
 #include "fp_identifier_parser.inc"
         return 0;
     }
 
-    inline unsigned readOpcodeForIntType(const char* input)
+    inline unsigned readIdentifierForIntType(const char* input)
     {
-        const unsigned value = readOpcodeForFloatType(input);
+        const unsigned value = readIdentifierForFloatType(input);
         if((value & 0x80000000U) != 0 &&
            !Functions[(value >> 16) & 0x7FFF].okForInt())
             return value & 0xFFFF;
@@ -321,20 +331,25 @@ namespace
     }
 
     template<typename Value_t>
-    inline unsigned readOpcode(const char* input)
+    inline unsigned readIdentifier(const char* input)
     {
         return IsIntType<Value_t>::result
-                ? readOpcodeForIntType(input)
-                : readOpcodeForFloatType(input);
+                ? readIdentifierForIntType(input)
+                : readIdentifierForFloatType(input);
     }
 
+    // Returns true if the entire string is a valid identifier
     template<typename Value_t>
-    bool containsOnlyValidNameChars(const std::string& name)
+    bool containsOnlyValidIdentifierChars(const std::string& name)
     {
         if(name.empty()) return false;
-        return readOpcode<Value_t>(name.c_str()) == (unsigned) name.size();
+        return readIdentifier<Value_t>(name.c_str()) == (unsigned) name.size();
     }
 
+
+    // -----------------------------------------------------------------------
+    // Wrappers for strto... functions
+    // -----------------------------------------------------------------------
     template<typename Value_t>
     inline Value_t fp_parseLiteral(const char* str, char** endptr)
     {
@@ -366,7 +381,11 @@ namespace
     }
 #endif
 
-    static inline int testxdigit(unsigned c)
+
+    // -----------------------------------------------------------------------
+    // Hexadecimal floating point literal parsing
+    // -----------------------------------------------------------------------
+    inline int testXdigit(unsigned c)
     {
         if((c-'0') < 10u) return c&15; // 0..9
         if(((c|0x20)-'a') < 6u) return 9+(c&15); // A..F or a..f
@@ -374,7 +393,7 @@ namespace
     }
 
     template<typename elem_t, unsigned n_limbs, unsigned limb_bits>
-    static inline void AddXdigit(elem_t* buffer, unsigned nibble)
+    inline void addXdigit(elem_t* buffer, unsigned nibble)
     {
         for(unsigned p=0; p<n_limbs; ++p)
         {
@@ -405,9 +424,9 @@ namespace
         // Read integer portion
         while(true)
         {
-            int xdigit = testxdigit(*str);
+            int xdigit = testXdigit(*str);
             if(xdigit < 0) break;
-            AddXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
+            addXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
             ++str;
 
             n_mantissa_bits += 4;
@@ -415,11 +434,11 @@ namespace
             {
                 // Exhausted the precision. Parse the rest (until exponent)
                 // normally but ignore the actual digits.
-                for(; testxdigit(*str) >= 0; ++str)
+                for(; testXdigit(*str) >= 0; ++str)
                     exponent += 4;
                 // Read but ignore decimals
                 if(*str == '.')
-                    for(++str; testxdigit(*str) >= 0; ++str)
+                    for(++str; testXdigit(*str) >= 0; ++str)
                         {}
                 goto read_exponent;
             }
@@ -428,9 +447,9 @@ namespace
         if(*str == '.')
             for(++str; ; )
             {
-                int xdigit = testxdigit(*str);
+                int xdigit = testXdigit(*str);
                 if(xdigit < 0) break;
-                AddXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
+                addXdigit<elem_t,n_limbs,limb_bits> (mantissa_buffer, xdigit);
                 ++str;
 
                 exponent -= 4;
@@ -439,7 +458,7 @@ namespace
                 {
                     // Exhausted the precision. Skip the rest
                     // of the decimals, until the exponent.
-                    while(testxdigit(*str) >= 0)
+                    while(testXdigit(*str) >= 0)
                         ++str;
                     break;
                 }
@@ -483,19 +502,22 @@ namespace
 //=========================================================================
 namespace
 {
+    // -----------------------------------------------------------------------
+    // Add a new identifier to the specified identifier map
+    // -----------------------------------------------------------------------
+    // Return value will be false if the name already existed
     template<typename Value_t>
-    bool addNewNameData(namePtrsType<Value_t>& namePtrs,
+    bool addNewNameData(NamePtrsMap<Value_t>& namePtrs,
                         std::pair<NamePtr, NameData<Value_t> >& newName,
                         bool isVar)
     {
-        typename namePtrsType<Value_t>::iterator nameIter =
+        typename NamePtrsMap<Value_t>::iterator nameIter =
             namePtrs.lower_bound(newName.first);
 
         if(nameIter != namePtrs.end() && newName.first == nameIter->first)
         {
             // redefining a var is not allowed.
-            if(isVar)
-                return false;
+            if(isVar) return false;
 
             // redefining other tokens is allowed, if the type stays the same.
             if(nameIter->second.type != newName.second.type)
@@ -518,24 +540,6 @@ namespace
 
         namePtrs.insert(nameIter, newName);
         return true;
-    }
-
-    template<typename Value_t>
-    std::string findName(const namePtrsType<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
-    {
-        for(typename namePtrsType<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
-        {
-            if(iter->second.type != type) continue;
-            if(iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
-        }
-        return "?";
     }
 }
 
@@ -565,7 +569,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 #endif
     StackSize(rhs.StackSize)
 {
-    for(typename namePtrsType<Value_t>::const_iterator i =
+    for(typename NamePtrsMap<Value_t>::const_iterator i =
             rhs.namePtrs.begin();
         i != rhs.namePtrs.end();
         ++i)
@@ -595,7 +599,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::~Data()
 {
-    for(typename namePtrsType<Value_t>::iterator i =
+    for(typename NamePtrsMap<Value_t>::iterator i =
             namePtrs.begin();
         i != namePtrs.end();
         ++i)
@@ -692,13 +696,13 @@ void FunctionParserBase<Value_t>::ForceDeepCopy()
 
 
 //=========================================================================
-// User-defined constant and function addition
+// User-defined identifier addition functions
 //=========================================================================
 template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddConstant(const std::string& name,
                                               Value_t value)
 {
-    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
+    if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -712,7 +716,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddUnit(const std::string& name,
                                           Value_t value)
 {
-    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
+    if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -725,7 +729,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddFunction
 (const std::string& name, FunctionPtr ptr, unsigned paramsAmount)
 {
-    if(!containsOnlyValidNameChars<Value_t>(name)) return false;
+    if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
@@ -758,7 +762,7 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
                                               FunctionParserBase& fp)
 {
-    if(!containsOnlyValidNameChars<Value_t>(name) ||
+    if(!containsOnlyValidIdentifierChars<Value_t>(name) ||
        CheckRecursiveLinking(&fp))
         return false;
 
@@ -785,7 +789,7 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
 
     NamePtr namePtr(name.data(), unsigned(name.size()));
 
-    typename namePtrsType<Value_t>::iterator
+    typename NamePtrsMap<Value_t>::iterator
         nameIter = data->namePtrs.find(namePtr);
 
     if(nameIter != data->namePtrs.end())
@@ -988,8 +992,9 @@ U+000B  \v
     } // SkipSpace(CharPtr& function)
 }
 
+// ---------------------------------------------------------------------------
 // Return parse error message
-// --------------------------
+// ---------------------------------------------------------------------------
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::ErrorMsg() const
 {
@@ -997,8 +1002,9 @@ const char* FunctionParserBase<Value_t>::ErrorMsg() const
 }
 
 
+// ---------------------------------------------------------------------------
 // Parse variables
-// ---------------
+// ---------------------------------------------------------------------------
 template<typename Value_t>
 bool FunctionParserBase<Value_t>::ParseVariables
 (const std::string& inputVarString)
@@ -1006,13 +1012,13 @@ bool FunctionParserBase<Value_t>::ParseVariables
     if(data->variablesString == inputVarString) return true;
 
     /* Delete existing variables from namePtrs */
-    for(typename namePtrsType<Value_t>::iterator i =
+    for(typename NamePtrsMap<Value_t>::iterator i =
             data->namePtrs.begin();
         i != data->namePtrs.end(); )
     {
         if(i->second.type == NameData<Value_t>::VARIABLE)
         {
-            typename namePtrsType<Value_t>::iterator j (i);
+            typename NamePtrsMap<Value_t>::iterator j (i);
             ++i;
             data->namePtrs.erase(j);
         }
@@ -1030,7 +1036,7 @@ bool FunctionParserBase<Value_t>::ParseVariables
     while(beginPtr < finalPtr)
     {
         SkipSpace(beginPtr);
-        unsigned nameLength = readOpcode<Value_t>(beginPtr);
+        unsigned nameLength = readIdentifier<Value_t>(beginPtr);
         if(nameLength == 0 || (nameLength & 0x80000000U)) return false;
         const char* endPtr = beginPtr + nameLength;
         SkipSpace(endPtr);
@@ -1052,8 +1058,9 @@ bool FunctionParserBase<Value_t>::ParseVariables
     return true;
 }
 
-// Parse interface functions
-// -------------------------
+// ---------------------------------------------------------------------------
+// Parse() public interface functions
+// ---------------------------------------------------------------------------
 template<typename Value_t>
 int FunctionParserBase<Value_t>::Parse(const char* Function,
                                        const std::string& Vars,
@@ -1087,8 +1094,9 @@ int FunctionParserBase<Value_t>::Parse(const std::string& Function,
 }
 
 
+// ---------------------------------------------------------------------------
 // Main parsing function
-// ---------------------
+// ---------------------------------------------------------------------------
 template<typename Value_t>
 int FunctionParserBase<Value_t>::ParseFunction(const char* function,
                                                bool useDegrees)
@@ -1541,7 +1549,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     if(BeginsLiteral<Value_t>( (unsigned char) *function))
         return CompileLiteral(function);
 
-    unsigned nameLength = readOpcode<Value_t>(function);
+    unsigned nameLength = readIdentifier<Value_t>(function);
     if(nameLength == 0)
     {
         // No identifier found
@@ -1561,7 +1569,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     const char* endPtr = function + nameLength;
     SkipSpace(endPtr);
 
-    typename namePtrsType<Value_t>::iterator nameIter =
+    typename NamePtrsMap<Value_t>::iterator nameIter =
         data->namePtrs.find(name);
     if(nameIter == data->namePtrs.end())
     {
@@ -1681,13 +1689,13 @@ template<typename Value_t>
 const char*
 FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
 {
-    unsigned nameLength = readOpcode<Value_t>(function);
+    unsigned nameLength = readIdentifier<Value_t>(function);
     if(nameLength & 0x80000000U) return function; // built-in function name
     if(nameLength != 0)
     {
         NamePtr name(function, nameLength);
 
-        typename namePtrsType<Value_t>::iterator nameIter =
+        typename NamePtrsMap<Value_t>::iterator nameIter =
             data->namePtrs.find(name);
         if(nameIter != data->namePtrs.end())
         {
@@ -1744,6 +1752,14 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
     return function;
 }
 
+/* Currently the power operator is skipped for integral types because its
+   usefulness with them is questionable, and in the case of GmpIng, for safety
+   reasons.
+   - With long int almost any power, except for very small ones, would
+     overflow the result, so the usefulness of this is rather questionable.
+   - With GmpInt the power operator could be easily abused to make the program
+     run out of memory (think of a function like "10^10^10^10^1000000").
+*/
 #ifdef FP_SUPPORT_LONG_INT_TYPE
 template<>
 inline const char*
@@ -2190,6 +2206,7 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
     }
     return function;
 }
+
 
 //===========================================================================
 // Function evaluation
@@ -2671,7 +2688,7 @@ namespace
             if(index < 0) break;
             if(index == oldIndex) return index;
 
-            unsigned nameLength = readOpcode<Value_t>(funcStr + index);
+            unsigned nameLength = readIdentifier<Value_t>(funcStr + index);
             if(nameLength & 0x80000000U) return index;
             if(nameLength == 0) return index;
 
@@ -2755,6 +2772,23 @@ namespace
         {
             dest << ' ';
         }
+    }
+
+    template<typename Value_t>
+    std::string findName(const NamePtrsMap<Value_t>& nameMap,
+                         unsigned index,
+                         typename NameData<Value_t>::DataType type)
+    {
+        for(typename NamePtrsMap<Value_t>::const_iterator
+                iter = nameMap.begin();
+            iter != nameMap.end();
+            ++iter)
+        {
+            if(iter->second.type == type && iter->second.index == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
     }
 
     const struct PowiMuliType

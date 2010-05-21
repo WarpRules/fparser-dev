@@ -1151,7 +1151,11 @@ or functions using the following operators in this order of precedence:
 </table>
 
 <p>(Note that currently the exponentiation operator is not supported for
-  <code>FunctionParser_li</code> nor <code>FunctionParser_gmpint</code>.)
+  <code>FunctionParser_li</code> nor <code>FunctionParser_gmpint</code>.
+  With the former the result would very easily overflow, making its
+  usefulness questionable. With the latter it could be easily abused to
+  make the program run out of memory; think of a function like
+  "10^10^10^100000".)
 
 <p>Since the unary minus has higher precedence than any other operator, for
   example the following expression is valid: <code>x*-y</code>

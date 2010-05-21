@@ -14,7 +14,7 @@ max x: 2
 step: 1
 */
 
-#include "fparser.hh"
+#include "../fparser.hh"
 
 #include <iostream>
 #include <iomanip>

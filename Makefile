@@ -88,7 +88,7 @@ LD += -Xlinker --gc-sections
 
 CPPFLAGS += -I"`pwd`"
 
-all: testbed speedtest functioninfo example
+all: testbed speedtest functioninfo
 
 FP_MODULES = 	fparser.o \
 		fpoptimizer/grammar_data.o \
@@ -111,13 +111,13 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/hash.o \
 		$(ADDITIONAL_MODULES)
 
-RELEASE_PACK_FILES = example.cc example2.cc fparser.cc \
+RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
 	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
 	fp_opcode_add.inc \
 	fp_identifier_parser.inc \
-	fparser.html style.css lgpl.txt gpl.txt
+	docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
@@ -133,10 +133,10 @@ speedtest: speedtest.o $(FP_MODULES)
 speedtest_release: speedtest.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-example: example.o $(FP_MODULES)
+examples/example: examples/example.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-example2: example2.o $(FP_MODULES)
+examples/example2: examples/example2.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 ftest: ftest.o $(FP_MODULES)
@@ -304,7 +304,7 @@ devel_pack:
 	tar --exclude='*~' \
 		--transform="s|^|fparser_$(RELEASE_VERSION)_devel/|" \
 		-cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
-		Makefile example.cc example2.cc fparser.cc \
+		Makefile examples/example.cc examples/example2.cc fparser.cc \
 		fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 		fpconfig.hh fptypes.hh fpaux.hh \
 		fp_opcode_add.inc \
@@ -313,7 +313,7 @@ devel_pack:
 		speedtest.cc testbed.cc \
 		tests/*.cc tests/*.txt tests/*/* \
 		util/*.cc util/*.hh util/*.dat util/*.txt util/*.y \
-		fparser.html style.css lgpl.txt gpl.txt \
+		docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt \
 		fpoptimizer/*.hh fpoptimizer/*.cc \
 		fpoptimizer/*.dat \
 		fpoptimizer/*.txt \
@@ -327,12 +327,13 @@ clean:
 	rm -f	testbed testbed_release \
 		speedtest speedtest_release \
 		functioninfo \
-		example example2 ftest powi_speedtest \
+		examples/example examples/example2 ftest powi_speedtest \
 		util/tree_grammar_parser \
 		tests/make_tests \
 		util/bytecoderules_parser \
 		util/cpp_compress \
 		util/make_function_name_parser \
+		examples/*.o \
 		fpoptimizer/*.o \
 		tests/*.o \
 		mpfr/*.o \
@@ -354,6 +355,7 @@ testbed_tests.inc: $(TESTBED_TEST_FILES)
 .dep:
 	echo -n '' > .dep
 	- g++ -MM -MG $(CPPFLAGS) $(wildcard *.cc) >> .dep
+	- g++ -MM $(CPPFLAGS) $(wildcard examples/*.cc) | sed 's|^.*.o:|examples/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard fpoptimizer/*.cc) | sed 's|^.*.o:|fpoptimizer/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard tests/*.cc) | sed 's|^.*.o:|tests/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard util/*.cc) | sed 's|^.*.o:|util/&|' >> .dep
