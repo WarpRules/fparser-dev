@@ -112,7 +112,7 @@ namespace FPoptimizer_CodeTree
 
         if(tree.GetOpcode() != cImmed)
         {
-            MinMaxTree<Value_t> p = CalculateResultBoundaries(tree);
+            range<Value_t> p = CalculateResultBoundaries(tree);
             if(p.has_min && p.has_max && p.min == p.max)
             {
                 // Replace us with this immed
@@ -456,12 +456,12 @@ namespace FPoptimizer_CodeTree
                  *               larger than the selected maximum.
                  */
                 size_t preserve=0;
-                MinMaxTree<Value_t> smallest_maximum;
+                range<Value_t> smallest_maximum;
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
                     while(a+1 < tree.GetParamCount() && tree.GetParam(a).IsIdenticalTo(tree.GetParam(a+1)))
                         tree.DelParam(a+1);
-                    MinMaxTree<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
+                    range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
                     if(p.has_max && (!smallest_maximum.has_max || (p.max) < smallest_maximum.max))
                     {
                         smallest_maximum.max = p.max;
@@ -471,7 +471,7 @@ namespace FPoptimizer_CodeTree
                 if(smallest_maximum.has_max)
                     for(size_t a=tree.GetParamCount(); a-- > 0; )
                     {
-                        MinMaxTree<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
+                        range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
                         if(p.has_min && a != preserve && p.min >= smallest_maximum.max)
                             tree.DelParam(a);
                     }
@@ -497,12 +497,12 @@ namespace FPoptimizer_CodeTree
                  *               smaller than the selected minimum.
                  */
                 size_t preserve=0;
-                MinMaxTree<Value_t> biggest_minimum;
+                range<Value_t> biggest_minimum;
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
                     while(a+1 < tree.GetParamCount() && tree.GetParam(a).IsIdenticalTo(tree.GetParam(a+1)))
                         tree.DelParam(a+1);
-                    MinMaxTree<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
+                    range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
                     if(p.has_min && (!biggest_minimum.has_min || p.min > biggest_minimum.min))
                     {
                         biggest_minimum.min = p.min;
@@ -514,7 +514,7 @@ namespace FPoptimizer_CodeTree
                     //fprintf(stderr, "Removing all where max < %g\n", biggest_minimum.min);
                     for(size_t a=tree.GetParamCount(); a-- > 0; )
                     {
-                        MinMaxTree<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
+                        range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
                         if(p.has_max && a != preserve && (p.max) < biggest_minimum.min)
                         {
                             //fprintf(stderr, "Removing %g\n", p.max);
@@ -545,7 +545,7 @@ namespace FPoptimizer_CodeTree
                 /* If we know the operand is always positive, cAbs is redundant.
                  * If we know the operand is always negative, use actual negation.
                  */
-                MinMaxTree<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
+                range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
                 if(p0.has_min && p0.min >= 0.0)
                     goto ReplaceTreeWithParam0;
                 if(p0.has_max && p0.max <= fp_const_negativezero<Value_t>())
@@ -756,8 +756,8 @@ namespace FPoptimizer_CodeTree
                  *         It allows e.g. atan2(6*x, 3*y) -> atan(2*x/y)
                  *         when we know y != 0
                  */
-                MinMaxTree<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
-                MinMaxTree<Value_t> p1 = CalculateResultBoundaries( tree.GetParam(1) );
+                range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
+                range<Value_t> p1 = CalculateResultBoundaries( tree.GetParam(1) );
                 if(tree.GetParam(0).IsImmed()
                 && fp_equal(tree.GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {

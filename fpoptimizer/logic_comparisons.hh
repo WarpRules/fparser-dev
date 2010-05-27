@@ -44,8 +44,8 @@ namespace
             if(a.IsIdenticalTo(b))
                 return if_identical;
 
-            MinMaxTree<Value_t> p0 = CalculateResultBoundaries(a);
-            MinMaxTree<Value_t> p1 = CalculateResultBoundaries(b);
+            range<Value_t> p0 = CalculateResultBoundaries(a);
+            range<Value_t> p1 = CalculateResultBoundaries(b);
             if(p0.has_max && p1.has_min)
             {
                 if(p0.max <  p1.min && if_always[0] != Unchanged)
@@ -79,7 +79,7 @@ namespace
         }
 
         template<typename Value_t>
-        static bool TestCase(WhatDoWhenCase when, const MinMaxTree<Value_t>& p)
+        static bool TestCase(WhatDoWhenCase when, const range<Value_t>& p)
         {
             if(!p.has_min || !p.has_max) return false;
             switch(when)
