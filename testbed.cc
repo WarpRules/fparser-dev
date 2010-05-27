@@ -143,7 +143,7 @@ bool TestCopyingNoDeepCopy(FunctionParser p)
             std::cout
                 << "\n - Giving as function parameter (no deep copy) failed."
                 << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p.PrintByteCode(std::cout);
 #endif
         }
@@ -165,7 +165,7 @@ bool TestCopyingDeepCopy(FunctionParser p)
             std::cout
                 << "\n - Giving as function parameter (deep copy) failed."
                 << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p.PrintByteCode(std::cout);
 #endif
         }
@@ -190,7 +190,7 @@ int TestCopying()
         {
             std::cout << "\n - Copy constructor with no deep copy failed."
                       << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p2.PrintByteCode(std::cout);
 #endif
         }
@@ -204,7 +204,7 @@ int TestCopying()
         {
             std::cout << "\n - Copy constructor with deep copy failed."
                       << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p2.PrintByteCode(std::cout);
 #endif
         }
@@ -218,7 +218,7 @@ int TestCopying()
         {
             std::cout << "\n - Assignment with no deep copy failed."
                       << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p3.PrintByteCode(std::cout);
 #endif
         }
@@ -232,7 +232,7 @@ int TestCopying()
         {
             std::cout << "\n - Assignment with deep copy failed."
                       << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p3.PrintByteCode(std::cout);
 #endif
         }
@@ -259,7 +259,7 @@ int TestCopying()
         if(verbosityLevel >= 2)
         {
             std::cout << "\n - Failed: p1 was corrupted." << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
             p1.PrintByteCode(std::cout);
 #endif
         }
@@ -364,7 +364,7 @@ int TestErrorSituations()
                 std::cout << "\n - Parsing the invalid function \""
                           << invalidFuncs[i].function_string
                           << "\" didn't fail\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                 fp.PrintByteCode(std::cout);
 #endif
             }
@@ -385,7 +385,7 @@ int TestErrorSituations()
                               << invalidFuncs[i].expected_error_position
                               << ", got " << parse_result << ")";
                 std::cout << "\n";
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                 fp.PrintByteCode(std::cout);
 #endif
             }
@@ -1844,7 +1844,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                         std::cout << (ind>0 ? ", " : "") << vars[ind];
                     std::cout << ")\nthe library returned " << error.str()
                               << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                     fp.PrintByteCode(std::cout);
 #endif
                 }
@@ -2438,7 +2438,7 @@ namespace OptimizerTests
                         << "\nreturned " << parserValue
                         << " instead of " << correctValue
                         << std::endl;
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                     fparser.PrintByteCode(std::cout);
 #endif
                 }

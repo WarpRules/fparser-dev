@@ -11,7 +11,7 @@
 
 using namespace FUNCTIONPARSERTYPES;
 
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
 namespace
 {
     template<typename Value_t>
@@ -32,7 +32,7 @@ namespace
 
 namespace FPoptimizer_CodeTree
 {
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
     template<typename Value_t>
     void DumpHashes(const CodeTree<Value_t>& tree, std::ostream& o)
     {

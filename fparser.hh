@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
 #include <iostream>
 #endif
 
@@ -94,8 +94,15 @@ public:
     void ForceDeepCopy();
 
 
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
-    // For debugging purposes only:
+
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
+    // For debugging purposes only.
+    // Performs no sanity checks or anything. If the values are wrong, the
+    // library will crash. Do not use unless you know what you are doing.
+    void InjectRawByteCode(const unsigned* bytecode, unsigned bytecodeAmount,
+                           const Value_t* immed, unsigned immedAmount,
+                           unsigned stackSize);
+
     void PrintByteCode(std::ostream& dest, bool showExpression = true) const;
 #endif
 

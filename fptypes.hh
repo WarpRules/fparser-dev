@@ -91,7 +91,7 @@ namespace FUNCTIONPARSERTYPES
             OkForInt = 0x08
         };
 
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
         const char name[8];
 #else
         struct name { } name;
@@ -109,7 +109,7 @@ namespace FUNCTIONPARSERTYPES
 #else
 # define FP_EVAL_FUNCTION_ENABLED 0
 #endif
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
 # define FP_FNAME(n) n
 #else
 # define FP_FNAME(n) {}

@@ -2748,10 +2748,29 @@ int FunctionParserBase<Value_t>::ParseAndDeduceVariables
 }
 
 
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
+//===========================================================================
+// Bytecode injection
+//===========================================================================
+template<typename Value_t>
+void FunctionParserBase<Value_t>::InjectRawByteCode
+(const unsigned* bytecode, unsigned bytecodeAmount,
+ const Value_t* immed, unsigned immedAmount, unsigned stackSize)
+{
+    CopyOnWrite();
+
+    data->ByteCode.assign(bytecode, bytecode + bytecodeAmount);
+    data->Immed.assign(immed, immed + immedAmount);
+    data->StackSize = stackSize;
+
+#ifndef FP_USE_THREAD_SAFE_EVAL
+    data->Stack.resize(stackSize);
+#endif
+}
+
 //===========================================================================
 // Debug output
 //===========================================================================
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
 #include <iomanip>
 #include <sstream>
 namespace

@@ -43,7 +43,7 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 CXX=g++
 LD=g++
 
-FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 
 #LD +=  -fprofile -fprofile-values -fprofile-generate -ftest-coverage 
 

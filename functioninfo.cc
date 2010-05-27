@@ -583,7 +583,7 @@ namespace
     void printByteCodes(const std::vector<FunctionInfo<Value_t> >& functions,
                         PrintMode mode = print_no_cut_or_wrap)
     {
-#ifdef FUNCTIONPARSER_SUPPORT_DEBUG_OUTPUT
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
         ParserWithConsts<Value_t> parser;
         const char* const wall =
             (mode == print_no_cut_or_wrap)
