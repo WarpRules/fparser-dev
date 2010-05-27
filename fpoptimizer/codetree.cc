@@ -131,8 +131,8 @@ namespace FPoptimizer_CodeTree
             case cMul:
             case cMin:
             case cMax:
-            case cAnd:
-            case cOr:
+            case cAnd: case cAbsAnd:
+            case cOr: case cAbsOr:
             case cHypot:
             case cEqual:
             case cNEqual:
