@@ -51,10 +51,10 @@ public:
     void setDelimiterChar(char);
 
     const char* ErrorMsg() const;
-    inline ParseErrorType GetParseErrorType() const { return parseErrorType; }
+    inline ParseErrorType GetParseErrorType() const { return mParseErrorType; }
 
     Value_t Eval(const Value_t* Vars);
-    inline int EvalError() const { return evalErrorType; }
+    inline int EvalError() const { return mEvalErrorType; }
 
     bool AddConstant(const std::string& name, Value_t value);
     bool AddUnit(const std::string& name, Value_t value);
@@ -114,19 +114,19 @@ private:
 
 // Private data:
 // ------------
-    char delimiterChar;
-    ParseErrorType parseErrorType;
-    int evalErrorType;
+    char mDelimiterChar;
+    ParseErrorType mParseErrorType;
+    int mEvalErrorType;
 
     friend class FPoptimizer_CodeTree::CodeTree<Value_t>;
 
     struct Data;
-    Data* data;
+    Data* mData;
 
-    bool useDegreeConversion;
-    unsigned evalRecursionLevel;
-    unsigned StackPtr;
-    const char* errorLocation;
+    bool mUseDegreeConversion, mByteCodeFlagsSet;
+    unsigned mEvalRecursionLevel;
+    unsigned mStackPtr;
+    const char* mErrorLocation;
 
 
 // Private methods:
@@ -158,6 +158,7 @@ private:
     inline const char* CompileFunction(const char*, unsigned);
     inline const char* CompileParenthesis(const char*);
     inline const char* CompileLiteral(const char*);
+    const char* Compile(const char*);
 };
 
 class FunctionParser: public FunctionParserBase<double> {};

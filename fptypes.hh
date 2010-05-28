@@ -20,7 +20,7 @@
 #include <cstring>
 
 #ifdef ONCE_FPARSER_H_
-# include <map>
+#include <map>
 #endif
 
 namespace FUNCTIONPARSERTYPES
@@ -232,34 +232,43 @@ namespace FUNCTIONPARSERTYPES
 template<typename Value_t>
 struct FunctionParserBase<Value_t>::Data
 {
-    unsigned referenceCounter;
+    unsigned mReferenceCounter;
 
-    unsigned numVariables;
-    std::string variablesString;
-    FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> namePtrs;
+    unsigned mVariablesAmount;
+    std::string mVariablesString;
+    FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> mNamePtrs;
+
+    struct InlineVariable
+    {
+        FUNCTIONPARSERTYPES::NamePtr mName;
+        unsigned mFetchIndex;
+    };
+
+    typedef std::vector<InlineVariable> InlineVarNamesContainer;
+    InlineVarNamesContainer mInlineVarNames;
 
     struct FuncPtrData
     {
         union
         {
-            FunctionPtr funcPtr;
-            FunctionParserBase<Value_t>* parserPtr;
+            FunctionPtr mFuncPtr;
+            FunctionParserBase<Value_t>* mParserPtr;
         };
-        unsigned params;
+        unsigned mParams;
     };
 
-    std::vector<FuncPtrData> FuncPtrs;
-    std::vector<FuncPtrData> FuncParsers;
+    std::vector<FuncPtrData> mFuncPtrs;
+    std::vector<FuncPtrData> mFuncParsers;
 
-    std::vector<unsigned> ByteCode;
-    std::vector<Value_t> Immed;
+    std::vector<unsigned> mByteCode;
+    std::vector<Value_t> mImmed;
 #if !defined(FP_USE_THREAD_SAFE_EVAL) && \
     !defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
-    std::vector<Value_t> Stack;
-    // Note: When Stack exists,
-    //       Stack.size() and StackSize are mutually redundant.
+    std::vector<Value_t> mStack;
+    // Note: When mStack exists,
+    //       mStack.size() and mStackSize are mutually redundant.
 #endif
-    unsigned StackSize;
+    unsigned mStackSize;
 
     Data();
     Data(const Data&);

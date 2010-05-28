@@ -17,7 +17,7 @@ void FunctionParserBase<Value_t>::Optimize()
     //PrintByteCode(std::cout);
 
     CodeTree<Value_t> tree;
-    tree.GenerateFrom(data->ByteCode, data->Immed, *data);
+    tree.GenerateFrom(mData->mByteCode, mData->mImmed, *mData);
 
     FPoptimizer_Optimize::ApplyGrammars(tree);
 
@@ -31,16 +31,17 @@ void FunctionParserBase<Value_t>::Optimize()
     fprintf(stderr, "Estimated stacktop %u\n", (unsigned)stacktop_max);
     fflush(stderr);*/
 
-    if(data->StackSize != stacktop_max)
+    if(mData->mStackSize != stacktop_max)
     {
-        data->StackSize = unsigned(stacktop_max); // Note: Ignoring GCC warning here.
-#ifndef FP_USE_THREAD_SAFE_EVAL
-        data->Stack.resize(stacktop_max);
+        mData->mStackSize = unsigned(stacktop_max); // Note: Ignoring GCC warning here.
+#if !defined(FP_USE_THREAD_SAFE_EVAL) && \
+    !defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+        mData->mStack.resize(stacktop_max);
 #endif
     }
 
-    data->ByteCode.swap(byteCode);
-    data->Immed.swap(immed);
+    mData->mByteCode.swap(byteCode);
+    mData->mImmed.swap(immed);
 
     //PrintByteCode(std::cout);
 }

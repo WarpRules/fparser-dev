@@ -415,8 +415,8 @@ namespace FPoptimizer_CodeTree
         bool keep_powi)
     {
         std::vector<CodeTree<Value_t> > var_trees;
-        var_trees.reserve(fpdata.numVariables);
-        for(unsigned n=0; n<fpdata.numVariables; ++n)
+        var_trees.reserve(fpdata.mVariablesAmount);
+        for(unsigned n=0; n<fpdata.mVariablesAmount; ++n)
         {
             var_trees.push_back( CodeTreeVar<Value_t> (n+VarBegin) );
         }
@@ -531,24 +531,24 @@ namespace FPoptimizer_CodeTree
                     case cFCall:
                     {
                         unsigned funcno = ByteCode[++IP];
-                        assert(funcno < fpdata.FuncPtrs.size());
-                        unsigned params = fpdata.FuncPtrs[funcno].params;
+                        assert(funcno < fpdata.mFuncPtrs.size());
+                        unsigned params = fpdata.mFuncPtrs[funcno].mParams;
                         sim.EatFunc(params, OPCODE(opcode), funcno);
                         break;
                     }
                     case cPCall:
                     {
                         unsigned funcno = ByteCode[++IP];
-                        assert(funcno < fpdata.FuncParsers.size());
+                        assert(funcno < fpdata.mFuncParsers.size());
                         const FunctionParserBase<Value_t>& p =
-                            *fpdata.FuncParsers[funcno].parserPtr;
-                        unsigned params = fpdata.FuncParsers[funcno].params;
+                            *fpdata.mFuncParsers[funcno].mParserPtr;
+                        unsigned params = fpdata.mFuncParsers[funcno].mParams;
 
                         /* Inline the procedure call */
                         /* Works because cPCalls can never recurse */
                         std::vector<CodeTree> paramlist = sim.Pop(params);
                         CodeTree pcall_tree;
-                        pcall_tree.GenerateFrom(p.data->ByteCode, p.data->Immed, *p.data,
+                        pcall_tree.GenerateFrom(p.mData->mByteCode, p.mData->mImmed, *p.mData,
                                                 paramlist);
                         sim.Push(pcall_tree);
                         break;
@@ -720,7 +720,7 @@ namespace FPoptimizer_CodeTree
 #ifndef FP_DISABLE_EVAL
                     case cEval:
                     {
-                        size_t paramcount = fpdata.numVariables;
+                        size_t paramcount = fpdata.mVariablesAmount;
                         sim.Eat(paramcount, OPCODE(opcode));
                         break;
                     }

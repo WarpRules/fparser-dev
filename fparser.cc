@@ -549,40 +549,39 @@ namespace
 //=========================================================================
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::Data():
-    referenceCounter(1),
-    numVariables(0),
-    StackSize(0)
+    mReferenceCounter(1),
+    mVariablesAmount(0),
+    mStackSize(0)
 {}
 
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
-    referenceCounter(0),
-    numVariables(rhs.numVariables),
-    variablesString(rhs.variablesString),
-    namePtrs(),
-    FuncPtrs(rhs.FuncPtrs),
-    FuncParsers(rhs.FuncParsers),
-    ByteCode(rhs.ByteCode),
-    Immed(rhs.Immed),
+    mReferenceCounter(0),
+    mVariablesAmount(rhs.mVariablesAmount),
+    mVariablesString(rhs.mVariablesString),
+    mNamePtrs(),
+    mFuncPtrs(rhs.mFuncPtrs),
+    mFuncParsers(rhs.mFuncParsers),
+    mByteCode(rhs.mByteCode),
+    mImmed(rhs.mImmed),
 #ifndef FP_USE_THREAD_SAFE_EVAL
-    Stack(rhs.StackSize),
+    mStack(rhs.mStackSize),
 #endif
-    StackSize(rhs.StackSize)
+    mStackSize(rhs.mStackSize)
 {
-    for(typename NamePtrsMap<Value_t>::const_iterator i =
-            rhs.namePtrs.begin();
-        i != rhs.namePtrs.end();
+    for(typename NamePtrsMap<Value_t>::const_iterator i = rhs.mNamePtrs.begin();
+        i != rhs.mNamePtrs.end();
         ++i)
     {
         if(i->second.type == NameData<Value_t>::VARIABLE)
         {
             const size_t variableStringOffset =
-                i->first.name - rhs.variablesString.c_str();
+                i->first.name - rhs.mVariablesString.c_str();
             std::pair<NamePtr, NameData<Value_t> > tmp
-                (NamePtr(&variablesString[variableStringOffset],
+                (NamePtr(&mVariablesString[variableStringOffset],
                          i->first.nameLength),
                  i->second);
-            namePtrs.insert(namePtrs.end(), tmp);
+            mNamePtrs.insert(mNamePtrs.end(), tmp);
         }
         else
         {
@@ -591,7 +590,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
                  i->second );
             memcpy(const_cast<char*>(tmp.first.name), i->first.name,
                    tmp.first.nameLength);
-            namePtrs.insert(namePtrs.end(), tmp);
+            mNamePtrs.insert(mNamePtrs.end(), tmp);
         }
     }
 }
@@ -599,9 +598,8 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::~Data()
 {
-    for(typename NamePtrsMap<Value_t>::iterator i =
-            namePtrs.begin();
-        i != namePtrs.end();
+    for(typename NamePtrsMap<Value_t>::iterator i = mNamePtrs.begin();
+        i != mNamePtrs.end();
         ++i)
     {
         if(i->second.type != NameData<Value_t>::VARIABLE)
@@ -615,51 +613,51 @@ FunctionParserBase<Value_t>::Data::~Data()
 //=========================================================================
 template<typename Value_t>
 FunctionParserBase<Value_t>::FunctionParserBase():
-    delimiterChar(0),
-    parseErrorType(NO_FUNCTION_PARSED_YET), evalErrorType(0),
-    data(new Data),
-    useDegreeConversion(false),
-    evalRecursionLevel(0),
-    StackPtr(0), errorLocation(0)
+    mDelimiterChar(0),
+    mParseErrorType(NO_FUNCTION_PARSED_YET), mEvalErrorType(0),
+    mData(new Data),
+    mUseDegreeConversion(false),
+    mEvalRecursionLevel(0),
+    mStackPtr(0), mErrorLocation(0)
 {
 }
 
 template<typename Value_t>
 FunctionParserBase<Value_t>::~FunctionParserBase()
 {
-    if(--(data->referenceCounter) == 0)
-        delete data;
+    if(--(mData->mReferenceCounter) == 0)
+        delete mData;
 }
 
 template<typename Value_t>
 FunctionParserBase<Value_t>::FunctionParserBase(const FunctionParserBase& cpy):
-    delimiterChar(cpy.delimiterChar),
-    parseErrorType(cpy.parseErrorType),
-    evalErrorType(cpy.evalErrorType),
-    data(cpy.data),
-    useDegreeConversion(cpy.useDegreeConversion),
-    evalRecursionLevel(0),
-    StackPtr(0), errorLocation(0)
+    mDelimiterChar(cpy.mDelimiterChar),
+    mParseErrorType(cpy.mParseErrorType),
+    mEvalErrorType(cpy.mEvalErrorType),
+    mData(cpy.mData),
+    mUseDegreeConversion(cpy.mUseDegreeConversion),
+    mEvalRecursionLevel(0),
+    mStackPtr(0), mErrorLocation(0)
 {
-    ++(data->referenceCounter);
+    ++(mData->mReferenceCounter);
 }
 
 template<typename Value_t>
 FunctionParserBase<Value_t>&
 FunctionParserBase<Value_t>::operator=(const FunctionParserBase& cpy)
 {
-    if(data != cpy.data)
+    if(mData != cpy.mData)
     {
-        if(--(data->referenceCounter) == 0) delete data;
+        if(--(mData->mReferenceCounter) == 0) delete mData;
 
-        delimiterChar = cpy.delimiterChar;
-        parseErrorType = cpy.parseErrorType;
-        evalErrorType = cpy.evalErrorType;
-        data = cpy.data;
-        useDegreeConversion = cpy.useDegreeConversion;
-        evalRecursionLevel = cpy.evalRecursionLevel;
+        mDelimiterChar = cpy.mDelimiterChar;
+        mParseErrorType = cpy.mParseErrorType;
+        mEvalErrorType = cpy.mEvalErrorType;
+        mData = cpy.mData;
+        mUseDegreeConversion = cpy.mUseDegreeConversion;
+        mEvalRecursionLevel = cpy.mEvalRecursionLevel;
 
-        ++(data->referenceCounter);
+        ++(mData->mReferenceCounter);
     }
 
     return *this;
@@ -669,7 +667,7 @@ FunctionParserBase<Value_t>::operator=(const FunctionParserBase& cpy)
 template<typename Value_t>
 void FunctionParserBase<Value_t>::setDelimiterChar(char c)
 {
-    delimiterChar = c;
+    mDelimiterChar = c;
 }
 
 
@@ -679,12 +677,12 @@ void FunctionParserBase<Value_t>::setDelimiterChar(char c)
 template<typename Value_t>
 void FunctionParserBase<Value_t>::CopyOnWrite()
 {
-    if(data->referenceCounter > 1)
+    if(mData->mReferenceCounter > 1)
     {
-        Data* oldData = data;
-        data = new Data(*oldData);
-        --(oldData->referenceCounter);
-        data->referenceCounter = 1;
+        Data* oldData = mData;
+        mData = new Data(*oldData);
+        --(oldData->mReferenceCounter);
+        mData->mReferenceCounter = 1;
     }
 }
 
@@ -709,7 +707,7 @@ bool FunctionParserBase<Value_t>::AddConstant(const std::string& name,
         (NamePtr(name.data(), unsigned(name.size())),
          NameData<Value_t>(NameData<Value_t>::CONSTANT, value));
 
-    return addNewNameData(data->namePtrs, newName, false);
+    return addNewNameData(mData->mNamePtrs, newName, false);
 }
 
 template<typename Value_t>
@@ -722,7 +720,7 @@ bool FunctionParserBase<Value_t>::AddUnit(const std::string& name,
     std::pair<NamePtr, NameData<Value_t> > newName
         (NamePtr(name.data(), unsigned(name.size())),
          NameData<Value_t>(NameData<Value_t>::UNIT, value));
-    return addNewNameData(data->namePtrs, newName, false);
+    return addNewNameData(mData->mNamePtrs, newName, false);
 }
 
 template<typename Value_t>
@@ -735,14 +733,14 @@ bool FunctionParserBase<Value_t>::AddFunction
     std::pair<NamePtr, NameData<Value_t> > newName
         (NamePtr(name.data(), unsigned(name.size())),
          NameData<Value_t>(NameData<Value_t>::FUNC_PTR,
-                           unsigned(data->FuncPtrs.size())));
+                           unsigned(mData->mFuncPtrs.size())));
 
-    const bool success = addNewNameData(data->namePtrs, newName, false);
+    const bool success = addNewNameData(mData->mNamePtrs, newName, false);
     if(success)
     {
-        data->FuncPtrs.push_back(typename Data::FuncPtrData());
-        data->FuncPtrs.back().funcPtr = ptr;
-        data->FuncPtrs.back().params = paramsAmount;
+        mData->mFuncPtrs.push_back(typename Data::FuncPtrData());
+        mData->mFuncPtrs.back().mFuncPtr = ptr;
+        mData->mFuncPtrs.back().mParams = paramsAmount;
     }
     return success;
 }
@@ -752,8 +750,8 @@ bool FunctionParserBase<Value_t>::CheckRecursiveLinking
 (const FunctionParserBase* fp) const
 {
     if(fp == this) return true;
-    for(unsigned i = 0; i < fp->data->FuncParsers.size(); ++i)
-        if(CheckRecursiveLinking(fp->data->FuncParsers[i].parserPtr))
+    for(unsigned i = 0; i < fp->mData->mFuncParsers.size(); ++i)
+        if(CheckRecursiveLinking(fp->mData->mFuncParsers[i].mParserPtr))
             return true;
     return false;
 }
@@ -770,14 +768,14 @@ bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
     std::pair<NamePtr, NameData<Value_t> > newName
         (NamePtr(name.data(), unsigned(name.size())),
          NameData<Value_t>(NameData<Value_t>::PARSER_PTR,
-                           unsigned(data->FuncParsers.size())));
+                           unsigned(mData->mFuncParsers.size())));
 
-    const bool success = addNewNameData(data->namePtrs, newName, false);
+    const bool success = addNewNameData(mData->mNamePtrs, newName, false);
     if(success)
     {
-        data->FuncParsers.push_back(typename Data::FuncPtrData());
-        data->FuncParsers.back().parserPtr = &fp;
-        data->FuncParsers.back().params = fp.data->numVariables;
+        mData->mFuncParsers.push_back(typename Data::FuncPtrData());
+        mData->mFuncParsers.back().mParserPtr = &fp;
+        mData->mFuncParsers.back().mParams = fp.mData->mVariablesAmount;
     }
     return success;
 }
@@ -790,9 +788,9 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
     NamePtr namePtr(name.data(), unsigned(name.size()));
 
     typename NamePtrsMap<Value_t>::iterator
-        nameIter = data->namePtrs.find(namePtr);
+        nameIter = mData->mNamePtrs.find(namePtr);
 
-    if(nameIter != data->namePtrs.end())
+    if(nameIter != mData->mNamePtrs.end())
     {
         if(nameIter->second.type == NameData<Value_t>::VARIABLE)
         {
@@ -800,7 +798,7 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
             return false;
         }
         delete[] nameIter->first.name;
-        data->namePtrs.erase(nameIter);
+        mData->mNamePtrs.erase(nameIter);
         return true;
     }
     return false;
@@ -998,7 +996,7 @@ U+000B  \v
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::ErrorMsg() const
 {
-    return ParseErrorMessage[parseErrorType];
+    return ParseErrorMessage[mParseErrorType];
 }
 
 
@@ -1009,24 +1007,24 @@ template<typename Value_t>
 bool FunctionParserBase<Value_t>::ParseVariables
 (const std::string& inputVarString)
 {
-    if(data->variablesString == inputVarString) return true;
+    if(mData->mVariablesString == inputVarString) return true;
 
-    /* Delete existing variables from namePtrs */
+    /* Delete existing variables from mNamePtrs */
     for(typename NamePtrsMap<Value_t>::iterator i =
-            data->namePtrs.begin();
-        i != data->namePtrs.end(); )
+            mData->mNamePtrs.begin();
+        i != mData->mNamePtrs.end(); )
     {
         if(i->second.type == NameData<Value_t>::VARIABLE)
         {
             typename NamePtrsMap<Value_t>::iterator j (i);
             ++i;
-            data->namePtrs.erase(j);
+            mData->mNamePtrs.erase(j);
         }
         else ++i;
     }
-    data->variablesString = inputVarString;
+    mData->mVariablesString = inputVarString;
 
-    const std::string& vars = data->variablesString;
+    const std::string& vars = mData->mVariablesString;
     const unsigned len = unsigned(vars.size());
 
     unsigned varNumber = VarBegin;
@@ -1046,7 +1044,7 @@ bool FunctionParserBase<Value_t>::ParseVariables
             (NamePtr(beginPtr, nameLength),
              NameData<Value_t>(NameData<Value_t>::VARIABLE, varNumber++));
 
-        if(!addNewNameData(data->namePtrs, newName, true))
+        if(!addNewNameData(mData->mNamePtrs, newName, true))
         {
             return false;
         }
@@ -1054,7 +1052,7 @@ bool FunctionParserBase<Value_t>::ParseVariables
         beginPtr = endPtr + 1;
     }
 
-    data->numVariables = varNumber - VarBegin;
+    mData->mVariablesAmount = varNumber - VarBegin;
     return true;
 }
 
@@ -1070,7 +1068,7 @@ int FunctionParserBase<Value_t>::Parse(const char* Function,
 
     if(!ParseVariables(Vars))
     {
-        parseErrorType = INVALID_VARS;
+        mParseErrorType = INVALID_VARS;
         return int(strlen(Function));
     }
 
@@ -1086,7 +1084,7 @@ int FunctionParserBase<Value_t>::Parse(const std::string& Function,
 
     if(!ParseVariables(Vars))
     {
-        parseErrorType = INVALID_VARS;
+        mParseErrorType = INVALID_VARS;
         return int(Function.size());
     }
 
@@ -1101,26 +1099,37 @@ template<typename Value_t>
 int FunctionParserBase<Value_t>::ParseFunction(const char* function,
                                                bool useDegrees)
 {
-    useDegreeConversion = useDegrees;
-    parseErrorType = FP_NO_ERROR;
+    mUseDegreeConversion = useDegrees;
+    mParseErrorType = FP_NO_ERROR;
 
-    data->ByteCode.clear(); data->ByteCode.reserve(128);
-    data->Immed.clear(); data->Immed.reserve(128);
-    data->StackSize = StackPtr = 0;
+    mData->mInlineVarNames.clear();
+    mData->mByteCode.clear(); mData->mByteCode.reserve(128);
+    mData->mImmed.clear(); mData->mImmed.reserve(128);
+    mData->mStackSize = mStackPtr = 0;
+    mByteCodeFlagsSet = false;
 
-    const char* ptr = CompileExpression(function);
-    if(parseErrorType != FP_NO_ERROR) return int(errorLocation - function);
+    const char* ptr = Compile(function);
+    mData->mInlineVarNames.clear();
+
+    if(mByteCodeFlagsSet)
+    {
+        const unsigned byteCodeSize = mData->mByteCode.size();
+        for(size_t i = 0; i < byteCodeSize; ++i)
+            mData->mByteCode[i] &= ~0x80000000U;
+    }
+
+    if(mParseErrorType != FP_NO_ERROR) return int(mErrorLocation - function);
 
     assert(ptr); // Should never be null at this point. It's a bug otherwise.
     if(*ptr)
     {
-        if(delimiterChar == 0 || *ptr != delimiterChar)
-            parseErrorType = EXPECT_OPERATOR;
+        if(mDelimiterChar == 0 || *ptr != mDelimiterChar)
+            mParseErrorType = EXPECT_OPERATOR;
         return int(ptr - function);
     }
 
 #ifndef FP_USE_THREAD_SAFE_EVAL
-    data->Stack.resize(data->StackSize);
+    mData->mStack.resize(mData->mStackSize);
 #endif
 
     return -1;
@@ -1134,15 +1143,15 @@ template<typename Value_t>
 inline const char* FunctionParserBase<Value_t>::SetErrorType(ParseErrorType t,
                                                              const char* pos)
 {
-    parseErrorType = t;
-    errorLocation = pos;
+    mParseErrorType = t;
+    mErrorLocation = pos;
     return 0;
 }
 
 template<typename Value_t>
 inline void FunctionParserBase<Value_t>::incStackPtr()
 {
-    if(++StackPtr > data->StackSize) ++(data->StackSize);
+    if(++mStackPtr > mData->mStackSize) ++(mData->mStackSize);
 }
 
 namespace
@@ -1230,8 +1239,8 @@ namespace
 template<typename Value_t>
 inline void FunctionParserBase<Value_t>::AddImmedOpcode(Value_t value)
 {
-    data->Immed.push_back(value);
-    data->ByteCode.push_back(cImmed);
+    mData->mImmed.push_back(value);
+    mData->mByteCode.push_back(cImmed);
 }
 
 template<typename Value_t>
@@ -1250,13 +1259,13 @@ inline void FunctionParserBase<Value_t>::CompilePowi(long abs_int_exponent)
         if(!(abs_int_exponent & 1))
         {
             abs_int_exponent /= 2;
-            data->ByteCode.push_back(cSqr);
+            mData->mByteCode.push_back(cSqr);
             // ^ Don't put AddFunctionOpcode here,
             //   it would slow down a great deal.
         }
         else
         {
-            data->ByteCode.push_back(cDup);
+            mData->mByteCode.push_back(cDup);
             incStackPtr();
             abs_int_exponent -= 1;
             ++num_muls;
@@ -1264,8 +1273,8 @@ inline void FunctionParserBase<Value_t>::CompilePowi(long abs_int_exponent)
     }
     if(num_muls > 0)
     {
-        data->ByteCode.resize(data->ByteCode.size()+num_muls, cMul);
-        StackPtr -= num_muls;
+        mData->mByteCode.resize(mData->mByteCode.size()+num_muls, cMul);
+        mStackPtr -= num_muls;
     }
 }
 
@@ -1276,14 +1285,15 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     for(int sqrt_count=0; /**/; ++sqrt_count)
     {
         long int_exponent = makeLongInteger(changed_immed);
-        if(isLongInteger(changed_immed) && IsEligibleIntPowiExponent(int_exponent))
+        if(isLongInteger(changed_immed) &&
+           IsEligibleIntPowiExponent(int_exponent))
         {
             long abs_int_exponent = int_exponent;
             if(abs_int_exponent < 0)
                 abs_int_exponent = -abs_int_exponent;
 
-            data->Immed.pop_back(); data->ByteCode.pop_back();
-            --StackPtr;
+            mData->mImmed.pop_back(); mData->mByteCode.pop_back();
+            --mStackPtr;
             // ^Though the above is accounted for by the procedure
             // that generates cPow, we need it for correct cFetch
             // indexes in CompilePowi().
@@ -1296,7 +1306,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
                     opcode = cRSqrt;
                     int_exponent = -int_exponent;
                 }
-                data->ByteCode.push_back(opcode);
+                mData->mByteCode.push_back(opcode);
                 --sqrt_count;
             }
             if((abs_int_exponent & 1) == 0)
@@ -1307,8 +1317,8 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
                 abs_int_exponent >>= 1;
             }
             CompilePowi(abs_int_exponent);
-            if(int_exponent < 0) data->ByteCode.push_back(cInv);
-            ++StackPtr; // Needed because cPow adding will assume this.
+            if(int_exponent < 0) mData->mByteCode.push_back(cInv);
+            ++mStackPtr; // Needed because cPow adding will assume this.
             return true;
         }
         if(sqrt_count >= 4) break;
@@ -1320,16 +1330,16 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     // when y is _not_ integer, because we know that x >= 0.
     // Otherwise either expression will give a NaN.
     if(/*!isInteger(original_immed) ||*/
-       IsNeverNegativeValueOpcode(data->ByteCode[data->ByteCode.size()-2]))
+       IsNeverNegativeValueOpcode(mData->mByteCode[mData->mByteCode.size()-2]))
     {
-        data->Immed.pop_back();
-        data->ByteCode.pop_back();
-        //--StackPtr; - accounted for by the procedure that generates cPow
+        mData->mImmed.pop_back();
+        mData->mByteCode.pop_back();
+        //--mStackPtr; - accounted for by the procedure that generates cPow
         AddFunctionOpcode(cLog);
         AddImmedOpcode(original_immed);
         //incStackPtr(); - this and the next are redundant because...
         AddFunctionOpcode(cMul);
-        //--StackPtr;    - ...because the cImmed was popped earlier.
+        //--mStackPtr;    - ...because the cImmed was popped earlier.
         AddFunctionOpcode(cExp);
         return true;
     }
@@ -1443,8 +1453,8 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
         return SetErrorType(noCommaError<Value_t>(*function), function);
 
     OPCODE opcode = cIf;
-    if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
-    if(IsNeverNegativeValueOpcode(data->ByteCode.back()))
+    if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
+    if(IsNeverNegativeValueOpcode(mData->mByteCode.back()))
     {
         // If we know that the condition to be tested is always
         // a positive value (such as when produced by "x<y"),
@@ -1454,25 +1464,25 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
         opcode = cAbsIf;
     }
 
-    data->ByteCode.push_back(opcode);
-    const unsigned curByteCodeSize = unsigned(data->ByteCode.size());
-    data->ByteCode.push_back(0); // Jump index; to be set later
-    data->ByteCode.push_back(0); // Immed jump index; to be set later
+    mData->mByteCode.push_back(opcode);
+    const unsigned curByteCodeSize = unsigned(mData->mByteCode.size());
+    mData->mByteCode.push_back(0); // Jump index; to be set later
+    mData->mByteCode.push_back(0); // Immed jump index; to be set later
 
-    --StackPtr;
+    --mStackPtr;
 
     function = CompileExpression(function + 1);
     if(!function) return 0;
     if(*function != ',')
         return SetErrorType(noCommaError<Value_t>(*function), function);
 
-    data->ByteCode.push_back(cJump);
-    const unsigned curByteCodeSize2 = unsigned(data->ByteCode.size());
-    const unsigned curImmedSize2 = unsigned(data->Immed.size());
-    data->ByteCode.push_back(0); // Jump index; to be set later
-    data->ByteCode.push_back(0); // Immed jump index; to be set later
+    mData->mByteCode.push_back(cJump);
+    const unsigned curByteCodeSize2 = unsigned(mData->mByteCode.size());
+    const unsigned curImmedSize2 = unsigned(mData->mImmed.size());
+    mData->mByteCode.push_back(0); // Jump index; to be set later
+    mData->mByteCode.push_back(0); // Immed jump index; to be set later
 
-    --StackPtr;
+    --mStackPtr;
 
     function = CompileExpression(function + 1);
     if(!function) return 0;
@@ -1484,13 +1494,13 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
        else-branch which could be confused as optimizable with that opcode
        (eg. cImmed). The optimizer removes the cNop safely.
      */
-    data->ByteCode.push_back(cNop);
+    mData->mByteCode.push_back(cNop);
 
     // Set jump indices
-    data->ByteCode[curByteCodeSize] = curByteCodeSize2+1;
-    data->ByteCode[curByteCodeSize+1] = curImmedSize2;
-    data->ByteCode[curByteCodeSize2] = unsigned(data->ByteCode.size())-1;
-    data->ByteCode[curByteCodeSize2+1] = unsigned(data->Immed.size());
+    mData->mByteCode[curByteCodeSize] = curByteCodeSize2+1;
+    mData->mByteCode[curByteCodeSize+1] = curImmedSize2;
+    mData->mByteCode[curByteCodeSize2] = unsigned(mData->mByteCode.size())-1;
+    mData->mByteCode[curByteCodeSize2+1] = unsigned(mData->mImmed.size());
 
     ++function;
     SkipSpace(function);
@@ -1527,7 +1537,7 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
             if(!function) return 0;
         }
         // No need for incStackPtr() because each parse parameter calls it
-        StackPtr -= requiredParams-1;
+        mStackPtr -= requiredParams-1;
     }
     else
     {
@@ -1570,9 +1580,25 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     SkipSpace(endPtr);
 
     typename NamePtrsMap<Value_t>::iterator nameIter =
-        data->namePtrs.find(name);
-    if(nameIter == data->namePtrs.end())
+        mData->mNamePtrs.find(name);
+    if(nameIter == mData->mNamePtrs.end())
     {
+        // Check if it's an inline variable:
+        for(typename Data::InlineVarNamesContainer::reverse_iterator iter =
+                mData->mInlineVarNames.rbegin();
+            iter != mData->mInlineVarNames.rend();
+            ++iter)
+        {
+            if(name == iter->mName)
+            {
+                mData->mByteCode.push_back(cFetch);
+                mData->mByteCode.push_back(iter->mFetchIndex);
+                mByteCodeFlagsSet = true;
+                incStackPtr();
+                return endPtr;
+            }
+        }
+
         return SetErrorType(UNKNOWN_IDENTIFIER, function);
     }
 
@@ -1580,50 +1606,38 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     switch(nameData->type)
     {
       case NameData<Value_t>::VARIABLE: // is variable
-          if(unlikely(!data->ByteCode.empty() && data->ByteCode.back() == nameData->index))
-              data->ByteCode.push_back(cDup);
+          if(unlikely(!mData->mByteCode.empty() &&
+                      mData->mByteCode.back() == nameData->index))
+              mData->mByteCode.push_back(cDup);
           else
-              data->ByteCode.push_back(nameData->index);
+              mData->mByteCode.push_back(nameData->index);
           incStackPtr();
           return endPtr;
 
-      case NameData<Value_t>::CONSTANT:
+      case NameData<Value_t>::CONSTANT: // is constant
           AddImmedOpcode(nameData->value);
           incStackPtr();
           return endPtr;
 
-      case NameData<Value_t>::UNIT:
+      case NameData<Value_t>::UNIT: // is unit (error if appears here)
           break;
 
-  /* The reason why a cNop is added after a cFCall and a cPCall opcode is
-     that the function index could otherwise be confused with an actual
-     opcode (most prominently cImmed), making parse-time optimizations bug
-     (eg. if cNeg immediately follows an index value equal to cImmed, in
-     which case the parser would "optimize" it to negating the (inexistent)
-     literal, causing mayhem). The optimizer gets rid of the cNop safely.
-     (Another option would be to add some offset to the function index
-     when storing it in the bytecode, and then subtract that offset when
-     interpreting the bytecode, but this causes more programming overhead
-     than the speed overhead caused by the cNop to be worth the trouble,
-     especially since the function call caused by the opcode is quite slow
-     anyways.)
-   */
-      case NameData<Value_t>::FUNC_PTR:
+      case NameData<Value_t>::FUNC_PTR: // is C++ function
           function = CompileFunctionParams
-              (endPtr, data->FuncPtrs[nameData->index].params);
+              (endPtr, mData->mFuncPtrs[nameData->index].mParams);
           //if(!function) return 0;
-          data->ByteCode.push_back(cFCall);
-          data->ByteCode.push_back(nameData->index);
-          data->ByteCode.push_back(cNop);
+          mData->mByteCode.push_back(cFCall);
+          mData->mByteCode.push_back(nameData->index | 0x80000000U);
+          mByteCodeFlagsSet = true;
           return function;
 
-      case NameData<Value_t>::PARSER_PTR:
+      case NameData<Value_t>::PARSER_PTR: // is FunctionParser
           function = CompileFunctionParams
-              (endPtr, data->FuncParsers[nameData->index].params);
+              (endPtr, mData->mFuncParsers[nameData->index].mParams);
           //if(!function) return 0;
-          data->ByteCode.push_back(cPCall);
-          data->ByteCode.push_back(nameData->index);
-          data->ByteCode.push_back(cNop);
+          mData->mByteCode.push_back(cPCall);
+          mData->mByteCode.push_back(nameData->index | 0x80000000U);
+          mByteCodeFlagsSet = true;
           return function;
     }
 
@@ -1644,13 +1658,13 @@ inline const char* FunctionParserBase<Value_t>::CompileFunction
     unsigned requiredParams = funcDef.params;
 #ifndef FP_DISABLE_EVAL
     if(func_opcode == cEval)
-        requiredParams = data->numVariables;
+        requiredParams = mData->mVariablesAmount;
 #endif
 
     function = CompileFunctionParams(function, requiredParams);
     if(!function) return 0;
 
-    if(useDegreeConversion)
+    if(mUseDegreeConversion)
     {
         if(funcDef.flags & FuncDefinition::AngleIn)
             AddFunctionOpcode(cRad);
@@ -1696,8 +1710,8 @@ FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
         NamePtr name(function, nameLength);
 
         typename NamePtrsMap<Value_t>::iterator nameIter =
-            data->namePtrs.find(name);
-        if(nameIter != data->namePtrs.end())
+            mData->mNamePtrs.find(name);
+        if(nameIter != mData->mNamePtrs.end())
         {
             const NameData<Value_t>* nameData = &nameIter->second;
             if(nameData->type == NameData<Value_t>::UNIT)
@@ -1705,7 +1719,7 @@ FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
                 AddImmedOpcode(nameData->value);
                 incStackPtr();
                 AddFunctionOpcode(cMul);
-                --StackPtr;
+                --mStackPtr;
 
                 const char* endPtr = function + nameLength;
                 SkipSpace(endPtr);
@@ -1731,14 +1745,14 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         SkipSpace(function);
 
         unsigned op = cPow;
-        if(data->ByteCode.back() == cImmed)
+        if(mData->mByteCode.back() == cImmed)
         {
-            if(data->Immed.back() == fp_const_e<Value_t>())
-                { op = cExp;  data->ByteCode.pop_back();
-                    data->Immed.pop_back(); --StackPtr; }
-            else if(data->Immed.back() == Value_t(2))
-                { op = cExp2; data->ByteCode.pop_back();
-                    data->Immed.pop_back(); --StackPtr; }
+            if(mData->mImmed.back() == fp_const_e<Value_t>())
+                { op = cExp;  mData->mByteCode.pop_back();
+                    mData->mImmed.pop_back(); --mStackPtr; }
+            else if(mData->mImmed.back() == Value_t(2))
+                { op = cExp2; mData->mByteCode.pop_back();
+                    mData->mImmed.pop_back(); --mStackPtr; }
         }
 
         function = CompileUnaryMinus(function);
@@ -1747,7 +1761,7 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         // add opcode
         AddFunctionOpcode(op);
 
-        if(op == cPow) --StackPtr;
+        if(op == cPow) --mStackPtr;
     }
     return function;
 }
@@ -1817,17 +1831,17 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
         if(pending_immed != Value_t(1)) \
         { \
             unsigned op = cMul; \
-            if(!IsIntType<Value_t>::result && data->ByteCode.back() == cInv) \
+            if(!IsIntType<Value_t>::result && mData->mByteCode.back() == cInv) \
             { \
                 /* (...) cInv 5 cMul -> (...) 5 cRDiv */ \
                 /*           ^               ^      | */ \
-                data->ByteCode.pop_back(); \
+                mData->mByteCode.pop_back(); \
                 op = cRDiv; \
             } \
             AddImmedOpcode(pending_immed); \
             incStackPtr(); \
             AddFunctionOpcode(op); \
-            --StackPtr; \
+            --mStackPtr; \
             if(do_reset) pending_immed = Value_t(1); \
         }
     while(true)
@@ -1841,7 +1855,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             function = CompileUnaryMinus(function);
             if(!function) return 0;
             AddFunctionOpcode(cMod);
-            --StackPtr;
+            --mStackPtr;
             continue;
         }
         if(c != '*' && c != '/') break;
@@ -1854,17 +1868,17 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
 
         ++function;
         SkipSpace(function);
-        if(data->ByteCode.back() == cImmed
+        if(mData->mByteCode.back() == cImmed
         && (safe_cumulation
-         || data->Immed.back() == Value_t(1)))
+         || mData->mImmed.back() == Value_t(1)))
         {
             // 5 (...) cMul --> (...)      ||| 5 cMul
             // 5 (...) cDiv --> (...) cInv ||| 5 cMul
             //  ^          |              ^
-            pending_immed *= data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            --StackPtr;
+            pending_immed *= mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            --mStackPtr;
             function = CompileUnaryMinus(function);
             if(!function) return 0;
             if(c == '/')
@@ -1872,76 +1886,76 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             continue;
         }
         if(safe_cumulation
-        && data->ByteCode.back() == cMul
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        && mData->mByteCode.back() == cMul
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) 5 cMul (...) cMul -> (:::) (...) cMul  ||| 5 cMul
             // (:::) 5 cMul (...) cDiv -> (:::) (...) cDiv  ||| 5 cMul
             //             ^                   ^
-            pending_immed *= data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+            pending_immed *= mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         // cDiv is not tested here because the bytecode
         // optimizer will convert this kind of cDivs into cMuls.
         bool lhs_inverted = false;
         if(!IsIntType<Value_t>::result && c == '*'
-        && data->ByteCode.back() == cInv)
+        && mData->mByteCode.back() == cInv)
         {
             // (:::) cInv (...) cMul -> (:::) (...) cRDiv
             // (:::) cInv (...) cDiv -> (:::) (...) cMul cInv
             //           ^                   ^            |
-            data->ByteCode.pop_back();
+            mData->mByteCode.pop_back();
             lhs_inverted = true;
         }
         function = CompileUnaryMinus(function);
         if(!function) return 0;
         if(safe_cumulation
-        && data->ByteCode.back() == cMul
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        && mData->mByteCode.back() == cMul
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) (...) 5 cMul cMul -> (:::) (...) cMul  |||  5 Mul
             // (:::) (...) 5 cMul cDiv -> (:::) (...) cDiv  ||| /5 Mul
             //                   ^                        ^
             if(c == '*')
-                pending_immed *= data->Immed.back();
+                pending_immed *= mData->mImmed.back();
             else
-                pending_immed /= data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+                pending_immed /= mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         else
         if(safe_cumulation
-        && data->ByteCode.back() == cRDiv
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        && mData->mByteCode.back() == cRDiv
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) (...) 5 cRDiv cMul -> (:::) (...) cDiv  |||  5 cMul
             // (:::) (...) 5 cRDiv cDiv -> (:::) (...) cMul  ||| /5 cMul
             //                    ^                   ^
             if(c == '*')
-                { c = '/'; pending_immed *= data->Immed.back(); }
+                { c = '/'; pending_immed *= mData->mImmed.back(); }
             else
-                { c = '*'; pending_immed /= data->Immed.back(); }
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+                { c = '*'; pending_immed /= mData->mImmed.back(); }
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         if(!lhs_inverted) // if (/x/y) was changed to /(x*y), add missing cInv
         {
             AddFunctionOpcode(c == '*' ? cMul : cDiv);
-            --StackPtr;
+            --mStackPtr;
         }
         else if(c == '*') // (/x)*y -> rdiv(x,y)
         {
             AddFunctionOpcode(cRDiv);
-            --StackPtr;
+            --mStackPtr;
         }
         else // (/x)/y -> /(x*y)
         {
             AddFunctionOpcode(cMul);
-            --StackPtr;
+            --mStackPtr;
             AddFunctionOpcode(cInv);
         }
     }
@@ -1962,17 +1976,17 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
         if(pending_immed != Value_t(0)) \
         { \
             unsigned op = cAdd; \
-            if(data->ByteCode.back() == cNeg) \
+            if(mData->mByteCode.back() == cNeg) \
             { \
                 /* (...) cNeg 5 cAdd -> (...) 5 cRSub */ \
                 /*           ^               ^      | */ \
-                data->ByteCode.pop_back(); \
+                mData->mByteCode.pop_back(); \
                 op = cRSub; \
             } \
             AddImmedOpcode(pending_immed); \
             incStackPtr(); \
             AddFunctionOpcode(op); \
-            --StackPtr; \
+            --mStackPtr; \
             if(do_reset) pending_immed = Value_t(0); \
         }
     while(true)
@@ -1981,88 +1995,88 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
         if(c != '+' && c != '-') break;
         ++function;
         SkipSpace(function);
-        if(data->ByteCode.back() == cImmed)
+        if(mData->mByteCode.back() == cImmed)
         {
             // 5 (...) cAdd --> (...)      ||| 5 cAdd
             // 5 (...) cSub --> (...) cNeg ||| 5 cAdd
             //  ^          |              ^
-            pending_immed += data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            --StackPtr;
+            pending_immed += mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            --mStackPtr;
             function = CompileMult(function);
             if(!function) return 0;
             if(c == '-')
                 AddFunctionOpcode(cNeg);
             continue;
         }
-        if(data->ByteCode.back() == cAdd
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        if(mData->mByteCode.back() == cAdd
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) 5 cAdd (...) cAdd -> (:::) (...) cAdd  ||| 5 cAdd
             // (:::) 5 cAdd (...) cSub -> (:::) (...) cSub  ||| 5 cAdd
             //             ^                   ^
-            pending_immed += data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+            pending_immed += mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         // cSub is not tested here because the bytecode
         // optimizer will convert this kind of cSubs into cAdds.
         bool lhs_negated = false;
-        if(data->ByteCode.back() == cNeg)
+        if(mData->mByteCode.back() == cNeg)
         {
             // (:::) cNeg (...) cAdd -> (:::) (...) cRSub
             // (:::) cNeg (...) cSub -> (:::) (...) cAdd cNeg
             //           ^                   ^            |
-            data->ByteCode.pop_back();
+            mData->mByteCode.pop_back();
             lhs_negated = true;
         }
         function = CompileMult(function);
         if(!function) return 0;
-        if(data->ByteCode.back() == cAdd
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        if(mData->mByteCode.back() == cAdd
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) (...) 5 cAdd cAdd -> (:::) (...) cAdd  |||  5 Add
             // (:::) (...) 5 cAdd cSub -> (:::) (...) cSub  ||| -5 Add
             //                   ^                        ^
             if(c == '+')
-                pending_immed += data->Immed.back();
+                pending_immed += mData->mImmed.back();
             else
-                pending_immed -= data->Immed.back();
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+                pending_immed -= mData->mImmed.back();
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         else
-        if(data->ByteCode.back() == cRSub
-        && data->ByteCode[data->ByteCode.size()-2] == cImmed)
+        if(mData->mByteCode.back() == cRSub
+        && mData->mByteCode[mData->mByteCode.size()-2] == cImmed)
         {
             // (:::) (...) 5 cRSub cAdd -> (:::) (...) cSub  |||  5 cAdd
             // (:::) (...) 5 cRSub cSub -> (:::) (...) cAdd  ||| -5 cAdd
             //                    ^                   ^
             if(c == '+')
-                { c = '-'; pending_immed += data->Immed.back(); }
+                { c = '-'; pending_immed += mData->mImmed.back(); }
             else
-                { c = '+'; pending_immed -= data->Immed.back(); }
-            data->Immed.pop_back();
-            data->ByteCode.pop_back();
-            data->ByteCode.pop_back();
+                { c = '+'; pending_immed -= mData->mImmed.back(); }
+            mData->mImmed.pop_back();
+            mData->mByteCode.pop_back();
+            mData->mByteCode.pop_back();
         }
         if(!lhs_negated) // if (-x-y) was changed to -(x+y), add missing cNeg
         {
             AddFunctionOpcode(c == '+' ? cAdd : cSub);
-            --StackPtr;
+            --mStackPtr;
         }
         else if(c == '+') // (-x)+y -> rsub(x,y)
         {
             AddFunctionOpcode(cRSub);
-            --StackPtr;
+            --mStackPtr;
         }
         else // (-x)-y -> -(x+y)
         {
             AddFunctionOpcode(cAdd);
-            --StackPtr;
+            --mStackPtr;
             AddFunctionOpcode(cNeg);
         }
     }
@@ -2084,7 +2098,7 @@ FunctionParserBase<Value_t>::CompileComparison(const char* function)
         if(op)
         {
             AddFunctionOpcode(op);
-            --StackPtr;
+            --mStackPtr;
         }
         switch(*function)
         {
@@ -2112,8 +2126,7 @@ FunctionParserBase<Value_t>::CompileComparison(const char* function)
 }
 
 template<typename Value_t>
-inline const char*
-FunctionParserBase<Value_t>::CompileAnd(const char* function)
+inline const char* FunctionParserBase<Value_t>::CompileAnd(const char* function)
 {
     size_t param0end=0;
     while(true)
@@ -2123,11 +2136,11 @@ FunctionParserBase<Value_t>::CompileAnd(const char* function)
 
         if(param0end)
         {
-            if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
+            if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
 
           #if 0
-            unsigned& param0last = data->ByteCode[param0end-1];
-            unsigned& param1last = data->ByteCode.back();
+            unsigned& param0last = mData->mByteCode[param0end-1];
+            unsigned& param1last = mData->mByteCode.back();
             if(IsNeverNegativeValueOpcode(param1last)
             && IsNeverNegativeValueOpcode(param0last))
             {
@@ -2149,19 +2162,18 @@ FunctionParserBase<Value_t>::CompileAnd(const char* function)
             else
           #endif
                 AddFunctionOpcode(cAnd);
-            --StackPtr;
+            --mStackPtr;
         }
         if(*function != '&') break;
         ++function;
         SkipSpace(function);
-        param0end = data->ByteCode.size();
+        param0end = mData->mByteCode.size();
     }
     return function;
 }
 
 template<typename Value_t>
-const char*
-FunctionParserBase<Value_t>::CompileExpression(const char* function)
+const char* FunctionParserBase<Value_t>::CompileExpression(const char* function)
 {
     size_t param0end=0;
     while(true)
@@ -2172,11 +2184,11 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
 
         if(param0end)
         {
-            if(data->ByteCode.back() == cNotNot) data->ByteCode.pop_back();
+            if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
 
           #if 0
-            unsigned& param0last = data->ByteCode[param0end-1];
-            unsigned& param1last = data->ByteCode.back();
+            unsigned& param0last = mData->mByteCode[param0end-1];
+            unsigned& param1last = mData->mByteCode.back();
             if(IsNeverNegativeValueOpcode(param1last)
             && IsNeverNegativeValueOpcode(param0last))
             {
@@ -2198,15 +2210,59 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
             else
           #endif
                 AddFunctionOpcode(cOr);
-            --StackPtr;
+            --mStackPtr;
         }
         if(*function != '|') break;
         ++function;
-        param0end = data->ByteCode.size();
+        param0end = mData->mByteCode.size();
     }
     return function;
 }
 
+template<typename Value_t>
+const char* FunctionParserBase<Value_t>::Compile(const char* function)
+{
+    while(true)
+    {
+        // Check if an identifier appears as first token:
+        SkipSpace(function);
+        unsigned nameLength = readIdentifier<Value_t>(function);
+        if(nameLength > 0 && !(nameLength & 0x80000000U))
+        {
+            typename Data::InlineVariable inlineVar =
+                { NamePtr(function, nameLength), 0 };
+
+            // Check if it's an unknown identifier:
+            typename NamePtrsMap<Value_t>::iterator nameIter =
+                mData->mNamePtrs.find(inlineVar.mName);
+            if(nameIter == mData->mNamePtrs.end())
+            {
+                const char* function2 = function + nameLength;
+                SkipSpace(function2);
+
+                // Check if ":=" follows the unknown identifier:
+                if(function2[0] == ':' && function2[1] == '=')
+                {
+                    // Parse the expression that follows and create the
+                    // inline variable:
+                    function2 = CompileExpression(function2 + 2);
+                    if(!function2) return 0;
+                    if(*function2 != ';') return function2;
+
+                    inlineVar.mFetchIndex = (mStackPtr - 1) | 0x80000000U;
+                    mData->mInlineVarNames.push_back(inlineVar);
+
+                    // Continue with the expression after the ';':
+                    function = function2 + 1;
+                    continue;
+                }
+            }
+        }
+        break;
+    }
+
+    return CompileExpression(function);
+}
 
 //===========================================================================
 // Function evaluation
@@ -2214,11 +2270,11 @@ FunctionParserBase<Value_t>::CompileExpression(const char* function)
 template<typename Value_t>
 Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 {
-    if(parseErrorType != FP_NO_ERROR) return Value_t(0);
+    if(mParseErrorType != FP_NO_ERROR) return Value_t(0);
 
-    const unsigned* const ByteCode = &(data->ByteCode[0]);
-    const Value_t* const Immed = data->Immed.empty() ? 0 : &(data->Immed[0]);
-    const unsigned ByteCodeSize = unsigned(data->ByteCode.size());
+    const unsigned* const byteCode = &(mData->mByteCode[0]);
+    const Value_t* const immed = mData->mImmed.empty() ? 0 : &(mData->mImmed[0]);
+    const unsigned byteCodeSize = unsigned(mData->mByteCode.size());
     unsigned IP, DP=0;
     int SP=-1;
 
@@ -2230,7 +2286,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
     /* alloca() allocates room from the hardware stack.
      * It is automatically freed when the function returns.
      */
-    Value_t* const Stack = (Value_t*)alloca(data->StackSize*sizeof(Value_t));
+    Value_t* const Stack = (Value_t*)alloca(mData->mStackSize*sizeof(Value_t));
 #else
     /* Allocate from the heap. Ensure that it is freed
      * automatically no matter which exit path is taken.
@@ -2239,17 +2295,17 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
     {
         Value_t* ptr;
         ~AutoDealloc() { delete[] ptr; }
-    } AutoDeallocStack = { new Value_t[data->StackSize] };
+    } AutoDeallocStack = { new Value_t[mData->mStackSize] };
     Value_t*& Stack = AutoDeallocStack.ptr;
 #endif
 #else
     /* No thread safety, so use a global stack. */
-    std::vector<Value_t>& Stack = data->Stack;
+    std::vector<Value_t>& Stack = mData->mStack;
 #endif
 
-    for(IP=0; IP<ByteCodeSize; ++IP)
+    for(IP=0; IP<byteCodeSize; ++IP)
     {
-        switch(ByteCode[IP])
+        switch(byteCode[IP])
         {
 // Functions:
           case   cAbs: Stack[SP] = fp_abs(Stack[SP]); break;
@@ -2257,21 +2313,21 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case  cAcos:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1))
-              { evalErrorType=4; return Value_t(0); }
+              { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acos(Stack[SP]); break;
 
           case cAcosh:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] < Value_t(1))
-              { evalErrorType=4; return Value_t(0); }
+              { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acosh(Stack[SP]); break;
 
           case  cAsin:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1))
-              { evalErrorType=4; return Value_t(0); }
+              { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_asin(Stack[SP]); break;
 
@@ -2285,7 +2341,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case cAtanh:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1))
-              { evalErrorType=4; return Value_t(0); }
+              { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_atanh(Stack[SP]); break;
 
@@ -2301,7 +2357,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t t = fp_tan(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(t == Value_t(0)) { evalErrorType=1; return Value_t(0); }
+                  if(t == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/t; break;
               }
@@ -2310,7 +2366,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t s = fp_sin(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(s == 0) { evalErrorType=1; return Value_t(0); }
+                  if(s == 0) { mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/s; break;
               }
@@ -2319,24 +2375,24 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #       ifndef FP_DISABLE_EVAL
           case  cEval:
               {
-                  const unsigned varAmount = data->numVariables;
+                  const unsigned varAmount = mData->mVariablesAmount;
                   Value_t retVal = Value_t(0);
-                  if(evalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
+                  if(mEvalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
                   {
-                      evalErrorType = 5;
+                      mEvalErrorType = 5;
                   }
                   else
                   {
-                      ++evalRecursionLevel;
+                      ++mEvalRecursionLevel;
 #                   ifndef FP_USE_THREAD_SAFE_EVAL
-                      /* Eval() will use data->Stack for its storage.
+                      /* Eval() will use mData->mStack for its storage.
                        * Swap the current stack with an empty one.
                        * This is the not-thread-safe method.
                        */
                       std::vector<Value_t> tmpStack(Stack.size());
-                      data->Stack.swap(tmpStack);
+                      mData->mStack.swap(tmpStack);
                       retVal = Eval(&tmpStack[SP - varAmount + 1]);
-                      data->Stack.swap(tmpStack);
+                      mData->mStack.swap(tmpStack);
 #                   else
                       /* Thread safety mode. We don't need to
                        * worry about stack reusing here, because
@@ -2345,7 +2401,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                        */
                       retVal = Eval(&Stack[SP - varAmount + 1]);
 #                   endif
-                      --evalRecursionLevel;
+                      --mEvalRecursionLevel;
                   }
                   SP -= varAmount-1;
                   Stack[SP] = retVal;
@@ -2368,7 +2424,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                       IP += 2;
                   else
                   {
-                      const unsigned* buf = &ByteCode[IP+1];
+                      const unsigned* buf = &byteCode[IP+1];
                       IP = buf[0];
                       DP = buf[1];
                   }
@@ -2379,14 +2435,14 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cLog:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(!(Stack[SP] > Value_t(0)))
-              { evalErrorType=3; return Value_t(0); }
+              { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log(Stack[SP]); break;
 
           case cLog10:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(!(Stack[SP] > Value_t(0)))
-              { evalErrorType=3; return Value_t(0); }
+              { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log10(Stack[SP]);
               break;
@@ -2394,7 +2450,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case  cLog2:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(!(Stack[SP] > Value_t(0)))
-              { evalErrorType=3; return Value_t(0); }
+              { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log2(Stack[SP]);
               break;
@@ -2412,11 +2468,11 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               /*if(Stack[SP-1] < Value_t(0) &&
                  !isInteger(Stack[SP]) &&
                  !isInteger(1.0 / Stack[SP]))
-              { evalErrorType=3; return Value_t(0); }*/
+              { mEvalErrorType=3; return Value_t(0); }*/
               // x:0 ^ y:negative is failure
               if(Stack[SP-1] == Value_t(0) &&
                  Stack[SP] < Value_t(0))
-              { evalErrorType=3; return Value_t(0); }
+              { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
               --SP; break;
@@ -2427,7 +2483,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t c = fp_cos(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(c == Value_t(0)) { evalErrorType=1; return Value_t(0); }
+                  if(c == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/c; break;
               }
@@ -2438,7 +2494,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cSqrt:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(0)) { evalErrorType=2; return Value_t(0); }
+              if(Stack[SP] < Value_t(0)) { mEvalErrorType=2; return Value_t(0); }
 #           endif
               Stack[SP] = fp_sqrt(Stack[SP]); break;
 
@@ -2448,11 +2504,11 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
 
 // Misc:
-          case cImmed: Stack[++SP] = Immed[DP++]; break;
+          case cImmed: Stack[++SP] = immed[DP++]; break;
 
           case  cJump:
               {
-                  const unsigned* buf = &ByteCode[IP+1];
+                  const unsigned* buf = &byteCode[IP+1];
                   IP = buf[0];
                   DP = buf[1];
                   break;
@@ -2467,16 +2523,16 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cDiv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP-1] /= Stack[SP]; --SP; break;
 
           case   cMod:
               if(Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
               Stack[SP-1] = fp_mod(Stack[SP-1], Stack[SP]);
               --SP; break;
 
@@ -2523,10 +2579,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 // User-defined function calls:
           case cFCall:
               {
-                  unsigned index = ByteCode[++IP];
-                  unsigned params = data->FuncPtrs[index].params;
+                  unsigned index = byteCode[++IP];
+                  unsigned params = mData->mFuncPtrs[index].mParams;
                   Value_t retVal =
-                      data->FuncPtrs[index].funcPtr(&Stack[SP-params+1]);
+                      mData->mFuncPtrs[index].mFuncPtr(&Stack[SP-params+1]);
                   SP -= int(params)-1;
                   Stack[SP] = retVal;
                   break;
@@ -2534,18 +2590,18 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case cPCall:
               {
-                  unsigned index = ByteCode[++IP];
-                  unsigned params = data->FuncParsers[index].params;
+                  unsigned index = byteCode[++IP];
+                  unsigned params = mData->mFuncParsers[index].mParams;
                   Value_t retVal =
-                      data->FuncParsers[index].parserPtr->Eval
+                      mData->mFuncParsers[index].mParserPtr->Eval
                       (&Stack[SP-params+1]);
                   SP -= int(params)-1;
                   Stack[SP] = retVal;
                   const int error =
-                      data->FuncParsers[index].parserPtr->EvalError();
+                      mData->mFuncParsers[index].mParserPtr->EvalError();
                   if(error)
                   {
-                      evalErrorType = error;
+                      mEvalErrorType = error;
                       return 0;
                   }
                   break;
@@ -2555,15 +2611,15 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #ifdef FP_SUPPORT_OPTIMIZER
           case   cFetch:
               {
-                  unsigned stackOffs = ByteCode[++IP];
+                  unsigned stackOffs = byteCode[++IP];
                   Stack[SP+1] = Stack[stackOffs]; ++SP;
                   break;
               }
 
           case   cPopNMov:
               {
-                  unsigned stackOffs_target = ByteCode[++IP];
-                  unsigned stackOffs_source = ByteCode[++IP];
+                  unsigned stackOffs_target = byteCode[++IP];
+                  unsigned stackOffs_source = byteCode[++IP];
                   Stack[stackOffs_target] = Stack[stackOffs_source];
                   SP = stackOffs_target;
                   break;
@@ -2572,7 +2628,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case  cLog2by:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP-1] <= Value_t(0))
-              { evalErrorType=3; return Value_t(0); }
+              { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
               --SP;
@@ -2599,7 +2655,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                   IP += 2;
               else
               {
-                  const unsigned* buf = &ByteCode[IP+1];
+                  const unsigned* buf = &byteCode[IP+1];
                   IP = buf[0];
                   DP = buf[1];
               }
@@ -2610,10 +2666,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cInv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP] = Value_t(1)/Stack[SP];
               break;
@@ -2625,10 +2681,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRDiv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP-1] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP-1] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
 
@@ -2637,7 +2693,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRSqrt:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { evalErrorType=1; return Value_t(0); }
+              { mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
 
@@ -2645,11 +2701,11 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
 // Variables:
           default:
-              Stack[++SP] = Vars[ByteCode[IP]-VarBegin];
+              Stack[++SP] = Vars[byteCode[IP]-VarBegin];
         }
     }
 
-    evalErrorType=0;
+    mEvalErrorType=0;
     return Stack[SP];
 }
 
@@ -2759,12 +2815,12 @@ void FunctionParserBase<Value_t>::InjectRawByteCode
 {
     CopyOnWrite();
 
-    data->ByteCode.assign(bytecode, bytecode + bytecodeAmount);
-    data->Immed.assign(immed, immed + immedAmount);
-    data->StackSize = stackSize;
+    mData->mByteCode.assign(bytecode, bytecode + bytecodeAmount);
+    mData->mImmed.assign(immed, immed + immedAmount);
+    mData->mStackSize = stackSize;
 
 #ifndef FP_USE_THREAD_SAFE_EVAL
-    data->Stack.resize(stackSize);
+    mData->mStack.resize(stackSize);
 #endif
 }
 
@@ -2956,13 +3012,13 @@ template<typename Value_t>
 void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                                                 bool showExpression) const
 {
-    dest << "Size of stack: " << data->StackSize << "\n";
+    dest << "Size of stack: " << mData->mStackSize << "\n";
 
     std::ostringstream outputBuffer;
     std::ostream& output = (showExpression ? outputBuffer : dest);
 
-    const std::vector<unsigned>& ByteCode = data->ByteCode;
-    const std::vector<Value_t>& Immed = data->Immed;
+    const std::vector<unsigned>& ByteCode = mData->mByteCode;
+    const std::vector<Value_t>& Immed = mData->mImmed;
 
     std::vector<std::pair<int,std::string> > stack;
     std::vector<IfInfo> if_stack;
@@ -3200,9 +3256,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
               case cFCall:
                   {
                       const unsigned index = ByteCode[++IP];
-                      params = data->FuncPtrs[index].params;
+                      params = mData->mFuncPtrs[index].mParams;
                       static std::string name;
-                      name = "f:" + findName(data->namePtrs, index,
+                      name = "f:" + findName(mData->mNamePtrs, index,
                                              NameData<Value_t>::FUNC_PTR);
                       n = name.c_str();
                       out_params = true;
@@ -3212,9 +3268,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
               case cPCall:
                   {
                       const unsigned index = ByteCode[++IP];
-                      params = data->FuncParsers[index].params;
+                      params = mData->mFuncParsers[index].mParams;
                       static std::string name;
-                      name = "p:" + findName(data->namePtrs, index,
+                      name = "p:" + findName(mData->mNamePtrs, index,
                                              NameData<Value_t>::PARSER_PTR);
                       n = name.c_str();
                       out_params = true;
@@ -3247,7 +3303,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
-                        case cEval: n = "eval"; params = data->numVariables;
+                        case cEval: n = "eval"; params = mData->mVariablesAmount;
     #endif
 
     #ifdef FP_SUPPORT_OPTIMIZER
@@ -3326,7 +3382,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                       if(showExpression)
                       {
                           stack.push_back(std::make_pair(0,
-                              (findName(data->namePtrs, opcode,
+                              (findName(mData->mNamePtrs, opcode,
                                         NameData<Value_t>::VARIABLE))));
                       }
                       output << "push Var" << opcode-VarBegin;

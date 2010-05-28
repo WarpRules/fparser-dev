@@ -381,7 +381,7 @@ namespace
         #if 0
             if(know_immed_offset)
             {
-                OutLine(Out)  << "data->Immed.resize( " << (1-offset) << " + ImmedPtr - &data->Immed[0] );";
+                OutLine(Out)  << "mData->mImmed.resize( " << (1-offset) << " + ImmedPtr - &mData->mImmed[0] );";
             }
             know_immed_offset = false;
         #else
@@ -395,7 +395,7 @@ namespace
         #if 0
             if(know_bytecode_offset)
             {
-                OutLine(Out)  << "data->ByteCode.resize( " << (1-offset) << " + ByteCodePtr - &data->ByteCode[0] );";
+                OutLine(Out)  << "mData->mByteCode.resize( " << (1-offset) << " + ByteCodePtr - &mData->mByteCode[0] );";
             }
             know_bytecode_offset = false;
         #else
@@ -417,22 +417,22 @@ namespace
                 OutLine(Out)  << "ByteCodePtr -= " << n << ";";
             else
                 for(; n > 0; --n)
-                    OutLine(Out)  << "data->ByteCode.pop_back();";
+                    OutLine(Out)  << "mData->mByteCode.pop_back();";
         #else
           #if 0
             for(; n > 0; --n)
-                OutLine(Out)  << "data->ByteCode.pop_back();";
+                OutLine(Out)  << "mData->mByteCode.pop_back();";
           #else
             if(n == 1)
-                OutLine(Out)  << "data->ByteCode.pop_back();";
+                OutLine(Out)  << "mData->mByteCode.pop_back();";
             else if(n > 0)
             {
-                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->ByteCode.pop_back();";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) mData->mByteCode.pop_back();";
             }
           #endif
             if(know_bytecode_offset)
             {
-                //OutLine(Out)  << "if(data->ByteCode.empty()) ByteCodePtr = 0; else ByteCodePtr -= " << n << ";";
+                //OutLine(Out)  << "if(mData->mByteCode.empty()) ByteCodePtr = 0; else ByteCodePtr -= " << n << ";";
                 OutLine(Out)  << "ByteCodePtr -= " << n << ";";
             }
         #endif
@@ -445,19 +445,19 @@ namespace
                 OutLine(Out)  << "ImmedPtr -= " << n << ";";
             else
                 for(; n > 0; --n)
-                    OutLine(Out)  << "data->Immed.pop_back();";
+                    OutLine(Out)  << "mData->mImmed.pop_back();";
         #else
             if(know_immed_offset)
                 OutLine(Out)  << "ImmedPtr -= " << n << ";";
          #if 0
             for(; n > 0; --n)
-                OutLine(Out)  << "data->Immed.pop_back();";
+                OutLine(Out)  << "mData->mImmed.pop_back();";
          #else
             if(n == 1)
-                OutLine(Out)  << "data->Immed.pop_back();";
+                OutLine(Out)  << "mData->mImmed.pop_back();";
             else if(n > 0)
             {
-                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) data->Immed.pop_back();";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) mData->mImmed.pop_back();";
             }
          #endif
         #endif
@@ -573,7 +573,7 @@ namespace
             {
                 outstream
                     << Indent(indent) << "incStackPtr();\n"
-                    << Indent(indent) << "--StackPtr;\n";
+                    << Indent(indent) << "--mStackPtr;\n";
                 continue;
             }
 
@@ -615,11 +615,11 @@ namespace
                 {
                     offset_synth.ResetImmed();
                     if(rep_v_used || true)
-                        OutLine(Out)  << "data->Immed.push_back(" << opcode << ");";
+                        OutLine(Out)  << "mData->mImmed.push_back(" << opcode << ");";
                     else
                     {
                         OutLine(Out)  << "rep_v = " << opcode << ";";
-                        OutLine(Out)  << "data->Immed.push_back(rep_v);";
+                        OutLine(Out)  << "mData->mImmed.push_back(rep_v);";
                         rep_v_used = true;
                     }
                     changed = true;
@@ -718,11 +718,11 @@ namespace
                 {
                     offset_synth.ResetByteCode();
                     if(op_v_used || true || opcode[0]!='c' || opcode=="cImmed")
-                        OutLine(Out)  << "data->ByteCode.push_back(" << opcode << ");";
+                        OutLine(Out)  << "mData->mByteCode.push_back(" << opcode << ");";
                     else
                     {
                         OutLine(Out)  << "op_v = " << opcode << ";";
-                        OutLine(Out)  << "data->ByteCode.push_back(op_v);";
+                        OutLine(Out)  << "mData->mByteCode.push_back(op_v);";
                         op_v_used = true;
                     }
                     changed = true;
@@ -810,7 +810,7 @@ namespace
                         code << Indent(indent) << "{\n";
                         { OutCode Out(code, indent+other_indent);
                           Synther(Out, indent+other_indent).ResetBoth(0,0);
-                          OutLine(Out) << "data->ByteCode.push_back(opcode);";
+                          OutLine(Out) << "mData->mByteCode.push_back(opcode);";
                         }
                         code << Indent(indent) << "}\n";
                     }
@@ -1025,7 +1025,7 @@ namespace
 
         { OutCode Out(out, 1);
           Synther(Out, 1).ResetBoth(0,0);
-          OutLine(Out) << "data->ByteCode.push_back(opcode);";
+          OutLine(Out) << "mData->mByteCode.push_back(opcode);";
         }
         CodeSeq.Flush(out);
 
@@ -1290,8 +1290,8 @@ int main()
         //"  Value_t  rep_v;\n"
         "\n"
         "  #define FP_ReDefinePointers() \\\n"
-        "    ByteCodePtr = !data->ByteCode.empty() ? &data->ByteCode[0] + data->ByteCode.size() - 1 : 0; \\\n"
-        "    ImmedPtr    = !data->Immed.empty()    ? &data->Immed[0]    + data->Immed.size()    - 1 : 0;\n"
+        "    ByteCodePtr = !mData->mByteCode.empty() ? &mData->mByteCode[0] + mData->mByteCode.size() - 1 : 0; \\\n"
+        "    ImmedPtr    = !mData->mImmed.empty()    ? &mData->mImmed[0]    + mData->mImmed.size()    - 1 : 0;\n"
         "  FP_ReDefinePointers();\n";
 
     out << "  FP_TRACE_BYTECODE_ADD(opcode);\n";

@@ -49,6 +49,7 @@ Joel Yliluoma
      <li><a href="#literals">Numeric literals</a>
      <li><a href="#identifiers">Identifier names</a>
      <li><a href="#functionsyntax">The function string syntax</a>
+     <li><a href="#inlinevars">Inline variables</a>
      <li><a href="#whitespace">Whitespace</a>
    </ul>
  <li>Miscellaneous
@@ -64,6 +65,12 @@ Joel Yliluoma
 
 <a name="whatsnew"></a>
 <h2>What's new</h2>
+
+<p>What's new in v4.3
+  <ul>
+    <li>Function syntax enhancement: Added possibility of defining new
+      variables in the function string itself. (See documentation for details.)
+  </ul>
 
 <p>What's new in v4.2
   <ul>
@@ -1322,6 +1329,40 @@ never reach that level but still take enormous amounts of time to evaluate.
 This can sometimes be undesirable because it is prone to exploitation,
 which is why <code>eval()</code> is disabled by default. It can be enabled
 in the <code>fpconfig.hh</code> file.
+
+
+<!-- -------------------------------------------------------------------- -->
+<a name="inlinevars"></a>
+<h3>Inline variables</h3>
+
+<p>The function syntax supports defining new variables inside the function
+string itself. This can be done with the following syntax:
+
+<p><code>"&lt;variable name&gt; := &lt;expression&gt;; &lt;function&gt;"</code>
+
+<p>For example:
+
+<p><code>"length := sqrt(x*x+y*y); 2*length*sin(length)"</code>
+
+<p>(Spaces around the '<code>:=</code>' operator are optional.)
+
+<p>The obvious benefit of this is that if a long expression needs to be
+used in the function several times, this allows writing it only once and
+using a named variable from that point forward.
+
+<p>The variable name must be an unused identifier (in other words, not an
+existing function, variable or unit name).
+
+<p>The <code>&lt;function&gt;</code> part can have further inline variable
+definitions, and thus it's possible to have any amount of them, for example:
+
+<p><code>"A := x^2; B := y^2; C := z^2; sqrt(A+B+C)"</code>
+
+<p>The expressions in subsequent inline variable definitions can use any
+of the previous inline variables. It is also possible to redefine an inline
+variable. For example:
+
+<p><code>"A := x^2; A := 2*A; sqrt(A)"</code>
 
 
 <!-- -------------------------------------------------------------------- -->

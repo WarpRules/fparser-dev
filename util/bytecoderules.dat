@@ -403,9 +403,9 @@ cDup cMul -> cSqr                                              # TEST 10/sqr_xx
 cNeg cSqr -> cSqr                                              # TEST 10/negsqr
 cAbs cSqr -> cSqr                                              # TEST 10/abssqr
 
-B [B==A] A [A >= VarBegin && data->ByteCode.size() > 0] -> B cDup                                                  # TEST 10/xxdup
-D [D==B] C [C==A]      B [B >= VarBegin && data->ByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup        # TEST 10/xxfdup
-D [D==B] C [C==A] cMul B [B >= VarBegin && data->ByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul   # TEST 10/xxsqrdup
+B [B==A] A [A >= VarBegin && mData->mByteCode.size() > 0] -> B cDup                                                  # TEST 10/xxdup
+D [D==B] C [C==A]      B [B >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup        # TEST 10/xxfdup
+D [D==B] C [C==A] cMul B [B >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul   # TEST 10/xxsqrdup
 
 IF(FP_FLOAT_VERSION) cExp2	 -> [DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp         # TEST 02/exp2
 IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul  # TEST 10/explog2
@@ -425,14 +425,14 @@ IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd #
 cDup cOr   -> cNotNot  # TEST 99/3
 cDup cAnd  -> cNotNot  # TEST 99/3
 
-B [B==A] cSin A [A>=VarBegin && data->ByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
-B [B==A] cSin A [A>=VarBegin && data->ByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
-B [B==A] cSin A [A>=VarBegin && data->ByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
-B [B==A] cCos A [A>=VarBegin && data->ByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
-B [B==A] cTan A [A>=VarBegin && data->ByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
-B [B==A] cCsc A [A>=VarBegin && data->ByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
-B [B==A] cSec A [A>=VarBegin && data->ByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
-B [B==A] cCot A [A>=VarBegin && data->ByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
+B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
+B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
+B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
+B [B==A] cCos A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
+B [B==A] cTan A [A>=VarBegin && mData->mByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
+B [B==A] cCsc A [A>=VarBegin && mData->mByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
+B [B==A] cSec A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
+B [B==A] cCot A [A>=VarBegin && mData->mByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
 cSinCos cDiv  -> cTan  # TEST 10/sincos_tan
 cSinCos cRDiv -> cCot
 
