@@ -112,18 +112,19 @@ public:
 private:
 //========================================================================
 
+    friend class FPoptimizer_CodeTree::CodeTree<Value_t>;
+
 // Private data:
 // ------------
     char mDelimiterChar;
     ParseErrorType mParseErrorType;
     int mEvalErrorType;
 
-    friend class FPoptimizer_CodeTree::CodeTree<Value_t>;
-
     struct Data;
     Data* mData;
 
-    bool mUseDegreeConversion, mByteCodeFlagsSet;
+    bool mUseDegreeConversion;
+    bool mHasByteCodeFlags;
     unsigned mEvalRecursionLevel;
     unsigned mStackPtr;
     const char* mErrorLocation;
@@ -158,6 +159,10 @@ private:
     inline const char* CompileFunction(const char*, unsigned);
     inline const char* CompileParenthesis(const char*);
     inline const char* CompileLiteral(const char*);
+    template<bool SetFlag>
+    inline void PushOpcodeParam(unsigned);
+    template<bool SetFlag>
+    inline void PutOpcodeParamAt(unsigned, unsigned offset);
     const char* Compile(const char*);
 };
 

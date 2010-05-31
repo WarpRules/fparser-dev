@@ -1106,15 +1106,15 @@ int FunctionParserBase<Value_t>::ParseFunction(const char* function,
     mData->mByteCode.clear(); mData->mByteCode.reserve(128);
     mData->mImmed.clear(); mData->mImmed.reserve(128);
     mData->mStackSize = mStackPtr = 0;
-    mByteCodeFlagsSet = false;
+
+    mHasByteCodeFlags = false;
 
     const char* ptr = Compile(function);
     mData->mInlineVarNames.clear();
 
-    if(mByteCodeFlagsSet)
+    if(mHasByteCodeFlags)
     {
-        const unsigned byteCodeSize = mData->mByteCode.size();
-        for(size_t i = 0; i < byteCodeSize; ++i)
+        for(unsigned i = unsigned(mData->mByteCode.size()); i-- > 0; )
             mData->mByteCode[i] &= ~0x80000000U;
     }
 
@@ -1466,8 +1466,8 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
 
     mData->mByteCode.push_back(opcode);
     const unsigned curByteCodeSize = unsigned(mData->mByteCode.size());
-    mData->mByteCode.push_back(0); // Jump index; to be set later
-    mData->mByteCode.push_back(0); // Immed jump index; to be set later
+    PushOpcodeParam<false>(0); // Jump index; to be set later
+    PushOpcodeParam<true> (0); // Immed jump index; to be set later
 
     --mStackPtr;
 
@@ -1479,8 +1479,8 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
     mData->mByteCode.push_back(cJump);
     const unsigned curByteCodeSize2 = unsigned(mData->mByteCode.size());
     const unsigned curImmedSize2 = unsigned(mData->mImmed.size());
-    mData->mByteCode.push_back(0); // Jump index; to be set later
-    mData->mByteCode.push_back(0); // Immed jump index; to be set later
+    PushOpcodeParam<false>(0); // Jump index; to be set later
+    PushOpcodeParam<true> (0); // Immed jump index; to be set later
 
     --mStackPtr;
 
@@ -1489,18 +1489,15 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
     if(*function != ')')
         return SetErrorType(noParenthError<Value_t>(*function), function);
 
-    /* A cNop is added as an easy fix for the problem which happens if cNeg
-       or other similar opcodes optimized by Parse() immediately follow an
-       else-branch which could be confused as optimizable with that opcode
-       (eg. cImmed). The optimizer removes the cNop safely.
-     */
-    mData->mByteCode.push_back(cNop);
+    PutOpcodeParamAt<true> ( mData->mByteCode.back(), unsigned(mData->mByteCode.size()-1) );
+    // ^Necessary for guarding against if(x,1,2)+1 being changed
+    //  into if(x,1,3) by fp_opcode_add.inc
 
     // Set jump indices
-    mData->mByteCode[curByteCodeSize] = curByteCodeSize2+1;
-    mData->mByteCode[curByteCodeSize+1] = curImmedSize2;
-    mData->mByteCode[curByteCodeSize2] = unsigned(mData->mByteCode.size())-1;
-    mData->mByteCode[curByteCodeSize2+1] = unsigned(mData->mImmed.size());
+    PutOpcodeParamAt<false>( curByteCodeSize2+1, curByteCodeSize );
+    PutOpcodeParamAt<false>( curImmedSize2,      curByteCodeSize+1 );
+    PutOpcodeParamAt<false>( unsigned(mData->mByteCode.size())-1, curByteCodeSize2);
+    PutOpcodeParamAt<false>( unsigned(mData->mImmed.size()),      curByteCodeSize2+1);
 
     ++function;
     SkipSpace(function);
@@ -1592,8 +1589,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
             if(name == iter->mName)
             {
                 mData->mByteCode.push_back(cFetch);
-                mData->mByteCode.push_back(iter->mFetchIndex);
-                mByteCodeFlagsSet = true;
+                PushOpcodeParam<true>(iter->mFetchIndex);
                 incStackPtr();
                 return endPtr;
             }
@@ -1627,8 +1623,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
               (endPtr, mData->mFuncPtrs[nameData->index].mParams);
           //if(!function) return 0;
           mData->mByteCode.push_back(cFCall);
-          mData->mByteCode.push_back(nameData->index | 0x80000000U);
-          mByteCodeFlagsSet = true;
+          PushOpcodeParam<true>(nameData->index);
           return function;
 
       case NameData<Value_t>::PARSER_PTR: // is FunctionParser
@@ -1636,8 +1631,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
               (endPtr, mData->mFuncParsers[nameData->index].mParams);
           //if(!function) return 0;
           mData->mByteCode.push_back(cPCall);
-          mData->mByteCode.push_back(nameData->index | 0x80000000U);
-          mByteCodeFlagsSet = true;
+          PushOpcodeParam<true>(nameData->index);
           return function;
     }
 
@@ -2249,7 +2243,7 @@ const char* FunctionParserBase<Value_t>::Compile(const char* function)
                     if(!function2) return 0;
                     if(*function2 != ';') return function2;
 
-                    inlineVar.mFetchIndex = (mStackPtr - 1) | 0x80000000U;
+                    inlineVar.mFetchIndex = mStackPtr - 1;
                     mData->mInlineVarNames.push_back(inlineVar);
 
                     // Continue with the expression after the ';':
@@ -2262,6 +2256,22 @@ const char* FunctionParserBase<Value_t>::Compile(const char* function)
     }
 
     return CompileExpression(function);
+}
+
+template<typename Value_t> template<bool PutFlag>
+inline void FunctionParserBase<Value_t>::PushOpcodeParam
+    (unsigned value)
+{
+    mData->mByteCode.push_back(value | (PutFlag ? 0x80000000U : 0u));
+    if(PutFlag) mHasByteCodeFlags = true;
+}
+
+template<typename Value_t> template<bool PutFlag>
+inline void FunctionParserBase<Value_t>::PutOpcodeParamAt
+    (unsigned value, unsigned offset)
+{
+    mData->mByteCode[offset] = value | (PutFlag ? 0x80000000U : 0u);
+    if(PutFlag) mHasByteCodeFlags = true;
 }
 
 //===========================================================================
@@ -3039,9 +3049,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
         {
             printHex(output, IP);
             if(if_stack.back().endif_location == IP)
-                output << ": (phi)";
+                output << ": ----- (phi)";
             else
-                output << ": (phi_threaded)";
+                output << ": ----- (phi+)";
 
             stack.resize(stack.size()+2);
             std::swap(stack[stack.size()-3], stack[stack.size()-1]);
