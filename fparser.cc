@@ -1588,8 +1588,15 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
         {
             if(name == iter->mName)
             {
-                mData->mByteCode.push_back(cFetch);
-                PushOpcodeParam<true>(iter->mFetchIndex);
+                if( iter->mFetchIndex+1 == mStackPtr)
+                {
+                    mData->mByteCode.push_back(cDup);
+                }
+                else
+                {
+                    mData->mByteCode.push_back(cFetch);
+                    PushOpcodeParam<true>(iter->mFetchIndex);
+                }
                 incStackPtr();
                 return endPtr;
             }
