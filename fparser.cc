@@ -2608,7 +2608,6 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               }
 
 
-#ifdef FP_SUPPORT_OPTIMIZER
           case   cFetch:
               {
                   unsigned stackOffs = byteCode[++IP];
@@ -2616,6 +2615,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                   break;
               }
 
+#ifdef FP_SUPPORT_OPTIMIZER
           case   cPopNMov:
               {
                   unsigned stackOffs_target = byteCode[++IP];
@@ -2924,7 +2924,6 @@ namespace
             unsigned dup_fetch_pos = IP;
             Value_t lhs = Value_t(1);
 
-    #ifdef FP_SUPPORT_OPTIMIZER
             if(ByteCode[IP] == cFetch)
             {
                 unsigned index = ByteCode[++IP];
@@ -2940,7 +2939,7 @@ namespace
                 //        is always converted into cDup.
                 goto dup_or_fetch;
             }
-    #endif
+
             if(ByteCode[IP] == cDup)
             {
                 lhs = result;
@@ -3062,9 +3061,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                 opcode == cSqr || opcode == cDup
              || opcode == cInv
              || opcode == cSqrt || opcode == cRSqrt
-    #ifdef FP_SUPPORT_OPTIMIZER
              || opcode == cFetch
-    #endif
             ))
             {
                 unsigned changed_ip = IP;
@@ -3128,14 +3125,12 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cCbrt: output << "cbrt"; break;
                         case cSqrt: output << "sqrt"; break;
                         case cRSqrt: output << "rsqrt"; break;
-    #ifdef FP_SUPPORT_OPTIMIZER
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];
                             output << "cFetch(" << index << ")";
                             break;
                         }
-    #endif
                         default: break;
                     }
                     padLine(outputBuffer, 20);
@@ -3306,8 +3301,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cEval: n = "eval"; params = mData->mVariablesAmount;
     #endif
 
-    #ifdef FP_SUPPORT_OPTIMIZER
-                        case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
                         case cFetch:
                         {
                             unsigned index = ByteCode[++IP];
@@ -3317,6 +3310,8 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                             produces = 0;
                             break;
                         }
+    #ifdef FP_SUPPORT_OPTIMIZER
+                        case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
                         case cPopNMov:
                         {
                             size_t a = ByteCode[++IP];

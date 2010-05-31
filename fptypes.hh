@@ -55,8 +55,6 @@ namespace FUNCTIONPARSERTYPES
         cFCall, cPCall,
 
 #ifdef FP_SUPPORT_OPTIMIZER
-        cFetch, /* Same as Dup, except with absolute index
-                 * (next value is index) */
         cPopNMov, /* cPopNMov(x,y) moves [y] to [x] and deletes anything
                    * above [x]. Used for disposing of temporaries.
                    */
@@ -70,6 +68,8 @@ namespace FUNCTIONPARSERTYPES
         cAbsIf,     /* As cAbsIf,     but assume the 1st operand is an absolute value */
 
         cDup,   /* Duplicates the last value in the stack: Push [Stacktop] */
+        cFetch, /* Same as Dup, except with absolute index
+                 * (next value is index) */
         cInv,   /* Inverts the last value in the stack (x = 1/x) */
         cSqr,   /* squares the last operand in the stack, no push/pop */
         cRDiv,  /* reverse division (not x/y, but y/x) */
