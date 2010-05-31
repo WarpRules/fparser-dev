@@ -105,8 +105,9 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cFetch: p = "cFetch"; break;
         case cPopNMov: p = "cPopNMov"; break;
         case cLog2by: p = "cLog2by"; break;
-        case cSinCos: p = "cSinCos"; break;
+        case cNop: p = "cNop"; break;
 #endif
+        case cSinCos: p = "cSinCos"; break;
         case cAbsNot: p = "cAbsNot"; break;
         case cAbsNotNot: p = "cAbsNotNot"; break;
         case cAbsAnd: p = "cAbsAnd"; break;
@@ -119,7 +120,6 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cRSub: p = "cRSub"; break;
         case cNotNot: p = "cNotNot"; break;
         case cRSqrt: p = "cRSqrt"; break;
-        case cNop: p = "cNop"; break;
         case VarBegin: p = "VarBegin"; break;
     }
     std::ostringstream tmp;

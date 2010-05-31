@@ -59,6 +59,7 @@ namespace FUNCTIONPARSERTYPES
                    * above [x]. Used for disposing of temporaries.
                    */
         cLog2by, /* log2by(x,y) = log2(x) * y */
+        cNop,    /* Used by fpoptimizer internally; should not occur in bytecode */
 #endif
         cSinCos, /* sin(x) followed by cos(x) (two values are pushed to stack) */
         cAbsAnd,    /* As cAnd,       but assume both operands are absolute values */
@@ -76,7 +77,6 @@ namespace FUNCTIONPARSERTYPES
         cRSub,  /* reverse subtraction (not x-y, but y-x) */
         cRSqrt, /* inverse square-root (1/sqrt(x)) */
 
-        cNop,
         VarBegin
     };
 

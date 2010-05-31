@@ -2132,30 +2132,7 @@ inline const char* FunctionParserBase<Value_t>::CompileAnd(const char* function)
         {
             if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
 
-          #if 0
-            unsigned& param0last = mData->mByteCode[param0end-1];
-            unsigned& param1last = mData->mByteCode.back();
-            if(IsNeverNegativeValueOpcode(param1last)
-            && IsNeverNegativeValueOpcode(param0last))
-            {
-                /* Change !x & !y into !(x | y). Because y might
-                 * contain an cIf, we replace the first cNot/cAbsNot
-                 * with cNop to avoid jump indices being broken.
-                 */
-                if((param0last == cNot || param0last == cAbsNot)
-                && (param1last == cNot || param1last == cAbsNot))
-                {
-                    param1last = (param0last==cAbsNot && param1last==cAbsNot)
-                                    ? cAbsOr : cOr;
-                    param0last = cNop;
-                    AddFunctionOpcode(cAbsNot);
-                }
-                else
-                    AddFunctionOpcode(cAbsAnd);
-            }
-            else
-          #endif
-                AddFunctionOpcode(cAnd);
+            AddFunctionOpcode(cAnd);
             --mStackPtr;
         }
         if(*function != '&') break;
@@ -2180,30 +2157,7 @@ const char* FunctionParserBase<Value_t>::CompileExpression(const char* function)
         {
             if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
 
-          #if 0
-            unsigned& param0last = mData->mByteCode[param0end-1];
-            unsigned& param1last = mData->mByteCode.back();
-            if(IsNeverNegativeValueOpcode(param1last)
-            && IsNeverNegativeValueOpcode(param0last))
-            {
-                /* Change !x | !y into !(x & y). Because y might
-                 * contain an cIf, we replace the first cNot/cAbsNot
-                 * with cNop to avoid jump indices being broken.
-                 */
-                if((param0last == cNot || param0last == cAbsNot)
-                && (param1last == cNot || param1last == cAbsNot))
-                {
-                    param1last = (param0last==cAbsNot && param1last==cAbsNot)
-                                    ? cAbsAnd : cAnd;
-                    param0last = cNop;
-                    AddFunctionOpcode(cAbsNot);
-                }
-                else
-                    AddFunctionOpcode(cAbsOr);
-            }
-            else
-          #endif
-                AddFunctionOpcode(cOr);
+            AddFunctionOpcode(cOr);
             --mStackPtr;
         }
         if(*function != '|') break;
@@ -2643,6 +2597,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
               --SP;
               break;
+
+          case cNop: break;
 #endif // FP_SUPPORT_OPTIMIZER
 
           case cSinCos:
@@ -2707,7 +2663,6 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           endif
               Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
 
-          case cNop: break;
 
 // Variables:
           default:
@@ -3337,6 +3292,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                             produces = 0;
                             break;
                         }
+                        case cNop:
+                            output << "nop"; params = 0; produces = 0;
+                            break;
     #endif
                         case cSinCos:
                         {
@@ -3371,10 +3329,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cRDiv: n = "rdiv"; break;
                         case cRSub: n = "rsub"; break;
                         case cRSqrt: n = "rsqrt"; params = 1; break;
-
-                        case cNop:
-                            output << "nop"; params = 0; produces = 0;
-                            break;
 
                         default:
                             n = Functions[opcode-cAbs].name;
@@ -3468,7 +3422,11 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
             //padLine(outputBuffer, 20);
             output << "= ";
             if(((opcode == cIf || opcode == cAbsIf) && params != 3)
-              || opcode == cJump || opcode == cNop)
+              || opcode == cJump
+    #ifdef FP_SUPPORT_OPTIMIZER
+              || opcode == cNop
+    #endif
+                )
                 output << "(void)";
             else if(stack.empty())
                 output << "[?] ?";
