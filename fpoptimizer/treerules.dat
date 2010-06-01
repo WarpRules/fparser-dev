@@ -123,31 +123,51 @@
 # are cEqual,cNEqual,cLess.
 # cNEqual could be changed to cEqual, but we see no need.
 cIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
+cIf [(cGreaterOrEq[x y]) z a] : (cGreater[y x]) a z
 #cIf [(cNEqual[x y]) z a]   : (cEqual[y x]) a z
 
-cIf [(cLess[x y]) x y] -> cMin x y             # TEST 20/ifminmax
-cIf [(cLess[x y]) y x] -> cMax x y             # TEST 20/ifminmax
-cIf [(cLessOrEq[x y]) x y] -> cMin x y         # TEST 20/ifminmax
-cIf [(cLessOrEq[x y]) y x] -> cMax x y         # TEST 20/ifminmax
-cIf [(cGreater[x y]) y x] -> cMin x y          # TEST 20/ifminmax
-cIf [(cGreater[x y]) x y] -> cMax x y          # TEST 20/ifminmax
-cIf [(cGreaterOrEq[x y]) y x] -> cMin x y      # TEST 20/ifminmax
-cIf [(cGreaterOrEq[x y]) x y] -> cMax x y      # TEST 20/ifminmax
+cIf [(cLess[x y]) x y] -> cMin x y             # TEST 20/cmp*_minmax
+cIf [(cLess[x y]) y x] -> cMax x y             # TEST 20/cmp*_minmax
+#cIf [(cLessOrEq[x y]) x y] -> cMin x y         # TEST 20/cmp*_minmax
+#cIf [(cLessOrEq[x y]) y x] -> cMax x y         # TEST 20/cmp*_minmax
+cIf [(cGreater[x y]) y x] -> cMin x y          # TEST 20/cmp*_minmax
+cIf [(cGreater[x y]) x y] -> cMax x y          # TEST 20/cmp*_minmax
+#cIf [(cGreaterOrEq[x y]) y x] -> cMin x y      # TEST 20/cmp*_minmax
+#cIf [(cGreaterOrEq[x y]) x y] -> cMax x y      # TEST 20/cmp*_minmax
 
-cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
-cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
-cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
-cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
+#  abs(x) = (x<0 ? -x : x)
+#  abs(x) = x * (x<0 ? -1 : 1)
+#           x * (x<0 ? -5 : 5) = abs(x)*5
+#           x * ((x<0 ? -5 : 5) + y) = abs(x)*5 + x*y
 
-cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)])
-cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)])
-cAnd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAnd y a) (cAnd z b)])
-cOr  (cIf[x y z]) (cIf[x a b]) : (cIf [x (cOr  y a) (cOr  z b)])
-cMin (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMin y a) (cMin z b)])
-cMax (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMax y a) (cMax z b)])
+#x<0 ? -x : x   POS
+#x>0 ?  x : -x  POS
+#x<0 ?  x : -x  NEG
+#x>0 ? -x : x   NEG
 
-cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr  x y)])
-cOr  (cNot[x]) (cNot[y]) : (cNot [(cAnd x y)])
+cMul (cIf [(cLess[x 0])    % -%]) x : (cAbs[x]) -%      # TEST 20/ifabs
+cMul (cIf [(cGreater[x 0]) % -%]) x : (cAbs[x])  %      # TEST 20/ifabs
+
+cMul (cAdd (cIf [(cLess[x 0])    % -%]) <1>) x : (cAdd (cMul (cAbs[x]) -%) (cMul x (cAdd <1>)))  # TEST 20/ifabs
+cMul (cAdd (cIf [(cGreater[x 0]) % -%]) <1>) x : (cAdd (cMul (cAbs[x])  %) (cMul x (cAdd <1>)))  # TEST 20/ifabs
+
+cMul % (cIf [x & z@C]) : (cIf [x *(% &) *(% z@C)])       # TEST 20/if_join_mul2, ifabs
+cAdd % (cIf [x & z@C]) : (cIf [x +(% &) +(% z@C)])       # TEST 20/if_join_add2
+
+cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x  # TEST 20/trunc_from_if
+#cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
+cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x     # TEST 20/trunc_from_if
+#cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
+
+cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)]) # TEST 20/if_join_add
+cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)]) # TEST 20/if_join_mul
+cAnd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAnd y a) (cAnd z b)]) # TEST 20/if_join_and
+cOr  (cIf[x y z]) (cIf[x a b]) : (cIf [x (cOr  y a) (cOr  z b)]) # TEST 20/if_join_or
+cMin (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMin y a) (cMin z b)]) # TEST 20/if_join_min
+cMax (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMax y a) (cMax z b)]) # TEST 20/if_join_max
+
+cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr  x y)]) # TEST 20/nor2, nor2plus, nor3
+cOr  (cNot[x]) (cNot[y]) : (cNot [(cAnd x y)]) # TEST 20/nand2, nand2plus, nand3
 
 cAnd (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cOr  z (cIf[x y (cNot[%])]))])
 cOr  (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cAnd z (cIf[x y (cNot[%])]))])
@@ -155,12 +175,7 @@ cOr  (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cAnd z (cIf[x y (cNot[%])]))])
 cAnd (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cOr  z (cIf[x (cNot[%]) y]))])
 cOr  (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cAnd z (cIf[x (cNot[%]) y]))])
 
-cMul (cNot[x])    (cNotNot[y]) : (cAnd (cNot[x]) y)
-cMul (cNot[x])    (cNot[y])    : (cNot (cOr x y))
-cMul (cNotNot[x]) (cNotNot[y]) : (cAnd x y)
-# ^Warning: There is probably chance for infinite loop in those rules
-#cAnd (cNot[x]) (cNot[y]) : (cNot [(cOr x y)])
-# ^causes crash.
+cMul x@L y@L : (cAnd x y) # TEST 20/muland2, muland2plus, muland3, mulnor2, mulnor2plus, mulnor3, mulandlt
 
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
@@ -170,12 +185,12 @@ cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 # !x = abs(x) < 0.5
 # Thus, !(x*2) = abs(x) < 0.5/2
 # Note: Due to range-based optimizations, % can never be 0 here. These are safe.
-cGreater  [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]      # TEST 10/absnzlt (no fpoptimizer test)
-cLessOrEq [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]   # TEST 10/absnzge (no fpoptimizer test)
+cGreater  [% (cAbs[x])] -> cNot[(cMul x 0.5 /%)]      # TEST 20/absnzlt
+cLessOrEq [% (cAbs[x])] -> cNotNot[(cMul x 0.5 /%)]   # TEST 20/absnzge
 
 # abs(x) > 0  -->  abs(x) != 0  -->  x != 0
-cEqual    [0 (cAbs[x])] : x 0              # TEST 10/abseq0 (no fpoptimizer test)
-cNEqual   [0 (cAbs[x])] : x 0              # TEST 10/absneq0 (no fpoptimizer test)
+cEqual    [0 (cAbs[x])] : x 0              # TEST 20/abseq0
+cNEqual   [0 (cAbs[x])] : x 0              # TEST 20/absneq0
 
 cIf [x 1 0] -> cNotNot [x]         # TEST 20/if10 (factor 1)
 cIf [x 0 1] -> cNot [x]            # TEST 20/if10 (factor 10)
@@ -213,49 +228,49 @@ cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 
 [SIMPLIFY_EQUATION]
 
-cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
-cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
-cGreater     [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
-cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
-cEqual       [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
-cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp_add_imm
+cLess        [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
+cLessOrEq    [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
+cGreater     [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
+cGreaterOrEq [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
+cEqual       [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
+cNEqual      [(cAdd % <1>) &]  : (cAdd <1>) SUB(& %) # TEST 20/cmp*_add_imm
 
-cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
-cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
-cGreater     [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
-cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
-cEqual       [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
-cNEqual      [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp_add_imm
+cLess        [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
+cLessOrEq    [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
+cGreater     [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
+cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
+cEqual       [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
+cNEqual      [(cAdd % <1>) (cAdd & <2>)] : (cAdd <1>)  (cAdd <2> & -%) # TEST 20/cmp*_add_imm
 
-cLess        [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cLessOrEq    [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cGreater     [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cGreaterOrEq [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
-cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>)
+cLess        [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
+cLessOrEq    [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
+cGreater     [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
+cGreaterOrEq [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
+cEqual       [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
+cNEqual      [(cAdd x <1>) (cAdd x <2>)] : (cAdd <1>) (cAdd <2>) # TEST 20/cmp*_add_reduce
 
-cLess        [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
-cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
-cGreater     [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
-cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp_mul_imm_pos
-cLess        [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cLessOrEq    [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cGreater     [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cGreaterOrEq [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cEqual       [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp_mul_imm_pos
-cNEqual      [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp_mul_imm_pos
+cLess        [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp*_mul_imm_pos
+cLessOrEq    [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp*_mul_imm_pos
+cGreater     [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp*_mul_imm_pos
+cGreaterOrEq [(cMul %@P <1>) &]  : (cMul <1>) DIV(& %) # TEST 20/cmp*_mul_imm_pos
+cLess        [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cLessOrEq    [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cGreater     [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cGreaterOrEq [(cMul %@N <1>) &]  : DIV(& %) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cEqual       [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp*_mul_imm_pos
+cNEqual      [(cMul % <1>) &]  : (cMul <1>) DIV(& %)   # TEST 20/cmp*_mul_imm_pos
 
-cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
-cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
-cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
-cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
-cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
-cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp_mul_imm_neg
+cLess        [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
+cLessOrEq    [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
+cGreater     [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
+cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
+cLess        [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cLessOrEq    [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cGreater     [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
+cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)] :  (cMul <2> DIV(& %)) (cMul <1>) # TEST 20/cmp*_mul_imm_neg
 
-cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
-cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp_mul_imm_pos
+cEqual       [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
+cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TEST 20/cmp*_mul_imm_pos
 
 #cLess        [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 #cLessOrEq    [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
@@ -267,44 +282,46 @@ cNEqual      [(cMul % <1>) (cMul & <2>)] : (cMul <1>)  (cMul <2> DIV(& %)) # TES
 
 # Instead of x, generate (x^%)^(1/%) to further
 # delegate the possible responsibility of adding an abs() call.
-cLess        [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cLessOrEq    [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreater     [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cGreaterOrEq [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cEqual       [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
-cNEqual      [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%)
+cLess        [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
+cLessOrEq    [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
+cGreater     [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
+cGreaterOrEq [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
+cEqual       [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
+cNEqual      [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*_pow_imm_*
 
-cLess        [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cLessOrEq    [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cGreater     [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cGreaterOrEq [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cEqual       [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
-cNEqual      [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)])
+#cLess        [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+#cLessOrEq    [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+#cGreater     [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+#cGreaterOrEq [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+#cEqual       [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+#cNEqual      [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*_powpow_imm_pospos
+# ^ Note: This fails in "pow(x,2) op pow(y,3)" when x=-5, y=-6"
+#         TODO: Figure out how to workaround
 
-cLess        [(cPow [% x]) (cPow [% y])] : x y
-cLessOrEq    [(cPow [% x]) (cPow [% y])] : x y
-cGreater     [(cPow [% x]) (cPow [% y])] : x y
-cGreaterOrEq [(cPow [% x]) (cPow [% y])] : x y
-cEqual       [(cPow [% x]) (cPow [% y])] : x y
-cNEqual      [(cPow [% x]) (cPow [% y])] : x y
+cLess        [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
+cLessOrEq    [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
+cGreater     [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
+cGreaterOrEq [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
+cEqual       [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
+cNEqual      [(cPow [% x]) (cPow [% y])] : x y # TEST 20/cmp*_powpow_imm_base
 #  ^Note: This fails on exp(x)=exp(y) because of epsilon
 
-cLess        [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
-cLessOrEq    [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
-cGreater     [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
-cGreaterOrEq [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
-cEqual       [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
-cNEqual      [(cPow [%@P x]) &@P] : x DIV(LOG(&) LOG(%))
+cLess        [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
+cLessOrEq    [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
+cGreater     [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
+cGreaterOrEq [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
+cEqual       [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
+cNEqual      [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
 
 [REMOVE_REDUNDANT]
 
-cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])
+cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])  # TEST 20/mergemultiabs
 
 [EXTRACT1]
 
 # ceil(-x) = -floor(x); floor(-x) = -ceil(x)
-cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])
-cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
+cFloor[(cMul -1 <1>)] -> cMul -1 (cCeil[(cMul <1>)])  # TEST 20/negfloor
+cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])  # TEST 20/negceil
 
 [LOGARITHM]
 
@@ -324,8 +341,8 @@ cCeil[(cMul -1 <1>)] -> cMul -1 (cFloor[(cMul <1>)])
 # Warning: This loses the information that x > 0,
 #          that could be utilized in further optimizations.
 #
-cPow [%       (cLog[x])     ]   :     x        LOG(%)
-cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>)
+cPow [%       (cLog[x])     ]   :     x        LOG(%)      # TEST 20/powimmlog
+cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>) # TEST 20/powimmlog
 
 # Because log(exp(6)*x) = log(x)+6, we can also do this:
 #                  y^(log(x)+z)
@@ -337,7 +354,7 @@ cPow [% (cMul (cLog[x]) <1>)]   :     x  (cMul LOG(%) <1>)
 # Probably beneficial to do it only when y is const,
 # though. Otherwise we only trade + for *, which is bad.
 # Also z should be const, otherwise we get two pows instead of one.
-cPow [% (cAdd {(cLog[x]) &})]              -> cMul POW(% &) (cPow [x LOG(%)])
+cPow [% (cAdd {(cLog[x]) &})] -> cMul POW(% &) (cPow [x LOG(%)]) # TEST 20/powimmaddimmlog
 
 # x^(y*z) = (x*y)^z - done by ConstantFolding
 
@@ -347,11 +364,11 @@ cPow [z (cMul (cPow [(cLog[z])  -1]) (cLog[x])  <1>)] : x (cMul <1>)
 cPow [% (cMul /LOG(%)                (cLog[x])  <1>)] : x (cMul <1>)
 
 # log(x) + log(y) = log(x*y)
-cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))
+cAdd (cLog[x])  (cLog[y])  : (cLog  (cMul [x y]))   # TEST 20/addlog
 
 # When x is const, the reverse is more beneficial
 #  i.e.  log(2*x) = log(x) + log(2)
-cLog  [(cMul %@P <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%)
+cLog  [(cMul %@P <1>)] -> cAdd (cLog  [(cMul <1>)]) LOG(%) # TEST 20/mulimmlog
 
 # log(x * z^y) = (log(x) / log(z) + y) * log(z)
 #              = log(x) + log(z)*y
@@ -371,10 +388,10 @@ cMul {% (cAdd {1 (cMul {(cLog  [x]) /%})})} -> cAdd (cLog  [x]) %
 
 # (x*5) ^ 2 = x^2 * (5^2)
 # (x*5)^-1  = 0.2/x , shrug
-cPow [(cMul %@P <1>) &]                      -> cMul POW(% &)   (cPow [(cMul <1>) &])
+cPow [(cMul %@P <1>) &]    -> cMul POW(% &)   (cPow [(cMul <1>) &]) # TEST 20/powmulimm_*
 # ^Limited to positive values so that (-4*x)^3.3 won't be changed into nan*x^3.3
 
-cPow [(cMul %@N <1>) &@E]                    -> cMul POW(% &)   (cPow [(cMul <1>) &])
+cPow [(cMul %@N <1>) &@E]  -> cMul POW(% &)   (cPow [(cMul <1>) &]) # TEST 20/powmulimm_*
 # ^This changes (-5*x)^2 into x^2 * (-5)^2 = x^2 * 25, but only when & is an even integer.
 
 # z^(x+y/log(z)) = z^x * exp(y)
@@ -467,7 +484,7 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul (cPow[x &@I]) <2>) : (cMul (cPow[x MIN(% 
 #     srsly, what?
 
 
-cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x             <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
 # The replacement expanded below:
 #  (cMul (cPow[x MIN(% 1)])
 #        (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))
@@ -482,29 +499,29 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x           <2>) : (cMul (cPow[x MIN(% 1)
 
 # Note: These two rules should be done in constantfolding, but it's complicated.
 # 5*x - 5*y = 5*(x-y)
-cAdd (cMul %@P <1>) (cMul -% <2>) : (cMul % (cAdd <1> (cMul -1 <2>)))
+cAdd (cMul %@P <1>) (cMul -% <2>) : (cMul % (cAdd <1> (cMul -1 <2>))) # TEST 20/addnegmulpos
 # 5 - 5*x   = -5*(x-1)
 #cAdd %@M            (cMul -% <2>) : (cMul -% (cAdd (cMul <2>) -1))
-cAdd %@M            (cMul -% <2>) : (cMul % (cAdd 1 (cMul <2> -1)))
+cAdd %@M            (cMul -% <2>) : (cMul % (cAdd 1 (cMul <2> -1)))   # TEST 20/addnegmulneg
 
 #    (5.1*x +      4.1*y      + z+w)*2
 # -> (5.1*2*x + 2*(4.1*y      + z+w))
 # -> (5.1*2*x +   (4.1*2*y + 2*(z+w)))
-cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul % & <1>) (cMul & (cAdd <2>)))
+cMul (cAdd (cMul %@M <1>) <2>) &  :  (cAdd (cMul % & <1>) (cMul & (cAdd <2>))) # TEST 20/addmulconstmul
 
 #    (2+x+y)*4 = 2*4 + 4*(x+y)
-cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))
+cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addconstmul
 
 
 [TRIGONOMETRIC]
 
 # sin(-x) = -sin(x)
-cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])
+cSin [(cMul -1 <1>)] -> cMul -1 (cSin [(cMul <1>)])   # TEST 20/negsin
 # However,  -sin(5*x) better expressed as sin(-5*x)
 cMul -1 (cSin [(cMul %@N <1>)]) : (cSin [(cMul -% <1>)])
 # cos(-x) = cos(x)
-cCos [(cMul -1 <1>)] : (cMul <1>)
-cCos [(cAbs [x])] : x
+cCos [(cMul -1 <1>)] : (cMul <1>)                     # TEST 20/negcos
+cCos [(cAbs [x])] : x                                 # TEST 20/abscos
 
 # cos(pi/2 - x) = sin(x)
 cCos [(cAdd {CONSTANT_PIHALF@R (cMul %@N <1>)})] -> cSin[(cMul -% <1>)]         # TEST 20/trig_modulo
@@ -528,11 +545,11 @@ cSin [(cAdd 0@R <1>)]             -> cSin[(cAdd <1>)]
 
 
 # sin(x)^2 + cos(x)^2 = 1
-cAdd  (cPow[ (cSin[x]) 2]) (cPow [(cCos[x]) 2]) : 1
+cAdd  (cPow[ (cSin[x]) 2]) (cPow [(cCos[x]) 2]) : 1  # TEST 20/addsin2cos2
 # y-sin(x)^2 = cos(x)^2+(y-1)
 # y-cos(x)^2 = sin(x)^2+(y-1)
-cAdd 1 (cMul { -1 (cPow[ (cSin[x]) 2]) }) : (cPow [(cCos[x]) 2])
-cAdd 1 (cMul { -1 (cPow[ (cCos[x]) 2]) }) : (cPow [(cSin[x]) 2])
+cAdd 1 (cMul { -1 (cPow[ (cSin[x]) 2]) }) : (cPow [(cCos[x]) 2])  # TEST 20/sub1sin2
+cAdd 1 (cMul { -1 (cPow[ (cCos[x]) 2]) }) : (cPow [(cSin[x]) 2])  # TEST 20/sub1cos2
 
 # sin(x)*cos(y) + cos(x)*sin(y) = sin(x+y)
 # sin(x)*cos(y) - cos(x)*sin(y) = sin(x-y)
@@ -552,10 +569,10 @@ cAdd  (cMul {(cCos[x]) (cCos[y]) -1}) (cMul {(cSin[x]) (cSin[y])   }) : (cMul [-
 # ^This one is redudant: It just reaffirms that sin(x) = -sin(-x).
 
 # sin(asin(x)) = x
-cSin [(cAsin [x])] -> x
+cSin [(cAsin [x])] -> x  # TEST 20/asinsin
 
 # cos(acos(x)) = x
-cCos [(cAcos [x])] -> x
+cCos [(cAcos [x])] -> x  # TEST 20/acoscos
 
 # Note: asin(sin(x)) must not be converted, because
 # even though asin(sin(1.1)) = 1.1, asin(sin(1500)) != 1500.
@@ -663,12 +680,12 @@ cMul (cAdd { 1 (cPow [% x])}) (cPow [(cAdd {-1 (cPow [% x])}) -1]) : (cPow [(cTa
 [SINH_COSH_EXP_TRANSFORMATIONS]
 
 # sinh(-x) = -sinh(x)
-cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])]
+cSinh [(cMul -1 <1>)] -> cMul [-1 (cSinh [(cMul <1>)])] # TEST 20/negsinh
 # However,  -sinh(5*x) better expressed as sinh(-5*x)
 cMul -1 (cSinh [(cMul %@N <1>)]) : (cSinh [(cMul -% <1>)])
 # cosh(-x) = cosh(x)
-cCosh [(cMul -1 <1>)] : (cMul <1>)
-cCosh [(cAbs [x])] : x
+cCosh [(cMul -1 <1>)] : (cMul <1>)                    # TEST 20/negcosh
+cCosh [(cAbs [x])] : x                                # TEST 20/abscosh
 
 # x - 1/x = sinh(log(x))*2. However, this alone is a pessimal conversion.
 #cAdd  x  (cMul {-1 (cPow [       x   -1])})  : (cMul (cSinh [(cLog [x])]) 2)
@@ -741,8 +758,8 @@ cMul (cSinh[x]) (cPow[(cCosh[x]) %]) : (cTanh[x]) (cPow[(cCosh[x]) +(% 1)])
 # cosh(asinh(x)) = sqrt(x^2 + 1)  (not a typo)
 #  Not sure whether these are faster. They are more opcodes, but
 #  simpler. The rationale is in allowing for further optimizations.
-cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5]
-cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5]
+cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5] # TEST 20/acoshsinh
+cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5] # TEST 20/asinhcosh
 
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#
@@ -812,8 +829,8 @@ cPow [ (cAdd {(cMul {a@C (cPow [x %@E])})  (cMul {z@C (cPow [y &@E])})} ) 0.5 ] 
 
 [ABS_LOGICAL]
 
-cNot    [x@P] -> cAbsNot [x]
-cNotNot [x@P] -> cAbsNotNot [x]
+cNot    [x@P] -> cAbsNot [x]        # TEST 20/posnot
+cNotNot [x@P] -> cAbsNotNot [x]     # TEST 20/posnotnot
 cAnd x@P y@P   : (cAbsAnd x y)
 cOr x@P y@P    : (cAbsOr  x y)
 cIf [x@P y z]    -> cAbsIf x y z
@@ -826,8 +843,8 @@ cIf [x@P y z]    -> cAbsIf x y z
 cAbsIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
 cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
 
-cLess        [x 0.5] -> cAbsNot[x]
-cGreaterOrEq [x 0.5] -> cAbsNotNot[x]
+cLess        [x 0.5] -> cAbsNot[x]     # TEST 20/lthalf
+cGreaterOrEq [x 0.5] -> cAbsNotNot[x]  # TEST 20/gehalf
 
 [NON_SHORTCUT_LOGICAL_EVALUATION]
 

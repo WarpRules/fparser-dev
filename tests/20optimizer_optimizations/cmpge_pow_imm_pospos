@@ -1,0 +1,5 @@
+T=d ld f mf
+V=x
+R=-6,6,1
+F=(pow(x,2) >= 25)
+C=fp_greaterOrEq(fp_pow(x,2), 25)

@@ -348,7 +348,7 @@ namespace
             for(unsigned n=0; n<n_pop; ++n)
                 result[n].swap(stack[stack.size()-n_pop+n]);
         #ifdef DEBUG_SUBSTITUTIONS
-            for(unsigned n=n_pop; n-- > 0; )
+            for(size_t n=n_pop; n-- > 0; )
             {
                 std::cout << "POP ";
                 DumpTree(result[n]);

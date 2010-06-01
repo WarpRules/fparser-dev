@@ -1,0 +1,5 @@
+T=d ld f mf
+V=x
+R=-6,6,1
+F=(150.0625 != pow(3.5,x))
+C=fp_nequal(150.0625, fp_pow(3.5,x))

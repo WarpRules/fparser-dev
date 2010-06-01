@@ -1,0 +1,24 @@
+T=d ld f mf
+V=x
+R=-6,6,1
+
+# Combine tests:
+#   cmplt_pow_imm_pospos_base
+#   cmple_pow_imm_pospos_base
+#   cmpgt_pow_imm_pospos_base
+#   cmpge_pow_imm_pospos_base
+#   cmpne_pow_imm_pospos_base
+#   cmpeq_pow_imm_pospos_base
+
+F=0x0001 * (150.0625 < pow(3.5,x)) + \
+  0x0002 * (150.0625 <= pow(3.5,x)) + \
+  0x0004 * (150.0625 > pow(3.5,x)) + \
+  0x0008 * (150.0625 >= pow(3.5,x)) + \
+  0x0010 * (150.0625 != pow(3.5,x)) + \
+  0x0020 * (150.0625 = pow(3.5,x))
+C=0x0001 * fp_less(150.0625, fp_pow(3.5,x)) + \
+  0x0002 * fp_lessOrEq(150.0625, fp_pow(3.5,x)) + \
+  0x0004 * fp_greater(150.0625, fp_pow(3.5,x)) + \
+  0x0008 * fp_greaterOrEq(150.0625, fp_pow(3.5,x)) + \
+  0x0010 * fp_nequal(150.0625, fp_pow(3.5,x)) + \
+  0x0020 * fp_equal(150.0625, fp_pow(3.5,x))

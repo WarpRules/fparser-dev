@@ -18,13 +18,13 @@ namespace
         // remove the cNot and swap the branches.
         for(;;)
         {
-            if(tree.GetParam(0).GetOpcode() == cNot)
+            if(tree.GetParam(0).GetOpcode() == cNot) // TEST 20/ifnot
             {
                 tree.SetOpcode(cIf);
                 tree.GetParam(0).Become( tree.GetParam(0).GetParam(0) );
                 tree.GetParam(1).swap(tree.GetParam(2));
             }
-            else if(tree.GetParam(0).GetOpcode() == cAbsNot)
+            else if(tree.GetParam(0).GetOpcode() == cAbsNot) // TEST 20/ifabsnot
             {
                 tree.SetOpcode(cAbsIf);
                 tree.GetParam(0).Become( tree.GetParam(0).GetParam(0) );
@@ -36,7 +36,7 @@ namespace
         // If the sub-expression evaluates to approx. zero, yield param3.
         // If the sub-expression evaluates to approx. nonzero, yield param2.
         switch(GetLogicalValue(tree.GetParam(0), tree.GetOpcode()==cAbsIf))
-        {
+        { // TEST 20/ifconst
             case IsAlways: // true
                 tree.Become(tree.GetParam(1));
                 return true; // rerun optimization (opcode changed)
@@ -49,6 +49,7 @@ namespace
         if(tree.GetParam(0).GetOpcode() == cIf
         || tree.GetParam(0).GetOpcode() == cAbsIf)
         {
+            // TEST 20/ififconst
             //     if(if(x, a,b), c,d)
             //  -> if(x, if(a, c,d), if(b, c,d))
             // when either a or b is constantly true/false
@@ -92,6 +93,7 @@ namespace
             && (leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(1))
              || leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(2))))
             {
+            // TEST 20/ifmerge
             //     if(x, if(y,a,b), if(y,c,d))
             // ->  if(y, if(x,a,c), if(x,b,d))
             // when either a,c are identical or b,d are identical
@@ -118,6 +120,7 @@ namespace
             if(leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(1))
             && leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(2)))
             {
+                // TEST 20/ifmerge2
                 //    if(x, if(y,a,b), if(z,a,b))
                 // -> if( if(x, y,z), a,b)
                 CodeTree<Value_t> cond_tree;
@@ -135,6 +138,7 @@ namespace
             if(leaf1.GetParam(1).IsIdenticalTo(leaf2.GetParam(2))
             && leaf1.GetParam(2).IsIdenticalTo(leaf2.GetParam(1)))
             {
+                // TEST 20/ifmerge2b
                 //    if(x, if(y,a,b), if(z,b,a))
                 // -> if( if(x, y,!z), a,b)
                 CodeTree<Value_t> not_tree;
@@ -160,7 +164,9 @@ namespace
 
         if(branch1.IsIdenticalTo(branch2))
         {
+            // TEST 20/ifnop
             // If both branches of an If() are identical, the test becomes unnecessary
+            // NOTE: Possible side-effect on condition removed
             tree.Become(tree.GetParam(1));
             return true; // rerun optimization (opcode changed)
         }
@@ -169,6 +175,11 @@ namespace
         const OPCODE op2 = branch2.GetOpcode();
         if(op1 == op2)
         {
+            // TEST 20/if_extract_add
+            // TEST 20/if_extract_mul
+            // TEST 20/if_extract_min
+            // TEST 20/if_extract_sin
+            // TEST 20/if_extract_abs
             // If both branches apply the same unary function to different values,
             // extract the function. E.g. if(x,sin(a),sin(b)) -> sin(if(x,a,b))
             if(branch1.GetParamCount() == 1)
@@ -228,6 +239,12 @@ namespace
         || (op1 == cOr  && IsLogicalValue(branch2))
           )
         {
+            // TEST 20/if_extract_add1
+            // TEST 20/if_extract_mul1
+            // TEST 20/if_extract_and1_l
+            // TEST 20/if_extract_and1_nl
+            // TEST 20/if_extract_or1_l
+            // TEST 20/if_extract_or1_nl
             for(size_t a=branch1.GetParamCount(); a-- > 0; )
                 if(branch1.GetParam(a).IsIdenticalTo(branch2))
                 {
@@ -275,6 +292,12 @@ namespace
         || (op2 == cOr  && IsLogicalValue(branch1))
           )
         {
+            // TEST 20/if_extract_add2
+            // TEST 20/if_extract_mul2
+            // TEST 20/if_extract_and2_l
+            // TEST 20/if_extract_and2_nl
+            // TEST 20/if_extract_or2_l
+            // TEST 20/if_extract_or2_nl
             for(size_t a=branch2.GetParamCount(); a-- > 0; )
                 if(branch2.GetParam(a).IsIdenticalTo(branch1))
                 {
