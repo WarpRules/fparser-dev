@@ -90,7 +90,7 @@ Calling PCall functions in the C++ code
 In order to call PCall functions in the C++ code,
 use this syntax:
 
-  Sub({x+1, y-1})
+  userDefFuncSub({x+1, y-1})
 
 This is equivalent to the fparser function Sub(x+1, y-1).
 
