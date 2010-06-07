@@ -411,21 +411,15 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template
-    size_t CodeTree<double>::SynthCommonSubExpressions(
-        FPoptimizer_ByteCode::ByteCodeSynth<double>& synth) const;
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template
-    size_t CodeTree<float>::SynthCommonSubExpressions(
-        FPoptimizer_ByteCode::ByteCodeSynth<float>& synth) const;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template
-    size_t CodeTree<long double>::SynthCommonSubExpressions(
-        FPoptimizer_ByteCode::ByteCodeSynth<long double>& synth) const;
-#endif
+#define FP_INSTANTIATE(type) \
+    template \
+    size_t CodeTree<type>::SynthCommonSubExpressions( \
+        FPoptimizer_ByteCode::ByteCodeSynth<type>& synth) const;
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

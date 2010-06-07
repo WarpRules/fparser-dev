@@ -909,15 +909,13 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template void ConstantFolding(CodeTree<double>& );
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void ConstantFolding(CodeTree<float>& );
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void ConstantFolding(CodeTree<long double>& );
-#endif
+#define FP_INSTANTIATE(type) \
+    template void ConstantFolding(CodeTree<type>& );
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

@@ -745,30 +745,18 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template
-    void CodeTree<double>::GenerateFrom(
-        const std::vector<unsigned>& ByteCode,
-        const std::vector<double>& Immed,
-        const FunctionParserBase<double>::Data& fpdata,
+#define FP_INSTANTIATE(type) \
+    template \
+    void CodeTree<type>::GenerateFrom( \
+        const std::vector<unsigned>& ByteCode, \
+        const std::vector<type>& Immed, \
+        const FunctionParserBase<type>::Data& fpdata, \
         bool keep_powi);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template
-    void CodeTree<float>::GenerateFrom(
-        const std::vector<unsigned>& ByteCode,
-        const std::vector<float>& Immed,
-        const FunctionParserBase<float>::Data& fpdata,
-        bool keep_powi);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template
-    void CodeTree<long double>::GenerateFrom(
-        const std::vector<unsigned>& ByteCode,
-        const std::vector<long double>& Immed,
-        const FunctionParserBase<long double>::Data& fpdata,
-        bool keep_powi);
-#endif
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

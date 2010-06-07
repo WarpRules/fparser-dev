@@ -175,17 +175,13 @@ namespace FPoptimizer_Grammar
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_Grammar
 {
-    template void DumpParams<double>(unsigned, unsigned, std::ostream& );
-    template bool ParamSpec_Compare<double>(const void*, const void*, SpecialOpcode);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void DumpParams<float>(unsigned, unsigned, std::ostream& );
-    template bool ParamSpec_Compare<float>(const void*, const void*, SpecialOpcode);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void DumpParams<long double>(unsigned, unsigned, std::ostream& );
-    template bool ParamSpec_Compare<long double>(const void*, const void*, SpecialOpcode);
-#endif
+#define FP_INSTANTIATE(type) \
+    template void DumpParams<type>(unsigned, unsigned, std::ostream& ); \
+    template bool ParamSpec_Compare<type>(const void*, const void*, SpecialOpcode);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */

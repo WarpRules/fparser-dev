@@ -574,27 +574,18 @@ namespace FPoptimizer_ByteCode
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_ByteCode
 {
-    template class SequenceOpcodes<double>;
-    template void AssembleSequence(
-        long count,
-        const SequenceOpCode<double>& sequencing,
-        ByteCodeSynth<double>& synth);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template class SequenceOpcodes<float>;
-    template void AssembleSequence(
-        long count,
-        const SequenceOpCode<float>& sequencing,
-        ByteCodeSynth<float>& synth);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template class SequenceOpcodes<long double>;
-    template void AssembleSequence(
-        long count,
-        const SequenceOpCode<long double>& sequencing,
-        ByteCodeSynth<long double>& synth);
-#endif
+#define FP_INSTANTIATE(type) \
+    template class SequenceOpcodes<type>; \
+    template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned); \
+    template void AssembleSequence( \
+        long count, \
+        const SequenceOpCode<type>& sequencing, \
+        ByteCodeSynth<type>& synth);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

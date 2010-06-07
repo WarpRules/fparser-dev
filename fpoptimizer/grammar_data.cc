@@ -1443,9 +1443,14 @@ namespace FPoptimizer_Grammar
             return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-35]);
         return ParamSpec(ParamHolder,(const void*)&plist_p[index]);
     }
-/* BEGIN_EXPLICIT_INSTANTATION */
-template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
-template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
-template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
-/* END_EXPLICIT_INSTANTATION */
 }
+/* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
+namespace FPoptimizer_Grammar
+{
+#define FP_INSTANTIATE(type) \
+    template ParamSpec ParamSpec_Extract<type>(unsigned paramlist, unsigned index);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
+}
+/* END_EXPLICIT_INSTANTATION */

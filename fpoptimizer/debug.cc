@@ -138,21 +138,15 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template void DumpHashes(const CodeTree<double>& tree, std::ostream& o);
-    template void DumpTree(const CodeTree<double>& tree, std::ostream& o);
-    template void DumpTreeWithIndent(const CodeTree<double>& tree, std::ostream& o, const std::string& indent);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void DumpHashes(const CodeTree<float>& tree, std::ostream& o);
-    template void DumpTree(const CodeTree<float>& tree, std::ostream& o);
-    template void DumpTreeWithIndent(const CodeTree<float>& tree, std::ostream& o, const std::string& indent);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void DumpHashes(const CodeTree<long double>& tree, std::ostream& o);
-    template void DumpTree(const CodeTree<long double>& tree, std::ostream& o);
-    template void DumpTreeWithIndent(const CodeTree<long double>& tree, std::ostream& o, const std::string& indent);
-#endif
+#define FP_INSTANTIATE(type) \
+    template void DumpHashes(const CodeTree<type>& tree, std::ostream& o); \
+    template void DumpTree(const CodeTree<type>& tree, std::ostream& o); \
+    template void DumpTreeWithIndent(const CodeTree<type>& tree, std::ostream& o, const std::string& indent);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

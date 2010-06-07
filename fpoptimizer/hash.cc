@@ -168,24 +168,16 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template void CodeTree<double>::Sort();
-    template void CodeTree<double>::Rehash(bool);
-    template void CodeTree<double>::FixIncompleteHashes();
-    template void CodeTreeData<double>::Recalculate_Hash_NoRecursion();
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void CodeTree<float>::Sort();
-    template void CodeTree<float>::Rehash(bool);
-    template void CodeTree<float>::FixIncompleteHashes();
-    template void CodeTreeData<float>::Recalculate_Hash_NoRecursion();
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void CodeTree<long double>::Sort();
-    template void CodeTree<long double>::Rehash(bool);
-    template void CodeTree<long double>::FixIncompleteHashes();
-    template void CodeTreeData<long double>::Recalculate_Hash_NoRecursion();
-#endif
+#define FP_INSTANTIATE(type) \
+    template void CodeTree<type>::Sort(); \
+    template void CodeTree<type>::Rehash(bool); \
+    template void CodeTree<type>::FixIncompleteHashes(); \
+    template void CodeTreeData<type>::Recalculate_Hash_NoRecursion();
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

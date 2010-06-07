@@ -459,24 +459,16 @@ namespace
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template void CodeTree<double>::SynthesizeByteCode(
-        std::vector<unsigned>& ByteCode,
-        std::vector<double>&   Immed,
+#define FP_INSTANTIATE(type) \
+    template void CodeTree<type>::SynthesizeByteCode( \
+        std::vector<unsigned>& ByteCode, \
+        std::vector<type>&   Immed, \
         size_t& stacktop_max);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void CodeTree<float>::SynthesizeByteCode(
-        std::vector<unsigned>& ByteCode,
-        std::vector<float>&   Immed,
-        size_t& stacktop_max);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void CodeTree<long double>::SynthesizeByteCode(
-        std::vector<unsigned>& ByteCode,
-        std::vector<long double>&   Immed,
-        size_t& stacktop_max);
-#endif
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

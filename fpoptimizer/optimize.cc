@@ -393,15 +393,13 @@ namespace FPoptimizer_Optimize
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_Optimize
 {
-    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<double>& tree);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<float>& tree);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<long double>& tree);
-#endif
+#define FP_INSTANTIATE(type) \
+    template void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<type>& tree);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

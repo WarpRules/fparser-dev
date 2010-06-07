@@ -740,33 +740,19 @@ namespace FPoptimizer_Optimize
 
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_Optimize
 {
-    template
-    MatchResultType TestParams(
-        const ParamSpec_SubFunctionData& model_tree,
-        const CodeTree<double> & tree,
-        const MatchPositionSpecBaseP& start_at,
-        MatchInfo<double>& info,
+#define FP_INSTANTIATE(type) \
+    template \
+    MatchResultType TestParams( \
+        const ParamSpec_SubFunctionData& model_tree, \
+        const CodeTree<type> & tree, \
+        const MatchPositionSpecBaseP& start_at, \
+        MatchInfo<type>& info, \
         bool TopLevel);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template
-    MatchResultType TestParams(
-        const ParamSpec_SubFunctionData& model_tree,
-        const CodeTree<float> & tree,
-        const MatchPositionSpecBaseP& start_at,
-        MatchInfo<float>& info,
-        bool TopLevel);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template
-    MatchResultType TestParams(
-        const ParamSpec_SubFunctionData& model_tree,
-        const CodeTree<long double> & tree,
-        const MatchPositionSpecBaseP& start_at,
-        MatchInfo<long double>& info,
-        bool TopLevel);
-#endif
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

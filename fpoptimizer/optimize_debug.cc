@@ -78,27 +78,17 @@ namespace FPoptimizer_Grammar
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_Grammar
 {
-    template void DumpMatch(const Rule& rule,
-                   const CodeTree<double>& tree,
-                   const MatchInfo<double>& info,
-                   bool DidMatch,
+#define FP_INSTANTIATE(type) \
+    template void DumpMatch(const Rule& rule, \
+                   const CodeTree<type>& tree, \
+                   const MatchInfo<type>& info, \
+                   bool DidMatch, \
                    std::ostream& o);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template void DumpMatch(const Rule& rule,
-                   const CodeTree<float>& tree,
-                   const MatchInfo<float>& info,
-                   bool DidMatch,
-                   std::ostream& o);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template void DumpMatch(const Rule& rule,
-                   const CodeTree<long double>& tree,
-                   const MatchInfo<long double>& info,
-                   bool DidMatch,
-                   std::ostream& o);
-#endif
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

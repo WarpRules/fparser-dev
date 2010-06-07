@@ -1671,6 +1671,7 @@ unsigned GrammarData::ParamSpec::BuildDepMask()
     return DepMask;
 }
 
+#include "../fpoptimizer/instantiate.hh"
 namespace FPoptimizer_Grammar
 {
     template<typename Value_t>
@@ -1682,9 +1683,10 @@ namespace FPoptimizer_Grammar
     }
 
     /* BEGIN_EXPLICIT_INSTANTATION */
-    template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);
-    template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);
-    template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);
+#define FP_INSTANTIATE(type) \
+    template ParamSpec ParamSpec_Extract<type>(unsigned paramlist, unsigned index);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
     /* END_EXPLICIT_INSTANTATION */
 }
 
@@ -1808,12 +1810,17 @@ int main()
         "            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-" << n_begin << "]);\n"
         "        return ParamSpec(ParamHolder,(const void*)&plist_p[index"/*"-" << p_begin << */"]);\n"
         "    }\n"
+        "}\n"
         "/* BEGIN_EXPLICIT_INSTANTATION */\n"
-        "template ParamSpec ParamSpec_Extract<double>(unsigned paramlist, unsigned index);\n"
-        "template ParamSpec ParamSpec_Extract<float>(unsigned paramlist, unsigned index);\n"
-        "template ParamSpec ParamSpec_Extract<long double>(unsigned paramlist, unsigned index);\n"
-        "/* END_EXPLICIT_INSTANTATION */\n"
-        "}\n";
+        "#include \"instantiate.hh\"\n"
+        "namespace FPoptimizer_Grammar\n"
+        "{\n"
+        "#define FP_INSTANTIATE(type) \\\n"
+        "    template ParamSpec ParamSpec_Extract<type>(unsigned paramlist, unsigned index);\n"
+        "    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)\n"
+        "#undef FP_INSTANTIATE\n"
+        "}\n"
+        "/* END_EXPLICIT_INSTANTATION */\n";
 
     return 0;
 }

@@ -1035,21 +1035,15 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template range<double> CalculateResultBoundaries(const CodeTree<double> &);
-    template bool IsLogicalValue(const CodeTree<double> &);
-    template TriTruthValue GetIntegerInfo(const CodeTree<double> &);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template range<float> CalculateResultBoundaries(const CodeTree<float> &);
-    template bool IsLogicalValue(const CodeTree<float> &);
-    template TriTruthValue GetIntegerInfo(const CodeTree<float> &);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template range<long double> CalculateResultBoundaries(const CodeTree<long double>& );
-    template bool IsLogicalValue(const CodeTree<long double> &);
-    template TriTruthValue GetIntegerInfo(const CodeTree<long double> &);
-#endif
+#define FP_INSTANTIATE(type) \
+    template range<type> CalculateResultBoundaries(const CodeTree<type> &); \
+    template bool IsLogicalValue(const CodeTree<type> &); \
+    template TriTruthValue GetIntegerInfo(const CodeTree<type> &);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

@@ -431,18 +431,14 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template class CodeTree<double>;
-    template class CodeTreeData<double>;
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template class CodeTree<float>;
-    template class CodeTreeData<float>;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template class CodeTree<long double>;
-    template class CodeTreeData<long double>;
-#endif
+#define FP_INSTANTIATE(type) \
+    template class CodeTree<type>; \
+    template class CodeTreeData<type>;
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

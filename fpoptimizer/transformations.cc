@@ -944,18 +944,14 @@ namespace FPoptimizer_CodeTree
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_CodeTree
 {
-    template
-    bool CodeTree<double>::RecreateInversionsAndNegations(bool prefer_base2);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template
-    bool CodeTree<float>::RecreateInversionsAndNegations(bool prefer_base2);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template
-    bool CodeTree<long double>::RecreateInversionsAndNegations(bool prefer_base2);
-#endif
+#define FP_INSTANTIATE(type) \
+    template \
+    bool CodeTree<type>::RecreateInversionsAndNegations(bool prefer_base2);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 

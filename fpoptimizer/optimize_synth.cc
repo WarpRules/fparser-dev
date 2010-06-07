@@ -122,27 +122,17 @@ namespace FPoptimizer_Optimize
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
+#include "instantiate.hh"
 namespace FPoptimizer_Optimize
 {
-    template
-    void SynthesizeRule(
-        const Rule& rule,
-        CodeTree<double>& tree,
-        MatchInfo<double>& info);
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template
-    void SynthesizeRule(
-        const Rule& rule,
-        CodeTree<float>& tree,
-        MatchInfo<float>& info);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    template
-    void SynthesizeRule(
-        const Rule& rule,
-        CodeTree<long double>& tree,
-        MatchInfo<long double>& info);
-#endif
+#define FP_INSTANTIATE(type) \
+    template \
+    void SynthesizeRule( \
+        const Rule& rule, \
+        CodeTree<type>& tree, \
+        MatchInfo<type>& info);
+    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
+#undef FP_INSTANTIATE
 }
 /* END_EXPLICIT_INSTANTATION */
 
