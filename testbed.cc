@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.2.2.9";
+static const char* const kVersionNumber = "2.2.2.10";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -2866,8 +2866,9 @@ int main(int argc, char* argv[])
         { "Whitespaces", &WhiteSpaceTest },
         { "Optimizer test 1 (trig. combinations)", &testOptimizer1 },
         { "Optimizer test 2 (bool combinations, double)",
-          skipSlowAlgo ? 0 : &testOptimizer2 },
-        { "Optimizer test 3 (bool combinations, long)", &testOptimizer3 },
+          (skipSlowAlgo || (!runAllTypes && !run_d)) ? 0 : &testOptimizer2 },
+        { "Optimizer test 3 (bool combinations, long)",
+          (!runAllTypes && !run_li) ? 0 : &testOptimizer3 },
         { "Integral powers",  &TestIntPow },
         { "UTF8 test", skipSlowAlgo ? 0 : &UTF8Test },
         { "Identifier test", &TestIdentifiers },
