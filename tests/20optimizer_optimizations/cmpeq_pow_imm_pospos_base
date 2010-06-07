@@ -1,5 +1,5 @@
 T=d ld f mf
 V=x
 R=-6,6,1
-F=(150.0625 = pow(3.5,x))
-C=fp_equal(150.0625, fp_pow(3.5,x))
+F=(5.0625 = pow(1.5,x))
+C=fp_equal(5.0625, fp_pow(1.5,x))
