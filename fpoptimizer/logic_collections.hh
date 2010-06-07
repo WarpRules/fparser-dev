@@ -441,7 +441,7 @@ namespace
                 {
                     Value_t exponent = list.first.GetImmed();
                     if(exponent == Value_t(0)) continue;
-                    if(FloatEqual(exponent, Value_t(1) ))
+                    if(fp_equal(exponent, Value_t(1) ))
                     {
                         tree.AddParamsMove(list.second);
                         continue;

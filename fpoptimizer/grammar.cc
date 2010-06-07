@@ -28,7 +28,7 @@ namespace FPoptimizer_Grammar
             {
                 ParamSpec_NumConstant<Value_t>& a = *(ParamSpec_NumConstant<Value_t>*) aa;
                 ParamSpec_NumConstant<Value_t>& b = *(ParamSpec_NumConstant<Value_t>*) bb;
-                return FloatEqual(a.constvalue, b.constvalue)
+                return fp_equal(a.constvalue, b.constvalue)
                     && a.modulo == b.modulo;
             }
             case SubFunction:

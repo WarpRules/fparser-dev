@@ -367,7 +367,7 @@ namespace FPoptimizer_CodeTree
                     immed_product *= immed; ++n_immeds;
                 }
                 // Merge immeds.
-                if(n_immeds > 1 || (n_immeds == 1 && FloatEqual(immed_product, Value_t(1))))
+                if(n_immeds > 1 || (n_immeds == 1 && fp_equal(immed_product, Value_t(1))))
                     needs_resynth = true;
                 if(needs_resynth)
                 {
@@ -384,7 +384,7 @@ namespace FPoptimizer_CodeTree
                         #endif
                             tree.DelParam(a);
                         }
-                    if(!FloatEqual(immed_product, Value_t(1)))
+                    if(!fp_equal(immed_product, Value_t(1)))
                         tree.AddParam( CodeTreeImmed(immed_product) );
                 }
                 switch(tree.GetParamCount())

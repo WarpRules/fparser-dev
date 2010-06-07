@@ -214,7 +214,7 @@ namespace GrammarData
             switch(Opcode)
             {
                 case NumConstant:
-                    return b.Opcode == Opcode && FloatEqual(ConstantValue, b.ConstantValue);
+                    return b.Opcode == Opcode && fp_equal(ConstantValue, b.ConstantValue);
                 case ParamHolder:
                     return b.Opcode == Opcode && ImmedConstraint == b.ImmedConstraint
                         && b.DepMask == DepMask && Index == b.Index;
@@ -741,8 +741,8 @@ public:
         result.precision(50);
         #define Value_t double
         #define if_const(n) \
-            if(FloatEqual(value, n)) result << #n; \
-            else if(FloatEqual(value, -n)) result << "-" #n;
+            if(fp_equal(value, n)) result << #n; \
+            else if(fp_equal(value, -n)) result << "-" #n;
         if_const(fp_const_e<Value_t>())
         else if_const(fp_const_einv<Value_t>())
         else if_const(fp_const_twoe<Value_t>())

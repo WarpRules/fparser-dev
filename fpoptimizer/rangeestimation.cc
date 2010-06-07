@@ -996,8 +996,8 @@ namespace FPoptimizer_CodeTree
         switch(tree.GetOpcode())
         {
             case cImmed:
-                return FloatEqual(tree.GetImmed(), Value_t(0))
-                    || FloatEqual(tree.GetImmed(), Value_t(1));
+                return fp_equal(tree.GetImmed(), Value_t(0))
+                    || fp_equal(tree.GetImmed(), Value_t(1));
             case cAnd:
             case cOr:
             case cNot:

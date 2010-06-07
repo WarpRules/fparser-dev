@@ -51,7 +51,7 @@ namespace
         {
             // Conversion through a float type value gets rid of
             // awkward abs(x)^1 generated from exp(log(x^6)/6),
-            // without sacrificing as much precision as FloatEqual() does.
+            // without sacrificing as much precision as fp_equal() does.
             // x^1 = x
             tree.Become(tree.GetParam(0));
             return true; // rerun optimization (opcode changed)
