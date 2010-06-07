@@ -25,7 +25,7 @@ namespace FPoptimizer_ByteCode
           SequenceOpcodes<Value_t>::MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
 
     template<typename Value_t>
-    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode)
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode_Float(unsigned opcode)
     {
         /*ByteCode.push_back(opcode);
         return;*/
@@ -47,6 +47,40 @@ namespace FPoptimizer_ByteCode
 #undef mData
 #undef TryCompilePowi
 #undef incStackPtr
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode_Integer(unsigned opcode)
+    {
+        /*ByteCode.push_back(opcode);
+        return;*/
+
+        int mStackPtr=0;
+#define incStackPtr() do { \
+        if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
+    } while(0)
+#define findName(a,b,c) "var"
+#define TryCompilePowi(o) false
+#define mData this
+#define mByteCode ByteCode
+#define mImmed Immed
+# define FP_FLOAT_VERSION 0
+# include "fp_opcode_add.inc"
+# undef FP_FLOAT_VERSION
+#undef mImmed
+#undef mByteCode
+#undef mData
+#undef TryCompilePowi
+#undef incStackPtr
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode)
+    {
+        if(IsIntType<Value_t>::result)
+            AddFunctionOpcode_Integer(opcode);
+        else
+            AddFunctionOpcode_Float(opcode);
     }
 }
 
@@ -101,6 +135,7 @@ static const int POWI_CACHE_SIZE = 256;
 
 #define FPO(x) /**/
 //#define FPO(x) x
+//#include <stdio.h>
 
 
 namespace

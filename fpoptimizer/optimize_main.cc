@@ -46,12 +46,6 @@ void FunctionParserBase<Value_t>::Optimize()
     //PrintByteCode(std::cout);
 }
 
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-template<>
-void FunctionParserBase<long>::Optimize()
-{}
-#endif
-
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 template<>
 void FunctionParserBase<MpfrFloat>::Optimize()

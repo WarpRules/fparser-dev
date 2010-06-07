@@ -89,7 +89,8 @@ namespace FPoptimizer_CodeTree
     {
         tree.Sort(); // Otherwise "0 <= acos(x)" does not get properly optimized
     #ifdef DEBUG_SUBSTITUTIONS
-        std::cout << "Runs ConstantFolding for: ";
+        void* stackptr=0;
+        std::cout << "[" << (&stackptr) << "]Runs ConstantFolding for: ";
         DumpTree(tree);
         std::cout << "\n";
         DumpHashes(tree);
@@ -99,7 +100,7 @@ namespace FPoptimizer_CodeTree
     redo:;
             tree.Sort();
         #ifdef DEBUG_SUBSTITUTIONS
-            std::cout << "Re-runs ConstantFolding: ";
+            std::cout << "[" << (&stackptr) << "]Re-runs ConstantFolding: ";
             DumpTree(tree);
             std::cout << "\n";
             DumpHashes(tree);
@@ -117,14 +118,14 @@ namespace FPoptimizer_CodeTree
             {
                 // Replace us with this immed
                 tree.ReplaceWithImmed(p.min);
-                return;
+                goto do_return;
             }
         }
 
         if(false)
         {
-            ReplaceTreeWithOne:  tree.ReplaceWithImmed(Value_t(1)); return;
-            ReplaceTreeWithZero: tree.ReplaceWithImmed(Value_t(0)); return;
+            ReplaceTreeWithOne:  tree.ReplaceWithImmed(Value_t(1)); goto do_return;
+            ReplaceTreeWithZero: tree.ReplaceWithImmed(Value_t(0)); goto do_return;
             ReplaceTreeWithParam0:
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "Before replace: ";
@@ -640,7 +641,7 @@ namespace FPoptimizer_CodeTree
             #define HANDLE_UNARY_CONST_FUNC(funcname) \
                 if(tree.GetParam(0).IsImmed()) \
                     { tree.ReplaceWithImmed( funcname(tree.GetParam(0).GetImmed()) ); \
-                      return; }
+                      goto do_return; }
 
             case cLog:
                 HANDLE_UNARY_CONST_FUNC(fp_log);
@@ -731,14 +732,14 @@ namespace FPoptimizer_CodeTree
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed())
                     { tree.ReplaceWithImmed( fp_log2(tree.GetParam(0).GetImmed()) * tree.GetParam(1).GetImmed() );
-                      return; }
+                      goto do_return; }
                 break;
 
             case cMod: /* Can more be done than this? */
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed())
                     { tree.ReplaceWithImmed( fp_mod(tree.GetParam(0).GetImmed(), tree.GetParam(1).GetImmed()) );
-                      return; }
+                      goto do_return; }
                 break;
 
             case cAtan2:
@@ -762,23 +763,23 @@ namespace FPoptimizer_CodeTree
                 && fp_equal(tree.GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {
                     if(p1.has_max && (p1.max) < 0)          // y == 0 && x < 0
-                        { tree.ReplaceWithImmed( fp_const_pi<Value_t>() ); return; }
+                        { tree.ReplaceWithImmed( fp_const_pi<Value_t>() ); goto do_return; }
                     if(p1.has_min && p1.min >= 0.0)           // y == 0 && x >= 0.0
-                        { tree.ReplaceWithImmed( Value_t(0) ); return; }
+                        { tree.ReplaceWithImmed( Value_t(0) ); goto do_return; }
                 }
                 if(tree.GetParam(1).IsImmed()
                 && fp_equal(tree.GetParam(1).GetImmed(), Value_t(0)))   // x == 0
                 {
                     if(p0.has_max && (p0.max) < 0)          // y < 0 && x == 0
-                        { tree.ReplaceWithImmed( -fp_const_pihalf<Value_t>() ); return; }
+                        { tree.ReplaceWithImmed( -fp_const_pihalf<Value_t>() ); goto do_return; }
                     if(p0.has_min && p0.min > 0)              // y > 0 && x == 0
-                        { tree.ReplaceWithImmed(  fp_const_pihalf<Value_t>() ); return; }
+                        { tree.ReplaceWithImmed(  fp_const_pihalf<Value_t>() ); goto do_return; }
                 }
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed())
                     { tree.ReplaceWithImmed( fp_atan2(tree.GetParam(0).GetImmed(),
                                              tree.GetParam(1).GetImmed()) );
-                      return; }
+                      goto do_return; }
                 if((p1.has_min && p1.min > 0.0)                   // p1 != 0.0
                 || (p1.has_max && (p1.max) < fp_const_negativezero<Value_t>())) // become atan(p0 / p1)
                 {
@@ -816,75 +817,75 @@ namespace FPoptimizer_CodeTree
                 && tree.GetParam(1).IsImmed()
                 && tree.GetParam(1).GetImmed() != 0.0)
                     { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() / tree.GetParam(1).GetImmed() );
-                      return; }
+                      goto do_return; }
                 break;
             case cInv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(0).GetImmed() != 0.0)
                     { tree.ReplaceWithImmed( Value_t(1) / tree.GetParam(0).GetImmed() );
-                      return; }
+                      goto do_return; }
                 // Note: Could use (mulgroup)^immed optimization from cPow
                 break;
             case cSub: // converted into cMul y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed())
                     { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() - tree.GetParam(1).GetImmed() );
-                      return; }
+                      goto do_return; }
                 break;
             case cNeg: // converted into cMul x -1
                 if(tree.GetParam(0).IsImmed())
                     { tree.ReplaceWithImmed( -tree.GetParam(0).GetImmed() );
-                      return; }
+                      goto do_return; }
                 break;
             case cRad: // converted into cMul x CONSTANT_RD
                 if(tree.GetParam(0).IsImmed())
                     { tree.ReplaceWithImmed( RadiansToDegrees( tree.GetParam(0).GetImmed() ) );
-                      return; }
+                      goto do_return; }
                 break;
             case cDeg: // converted into cMul x CONSTANT_DR
                 if(tree.GetParam(0).IsImmed())
                     { tree.ReplaceWithImmed( DegreesToRadians( tree.GetParam(0).GetImmed() ) );
-                      return; }
+                      goto do_return; }
                 break;
             case cSqr: // converted into cMul x x
                 if(tree.GetParam(0).IsImmed())
                     { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() * tree.GetParam(0).GetImmed() );
-                      return; }
+                      goto do_return; }
                 break;
             case cExp2: // converted into cPow 2.0 x
                 HANDLE_UNARY_CONST_FUNC(fp_exp2); break;
             case cRSqrt: // converted into cPow x -0.5
                 if(tree.GetParam(0).IsImmed())
                     { tree.ReplaceWithImmed( Value_t(1) / fp_sqrt(tree.GetParam(0).GetImmed()) );
-                      return; }
+                      goto do_return; }
                 break;
             case cCot: // converted into cMul (cPow (cTan x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_tan(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
                       { tree.ReplaceWithImmed( Value_t(1) / tmp );
-                        return; } }
+                        goto do_return; } }
                 break;
             case cSec: // converted into cMul (cPow (cCos x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_cos(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
                       { tree.ReplaceWithImmed( Value_t(1) / tmp );
-                        return; } }
+                        goto do_return; } }
                 break;
             case cCsc: // converted into cMul (cPow (cSin x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_sin(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
                       { tree.ReplaceWithImmed( Value_t(1) / tmp );
-                        return; } }
+                        goto do_return; } }
                 break;
             case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))
                 if(tree.GetParam(0).IsImmed() && tree.GetParam(1).IsImmed())
                 {
                     tree.ReplaceWithImmed( fp_hypot(tree.GetParam(0).GetImmed(),
                                            tree.GetParam(1).GetImmed()) );
-                    return;
+                    goto do_return;
                 }
                 break;
 
@@ -905,6 +906,13 @@ namespace FPoptimizer_CodeTree
             case cEval:
                 break;
         }
+    do_return:;
+#ifdef DEBUG_SUBSTITUTIONS
+        std::cout << "[" << (&stackptr) << "]Done ConstantFolding, result: ";
+        DumpTree(tree);
+        std::cout << "\n";
+        DumpHashes(tree);
+#endif
     }
 }
 

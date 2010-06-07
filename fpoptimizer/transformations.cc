@@ -621,7 +621,7 @@ namespace FPoptimizer_CodeTree
                             DelParam(a);
                         }
                     }
-                    else if(GetParam(a).GetOpcode() == cDiv)
+                    else if(GetParam(a).GetOpcode() == cDiv && !IsIntType<Value_t>::result)
                     {
                         bool is_signed = false;
 
@@ -648,7 +648,7 @@ namespace FPoptimizer_CodeTree
                             DelParam(a);
                         }
                     }
-                    else if(GetParam(a).GetOpcode() == cRDiv)
+                    else if(GetParam(a).GetOpcode() == cRDiv && !IsIntType<Value_t>::result)
                     {
                         bool is_signed = false;
 

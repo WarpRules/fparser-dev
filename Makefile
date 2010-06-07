@@ -223,6 +223,7 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 		echo; \
 	done | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
 	     | util/cpp_compress "lnxyceti" >> $@
+	#     >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 util/tree_grammar_parser: \

@@ -252,6 +252,8 @@ namespace FPoptimizer_ByteCode
             }
         }
 
+        void AddFunctionOpcode_Float(unsigned opcode);
+        void AddFunctionOpcode_Integer(unsigned opcode);
         void AddFunctionOpcode(unsigned opcode);
 
     private:

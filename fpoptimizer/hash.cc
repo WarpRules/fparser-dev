@@ -57,6 +57,105 @@ namespace FPoptimizer_CodeTree
 
         data->Recalculate_Hash_NoRecursion();
     }
+    
+    template<typename Value_t>
+    struct ImmedHashGenerator
+    {
+        static void MakeHash(
+            FUNCTIONPARSERTYPES::fphash_t& NewHash,
+            const Value_t& Value)
+        {
+            /* TODO: For non-POD types, convert the value
+             * into a base-62 string (or something) and hash that.
+             */
+            NewHash.hash1 = 0; // Try to ensure immeds gets always sorted first
+          #if 0
+            long double value = Value;
+            fphash_value_t key = crc32::calc((const unsigned char*)&value, sizeof(value));
+            key ^= (key << 24);
+          #elif 0
+            union
+            {
+                struct
+                {
+                    unsigned char filler1[16];
+                    Value_t       v;
+                    unsigned char filler2[16];
+                } buf2;
+                struct
+                {
+                    unsigned char filler3[sizeof(Value_t)+16-sizeof(fphash_value_t)];
+                    fphash_value_t key;
+                } buf1;
+            } data;
+            memset(&data, 0, sizeof(data));
+            data.buf2.v = Value;
+            fphash_value_t key = data.buf1.key;
+          #else
+            int exponent;
+            Value_t fraction = std::frexp(Value, &exponent);
+            fphash_value_t key = (unsigned(exponent+0x8000) & 0xFFFF);
+            if(fraction < 0)
+                { fraction = -fraction; key = key^0xFFFF; }
+            else
+                key += 0x10000;
+            fraction -= Value_t(0.5);
+            key <<= 39; // covers bits 39..55 now
+            key |= fphash_value_t((fraction+fraction) * Value_t(1u<<31)) << 8;
+            // fraction covers bits 8..39 now
+          #endif
+            /* Key = 56-bit unsigned integer value
+             *       that is directly proportional
+             *       to the floating point value.
+             */
+            NewHash.hash1 |= key;
+            //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
+            fphash_value_t crc = (key >> 10) | (key << (64-10));
+            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+        }
+    };
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    template<>
+    struct ImmedHashGenerator<long>
+    {
+        static void MakeHash(
+            FUNCTIONPARSERTYPES::fphash_t& NewHash,
+            long Value)
+        {
+            fphash_value_t key = Value;
+            /* Key = 56-bit unsigned integer value
+             *       that is directly proportional
+             *       to the floating point value.
+             */
+            NewHash.hash1 |= key;
+            //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
+            fphash_value_t crc = (key >> 10) | (key << (64-10));
+            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+        }
+    };
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    struct ImmedHashGenerator<GmpInt>
+    {
+        static void MakeHash(
+            FUNCTIONPARSERTYPES::fphash_t& NewHash,
+            const GmpInt& Value)
+        {
+            fphash_value_t key = Value.toInt();
+            /* Key = 56-bit unsigned integer value
+             *       that is directly proportional
+             *       to the floating point value.
+             */
+            NewHash.hash1 |= key;
+            //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
+            fphash_value_t crc = (key >> 10) | (key << (64-10));
+            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+        }
+    };
+#endif
 
     template<typename Value_t>
     void CodeTreeData<Value_t>::Recalculate_Hash_NoRecursion()
@@ -73,53 +172,7 @@ namespace FPoptimizer_CodeTree
         {
             case cImmed:              // Value
             {
-                /* TODO: For non-POD types, convert the value
-                 * into a base-62 string (or something) and hash that.
-                 */
-                NewHash.hash1 = 0; // Try to ensure immeds gets always sorted first
-              #if 0
-                long double value = Value;
-                fphash_value_t key = crc32::calc((const unsigned char*)&value, sizeof(value));
-                key ^= (key << 24);
-              #elif 0
-                union
-                {
-                    struct
-                    {
-                        unsigned char filler1[16];
-                        Value_t       v;
-                        unsigned char filler2[16];
-                    } buf2;
-                    struct
-                    {
-                        unsigned char filler3[sizeof(Value_t)+16-sizeof(fphash_value_t)];
-                        fphash_value_t key;
-                    } buf1;
-                } data;
-                memset(&data, 0, sizeof(data));
-                data.buf2.v = Value;
-                fphash_value_t key = data.buf1.key;
-              #else
-                int exponent;
-                Value_t fraction = std::frexp(Value, &exponent);
-                fphash_value_t key = (unsigned(exponent+0x8000) & 0xFFFF);
-                if(fraction < 0)
-                    { fraction = -fraction; key = key^0xFFFF; }
-                else
-                    key += 0x10000;
-                fraction -= Value_t(0.5);
-                key <<= 39; // covers bits 39..55 now
-                key |= fphash_value_t((fraction+fraction) * Value_t(1u<<31)) << 8;
-                // fraction covers bits 8..39 now
-              #endif
-                /* Key = 56-bit unsigned integer value
-                 *       that is directly proportional
-                 *       to the floating point value.
-                 */
-                NewHash.hash1 |= key;
-                //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
-                fphash_value_t crc = (key >> 10) | (key << (64-10));
-                NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+                ImmedHashGenerator<Value_t>::MakeHash(NewHash, Value);
                 break; // no params
             }
             case VarBegin:            // Var_or_Funcno

@@ -736,7 +736,7 @@ namespace FPoptimizer_CodeTree
                         }
                         if(p0.has_min && p0.min >= Value_t(0) && p0.has_max && p1.has_max)
                         {
-                            Value_t max = pow(p0.max, p1.max);
+                            Value_t max = fp_pow(p0.max, p1.max);
                             if(min > max) std::swap(min, max);
                             return range<Value_t>(min, max);
                         }

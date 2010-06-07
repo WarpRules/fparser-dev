@@ -52,6 +52,12 @@ namespace FPoptimizer_Grammar
         Modulo_None    = 0,
         Modulo_Radians = 1
     };
+    enum Situation_Flags
+    {
+        LogicalContextOnly = 0x01,
+        NotForIntegers     = 0x02,
+        OnlyForIntegers    = 0x04
+    };
 
     /* The param_opcode field of the ParamSpec has the following
      * possible values (from enum SpecialOpcode):
@@ -194,10 +200,10 @@ namespace FPoptimizer_Grammar
          *       Other leaves remain intact.
          */
         RuleType  ruletype         : 2;
-        bool      logical_context  : 1;
+        unsigned  situation_flags  : 3;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
-        unsigned  repl_param_count : 2+13; /* Assumed to be 1 when type == ProduceNewTree */
+        unsigned  repl_param_count : 2+11; /* Assumed to be 1 when type == ProduceNewTree */
         unsigned  repl_param_list  : 30;
 
         /* The function that we must match. Always a SubFunction. */

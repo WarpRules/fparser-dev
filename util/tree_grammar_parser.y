@@ -281,14 +281,14 @@ namespace GrammarData
 
         FunctionType  Input;
         MatchedParams Replacement; // length should be 1 if ProduceNewTree is used
-        bool LogicalContext;
+        unsigned SituationFlags;
     public:
         Rule(RuleType t, const FunctionType& f, const MatchedParams& r)
-            : Type(t), Input(f), Replacement(r), LogicalContext(false)
+            : Type(t), Input(f), Replacement(r), SituationFlags(0)
         { }
 
         Rule(RuleType t, const FunctionType& f, ParamSpec* p)
-            : Type(t), Input(f), Replacement(), LogicalContext(false)
+            : Type(t), Input(f), Replacement(), SituationFlags(0)
         { Replacement.AddParam(p); }
 
         void BuildFinalDepMask()
@@ -296,9 +296,9 @@ namespace GrammarData
             Input.Params.BuildFinalDepMask();
             //Replacement.BuildFinalDepMask(); -- not needed, though not wrong either.
         }
-        void SetLogicalContextOnly()
+        void SetSituationFlags(unsigned flags)
         {
-            LogicalContext = true;
+            SituationFlags = flags;
         }
     };
 
@@ -423,8 +423,8 @@ struct RuleComparer
             return a.match_tree.subfunc_opcode < b.match_tree.subfunc_opcode;
 
         // Other rules to break ties
-        if(a.logical_context != b.logical_context)
-            return a.logical_context < b.logical_context;
+        if(a.situation_flags != b.situation_flags)
+            return a.situation_flags < b.situation_flags;
 
         if(a.ruletype != b.ruletype)
             return a.ruletype < b.ruletype;
@@ -565,7 +565,7 @@ public:
         memset(&ritem, 0, sizeof(ritem));
         //ritem.n_minimum_params          = min_params;
         ritem.ruletype                  = r.Type;
-        ritem.logical_context           = r.LogicalContext;
+        ritem.situation_flags           = r.SituationFlags;
         ritem.match_tree.subfunc_opcode = r.Input.Opcode;
         ritem.match_tree.match_type     = r.Input.Params.Type;
         ritem.match_tree.restholder_index = r.Input.Params.RestHolderIndex;
@@ -1047,7 +1047,12 @@ public:
             std::cout <<
             "        /* " << a << ":\t";
             ParamSpec_SubFunction tmp = {rlist[a].match_tree,0,0};
-            if(rlist[a].logical_context) std::cout << "@L ";
+            if(rlist[a].situation_flags & LogicalContextOnly)
+                std::cout << "@L ";
+            if(rlist[a].situation_flags & NotForIntegers)
+                std::cout << "@F ";
+            if(rlist[a].situation_flags & OnlyForIntegers)
+                std::cout << "@I ";
             FPoptimizer_Grammar::DumpParam<double>
                 ( ParamSpec(SubFunction, (const void*) &tmp) );
             switch(rlist[a].ruletype)
@@ -1074,7 +1079,7 @@ public:
                         << (rlist[a].ruletype == ProduceNewTree  ? "ProduceNewTree"
                          :/*rlist[a].ruletype == ReplaceParams ?*/ "ReplaceParams "
                            )
-                        << ", " << (rlist[a].logical_context ? "true " : "false")
+                        << ", " << rlist[a].situation_flags
                         << ", " << rlist[a].repl_param_count
                         <<  "," << collection.ParamListToString(rlist[a].repl_param_list, rlist[a].repl_param_count)
                         << ", " << collection.SubFunctionDataToString(rlist[a].match_tree)
@@ -1157,7 +1162,7 @@ static GrammarDumper dumper;
 %type <f> function function_match
 %type <p> paramlist
 %type <a> param
-%type <index> param_constraints const_constraints
+%type <index> param_constraints const_constraints rule_constraints
 
 %%
     grammar:
@@ -1166,20 +1171,35 @@ static GrammarDumper dumper;
         grammar.AddRule(*$2);
         delete $2;
       }
-    | grammar param_constraints substitution
+    | grammar rule_constraints substitution
       {
-        if($2 != Value_Logical)
-        {
-            char msg[] = "Only @L rule constraint is allowed for now";
-            yyerror(msg); YYERROR;
-        }
-        if($2 & Value_Logical)
-            $3->SetLogicalContextOnly();
+        $3->SetSituationFlags($2);
         grammar.AddRule(*$3);
         delete $3;
       }
     | grammar NEWLINE
     | /* empty */
+    ;
+
+    rule_constraints:
+      rule_constraints PARAM_CONSTRAINT
+      {
+        if($2 == Value_Logical)
+          $$ = $1 | LogicalContextOnly;
+        else if($2 == Value_NonInteger)
+          $$ = $1 | NotForIntegers;
+        else if($2 == Value_IsInteger)
+          $$ = $1 | OnlyForIntegers;
+        else
+        {
+          char msg[] = "Only @L, @F and @I rule constraints are allowed for now";
+          yyerror(msg); YYERROR;
+        }
+      }
+    |  /* empty */
+      {
+        $$ = 0;
+      }
     ;
 
     substitution:

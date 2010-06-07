@@ -460,7 +460,8 @@ namespace FPoptimizer_CodeTree
 
             unsigned opcode = ByteCode[IP];
             if((opcode == cSqr || opcode == cDup
-             || opcode == cInv || opcode == cNeg
+             || (opcode == cInv && !IsIntType<Value_t>::result)
+             || opcode == cNeg
              || opcode == cSqrt || opcode == cRSqrt
              || opcode == cFetch))
             {
@@ -576,11 +577,11 @@ namespace FPoptimizer_CodeTree
                         break;
                     // Unary functions requiring special attention
                     case cSqrt: // already handled by powi_opt
-                        sim.AddConst(0.5);
+                        sim.AddConst( Value_t(0.5) );
                         sim.Eat(2, cPow);
                         break;
                     case cRSqrt: // already handled by powi_opt
-                        sim.AddConst(-0.5);
+                        sim.AddConst( Value_t(-0.5) );
                         sim.Eat(2, cPow);
                         break;
                     case cCbrt:
@@ -629,7 +630,7 @@ namespace FPoptimizer_CodeTree
                     #ifndef __x86_64
                         if(keep_powi) { sim.Eat(1, cInt); break; }
                     #endif
-                        sim.AddConst(0.5);
+                        sim.AddConst( Value_t(0.5) );
                         sim.Eat(2, cAdd);
                         sim.Eat(1, cFloor);
                         break;
@@ -656,7 +657,7 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(2);
                         sim.Eat(2, cPow); // y^2 x^2
                         sim.Eat(2, cAdd); // y^2 + x^2
-                        sim.AddConst(0.5);
+                        sim.AddConst( Value_t(0.5) );
                         sim.Eat(2, cPow); // (y^2 + x^2)^0.5
                         break;
                     case cSinCos:
@@ -684,7 +685,11 @@ namespace FPoptimizer_CodeTree
                         sim.SwapLastTwoInStack();
                         // Passthru to cDiv
                     case cDiv:
-                        if(keep_powi) { sim.Eat(2, cDiv); break; }
+                        if(keep_powi || IsIntType<Value_t>::result)
+                        {
+                            sim.Eat(2, cDiv);
+                            break;
+                        }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow); // 1/x is x^-1
                         sim.Eat(2, cMul); // Divide is inverse multiply

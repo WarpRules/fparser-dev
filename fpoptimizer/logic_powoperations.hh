@@ -47,8 +47,9 @@ namespace
             return false;
         }
         if(tree.GetParam(1).IsImmed()
-        && (float)tree.GetParam(1).GetImmed() == 1.0)
+        && fp_equal(tree.GetParam(1).GetImmed(), Value_t(1)))
         {
+            // Used to be: float(getimmed()) == 1.0
             // Conversion through a float type value gets rid of
             // awkward abs(x)^1 generated from exp(log(x^6)/6),
             // without sacrificing as much precision as fp_equal() does.
@@ -57,7 +58,7 @@ namespace
             return true; // rerun optimization (opcode changed)
         }
         if(tree.GetParam(0).IsImmed()
-        && (float)tree.GetParam(0).GetImmed() == 1.0)
+        && fp_equal(tree.GetParam(0).GetImmed(), Value_t(1)))
         {
             // 1^x = 1
             tree.ReplaceWithImmed(1);

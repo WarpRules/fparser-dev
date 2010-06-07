@@ -21,12 +21,15 @@ namespace
         data.d = d;
         o << "(" << std::hex << data.h << std::dec << ")";
     }
+  #ifdef FP_SUPPORT_FLOAT_TYPE
     void OutFloatHex(std::ostream& o, float f)
     {
         union { float f; uint_least32_t h; } data;
         data.f = f;
         o << "(" << std::hex << data.h << std::dec << ")";
     }
+  #endif
+  #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     void OutFloatHex(std::ostream& o, long double ld)
     {
         union { long double ld;
@@ -34,6 +37,14 @@ namespace
         data.ld = ld;
         o << "(" << std::hex << data.s.b << data.s.a << std::dec << ")";
     }
+  #endif
+  #ifdef FP_SUPPORT_LONG_INT_TYPE
+    void OutFloatHex(std::ostream& o, long ld)
+    {
+        o << "(" << std::hex << ld << std::dec << ")";
+    }
+  #endif
+
 #endif
 }
 

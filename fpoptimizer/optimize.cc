@@ -133,12 +133,23 @@ namespace
 
         MatchResultType found(false, MatchPositionSpecBaseP());
 
-        if(rule.logical_context && !from_logical_context)
+        if((rule.situation_flags & LogicalContextOnly)
+        && !from_logical_context)
         {
             /* If the rule only applies in logical contexts,
              * but we do not have a logical context, fail the rule
              */
             goto fail;
+        }
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        {
+            if(rule.situation_flags & NotForIntegers)
+                goto fail;
+        }
+        else
+        {
+            if(rule.situation_flags & OnlyForIntegers)
+                goto fail;
         }
 
         /*std::cout << "TESTING: ";
