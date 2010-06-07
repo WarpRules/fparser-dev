@@ -24,6 +24,23 @@ namespace
                   FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth,
                   size_t max_bytecode_grow_length);
 
+    /*
+    Trigonomic operations are expensive.
+    If we need to synthesize a tan(x), we could
+    first check if we can synthesize it by utilizing
+    some expressions that are already in the stack.
+    Such as: 1 / cot(x)
+             sin(x) / cos(x)
+             sin(x) * sec(x)
+             (1/csc(x)) / cos(x)
+             sec(x) / csc(x)
+    This table lists the instructions for building
+    each of these functions from components that
+    might already exist in the stack.
+
+    It is up to CSE to make it possible for this
+    opportunity to arise as often as possible.
+    */
     static const struct SinCosTanDataType
     {
         OPCODE whichopcode;
