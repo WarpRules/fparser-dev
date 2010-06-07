@@ -932,6 +932,18 @@ namespace FPoptimizer_CodeTree
                 }
                 break;
             }
+            case cDiv:
+            {
+                // Change 1/x into inv(x)
+                // Needed in integer mode, no other code does it.
+                if(GetParam(0).IsImmed()
+                && fp_equal(GetParam(0).GetImmed(), Value_t(1)))
+                {
+                    SetOpcode(cInv);
+                    DelParam(0);
+                }
+                break;
+            }
 
             default: break;
         }

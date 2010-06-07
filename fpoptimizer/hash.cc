@@ -57,7 +57,7 @@ namespace FPoptimizer_CodeTree
 
         data->Recalculate_Hash_NoRecursion();
     }
-    
+
     template<typename Value_t>
     struct ImmedHashGenerator
     {

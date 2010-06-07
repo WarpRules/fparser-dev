@@ -199,6 +199,17 @@ cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
 cEqual    [0 (cAbs[x])] : x 0              # TEST 20/abseq0
 cNEqual   [0 (cAbs[x])] : x 0              # TEST 20/absneq0
 
+@I cEqual    [0 x]      -> cNot [x]        # TEST 20/eq0
+@I cNEqual   [0 x]      -> cNotNot [x]     # TEST 20/neq0
+@I cEqual    [1 x@L]    -> x               # TEST 20/eq1
+@I cNEqual   [1 x@L]  	-> cNot [x]        # TEST 20/neq1
+@I cNot    [(cAdd % <1>)] -> cEqual  -% (cAdd <1>)  # TEST 20/xaddnot
+@I cNotNot [(cAdd % <1>)] -> cNEqual -% (cAdd <1>)  # TEST 20/xaddnotnot
+@I cLess        [0 (cAbs[x])] -> cNotNot [x]     # TEST 20/gt0_abs
+@I cLessOrEq    [1 (cAbs[x])] -> cNotNot [x]     # TEST 20/ge1_abs
+@I cGreater     [1 (cAbs[x])] -> cNot [x]        # TEST 20/gt1_abs
+@I cGreaterOrEq [0 (cAbs[x])] -> cNot [x]        # TEST 20/ge0_abs
+
 cIf [x 1 0] -> cNotNot [x]         # TEST 20/if10 (factor 1)
 cIf [x 0 1] -> cNot [x]            # TEST 20/if10 (factor 10)
 cAbsIf [x 1 0] -> cAbsNotNot [x]   # TEST 20/if10 (factor 100)

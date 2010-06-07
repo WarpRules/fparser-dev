@@ -175,9 +175,6 @@ namespace
         const OPCODE op2 = branch2.GetOpcode();
         if(op1 == op2)
         {
-            // TEST 20/if_extract_add
-            // TEST 20/if_extract_mul
-            // TEST 20/if_extract_min
             // TEST 20/if_extract_sin
             // TEST 20/if_extract_abs
             // If both branches apply the same unary function to different values,
@@ -195,13 +192,54 @@ namespace
                 tree.AddParamMove(changed_if);
                 return true; // rerun optimization (opcode changed)
             }
+            // TEST 20/if_extract_div
+            // If both branches apply the same binary function to a set of parameters
+            // where only one parameter differs, extract the function.
+            // E.g. if(x, y/2, z/2) --> if(x, y,z)/2 (integer mode)
+            if(branch1.GetParamCount() == 2
+            && branch2.GetParamCount() == 2)
+            {
+                if(branch1.GetParam(0).IsIdenticalTo(branch2.GetParam(0)))
+                {
+                    CodeTree<Value_t> param0 = branch1.GetParam(0);
+                    CodeTree<Value_t> changed_if;
+                    changed_if.SetOpcode(tree.GetOpcode());
+                    changed_if.AddParamMove(tree.GetParam(0));
+                    changed_if.AddParam(branch1.GetParam(1));
+                    changed_if.AddParam(branch2.GetParam(1));
+                    changed_if.Rehash();
+                    tree.SetOpcode(op1);
+                    tree.DelParams();
+                    tree.AddParamMove(param0);
+                    tree.AddParamMove(changed_if);
+                    return true; // rerun optimization (opcode changed)
+                }
+                if(branch1.GetParam(1).IsIdenticalTo(branch2.GetParam(1)))
+                {
+                    CodeTree<Value_t> param1 = branch1.GetParam(1);
+                    CodeTree<Value_t> changed_if;
+                    changed_if.SetOpcode(tree.GetOpcode());
+                    changed_if.AddParamMove(tree.GetParam(0));
+                    changed_if.AddParam(branch1.GetParam(0));
+                    changed_if.AddParam(branch2.GetParam(0));
+                    changed_if.Rehash();
+                    tree.SetOpcode(op1);
+                    tree.DelParams();
+                    tree.AddParamMove(changed_if);
+                    tree.AddParamMove(param1);
+                    return true; // rerun optimization (opcode changed)
+                }
+            }
+            // TEST 20/if_extract_add
+            // TEST 20/if_extract_mul
+            // TEST 20/if_extract_min
             if(op1 == cAdd    || op1 == cMul
             || op1 == cAnd    || op1 == cOr
             || op1 == cAbsAnd || op1 == cAbsOr
             || op1 == cMin    || op1 == cMax)
             {
-                // If the two groups contain one or more
-                // identical values, extract them.
+                // If the two commutative groups contain one
+                // or more identical values, extract them.
                 std::vector<CodeTree<Value_t> > overlap;
                 for(size_t a=branch1.GetParamCount(); a-- > 0; )
                 {
