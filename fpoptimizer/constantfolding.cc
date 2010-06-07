@@ -386,7 +386,7 @@ namespace FPoptimizer_CodeTree
                             tree.DelParam(a);
                         }
                     if(!fp_equal(immed_product, Value_t(1)))
-                        tree.AddParam( CodeTreeImmed(immed_product) );
+                        tree.AddParam( CodeTreeImmed<Value_t> (immed_product) );
                 }
                 switch(tree.GetParamCount())
                 {
@@ -431,7 +431,7 @@ namespace FPoptimizer_CodeTree
                             tree.DelParam(a);
                         }
                     if(!(immed_sum == 0.0))
-                        tree.AddParam( CodeTreeImmed(immed_sum) );
+                        tree.AddParam( CodeTreeImmed<Value_t> (immed_sum) );
                 }
                 switch(tree.GetParamCount())
                 {

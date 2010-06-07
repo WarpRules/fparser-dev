@@ -862,7 +862,7 @@ namespace FPoptimizer_CodeTree
                                 // exp2(4)^x becomes exp2(4*x)
                                 CodeTree<Value_t> exponent;
                                 exponent.SetOpcode(cMul);
-                                exponent.AddParam( CodeTreeImmed( mulvalue ) );
+                                exponent.AddParam( CodeTreeImmed<Value_t>( mulvalue ) );
                                 exponent.AddParam(p1);
                                 exponent.Rehash();
                                 SetParamMove(0, exponent);
@@ -884,7 +884,7 @@ namespace FPoptimizer_CodeTree
                                 // exp(4)^x becomes exp(4*x)
                                 CodeTree<Value_t> exponent;
                                 exponent.SetOpcode(cMul);
-                                exponent.AddParam( CodeTreeImmed( mulvalue ) );
+                                exponent.AddParam( CodeTreeImmed<Value_t>( mulvalue ) );
                                 exponent.AddParam(p1);
                                 exponent.Rehash();
                                 SetParamMove(0, exponent);

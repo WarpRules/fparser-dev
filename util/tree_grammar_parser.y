@@ -759,7 +759,7 @@ public:
         else if_const(FPOPT_NAN_CONST)
         #undef if_const
         #undef Value_t
-        else result << value;
+        else result << "Value_t(" << value << ")";
         return result.str();
     }
 

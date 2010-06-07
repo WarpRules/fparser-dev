@@ -111,7 +111,7 @@ namespace
                 std::cout << "Before pow-mul change: "; DumpTree(tree);
                 std::cout << "\n";
             #endif
-                tree.GetParam(0).Become(CodeTreeImmed(base_immed));
+                tree.GetParam(0).Become(CodeTreeImmed<Value_t> (base_immed));
                 tree.GetParam(1).Become(mulgroup);
             #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "After pow-mul change: "; DumpTree(tree);
@@ -168,7 +168,7 @@ namespace
                 newpow.Rehash(false);
                 tree.SetOpcode(cMul);
                 tree.AddParamMove(newpow);
-                tree.AddParam( CodeTreeImmed(factor_immed) );
+                tree.AddParam( CodeTreeImmed<Value_t>(factor_immed) );
                 return true; // rerun optimization (opcode changed)
             }
         }
@@ -193,7 +193,7 @@ namespace
             }
             else
                 tree.SetParam(0, tree.GetParam(0).GetParam(0));
-            tree.SetParam(1, CodeTreeImmed(c));
+            tree.SetParam(1, CodeTreeImmed<Value_t>(c));
         }
         return false; // No changes that require a rerun
     }

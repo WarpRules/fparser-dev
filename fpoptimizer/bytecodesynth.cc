@@ -18,11 +18,11 @@ namespace FPoptimizer_ByteCode
 
     template<typename Value_t>
     const SequenceOpCode<Value_t>
-          SequenceOpcodes<Value_t>::AddSequence = {0.0, cNeg, cAdd, cAdd, cSub, cRSub };
+          SequenceOpcodes<Value_t>::AddSequence = { Value_t(0), cNeg, cAdd, cAdd, cSub, cRSub };
 
     template<typename Value_t>
     const SequenceOpCode<Value_t>
-          SequenceOpcodes<Value_t>::MulSequence = {1.0, cInv, cMul, cMul, cDiv, cRDiv };
+          SequenceOpcodes<Value_t>::MulSequence = { Value_t(1), cInv, cMul, cMul, cDiv, cRDiv };
 
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode_Float(unsigned opcode)
