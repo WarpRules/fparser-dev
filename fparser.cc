@@ -1380,8 +1380,15 @@ inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
 #endif
 
 template<typename Value_t>
-inline const char*
-FunctionParserBase<Value_t>::CompileLiteral(const char* function)
+unsigned
+FunctionParserBase<Value_t>::ParseIdentifier(const char* function)
+{
+    return readIdentifier<Value_t>(function);
+}
+
+template<typename Value_t>
+std::pair<const char*, Value_t>
+FunctionParserBase<Value_t>::ParseLiteral(const char* function)
 {
     char* endptr;
 #if 0 /* Profile the hex literal parser */
@@ -1389,11 +1396,9 @@ FunctionParserBase<Value_t>::CompileLiteral(const char* function)
     {
         // Parse hexadecimal literal if fp_parseLiteral didn't already
         Value_t val = parseHexLiteral<Value_t>(function+2, &endptr);
-        if(endptr == function+2) return SetErrorType(SYNTAX_ERROR, function);
-        AddImmedOpcode(val);
-        incStackPtr();
-        SkipSpace(endptr);
-        return endptr;
+        if(endptr == function+2)
+            return std::pair<const char*,Value_t> (function, Value_t());
+        return std::pair<const char*, Value_t> (endptr, val);
     }
 #endif
     Value_t val = fp_parseLiteral<Value_t>(function, &endptr);
@@ -1402,45 +1407,56 @@ FunctionParserBase<Value_t>::CompileLiteral(const char* function)
     {
         // Parse hexadecimal literal if fp_parseLiteral didn't already
         val = parseHexLiteral<Value_t>(function+2, &endptr);
-        if(endptr == function+2) return SetErrorType(SYNTAX_ERROR, function);
+        if(endptr == function+2)
+            return std::pair<const char*,Value_t> (function, Value_t());
     }
-    else if(endptr == function) return SetErrorType(SYNTAX_ERROR, function);
+    else if(endptr == function)
+        return std::pair<const char*,Value_t> (function, Value_t());
 
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endptr);
-    return endptr;
+    return std::pair<const char*,Value_t> (endptr, val);
 }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 template<>
-inline const char*
-FunctionParserBase<MpfrFloat>::CompileLiteral(const char* function)
+std::pair<const char*, MpfrFloat>
+FunctionParserBase<MpfrFloat>::ParseLiteral(const char* function)
 {
     char* endPtr;
     const MpfrFloat val = MpfrFloat::parseString(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
+    if(endPtr == function)
+        return std::pair<const char*,MpfrFloat> (function, MpfrFloat());
+    return std::pair<const char*,MpfrFloat> (endPtr, val);
 }
 #endif
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
 template<>
-inline const char*
-FunctionParserBase<GmpInt>::CompileLiteral(const char* function)
+std::pair<const char*, GmpInt>
+FunctionParserBase<GmpInt>::ParseLiteral(const char* function)
 {
     char* endPtr;
     const GmpInt val = GmpInt::parseString(function, &endPtr);
-    if(endPtr == function) return SetErrorType(SYNTAX_ERROR, function);
-    AddImmedOpcode(val);
-    incStackPtr();
-    SkipSpace(endPtr);
-    return endPtr;
+    if(endPtr == function)
+        return std::pair<const char*,GmpInt> (function, GmpInt());
+    return std::pair<const char*,GmpInt> (endPtr, val);
 }
 #endif
+
+
+template<typename Value_t>
+inline const char*
+FunctionParserBase<Value_t>::CompileLiteral(const char* function)
+{
+    std::pair<const char*, Value_t> result = ParseLiteral(function);
+
+    if(result.first == function)
+        return SetErrorType(SYNTAX_ERROR, result.first);
+
+    AddImmedOpcode(result.second);
+    incStackPtr();
+    SkipSpace(result.first);
+    return result.first;
+}
 
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileIf(const char* function)

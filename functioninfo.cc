@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.1.1.2";
+static const char* const kVersionNumber = "1.1.1.3";
 
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
@@ -25,6 +25,7 @@ static const char* const kVersionNumber = "1.1.1.2";
 #include <cmath>
 #include <sstream>
 #include <cassert>
+#include <algorithm>
 
 #define SEPARATOR \
 "----------------------------------------------------------------------------"
@@ -128,6 +129,10 @@ namespace
             AddFunction("psub", SubFun);
             AddFunction("pvalue", ValueFun);
         }
+
+        // Publicize fparser's parsing functions
+        using FunctionParserBase<Value_t>::ParseLiteral;
+        using FunctionParserBase<Value_t>::ParseIdentifier;
     };
 
     struct TimingInfo
@@ -291,6 +296,58 @@ namespace
 #endif
 
     template<typename Value_t>
+    std::vector<Value_t> findImmeds(const std::vector<FunctionInfo<Value_t> >& functions)
+    {
+        std::vector<Value_t> result;
+
+        for(size_t a=0; a<functions.size(); ++a)
+        {
+            const std::string& functionString = functions[a].mFunctionString;
+            const ParserWithConsts<Value_t>& parser = functions[a].mParser;
+            const char* function = functionString.c_str();
+            size_t len = functionString.size();
+
+            for(size_t pos=0; pos<len; )
+            {
+                std::pair<const char*, Value_t>
+                    literal = parser.ParseLiteral(function+pos);
+                if(literal.first != (function+pos))
+                {
+                    result.push_back(literal.second);
+                    result.push_back(-literal.second);
+                    pos = literal.first - function;
+                    continue;
+                }
+                unsigned identifier = parser.ParseIdentifier(function);
+
+                unsigned skip_length = identifier & 0xFFFF;
+                if(skip_length == 0) skip_length = 1;
+                pos += skip_length;
+            }
+        }
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+        return result;
+    }
+
+    template<typename Value_t>
+    double makeDoubleFrom(const Value_t& v)
+    {
+        /* FIXME: Why is this function needed?
+         * Why does findValidVarValues() use "double" datatype?
+         */
+        return v;
+    }
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    double makeDoubleFrom(const GmpInt& v)
+    {
+        return v.toInt();
+    }
+#endif
+
+    template<typename Value_t>
     bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions)
     {
         unsigned varsAmount = 1;
@@ -302,8 +359,12 @@ namespace
         std::vector<double> doubleValues(varsAmount, 0);
         std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
 
+        std::vector<Value_t> immedList = findImmeds(functions);
+
         for(size_t i = 0; i < functions.size(); ++i)
             functions[i].mValidVarValues = varValues;
+
+        std::vector<size_t> immedCounter(varsAmount, 0);
 
         while(true)
         {
@@ -332,32 +393,41 @@ namespace
             size_t varIndex = 0;
             while(true)
             {
-                doubleValues[varIndex] = -doubleValues[varIndex];
-                if(doubleValues[varIndex] < 0.0)
-                    break;
-
-                doubleValues[varIndex] += deltas[varIndex];
-                if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
-                    deltas[varIndex] *= kVarValuesDeltaFactor1;
-                else
-                    deltas[varIndex] *= kVarValuesDeltaFactor2;
-
-                if(doubleValues[varIndex] <= kVarValuesUpperLimit)
-                    break;
-                else
+                if(immedCounter[varIndex] == 0)
                 {
-                    doubleValues[varIndex] = 0.0;
-                    deltas[varIndex] = kVarValuesInitialDelta;
-                    if(++varIndex == doubleValues.size())
+                    doubleValues[varIndex] = -doubleValues[varIndex];
+                    if(doubleValues[varIndex] < 0.0)
+                        break;
+
+                    doubleValues[varIndex] += deltas[varIndex];
+                    if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
+                        deltas[varIndex] *= kVarValuesDeltaFactor1;
+                    else
+                        deltas[varIndex] *= kVarValuesDeltaFactor2;
+
+                    if(doubleValues[varIndex] <= kVarValuesUpperLimit)
+                        break;
+                }
+
+                if(immedCounter[varIndex] < immedList.size())
+                {
+                    doubleValues[varIndex] =
+                        makeDoubleFrom (immedList[immedCounter[varIndex]++] );
+                    break;
+                }
+
+                immedCounter[varIndex] = 0;
+                doubleValues[varIndex] = 0.0;
+                deltas[varIndex] = kVarValuesInitialDelta;
+                if(++varIndex == doubleValues.size())
+                {
+                    if(ParserData<Value_t>::gVarValues.empty())
                     {
-                        if(ParserData<Value_t>::gVarValues.empty())
-                        {
-                            ParserData<Value_t>::gVarValues.push_back
-                                (std::vector<Value_t>(varsAmount, 0));
-                            return false;
-                        }
-                        return true;
+                        ParserData<Value_t>::gVarValues.push_back
+                            (std::vector<Value_t>(varsAmount, 0));
+                        return false;
                     }
+                    return true;
                 }
             }
         }

@@ -164,6 +164,11 @@ private:
     template<bool SetFlag>
     inline void PutOpcodeParamAt(unsigned, unsigned offset);
     const char* Compile(const char*);
+
+protected:
+    // Parsing utility functions
+    static std::pair<const char*, Value_t> ParseLiteral(const char*);
+    static unsigned ParseIdentifier(const char*);
 };
 
 class FunctionParser: public FunctionParserBase<double> {};
