@@ -182,8 +182,6 @@ cOr  (cNot[z]) (cIf[x (cNot[y]) %@L]) : (cNot [(cAnd z (cIf[x y (cNot[%])]))])
 cAnd (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cOr  z (cIf[x (cNot[%]) y]))])
 cOr  (cNot[z]) (cIf[x %@L (cNot[y])]) : (cNot [(cAnd z (cIf[x (cNot[%]) y]))])
 
-cMul x@L y@L : (cAnd x y) # TEST 20/muland2, muland2plus, muland3, mulnor2, mulnor2plus, mulnor3, mulandlt
-
 # From logic, follows that...
 #   (a==b) & (b==c) & (a==c) -- one of these is redundant
 cAnd (cEqual[x y]) (cEqual[y z]) (cEqual[x z])  : (cEqual[x y]) (cEqual[y z])
@@ -869,8 +867,12 @@ cAbsIf [(cNotNot[x]) y z]     -> cIf x y z
 cOr  x@L y@L          : (cNotNot (cAdd x y))
 cOr  x@L (cAdd <1>)@P : (cNotNot (cAdd x <1>))
 cAnd x@L <1>         -> (cNotNot (cMul x (cAnd <1>)))
+# ^Conflicts with "cMul x@L y@L"
 
 [SHORTCUT_LOGICAL_EVALUATION]
+
+cMul x@L y@L : (cAnd x y) # TEST 20/muland2, muland2plus, muland3, mulnor2, mulnor2plus, mulnor3, mulandlt
+# ^Conflicts with "cAnd x@L <1>"
 
 # @L cAdd x@L@M <1> -> cOr x (cAdd <1>)
 # cMul x@L   <1>    -> cAnd x (cMul <1>)
