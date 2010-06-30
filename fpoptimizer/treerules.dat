@@ -598,8 +598,8 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #                           will revert this optimization.
 @F cAtan [(cMul {x (cPow [y@Q %@N])})] -> cAtan2 [x (cPow [y -%])]
 
-@F cAtan2 [(cMul  x <1>) (cMul  x <2>)]   : (cMul <1>) (cMul <2>)
-# ^ Note: This fails when x=0
+@F cAtan2 [(cMul  x@P <1>) (cMul  x@P <2>)]   : (cMul <1>) (cMul <2>)
+# ^ Note: This fails when x <= 0
 #@F cAtan2 [(cMul  % <1>) (cMul  % <2>)]   : (cMul <1>) (cMul <2>)
 
 #        asin(x): atan2(x, (1-x*x)^0.5)
