@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.1.1.3";
+static const char* const kVersionNumber = "1.2.0.4";
 
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
@@ -336,7 +336,7 @@ namespace
         /* FIXME: Why is this function needed?
          * Why does findValidVarValues() use "double" datatype?
          */
-        return v;
+        return double(v);
     }
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
@@ -348,12 +348,71 @@ namespace
 #endif
 
     template<typename Value_t>
-    bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions)
+    std::vector<Value_t> parseUserGivenVarValues(const std::string& str)
+    {
+        std::vector<Value_t> values;
+        std::istringstream is(str);
+        Value_t value;
+        while(is >> value) values.push_back(value);
+        return values;
+    }
+
+    template<typename Value_t>
+    std::vector<Value_t> parseUserGivenVarValuesFromSpecialClass
+    (const std::string& str)
+    {
+        std::vector<Value_t> values;
+        const char* ptr = str.c_str();
+        char* endptr = 0;
+        while(true)
+        {
+            Value_t value = Value_t::parseString(ptr, &endptr);
+            if(endptr == ptr) break;
+            values.push_back(value);
+            ptr += endptr - ptr;
+        }
+        return values;
+    }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    std::vector<MpfrFloat> parseUserGivenVarValues<MpfrFloat>
+    (const std::string& str)
+    {
+        return parseUserGivenVarValuesFromSpecialClass<MpfrFloat>(str);
+    }
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    template<>
+    std::vector<GmpInt> parseUserGivenVarValues<GmpInt>
+    (const std::string& str)
+    {
+        return parseUserGivenVarValuesFromSpecialClass<GmpInt>(str);
+    }
+#endif
+
+    template<typename Value_t>
+    bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions,
+                            const std::string& userGivenVarValuesString)
     {
         unsigned varsAmount = 1;
         for(size_t i = 0; i < gVarString.length(); ++i)
             if(gVarString[i] == ',')
                 ++varsAmount;
+
+        std::vector<Value_t> userGivenVarValues;
+        if(!userGivenVarValuesString.empty())
+        {
+            userGivenVarValues =
+                parseUserGivenVarValues<Value_t>(userGivenVarValuesString);
+            if(userGivenVarValues.size() != varsAmount)
+            {
+                std::cout << "Warning: Wrong amount of values specified with "
+                    "-varValues. Ignoring." << std::endl;
+                userGivenVarValues.clear();
+            }
+        }
 
         std::vector<Value_t> varValues(varsAmount, 0);
         std::vector<double> doubleValues(varsAmount, 0);
@@ -361,8 +420,17 @@ namespace
 
         std::vector<Value_t> immedList = findImmeds(functions);
 
-        for(size_t i = 0; i < functions.size(); ++i)
-            functions[i].mValidVarValues = varValues;
+        if(userGivenVarValues.empty())
+        {
+            for(size_t i = 0; i < functions.size(); ++i)
+                functions[i].mValidVarValues = varValues;
+        }
+        else
+        {
+            for(size_t i = 0; i < functions.size(); ++i)
+                functions[i].mValidVarValues = userGivenVarValues;
+            ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
+        }
 
         std::vector<size_t> immedCounter(varsAmount, 0);
 
@@ -377,7 +445,8 @@ namespace
                 Value_t value = functions[i].mParser.Eval(&varValues[0]);
                 if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
                 {
-                    functions[i].mValidVarValues = varValues;
+                    if(userGivenVarValues.empty())
+                        functions[i].mValidVarValues = varValues;
                     wasOk = true;
                 }
             }
@@ -894,17 +963,18 @@ namespace
             "\n\nUsage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
-            "  -f                : Use FunctionParser_f.\n"
-            "  -ld               : Use FunctionParser_ld.\n"
-            "  -mpfr             : Use FunctionParser_mpfr.\n"
-            "  -mpfr_bits <bits> : MpfrFloat mantissa bits (default 80).\n"
-            "  -li               : Use FunctionParser_li.\n"
-            "  -gi               : Use FunctionParser_gmpint.\n"
-            "  -vars <string>    : Specify a var string.\n"
-            "  -nt               : No timing measurements.\n"
-            "  -ntd              : No timing if functions differ.\n"
-            "  -deg              : Use degrees for trigonometry.\n"
-            "  -noexpr           : Don't print byte code expressions.\n";
+            "  -f                  : Use FunctionParser_f.\n"
+            "  -ld                 : Use FunctionParser_ld.\n"
+            "  -mpfr               : Use FunctionParser_mpfr.\n"
+            "  -mpfr_bits <bits>   : MpfrFloat mantissa bits (default 80).\n"
+            "  -li                 : Use FunctionParser_li.\n"
+            "  -gi                 : Use FunctionParser_gmpint.\n"
+            "  -vars <string>      : Specify a var string.\n"
+            "  -nt                 : No timing measurements.\n"
+            "  -ntd                : No timing if functions differ.\n"
+            "  -deg                : Use degrees for trigonometry.\n"
+            "  -noexpr             : Don't print byte code expressions.\n"
+            "  -varValues <values> : Space-separated variable values to use.\n";
         return 1;
     }
 }
@@ -912,7 +982,8 @@ namespace
 template<typename Value_t>
 int functionInfo(const char* const parserTypeString,
                  const std::vector<std::string>& functionStrings,
-                 bool measureTimings, bool noTimingIfEqualityErrors)
+                 bool measureTimings, bool noTimingIfEqualityErrors,
+                 const std::string& userGivenVarValues)
 {
     std::vector<FunctionInfo<Value_t> > functions(functionStrings.size());
     for(size_t i = 0; i < functions.size(); ++i)
@@ -927,7 +998,8 @@ int functionInfo(const char* const parserTypeString,
             return 1;
     }
 
-    const bool validVarValuesFound = findValidVarValues(functions);
+    const bool validVarValuesFound =
+        findValidVarValues(functions, userGivenVarValues);
 
     std::cout << SEPARATOR << std::endl
               << "Parser type: " << parserTypeString << std::endl;
@@ -991,6 +1063,7 @@ int main(int argc, char* argv[])
     bool measureTimings = true, noTimingIfEqualityErrors = false;
     ParserType parserType = FP_D;
     unsigned long mantissaBits = 80;
+    std::string userGivenVarValues;
 
     for(int i = 1; i < argc; ++i)
     {
@@ -1017,6 +1090,11 @@ int main(int argc, char* argv[])
         }
         else if(std::strcmp(argv[i], "-noexpr") == 0)
             gPrintByteCodeExpressions = false;
+        else if(std::strcmp(argv[i], "-varValues") == 0)
+        {
+            if(++i == argc) return printHelp(argv[0]);
+            userGivenVarValues = argv[i];
+        }
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0
@@ -1036,7 +1114,8 @@ int main(int argc, char* argv[])
 #ifndef FP_DISABLE_DOUBLE_TYPE
           return functionInfo<double>
               ("double", functionStrings,
-               measureTimings, noTimingIfEqualityErrors);
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
 #else
           notCompiledParserType = "double";
           break;
@@ -1046,7 +1125,8 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_FLOAT_TYPE
           return functionInfo<float>
               ("float", functionStrings,
-               measureTimings, noTimingIfEqualityErrors);
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
 #else
           notCompiledParserType = "float";
           break;
@@ -1056,7 +1136,8 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
           return functionInfo<long double>
               ("long double", functionStrings,
-               measureTimings, noTimingIfEqualityErrors);
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
 #else
           notCompiledParserType = "long double";
           break;
@@ -1070,7 +1151,8 @@ int main(int argc, char* argv[])
               typeName << "MpfrFloat(" << mantissaBits << ")";
               return functionInfo<MpfrFloat>
                   (typeName.str().c_str(), functionStrings,
-                   measureTimings, noTimingIfEqualityErrors);
+                   measureTimings, noTimingIfEqualityErrors,
+                   userGivenVarValues);
           }
 #else
           notCompiledParserType = "MpfrFloat";
@@ -1081,7 +1163,8 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_LONG_INT_TYPE
           return functionInfo<long int>
               ("long int", functionStrings,
-               measureTimings, noTimingIfEqualityErrors);
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
 #else
           notCompiledParserType = "long int";
           break;
@@ -1091,7 +1174,8 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_GMP_INT_TYPE
           return functionInfo<GmpInt>
               ("GmpInt", functionStrings,
-               measureTimings, noTimingIfEqualityErrors);
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
 #else
           notCompiledParserType = "GmpInt";
           break;
