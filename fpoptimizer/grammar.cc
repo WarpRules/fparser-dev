@@ -146,7 +146,7 @@ namespace FPoptimizer_Grammar
         }
         switch( ImmedConstraint_Constness(constraints & ConstnessMask) )
         {
-            //case ConstnessMask:
+            case ConstnessMask: break;
             case Constness_Const:
                 if(parampair.first == ParamHolder)
                 {
@@ -155,6 +155,7 @@ namespace FPoptimizer_Grammar
                 }
                 o << "@C";
                 break;
+            case Constness_NotConst: o << "@V"; break;
             case Oneness_Any: break;
         }
     }

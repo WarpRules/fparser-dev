@@ -43,9 +43,10 @@ namespace FPoptimizer_Grammar
     };
     enum ImmedConstraint_Constness
     {
-        ConstnessMask = 0x80,
+        ConstnessMask = 0x180,
         Constness_Any    = 0x00,
-        Constness_Const  = 0x80
+        Constness_Const  = 0x80,
+        Constness_NotConst=0x100
     };
     enum Modulo_Mode
     {
@@ -123,8 +124,8 @@ namespace FPoptimizer_Grammar
     struct ParamSpec_ParamHolder
     {
         unsigned index       : 8; // holder ID
-        unsigned constraints : 8; // constraints
-        unsigned depcode     :16;
+        unsigned constraints : 9; // constraints
+        unsigned depcode     :15;
     } PACKED_GRAMMAR_ATTRIBUTE;
 
     template<typename Value_t>
@@ -171,8 +172,8 @@ namespace FPoptimizer_Grammar
     struct ParamSpec_SubFunction
     {
         ParamSpec_SubFunctionData data;
-        unsigned constraints : 8; // constraints
-        unsigned depcode     : 8;
+        unsigned constraints : 9; // constraints
+        unsigned depcode     : 7;
     } PACKED_GRAMMAR_ATTRIBUTE; // 8 bytes
 
     /* Theoretical minimal sizes in each param_opcode cases:
