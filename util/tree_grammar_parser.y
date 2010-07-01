@@ -250,7 +250,8 @@ namespace GrammarData
             switch(Opcode)
             {
                 case NumConstant: return true;
-                case ParamHolder: return ImmedConstraint & Constness_Const;
+                case ParamHolder: return
+                    (ImmedConstraint & ConstnessMask) == Constness_Const;
                 case SubFunction:
                     if(!IsConst) return false; // subfunctions are not constant
             }
@@ -714,8 +715,9 @@ public:
         }
         switch( ImmedConstraint_Constness( constraints & ConstnessMask ) )
         {
-            /*case ConstnessMask:*/ case Oneness_Any: break;
+            case ConstnessMask: case Oneness_Any: break;
             case Constness_Const: result << sep << "Constness_Const"; sep=s; break;
+            case Constness_NotConst: result << sep << "Constness_NotConst"; sep=s; break;
         }
         if(!*sep) result << "0";
         return result.str();
@@ -1479,6 +1481,7 @@ static int yylex(YYSTYPE* lval)
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
                 case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; }
+                case 'V': { lval->index = Constness_NotConst; return PARAM_CONSTRAINT; }
                 case 'R': { lval->index = Modulo_Radians; return CONST_CONSTRAINT; }
             }
             std::ungetc(c2, stdin);

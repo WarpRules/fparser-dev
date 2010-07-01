@@ -79,6 +79,9 @@ namespace
             case Constness_Const:
                 if(!tree.IsImmed()) return false;
                 break;
+            case Constness_NotConst:
+                if(tree.IsImmed()) return false;
+                break;
         }
         return true;
     }

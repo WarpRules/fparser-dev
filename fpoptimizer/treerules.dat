@@ -49,6 +49,7 @@
 #                                 @1  = value evaluating to +1 or -1 only
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
 #                                 @C  = Const (x@C is similar to % and &)
+#                                 @V  = Explicitly non-const
 # %token CONST_CONSTRAINT     # constraint applicable to a numeric literal:
 #                                 @R  = Radians: Constant is tested after normalizing to -pi/2..pi/2 range
 #                             # they can be applied to IMMEDHOLDER_TOKENs and NAMEDHOLDER_TOKENs
@@ -598,9 +599,8 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #                           will revert this optimization.
 @F cAtan [(cMul {x (cPow [y@Q %@N])})] -> cAtan2 [x (cPow [y -%])]
 
-@F cAtan2 [(cMul  x@P <1>) (cMul  x@P <2>)]   : (cMul <1>) (cMul <2>)
-# ^ Note: This fails when x <= 0
-#@F cAtan2 [(cMul  % <1>) (cMul  % <2>)]   : (cMul <1>) (cMul <2>)
+@F cAtan2 [(cMul  x@P   <1>) (cMul  x@P   <2>)]   : (cMul    <1>) (cMul    <2>)
+@F cAtan2 [(cMul  x@N@V <1>) (cMul  x@N@V <2>)]   : (cMul -1 <1>) (cMul -1 <2>)
 
 #        asin(x): atan2(x, (1-x*x)^0.5)
 #        asin(x): atan(x * (1-x*x)^-0.5) - automatically converted to the above.
