@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison.
 #===========================================================================
 
-RELEASE_VERSION=4.2
+RELEASE_VERSION=4.3
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -277,7 +277,7 @@ set_version_string: util/version_changer
 		fp_opcode_add.inc \
 		fpoptimizer/fpoptimizer_header.txt \
 		util/bytecoderules_header.txt \
-		fparser.html webpage/index.html
+		docs/fparser.html webpage/index.html
 
 pack: set_version_string distro_pack devel_pack
 

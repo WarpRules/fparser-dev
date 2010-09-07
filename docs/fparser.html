@@ -3,11 +3,11 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
- <title>Function Parser for C++ v4.2    : Documentation</title>
+ <title>Function Parser for C++ v4.3    : Documentation</title>
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.2    </h1>
+<h1>Function Parser for C++ v4.3    </h1>
 
 <p>Authors: Juha Nieminen
 (<a href="http://iki.fi/warp/">http://iki.fi/warp/</a>),
@@ -70,6 +70,9 @@ Joel Yliluoma
   <ul>
     <li>Function syntax enhancement: Added possibility of defining new
       variables in the function string itself. (See documentation for details.)
+    <li>Fixed some bugs in the optimizer (among others,
+      <code>"atan2(-x,-y)"</code> was being wrongly optimized into
+      <code>"atan2(x,y)"</code>
   </ul>
 
 <p>What's new in v4.2
