@@ -156,6 +156,37 @@ namespace FUNCTIONPARSERTYPES
     */
 #endif
 
+    template<typename Value_t>
+    inline Value_t fp_log2(Value_t x)
+    {
+        return fp_log(x) * fp_const_log2inv<Value_t>();
+    }
+
+    template<typename Value_t>
+    inline Value_t fp_log10(Value_t x)
+    {
+        return fp_log(x) * fp_const_log10inv<Value_t>();
+    }
+
+    template<typename Value_t>
+    inline Value_t fp_cbrt(Value_t x)
+    {
+        return x > Value_t(0) ?  fp_exp(fp_log( x) / Value_t(3))
+             : x < Value_t(0) ? -fp_exp(fp_log(-x) / Value_t(3))
+             : Value_t(0);
+    }
+
+    template<typename Value_t>
+    inline Value_t fp_trunc(Value_t x)
+    {
+        return x < Value_t(0) ? fp_ceil(x) : fp_floor(x);
+    }
+
+    template<typename Value_t>
+    inline Value_t fp_int(Value_t x)
+    {
+        return fp_floor(x + Value_t(0.5));
+    }
 
 // -------------------------------------------------------------------------
 // double
@@ -167,21 +198,13 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_atan2(double x, double y) { return atan2(x, y); }
 #ifdef FP_SUPPORT_CBRT
     inline double fp_cbrt(double x) { return cbrt(x); }
-#else
-    inline double fp_cbrt(double x) { return x>0 ?  exp(log( x)/3.0)
-                                           : x<0 ? -exp(log(-x)/3.0)
-                                           : 0.0; }
 #endif
     inline double fp_ceil(double x) { return ceil(x); }
     inline double fp_cos(double x) { return cos(x); }
     inline double fp_cosh(double x) { return cosh(x); }
     inline double fp_exp(double x) { return exp(x); }
     inline double fp_floor(double x) { return floor(x); }
-    inline double fp_int(double x) { return floor(x + .5); }
     inline double fp_log(double x) { return log(x); }
-    inline double fp_log10(double x)
-    { return log(x) *
-            0.434294481903251827651128918916605082294397005803666566; }
     inline double fp_mod(double x, double y) { return fmod(x, y); }
     inline double fp_sin(double x) { return sin(x); }
     inline double fp_sinh(double x) { return sinh(x); }
@@ -198,14 +221,9 @@ namespace FUNCTIONPARSERTYPES
     inline double fp_hypot(double x, double y) { return hypot(x,y); }
 #endif
 
-    inline double fp_trunc(double x) { return x<0.0 ? ceil(x) : floor(x); }
-
     inline double fp_pow_base(double x, double y) { return pow(x, y); }
 
-#ifndef FP_SUPPORT_LOG2
-    inline double fp_log2(double x)
-    { return log(x) * 1.4426950408889634073599246810018921374266459541529859; }
-#else
+#ifdef FP_SUPPORT_LOG2
     inline double fp_log2(double x) { return log2(x); }
 #endif // FP_SUPPORT_LOG2
 
@@ -238,21 +256,13 @@ namespace FUNCTIONPARSERTYPES
     inline float fp_atan2(float x, float y) { return atan2f(x, y); }
 #ifdef FP_SUPPORT_CBRT
     inline float fp_cbrt(float x) { return cbrtf(x); }
-#else
-    inline float fp_cbrt(float x) { return x>0 ?  expf(logf( x)/3.0f)
-                                         : x<0 ? -expf(logf(-x)/3.0f)
-                                         : 0.0f; }
 #endif
     inline float fp_ceil(float x) { return ceilf(x); }
     inline float fp_cos(float x) { return cosf(x); }
     inline float fp_cosh(float x) { return coshf(x); }
     inline float fp_exp(float x) { return expf(x); }
     inline float fp_floor(float x) { return floorf(x); }
-    inline float fp_int(float x) { return floorf(x + .5F); }
     inline float fp_log(float x) { return logf(x); }
-    inline float fp_log10(float x)
-    { return logf(x) *
-            0.434294481903251827651128918916605082294397005803666566F; }
     inline float fp_mod(float x, float y) { return fmodf(x, y); }
     inline float fp_sin(float x) { return sinf(x); }
     inline float fp_sinh(float x) { return sinhf(x); }
@@ -269,15 +279,9 @@ namespace FUNCTIONPARSERTYPES
     inline float fp_hypot(float x, float y) { return hypotf(x,y); }
 #endif
 
-    inline float fp_trunc(float x) { return x<0.0F ? ceilf(x) : floorf(x); }
-
     inline float fp_pow_base(float x, float y) { return powf(x, y); }
 
-#ifndef FP_SUPPORT_LOG2
-    inline float fp_log2(float x)
-    { return logf(x) *
-            1.4426950408889634073599246810018921374266459541529859F; }
-#else
+#ifdef FP_SUPPORT_LOG2
     inline float fp_log2(float x) { return log2f(x); }
 #endif // FP_SUPPORT_LOG2
 
@@ -314,22 +318,13 @@ namespace FUNCTIONPARSERTYPES
     { return atan2l(x, y); }
 #ifdef FP_SUPPORT_CBRT
     inline long double fp_cbrt(long double x) { return cbrtl(x); }
-#else
-    inline long double fp_cbrt(long double x)
-        { return x>0 ?  expl(logl( x)/3.0l)
-               : x<0 ? -expl(logl(-x)/3.0l)
-               : 0.0l; }
 #endif
     inline long double fp_ceil(long double x) { return ceill(x); }
     inline long double fp_cos(long double x) { return cosl(x); }
     inline long double fp_cosh(long double x) { return coshl(x); }
     inline long double fp_exp(long double x) { return expl(x); }
     inline long double fp_floor(long double x) { return floorl(x); }
-    inline long double fp_int(long double x) { return floorl(x + .5L); }
     inline long double fp_log(long double x) { return logl(x); }
-    inline long double fp_log10(long double x)
-    { return logl(x) *
-            0.434294481903251827651128918916605082294397005803666566L; }
     inline long double fp_mod(long double x, long double y)
     { return fmodl(x, y); }
     inline long double fp_sin(long double x) { return sinl(x); }
@@ -347,16 +342,10 @@ namespace FUNCTIONPARSERTYPES
     inline long double fp_hypot(long double x, long double y) { return hypotl(x,y); }
 #endif
 
-    inline long double fp_trunc(long double x)
-    { return x<0.0L ? ceill(x) : floorl(x); }
-
     inline long double fp_pow_base(long double x, long double y)
     { return powl(x, y); }
 
-#ifndef FP_SUPPORT_LOG2
-    inline long double fp_log2(long double x)
-    { return fp_log(x) * 1.4426950408889634073599246810018921374266459541529859L; }
-#else
+#ifdef FP_SUPPORT_LOG2
     inline long double fp_log2(long double x) { return log2l(x); }
 #endif // FP_SUPPORT_LOG2
 
@@ -381,15 +370,12 @@ namespace FUNCTIONPARSERTYPES
     inline long fp_asin(long) { return 0; }
     inline long fp_atan(long) { return 0; }
     inline long fp_atan2(long, long) { return 0; }
-    inline long fp_cbrt(long) { return 0; }
     inline long fp_ceil(long x) { return x; }
     inline long fp_cos(long) { return 0; }
     inline long fp_cosh(long) { return 0; }
     inline long fp_exp(long) { return 0; }
     inline long fp_floor(long x) { return x; }
-    inline long fp_int(long x) { return x; }
     inline long fp_log(long) { return 0; }
-    inline long fp_log10(long) { return 0; }
     inline long fp_mod(long x, long y) { return x % y; }
     inline long fp_pow(long, long) { return 0; }
     inline long fp_sin(long) { return 0; }
@@ -400,9 +386,7 @@ namespace FUNCTIONPARSERTYPES
     inline long fp_asinh(long) { return 0; }
     inline long fp_acosh(long) { return 0; }
     inline long fp_atanh(long) { return 0; }
-    inline long fp_trunc(long x) { return x; }
     inline long fp_pow_base(long, long) { return 0; }
-    inline long fp_log2(long) { return 0; }
     inline long fp_exp2(long) { return 0; }
 
     template<>
@@ -444,7 +428,6 @@ namespace FUNCTIONPARSERTYPES
     inline MpfrFloat fp_pow(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
     inline MpfrFloat fp_pow_base(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
 
-    inline MpfrFloat fp_log2(const MpfrFloat& x) { return MpfrFloat::log2(x); }
     inline MpfrFloat fp_exp2(const MpfrFloat& x) { return MpfrFloat::exp2(x); }
 
     template<>
@@ -467,16 +450,13 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_asin(GmpInt) { return 0; }
     inline GmpInt fp_atan(GmpInt) { return 0; }
     inline GmpInt fp_atan2(GmpInt, GmpInt) { return 0; }
-    inline GmpInt fp_cbrt(GmpInt) { return 0; }
     inline GmpInt fp_ceil(GmpInt x) { return x; }
     inline GmpInt fp_cos(GmpInt) { return 0; }
     inline GmpInt fp_cosh(GmpInt) { return 0; }
     inline GmpInt fp_exp(GmpInt) { return 0; }
     inline GmpInt fp_floor(GmpInt x) { return x; }
     inline GmpInt fp_hypot(GmpInt, GmpInt) { return 0; }
-    inline GmpInt fp_int(GmpInt x) { return x; }
     inline GmpInt fp_log(GmpInt) { return 0; }
-    inline GmpInt fp_log10(GmpInt) { return 0; }
     inline GmpInt fp_mod(GmpInt x, GmpInt y) { return x % y; }
     inline GmpInt fp_pow(GmpInt, GmpInt) { return 0; }
     inline GmpInt fp_sin(GmpInt) { return 0; }
@@ -487,9 +467,7 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_asinh(GmpInt) { return 0; }
     inline GmpInt fp_acosh(GmpInt) { return 0; }
     inline GmpInt fp_atanh(GmpInt) { return 0; }
-    inline GmpInt fp_trunc(GmpInt x) { return x; }
     inline GmpInt fp_pow_base(GmpInt, GmpInt) { return 0; }
-    inline GmpInt fp_log2(GmpInt) { return 0; }
     inline GmpInt fp_exp2(GmpInt) { return 0; }
 
     template<>
