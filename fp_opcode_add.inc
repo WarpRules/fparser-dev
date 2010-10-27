@@ -3356,7 +3356,7 @@ h1
 oI
 y>qY
 oW(274,"y[y>Value_t(0)] cPow[x>Value_t(0)]"
-wF,"[fp_pow(x,1/y)] A"
+wF,"[fp_pow(x,Value_t(1)/y)] A"
 ,aE(A)q41);q5
 Lmk;}
 }
@@ -4161,7 +4161,7 @@ mT
 qW
 Lqd;Lmk:g5
 dZ
-x,1/y
+x,o9/y
 gU
 Lqa;Lml:gB
 fp_asinh(x

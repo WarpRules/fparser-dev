@@ -271,7 +271,7 @@ cSqr x [x==Value_t(0)] cNEqual -> [x] cNEqual  # TEST 10/sqrneq0
                                        cNeg x A [IsComparisonOpcode(A)] -> [-x] {OppositeComparisonOpcode(A)}   # TEST 10/cmp_neg
 IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] A                              # TEST 10/cmp_mulpos
 IF(FP_FLOAT_VERSION) y [y<Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] {OppositeComparisonOpcode(A)}  # TEST 10/cmp_mulneg
-IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_pow(x,1/y)] A     # TEST 10/cmp_powy_*
+IF(FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_pow(x,Value_t(1)/y)] A     # TEST 10/cmp_powy_*
 IF(FP_FLOAT_VERSION)                   cSqr [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> cAbs [fp_sqrt(x)] A   # TEST 10/cmp_sqr, 10/cmp_sqr_neg
 IF(FP_FLOAT_VERSION)                  cExp [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_log(x)] A          # TEST 10/cmp_exp, 10/cmp_exp_neg
 IF(FP_FLOAT_VERSION)                 cExp2 [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_log2(x)] A         # TEST 10/cmp_exp2, 10/cmp_exp2_neg
