@@ -347,6 +347,14 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    double makeDoubleFrom(const MpfrFloat& v)
+    {
+        return v.toDouble();
+    }
+#endif
+
     template<typename Value_t>
     std::vector<Value_t> parseUserGivenVarValues(const std::string& str)
     {

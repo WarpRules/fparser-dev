@@ -404,7 +404,10 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
             if(*funcstr == ')') --depth;
 
             char* endptr = 0;
-            if((*funcstr >= '0' && *funcstr <= '9') || *funcstr == '.')
+            if((*funcstr >= '0' && *funcstr <= '9')
+            || *funcstr == '.'
+            || (*funcstr == '-' && funcstr[-1] == '(')
+              )
                 std::strtod(funcstr, &endptr);
             if(endptr && endptr != funcstr)
             {
