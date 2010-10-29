@@ -1,4 +1,4 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x,y
 R=-3,3,2
 F=((-5.1)*x*y)^(-8)

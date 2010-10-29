@@ -1,4 +1,4 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x
 R=-3,3,0.25
 F=if(x>0,  floor(x),ceil(x))+\

@@ -1,4 +1,4 @@
-T=d ld li f mf gi
+T=d ld li f mf gi cd
 V=x,y
 R=-2,2,1
 F=if(x, y*2, y)

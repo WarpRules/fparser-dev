@@ -1,5 +1,5 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x
 R=-6,6,1
 F=(pow(x,3) <= -125)
-C=fp_lessOrEq(fp_pow(x,3), -125)
+C=fp_lessOrEq(x*x*x, -125)

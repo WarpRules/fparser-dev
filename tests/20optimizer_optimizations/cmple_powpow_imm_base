@@ -1,4 +1,4 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x,y
 R=-6,6,1
 F=(pow(2,x) <= pow(-4,y))

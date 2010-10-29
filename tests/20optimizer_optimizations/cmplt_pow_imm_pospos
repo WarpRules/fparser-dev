@@ -1,5 +1,5 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x
 R=-6,6,1
 F=(pow(x,2) < 25)
-C=fp_less(fp_pow(x,2), 25)
+C=fp_less(x*x, 25)

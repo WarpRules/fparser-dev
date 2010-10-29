@@ -295,6 +295,14 @@ namespace
     inline bool valueIsOk<GmpInt>(GmpInt) { return true; }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    template<>
+    inline bool valueIsOk<std::complex<double> > (std::complex<double>)
+    {
+        return true;
+    }
+#endif
+
     template<typename Value_t>
     std::vector<Value_t> findImmeds(const std::vector<FunctionInfo<Value_t> >& functions)
     {
@@ -1131,6 +1139,7 @@ namespace
             "  -mpfr_bits <bits>   : MpfrFloat mantissa bits (default 80).\n"
             "  -li                 : Use FunctionParser_li.\n"
             "  -gi                 : Use FunctionParser_gmpint.\n"
+            "  -cd                 : Use FunctionParser_cd.\n"
             "  -vars <string>      : Specify a var string.\n"
             "  -nt                 : No timing measurements.\n"
             "  -ntd                : No timing if functions differ.\n"
@@ -1220,7 +1229,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 2) return printHelp(argv[0]);
 
-    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI };
+    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI, FP_CD };
 
     std::vector<std::string> functionStrings;
     bool measureTimings = true, noTimingIfEqualityErrors = false;
@@ -1235,6 +1244,7 @@ int main(int argc, char* argv[])
         else if(std::strcmp(argv[i], "-mpfr") == 0) parserType = FP_MPFR;
         else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
         else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
+        else if(std::strcmp(argv[i], "-cd") == 0) parserType = FP_CD;
         else if(std::strcmp(argv[i], "-vars") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
@@ -1341,6 +1351,17 @@ int main(int argc, char* argv[])
                userGivenVarValues);
 #else
           notCompiledParserType = "GmpInt";
+          break;
+#endif
+
+      case FP_CD:
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+          return functionInfo<std::complex<double> >
+              ("std::complex<double>", functionStrings,
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
+#else
+          notCompiledParserType = "std::complex<double>";
           break;
 #endif
     }

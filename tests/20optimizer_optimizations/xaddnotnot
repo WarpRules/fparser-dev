@@ -1,4 +1,4 @@
-T=d f ld li gi
+T=d f ld li gi cd
 V=x
 R=-5,5,1
 F=!!(x+if(1,4,4))

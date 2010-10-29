@@ -1,5 +1,5 @@
-T=d ld f mf
+T=d ld f mf cd
 V=x
 R=-6,6,1
 F=(pow(x,3) >= -125)
-C=fp_greaterOrEq(fp_pow(x,3), -125)
+C=fp_greaterOrEq(x*x*x, -125)

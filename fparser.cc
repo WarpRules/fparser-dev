@@ -488,6 +488,14 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    template<>
+    inline std::complex<double> fp_parseLiteral<std::complex<double> >(const char* str, char** endptr)
+    {
+        return fp_parseComplexLiteral<double> (str,endptr);
+    }
+#endif
+
     // -----------------------------------------------------------------------
     // Hexadecimal floating point literal parsing
     // -----------------------------------------------------------------------
@@ -599,6 +607,15 @@ namespace
     long parseHexLiteral<long>(const char* str, char** endptr)
     {
         return strtol(str, endptr, 16);
+    }
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    template<>
+    std::complex<double>
+    parseHexLiteral<std::complex<double> >(const char* str, char** endptr)
+    {
+        return parseHexLiteral<double> (str, endptr);
     }
 #endif
 }
@@ -1502,6 +1519,19 @@ inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
     typedef GmpInt Value_t;
 #define FP_FLOAT_VERSION 0
 #define FP_COMPLEX_VERSION 0
+#include "fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+template<>
+inline void FunctionParserBase<std::complex<double> >::AddFunctionOpcode(unsigned opcode)
+{
+    typedef std::complex<double> Value_t;
+#define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 1
 #include "fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION

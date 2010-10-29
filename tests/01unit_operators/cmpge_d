@@ -1,4 +1,4 @@
-T=d f ld mf
+T=d f ld mf cd
 V=x,y
 R=-1.75, 1.75, 0.25
 F=x>=y

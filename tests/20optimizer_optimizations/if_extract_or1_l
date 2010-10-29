@@ -1,4 +1,4 @@
-T=d ld li f mf gi
+T=d ld li f mf gi cd
 V=x,y,z
 R=-1,1,1
 F=if(x, y|z, y<1)

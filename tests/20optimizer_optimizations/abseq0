@@ -1,4 +1,4 @@
-T=d li
+T=d li cd
 V=x
 R=0,1,1
 F=(abs(x)=if(1,0,1)) + (if(1,0,1)=abs(x))

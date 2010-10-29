@@ -20,6 +20,7 @@ namespace
         if(type == "long") return "FP_SUPPORT_LONG_INT_TYPE";
         if(type == "MpfrFloat") return "FP_SUPPORT_MPFR_FLOAT_TYPE";
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
+        if(type == "std::complex<double>") return "FP_SUPPORT_COMPLEX_DOUBLE_TYPE";
         return std::string();
     }
     std::string GetTypeForDefine(const std::string& def)
@@ -29,6 +30,7 @@ namespace
         if(def == "FP_SUPPORT_LONG_INT_TYPE") return "long";
         if(def == "FP_SUPPORT_MPFR_FLOAT_TYPE") return "MpfrFloat";
         if(def == "FP_SUPPORT_GMP_INT_TYPE") return "GmpInt";
+        if(def == "FP_SUPPORT_COMPLEX_DOUBLE_TYPE") return "std::complex<double>";
         return "double";
     }
     std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
@@ -61,6 +63,40 @@ namespace
                 return NumConst(type, value.substr(0,  value.size()-1-n_trailing_zeros));
             }
 
+            if(type == "std::complex<double>")
+            {
+                /* N() and P() require two parameters: a real part and an imaginary part.
+                 * Make those two parts.
+                 */
+                const char* first_part        = value.c_str();
+                const char* second_part_begin = first_part;
+
+                if(*first_part == '+' || *first_part == '-')
+                    ++second_part_begin;
+                while(*second_part_begin != '\0'
+                   && !( (*second_part_begin == '-'
+                       || *second_part_begin == '+')
+                      && second_part_begin[-1] != 'e'
+                      && second_part_begin[-1] != 'E')) ++second_part_begin;
+                std::string first_part_str(first_part, second_part_begin - first_part);
+                std::string second_part_str(second_part_begin);
+                if(second_part_str.empty())
+                {
+                    second_part_str = "0";
+                    if(value[value.size()-1] == 'i'
+                    || value[value.size()-1] == 'I')
+                        first_part_str.erase(first_part_str.size()-1);
+                }
+                else
+                {
+                    if(value[value.size()-1] == 'i'
+                    || value[value.size()-1] == 'I')
+                    {
+                        second_part_str.erase(second_part_str.size()-1);
+                    }
+                }
+                return "N(" + first_part_str + "," + second_part_str + ")";
+            }
             char* endptr = 0;
             long longval = strtol(value.c_str(), &endptr, 10);
             if(endptr && !*endptr)
@@ -74,6 +110,8 @@ namespace
     }
     std::string NumConstDefines(const std::string& type)
     {
+        if(type == "std::complex<double>")
+            return "#define N(x,y) (Value_t(x,y))\n";
         if(type == "MpfrFloat")
             return "#define N(x) (Value_t(#x,0))\n"
                    "#define P(x) N(x)\n";
@@ -87,6 +125,7 @@ namespace
     }
     std::string NumConstUndefines(const std::string& type)
     {
+        if(type == "std::complex<double>") return "#undef N\n";
         if(type == "long" || type == "GmpInt") return "#undef P\n";
         return "#undef N\n"
                "#undef P\n";
@@ -105,6 +144,8 @@ namespace
             return ("MpfrFloat");
         else if(typecode == "gi")
             return ("GmpInt");
+        else if(typecode == "cd")
+            return ("std::complex<double>");
         return typecode;
     }
     std::string test_declaration(const std::string& name)
@@ -227,6 +268,14 @@ void ListTests(std::ostream& outStream)
                     std::strtod(rangesdata, &endptr);
                     if(endptr && endptr != rangesdata)
                     {
+                        /* Complex number support: */
+                        if(*endptr == 'i' || *endptr == 'I')
+                            ++endptr;
+                        else if(*endptr == '+' || *endptr == '-')
+                        {
+                            std::strtod(endptr, &endptr);
+                            if(*endptr == 'i' || *endptr == 'I') ++endptr;
+                        }
                         ranges << NumConst(type, std::string(rangesdata,endptr-rangesdata));
                         rangesdata = endptr;
                     }

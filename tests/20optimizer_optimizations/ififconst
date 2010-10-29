@@ -1,4 +1,4 @@
-T=d ld f mf
+T=d ld f mf cd
 V=w,x,y,z
 R=0,1,1
 F=if(if(x,1,y),z,w) + if(if(w,z,0),x,y)

@@ -1,4 +1,4 @@
-T=d f ld mf
+T=d f ld mf cd
 V=x
 R=1.7, 3.7, 0.28
 F=sinh(if(1,acosh(x),0))
