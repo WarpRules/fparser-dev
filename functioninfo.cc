@@ -311,6 +311,14 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    template<>
+    inline bool valueIsOk<std::complex<long double> > (std::complex<long double>)
+    {
+        return true;
+    }
+#endif
+
     template<typename Value_t>
     std::vector<Value_t> findImmeds(const std::vector<FunctionInfo<Value_t> >& functions)
     {
@@ -1149,6 +1157,7 @@ namespace
             "  -gi                 : Use FunctionParser_gmpint.\n"
             "  -cd                 : Use FunctionParser_cd.\n"
             "  -cf                 : Use FunctionParser_cf.\n"
+            "  -cld                : Use FunctionParser_cld.\n"
             "  -vars <string>      : Specify a var string.\n"
             "  -nt                 : No timing measurements.\n"
             "  -ntd                : No timing if functions differ.\n"
@@ -1238,7 +1247,7 @@ int main(int argc, char* argv[])
 {
     if(argc < 2) return printHelp(argv[0]);
 
-    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI, FP_CD, FP_CF };
+    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI, FP_CD, FP_CF, FP_CLD };
 
     std::vector<std::string> functionStrings;
     bool measureTimings = true, noTimingIfEqualityErrors = false;
@@ -1255,6 +1264,7 @@ int main(int argc, char* argv[])
         else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
         else if(std::strcmp(argv[i], "-cd") == 0) parserType = FP_CD;
         else if(std::strcmp(argv[i], "-cf") == 0) parserType = FP_CF;
+        else if(std::strcmp(argv[i], "-cld") == 0) parserType = FP_CLD;
         else if(std::strcmp(argv[i], "-vars") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
@@ -1383,6 +1393,17 @@ int main(int argc, char* argv[])
                userGivenVarValues);
 #else
           notCompiledParserType = "std::complex<float>";
+          break;
+#endif
+
+      case FP_CLD:
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+          return functionInfo<std::complex<long double> >
+              ("std::complex<long double>", functionStrings,
+               measureTimings, noTimingIfEqualityErrors,
+               userGivenVarValues);
+#else
+          notCompiledParserType = "std::complex<long double>";
           break;
 #endif
     }

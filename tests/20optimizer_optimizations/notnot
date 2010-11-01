@@ -1,4 +1,4 @@
-T=d ld li f mf gi cd cf
+T=d ld li f mf gi cd cf cld
 V=x,y
 R=-2,2,1
 F=!!x + if(y, 1,0)

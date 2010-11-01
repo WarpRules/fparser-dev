@@ -110,6 +110,12 @@ namespace
         { return Epsilon<float>(); }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    template<>
+    inline std::complex<long double> Epsilon<std::complex<long double> >()
+        { return Epsilon<long double>(); }
+#endif
+
 
 #ifndef _MSC_VER
     void setAnsiColor(unsigned color)
@@ -2691,6 +2697,7 @@ int main(int argc, char* argv[])
         "    -gi, -gmpint      Test GmpInt datatype\n"
         "    -cd               Test std::complex<double> datatype\n"
         "    -cf               Test std::complex<float> datatype\n"
+        "    -cld              Test std::complex<long double> datatype\n"
         "    -algo <n>         Run only algorithmic test <n>\n"
         "    -noalgo           Skip all algorithmic tests\n"
         "    -skipSlowAlgo     Skip slow algorithmic tests\n"
@@ -2708,7 +2715,7 @@ int main(int argc, char* argv[])
     bool runAlgoTests = true;
     bool run_d = false, run_f = false, run_ld = false;
     bool run_li = false, run_mf = false, run_gi = false;
-    bool run_cd = false, run_cf = false;
+    bool run_cd = false, run_cf = false, run_cld = false;
     unsigned runAlgoTest = 0;
 
     for(int i = 1; i < argc; ++i)
@@ -2797,6 +2804,8 @@ int main(int argc, char* argv[])
             runAllTypes = false, run_cd = true;
         else if(std::strcmp(argv[i], "-cf") == 0)
             runAllTypes = false, run_cf = true;
+        else if(std::strcmp(argv[i], "-cld") == 0)
+            runAllTypes = false, run_cld = true;
 
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
@@ -2882,6 +2891,11 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
         if(runAllTypes || run_cf)
             if(!runRegressionTests<std::complex<float> >("std::complex<float>"))
+                allTestsOk = false;
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+        if(runAllTypes || run_cld)
+            if(!runRegressionTests<std::complex<long double> >("std::complex<long double>"))
                 allTestsOk = false;
 #endif
     }

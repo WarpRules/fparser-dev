@@ -79,6 +79,12 @@ void FunctionParserBase<std::complex<float> >::Optimize()
 {}
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+template<>
+void FunctionParserBase<std::complex<long double> >::Optimize()
+{}
+#endif
+
 FUNCTIONPARSER_INSTANTIATE_TYPES
 
 #endif

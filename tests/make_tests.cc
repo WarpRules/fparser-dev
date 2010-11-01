@@ -22,6 +22,7 @@ namespace
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
         if(type == "std::complex<double>") return "FP_SUPPORT_COMPLEX_DOUBLE_TYPE";
         if(type == "std::complex<float>") return "FP_SUPPORT_COMPLEX_FLOAT_TYPE";
+        if(type == "std::complex<long double>") return "FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE";
         return std::string();
     }
     std::string GetTypeForDefine(const std::string& def)
@@ -33,6 +34,7 @@ namespace
         if(def == "FP_SUPPORT_GMP_INT_TYPE") return "GmpInt";
         if(def == "FP_SUPPORT_COMPLEX_DOUBLE_TYPE") return "std::complex<double>";
         if(def == "FP_SUPPORT_COMPLEX_FLOAT_TYPE") return "std::complex<float>";
+        if(def == "FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE") return "std::complex<long double>";
         return "double";
     }
     std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
@@ -50,7 +52,8 @@ namespace
 
             if(type == "float"
             || type == "std::complex<float>") return fltvalue + "f";
-            if(type == "long double") return fltvalue + "l";
+            if(type == "long double"
+            || type == "std::complex<long double>") return fltvalue + "l";
             if(type == "double")      return fltvalue;
             return value;
         }
@@ -67,7 +70,8 @@ namespace
             }
 
             if(type == "std::complex<double>"
-            || type == "std::complex<float>")
+            || type == "std::complex<float>"
+            || type == "std::complex<long double>")
             {
                 /* N() and P() require two parameters: a real part and an imaginary part.
                  * Make those two parts.
@@ -99,6 +103,12 @@ namespace
                         second_part_str.erase(second_part_str.size()-1);
                     }
                 }
+                if(first_part_str.find('.') == std::string::npos
+                && first_part_str.find('e') == std::string::npos
+                  ) first_part_str += ".0";
+                if(second_part_str.find('.') == std::string::npos
+                && second_part_str.find('e') == std::string::npos
+                  ) second_part_str += ".0";
                 return "N(" + first_part_str + "," + second_part_str + ")";
             }
             char* endptr = 0;
@@ -114,9 +124,12 @@ namespace
     }
     std::string NumConstDefines(const std::string& type)
     {
-        if(type == "std::complex<double>"
-        || type == "std::complex<float>")
+        if(type == "std::complex<double>")
             return "#define N(x,y) (Value_t(x,y))\n";
+        if(type == "std::complex<float>")
+            return "#define N(x,y) (Value_t(APP(x,f),APP(y,f)))\n";
+        if(type == "std::complex<long double>")
+            return "#define N(x,y) (Value_t(APP(x,l),APP(y,l)))\n";
         if(type == "MpfrFloat")
             return "#define N(x) (Value_t(#x,0))\n"
                    "#define P(x) N(x)\n";
@@ -131,7 +144,8 @@ namespace
     std::string NumConstUndefines(const std::string& type)
     {
         if(type == "std::complex<double>"
-        || type == "std::complex<float>") return "#undef N\n";
+        || type == "std::complex<float>"
+        || type == "std::complex<long double>") return "#undef N\n";
         if(type == "long" || type == "GmpInt") return "#undef P\n";
         return "#undef N\n"
                "#undef P\n";
@@ -154,6 +168,8 @@ namespace
             return ("std::complex<double>");
         else if(typecode == "cf")
             return ("std::complex<float>");
+        else if(typecode == "cld")
+            return ("std::complex<long double>");
         return typecode;
     }
     std::string test_declaration(const std::string& name)

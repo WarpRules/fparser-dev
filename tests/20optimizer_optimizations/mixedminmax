@@ -1,4 +1,4 @@
-T=d ld li f mf gi cd cf
+T=d ld li f mf gi cd cf cld
 V=x,y,z
 R=0,4,1
 F=max(z,min(x,max(max(z,y),x))) + \
