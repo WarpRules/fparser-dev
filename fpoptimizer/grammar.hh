@@ -57,7 +57,9 @@ namespace FPoptimizer_Grammar
     {
         LogicalContextOnly = 0x01,
         NotForIntegers     = 0x02,
-        OnlyForIntegers    = 0x04
+        OnlyForIntegers    = 0x04,
+        OnlyForComplex     = 0x08,
+        NotForComplex      = 0x10
     };
 
     /* The param_opcode field of the ParamSpec has the following
@@ -201,10 +203,10 @@ namespace FPoptimizer_Grammar
          *       Other leaves remain intact.
          */
         RuleType  ruletype         : 2;
-        unsigned  situation_flags  : 3;
+        unsigned  situation_flags  : 5;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
-        unsigned  repl_param_count : 2+11; /* Assumed to be 1 when type == ProduceNewTree */
+        unsigned  repl_param_count : 2+9; /* Assumed to be 1 when type == ProduceNewTree */
         unsigned  repl_param_list  : 30;
 
         /* The function that we must match. Always a SubFunction. */

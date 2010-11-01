@@ -1062,6 +1062,10 @@ public:
             std::cout <<
             "        /* " << a << ":\t";
             ParamSpec_SubFunction tmp = {rlist[a].match_tree,0,0};
+            if(rlist[a].situation_flags & OnlyForComplex)
+                std::cout << "@C ";
+            if(rlist[a].situation_flags & NotForComplex)
+                std::cout << "@R ";
             if(rlist[a].situation_flags & LogicalContextOnly)
                 std::cout << "@L ";
             if(rlist[a].situation_flags & NotForIntegers)
@@ -1208,9 +1212,21 @@ static GrammarDumper dumper;
           $$ = $1 | NotForIntegers;
         else if($2 == Value_IsInteger) // @I
           $$ = $1 | OnlyForIntegers;
+        else if($2 == Constness_Const)
+          $$ = $1 | OnlyForComplex;
         else
         {
-          char msg[] = "Only @L, @F and @I rule constraints are allowed for now";
+          char msg[] = "Only @L, @F, @I, @C and @R rule constraints are allowed for now";
+          yyerror(msg); YYERROR;
+        }
+      }
+    | rule_constraints CONST_CONSTRAINT
+      {
+        if($2 == Modulo_Radians)
+          $$ = $1 | NotForComplex;
+        else
+        {
+          char msg[] = "Only @L, @F, @I, @C and @R rule constraints are allowed for now";
           yyerror(msg); YYERROR;
         }
       }

@@ -29,6 +29,10 @@
 #include "mpfr/GmpInt.hh"
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+#include <complex>
+#endif
+
 #ifdef ONCE_FPARSER_H_
 namespace FUNCTIONPARSERTYPES
 {
@@ -45,6 +49,19 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     struct IsIntType<GmpInt>
+    {
+        enum { result = true };
+    };
+#endif
+
+    template<typename value_t>
+    struct IsComplexType
+    {
+        enum { result = false };
+    };
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    struct IsComplexType<std::complex<T> >
     {
         enum { result = true };
     };
@@ -412,6 +429,305 @@ namespace FUNCTIONPARSERTYPES
 // Synthetic functions and fallbacks for when an optimized
 // implementation or a library function is not available
 // -------------------------------------------------------------------------
+    template<typename Value_t> inline Value_t fp_exp2(const Value_t& x);
+    template<typename Value_t> inline Value_t fp_int(const Value_t& x);
+    template<typename Value_t> inline Value_t fp_trunc(const Value_t& x);
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    /* NOTE: Complex multiplication of a and b can be done with:
+        tmp = b.real * (a.real + a.imag)
+        result.real = tmp - a.imag * (b.real + b.imag)
+        result.imag = tmp + a.real * (b.imag - b.real)
+        This has fewer multiplications than the standard
+        algorithm. Take note, if you support mpfr complex one day.
+    */
+
+    // These provide fallbacks in case there's no library function
+    template<typename T>
+    inline std::complex<T> fp_floor(const std::complex<T>& x)
+    {
+        return std::complex<T> (fp_floor(x.real()), fp_floor(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_trunc(const std::complex<T>& x)
+    {
+        return std::complex<T> (fp_trunc(x.real()), fp_trunc(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_int(const std::complex<T>& x)
+    {
+        return std::complex<T> (fp_int(x.real()), fp_int(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_ceil(const std::complex<T>& x)
+    {
+        return std::complex<T> (fp_ceil(x.real()), fp_ceil(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_abs(const std::complex<T>& x)
+    {
+        return std::abs(x);
+        //T extent = fp_max(fp_abs(x.real()), fp_abs(x.imag()));
+        //if(extent == T()) return x;
+        //return extent * fp_hypot(x.real() / extent, x.imag() / extent);
+    }
+    template<typename T>
+    inline std::complex<T> fp_exp(const std::complex<T>& x)
+    {
+        return std::exp(x);
+        // // exp(Xr) * (cos(Xi) + i*sin(Xi))
+        // // exp(Xr)*cos(Xi) + i*exp(Xr)*sin(Xi)
+        // const T ex(fp_exp(x.real()));
+        // return std::complex<T> (
+        //     ex*fp_cos(x.imag()),
+        //     ex*fp_sin(x.imag()) );
+    }
+    template<typename T>
+    inline std::complex<T> fp_log(const std::complex<T>& x)
+    {
+        return std::log(x);
+        // // 0.5*log(Xr^2 + Xi^2) + i*atan2(Xi,Xr)
+        // // log(hypot(Xr,Xi)) + i*atan2(Xi,Xr)
+        // // log(hypot(Xr,Xi)) + 2i*atan(Xi / (Xr+hypot(Xr,Xy)))
+        // if(x.imag()==T()) return fp_log(x.real()); // <-optimization
+        // return std::complex<T> (
+        //     T(0.5)*fp_log(x.real()*x.real() + x.imag()*x.imag()),
+        //     fp_atan2(x.imag(),x.real()) );
+        // //const T hyp(fp_hypot(x.real(), x.imag()));
+        // //const T at(fp_atan(x.imag() / (x.real()+hyp)));
+        // //return std::complex<T> (fp_log(hyp), at+at);
+    }
+    template<typename T>
+    inline std::complex<T> fp_sqrt(const std::complex<T>& x)
+    {
+        return std::sqrt(x);
+        // // sqrt(Xr) * exp(i * atan2(Xi, Xr))
+        // // Note: sin(atan2(y,x)) = y / hypot(x,y)
+        // //   and cos(atan2(y,x)) = x / hypot(x,y)
+        // //
+        // // Thus, as exp(i*atan2(Xi,Xr)) = exp(0)*cos(atan2(Xi,Xr))
+        // //                            + i*exp(0)*sin(atan2(Xi,Xr))
+        // // We get: exp(...) = y/hypot(x,y) + i*x/hypot(x,y)
+        // if(x == std::complex<T>(T(),T())) return x; // sqrt(0)
+        // const T hyp(fp_hypot(x.real(), x.imag()));
+        // return fp_sqrt(x.real()) * std::complex<T> (x.real()/hyp, x.imag()/hyp);
+    }
+    template<typename T>
+    inline std::complex<T> fp_acos(const std::complex<T>& x)
+    {
+        // -i * log(x + i * sqrt(1 - x^2))
+        const std::complex<T> i (T(), T(1));
+        return -i *  fp_log(x + i * fp_sqrt(T(1) - x*x));
+        // Note: Real version of acos() cannot handle |x| > 1,
+        //       because it would cause sqrt(negative value).
+    }
+    template<typename T>
+    inline std::complex<T> fp_asin(const std::complex<T>& x)
+    {
+        // -i * log(i*x + sqrt(1 - x^2))
+        const std::complex<T> i (T(), T(1));
+        return -i * fp_log(i*x + fp_sqrt(T(1) - x*x));
+        // Note: Real version of asin() cannot handle |x| > 1,
+        //       because it would cause sqrt(negative value).
+    }
+    template<typename T>
+    inline std::complex<T> fp_atan(const std::complex<T>& x)
+    {
+        // 0.5i * (log(1-i*x) - log(1+i*x))
+        // -0.5i * log( (1+i*x) / (1-i*x) )
+        const std::complex<T> i (T(), T(1));
+        return (T(-0.5)*i) * fp_log( (T(1)+i*x) / (T(1)-i*x) );
+        // Note: x = -1i causes division by zero
+        //       x = +1i causes log(0)
+        // Thus, x must not be +-1i
+    }
+    template<typename T>
+    inline std::complex<T> fp_cos(const std::complex<T>& x)
+    {
+        return std::cos(x);
+        // // (exp(i*x) + exp(-i*x)) / (2)
+        // //const std::complex<T> i (T(), T(1));
+        // //return (fp_exp(i*x) + fp_exp(-i*x)) / T(2);
+        // // Also: cos(Xr)*cosh(Xi) - i*sin(Xr)*sinh(Xi)
+        // return std::complex<T> (
+        //     fp_cos(x.real())*fp_cosh(x.imag()),
+        //     -fp_sin(x.real())*fp_sinh(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_sin(const std::complex<T>& x)
+    {
+        return std::sin(x);
+        // // (exp(i*x) - exp(-i*x)) / (2i)
+        // //const std::complex<T> i (T(), T(1));
+        // //return (fp_exp(i*x) - fp_exp(-i*x)) / (i+i);
+        // // Also: sin(Xr)*cosh(Xi) + cos(Xr)*sinh(Xi)
+        // return std::complex<T> (
+        //     fp_sin(x.real())*fp_cosh(x.imag()),
+        //     fp_cos(x.real())*fp_sinh(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_tan(const std::complex<T>& x)
+    {
+        return std::tan(x);
+        // // (i-i*exp(2i*x)) / (exp(2i*x)+1)
+        // const std::complex<T> i (T(), T(1)), exp2ix=fp_exp((2*i)*x);
+        // return (i-i*exp2ix) / (exp2ix+T(1));
+        // // Also: sin(x)/cos(y)
+        // // return fp_sin(x)/fp_cos(x);
+    }
+    template<typename T>
+    inline std::complex<T> fp_cosh(const std::complex<T>& x)
+    {
+        return std::cosh(x);
+        // // (exp(x) + exp(-x)) * 0.5
+        // // Also: cosh(Xr)*cos(Xi) + i*sinh(Xr)*sin(Xi)
+        // return std::complex<T> (
+        //     fp_cosh(x.real())*fp_cos(x.imag()),
+        //     fp_sinh(x.real())*fp_sin(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_sinh(const std::complex<T>& x)
+    {
+        return std::sinh(x);
+        // // (exp(x) - exp(-x)) * 0.5
+        // // Also: sinh(Xr)*cos(Xi) + i*cosh(Xr)*sin(Xi)
+        // return std::complex<T> (
+        //     fp_sinh(x.real())*fp_cos(x.imag()),
+        //     fp_cosh(x.real())*fp_sin(x.imag()));
+    }
+    template<typename T>
+    inline std::complex<T> fp_tanh(const std::complex<T>& x)
+    {
+        return std::tanh(x);
+        // // (exp(2*x)-1) / (exp(2*x)+1)
+        // // Also: sinh(x)/tanh(x)
+        // const std::complex<T> exp2x=fp_exp(x+x);
+        // return (exp2x-T(1)) / (exp2x+T(1));
+    }
+    template<typename T>
+    inline std::complex<T> fp_pow(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        // return std::pow(x,y);
+        const std::complex<T> t(fp_log(x));
+        if(y.imag() == T())
+        {
+            // If y is real, this works and is faster:
+            //  t := log(x)
+            //  rho   := exp(y*t.real());
+            //  theta := y*t.imag()
+            //  polar(rho, theta) which is: rho * cos(theta) + i*rho*sin(theta)
+            return std::polar(fp_exp(y.real() * t.real()), y.real()*t.imag());
+        }
+        if(x.imag() == T() && x.real() > T())
+        {
+            // polar(Xr ^ Yr, Yi * log(Xr))
+            return std::polar(fp_pow(x.real(), y.real()), y.imag()*t.real());
+        }
+        // exp(y * log(x))
+        return fp_exp(y * t);
+    }
+    template<typename T>
+    inline std::complex<T> fp_cbrt(const std::complex<T>& x)
+    {
+        // For real numbers, prefer giving a real solution
+        // rather than a complex solution.
+        // For example, cbrt(-3) has the following three solutions:
+        //  A) 0.7211247966535 + 1.2490247864016i
+        //  B) 0.7211247966535 - 1.2490247864016i
+        //  C) -1.442249593307
+        // exp(log(x)/3) gives A, but we prefer to give C.
+        if(x.imag() == T()) return fp_cbrt(x.real());
+        const std::complex<T> t(fp_log(x));
+        return std::polar(fp_exp(t.real() / T(3)), t.imag() / T(3));
+    }
+
+    template<typename T>
+    inline std::complex<T> fp_exp2(const std::complex<T>& x)
+    {
+        // pow(2, x)
+        // polar(2^Xr, Xi*log(2))
+        return std::polar(fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
+    }
+    template<typename T>
+    inline std::complex<T> fp_mod(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        // Modulo function is probably not defined for complex numbers.
+        // But we do our best to calculate it the same way as it is done
+        // with real numbers, so that at least it is in some way "consistent".
+        if(y.imag() == 0) return fp_mod(x.real(), y.real()); // optimization
+        std::complex<T> n = fp_trunc(x / y);
+        return x - n * y;
+    }
+
+    /* libstdc++ already defines a streaming operator for complex values,
+     * but we redefine our own that it is compatible with the input
+     * accepted by fparser. I.e. instead of (5,3) we now get (5+3i),
+     * and instead of (-4,0) we now get -4.
+     */
+    template<typename T>
+    inline std::ostream& operator<<(std::ostream& os, const std::complex<T>& value)
+    {
+        if(value.imag() == T()) return os << value.real();
+        if(value.real() == T()) return os << value.imag() << 'i';
+        if(value.imag() < T())
+            return os << '(' << value.real() << "-" << -value.imag() << "i)";
+        else
+            return os << '(' << value.real() << "+" << value.imag() << "i)";
+    }
+
+    /* Less-than or greater-than operators are not technically defined
+     * for Complex types. However, in fparser and its tool set, these
+     * operators are widely required to be present.
+     * Our implementation here is based on converting the complex number
+     * into a scalar and the doing a scalar comparison on the value.
+     * The means by which the number is changed into a scalar is based
+     * on the following principles:
+     * - Does not introduce unjustified amounts of extra inaccuracy
+     * - Is transparent to purely real values
+     *     (this disqualifies something like x.real() + x.imag())
+     * - Does not ignore the imaginary value completely
+     *     (this may be relevant especially in testbed)
+     * - Is not so complicated that it would slow down a great deal
+     *
+     * Basically our formula here is the same as std::abs(),
+     * except that it keeps the sign of the original real number,
+     * and it does not do a sqrt() calculation that is not really
+     * needed because we are only interested in the relative magnitudes.
+     *
+     * Equality and nonequality operators must not need to be overloaded.
+     * They are already implemented in standard, and we must
+     * not introduce flawed equality assumptions.
+     */
+    template<typename T>
+    inline T fp_complexScalarize(const std::complex<T>& x)
+    {
+        T res(std::norm(x));
+        if(x.real() < T()) res = -res;
+        return res;
+    }
+    template<typename T>
+    inline T fp_realComplexScalarize(const T& x)
+    {
+        T res(x*x);
+        if(x < T()) res = -res;
+        return res;
+    }
+    //    { return x.real() * (T(1.0) + fp_abs(x.imag())); }
+    #define d(op) \
+    template<typename T> \
+    inline bool operator op (const std::complex<T>& x, T y) \
+        { return fp_complexScalarize(x) op fp_realComplexScalarize(y); } \
+    template<typename T> \
+    inline bool operator op (const std::complex<T>& x, const std::complex<T>& y) \
+        { return fp_complexScalarize(x) op \
+                 fp_complexScalarize(y); } \
+    template<typename T> \
+    inline bool operator op (T x, const std::complex<T>& y) \
+        { return fp_realComplexScalarize(x) op fp_complexScalarize(y); }
+    d( < ) d( <= ) d( > ) d( >= )
+    #undef d
+#endif
+
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)
     {
@@ -433,15 +749,15 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x)
     {
-        return x > Value_t(0) ?  fp_exp(fp_log( x) / Value_t(3))
-             : x < Value_t(0) ? -fp_exp(fp_log(-x) / Value_t(3))
-             : Value_t(0);
+        return x > Value_t() ?  fp_exp(fp_log( x) / Value_t(3))
+             : x < Value_t() ? -fp_exp(fp_log(-x) / Value_t(3))
+             : Value_t();
     }
 
     template<typename Value_t>
     inline Value_t fp_trunc(const Value_t& x)
     {
-        return x < Value_t(0) ? fp_ceil(x) : fp_floor(x);
+        return x < Value_t() ? fp_ceil(x) : fp_floor(x);
     }
 
     template<typename Value_t>
@@ -480,7 +796,12 @@ namespace FUNCTIONPARSERTYPES
 
     template<typename Value_t>
     inline Value_t fp_atanh(const Value_t& x)
-        { return fp_log( (Value_t(1)+x) / (Value_t(1)-x)) * Value_t(0.5); }
+    {
+        return fp_log( (Value_t(1)+x) / (Value_t(1)-x)) * Value_t(0.5);
+        // Note: x = +1 causes division by zero
+        //       x = -1 causes log(0)
+        // Thus, x must not be +-1
+    }
 
     template<typename Value_t>
     inline Value_t fp_sinh(const Value_t& x)
@@ -564,7 +885,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool fp_truth(const Value_t& d)
     {
         return IsIntType<Value_t>::result
-                ? d != Value_t(0)
+                ? d != Value_t()
                 : fp_abs(d) >= Value_t(0.5);
     }
 
@@ -572,7 +893,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool fp_absTruth(const Value_t& abs_d)
     {
         return IsIntType<Value_t>::result
-                ? abs_d > Value_t(0)
+                ? abs_d > Value_t()
                 : abs_d >= Value_t(0.5);
     }
 
@@ -631,6 +952,8 @@ namespace FUNCTIONPARSERTYPES
     bool IsVarOpcode(unsigned op);
     bool IsCommutativeOrParamSwappableBinaryOpcode(unsigned op);
     unsigned GetParamSwappedBinaryOpcode(unsigned op);
+
+    template<bool ComplexType>
     bool HasInvalidRangesOpcode(unsigned op);
 
     template<typename Value_t>
@@ -670,6 +993,14 @@ namespace FUNCTIONPARSERTYPES
     {
         return (long) fp_int(value);
     }
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline long makeLongInteger(const std::complex<T>& value)
+    {
+        return (long) fp_int( std::abs(value) );
+    }
+#endif
 
 #ifdef FP_SUPPORT_LONG_INT_TYPE
     template<>

@@ -202,33 +202,68 @@ unsigned FUNCTIONPARSERTYPES::GetParamSwappedBinaryOpcode(unsigned op)
     return op; // Error
 }
 
+template<bool ComplexType>
 bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
 {
 #ifndef FP_NO_EVALUATION_CHECKS
     // Returns true, if the given opcode has a range of
     // input values that gives an error.
-    switch(op)
+    if(ComplexType)
     {
-      case cAcos: // allowed range: |x| <= 1
-      case cAsin: // allowed range: |x| <= 1
-      case cAcosh: // allowed range: x >= 1
-      case cAtanh: // allowed range: |x| < 1
-          //case cCot: // note: no range, just separate values
-          //case cCsc: // note: no range, just separate values
-      case cLog: // allowed range: x > 0
-      case cLog2: // allowed range: x > 0
-      case cLog10: // allowed range: x > 0
-#ifdef FP_SUPPORT_OPTIMIZER
-      case cLog2by: // allowed range: x > 0
-#endif
-          //case cPow: // note: no range, just separate values
-          //case cSec: // note: no range, just separate values
-      case cSqrt: // allowed range: x >= 0
-      case cRSqrt: // allowed range: x > 0
-          //case cDiv: // note: no range, just separate values
-          //case cRDiv: // note: no range, just separate values
-          //case cInv: // note: no range, just separate values
+        // COMPLEX:
+        switch(op)
+        {
+          case cAtan:  // allowed range: x != +-1i
+          case cAtanh: // allowed range: x != +-1
+          //case cCot: // allowed range: tan(x) != 0
+          //case cCsc: // allowed range: sin(x) != 0
+          case cLog:   // allowed range: x != 0
+          case cLog2:  // allowed range: x != 0
+          case cLog10: // allowed range: x != 0
+    #ifdef FP_SUPPORT_OPTIMIZER
+          case cLog2by:// allowed range: x != 0
+    #endif
+          //case cPow: // allowed when: x != 0 or y != 0
+          //case cSec: // allowed range: cos(x) != 0
+          //case cTan:   // allowed range: cos(x) != 0  --> x != +-(pi/2)
+          //case cTanh:  // allowed range: log(x) != -1 --> x != +-(pi/2)i
+          case cRSqrt: // allowed range: x != 0
+          //case cDiv: // allowed range: y != 0
+          //case cRDiv: // allowed range: x != 0
+          //case cInv: // allowed range: x != 0
           return true;
+        }
+    }
+    else
+    {
+        // REAL:
+        switch(op)
+        {
+          case cAcos: // allowed range: |x| <= 1
+          case cAsin: // allowed range: |x| <= 1
+          case cAcosh: // allowed range: x >= 1
+          case cAtanh: // allowed range: |x| < 1
+          //case cCot: // allowed range: tan(x) != 0
+          //case cCsc: // allowed range: sin(x) != 0
+          case cLog:   // allowed range: x > 0
+          case cLog2:  // allowed range: x > 0
+          case cLog10: // allowed range: x > 0
+    #ifdef FP_SUPPORT_OPTIMIZER
+          case cLog2by:// allowed range: x > 0
+    #endif
+          //case cPow: // allowed when: x > 0 or (x = 0 and y != 0) or (x<0)
+                       // Technically, when (x<0 and y is not integer),
+                       // it is not allowed, but we allow it anyway
+                       // in order to make nontrivial roots work.
+          //case cSec: // allowed range: cos(x) != 0
+          case cSqrt: // allowed range: x >= 0
+          case cRSqrt: // allowed range: x > 0
+          //case cTan:   // allowed range: cos(x) != 0 --> x != +-(pi/2)
+          //case cDiv: // allowed range: y != 0
+          //case cRDiv: // allowed range: x != 0
+          //case cInv: // allowed range: x != 0
+          return true;
+        }
     }
 #endif
     return false;
@@ -437,6 +472,21 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline std::complex<T> fp_parseComplexLiteral(const char* str, char** endptr)
+    {
+        T result = fp_parseLiteral<T> (str,endptr);
+        const char* end = *endptr;
+        if( (*end == 'i'  || *end == 'I')
+        &&  !std::isalnum(end[1]) )
+        {
+            ++*endptr;
+            return std::complex<T> (T(), result);
+        }
+        return std::complex<T> (result, T());
+    }
+#endif
 
     // -----------------------------------------------------------------------
     // Hexadecimal floating point literal parsing
@@ -1426,7 +1476,9 @@ template<typename Value_t>
 inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
 {
 #define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 0
 #include "fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
 
@@ -1436,7 +1488,9 @@ inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
 {
     typedef long Value_t;
 #define FP_FLOAT_VERSION 0
+#define FP_COMPLEX_VERSION 0
 #include "fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
 #endif
@@ -1447,7 +1501,9 @@ inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
 {
     typedef GmpInt Value_t;
 #define FP_FLOAT_VERSION 0
+#define FP_COMPLEX_VERSION 0
 #include "fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
 #endif
@@ -2372,21 +2428,24 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cAcos:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1))
+              if(IsComplexType<Value_t>::result == false
+              && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
               { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acos(Stack[SP]); break;
 
           case cAcosh:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(1))
+              if(IsComplexType<Value_t>::result == false
+              && Stack[SP] < Value_t(1))
               { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acosh(Stack[SP]); break;
 
           case  cAsin:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1))
+              if(IsComplexType<Value_t>::result == false
+              && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
               { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_asin(Stack[SP]); break;
@@ -2400,7 +2459,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case cAtanh:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1))
+              if(IsComplexType<Value_t>::result
+              ?  (Stack[SP] == Value_t(-1) || Stack[SP] == Value_t(1))
+              :  (Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1)))
               { mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_atanh(Stack[SP]); break;
@@ -2494,14 +2555,18 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case   cLog:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(!(Stack[SP] > Value_t(0)))
+              if(IsComplexType<Value_t>::result
+               ?   Stack[SP] == Value_t(0)
+               :   !(Stack[SP] > Value_t(0)))
               { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log(Stack[SP]); break;
 
           case cLog10:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(!(Stack[SP] > Value_t(0)))
+              if(IsComplexType<Value_t>::result
+               ?   Stack[SP] == Value_t(0)
+               :   !(Stack[SP] > Value_t(0)))
               { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log10(Stack[SP]);
@@ -2509,7 +2574,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cLog2:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(!(Stack[SP] > Value_t(0)))
+              if(IsComplexType<Value_t>::result
+               ?   Stack[SP] == Value_t(0)
+               :   !(Stack[SP] > Value_t(0)))
               { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log2(Stack[SP]);
@@ -2525,7 +2592,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           ifndef FP_NO_EVALUATION_CHECKS
               // x:Negative ^ y:NonInteger is failure,
               // except when the reciprocal of y forms an integer
-              /*if(Stack[SP-1] < Value_t(0) &&
+              /*if(IsComplexType<Value_t>::result == false
+              && Stack[SP-1] < Value_t(0) &&
                  !isInteger(Stack[SP]) &&
                  !isInteger(1.0 / Stack[SP]))
               { mEvalErrorType=3; return Value_t(0); }*/
@@ -2554,7 +2622,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cSqrt:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP] < Value_t(0)) { mEvalErrorType=2; return Value_t(0); }
+              if(IsComplexType<Value_t>::result == false
+              && Stack[SP] < Value_t(0)) { mEvalErrorType=2; return Value_t(0); }
 #           endif
               Stack[SP] = fp_sqrt(Stack[SP]); break;
 
@@ -2687,7 +2756,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cLog2by:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(Stack[SP-1] <= Value_t(0))
+              if(IsComplexType<Value_t>::result
+               ?   Stack[SP-1] == Value_t(0)
+               :   !(Stack[SP-1] > Value_t(0)))
               { mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];

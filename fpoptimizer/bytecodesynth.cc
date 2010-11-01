@@ -1,7 +1,9 @@
 #include "bytecodesynth.hh"
-#include "opcodename.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
+
+#include "opcodename.hh"
+#include "codetree.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
@@ -24,13 +26,10 @@ namespace FPoptimizer_ByteCode
     const SequenceOpCode<Value_t>
           SequenceOpcodes<Value_t>::MulSequence = { Value_t(1), cInv, cMul, cMul, cDiv, cRDiv };
 
-    template<typename Value_t>
-    void ByteCodeSynth<Value_t>::AddFunctionOpcode_Float(unsigned opcode)
-    {
-        /*ByteCode.push_back(opcode);
-        return;*/
-
-        int mStackPtr=0;
+    /*******/
+#define StackTop ByteCodeSynthBase<Value_t>::StackTop
+#define StackMax ByteCodeSynthBase<Value_t>::StackMax
+#define StackState ByteCodeSynthBase<Value_t>::StackState
 #define incStackPtr() do { \
         if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
     } while(0)
@@ -39,49 +38,60 @@ namespace FPoptimizer_ByteCode
 #define mData this
 #define mByteCode ByteCode
 #define mImmed Immed
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t,false,false>::AddFunctionOpcode(unsigned opcode)
+    {
+        int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
+# define FP_COMPLEX_VERSION 0
 # include "fp_opcode_add.inc"
+# undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
-#undef mImmed
-#undef mByteCode
-#undef mData
-#undef TryCompilePowi
-#undef incStackPtr
     }
 
     template<typename Value_t>
-    void ByteCodeSynth<Value_t>::AddFunctionOpcode_Integer(unsigned opcode)
+    void ByteCodeSynth<Value_t,true,false>::AddFunctionOpcode(unsigned opcode)
     {
-        /*ByteCode.push_back(opcode);
-        return;*/
-
         int mStackPtr=0;
-#define incStackPtr() do { \
-        if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
-    } while(0)
-#define findName(a,b,c) "var"
-#define TryCompilePowi(o) false
-#define mData this
-#define mByteCode ByteCode
-#define mImmed Immed
 # define FP_FLOAT_VERSION 0
+# define FP_COMPLEX_VERSION 0
 # include "fp_opcode_add.inc"
+# undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
+    }
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t,false,true>::AddFunctionOpcode(unsigned opcode)
+    {
+        int mStackPtr=0;
+# define FP_FLOAT_VERSION 1
+# define FP_COMPLEX_VERSION 1
+# include "fp_opcode_add.inc"
+# undef FP_COMPLEX_VERSION
+# undef FP_FLOAT_VERSION
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t,true,true>::AddFunctionOpcode(unsigned opcode)
+    {
+        int mStackPtr=0;
+# define FP_FLOAT_VERSION 0
+# define FP_COMPLEX_VERSION 1
+# include "fp_opcode_add.inc"
+# undef FP_COMPLEX_VERSION
+# undef FP_FLOAT_VERSION
+    }
+#endif
+
+#undef findName
 #undef mImmed
 #undef mByteCode
 #undef mData
 #undef TryCompilePowi
 #undef incStackPtr
-    }
-
-    template<typename Value_t>
-    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode)
-    {
-        if(IsIntType<Value_t>::result)
-            AddFunctionOpcode_Integer(opcode);
-        else
-            AddFunctionOpcode_Float(opcode);
-    }
+    /*******/
 }
 
 using namespace FPoptimizer_ByteCode;
@@ -612,15 +622,18 @@ namespace FPoptimizer_ByteCode
 #include "instantiate.hh"
 namespace FPoptimizer_ByteCode
 {
+#define bt(x) FUNCTIONPARSERTYPES::IsIntType<x>::result,\
+              FUNCTIONPARSERTYPES::IsComplexType<x>::result
 #define FP_INSTANTIATE(type) \
     template class SequenceOpcodes<type>; \
-    template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned); \
+    template void ByteCodeSynth<type,bt(type)>::AddFunctionOpcode(unsigned); \
     template void AssembleSequence( \
         long count, \
         const SequenceOpCode<type>& sequencing, \
         ByteCodeSynth<type>& synth);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
+#undef bt
 }
 /* END_EXPLICIT_INSTANTATION */
 

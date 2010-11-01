@@ -19,10 +19,10 @@ enum { MAX_MULI_BYTECODE_LENGTH = 3 };
 namespace FPoptimizer_ByteCode
 {
     template<typename Value_t>
-    class ByteCodeSynth
+    class ByteCodeSynthBase
     {
     public:
-        ByteCodeSynth()
+        ByteCodeSynthBase()
             : ByteCode(), Immed(), StackState(), StackTop(0), StackMax(0)
         {
             /* estimate the initial requirements as such */
@@ -90,17 +90,6 @@ namespace FPoptimizer_ByteCode
         void ProducedNParams(unsigned produce_count)
         {
             SetStackTop(StackTop + produce_count);
-        }
-
-        void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
-        {
-            EatNParams(eat_count);
-
-            using namespace FUNCTIONPARSERTYPES;
-
-            AddFunctionOpcode(opcode);
-
-            ProducedNParams(produce_count);
         }
 
         void DoPopNMov(size_t targetpos, size_t srcpos)
@@ -268,11 +257,7 @@ namespace FPoptimizer_ByteCode
             }
         }
 
-        void AddFunctionOpcode_Float(unsigned opcode);
-        void AddFunctionOpcode_Integer(unsigned opcode);
-        void AddFunctionOpcode(unsigned opcode);
-
-    private:
+    protected:
         std::vector<unsigned> ByteCode;
         std::vector<Value_t>   Immed;
 
@@ -283,6 +268,28 @@ namespace FPoptimizer_ByteCode
         size_t StackTop;
         size_t StackMax;
     };
+
+    template<typename Value_t, bool IsInteger, bool IsComplex>
+    class ByteCodeSynth { };
+
+    #define MakeByteCodeSynthClass(p1,p2) \
+    template<typename Value_t> \
+    class ByteCodeSynth<Value_t,p1,p2>: public ByteCodeSynthBase<Value_t> \
+    { \
+    public: \
+        void AddFunctionOpcode(unsigned opcode); \
+        void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1) \
+        { \
+            ByteCodeSynthBase<Value_t>::EatNParams(eat_count); \
+            AddFunctionOpcode(opcode); \
+            ByteCodeSynthBase<Value_t>::ProducedNParams(produce_count); \
+        } \
+    }
+    MakeByteCodeSynthClass(false,false);
+    MakeByteCodeSynthClass(false,true);
+    MakeByteCodeSynthClass(true,false);
+    MakeByteCodeSynthClass(true,true);
+    #undef MakeByteCodeSynthClass
 
     template<typename Value_t>
     struct SequenceOpCode;

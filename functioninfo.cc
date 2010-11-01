@@ -401,114 +401,266 @@ namespace
     }
 #endif
 
+    template<typename Value_t
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+     , bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result
+#endif
+            >
+    struct findValidVarValuesAux
+    {
+        static bool find(std::vector<FunctionInfo<Value_t> >& functions,
+                         const std::string& userGivenVarValuesString)
+        {
+            unsigned varsAmount = 1;
+            for(size_t i = 0; i < gVarString.length(); ++i)
+                if(gVarString[i] == ',')
+                    ++varsAmount;
+
+            std::vector<Value_t> userGivenVarValues;
+            if(!userGivenVarValuesString.empty())
+            {
+                userGivenVarValues =
+                    parseUserGivenVarValues<Value_t>(userGivenVarValuesString);
+                if(userGivenVarValues.size() != varsAmount)
+                {
+                    std::cout << "Warning: Wrong amount of values specified with "
+                        "-varValues. Ignoring." << std::endl;
+                    userGivenVarValues.clear();
+                }
+            }
+
+            std::vector<Value_t> varValues(varsAmount, Value_t());
+            std::vector<double> doubleValues(varsAmount, 0);
+            std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
+
+            std::vector<Value_t> immedList = findImmeds(functions);
+
+            if(userGivenVarValues.empty())
+            {
+                for(size_t i = 0; i < functions.size(); ++i)
+                    functions[i].mValidVarValues = varValues;
+            }
+            else
+            {
+                for(size_t i = 0; i < functions.size(); ++i)
+                    functions[i].mValidVarValues = userGivenVarValues;
+                ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
+            }
+
+            std::vector<size_t> immedCounter(varsAmount, 0);
+
+            while(true)
+            {
+                for(unsigned i = 0; i < varsAmount; ++i)
+                    varValues[i] = Value_t(doubleValues[i]);
+
+                bool wasOk = false;
+                for(size_t i = 0; i < functions.size(); ++i)
+                {
+                    Value_t value = functions[i].mParser.Eval(&varValues[0]);
+                    if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
+                    {
+                        if(userGivenVarValues.empty())
+                            functions[i].mValidVarValues = varValues;
+                        wasOk = true;
+                    }
+                }
+
+                if(wasOk)
+                {
+                    ParserData<Value_t>::gVarValues.push_back(varValues);
+                    if(ParserData<Value_t>::gVarValues.size() >=
+                       kMaxVarValueSetsAmount)
+                        return true;
+                }
+
+                size_t varIndex = 0;
+                while(true)
+                {
+                    if(immedCounter[varIndex] == 0)
+                    {
+                        doubleValues[varIndex] = -doubleValues[varIndex];
+                        if(doubleValues[varIndex] < 0.0)
+                            break;
+
+                        doubleValues[varIndex] += deltas[varIndex];
+                        if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
+                            deltas[varIndex] *= kVarValuesDeltaFactor1;
+                        else
+                            deltas[varIndex] *= kVarValuesDeltaFactor2;
+
+                        if(doubleValues[varIndex] <= kVarValuesUpperLimit)
+                            break;
+                    }
+
+                    if(immedCounter[varIndex] < immedList.size())
+                    {
+                        size_t& i = immedCounter[varIndex];
+                        doubleValues[varIndex] =
+                            makeDoubleFrom (immedList[i] );
+                        i += 1;
+                        break;
+                    }
+
+                    immedCounter[varIndex] = 0;
+                    doubleValues[varIndex] = 0.0;
+                    deltas[varIndex] = kVarValuesInitialDelta;
+                    if(++varIndex == doubleValues.size())
+                    {
+                        if(ParserData<Value_t>::gVarValues.empty())
+                        {
+                            ParserData<Value_t>::gVarValues.push_back
+                                (std::vector<Value_t>(varsAmount, Value_t()));
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+    };
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename Value_t>
+    struct findValidVarValuesAux<Value_t, true>
+    {
+        /* Same as above, but for complex numbers */
+
+        static double makeDouble1From(const Value_t& v)
+        {
+            return makeDoubleFrom(v.real());
+        }
+        static double makeDouble2From(const Value_t& v)
+        {
+            return makeDoubleFrom(v.imag());
+        }
+
+        static bool find(std::vector<FunctionInfo<Value_t> >& functions,
+                         const std::string& userGivenVarValuesString)
+        {
+            unsigned varsAmount = 1;
+            for(size_t i = 0; i < gVarString.length(); ++i)
+                if(gVarString[i] == ',')
+                    ++varsAmount;
+
+            std::vector<Value_t> userGivenVarValues;
+            if(!userGivenVarValuesString.empty())
+            {
+                userGivenVarValues =
+                    parseUserGivenVarValues<Value_t>(userGivenVarValuesString);
+                if(userGivenVarValues.size() != varsAmount)
+                {
+                    std::cout << "Warning: Wrong amount of values specified with "
+                        "-varValues. Ignoring." << std::endl;
+                    userGivenVarValues.clear();
+                }
+            }
+
+            const unsigned valuesAmount = varsAmount*2;
+
+            std::vector<Value_t> varValues(varsAmount, 0);
+            std::vector<double> doubleValues(valuesAmount, 0);
+            std::vector<double> deltas(valuesAmount, kVarValuesInitialDelta);
+
+            std::vector<Value_t> immedList = findImmeds(functions);
+
+            if(userGivenVarValues.empty())
+            {
+                for(size_t i = 0; i < functions.size(); ++i)
+                    functions[i].mValidVarValues = varValues;
+            }
+            else
+            {
+                for(size_t i = 0; i < functions.size(); ++i)
+                    functions[i].mValidVarValues = userGivenVarValues;
+                ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
+            }
+
+            std::vector<size_t> immedCounter(valuesAmount, 0);
+
+            while(true)
+            {
+                for(unsigned i = 0; i < varsAmount; ++i)
+                    varValues[i] = Value_t(
+                        doubleValues[i*2+0],
+                        doubleValues[i*2+1]
+                    );
+
+                bool wasOk = false;
+                for(size_t i = 0; i < functions.size(); ++i)
+                {
+                    Value_t value = functions[i].mParser.Eval(&varValues[0]);
+                    if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
+                    {
+                        if(userGivenVarValues.empty())
+                            functions[i].mValidVarValues = varValues;
+                        wasOk = true;
+                    }
+                }
+
+                if(wasOk)
+                {
+                    ParserData<Value_t>::gVarValues.push_back(varValues);
+                    if(ParserData<Value_t>::gVarValues.size() >=
+                       kMaxVarValueSetsAmount)
+                        return true;
+                }
+
+                size_t valueIndex = 0;
+                while(true)
+                {
+                    if(immedCounter[valueIndex] == 0)
+                    {
+                        doubleValues[valueIndex] = -doubleValues[valueIndex];
+                        if(doubleValues[valueIndex] < 0.0)
+                            break;
+
+                        doubleValues[valueIndex] += deltas[valueIndex];
+                        if(deltas[valueIndex] < kVarValuesDeltaFactor2Threshold)
+                            deltas[valueIndex] *= kVarValuesDeltaFactor1;
+                        else
+                            deltas[valueIndex] *= kVarValuesDeltaFactor2;
+
+                        if(doubleValues[valueIndex] <= kVarValuesUpperLimit)
+                            break;
+                    }
+
+                    if(immedCounter[valueIndex] < immedList.size())
+                    {
+                        size_t& i = immedCounter[valueIndex];
+                        doubleValues[valueIndex] =
+                            (valueIndex & 1)
+                                ? makeDouble2From( immedList[i] )
+                                : makeDouble1From( immedList[i] );
+                        i += 1;
+                        break;
+                    }
+
+                    immedCounter[valueIndex] = 0;
+                    doubleValues[valueIndex] = 0.0;
+                    deltas[valueIndex] = kVarValuesInitialDelta;
+                    if(++valueIndex == doubleValues.size())
+                    {
+                        if(ParserData<Value_t>::gVarValues.empty())
+                        {
+                            ParserData<Value_t>::gVarValues.push_back
+                                (std::vector<Value_t>(varsAmount, Value_t()));
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+    };
+#endif
+
     template<typename Value_t>
     bool findValidVarValues(std::vector<FunctionInfo<Value_t> >& functions,
                             const std::string& userGivenVarValuesString)
     {
-        unsigned varsAmount = 1;
-        for(size_t i = 0; i < gVarString.length(); ++i)
-            if(gVarString[i] == ',')
-                ++varsAmount;
-
-        std::vector<Value_t> userGivenVarValues;
-        if(!userGivenVarValuesString.empty())
-        {
-            userGivenVarValues =
-                parseUserGivenVarValues<Value_t>(userGivenVarValuesString);
-            if(userGivenVarValues.size() != varsAmount)
-            {
-                std::cout << "Warning: Wrong amount of values specified with "
-                    "-varValues. Ignoring." << std::endl;
-                userGivenVarValues.clear();
-            }
-        }
-
-        std::vector<Value_t> varValues(varsAmount, 0);
-        std::vector<double> doubleValues(varsAmount, 0);
-        std::vector<double> deltas(varsAmount, kVarValuesInitialDelta);
-
-        std::vector<Value_t> immedList = findImmeds(functions);
-
-        if(userGivenVarValues.empty())
-        {
-            for(size_t i = 0; i < functions.size(); ++i)
-                functions[i].mValidVarValues = varValues;
-        }
-        else
-        {
-            for(size_t i = 0; i < functions.size(); ++i)
-                functions[i].mValidVarValues = userGivenVarValues;
-            ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
-        }
-
-        std::vector<size_t> immedCounter(varsAmount, 0);
-
-        while(true)
-        {
-            for(unsigned i = 0; i < varsAmount; ++i)
-                varValues[i] = Value_t(doubleValues[i]);
-
-            bool wasOk = false;
-            for(size_t i = 0; i < functions.size(); ++i)
-            {
-                Value_t value = functions[i].mParser.Eval(&varValues[0]);
-                if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
-                {
-                    if(userGivenVarValues.empty())
-                        functions[i].mValidVarValues = varValues;
-                    wasOk = true;
-                }
-            }
-
-            if(wasOk)
-            {
-                ParserData<Value_t>::gVarValues.push_back(varValues);
-                if(ParserData<Value_t>::gVarValues.size() >=
-                   kMaxVarValueSetsAmount)
-                    return true;
-            }
-
-            size_t varIndex = 0;
-            while(true)
-            {
-                if(immedCounter[varIndex] == 0)
-                {
-                    doubleValues[varIndex] = -doubleValues[varIndex];
-                    if(doubleValues[varIndex] < 0.0)
-                        break;
-
-                    doubleValues[varIndex] += deltas[varIndex];
-                    if(deltas[varIndex] < kVarValuesDeltaFactor2Threshold)
-                        deltas[varIndex] *= kVarValuesDeltaFactor1;
-                    else
-                        deltas[varIndex] *= kVarValuesDeltaFactor2;
-
-                    if(doubleValues[varIndex] <= kVarValuesUpperLimit)
-                        break;
-                }
-
-                if(immedCounter[varIndex] < immedList.size())
-                {
-                    doubleValues[varIndex] =
-                        makeDoubleFrom (immedList[immedCounter[varIndex]++] );
-                    break;
-                }
-
-                immedCounter[varIndex] = 0;
-                doubleValues[varIndex] = 0.0;
-                deltas[varIndex] = kVarValuesInitialDelta;
-                if(++varIndex == doubleValues.size())
-                {
-                    if(ParserData<Value_t>::gVarValues.empty())
-                    {
-                        ParserData<Value_t>::gVarValues.push_back
-                            (std::vector<Value_t>(varsAmount, 0));
-                        return false;
-                    }
-                    return true;
-                }
-            }
-        }
+        return findValidVarValuesAux<Value_t>
+            ::find(functions, userGivenVarValuesString);
     }
 
     template<typename Value_t>
@@ -585,6 +737,7 @@ namespace
                     continue;
                 }
 
+                using namespace FUNCTIONPARSERTYPES;
                 std::cout << SEPARATOR << "\n******* For variable values (";
                 for(size_t i = 0; i < varsAmount; ++i)
                 {
@@ -1032,6 +1185,7 @@ int functionInfo(const char* const parserTypeString,
         for(size_t j = 0; j < ParserData<Value_t>::gVarValues[i].size(); ++j)
         {
             if(j > 0) std::cout << ",";
+            using namespace FUNCTIONPARSERTYPES;
             std::cout << ParserData<Value_t>::gVarValues[i][j];
         }
         std::cout << ")";

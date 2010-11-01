@@ -151,6 +151,16 @@ namespace
             if(rule.situation_flags & OnlyForIntegers)
                 goto fail;
         }
+        if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result)
+        {
+            if(rule.situation_flags & NotForComplex)
+                goto fail;
+        }
+        else
+        {
+            if(rule.situation_flags & OnlyForComplex)
+                goto fail;
+        }
 
         /*std::cout << "TESTING: ";
         DumpMatch(rule, *tree, info, false);*/

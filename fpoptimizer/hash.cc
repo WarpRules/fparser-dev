@@ -115,6 +115,23 @@ namespace FPoptimizer_CodeTree
         }
     };
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    struct ImmedHashGenerator< std::complex<T> >
+    {
+        static void MakeHash(
+            FUNCTIONPARSERTYPES::fphash_t& NewHash,
+            const std::complex<T>& Value)
+        {
+            ImmedHashGenerator<T>::MakeHash(NewHash, Value.real());
+            FUNCTIONPARSERTYPES::fphash_t temp;
+            ImmedHashGenerator<T>::MakeHash(temp, Value.imag());
+            NewHash.hash1 ^= temp.hash2;
+            NewHash.hash2 ^= temp.hash1;
+        }
+    };
+#endif
+
 #ifdef FP_SUPPORT_LONG_INT_TYPE
     template<>
     struct ImmedHashGenerator<long>

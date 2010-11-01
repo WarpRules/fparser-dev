@@ -105,6 +105,10 @@
 #define FP_SUPPORT_OPTIMIZER
 #endif
 
+#if 0
+#define FP_SUPPORT_COMPLEX_NUMBERS
+#endif
+
 
 /*
  Epsilon value used with the comparison operators (must be non-negative):
