@@ -326,7 +326,7 @@ hC*q0;hP*q2;
 #define FP_ReDefinePointers() q0=!g2.empty()?&g2[0]+g2 dO-1:0;q2=!hR dH.empty()?&hR dH[0]+hR dH dO-1:0;
 qZ
 w1(opcode);
-#if(!FP_FLOAT_VERSION)
+#if(!(FP_FLOAT_VERSION))
 hP
 x;hC
 A;hP
@@ -1678,7 +1678,7 @@ TailCall_cSqrt;q5
 hE;q5
 hF;
 #endif
-#if(FP_FLOAT_VERSION)
+#if((FP_FLOAT_VERSION))
 hP
 x;hC
 A;hP

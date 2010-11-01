@@ -1264,6 +1264,93 @@ namespace
                               lineno);
         }
     }
+
+    template<typename T>
+    bool SplitConditionString(const std::string& s, T& set, T& unset)
+    {
+        size_t a=0, b=s.size();
+        bool glue_necessary = false;
+        while(a < b)
+        {
+            if(s[a] == ' ') { ++a; continue; }
+            if(s[a] == '(' || s[a] == ')') return false; // Cannot evaluate
+            bool positive = true;
+            if(s[a] == '!') { ++a; positive = false; if(a >= b) return false; }
+            if(glue_necessary)
+            {
+                if(s[a] != '&' || s[a+1] != '&') return false;
+                a += 2;
+                if(a >= b) return false;
+            }
+            while(a < b && s[a] == ' ') ++a;
+            if(a >= b) return false;
+            if((s[a] >= 'A' && s[a] <= 'Z')
+            || (s[a] >= 'a' && s[a] <= 'z')
+            || s[a]=='_')
+            {
+                size_t begin = a;
+                while(++a < b && ((s[a] >= 'A' && s[a] <= 'Z')
+                               || (s[a] >= 'a' && s[a] <= 'z')
+                               || (s[a] >= '0' && s[a] <= '9')
+                               || s[a]=='_'))
+                    { }
+                (positive ? set : unset).insert( s.substr(begin, a-begin) );
+                glue_necessary = true;
+                continue;
+            }
+            else
+                break;
+        }
+        return true;
+    }
+
+    std::string GetPreconditionMaskName(
+        const std::vector<std::string>& cond,
+        size_t bitmask)
+    {
+        std::set<std::string> enabled;
+        std::set<std::string> disabled;
+
+        for(size_t b=0; b<cond.size(); ++b)
+        {
+            if(bitmask & (1 << b))
+            {
+                std::string c = cond[b];
+                std::set<std::string> e, d;
+                if(!SplitConditionString(c, e, d))
+                    enabled.insert(c);
+                else
+                {
+                    enabled.insert(e.begin(), e.end());
+                    disabled.insert(d.begin(), d.end());
+                }
+            }
+            else
+            {
+                disabled.insert(cond[b]);
+                // No splitting of conditions here,
+                // because !(a && b) yields !a || !b, not !a && !b
+            }
+        }
+
+        std::string result;
+        bool first=true;
+        for(std::set<std::string>::const_iterator
+            i = enabled.begin(); i != enabled.end(); ++i)
+        {
+            if(disabled.find(*i) != disabled.end())
+                return std::string(); // conflicting conditions
+            if(first) first=false; else result += " && ";
+            result += "(" + *i + ")";
+        }
+        for(std::set<std::string>::const_iterator
+            i = disabled.begin(); i != disabled.end(); ++i)
+        {
+            if(first) first=false; else result += " && ";
+            result += "!(" + *i + ")";
+        }
+        return result;
+    }
 }
 
 int main()
@@ -1325,17 +1412,13 @@ int main()
             Generate(out);
         else
         {
-            const char* sep = "#if(";
-            for(size_t b=0; b<different_preconditions.size(); ++b, sep = " && ")
+            std::string mask = GetPreconditionMaskName(different_preconditions, n);
+            if(!mask.empty())
             {
-                if(n & (1 << b))
-                    out << sep << different_preconditions[b];
-                else
-                    out << sep << "!" << different_preconditions[b];
+                out << "#if(" << mask << ")\n";
+                Generate(out);
+                out << "#endif\n";
             }
-            out << ")\n";
-            Generate(out);
-            out << "#endif\n";
         }
     }
 
