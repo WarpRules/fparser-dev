@@ -2353,7 +2353,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t s = fp_sin(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(s == 0) { mEvalErrorType=1; return Value_t(0); }
+                  if(s == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/s; break;
               }
@@ -3063,7 +3063,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                 std::string        operation_prefix;
                 std::ostringstream operation_value;
                 int prio = 0;
-                if(exponent == 1.0)
+                if(exponent == Value_t(1.0))
                 {
                     if(opcode != cDup) goto not_powi_or_muli;
                     Value_t factor =

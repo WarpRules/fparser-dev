@@ -528,7 +528,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool fp_truth(const Value_t& d)
     {
         return IsIntType<Value_t>::result
-                ? d != 0
+                ? d != Value_t(0)
                 : fp_abs(d) >= Value_t(0.5);
     }
 
@@ -536,7 +536,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool fp_absTruth(const Value_t& abs_d)
     {
         return IsIntType<Value_t>::result
-                ? abs_d > 0
+                ? abs_d > Value_t(0)
                 : abs_d >= Value_t(0.5);
     }
 

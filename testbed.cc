@@ -1680,6 +1680,7 @@ namespace
 
         if(diff > Eps)
         {
+            using namespace FUNCTIONPARSERTYPES;
             if(verbosityLevel >= 2)
                 error << std::setprecision(16) << v2 << " instead of "
                       << std::setprecision(16) << v1
@@ -1746,9 +1747,13 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
     while(true)
     {
         unsigned paramInd = 0;
-        while(paramInd < testData.paramAmount &&
-              (vars[paramInd] += testData.paramStep) > testData.paramMax)
+        while(paramInd < testData.paramAmount)
         {
+            using namespace FUNCTIONPARSERTYPES;
+            /* ^ Import a possible <= operator from that
+             *   namespace for this particular comparison only */
+            vars[paramInd] += testData.paramStep;
+            if(vars[paramInd] <= testData.paramMax) break;
             vars[paramInd++] = testData.paramMin;
         }
 
@@ -1773,6 +1778,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             {
                 if(v1 != v2)
                 {
+                    using namespace FUNCTIONPARSERTYPES;
                     if(verbosityLevel >= 2)
                         error << v2 << " instead of " << v1;
                     else
@@ -1806,6 +1812,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
                 if(diff > Eps)
                 {
+                    using namespace FUNCTIONPARSERTYPES;
                     if(verbosityLevel >= 2)
                         error << std::setprecision(28) << v2 << " instead of "
                               << std::setprecision(28) << v1
@@ -1839,7 +1846,10 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
                 if(verbosityLevel >= 2)
                 {
-                    std::cout << std::endl << "Error: For (";
+                    using namespace FUNCTIONPARSERTYPES;
+                    // ^ For output of complex numbers according to fparser practice
+
+                    std::cout << std::endl << "Error: For (" << std::setprecision(20);
                     for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
                         std::cout << (ind>0 ? ", " : "") << vars[ind];
                     std::cout << ")\nthe library returned " << error.str()
@@ -1850,6 +1860,8 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 }
                 else
                 {
+                    using namespace FUNCTIONPARSERTYPES;
+
                     briefErrorMessages << "- " << testData.testName << " (";
                     for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
                         briefErrorMessages << (ind>0 ? "," : "") << vars[ind];
@@ -1985,7 +1997,8 @@ bool runRegressionTests(const std::string& valueType)
 
     // Test repeated constant addition
     // -------------------------------
-    for(Value_t value = 0; value < 20; value += 1)
+   {using namespace FUNCTIONPARSERTYPES; // For a possible custom < operator
+    for(Value_t value = 0; value < Value_t(20); value += 1)
     {
         if(!fp.AddConstant("TestConstant", value))
         {
@@ -1996,11 +2009,11 @@ bool runRegressionTests(const std::string& valueType)
         fp.Parse("TestConstant", "");
         if(fp.Eval(0) != value)
         {
-            if(value == 0) std::cout << "Usage of 'TestConstant' failed\n";
+            if(value == Value_t(0)) std::cout << "Usage of 'TestConstant' failed\n";
             else std::cout << "Changing the value of 'TestConstant' failed\n";
             return false;
         }
-    }
+    }}
 
     bool allRegressionTestsOk = true;
     std::ostringstream briefErrorMessages;
@@ -2424,6 +2437,7 @@ namespace OptimizerTests
                     FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
                 if(verbosityLevel >= 2)
                 {
+                    using namespace FUNCTIONPARSERTYPES;
                     std::cout
                         << "\nFor function \"" << functionString
                         << "\" (";
@@ -2444,6 +2458,7 @@ namespace OptimizerTests
                 }
                 else if(verbosityLevel >= 1)
                 {
+                    using namespace FUNCTIONPARSERTYPES;
                     std::cout << "<" << (isIntegral ? "long" : "double");
                     std::cout << (optimized ? ",optimized" : "");
                     std::cout << ">\"" << functionString

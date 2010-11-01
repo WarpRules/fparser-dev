@@ -325,7 +325,8 @@ namespace
                 pos += skip_length;
             }
         }
-        std::sort(result.begin(), result.end());
+
+        std::sort(result.begin(), result.end(), FUNCTIONPARSERTYPES::fp_less<Value_t> );
         result.erase(std::unique(result.begin(), result.end()), result.end());
         return result;
     }
