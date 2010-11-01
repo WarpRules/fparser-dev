@@ -1,4 +1,4 @@
-T=d ld li f mf gi cd
+T=d ld li f mf gi cd cf
 V=x,y
 R=0,1,1
 F= (x <= y) | (x = y)

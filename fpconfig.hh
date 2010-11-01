@@ -31,6 +31,7 @@
 //#define FP_SUPPORT_MPFR_FLOAT_TYPE
 //#define FP_SUPPORT_GMP_INT_TYPE
 //#define FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+//#define FP_SUPPORT_COMPLEX_FLOAT_TYPE
 
 /* Uncomment this line of define it in your compiler settings if you want
    to disable compiling the basic double version of the library, in case
@@ -106,7 +107,7 @@
 #define FP_SUPPORT_OPTIMIZER
 #endif
 
-#if defined(FP_SUPPORT_COMPLEX_DOUBLE_TYPE)
+#if defined(FP_SUPPORT_COMPLEX_DOUBLE_TYPE) || defined(FP_SUPPORT_COMPLEX_FLOAT_TYPE)
 #define FP_SUPPORT_COMPLEX_NUMBERS
 #endif
 

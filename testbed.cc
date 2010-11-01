@@ -104,6 +104,13 @@ namespace
     }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    template<>
+    inline std::complex<float> Epsilon<std::complex<float> >()
+        { return Epsilon<float>(); }
+#endif
+
+
 #ifndef _MSC_VER
     void setAnsiColor(unsigned color)
     {
@@ -2683,6 +2690,7 @@ int main(int argc, char* argv[])
         "    -mf, -mpfr        Test MpfrFloat datatype\n"
         "    -gi, -gmpint      Test GmpInt datatype\n"
         "    -cd               Test std::complex<double> datatype\n"
+        "    -cf               Test std::complex<float> datatype\n"
         "    -algo <n>         Run only algorithmic test <n>\n"
         "    -noalgo           Skip all algorithmic tests\n"
         "    -skipSlowAlgo     Skip slow algorithmic tests\n"
@@ -2700,7 +2708,7 @@ int main(int argc, char* argv[])
     bool runAlgoTests = true;
     bool run_d = false, run_f = false, run_ld = false;
     bool run_li = false, run_mf = false, run_gi = false;
-    bool run_cd = false;
+    bool run_cd = false, run_cf = false;
     unsigned runAlgoTest = 0;
 
     for(int i = 1; i < argc; ++i)
@@ -2787,6 +2795,8 @@ int main(int argc, char* argv[])
             runAllTypes = false, run_gi = true;
         else if(std::strcmp(argv[i], "-cd") == 0)
             runAllTypes = false, run_cd = true;
+        else if(std::strcmp(argv[i], "-cf") == 0)
+            runAllTypes = false, run_cf = true;
 
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
@@ -2867,6 +2877,11 @@ int main(int argc, char* argv[])
 #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
         if(runAllTypes || run_cd)
             if(!runRegressionTests<std::complex<double> >("std::complex<double>"))
+                allTestsOk = false;
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+        if(runAllTypes || run_cf)
+            if(!runRegressionTests<std::complex<float> >("std::complex<float>"))
                 allTestsOk = false;
 #endif
     }

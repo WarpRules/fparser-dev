@@ -1,4 +1,4 @@
-T=d ld f mf cd
+T=d ld f mf cd cf
 V=x
 R=-6,6,1
 F=(pow(x,3) >= -125)

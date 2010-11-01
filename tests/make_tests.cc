@@ -21,6 +21,7 @@ namespace
         if(type == "MpfrFloat") return "FP_SUPPORT_MPFR_FLOAT_TYPE";
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
         if(type == "std::complex<double>") return "FP_SUPPORT_COMPLEX_DOUBLE_TYPE";
+        if(type == "std::complex<float>") return "FP_SUPPORT_COMPLEX_FLOAT_TYPE";
         return std::string();
     }
     std::string GetTypeForDefine(const std::string& def)
@@ -31,6 +32,7 @@ namespace
         if(def == "FP_SUPPORT_MPFR_FLOAT_TYPE") return "MpfrFloat";
         if(def == "FP_SUPPORT_GMP_INT_TYPE") return "GmpInt";
         if(def == "FP_SUPPORT_COMPLEX_DOUBLE_TYPE") return "std::complex<double>";
+        if(def == "FP_SUPPORT_COMPLEX_FLOAT_TYPE") return "std::complex<float>";
         return "double";
     }
     std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
@@ -46,7 +48,8 @@ namespace
             if(endptr && !*endptr)
                 fltvalue += ".0";
 
-            if(type == "float")       return fltvalue + "f";
+            if(type == "float"
+            || type == "std::complex<float>") return fltvalue + "f";
             if(type == "long double") return fltvalue + "l";
             if(type == "double")      return fltvalue;
             return value;
@@ -63,7 +66,8 @@ namespace
                 return NumConst(type, value.substr(0,  value.size()-1-n_trailing_zeros));
             }
 
-            if(type == "std::complex<double>")
+            if(type == "std::complex<double>"
+            || type == "std::complex<float>")
             {
                 /* N() and P() require two parameters: a real part and an imaginary part.
                  * Make those two parts.
@@ -110,7 +114,8 @@ namespace
     }
     std::string NumConstDefines(const std::string& type)
     {
-        if(type == "std::complex<double>")
+        if(type == "std::complex<double>"
+        || type == "std::complex<float>")
             return "#define N(x,y) (Value_t(x,y))\n";
         if(type == "MpfrFloat")
             return "#define N(x) (Value_t(#x,0))\n"
@@ -125,7 +130,8 @@ namespace
     }
     std::string NumConstUndefines(const std::string& type)
     {
-        if(type == "std::complex<double>") return "#undef N\n";
+        if(type == "std::complex<double>"
+        || type == "std::complex<float>") return "#undef N\n";
         if(type == "long" || type == "GmpInt") return "#undef P\n";
         return "#undef N\n"
                "#undef P\n";
@@ -146,6 +152,8 @@ namespace
             return ("GmpInt");
         else if(typecode == "cd")
             return ("std::complex<double>");
+        else if(typecode == "cf")
+            return ("std::complex<float>");
         return typecode;
     }
     std::string test_declaration(const std::string& name)

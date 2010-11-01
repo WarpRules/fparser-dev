@@ -1,4 +1,4 @@
-T=d ld li f mf gi cd
+T=d ld li f mf gi cd cf
 V=x
 R=-6,6,1
 F=((((x*5/2)+x*x-2)) = ((x*5/2)+abs(x)))
