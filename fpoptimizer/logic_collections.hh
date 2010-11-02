@@ -299,7 +299,7 @@ namespace
 
             CodeTree<Value_t> exponent ( CollectMulGroup_Item(value, has_highlevel_opcodes) );
 
-            if(!factor.IsImmed() || factor.GetImmed() != 1.0)
+            if(!factor.IsImmed() || factor.GetImmed() != Value_t(1.0))
             {
                 CodeTree<Value_t> new_exp;
                 new_exp.SetOpcode(cMul);

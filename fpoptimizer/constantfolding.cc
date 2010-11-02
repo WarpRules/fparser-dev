@@ -411,7 +411,7 @@ namespace FPoptimizer_CodeTree
                     immed_sum += immed; ++n_immeds;
                 }
                 // Merge immeds.
-                if(n_immeds > 1 || (n_immeds == 1 && immed_sum == 0.0))
+                if(n_immeds > 1 || (n_immeds == 1 && immed_sum == Value_t(0)))
                     needs_resynth = true;
                 if(needs_resynth)
                 {
@@ -430,7 +430,7 @@ namespace FPoptimizer_CodeTree
                         #endif
                             tree.DelParam(a);
                         }
-                    if(!(immed_sum == 0.0))
+                    if(!(immed_sum == Value_t(0.0)))
                         tree.AddParam( CodeTreeImmed<Value_t> (immed_sum) );
                 }
                 switch(tree.GetParamCount())
@@ -547,7 +547,7 @@ namespace FPoptimizer_CodeTree
                  * If we know the operand is always negative, use actual negation.
                  */
                 range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
-                if(p0.has_min && p0.min >= 0.0)
+                if(p0.has_min && p0.min >= Value_t(0.0))
                     goto ReplaceTreeWithParam0;
                 if(p0.has_max && p0.max <= fp_const_negativezero<Value_t>())
                 {
@@ -571,7 +571,7 @@ namespace FPoptimizer_CodeTree
                     for(size_t a=0; a<p.GetParamCount(); ++a)
                     {
                         p0 = CalculateResultBoundaries( p.GetParam(a) );
-                        if(p0.has_min && p0.min >= 0.0)
+                        if(p0.has_min && p0.min >= Value_t(0.0))
                             { pos_set.push_back(p.GetParam(a)); }
                         if(p0.has_max && p0.max <= fp_const_negativezero<Value_t>())
                             { neg_set.push_back(p.GetParam(a)); }
@@ -593,7 +593,7 @@ namespace FPoptimizer_CodeTree
                         for(size_t a=0; a<p.GetParamCount(); ++a)
                         {
                             p0 = CalculateResultBoundaries( p.GetParam(a) );
-                            if((p0.has_min && p0.min >= 0.0)
+                            if((p0.has_min && p0.min >= Value_t(0.0))
                             || (p0.has_max && p0.max <= fp_const_negativezero<Value_t>()))
                                 {/*pclone.DelParam(a);*/}
                             else
@@ -762,17 +762,17 @@ namespace FPoptimizer_CodeTree
                 if(tree.GetParam(0).IsImmed()
                 && fp_equal(tree.GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {
-                    if(p1.has_max && (p1.max) < 0)          // y == 0 && x < 0
+                    if(p1.has_max && (p1.max) < Value_t(0))    // y == 0 && x < 0
                         { tree.ReplaceWithImmed( fp_const_pi<Value_t>() ); goto do_return; }
-                    if(p1.has_min && p1.min >= 0.0)           // y == 0 && x >= 0.0
+                    if(p1.has_min && p1.min >= Value_t(0.0))  // y == 0 && x >= 0.0
                         { tree.ReplaceWithImmed( Value_t(0) ); goto do_return; }
                 }
                 if(tree.GetParam(1).IsImmed()
                 && fp_equal(tree.GetParam(1).GetImmed(), Value_t(0)))   // x == 0
                 {
-                    if(p0.has_max && (p0.max) < 0)          // y < 0 && x == 0
+                    if(p0.has_max && (p0.max) < Value_t(0))   // y < 0 && x == 0
                         { tree.ReplaceWithImmed( -fp_const_pihalf<Value_t>() ); goto do_return; }
-                    if(p0.has_min && p0.min > 0)              // y > 0 && x == 0
+                    if(p0.has_min && p0.min > Value_t(0))     // y > 0 && x == 0
                         { tree.ReplaceWithImmed(  fp_const_pihalf<Value_t>() ); goto do_return; }
                 }
                 if(tree.GetParam(0).IsImmed()
@@ -780,7 +780,7 @@ namespace FPoptimizer_CodeTree
                     { tree.ReplaceWithImmed( fp_atan2(tree.GetParam(0).GetImmed(),
                                              tree.GetParam(1).GetImmed()) );
                       goto do_return; }
-                if((p1.has_min && p1.min > 0.0)                   // p1 != 0.0
+                if((p1.has_min && p1.min > Value_t(0))            // p1 != 0.0
                 || (p1.has_max && (p1.max) < fp_const_negativezero<Value_t>())) // become atan(p0 / p1)
                 {
                     CodeTree<Value_t> pow_tree;
@@ -815,13 +815,13 @@ namespace FPoptimizer_CodeTree
             case cDiv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed()
-                && tree.GetParam(1).GetImmed() != 0.0)
+                && tree.GetParam(1).GetImmed() != Value_t(0.0))
                     { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() / tree.GetParam(1).GetImmed() );
                       goto do_return; }
                 break;
             case cInv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
-                && tree.GetParam(0).GetImmed() != 0.0)
+                && tree.GetParam(0).GetImmed() != Value_t(0.0))
                     { tree.ReplaceWithImmed( Value_t(1) / tree.GetParam(0).GetImmed() );
                       goto do_return; }
                 // Note: Could use (mulgroup)^immed optimization from cPow

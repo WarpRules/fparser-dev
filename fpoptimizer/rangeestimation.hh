@@ -21,6 +21,8 @@ namespace FPoptimizer_CodeTree
         void set_abs();
         void set_neg();
 
+        /////////
+
         template<unsigned Compare>
         void set_min_max_if
             (const Value_t& v,
@@ -50,25 +52,77 @@ namespace FPoptimizer_CodeTree
         void set_min_max
             (Value_t (*const func)(Value_t),
              range<Value_t> model = range<Value_t>());
+
+
+        /////////
+
+        template<unsigned Compare>
+        void set_min_max_if
+            (const Value_t& v,
+             Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
+
+        template<unsigned Compare>
+        void set_min_if
+            (const Value_t& v,
+             Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
+
+        template<unsigned Compare>
+        void set_max_if
+            (const Value_t& v,
+             Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
+
+        void set_min
+            (Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
+
+        void set_max
+            (Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
+
+        void set_min_max
+            (Value_t (*const func)(const Value_t&),
+             range<Value_t> model = range<Value_t>());
     };
 
     /* Analysis functions for a MinmaxTree */
     template<typename Value_t>
     inline bool IsLogicalTrueValue(const range<Value_t>& p, bool abs)
     {
-        if(p.has_min && p.min >= 0.5) return true;
-        if(!abs && p.has_max && p.max <= -0.5) return true;
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        {
+            if(p.has_min && p.min >= Value_t(1)) return true;
+            if(!abs && p.has_max && p.max <= Value_t(-1)) return true;
+        }
+        else
+        {
+            if(p.has_min && p.min >= Value_t(0.5)) return true;
+            if(!abs && p.has_max && p.max <= Value_t(-0.5)) return true;
+        }
         return false;
     }
 
     template<typename Value_t>
     inline bool IsLogicalFalseValue(const range<Value_t>& p, bool abs)
     {
-        if(abs)
-            return p.has_max && p.max < 0.5;
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        {
+            if(abs)
+                return p.has_max && p.max < Value_t(1);
+            else
+                return p.has_min && p.has_max
+                  && p.min > Value_t(-1) && p.max < Value_t(1);
+        }
         else
-            return p.has_min && p.has_max
-               && p.min > -0.5 && p.max < 0.5;
+        {
+            if(abs)
+                return p.has_max && p.max < Value_t(0.5);
+            else
+                return p.has_min && p.has_max
+                   && p.min > Value_t(-0.5) && p.max < Value_t(0.5);
+        }
     }
 
     /* This function calculates the minimum and maximum values

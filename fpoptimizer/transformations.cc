@@ -482,7 +482,7 @@ namespace FPoptimizer_CodeTree
                             div_params.push_back(GetParam(a).GetParam(0));
                             DelParam(a); // delete the pow group
                         }
-                        else if(exponent < 0 && isInteger(exponent))
+                        else if(exponent < Value_t(0) && isInteger(exponent))
                         {
                             CodeTree<Value_t> edited_powgroup;
                             edited_powgroup.SetOpcode(cPow);
@@ -758,7 +758,7 @@ namespace FPoptimizer_CodeTree
                         {
                             bool signed_chain = false;
 
-                            if(p1.GetImmed() < 0
+                            if(p1.GetImmed() < Value_t(0)
                             && r.sep_list[0] == 0
                             && r.n_int_sqrt > 0)
                             {
@@ -819,7 +819,7 @@ namespace FPoptimizer_CodeTree
                                 mul.AddParamMove(mul_item);
                             }
 
-                            if(p1.GetImmed() < 0 && !signed_chain)
+                            if(p1.GetImmed() < Value_t(0) && !signed_chain)
                             {
                                 mul.Rehash();
                                 SetOpcode(cInv);
@@ -844,7 +844,7 @@ namespace FPoptimizer_CodeTree
                  || !isLongInteger(p1.GetImmed())
                  || !IsOptimizableUsingPowi<Value_t>( makeLongInteger(p1.GetImmed()) )))
                 {
-                    if(p0.IsImmed() && p0.GetImmed() > 0.0)
+                    if(p0.IsImmed() && p0.GetImmed() > Value_t(0.0))
                     {
                         // Convert into cExp or Exp2.
                         //    x^y = exp(log(x) * y) =

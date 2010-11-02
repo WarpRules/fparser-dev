@@ -68,6 +68,8 @@ namespace FPoptimizer_CodeTree
         min = -min; max = -max;
     }
 
+    //////
+
     template<typename Value_t> template<unsigned Compare>
     void range<Value_t>::set_min_if
         (const Value_t& v,
@@ -132,6 +134,75 @@ namespace FPoptimizer_CodeTree
         set_min(func, model);
         set_max(func, model);
     }
+
+    //////
+
+    template<typename Value_t> template<unsigned Compare>
+    void range<Value_t>::set_min_if
+        (const Value_t& v,
+         Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        if(has_min && Comp<Compare>() (min,v))
+            min = func(min);
+        else
+            { has_min = model.has_min; min = model.min; }
+    }
+
+    template<typename Value_t> template<unsigned Compare>
+    void range<Value_t>::set_max_if
+        (const Value_t& v,
+         Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        if(has_max && Comp<Compare>() (max,v))
+            max = func(max);
+        else
+            { has_max = model.has_max; max = model.max; }
+    }
+
+    template<typename Value_t> template<unsigned Compare>
+    void range<Value_t>::set_min_max_if
+        (const Value_t& v,
+         Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        set_min_if<Compare> (v,func, model);
+        set_max_if<Compare> (v,func, model);
+    }
+
+    template<typename Value_t>
+    void range<Value_t>::set_min
+       (Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        if(has_min)
+            min = func(min);
+        else
+            { has_min = model.has_min; min = model.min; }
+    }
+
+    template<typename Value_t>
+    void range<Value_t>::set_max
+       (Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        if(has_max)
+            max = func(max);
+        else
+            { has_max = model.has_max; max = model.max; }
+    }
+
+    template<typename Value_t>
+    void range<Value_t>::set_min_max
+        (Value_t (*const func)(const Value_t&),
+         range<Value_t> model)
+    {
+        set_min(func, model);
+        set_max(func, model);
+    }
+
+    //////////////
 
     template<typename Value_t>
     range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree)
@@ -590,14 +661,14 @@ namespace FPoptimizer_CodeTree
                 {
                     if(y.max >= Value_t(0))
                     {
-                        if(!x.has_min || (x.min) < 0)
+                        if(!x.has_min || (x.min) < Value_t(0))
                             return range<Value_t>(-y.max, y.max);
                         else
                             return range<Value_t>(Value_t(0), y.max);
                     }
                     else
                     {
-                        if(!x.has_max || (x.max) >= 0)
+                        if(!x.has_max || (x.max) >= Value_t(0))
                             return range<Value_t>(y.max, -y.max);
                         else
                             return range<Value_t>(y.max, fp_const_negativezero<Value_t>());
@@ -623,7 +694,7 @@ namespace FPoptimizer_CodeTree
                     return range<Value_t>(Value_t(1), Value_t(1)); // 1^x = 1
                 }
                 if(tree.GetParam(1).IsImmed()
-                && tree.GetParam(1).GetImmed() > 0
+                && tree.GetParam(1).GetImmed() > Value_t(0)
                 && GetEvennessInfo(tree.GetParam(1)) == IsAlways)
                 {
                     // x ^ even_int_const always produces a non-negative value.
@@ -632,16 +703,16 @@ namespace FPoptimizer_CodeTree
                     range<Value_t> result;
                     result.has_min = true;
                     result.min = 0;
-                    if(tmp.has_min && tmp.min >= 0)
+                    if(tmp.has_min && tmp.min >= Value_t(0))
                         result.min = fp_pow(tmp.min, exponent);
-                    else if(tmp.has_max && tmp.max <= 0)
+                    else if(tmp.has_max && tmp.max <= Value_t(0))
                         result.min = fp_pow(tmp.max, exponent);
 
                     result.has_max = false;
                     if(tmp.has_min && tmp.has_max)
                     {
                         result.has_max = true;
-                        result.max     = std::max(fp_abs(tmp.min), fp_abs(tmp.max));
+                        result.max     = fp_max(fp_abs(tmp.min), fp_abs(tmp.max));
                         result.max     = fp_pow(result.max, exponent);
                     }
                     return result;
@@ -851,8 +922,8 @@ namespace FPoptimizer_CodeTree
             case cSqrt: // converted into cPow x 0.5
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                if(m.has_min) m.min = (m.min) < 0 ? 0 : fp_sqrt(m.min);
-                if(m.has_max) m.max = (m.max) < 0 ? 0 : fp_sqrt(m.max);
+                if(m.has_min) m.min = (m.min) < Value_t(0) ? 0 : fp_sqrt(m.min);
+                if(m.has_max) m.max = (m.max) < Value_t(0) ? 0 : fp_sqrt(m.max);
                 return m;
             }
             case cRSqrt: // converted into cPow x -0.5

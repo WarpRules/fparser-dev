@@ -470,7 +470,7 @@ namespace FPoptimizer_CodeTree
                 Value_t exponent = ParsePowiSequence<Value_t>(
                     ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
-                if(exponent != 1.0)
+                if(exponent != Value_t(1.0))
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
                     sim.AddConst(exponent);
@@ -484,7 +484,7 @@ namespace FPoptimizer_CodeTree
                     Value_t factor = ParseMuliSequence<Value_t>(
                         ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                         sim.GetStackTop()-1);
-                    if(factor != 1.0)
+                    if(factor != Value_t(1.0))
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
                         sim.AddConst(factor);

@@ -84,10 +84,10 @@ namespace
             if(!p.has_min || !p.has_max) return false;
             switch(when)
             {
-                case Eq0: return p.min==0.0 && p.max==p.min;
-                case Eq1: return p.min==1.0 && p.max==p.max;
-                case Gt0Le1: return p.min>0 && p.max<=1;
-                case Ge0Lt1: return p.min>=0 && p.max<1;
+                case Eq0: return p.min==Value_t(0.0) && p.max==p.min;
+                case Eq1: return p.min==Value_t(1.0) && p.max==p.max;
+                case Gt0Le1: return p.min>Value_t(0) && p.max<=Value_t(1);
+                case Ge0Lt1: return p.min>=Value_t(0) && p.max<Value_t(1);
                 default:;
             }
             return false;
