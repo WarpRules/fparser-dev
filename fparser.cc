@@ -3286,7 +3286,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cRad: n = "rad"; params = 1; break;
 
     #ifndef FP_DISABLE_EVAL
-                        case cEval: n = "eval"; params = mData->mVariablesAmount;
+                        case cEval: n = "eval"; params = mData->mVariablesAmount; break;
     #endif
 
                         case cFetch:
