@@ -67,7 +67,7 @@ void FunctionParserBase<GmpInt>::Optimize()
 {}
 #endif
 
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+/*#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
 template<>
 void FunctionParserBase<std::complex<double> >::Optimize()
 {}
@@ -83,7 +83,7 @@ void FunctionParserBase<std::complex<float> >::Optimize()
 template<>
 void FunctionParserBase<std::complex<long double> >::Optimize()
 {}
-#endif
+#endif*/
 
 FUNCTIONPARSER_INSTANTIATE_TYPES
 
