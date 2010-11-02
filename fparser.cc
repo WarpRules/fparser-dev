@@ -1234,6 +1234,23 @@ namespace
     const double EpsilonOrZero = 0.0;
 #endif
 
+    /* Needed by fp_opcode_add.inc if tracing is enabled */
+    template<typename Value_t>
+    std::string findName(const NamePtrsMap<Value_t>& nameMap,
+                         unsigned index,
+                         typename NameData<Value_t>::DataType type)
+    {
+        for(typename NamePtrsMap<Value_t>::const_iterator
+                iter = nameMap.begin();
+            iter != nameMap.end();
+            ++iter)
+        {
+            if(iter->second.type == type && iter->second.index == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
+    }
 }
 
 template<typename Value_t>
@@ -2835,23 +2852,6 @@ namespace
         {
             dest << ' ';
         }
-    }
-
-    template<typename Value_t>
-    std::string findName(const NamePtrsMap<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
-    {
-        for(typename NamePtrsMap<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
-        {
-            if(iter->second.type == type && iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
-        }
-        return "?";
     }
 
     const struct PowiMuliType

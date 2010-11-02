@@ -15,7 +15,7 @@ is available in the development package.
 #define FP_TRACE_OPCODENAME(op) \
     (op < VarBegin \
         ? FP_GetOpcodeName(OPCODE(op)) \
-        : findName(data->namePtrs,op,NameData<Value_t>::VARIABLE))
+        : findName(mData->mNamePtrs,op,NameData<Value_t>::VARIABLE))
 #define FP_TRACE_BYTECODE_ADD(opcode) \
     /*std::cout << "Adding opcode: " << FP_TRACE_OPCODENAME(opcode) \
                 << ", bytecode length " << data->ByteCode.size() \
