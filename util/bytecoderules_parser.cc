@@ -1080,6 +1080,46 @@ namespace
         }
     }
 
+    template<typename T>
+    bool SplitConditionString(const std::string& s, T& set, T& unset)
+    {
+        size_t a=0, b=s.size();
+        bool glue_necessary = false;
+        while(a < b)
+        {
+            if(s[a] == ' ') { ++a; continue; }
+            if(s[a] == '(' || s[a] == ')') return false; // Cannot evaluate
+            bool positive = true;
+            if(glue_necessary)
+            {
+                if(s[a] != '&' || s[a+1] != '&') return false;
+                a += 2;
+                if(a >= b) return false;
+            }
+            while(a < b && s[a] == ' ') ++a;
+            if(s[a] == '!') { ++a; positive = false; if(a >= b) return false; }
+            while(a < b && s[a] == ' ') ++a;
+            if(a >= b) return false;
+            if((s[a] >= 'A' && s[a] <= 'Z')
+            || (s[a] >= 'a' && s[a] <= 'z')
+            || s[a]=='_')
+            {
+                size_t begin = a;
+                while(++a < b && ((s[a] >= 'A' && s[a] <= 'Z')
+                               || (s[a] >= 'a' && s[a] <= 'z')
+                               || (s[a] >= '0' && s[a] <= '9')
+                               || s[a]=='_'))
+                    { }
+                (positive ? set : unset).insert( s.substr(begin, a-begin) );
+                glue_necessary = true;
+                continue;
+            }
+            else
+                break;
+        }
+        return true;
+    }
+
     struct ParsingMode
     {
         std::set<std::string> different_preconditions;
@@ -1117,23 +1157,67 @@ namespace
 
             if(mode.collect_preconditions)
             {
-                while(!Precondition.empty()
-                    && Precondition[0] == '!') Precondition.erase(Precondition.begin());
-                if(!Precondition.empty())
-                    mode.different_preconditions.insert(Precondition);
+                std::set<std::string> en, dis;
+                if(SplitConditionString(Precondition, en, dis))
+                {
+                    mode.different_preconditions.insert(en.begin(), en.end());
+                    mode.different_preconditions.insert(dis.begin(), dis.end());
+                }
+                else
+                {
+                    while(!Precondition.empty()
+                        && Precondition[0] == '!') Precondition.erase(Precondition.begin());
+                    if(!Precondition.empty())
+                        mode.different_preconditions.insert(Precondition);
+                }
                 continue;
             }
 
             if(!Precondition.empty())
             {
-                std::string cond = Precondition;
-                bool inverse = false;
-                while(cond[0] == '!')
-                    { inverse = !inverse; cond.erase(cond.begin()); }
-                if((mode.allowed_preconditions.find(cond)
-                 == mode.allowed_preconditions.end()) != inverse)
+                std::set<std::string> en, dis;
+                /*fprintf(stderr, "Rule %u, Condition %s, allowed:",
+                    lineno, Precondition.c_str());
+                for(std::set<std::string>::const_iterator
+                    i = mode.allowed_preconditions.begin();
+                    i != mode.allowed_preconditions.end();
+                    ++i)
+                    fprintf(stderr, " %s", i->c_str());*/
+
+                if(SplitConditionString(Precondition, en, dis))
                 {
-                    continue;
+                    bool ok = true;
+                    for(std::set<std::string>::const_iterator
+                        i = en.begin(); i != en.end(); ++i)
+                    {
+                        /*fprintf(stderr, "[en:%s]", i->c_str());*/
+                        if(mode.allowed_preconditions.find(*i)
+                        == mode.allowed_preconditions.end())
+                            { ok = false; break; }
+                    }
+                    for(std::set<std::string>::const_iterator
+                        i = dis.begin(); i != dis.end(); ++i)
+                    {
+                        /*fprintf(stderr, "[dis:%s]", i->c_str());*/
+                        if(mode.allowed_preconditions.find(*i)
+                        != mode.allowed_preconditions.end())
+                            { ok = false; break; }
+                    }
+                    /*fprintf(stderr, " - decision: %s\n", ok?"OK":" Not ok");
+                    fflush(stderr);*/
+                    if(!ok) continue;
+                }
+                else
+                {
+                    std::string cond = Precondition;
+                    bool inverse = false;
+                    while(cond[0] == '!')
+                        { inverse = !inverse; cond.erase(cond.begin()); }
+                    if((mode.allowed_preconditions.find(cond)
+                     == mode.allowed_preconditions.end()) != inverse)
+                    {
+                        continue;
+                    }
                 }
             }
 
@@ -1265,45 +1349,6 @@ namespace
         }
     }
 
-    template<typename T>
-    bool SplitConditionString(const std::string& s, T& set, T& unset)
-    {
-        size_t a=0, b=s.size();
-        bool glue_necessary = false;
-        while(a < b)
-        {
-            if(s[a] == ' ') { ++a; continue; }
-            if(s[a] == '(' || s[a] == ')') return false; // Cannot evaluate
-            bool positive = true;
-            if(s[a] == '!') { ++a; positive = false; if(a >= b) return false; }
-            if(glue_necessary)
-            {
-                if(s[a] != '&' || s[a+1] != '&') return false;
-                a += 2;
-                if(a >= b) return false;
-            }
-            while(a < b && s[a] == ' ') ++a;
-            if(a >= b) return false;
-            if((s[a] >= 'A' && s[a] <= 'Z')
-            || (s[a] >= 'a' && s[a] <= 'z')
-            || s[a]=='_')
-            {
-                size_t begin = a;
-                while(++a < b && ((s[a] >= 'A' && s[a] <= 'Z')
-                               || (s[a] >= 'a' && s[a] <= 'z')
-                               || (s[a] >= '0' && s[a] <= '9')
-                               || s[a]=='_'))
-                    { }
-                (positive ? set : unset).insert( s.substr(begin, a-begin) );
-                glue_necessary = true;
-                continue;
-            }
-            else
-                break;
-        }
-        return true;
-    }
-
     std::string GetPreconditionMaskName(
         const std::vector<std::string>& cond,
         size_t bitmask)
@@ -1316,14 +1361,14 @@ namespace
             if(bitmask & (1 << b))
             {
                 std::string c = cond[b];
-                std::set<std::string> e, d;
-                if(!SplitConditionString(c, e, d))
+                /*std::set<std::string> e, d;
+                if(!SplitConditionString(c, e, d))*/
                     enabled.insert(c);
-                else
+                /*else
                 {
                     enabled.insert(e.begin(), e.end());
                     disabled.insert(d.begin(), d.end());
-                }
+                }*/
             }
             else
             {
@@ -1415,7 +1460,7 @@ int main()
             std::string mask = GetPreconditionMaskName(different_preconditions, n);
             if(!mask.empty())
             {
-                out << "#if(" << mask << ")\n";
+                out << "#if(" << mask << ")\n" << std::flush;
                 Generate(out);
                 out << "#endif\n";
             }
