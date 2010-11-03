@@ -6,22 +6,27 @@
 # matches the function trees into the rules and performing those replacements
 # which can be performed.
 #
-# Copyright 2009 Joel Yliluoma, written specifically
+# Copyright 2010 Joel Yliluoma, written specifically
 #               for Warp's Function Parser (fparser).
 #
 
 #   asinh: log(x + sqrt(x*x + 1))
 #   acosh: log(x + sqrt(x*x - 1))
 #   atanh: log( (1+x) / (1-x)) / 2
-#   asin: atan2(x, sqrt(1-x*x))
-#   acos: atan2(sqrt(1-x*x), x)
-#   atan2: atan(x/y)
+#   asin: atan2(x, sqrt(1-x*x))     Complex: -i*log(i*x + sqrt(1 - x*x))
+#   acos: atan2(sqrt(1-x*x), x)     Complex: -i*log(x + i*sqrt(1 - x*x))
+#   atan:                           Complex: -0.5i * log( (1+i*x) / (1-i*x) )
+#   atan2: atan(y/x)
+#        = 2*atan(y/(sqrt(x^2+y^2) + x))
+#   sin:                            Complex: (exp(i*x) - exp(-i*x)) / (2i)
+#   cos:                            Complex: (exp(i*x) + exp(-i*x)) / (2)
+#   tan: sin/cos                    Complex: (i-i*exp(2i*x)) / (exp(2i*x)+1)
 #   sinh: (exp(x)-exp(-x)) / 2
 #       = exp(-x) * (exp(2*x)-1) / 2
 #   cosh: (exp(x)+exp(-x)) / 2
 #       = exp(-x) * (exp(2*x)+1) / 2
-#   tanh: sinh/cosh = (exp(2*x)-1) / (exp(2*x)+1)
-#   tan: sin/cos
+#   tanh: sinh/cosh
+#       = (exp(2*x)-1) / (exp(2*x)+1)
 #   log10: log/CONSTANT_L10I
 #   log2: log/CONSTANT_L2I
 #   sqrt: pow(x, 0.5)
