@@ -429,9 +429,14 @@ namespace FUNCTIONPARSERTYPES
 // Synthetic functions and fallbacks for when an optimized
 // implementation or a library function is not available
 // -------------------------------------------------------------------------
+    template<typename Value_t> inline Value_t fp_arg(const Value_t& x);
     template<typename Value_t> inline Value_t fp_exp2(const Value_t& x);
     template<typename Value_t> inline Value_t fp_int(const Value_t& x);
     template<typename Value_t> inline Value_t fp_trunc(const Value_t& x);
+    template<typename Value_t>
+    inline void fp_sinCos(Value_t& , Value_t& , const Value_t& );
+    template<typename Value_t>
+    inline void fp_sinhCosh(Value_t& , Value_t& , const Value_t& );
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     /* NOTE: Complex multiplication of a and b can be done with:
@@ -441,6 +446,25 @@ namespace FUNCTIONPARSERTYPES
         This has fewer multiplications than the standard
         algorithm. Take note, if you support mpfr complex one day.
     */
+
+    template<typename T>
+    struct FP_ProbablyHasFastLibcComplex
+    { enum { result = false }; };
+    /* The generic sqrt() etc. implementations in libstdc++
+     * are very plain and non-optimized; however, it contains
+     * callbacks to libc complex math functions where possible,
+     * and I suspect that those may actually be well optimized.
+     * So we use std:: functions when we suspect they may be fast,
+     * and otherwise we use our own optimized implementations.
+     */
+  #ifdef __GNUC__
+    template<> struct FP_ProbablyHasFastLibcComplex<float>
+    { enum { result = true }; };
+    template<> struct FP_ProbablyHasFastLibcComplex<double>
+    { enum { result = true }; };
+    template<> struct FP_ProbablyHasFastLibcComplex<long double>
+    { enum { result = true }; };
+  #endif
 
     template<typename T>
     inline std::complex<T> fp_real(const std::complex<T>& x)
@@ -462,11 +486,18 @@ namespace FUNCTIONPARSERTYPES
     {
         return std::conj(x);
     }
+    template<typename T, bool>
+    inline std::complex<T> fp_polar(const T& x, const T& y)
+    {
+        T si, co; fp_sinCos(si, co, y);
+        return std::complex<T> (x*co, x*si);
+    }
     template<typename T>
     inline std::complex<T> fp_polar(const std::complex<T>& x, const std::complex<T>& y)
     {
         // x * cos(y) + i * x * sin(y) -- arguments are supposed to be REAL numbers
-        return std::polar(x.real(), y.real());
+        return fp_polar<T,true> (x.real(), y.real());
+        //return std::polar(x.real(), y.real());
         //return x * (fp_cos(y) + (std::complex<T>(0,1) * fp_sin(y));
     }
 
@@ -502,32 +533,31 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_exp(const std::complex<T>& x)
     {
-        return std::exp(x);
-        // // exp(Xr) * (cos(Xi) + i*sin(Xi))
-        // // exp(Xr)*cos(Xi) + i*exp(Xr)*sin(Xi)
-        // const T ex(fp_exp(x.real()));
-        // return std::polar(ex, x.imag());
+        if(FP_ProbablyHasFastLibcComplex<T>::result)
+            return std::exp(x);
+        return fp_polar<T,true>(fp_exp(x.real()), x.imag());
     }
     template<typename T>
     inline std::complex<T> fp_log(const std::complex<T>& x)
     {
-        return std::log(x);
-        // // 0.5*log(Xr^2 + Xi^2) + i*arg(x)
-        // // log(hypot(Xr,Xi)) + i*atan2(Xi,Xr)
-        // // log(hypot(Xr,Xi)) + 2i*atan(Xi / (Xr+hypot(Xr,Xy)))
-        // if(x.imag()==T()) return fp_log(x.real()); // <-optimization
-        // return std::complex<T> (
-        //     T(0.5)*fp_log(x.real()*x.real() + x.imag()*x.imag()),
-        //     fp_atan2(x.imag(),x.real()) );
-        // //const T hyp(fp_hypot(x.real(), x.imag()));
-        // //const T at(fp_atan(x.imag() / (x.real()+hyp)));
-        // //return std::complex<T> (fp_log(hyp), at+at);
+        if(FP_ProbablyHasFastLibcComplex<T>::result)
+            return std::log(x);
+        // log(abs(x))        + i*arg(x)
+        // log(Xr^2+Xi^2)*0.5 + i*arg(x)
+        if(x.imag()==T())
+            return std::complex<T>( fp_log(fp_abs(x.real())),
+                                    fp_arg(x.real()) ); // Note: Uses real-value fp_arg() here!
+        return std::complex<T>(
+            fp_log(std::norm(x)) * T(0.5),
+            fp_arg(x).real() );
     }
     template<typename T>
     inline std::complex<T> fp_sqrt(const std::complex<T>& x)
     {
-        return std::sqrt(x);
-        // return std::polar(fp_sqrt(fp_abs(x)), T(0.5)*fp_arg(x));
+        if(FP_ProbablyHasFastLibcComplex<T>::result)
+            return std::sqrt(x);
+        return fp_polar<T,true> (fp_sqrt(fp_abs(x).real()),
+                                 T(0.5)*fp_arg(x).real());
     }
     template<typename T>
     inline std::complex<T> fp_acos(const std::complex<T>& x)
@@ -583,9 +613,38 @@ namespace FUNCTIONPARSERTYPES
         //     fp_cos(x.real())*fp_sinh(x.imag()));
     }
     template<typename T>
+    inline void fp_sinCos(
+        std::complex<T>& sinvalue,
+        std::complex<T>& cosvalue,
+        const std::complex<T>& x)
+    {
+        //const std::complex<T> i (T(), T(1)), expix(fp_exp(i*x)), expmix(fp_exp((-i)*x));
+        //cosvalue = (expix + expmix) * T(0.5);
+        //sinvalue = (expix - expmix) * (i*T(-0.5));
+        // The above expands to the following:
+        T srx, crx; fp_sinCos(srx, crx, x.real());
+        T six, cix; fp_sinhCosh(six, cix, x.imag());
+        sinvalue = std::complex<T>(srx*cix,  crx*six);
+        cosvalue = std::complex<T>(crx*cix, -srx*six);
+    }
+    template<typename T>
+    inline void fp_sinhCosh(
+        std::complex<T>& sinhvalue,
+        std::complex<T>& coshvalue,
+        const std::complex<T>& x)
+    {
+        T srx, crx; fp_sinhCosh(srx, crx, x.real());
+        T six, cix; fp_sinCos(six, cix, x.imag());
+        sinhvalue = std::complex<T>(srx*cix, crx*six);
+        coshvalue = std::complex<T>(crx*cix, srx*six);
+    }
+    template<typename T>
     inline std::complex<T> fp_tan(const std::complex<T>& x)
     {
         return std::tan(x);
+        //std::complex<T> si, co;
+        //fp_sinCos(si, co, x);
+        //return si/co;
         // // (i-i*exp(2i*x)) / (exp(2i*x)+1)
         // const std::complex<T> i (T(), T(1)), exp2ix=fp_exp((2*i)*x);
         // return (i-i*exp2ix) / (exp2ix+T(1));
@@ -616,6 +675,9 @@ namespace FUNCTIONPARSERTYPES
     inline std::complex<T> fp_tanh(const std::complex<T>& x)
     {
         return std::tanh(x);
+        //std::complex<T> si, co;
+        //fp_sinhCosh(si, co, x);
+        //return si/co;
         // // (exp(2*x)-1) / (exp(2*x)+1)
         // // Also: sinh(x)/tanh(x)
         // const std::complex<T> exp2x=fp_exp(x+x);
@@ -625,23 +687,44 @@ namespace FUNCTIONPARSERTYPES
     inline std::complex<T> fp_pow(const std::complex<T>& x, const std::complex<T>& y)
     {
         // return std::pow(x,y);
-        const std::complex<T> t(fp_log(x));
-        if(y.imag() == T())
-        {
-            // If y is real, this works and is faster:
-            //  t := log(x)
-            //  rho   := exp(y*t.real());
-            //  theta := y*t.imag()
-            //  polar(rho, theta) which is: rho * cos(theta) + i*rho*sin(theta)
-            return std::polar(fp_exp(y.real() * t.real()), y.real()*t.imag());
-        }
-        if(x.imag() == T() && x.real() > T())
-        {
-            // polar(Xr ^ Yr, Yi * log(Xr))
-            return std::polar(fp_pow(x.real(), y.real()), y.imag()*t.real());
-        }
-        // exp(y * log(x))
-        return fp_exp(y * t);
+
+        // With complex numbers, pow(x,y) can be solved with
+        // the general formula: exp(y*log(x)). It handles
+        // all special cases gracefully.
+        // It expands to the following:
+        // A)
+        //     t1 = log(x)
+        //     t2 = y * t1
+        //     res = exp(t2)
+        // B)
+        //     t1.r = log(x.r * x.r + x.i * x.i) * 0.5  \ fp_log()
+        //     t1.i = atan2(x.i, x.r)                   /
+        //     t2.r = y.r*t1.r - y.i*t1.i          \ multiplication
+        //     t2.i = y.r*t1.i + y.i*t1.r          /
+        //     rho   = exp(t2.r)        \ fp_exp()
+        //     theta = t2.i             /
+        //     res.r = rho * cos(theta)   \ fp_polar(), called from
+        //     res.i = rho * sin(theta)   / fp_exp(). Uses sincos().
+        // Aside from the common "norm" calculation in atan2()
+        // and in the log parameter, both of which are part of fp_log(),
+        // there does not seem to be any incentive to break this
+        // function down further; it would not help optimizing it.
+        // However, we do handle the following special cases:
+        //
+        // When x is real (positive or negative):
+        //     t1.r = log(abs(x.r))
+        //     t1.i = x.r<0 ? -pi : 0
+        // When y is real:
+        //     t2.r = y.r * t1.r
+        //     t2.i = y.r * t1.i
+        const std::complex<T> t =
+            (x.imag() != T())
+            ? fp_log(x)
+            : std::complex<T> (fp_log(fp_abs(x.real())),
+                               fp_arg(x.real())); // Note: Uses real-value fp_arg() here!
+        return y.imag() != T()
+            ? fp_exp(y * t)
+            : fp_polar<T,true> (fp_exp(y.real()*t.real()), y.real()*t.imag());
     }
     template<typename T>
     inline std::complex<T> fp_cbrt(const std::complex<T>& x)
@@ -655,7 +738,7 @@ namespace FUNCTIONPARSERTYPES
         // exp(log(x)/3) gives A, but we prefer to give C.
         if(x.imag() == T()) return fp_cbrt(x.real());
         const std::complex<T> t(fp_log(x));
-        return std::polar(fp_exp(t.real() / T(3)), t.imag() / T(3));
+        return fp_polar<T,true> (fp_exp(t.real() / T(3)), t.imag() / T(3));
     }
 
     template<typename T>
@@ -663,7 +746,7 @@ namespace FUNCTIONPARSERTYPES
     {
         // pow(2, x)
         // polar(2^Xr, Xi*log(2))
-        return std::polar(fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
+        return fp_polar<T,true> (fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
     }
     template<typename T>
     inline std::complex<T> fp_mod(const std::complex<T>& x, const std::complex<T>& y)
@@ -751,7 +834,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_imag(const Value_t& ) { return Value_t(); }
     template<typename Value_t>
     inline Value_t fp_arg(const Value_t& x)
-        { return x < Value_t() ? fp_const_pi<Value_t>() : Value_t(); }
+        { return x < Value_t() ? -fp_const_pi<Value_t>() : Value_t(); }
     template<typename Value_t>
     inline Value_t fp_conj(const Value_t& x) { return x; }
     template<typename Value_t>
@@ -852,10 +935,8 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_atan2(const Value_t& y, const Value_t& x)
     {
-        if(y == Value_t())
-            return (x < Value_t() ? fp_const_pi<Value_t>() : Value_t());
-        if(x == Value_t())
-            return fp_const_pi<Value_t>() * Value_t(-0.5);
+        if(y == Value_t()) return fp_arg(x);
+        if(x == Value_t()) return fp_const_pi<Value_t>() * Value_t(-0.5);
         // 2*atan(y / (sqrt(x^2+y^2) + x)    )
         // 2*atan(    (sqrt(x^2+y^2) - x) / y)
         Value_t res( fp_atan(y / (fp_hypot(x,y) + x)) );
