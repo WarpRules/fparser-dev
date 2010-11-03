@@ -2924,6 +2924,16 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           endif
               Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+          case   cReal: Stack[SP] = fp_real(Stack[SP]); break;
+          case   cImag: Stack[SP] = fp_imag(Stack[SP]); break;
+          case   cArg:  Stack[SP] = fp_arg(Stack[SP]); break;
+          case   cConj: Stack[SP] = fp_conj(Stack[SP]); break;
+          case   cPolar:
+              Stack[SP-1] = fp_polar(Stack[SP-1], Stack[SP]);
+              --SP; break;
+#endif
+
 
 // Variables:
           default:

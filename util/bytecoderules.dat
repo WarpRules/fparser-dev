@@ -60,6 +60,7 @@ cDup cMin ->				    # TEST 10/dupminmax
 cDup cMax ->				    # TEST 10/dupminmax
 cNeg cNeg ->                                # TEST 10/negneg
 IF(FP_FLOAT_VERSION) cInv  cInv ->          # TEST 10/invinv
+IF(FP_COMPLEX_VERSION) cConj cConj ->
 
 B [B==A] cDup A [IsVarOpcode(A)] cMin -> B cDup # TEST 10/dupminmax2
 B [B==A] cDup A [IsVarOpcode(A)] cMax -> B cDup # TEST 10/dupminmax2
@@ -75,6 +76,10 @@ y [y*x==Value_t(1)] cMul x cMul ->              # TEST 10/mul1b
 cDup cSub        -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cRSub       -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cDiv        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 10/divxx
+
+IF(FP_COMPLEX_VERSION) cReal cImag -> [Value_t()] cMul
+IF(FP_COMPLEX_VERSION) cAbs  cImag -> [Value_t()] cMul
+
 IF(FP_FLOAT_VERSION) x [x==Value_t()] cPow -> [Value_t()] cMul [Value_t(1)] cAdd
 IF(FP_FLOAT_VERSION) cSinCos cHypot        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 99/59
 
@@ -182,6 +187,11 @@ IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSqrt			-> [fp_sqrt(x)]
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]                 # TEST 10/tan*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]                # TEST 10/tanh*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y x cPow			-> [fp_pow(y,x)]
+IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cArg                       -> [fp_arg(x)]
+IF(FP_COMPLEX_VERSION)                     x cReal                      -> [fp_real(x)]
+IF(FP_COMPLEX_VERSION)                     x cImag                      -> [fp_imag(x)]
+IF(FP_COMPLEX_VERSION)                     x cConj                      -> [fp_conj(x)]
+IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x y cPolar                   -> [fp_polar(x,y)]
 
 ###### SIMPLIFYING SOME OPCODE SEQUENCES :
 

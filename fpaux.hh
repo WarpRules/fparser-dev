@@ -442,6 +442,34 @@ namespace FUNCTIONPARSERTYPES
         algorithm. Take note, if you support mpfr complex one day.
     */
 
+    template<typename T>
+    inline std::complex<T> fp_real(const std::complex<T>& x)
+    {
+        return x.real();
+    }
+    template<typename T>
+    inline std::complex<T> fp_imag(const std::complex<T>& x)
+    {
+        return x.imag();
+    }
+    template<typename T>
+    inline std::complex<T> fp_arg(const std::complex<T>& x)
+    {
+        return std::arg(x);
+    }
+    template<typename T>
+    inline std::complex<T> fp_conj(const std::complex<T>& x)
+    {
+        return std::conj(x);
+    }
+    template<typename T>
+    inline std::complex<T> fp_polar(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        // x * cos(y) + i * x * sin(y) -- arguments are supposed to be REAL numbers
+        return std::polar(x.real(), y.real());
+        //return x * (fp_cos(y) + (std::complex<T>(0,1) * fp_sin(y));
+    }
+
     // These provide fallbacks in case there's no library function
     template<typename T>
     inline std::complex<T> fp_floor(const std::complex<T>& x)
@@ -478,15 +506,13 @@ namespace FUNCTIONPARSERTYPES
         // // exp(Xr) * (cos(Xi) + i*sin(Xi))
         // // exp(Xr)*cos(Xi) + i*exp(Xr)*sin(Xi)
         // const T ex(fp_exp(x.real()));
-        // return std::complex<T> (
-        //     ex*fp_cos(x.imag()),
-        //     ex*fp_sin(x.imag()) );
+        // return std::polar(ex, x.imag());
     }
     template<typename T>
     inline std::complex<T> fp_log(const std::complex<T>& x)
     {
         return std::log(x);
-        // // 0.5*log(Xr^2 + Xi^2) + i*atan2(Xi,Xr)
+        // // 0.5*log(Xr^2 + Xi^2) + i*arg(x)
         // // log(hypot(Xr,Xi)) + i*atan2(Xi,Xr)
         // // log(hypot(Xr,Xi)) + 2i*atan(Xi / (Xr+hypot(Xr,Xy)))
         // if(x.imag()==T()) return fp_log(x.real()); // <-optimization
@@ -501,16 +527,7 @@ namespace FUNCTIONPARSERTYPES
     inline std::complex<T> fp_sqrt(const std::complex<T>& x)
     {
         return std::sqrt(x);
-        // // sqrt(Xr) * exp(i * atan2(Xi, Xr))
-        // // Note: sin(atan2(y,x)) = y / hypot(x,y)
-        // //   and cos(atan2(y,x)) = x / hypot(x,y)
-        // //
-        // // Thus, as exp(i*atan2(Xi,Xr)) = exp(0)*cos(atan2(Xi,Xr))
-        // //                            + i*exp(0)*sin(atan2(Xi,Xr))
-        // // We get: exp(...) = y/hypot(x,y) + i*x/hypot(x,y)
-        // if(x == std::complex<T>(T(),T())) return x; // sqrt(0)
-        // const T hyp(fp_hypot(x.real(), x.imag()));
-        // return fp_sqrt(x.real()) * std::complex<T> (x.real()/hyp, x.imag()/hyp);
+        // return std::polar(fp_sqrt(fp_abs(x)), T(0.5)*fp_arg(x));
     }
     template<typename T>
     inline std::complex<T> fp_acos(const std::complex<T>& x)
@@ -547,7 +564,7 @@ namespace FUNCTIONPARSERTYPES
         return std::cos(x);
         // // (exp(i*x) + exp(-i*x)) / (2)
         // //const std::complex<T> i (T(), T(1));
-        // //return (fp_exp(i*x) + fp_exp(-i*x)) / T(2);
+        // //return (fp_exp(i*x) + fp_exp(-i*x)) * T(0.5);
         // // Also: cos(Xr)*cosh(Xi) - i*sin(Xr)*sinh(Xi)
         // return std::complex<T> (
         //     fp_cos(x.real())*fp_cosh(x.imag()),
@@ -559,7 +576,7 @@ namespace FUNCTIONPARSERTYPES
         return std::sin(x);
         // // (exp(i*x) - exp(-i*x)) / (2i)
         // //const std::complex<T> i (T(), T(1));
-        // //return (fp_exp(i*x) - fp_exp(-i*x)) / (i+i);
+        // //return (fp_exp(i*x) - fp_exp(-i*x)) * (T(-0.5)*i);
         // // Also: sin(Xr)*cosh(Xi) + cos(Xr)*sinh(Xi)
         // return std::complex<T> (
         //     fp_sin(x.real())*fp_cosh(x.imag()),
@@ -727,6 +744,19 @@ namespace FUNCTIONPARSERTYPES
     d( < ) d( <= ) d( > ) d( >= )
     #undef d
 #endif
+
+    template<typename Value_t>
+    inline Value_t fp_real(const Value_t& x) { return x; }
+    template<typename Value_t>
+    inline Value_t fp_imag(const Value_t& ) { return Value_t(); }
+    template<typename Value_t>
+    inline Value_t fp_arg(const Value_t& x)
+        { return x < Value_t() ? fp_const_pi<Value_t>() : Value_t(); }
+    template<typename Value_t>
+    inline Value_t fp_conj(const Value_t& x) { return x; }
+    template<typename Value_t>
+    inline Value_t fp_polar(const Value_t& x, const Value_t& y)
+        { return x * fp_cos(y); } // This is of course a meaningless function.
 
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)

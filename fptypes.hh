@@ -31,14 +31,21 @@ namespace FUNCTIONPARSERTYPES
 // match that which is in the Functions[] array.
         cAbs,
         cAcos, cAcosh,
+        cArg,   /* get the phase angle of a complex value */
         cAsin, cAsinh,
         cAtan, cAtan2, cAtanh,
         cCbrt, cCeil,
+        cConj,  /* get the complex conjugate of a complex value */
         cCos, cCosh, cCot, cCsc,
         cEval,
         cExp, cExp2, cFloor, cHypot,
-        cIf, cInt, cLog, cLog10, cLog2, cMax, cMin,
-        cPow, cSec, cSin, cSinh, cSqrt, cTan, cTanh,
+        cIf,
+        cImag,  /* get imaginary part of a complex value */
+        cInt, cLog, cLog10, cLog2, cMax, cMin,
+        cPolar, /* create a complex number from polar coordinates */
+        cPow,
+        cReal,  /* get real part of a complex value */
+        cSec, cSin, cSinh, cSqrt, cTan, cTanh,
         cTrunc,
 
 // These do not need any ordering:
@@ -86,10 +93,11 @@ namespace FUNCTIONPARSERTYPES
     {
         enum FunctionFlags
         {
-            Enabled  = 0x01,
-            AngleIn  = 0x02,
-            AngleOut = 0x04,
-            OkForInt = 0x08
+            Enabled     = 0x01,
+            AngleIn     = 0x02,
+            AngleOut    = 0x04,
+            OkForInt    = 0x08,
+            ComplexOnly = 0x10
         };
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
@@ -126,6 +134,8 @@ namespace FUNCTIONPARSERTYPES
                      FuncDefinition::Enabled | FuncDefinition::AngleOut },
         /*cAcosh*/ { FP_FNAME("acosh"), 1,
                      FuncDefinition::Enabled | FuncDefinition::AngleOut },
+        /*cArg */  { FP_FNAME("arg"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::AngleOut | FuncDefinition::ComplexOnly },
         /*cAsin */ { FP_FNAME("asin"),  1,
                      FuncDefinition::Enabled | FuncDefinition::AngleOut },
         /*cAsinh*/ { FP_FNAME("asinh"), 1,
@@ -137,6 +147,8 @@ namespace FUNCTIONPARSERTYPES
         /*cAtanh*/ { FP_FNAME("atanh"), 1, FuncDefinition::Enabled },
         /*cCbrt */ { FP_FNAME("cbrt"),  1, FuncDefinition::Enabled },
         /*cCeil */ { FP_FNAME("ceil"),  1, FuncDefinition::Enabled },
+        /*cConj */ { FP_FNAME("conj"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::ComplexOnly },
         /*cCos  */ { FP_FNAME("cos"),   1,
                      FuncDefinition::Enabled | FuncDefinition::AngleIn },
         /*cCosh */ { FP_FNAME("cosh"),  1,
@@ -152,6 +164,8 @@ namespace FUNCTIONPARSERTYPES
         /*cHypot*/ { FP_FNAME("hypot"), 2, FuncDefinition::Enabled },
         /*cIf   */ { FP_FNAME("if"),    0,
                      FuncDefinition::Enabled | FuncDefinition::OkForInt },
+        /*cImag */ { FP_FNAME("imag"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::ComplexOnly },
         /*cInt  */ { FP_FNAME("int"),   1, FuncDefinition::Enabled },
         /*cLog  */ { FP_FNAME("log"),   1, FuncDefinition::Enabled },
         /*cLog10*/ { FP_FNAME("log10"), 1, FuncDefinition::Enabled },
@@ -160,7 +174,11 @@ namespace FUNCTIONPARSERTYPES
                      FuncDefinition::Enabled | FuncDefinition::OkForInt },
         /*cMin  */ { FP_FNAME("min"),   2,
                      FuncDefinition::Enabled | FuncDefinition::OkForInt },
+        /*cPolar */{ FP_FNAME("polar"), 2,
+                     FuncDefinition::Enabled | FuncDefinition::ComplexOnly | FuncDefinition::AngleIn },
         /*cPow  */ { FP_FNAME("pow"),   2, FuncDefinition::Enabled },
+        /*cReal */ { FP_FNAME("real"),  1,
+                     FuncDefinition::Enabled | FuncDefinition::ComplexOnly },
         /*cSec  */ { FP_FNAME("sec"),   1,
                      FuncDefinition::Enabled | FuncDefinition::AngleIn },
         /*cSin  */ { FP_FNAME("sin"),   1,

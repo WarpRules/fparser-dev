@@ -49,6 +49,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cAbs: p = "cAbs"; break;
         case cAcos: p = "cAcos"; break;
         case cAcosh: p = "cAcosh"; break;
+        case cArg: p = "cArg"; break;
         case cAsin: p = "cAsin"; break;
         case cAsinh: p = "cAsinh"; break;
         case cAtan: p = "cAtan"; break;
@@ -56,6 +57,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cAtanh: p = "cAtanh"; break;
         case cCbrt: p = "cCbrt"; break;
         case cCeil: p = "cCeil"; break;
+        case cConj: p = "cConj"; break;
         case cCos: p = "cCos"; break;
         case cCosh: p = "cCosh"; break;
         case cCot: p = "cCot"; break;
@@ -66,13 +68,16 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cFloor: p = "cFloor"; break;
         case cHypot: p = "cHypot"; break;
         case cIf: p = "cIf"; break;
+        case cImag: p = "cImag"; break;
         case cInt: p = "cInt"; break;
         case cLog: p = "cLog"; break;
         case cLog2: p = "cLog2"; break;
         case cLog10: p = "cLog10"; break;
         case cMax: p = "cMax"; break;
         case cMin: p = "cMin"; break;
+        case cPolar: p = "cPolar"; break;
         case cPow: p = "cPow"; break;
+        case cReal: p = "cReal"; break;
         case cSec: p = "cSec"; break;
         case cSin: p = "cSin"; break;
         case cSinh: p = "cSinh"; break;

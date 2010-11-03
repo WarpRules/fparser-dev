@@ -1183,13 +1183,18 @@ Without epsilon this comparison probably returns the wrong value.
 <p><table border=2>
 <tr>
  <td><code>abs(A)</code></td>
- <td>Absolute value of A. If A is negative, returns -A otherwise returns A.</td>
+ <td>Absolute value (magnitude) of A.
+     With real numbers, if A is negative, returns -A otherwise returns A.
+     With complex numbers, equivalent to <code>hypot(real(x),imag(x))</code>.</td>
 </tr><tr>
   <td><code>acos(A)</code></td>
   <td>Arc-cosine of A. Returns the angle, measured in radians, whose cosine is A.</td>
 </tr><tr>
   <td><code>acosh(A)</code></td>
   <td>Same as acos() but for hyperbolic cosine.</td>
+</tr><tr>
+  <td><code>arg(A)</code></td>
+  <td>Phase angle of complex number A. Equivalent to <code>atan2(imag(x),real(x))</code>.</td>
 </tr><tr>
   <td><code>asin(A)</code></td>
   <td>Arc-sine of A. Returns the angle, measured in radians, whose sine is A.</td>
@@ -1213,6 +1218,9 @@ Without epsilon this comparison probably returns the wrong value.
 </tr><tr>
   <td><code>cbrt(A)</code></td>
   <td>Cube root of A. Returns a solution to expression pow(x,3)=A.</td>
+</tr><tr>
+  <td><code>conj(A)</code></td>
+  <td>Complex conjugate of A. Equivalent to <code>real(x) - 1i*imag(x)</code> or <code>polar(abs(x),-arg(x))</code>.</td>
 </tr><tr>
   <td><code>ceil(A)</code></td>
   <td>Ceiling of A. Returns the smallest integer not smaller than A.
@@ -1261,6 +1269,9 @@ Without epsilon this comparison probably returns the wrong value.
       evaluated, the other parameter is skipped; this makes it safe to
       use <code>eval()</code> in them.</td>
 </tr><tr>
+  <td><code>imag(A)</code></td>
+  <td>Return the imaginary part of complex number A. Equivalent to <code>abs(A)*sin(arg(A))</code>.</td>
+</tr><tr>
   <td><code>int(A)</code></td>
   <td>Rounds A to the closest integer. Equidistant values are rounded up.
     E.g. -2.9 is rounded to -3.0; -2.5 and -2.1 are rounded to -2.0,
@@ -1281,8 +1292,15 @@ Without epsilon this comparison probably returns the wrong value.
   <td><code>min(A,B)</code></td>
   <td>If A&lt;B, the result is A, else B.</td>
 </tr><tr>
+  <td><code>polar(A,B)</code></td>
+  <td>Returns a complex number from magnitude A, phase angle B (in radians).
+      Equivalent to <code>real(A)*(cos(real(B))+1i*sin(real(B)))</code>.</td>
+</tr><tr>
   <td><code>pow(A,B)</code></td>
   <td>Exponentiation (A raised to the power B).</td>
+</tr><tr>
+  <td><code>real(A)</code></td>
+  <td>Return the real part of complex number A. Equivalent to <code>abs(A)*cos(arg(A))</code>.</td>
 </tr><tr>
   <td><code>sec(A)</code></td>
   <td>Secant of A. Equivalent to <code>1/cos(A)</code>.</td>
