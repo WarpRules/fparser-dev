@@ -511,6 +511,25 @@ namespace FUNCTIONPARSERTYPES
     }
 
     template<typename T>
+    struct FP_ProbablyHasFastLibcComplex
+    { enum { result = false }; };
+    /* The generic sqrt() etc. implementations in libstdc++
+     * are very plain and non-optimized; however, it contains
+     * callbacks to libc complex math functions where possible,
+     * and I suspect that those may actually be well optimized.
+     * So we use std:: functions when we suspect they may be fast,
+     * and otherwise we use our own optimized implementations.
+     */
+  #ifdef __GNUC__
+    template<> struct FP_ProbablyHasFastLibcComplex<float>
+    { enum { result = true }; };
+    template<> struct FP_ProbablyHasFastLibcComplex<double>
+    { enum { result = true }; };
+    template<> struct FP_ProbablyHasFastLibcComplex<long double>
+    { enum { result = true }; };
+  #endif
+
+    template<typename T>
     inline std::complex<T> fp_real(const std::complex<T>& x)
     {
         return x.real();
