@@ -18,12 +18,18 @@ namespace
         size_t n_as_cos_param;
         size_t n_as_sin_param;
         size_t n_as_tan_param;
+        size_t n_as_cosh_param;
+        size_t n_as_sinh_param;
+        size_t n_as_tanh_param;
     public:
         TreeCountItem() :
             n_occurrences(0),
             n_as_cos_param(0),
             n_as_sin_param(0),
-            n_as_tan_param(0) { }
+            n_as_tan_param(0),
+            n_as_cosh_param(0),
+            n_as_sinh_param(0),
+            n_as_tanh_param(0) { }
 
         void AddFrom(OPCODE op)
         {
@@ -34,6 +40,9 @@ namespace
             if(op == cCsc) ++n_as_sin_param;
             if(op == cTan) ++n_as_tan_param;
             if(op == cCot) ++n_as_tan_param;
+            if(op == cSinh) ++n_as_sinh_param;
+            if(op == cCosh) ++n_as_cosh_param;
+            if(op == cTanh) ++n_as_tanh_param;
         }
 
         size_t GetCSEscore() const
@@ -64,9 +73,26 @@ namespace
             return 0;
         }
 
+        /* Calculate whether a sinhcosh() would be useful.
+         */
+        int NeedsSinhCosh() const
+        {
+            bool always_sincostan =
+                (n_occurrences == (n_as_cosh_param + n_as_sinh_param + n_as_tanh_param));
+            if((n_as_tanh_param && (n_as_sinh_param || n_as_cosh_param))
+            || (n_as_sinh_param && n_as_cosh_param))
+            {
+                if(always_sincostan)
+                    return 1;
+                return 2;
+            }
+            return 0;
+        }
+
         size_t MinimumDepth() const
         {
-            size_t n_sincos = std::min(n_as_cos_param, n_as_sin_param);
+            size_t n_sincos = std::min(n_as_cos_param, n_as_sin_param)
+                            + std::min(n_as_cosh_param, n_as_sinh_param);
             if(n_sincos == 0)
                 return 2;
             return 1;
@@ -362,8 +388,9 @@ namespace FPoptimizer_CodeTree
             std::cout << "Found Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << "\n";
     #endif
 
-            int needs_sincos = occ.NeedsSinCos();
-            CodeTree<Value_t> sintree, costree;
+            int needs_sincos   = occ.NeedsSinCos();
+            int needs_sinhcosh = occ.NeedsSinhCosh();
+            CodeTree<Value_t> sintree, costree, sinhtree, coshtree;
             if(needs_sincos)
             {
                 sintree.AddParam(tree);
@@ -382,6 +409,26 @@ namespace FPoptimizer_CodeTree
                         continue;
                     }
                     needs_sincos = 0;
+                }
+            }
+            if(needs_sinhcosh)
+            {
+                sinhtree.AddParam(tree);
+                sinhtree.SetOpcode(cSinh);
+                sinhtree.Rehash();
+                coshtree.AddParam(tree);
+                coshtree.SetOpcode(cCosh);
+                coshtree.Rehash();
+                if(synth.Find(sinhtree) || synth.Find(coshtree))
+                {
+                    if(needs_sinhcosh == 2)
+                    {
+                        // sin, cos already found, and we don't
+                        // actually need _this_ tree by itself
+                        TreeCounts.erase(synth_it);
+                        continue;
+                    }
+                    needs_sinhcosh = 0;
                 }
             }
 
@@ -403,6 +450,20 @@ namespace FPoptimizer_CodeTree
 
                 synth.StackTopIs(sintree, 1);
                 synth.StackTopIs(costree, 0);
+            }
+            if(needs_sinhcosh)
+            {
+                if(needs_sincos) synth.FindAndDup(tree);
+                if(needs_sinhcosh == 2)
+                {
+                    // make a duplicate of the value, since it
+                    // is also needed in addition to the sin/cos.
+                    synth.DoDup(synth.GetStackTop()-1);
+                }
+                synth.AddOperation(cSinhCosh, 1, 2);
+
+                synth.StackTopIs(sinhtree, 1);
+                synth.StackTopIs(coshtree, 0);
             }
         }
 

@@ -2645,6 +2645,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               fp_sinCos(Stack[SP], Stack[SP+1], Stack[SP]);
               ++SP;
               break;
+          case cSinhCosh:
+              fp_sinhCosh(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
 
           case cAbsNot:
               Stack[SP] = fp_absNot(Stack[SP]); break;
@@ -3332,6 +3336,22 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                                 stack.push_back(cos);
                             }
                             output << "sincos";
+                            produces = 0;
+                            break;
+                        }
+                        case cSinhCosh:
+                        {
+                            if(showExpression)
+                            {
+                                std::pair<int, std::string> sinh = stack.back();
+                                std::pair<int, std::string> cosh(
+                                    0, "cosh(" + sinh.second + ")");
+                                sinh.first = 0;
+                                sinh.second = "sinh(" + sinh.second + ")";
+                                stack.back() = sinh;
+                                stack.push_back(cosh);
+                            }
+                            output << "sinhcosh";
                             produces = 0;
                             break;
                         }

@@ -458,6 +458,13 @@ namespace FUNCTIONPARSERTYPES
         cosvalue = fp_cos(param);
         sinvalue = fp_sin(param);
     }
+    template<typename Value_t>
+    inline void fp_sinhCosh(Value_t& sinhvalue, Value_t& coshvalue, const Value_t& param)
+    {
+        const Value_t ex(fp_exp(param)), emx(fp_exp(-param));
+        sinhvalue = Value_t(0.5)*(ex-emx);
+        coshvalue = Value_t(0.5)*(ex+emx);
+    }
 
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)

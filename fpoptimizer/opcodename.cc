@@ -108,6 +108,7 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cNop: p = "cNop"; break;
 #endif
         case cSinCos: p = "cSinCos"; break;
+        case cSinhCosh: p = "cSinhCosh"; break;
         case cAbsNot: p = "cAbsNot"; break;
         case cAbsNotNot: p = "cAbsNotNot"; break;
         case cAbsAnd: p = "cAbsAnd"; break;

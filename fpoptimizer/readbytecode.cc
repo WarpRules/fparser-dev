@@ -666,6 +666,12 @@ namespace FPoptimizer_CodeTree
                         sim.SwapLastTwoInStack();
                         sim.Eat(1, cCos);
                         break;
+                    case cSinhCosh:
+                        sim.Dup();
+                        sim.Eat(1, cSinh);
+                        sim.SwapLastTwoInStack();
+                        sim.Eat(1, cCosh);
+                        break;
                     //case cLog:
                     //    sim.Eat(1, cLog2);
                     //    sim.AddConst(fp_const_log2<Value_t>());
