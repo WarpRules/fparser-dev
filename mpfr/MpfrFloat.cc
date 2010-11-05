@@ -36,7 +36,7 @@ class MpfrFloat::MpfrFloatDataContainer
 
  public:
     MpfrFloatDataContainer():
-        mDefaultPrecision(256), mFirstFreeNode(0),
+        mDefaultPrecision(256), mFirstFreeNode(0), mConst_0(0),
         mConst_pi(0), mConst_e(0), mConst_log2(0), mConst_epsilon(0)
     {}
 
