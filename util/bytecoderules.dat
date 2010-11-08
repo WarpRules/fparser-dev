@@ -425,16 +425,26 @@ IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd #
 cDup cOr   -> cNotNot  # TEST 99/3
 cDup cAnd  -> cNotNot  # TEST 99/3
 
-B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
-B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
-B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
-B [B==A] cCos A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
-B [B==A] cTan A [A>=VarBegin && mData->mByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
-B [B==A] cCsc A [A>=VarBegin && mData->mByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
-B [B==A] cSec A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
-B [B==A] cCot A [A>=VarBegin && mData->mByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
-cSinCos cDiv  -> cTan  # TEST 10/sincos_tan
-cSinCos cRDiv -> cCot
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
+IF(FP_FLOAT_VERSION) B [B==A] cCos A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
+IF(FP_FLOAT_VERSION) B [B==A] cTan A [A>=VarBegin && mData->mByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
+IF(FP_FLOAT_VERSION) B [B==A] cCsc A [A>=VarBegin && mData->mByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
+IF(FP_FLOAT_VERSION) B [B==A] cSec A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
+IF(FP_FLOAT_VERSION) B [B==A] cCot A [A>=VarBegin && mData->mByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
+IF(FP_FLOAT_VERSION) cSinCos cDiv  -> cTan  # TEST 10/sincos_tan
+IF(FP_FLOAT_VERSION) cSinCos cRDiv -> cCot
 
-cSqr A [A>=VarBegin]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
-cSqr A [A>=VarBegin] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
+IF(FP_FLOAT_VERSION) B [B==A] cCos  A [A>=VarBegin && mData->mByteCode.size() > 3] cSin  C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinCos {GetParamSwappedBinaryOpcode(C)}   # TEST 99/59
+IF(FP_FLOAT_VERSION) B [B==A] cCosh A [A>=VarBegin && mData->mByteCode.size() > 3] cSinh C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinhCosh {GetParamSwappedBinaryOpcode(C)} # TEST 99/59
+IF(FP_FLOAT_VERSION) B [B==A] cSinh A [A>=VarBegin && mData->mByteCode.size() > 2] cCosh -> B cSinhCosh
+IF(FP_FLOAT_VERSION) cSinhCosh cDiv   -> cTanh
+IF(FP_FLOAT_VERSION) cSinhCosh cRDiv  -> cTanh cInv
+IF(FP_FLOAT_VERSION) B [B==A] cCos  A [A>=VarBegin && mData->mByteCode.size() > 3] cCsc cMul -> B cCot
+
+IF(FP_FLOAT_VERSION) cSqr A [A>=VarBegin]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
+IF(FP_FLOAT_VERSION) cSqr A [A>=VarBegin] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
+
+IF(FP_FLOAT_VERSION) cSinCos cHypot -> [Value_t(0)] cMul [Value_t(1)] cAdd      # TEST 99/59
+# ^ hypot(sin(x),cos(x)) = 1

@@ -155,6 +155,48 @@ bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
     return (op < FUNC_AMOUNT && Functions[op].params == 2);
 }
 
+bool FUNCTIONPARSERTYPES::IsCommutativeOrParamSwappableBinaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAdd:
+      case cMul:
+      case cEqual: case cNEqual:
+      case cAnd: case cAbsAnd:
+      case cOr: case cAbsOr:
+      case cMin: case cMax: case cHypot:
+          return true;
+      case cDiv: case cSub: case cRDiv: case cRSub:
+          return true;
+      case cLess: case cGreater:
+      case cLessOrEq: case cGreaterOrEq: return true;
+    }
+    return false;
+}
+
+unsigned FUNCTIONPARSERTYPES::GetParamSwappedBinaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cAdd:
+      case cMul:
+      case cEqual: case cNEqual:
+      case cAnd: case cAbsAnd:
+      case cOr: case cAbsOr:
+      case cMin: case cMax: case cHypot:
+          return op;
+      case cDiv: return cRDiv;
+      case cSub: return cRSub;
+      case cRDiv: return cDiv;
+      case cRSub: return cSub;
+      case cLess: return cGreater;
+      case cGreater: return cLess;
+      case cLessOrEq: return cGreaterOrEq;
+      case cGreaterOrEq: return cLessOrEq;
+    }
+    return op; // Error
+}
+
 bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
 {
 #ifndef FP_NO_EVALUATION_CHECKS
