@@ -45,21 +45,61 @@ IF(FP_FLOAT_VERSION) cExp2 x	[isInteger(x)] cPow -> [x] cMul cExp2  # TEST 10/ex
 IF(FP_FLOAT_VERSION) cPow  x	[isInteger(x)] cPow -> [x] cMul cPow   # TEST 10/powxpow
 IF(FP_FLOAT_VERSION) cSqr x cPow -> [x+x] cPow  #TEST 10/sqrxpow, 10/sqrxpow_nonint
 
+###### REMOVING IDLE OPERATIONS :
+
+x [x==Value_t(1)] cMul	->                  # TEST 10/mul1
+x [x==Value_t(1)] cDiv	->                  # TEST 10/div1
+x [x==Value_t(0)] cAdd	->                  # TEST 10/add0
+x [x==Value_t(0)] cSub	->                  # TEST 10/sub0
+
+###### INLINE EXPANSION OF BASIC OPERATORS :
+
+x cNeg			-> [-x]             # TEST 10/neg
+x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
+y x cMul		-> [y*x]            # TEST 10/mul
+y x [x!=Value_t(0)] cDiv -> [y/x]           # TEST 10/div
+y x [x!=Value_t(0)] cMod -> [fp_mod(y,x)]   # TEST 10/mod
+y x cAdd		-> [y+x]            # TEST 10/add
+y x cSub		-> [y-x]            # TEST 10/sub
+#y [y!=Value_t(0)] x cRDiv -> [x/y]
+#y x cRSub		-> [x-y]
+x cNot			-> [fp_not(x)]      # TEST 10/not
+
+y x cLess		-> [fp_less(y,x)]       # TEST 10/cmplt
+y x cLessOrEq		-> [fp_lessOrEq(y,x)]   # TEST 10/cmple
+y x cGreater		-> [fp_less(x,y)]       # TEST 10/cmpgt
+y x cGreaterOrEq	-> [fp_lessOrEq(x,y)]   # TEST 10/cmpge
+y x cEqual		-> [fp_equal(y,x)]      # TEST 10/cmpeq
+y x cNEqual		-> [fp_nequal(y,x)]     # TEST 10/cmpne
+y x cAnd		-> [fp_and(x,y)]        # TEST 10/and
+y x cOr			-> [fp_or(x,y)]         # TEST 10/or
+#y x cAbsAnd		-> [fp_absAnd(x,y)]
+#y x cAbsOr		-> [fp_absOr(x,y)]
+
+###### INLINE EXPANSION OF BASIC FUNCTIONS :
+
 x cAbs	 		-> [fp_abs(x)]                                         # TEST 10/abs
+IF(FP_FLOAT_VERSION) x cDeg	 		-> [RadiansToDegrees(x)]       # TEST 10/deg
+IF(FP_FLOAT_VERSION) x cRad	 		-> [DegreesToRadians(x)]       # TEST 10/rad
+IF(FP_FLOAT_VERSION) x cCeil	 		-> [fp_ceil(x)]                # TEST 10/ceil*
+IF(FP_FLOAT_VERSION) x cFloor 			-> [fp_floor(x)]               # TEST 10/floor*
+IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]                 # TEST 10/int
+IF(FP_FLOAT_VERSION) x cTrunc 			-> [fp_trunc(x)]               # TEST 10/runc*
+IF(FP_FLOAT_VERSION) y x cAtan2			-> [fp_atan2(y,x)]             # TEST 10/atan2*
+y x cMin					-> [fp_min(x,y)]    # TEST 10/min
+y x cMax					-> [fp_max(x,y)]    # TEST 10/max
+
 IF(FP_FLOAT_VERSION) x [x>=Value_t(1)]                 cAcosh -> [fp_acosh(x)] # TEST 10/acosh*
 IF(FP_FLOAT_VERSION) x                                 cAsinh -> [fp_asinh(x)] # TEST 10/asinh*
-IF(FP_FLOAT_VERSION) x [x> Value_t(-1)&&x< Value_t(1)] cAtanh -> [fp_atanh(x)] # TEST 10/atanh*
-IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAcos -> [fp_acos(x)]   # TEST 10/acos*
-IF(FP_FLOAT_VERSION) x [x>=Value_t(-1)&&x<=Value_t(1)] cAsin -> [fp_asin(x)]   # TEST 10/asin*
+IF(FP_FLOAT_VERSION) x [fp_abs(x)< Value_t(1)] cAtanh -> [fp_atanh(x)] # TEST 10/atanh*
+IF(FP_FLOAT_VERSION) x [fp_abs(x)<=Value_t(1)] cAcos  -> [fp_acos(x)]  # TEST 10/acos*
+IF(FP_FLOAT_VERSION) x [fp_abs(x)<=Value_t(1)] cAsin  -> [fp_asin(x)]  # TEST 10/asin*
 IF(FP_FLOAT_VERSION) x cAtan	 		-> [fp_atan(x)]                # TEST 10/atan*
 IF(FP_FLOAT_VERSION) x cCbrt	 		-> [fp_cbrt(x)]                # TEST 10/cbrt*
-IF(FP_FLOAT_VERSION) x cCeil	 		-> [fp_ceil(x)]                # TEST 10/ceil*
 IF(FP_FLOAT_VERSION) x cCos	 		-> [fp_cos(x)]                 # TEST 10/cos*
 IF(FP_FLOAT_VERSION) x cCosh	 		-> [fp_cosh(x)]                # TEST 10/cosh*
 IF(FP_FLOAT_VERSION) x cExp	 		-> [fp_exp(x)]                 # TEST 10/exp*
 IF(FP_FLOAT_VERSION) x cExp2	 		-> [fp_exp2(x)]                # TEST 10/exp2*
-IF(FP_FLOAT_VERSION) x cFloor 			-> [fp_floor(x)]               # TEST 10/floor*
-IF(FP_FLOAT_VERSION) x cInt	 		-> [fp_int(x)]                 # TEST 10/int
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog	-> [fp_log(x)]                 # TEST 10/log*
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog10	-> [fp_log10(x)]               # TEST 10/log10*
 IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog2	-> [fp_log2(x)]                # TEST 10/log2*
@@ -69,28 +109,11 @@ IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]                # TE
 #IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
 IF(FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]                 # TEST 10/tan*
 IF(FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]                # TEST 10/tanh*
-IF(FP_FLOAT_VERSION) x cTrunc 			-> [fp_trunc(x)]               # TEST 10/runc*
-IF(FP_FLOAT_VERSION) x cDeg	 		-> [RadiansToDegrees(x)]       # TEST 10/deg
-IF(FP_FLOAT_VERSION) x cRad	 		-> [DegreesToRadians(x)]       # TEST 10/rad
-cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt
-x cNeg			-> [-x]             # TEST 10/neg
-x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
-x [x==Value_t(1)] cMul	->                  # TEST 10/mul1
-y x cMul		-> [y*x]            # TEST 10/mul
-x [x==Value_t(1)] cDiv	->                  # TEST 10/div1
-y x [x!=Value_t(0)] cDiv -> [y/x]           # TEST 10/div
-y x [x!=Value_t(0)] cMod -> [fp_mod(y,x)]   # TEST 10/mod
-x [x==Value_t(0)] cAdd	->                  # TEST 10/add0
-y x cAdd		-> [y+x]            # TEST 10/add
-x [x==Value_t(0)] cSub	->                  # TEST 10/sub0
-y x cSub		-> [y-x]            # TEST 10/sub
-#y [y!=Value_t(0)] x cRDiv -> [x/y]
-#y x cRSub		-> [x-y]
-y x cMin		-> [fp_min(x,y)]    # TEST 10/min
-y x cMax		-> [fp_max(x,y)]    # TEST 10/max
-IF(FP_FLOAT_VERSION) y x cAtan2		-> [fp_atan2(y,x)]  # TEST 10/atan2*
 IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)] # TEST 10/pow*
-x cNot			-> [fp_not(x)]      # TEST 10/not
+
+###################
+
+cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt
 
 # rdiv(x,y)/z --> rdiv(x*z,y)   (y/x/z = y/(x*z))
 IF(FP_FLOAT_VERSION) B [B >= VarBegin] cRDiv A [A >= VarBegin] cDiv -> A cMul  B cRDiv #TEST 11/23
@@ -167,17 +190,6 @@ B [B==A] cMax A [A >= VarBegin] cMax -> B cMax # TEST 10/dupminmax3
 cDup cDiv              -> [Value_t(0)] cMul [Value_t(1)] cAdd # TEST 10/divxx
 # Exactly the same here, with x^0, however cPow is float-only:
 IF(FP_FLOAT_VERSION) x [x==Value_t(0)] cPow -> [Value_t(0)] cMul [Value_t(1)] cAdd
-
-y x cLess		-> [fp_less(y,x)]       # TEST 10/cmplt
-y x cLessOrEq		-> [fp_lessOrEq(y,x)]   # TEST 10/cmple
-y x cGreater		-> [fp_less(x,y)]       # TEST 10/cmpgt
-y x cGreaterOrEq	-> [fp_lessOrEq(x,y)]   # TEST 10/cmpge
-y x cEqual		-> [fp_equal(y,x)]      # TEST 10/cmpeq
-y x cNEqual		-> [fp_nequal(y,x)]     # TEST 10/cmpne
-y x cAnd		-> [fp_and(x,y)]        # TEST 10/and
-y x cOr			-> [fp_or(x,y)]         # TEST 10/or
-#y x cAbsAnd		-> [fp_absAnd(x,y)]
-#y x cAbsOr		-> [fp_absOr(x,y)]
 
 cNeg x cMul		-> [-x] cMul            # TEST 10/negmul
 x cMul cNeg		-> [-x] cMul            # TEST 10/mulneg
