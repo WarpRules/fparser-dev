@@ -45,25 +45,63 @@ IF(FP_FLOAT_VERSION) cExp2 x	[isInteger(x)] cPow -> [x] cMul cExp2  # TEST 10/ex
 IF(FP_FLOAT_VERSION) cPow  x	[isInteger(x)] cPow -> [x] cMul cPow   # TEST 10/powxpow
 IF(FP_FLOAT_VERSION) cSqr x cPow -> [x+x] cPow  #TEST 10/sqrxpow, 10/sqrxpow_nonint
 
+# This rule does not speed up evaluation at all, but
+# it greatly simplifies the optimization rule set, when
+# we don't need to check for sequences of an immed and cSub.
+x cSub -> [-x] cAdd    # TEST 10/immsub
+
 ###### REMOVING IDLE OPERATIONS :
 
 x [x==Value_t(1)] cMul	->                  # TEST 10/mul1
 x [x==Value_t(1)] cDiv	->                  # TEST 10/div1
-x [x==Value_t(0)] cAdd	->                  # TEST 10/add0
-x [x==Value_t(0)] cSub	->                  # TEST 10/sub0
+x [x==Value_t()] cAdd	->                  # TEST 10/add0
+x [x==Value_t()] cSub	->                  # TEST 10/sub0
+cDup cMin ->				    # TEST 10/dupminmax
+cDup cMax ->				    # TEST 10/dupminmax
+cNeg cNeg ->                                # TEST 10/negneg
+IF(FP_FLOAT_VERSION) cInv  cInv ->          # TEST 10/invinv
+
+B [B==A] cDup A [A >= VarBegin] cMin -> B cDup # TEST 10/dupminmax2
+B [B==A] cDup A [A >= VarBegin] cMax -> B cDup # TEST 10/dupminmax2
+B [B==A] cMin A [A >= VarBegin] cMin -> B cMin # TEST 10/dupminmax3
+B [B==A] cMax A [A >= VarBegin] cMax -> B cMax # TEST 10/dupminmax3
+
+y [y*x==Value_t(1)] cMul x cMul ->              # TEST 10/mul1b
+
+###### OPERATIONS WHICH PRODUCE A CONSTANT VALUE:
+###### An expression is turned into a constant value
+###### by multiplying it with zero and adding the constant.
+
+cDup cSub        -> [Value_t()] cMul                   # TEST 10/subxx
+cDup cRSub       -> [Value_t()] cMul                   # TEST 10/subxx
+cDup cDiv        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 10/divxx
+IF(FP_FLOAT_VERSION) x [x==Value_t()] cPow -> [Value_t()] cMul [Value_t(1)] cAdd
+IF(FP_FLOAT_VERSION) cSinCos cHypot        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 99/59
+
+# Multiplications by zero: Undo as many operands as possible by peeling.
+# Some of these optimimizations can be disabled due to law of diminishing returns.
+A [A >= VarBegin]                                                                                       x [x==Value_t()] cMul ->        [x]          # TEST 10/mul_zero VERIFY
+                                                 A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+B [B >= VarBegin]                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul -> A      [x] cMul     # TEST 10/mul_zero VERIFY
+y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+A [A >= VarBegin]                                                                                  cMul x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+C [C >= VarBegin]                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
+C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul -> B A [x] cMul     # TEST 10/mul_zero VERIFY
+y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
 
 ###### INLINE EXPANSION OF BASIC OPERATORS :
 
 x cNeg			-> [-x]             # TEST 10/neg
-x [x!=Value_t(0)] cInv 	-> [Value_t(1)/x]
+x [x!=Value_t()] cInv 	-> [Value_t(1)/x]
 y x cMul		-> [y*x]            # TEST 10/mul
-y x [x!=Value_t(0)] cDiv -> [y/x]           # TEST 10/div
-y x [x!=Value_t(0)] cMod -> [fp_mod(y,x)]   # TEST 10/mod
+y x [x!=Value_t()] cDiv -> [y/x]           # TEST 10/div
+y x [x!=Value_t()] cMod -> [fp_mod(y,x)]   # TEST 10/mod
 y x cAdd		-> [y+x]            # TEST 10/add
 y x cSub		-> [y-x]            # TEST 10/sub
-#y [y!=Value_t(0)] x cRDiv -> [x/y]
-#y x cRSub		-> [x-y]
 x cNot			-> [fp_not(x)]      # TEST 10/not
+#y [y!=Value_t()] x cRDiv -> [x/y]
+#y x cRSub		-> [x-y]
 
 y x cLess		-> [fp_less(y,x)]       # TEST 10/cmplt
 y x cLessOrEq		-> [fp_lessOrEq(y,x)]   # TEST 10/cmple
@@ -75,6 +113,14 @@ y x cAnd		-> [fp_and(x,y)]        # TEST 10/and
 y x cOr			-> [fp_or(x,y)]         # TEST 10/or
 #y x cAbsAnd		-> [fp_absAnd(x,y)]
 #y x cAbsOr		-> [fp_absOr(x,y)]
+
+cNeg x cMul			-> [-x] cMul    # TEST 10/negmul
+x cMul cNeg			-> [-x] cMul    # TEST 10/mulneg
+x [x==Value_t(-1)] cMul		-> cNeg         # TEST 10/mulminus1
+cNeg x [x!=Value_t()] cDiv	-> [-x] cDiv    # TEST 10/negdiv
+
+y cAdd x cAdd		-> [y+x] cAdd           # TEST 11/42
+y cMul x cMul		-> [y*x] cMul           # TEST 11/43
 
 ###### INLINE EXPANSION OF BASIC FUNCTIONS :
 
@@ -100,20 +146,83 @@ IF(FP_FLOAT_VERSION) x cCos	 		-> [fp_cos(x)]                 # TEST 10/cos*
 IF(FP_FLOAT_VERSION) x cCosh	 		-> [fp_cosh(x)]                # TEST 10/cosh*
 IF(FP_FLOAT_VERSION) x cExp	 		-> [fp_exp(x)]                 # TEST 10/exp*
 IF(FP_FLOAT_VERSION) x cExp2	 		-> [fp_exp2(x)]                # TEST 10/exp2*
-IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog	-> [fp_log(x)]                 # TEST 10/log*
-IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog10	-> [fp_log10(x)]               # TEST 10/log10*
-IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cLog2	-> [fp_log2(x)]                # TEST 10/log2*
+IF(FP_FLOAT_VERSION) x [x> Value_t()] cLog	-> [fp_log(x)]                 # TEST 10/log*
+IF(FP_FLOAT_VERSION) x [x> Value_t()] cLog10	-> [fp_log10(x)]               # TEST 10/log10*
+IF(FP_FLOAT_VERSION) x [x> Value_t()] cLog2	-> [fp_log2(x)]                # TEST 10/log2*
 IF(FP_FLOAT_VERSION) x cSin	 		-> [fp_sin(x)]                 # TEST 10/sin*
 IF(FP_FLOAT_VERSION) x cSinh	 		-> [fp_sinh(x)]                # TEST 10/sinh*
-IF(FP_FLOAT_VERSION) x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]                # TEST 10/sqr*
-#IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
+IF(FP_FLOAT_VERSION) x [x>=Value_t()] cSqrt	-> [fp_sqrt(x)]                # TEST 10/sqr*
+#IF(FP_FLOAT_VERSION) x [x> Value_t()] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
 IF(FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]                 # TEST 10/tan*
 IF(FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]                # TEST 10/tanh*
-IF(FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)] # TEST 10/pow*
+IF(FP_FLOAT_VERSION) y [ y!=Value_t() || x>=Value_t()] x cPow -> [fp_pow(y,x)] # TEST 10/pow*
+
+###### SIMPLIFYING SOME OPCODE SEQUENCES :
+
+x [x==Value_t(2)] cMul -> cDup cAdd                        # TEST 10/mul2
+cNeg cAdd -> cSub                                          # TEST 10/negadd
+cNeg cSub -> cAdd                                          # TEST 10/negsub
+cNeg cAbs -> cAbs                                          # TEST 10/negabs
+cDup cMul -> cSqr                                          # TEST 10/sqr_xx
+cNeg cSqr -> cSqr                                          # TEST 10/negsqr
+cAbs cSqr -> cSqr                                          # TEST 10/abssqr
+
+IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt
+IF(FP_FLOAT_VERSION) x [x==fp_const_rad_to_deg<Value_t>()] cMul -> cDeg #TEST 10/deg
+IF(FP_FLOAT_VERSION) x [x==fp_const_deg_to_rad<Value_t>()] cMul -> cRad #TEST 10/rad
+IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul # TEST 10/degxmul
+IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul # TEST 10/radxmul VERIFY
+IF(FP_FLOAT_VERSION) x cMul cRad -> [DegreesToRadians(x)] cMul # TEST 10/xmulrad
+
+IF(FP_FLOAT_VERSION) cInv cDiv -> cMul  # TEST 10/invdiv
+IF(FP_FLOAT_VERSION) cInv cMul -> cDiv  # TEST 10/invmul (float-only, because: y*(1/x) vs y/x)
+
+cLess        cNot -> cGreaterOrEq  # TEST 10/not_lt
+cLessOrEq    cNot -> cGreater      # TEST 10/not_le
+cGreater     cNot -> cLessOrEq     # TEST 10/not_gt
+cGreaterOrEq cNot -> cLess         # TEST 10/not_ge
+cEqual       cNot -> cNEqual       # TEST 10/not_eq
+cNEqual      cNot -> cEqual        # TEST 10/not_ne
+
+cDup cOr   -> cNotNot  # TEST 99/3
+cDup cAnd  -> cNotNot  # TEST 99/3
+
+cNeg  cNot -> cNot         # TEST 10/negnot
+cAbs  cNot -> cNot         # TEST 10/absnot
+
+cNot  cNot -> cNotNot      # TEST 10/notnot
+cNotNot cNot    -> cNot    # TEST 10/notnotnot
+cAbsNotNot cNot -> cAbsNot # TEST 10/absnotnotnot
+cNot cNotNot    -> cNot    # TEST 10/notnotnot2
+# ^ Impossible as it seems, it is triggered by (!x & !x) -> !!(!x)
+
+IF(FP_FLOAT_VERSION) cAbs cCos  -> cCos                   # TEST 10/abscos
+IF(FP_FLOAT_VERSION) cAbs cCosh -> cCosh                  # TEST 10/abscosh
+IF(FP_FLOAT_VERSION) cNeg cCos  -> cCos                   # TEST 10/negcos
+IF(FP_FLOAT_VERSION) cNeg cCosh -> cCosh                  # TEST 10/negcosh
+IF(FP_FLOAT_VERSION) cNeg cSin  -> cSin cNeg              # TEST 10/negsin
+IF(FP_FLOAT_VERSION) cNeg cSinh -> cSinh cNeg             # TEST 10/negsinh
+IF(FP_FLOAT_VERSION) cNeg cTan  -> cTan cNeg              # TEST 10/negtan
+IF(FP_FLOAT_VERSION) cNeg cTanh -> cTanh cNeg             # TEST 10/negtanh
+IF(FP_FLOAT_VERSION) x cMul cSin  cNeg -> [-x] cMul cSin  # TEST 10/xmulsinneg
+IF(FP_FLOAT_VERSION) x cMul cSinh cNeg -> [-x] cMul cSinh # TEST 10/xmulsinhneg
+IF(FP_FLOAT_VERSION) x cMul cTan  cNeg -> [-x] cMul cTan  # TEST 10/xmultanneg
+IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh # TEST 10/xmultanhneg
+
+IF(FP_FLOAT_VERSION) cSin cDiv -> cCsc cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCos cDiv -> cSec cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cTan cDiv -> cCot cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCsc cDiv -> cSin cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSec cDiv -> cCos cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCot cDiv -> cTan cMul   # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSin cInv -> cCsc        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCos cInv -> cSec        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cTan cInv -> cCot        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCsc cInv -> cSin        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cSec cInv -> cCos        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cCot cInv -> cTan        # TEST 10/invsincostan
 
 ###################
-
-cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt
 
 # rdiv(x,y)/z --> rdiv(x*z,y)   (y/x/z = y/(x*z))
 IF(FP_FLOAT_VERSION) B [B >= VarBegin] cRDiv A [A >= VarBegin] cDiv -> A cMul  B cRDiv #TEST 11/23
@@ -154,62 +263,18 @@ cNeg   cRSub x cAdd ->  [-x] cAdd cRSub
 
 A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLess -> A [x] cMul # TEST 10/lt0
 
-# Multiplications by zero: Undo as many operands as possible by peeling.
-# Some of these optimimizations can be disabled due to law of diminishing returns.
-A [A >= VarBegin]                                                                                       x [x==Value_t(0)] cMul ->        [x]          # TEST 10/mul_zero VERIFY
-                                                 A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t(0)] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-B [B >= VarBegin]                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul -> A      [x] cMul     # TEST 10/mul_zero VERIFY
-y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t(0)] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-A [A >= VarBegin]                                                                                  cMul x [x==Value_t(0)] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-C [C >= VarBegin]                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
-C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul -> B A [x] cMul     # TEST 10/mul_zero VERIFY
-y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t(0)] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
-
-x [x==Value_t(2)] cMul -> cDup cAdd                        # TEST 10/mul2
-IF(FP_FLOAT_VERSION) x [x==fp_const_rad_to_deg<Value_t>()] cMul -> cDeg #TEST 10/deg
-IF(FP_FLOAT_VERSION) x [x==fp_const_deg_to_rad<Value_t>()] cMul -> cRad #TEST 10/rad
 IF(FP_FLOAT_VERSION) cSqr cLog   -> cAbs cLog   cDup cAdd  # TEST 10/sqrlog
 IF(FP_FLOAT_VERSION) cSqr cLog2  -> cAbs cLog2  cDup cAdd  # TEST 10/sqrlog2
 IF(FP_FLOAT_VERSION) cSqr cLog10 -> cAbs cLog10 cDup cAdd  # TEST 10/sqrlog10
-IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul # TEST 10/degxmul
-IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul # TEST 10/radxmul VERIFY
-IF(FP_FLOAT_VERSION) x cMul cRad -> [DegreesToRadians(x)] cMul # TEST 10/xmulrad
-
-cDup cMin ->   #TEST 10/dupminmax
-cDup cMax ->   #TEST 10/dupminmax
-B [B==A] cDup A [A >= VarBegin] cMin -> B cDup # TEST 10/dupminmax2
-B [B==A] cDup A [A >= VarBegin] cMax -> B cDup # TEST 10/dupminmax2
-B [B==A] cMin A [A >= VarBegin] cMin -> B cMin # TEST 10/dupminmax3
-B [B==A] cMax A [A >= VarBegin] cMax -> B cMax # TEST 10/dupminmax3
-
-# x/x = 1. Since we cannot easily replace x with 1
-# without handling all kinds of lengths for lhs,
-# multiply it with 0 instead (this will invoke the
-# operand peeler), and then add 1.
-cDup cDiv              -> [Value_t(0)] cMul [Value_t(1)] cAdd # TEST 10/divxx
-# Exactly the same here, with x^0, however cPow is float-only:
-IF(FP_FLOAT_VERSION) x [x==Value_t(0)] cPow -> [Value_t(0)] cMul [Value_t(1)] cAdd
-
-cNeg x cMul		-> [-x] cMul            # TEST 10/negmul
-x cMul cNeg		-> [-x] cMul            # TEST 10/mulneg
-x [x==Value_t(-1)] cMul		-> cNeg         # TEST 10/mulminus1
-cNeg x [x!=Value_t(0)] cDiv	-> [-x] cDiv    # TEST 10/negdiv
-
-y cAdd x cAdd		-> [y+x] cAdd           # TEST 11/42
 
 IF(FP_FLOAT_VERSION) y [(y*x)==fp_const_rad_to_deg<Value_t>()] cMul x cMul -> cDeg
 IF(FP_FLOAT_VERSION) y [(y*x)==fp_const_deg_to_rad<Value_t>()] cMul x cMul -> cRad
 
-y [y*x==Value_t(1)] cMul x cMul ->              # TEST 10/mul1b
-y                   cMul x cMul -> [y*x] cMul   # TEST 11/43
 cDup cAdd      cDup cAdd -> [Value_t(4)] cMul       # TEST 10/mul4
 cDup cAdd cMul cDup cAdd -> cMul [Value_t(4)] cMul  # TEST 10/mul4
 
 cDup x cMul cAdd -> [x+Value_t(1)] cMul         # TEST 10/dupxmuladd
 cDup x cPow cMul -> [x+Value_t(1)] cPow         # TEST 10/dupxpowmul
-cDup cSub        -> [Value_t(0)] cMul           # TEST 10/subxx
-cDup cRSub       -> [Value_t(0)] cMul           # TEST 10/subxx
 
 IF(FP_FLOAT_VERSION) cDup [x+x==Value_t(1)] cAdd      x cMul ->                  # TEST 10/dupaddmulh
                      cDup                   cAdd      x cMul ->      [x+x] cMul  # TEST 10/dupaddmul7
@@ -221,11 +286,6 @@ IF(FP_FLOAT_VERSION) y [(y/x)==fp_const_deg_to_rad<Value_t>()] cMul x [x!=Value_
 IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
 
 IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul  # TEST 10/multodiv
-
-# This rule does not speed up evaluation at all, but
-# it greatly simplifies the optimization rule set, when
-# we don't need to check for sequences of an immed and cSub.
-x cSub -> [-x] cAdd    # TEST 10/immsub
 
 #IF(FP_FLOAT_VERSION) y cExp  x cPow -> [y*x] cExp
 #IF(FP_FLOAT_VERSION) y cExp2 x cPow -> [y*x] cExp2
@@ -255,24 +315,9 @@ IF(FP_FLOAT_VERSION) cAsinh cSinh -> # TEST 10/asinhsinh
 #IF(FP_FLOAT_VERSION) cAtanh cTanh ->
 # ^ Doable only if abs(x) < 1
 IF(FP_FLOAT_VERSION) cAtan2 cTan -> cDiv # TEST 10/atan2tan
-cNeg  cAbs -> cAbs                   # TEST 10/negabs
-IF(FP_FLOAT_VERSION) cInv  cInv ->       # TEST 10/invinv
-cNeg  cNeg ->                            # TEST 10/negneg
 IF(FP_FLOAT_VERSION) cPow  cInv -> cNeg cPow # TEST 10/powinv
 
-IF(FP_FLOAT_VERSION) cInv cDiv -> cMul  # TEST 10/invdiv
-IF(FP_FLOAT_VERSION) cInv cMul -> cDiv  # TEST 10/invmul (float-only, because: y*(1/x) vs y/x)
-cNeg cAdd -> cSub    # TEST 10/negadd
-cNeg cSub -> cAdd    # TEST 10/negsub
-
 #IF(FP_FLOAT_VERSION) x [x<0] cPow cMul -> [-x] cPow cDiv
-
-cLess        cNot -> cGreaterOrEq  # TEST 10/not_lt
-cLessOrEq    cNot -> cGreater      # TEST 10/not_le
-cGreater     cNot -> cLessOrEq     # TEST 10/not_gt
-cGreaterOrEq cNot -> cLess         # TEST 10/not_ge
-cEqual       cNot -> cNEqual       # TEST 10/not_eq
-cNEqual      cNot -> cEqual        # TEST 10/not_ne
 
 cAbs x [x==Value_t(0)] cEqual  -> [x] cEqual   # TEST 10/abseq0
 cAbs x [x==Value_t(0)] cNEqual -> [x] cNEqual  # TEST 10/absneq0
@@ -303,14 +348,6 @@ IF(FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsCompari
                 y      cAdd x cMul -> [x] cMul   [y*x]      cAdd #TEST 11/39
 A [A>=VarBegin] y cMul cAdd x cMul -> [x] cMul A [y*x] cMul cAdd #TEST 11/40
 A [A>=VarBegin] y cMul cSub x cMul -> [x] cMul A [y*x] cMul cSub #TEST 11/41
-
-cNeg  cNot -> cNot         # TEST 10/negnot
-cAbs  cNot -> cNot         # TEST 10/absnot
-cNot  cNot -> cNotNot      # TEST 10/notnot
-cNotNot cNot    -> cNot    # TEST 10/notnotnot
-cAbsNotNot cNot -> cAbsNot # TEST 10/absnotnotnot
-cNot cNotNot    -> cNot    # TEST 10/notnotnot2
-# ^ Impossible as it seems, it is triggered by (!x & !x) -> !!(!x)
 
 A [IsLogicalOpcode(A)]            cAbsNot cNot -> A              # TEST 10/absnot3
 A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot   # TEST 10/absnot4
@@ -360,34 +397,21 @@ IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)] cLessOrEq  -> cNeg cAbsNotNot # TEST 1
 IF(FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow # TEST 10/absevenconstpow
 IF(FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow # TEST 10/absmulevenconstpow
 
-IF(FP_FLOAT_VERSION) cAbs cCos  -> cCos                   # TEST 10/abscos
-IF(FP_FLOAT_VERSION) cAbs cCosh -> cCosh                  # TEST 10/abscosh
-IF(FP_FLOAT_VERSION) cNeg cCos  -> cCos                   # TEST 10/negcos
-IF(FP_FLOAT_VERSION) cNeg cCosh -> cCosh                  # TEST 10/negcosh
-IF(FP_FLOAT_VERSION) cNeg cSin  -> cSin cNeg              # TEST 10/negsin
-IF(FP_FLOAT_VERSION) cNeg cSinh -> cSinh cNeg             # TEST 10/negsinh
-IF(FP_FLOAT_VERSION) cNeg cTan  -> cTan cNeg              # TEST 10/negtan
-IF(FP_FLOAT_VERSION) cNeg cTanh -> cTanh cNeg             # TEST 10/negtanh
-IF(FP_FLOAT_VERSION) x cMul cSin  cNeg -> [-x] cMul cSin  # TEST 10/xmulsinneg
-IF(FP_FLOAT_VERSION) x cMul cSinh cNeg -> [-x] cMul cSinh # TEST 10/xmulsinhneg
-IF(FP_FLOAT_VERSION) x cMul cTan  cNeg -> [-x] cMul cTan  # TEST 10/xmultanneg
-IF(FP_FLOAT_VERSION) x cMul cTanh cNeg -> [-x] cMul cTanh # TEST 10/xmultanhneg
-
 IF(FP_FLOAT_VERSION) cAcosh cSinh -> [DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt # TEST 10/acoshsinh
-IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSqrt # TEST 10/asinhcosh
+# sinh(x) =  0.5 * (exp(x) - exp(-x))
+# acosh(x) = log(x + sqrt(x*x - 1))
+# Thus,
+# sinh(acosh(x)) = 0.5 * (exp(log(x + sqrt(x*x - 1))) - exp(-log(x + sqrt(x*x - 1))))
+# sinh(acosh(x)) = 0.5 * (   (   (x + sqrt(x*x - 1))) -     1 / (x + sqrt(x*x - 1)) )
+# sinh(acosh(x)) = 0.5 * (x + sqrt(x*x - 1) - 1 / (x + sqrt(x*x - 1)))
+# sinh(acosh(x)) = 0.5*x + 0.5*sqrt(x*x - 1) - 0.5/(x + sqrt(x*x - 1))
+# Maxima gets a step further and says that:
+# sinh(acosh(x)) = sqrt(x-1)*sqrt(x+1)
+# Furthermore, Wikipedia gives us this:
+# sinh(acosh(x)) = sqrt(x*x-1)  IF abs(x) > 1 or complex version
 
-IF(FP_FLOAT_VERSION) cSin cDiv -> cCsc cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCos cDiv -> cSec cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cTan cDiv -> cCot cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCsc cDiv -> cSin cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cSec cDiv -> cCos cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCot cDiv -> cTan cMul   # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cSin cInv -> cCsc        # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCos cInv -> cSec        # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cTan cInv -> cCot        # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCsc cInv -> cSin        # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cSec cInv -> cCos        # TEST 10/invsincostan
-IF(FP_FLOAT_VERSION) cCot cInv -> cTan        # TEST 10/invsincostan
+IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSqrt # TEST 10/asinhcosh
+# cosh(asinh(x)) = sqrt(x^2+1)
 
 # Hardcoded optimizations that are too complex or
 # impossible to convey using this rule file:
@@ -411,10 +435,6 @@ B [B==A] cNeg cMul A [A >= VarBegin] cMul  -> B cSqr cMul cNeg # TEST 10/sqr_ynx
 # ...*x*-x = ...*-(x^2)
 B [B==A] cMul A [A >= VarBegin] cNeg cMul  -> B cSqr cMul cNeg # TEST 10/sqr_yxnx
 
-cDup cMul -> cSqr                                              # TEST 10/sqr_xx
-cNeg cSqr -> cSqr                                              # TEST 10/negsqr
-cAbs cSqr -> cSqr                                              # TEST 10/abssqr
-
 B [B==A] A [A >= VarBegin && mData->mByteCode.size() > 0] -> B cDup                                                  # TEST 10/xxdup
 D [D==B] C [C==A]      B [B >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup        # TEST 10/xxfdup
 D [D==B] C [C==A] cMul B [B >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul   # TEST 10/xxsqrdup
@@ -433,9 +453,6 @@ IF(FP_FLOAT_VERSION) cExp cLog10 -> [DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd # TEST 10/logmul2
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd # TEST 10/logmul
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd # TEST 10/logmul10
-
-cDup cOr   -> cNotNot  # TEST 99/3
-cDup cAnd  -> cNotNot  # TEST 99/3
 
 IF(FP_FLOAT_VERSION) B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
 IF(FP_FLOAT_VERSION) B [B==A] cSin A [A>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
@@ -457,6 +474,3 @@ IF(FP_FLOAT_VERSION) B [B==A] cCos  A [A>=VarBegin && mData->mByteCode.size() > 
 
 IF(FP_FLOAT_VERSION) cSqr A [A>=VarBegin]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
 IF(FP_FLOAT_VERSION) cSqr A [A>=VarBegin] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
-
-IF(FP_FLOAT_VERSION) cSinCos cHypot -> [Value_t(0)] cMul [Value_t(1)] cAdd      # TEST 99/59
-# ^ hypot(sin(x),cos(x)) = 1
