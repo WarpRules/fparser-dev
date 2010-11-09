@@ -102,6 +102,7 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/optimize_synth.o \
 		fpoptimizer/optimize_debug.o \
 		fpoptimizer/constantfolding.o \
+		fpoptimizer/valuerange.o \
 		fpoptimizer/rangeestimation.o \
 		fpoptimizer/opcodename.o \
 		fpoptimizer/bytecodesynth.o \
@@ -187,6 +188,7 @@ FPOPTIMIZER_CC_FILES=\
 	    fpoptimizer/opcodename.cc \
 	    fpoptimizer/bytecodesynth.hh \
 	    fpoptimizer/bytecodesynth.cc \
+	    fpoptimizer/valuerange.hh \
 	    fpoptimizer/rangeestimation.hh \
 	    fpoptimizer/constantfolding.hh \
 	    fpoptimizer/logic_boolgroups.hh \
@@ -206,6 +208,7 @@ FPOPTIMIZER_CC_FILES=\
 	    fpoptimizer/makebytecode.cc \
 	    fpoptimizer/readbytecode.cc \
 	    fpoptimizer/constantfolding.cc \
+	    fpoptimizer/valuerange.cc \
 	    fpoptimizer/rangeestimation.cc \
 	    fpoptimizer/transformations.cc \
 	    fpoptimizer/cse.cc \
@@ -256,6 +259,7 @@ util/powi_opt: \
 		fpoptimizer/hash.o \
 		fpoptimizer/constantfolding.o \
 		fpoptimizer/codetree.o \
+		fpoptimizer/valuerange.o \
 		fpoptimizer/rangeestimation.o
 	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 

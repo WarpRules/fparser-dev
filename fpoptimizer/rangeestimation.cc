@@ -8,211 +8,18 @@ using namespace FPoptimizer_CodeTree;
 
 //#define DEBUG_SUBSTITUTIONS_extra_verbose
 
-namespace
-{
-    template<unsigned Compare> struct Comp { };
-    template<>struct Comp<cLess> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a<b; }
-    };
-    template<>struct Comp<cLessOrEq> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a<=b; }
-    };
-    template<>struct Comp<cGreater> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a>b; }
-    };
-    template<>struct Comp<cGreaterOrEq> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a>=b; }
-    };
-    template<>struct Comp<cEqual> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a==b; }
-    };
-    template<>struct Comp<cNEqual> {
-        template<typename Value_t>
-        bool operator() (const Value_t& a, const Value_t& b) { return a!=b; }
-    };
-}
-
 namespace FPoptimizer_CodeTree
 {
-    template<typename Value_t>
-    void range<Value_t>::set_abs()
-    {
-        if(!has_min && !has_max)                  // -inf..+inf -> +0..+inf
-            { has_min = true; min = Value_t(0); }
-        else if(!has_min && max < Value_t(0))     // -inf..-5   -> +5..+inf
-            { has_min = true; min = -max; has_max = false; }
-        else if(!has_min)                         // -inf..+5   -> +0..+inf
-            { has_min = true; min = Value_t(0); has_max = false; }
-        else if(min >= Value_t(0))                // +0..xx     -> +0..xx
-            return;                               // +5..xx     -> +5..xx
-        else if(!has_max)                         // -5..+inf   -> +0..+inf
-            { has_min = true; min = Value_t(0); }
-        else if(max < Value_t(0))                 // -5..-3     -> +3..+5
-            { Value_t tmp(-max); max=-min; min=tmp; }
-        else if(-min >= max)                      // -5..+3     -> 0..+5
-            { max = -min; min = Value_t(0); }
-        else                                      // -5..+7     -> +5..+7
-            { min = Value_t(0); }
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_neg()
-    {
-        std::swap(has_min, has_max);
-        std::swap(min, max);
-        min = -min; max = -max;
-    }
-
-    //////
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_min_if
-        (const Value_t& v,
-         Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        if(has_min && Comp<Compare>() (min,v))
-            min = func(min);
-        else
-            { has_min = model.has_min; min = model.min; }
-    }
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_max_if
-        (const Value_t& v,
-         Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        if(has_max && Comp<Compare>() (max,v))
-            max = func(max);
-        else
-            { has_max = model.has_max; max = model.max; }
-    }
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_min_max_if
-        (const Value_t& v,
-         Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        set_min_if<Compare> (v,func, model);
-        set_max_if<Compare> (v,func, model);
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_min
-       (Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        if(has_min)
-            min = func(min);
-        else
-            { has_min = model.has_min; min = model.min; }
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_max
-       (Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        if(has_max)
-            max = func(max);
-        else
-            { has_max = model.has_max; max = model.max; }
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_min_max
-        (Value_t (*const func)(Value_t),
-         range<Value_t> model)
-    {
-        set_min(func, model);
-        set_max(func, model);
-    }
-
-    //////
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_min_if
-        (const Value_t& v,
-         Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        if(has_min && Comp<Compare>() (min,v))
-            min = func(min);
-        else
-            { has_min = model.has_min; min = model.min; }
-    }
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_max_if
-        (const Value_t& v,
-         Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        if(has_max && Comp<Compare>() (max,v))
-            max = func(max);
-        else
-            { has_max = model.has_max; max = model.max; }
-    }
-
-    template<typename Value_t> template<unsigned Compare>
-    void range<Value_t>::set_min_max_if
-        (const Value_t& v,
-         Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        set_min_if<Compare> (v,func, model);
-        set_max_if<Compare> (v,func, model);
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_min
-       (Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        if(has_min)
-            min = func(min);
-        else
-            { has_min = model.has_min; min = model.min; }
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_max
-       (Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        if(has_max)
-            max = func(max);
-        else
-            { has_max = model.has_max; max = model.max; }
-    }
-
-    template<typename Value_t>
-    void range<Value_t>::set_min_max
-        (Value_t (*const func)(const Value_t&),
-         range<Value_t> model)
-    {
-        set_min(func, model);
-        set_max(func, model);
-    }
-
-    //////////////
-
     template<typename Value_t>
     range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree)
 #ifdef DEBUG_SUBSTITUTIONS_extra_verbose
     {
+        using namespace FUNCTIONPARSERTYPES;
         range<Value_t> tmp = CalculateResultBoundaries_do(tree);
         std::cout << "Estimated boundaries: ";
-        if(tmp.has_min) std::cout << tmp.min; else std::cout << "-inf";
+        if(tmp.min.known) std::cout << tmp.min.val; else std::cout << "-inf";
         std::cout << " .. ";
-        if(tmp.has_max) std::cout << tmp.max; else std::cout << "+inf";
+        if(tmp.max.known) std::cout << tmp.max.val; else std::cout << "+inf";
         std::cout << ": ";
         DumpTree(tree);
         std::cout << std::endl;
@@ -233,6 +40,10 @@ namespace FPoptimizer_CodeTree
         static const range<Value_t> abs_pi_limits
             ( Value_t(0),
               fp_const_pi<Value_t>());
+
+        static const range<Value_t> plusminus1_limits
+            ( Value_t(-1),
+              Value_t(1) );
 
         using namespace std;
         switch( tree.GetOpcode() )
@@ -269,65 +80,71 @@ namespace FPoptimizer_CodeTree
             case cLog: /* Defined for 0.0 < x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_max_if<cGreater>(Value_t(0), fp_log); // No boundaries
+                m.min.template set_if<cGreater>(Value_t(0), fp_log); // No boundaries
+                m.max.template set_if<cGreater>(Value_t(0), fp_log); // No boundaries
                 return m;
             }
 
             case cLog2: /* Defined for 0.0 < x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_max_if<cGreater>(Value_t(0), fp_log2); // No boundaries
+                m.min.template set_if<cGreater>(Value_t(0), fp_log2); // No boundaries
+                m.max.template set_if<cGreater>(Value_t(0), fp_log2); // No boundaries
                 return m;
             }
 
             case cLog10: /* Defined for 0.0 < x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_max_if<cGreater>(Value_t(0), fp_log10); // No boundaries
+                m.min.template set_if<cGreater>(Value_t(0), fp_log10); // No boundaries
+                m.max.template set_if<cGreater>(Value_t(0), fp_log10); // No boundaries
                 return m;
             }
 
             case cAcosh: /* defined for             1.0 <= x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_max_if<cGreaterOrEq>(Value_t(1), fp_acosh); // No boundaries
+                m.min.template set_if<cGreaterOrEq>(Value_t(1), fp_acosh); // No boundaries
+                m.max.template set_if<cGreaterOrEq>(Value_t(1), fp_acosh); // No boundaries
                 return m;
             }
             case cAsinh: /* defined for all values -inf <= x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min_max(fp_asinh); // No boundaries
+                m.min.set(fp_asinh); // No boundaries
+                m.max.set(fp_asinh); // No boundaries
                 return m;
             }
             case cAtanh: /* defined for -1.0 <= x < 1, results within -inf..+inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.template set_min_if<cGreater> (Value_t(-1), fp_atanh);
-                m.template set_max_if<cLess>    (Value_t( 1), fp_atanh);
+                m.min.template set_if<cGreater> (Value_t(-1), fp_atanh);
+                m.max.template set_if<cLess>    (Value_t( 1), fp_atanh);
                 return m;
             }
             case cAcos: /* defined for -1.0 <= x <= 1, results within CONSTANT_PI..0 */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
                 return range<Value_t>( // Note that the range is flipped!
-                    (m.has_max && (m.max) < Value_t(1))
-                        ? fp_acos(m.max) : Value_t(0),
-                    (m.has_min && (m.min) >= Value_t(-1))
-                        ? fp_acos(m.min) : fp_const_pi<Value_t>()
+                    (m.max.known && (m.max.val) < Value_t(1))
+                        ? fp_acos(m.max.val) : Value_t(0),
+                    (m.min.known && (m.min.val) >= Value_t(-1))
+                        ? fp_acos(m.min.val) : fp_const_pi<Value_t>()
                                           );
             }
             case cAsin: /* defined for -1.0 <= x < 1, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
                 /* Assuming that x is never outside valid limits */
-                m.template set_min_if<cGreater>(Value_t(-1), fp_asin, pihalf_limits);
-                m.template set_max_if<cLess   >(Value_t( 1), fp_asin, pihalf_limits);
+                m.min.template set_if<cGreater>(Value_t(-1), fp_asin, pihalf_limits.min.val);
+                m.max.template set_if<cLess   >(Value_t( 1), fp_asin, pihalf_limits.max.val);
                 return m;
             }
             case cAtan: /* defined for all values -inf <= x <= inf, results within -CONSTANT_PIHALF..CONSTANT_PIHALF */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min_max(fp_atan, pihalf_limits);
+                m.min.set(fp_atan, pihalf_limits.min.val);
+                m.max.set(fp_atan, pihalf_limits.max.val);
                 return m;
             }
             case cAtan2: /* too complicated to estimate */
@@ -357,12 +174,12 @@ namespace FPoptimizer_CodeTree
                 /* Quite difficult to estimate due to the cyclic nature of the function. */
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
                 bool covers_full_cycle
-                    = !m.has_min || !m.has_max
-                    || (m.max - m.min) >= (fp_const_twopi<Value_t>());
+                    = !m.min.known || !m.max.known
+                    || (m.max.val - m.min.val) >= (fp_const_twopi<Value_t>());
                 if(covers_full_cycle)
                     return range<Value_t>(Value_t(-1), Value_t(1));
-                Value_t min = fp_mod(m.min, fp_const_twopi<Value_t>()); if(min<Value_t(0)) min+=fp_const_twopi<Value_t>();
-                Value_t max = fp_mod(m.max, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
+                Value_t min = fp_mod(m.min.val, fp_const_twopi<Value_t>()); if(min<Value_t(0)) min+=fp_const_twopi<Value_t>();
+                Value_t max = fp_mod(m.max.val, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
                 if(max < min) max += fp_const_twopi<Value_t>();
                 bool covers_plus1  = (min <= fp_const_pihalf<Value_t>() && max >= fp_const_pihalf<Value_t>());
                 bool covers_minus1 = (min <= Value_t(1.5)*fp_const_pi<Value_t>() && max >= Value_t(1.5)*fp_const_pi<Value_t>());
@@ -380,15 +197,15 @@ namespace FPoptimizer_CodeTree
                 /* Quite difficult to estimate due to the cyclic nature of the function. */
                 /* cos(x) = sin(pi/2 - x) = sin(x + pi/2) */
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                if(m.has_min) m.min += fp_const_pihalf<Value_t>();/*for cCos*/
-                if(m.has_max) m.max += fp_const_pihalf<Value_t>();/*for cCos*/
+                if(m.min.known) m.min.val += fp_const_pihalf<Value_t>();/*for cCos*/
+                if(m.max.known) m.max.val += fp_const_pihalf<Value_t>();/*for cCos*/
                 bool covers_full_cycle
-                    = !m.has_min || !m.has_max
-                    || (m.max - m.min) >= (fp_const_twopi<Value_t>());
+                    = !m.min.known || !m.max.known
+                    || (m.max.val - m.min.val) >= (fp_const_twopi<Value_t>());
                 if(covers_full_cycle)
                     return range<Value_t>(Value_t(-1), Value_t(1));
-                Value_t min = fp_mod(m.min, fp_const_twopi<Value_t>()); if(min<Value_t(0)) min+=fp_const_twopi<Value_t>();
-                Value_t max = fp_mod(m.max, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
+                Value_t min = fp_mod(m.min.val, fp_const_twopi<Value_t>()); if(min<Value_t(0)) min+=fp_const_twopi<Value_t>();
+                Value_t max = fp_mod(m.max.val, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
                 if(max < min) max += fp_const_twopi<Value_t>();
                 bool covers_plus1  = (min <= fp_const_pihalf<Value_t>() && max >= fp_const_pihalf<Value_t>());
                 bool covers_minus1 = (min <= Value_t(1.5)*fp_const_pi<Value_t>() && max >= Value_t(1.5)*fp_const_pi<Value_t>());
@@ -413,76 +230,78 @@ namespace FPoptimizer_CodeTree
             case cCeil:
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_max(fp_ceil); // ceil() may increase the value, may not decrease
+                m.max.set(fp_ceil); // ceil() may increase the value, may not decrease
                 return m;
             }
             case cFloor:
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min(fp_floor); // floor() may decrease the value, may not increase
+                m.min.set(fp_floor); // floor() may decrease the value, may not increase
                 return m;
             }
             case cTrunc:
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min(fp_floor); // trunc() may either increase or decrease the value
-                m.set_max(fp_ceil); // for safety, we assume both
+                m.min.set(fp_floor); // trunc() may either increase or decrease the value
+                m.max.set(fp_ceil); // for safety, we assume both
                 return m;
             }
             case cInt:
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min(fp_floor); // int() may either increase or decrease the value
-                m.set_max(fp_ceil); // for safety, we assume both
+                m.min.set(fp_floor); // int() may either increase or decrease the value
+                m.max.set(fp_ceil); // for safety, we assume both
                 return m;
             }
             case cSinh: /* defined for all values -inf <= x <= inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min_max(fp_sinh); // No boundaries
+                m.min.set(fp_sinh); // No boundaries
+                m.max.set(fp_sinh); // No boundaries
                 return m;
             }
             case cTanh: /* defined for all values -inf <= x <= inf, results within -1..1 */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min_max(fp_tanh, range<Value_t> (Value_t(-1), Value_t(1)));
+                m.min.set(fp_tanh, plusminus1_limits.min);
+                m.max.set(fp_tanh, plusminus1_limits.max);
                 return m;
             }
             case cCosh: /* defined for all values -inf <= x <= inf, results within 1..inf */
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                if(m.has_min)
+                if(m.min.known)
                 {
-                    if(m.has_max) // max, min
+                    if(m.max.known) // max, min
                     {
-                        if(m.min >= Value_t(0) && m.max >= Value_t(0)) // +x .. +y
-                            { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max); }
-                        else if((m.min) < Value_t(0) && m.max >= Value_t(0)) // -x .. +y
-                            { Value_t tmp = fp_cosh(m.min); m.max = fp_cosh(m.max);
-                              if(tmp > m.max) m.max = tmp;
-                              m.min = Value_t(1); }
+                        if(m.min.val >= Value_t(0) && m.max.val >= Value_t(0)) // +x .. +y
+                            { m.min.val = fp_cosh(m.min.val); m.max.val = fp_cosh(m.max.val); }
+                        else if((m.min.val) < Value_t(0) && m.max.val >= Value_t(0)) // -x .. +y
+                            { Value_t tmp = fp_cosh(m.min.val); m.max.val = fp_cosh(m.max.val);
+                              if(tmp > m.max.val) m.max.val = tmp;
+                              m.min.val = Value_t(1); }
                         else // -x .. -y
-                            { m.min = fp_cosh(m.min); m.max = fp_cosh(m.max);
-                              std::swap(m.min, m.max); }
+                            { m.min.val = fp_cosh(m.min.val); m.max.val = fp_cosh(m.max.val);
+                              std::swap(m.min.val, m.max.val); }
                     }
                     else // min, no max
                     {
-                        if(m.min >= Value_t(0)) // 0..inf -> 1..inf
-                            { m.has_max = false; m.min = fp_cosh(m.min); }
+                        if(m.min.val >= Value_t(0)) // 0..inf -> 1..inf
+                            { m.max.known = false; m.min.val = fp_cosh(m.min.val); }
                         else
-                            { m.has_max = false; m.min = Value_t(1); } // Anything between 1..inf
+                            { m.max.known = false; m.min.val = Value_t(1); } // Anything between 1..inf
                     }
                 }
                 else // no min
                 {
-                    m.has_min = true; m.min = Value_t(1); // always a lower boundary
-                    if(m.has_max) // max, no min
+                    m.min.known = true; m.min.val = Value_t(1); // always a lower boundary
+                    if(m.max.known) // max, no min
                     {
-                        m.min = fp_cosh(m.max); // n..inf
-                        m.has_max = false; // No upper boundary
+                        m.min.val = fp_cosh(m.max.val); // n..inf
+                        m.max.known = false; // No upper boundary
                     }
                     else // no max, no min
-                        m.has_max = false; // No upper boundary
+                        m.max.known = false; // No upper boundary
                 }
                 return m;
             }
@@ -493,8 +312,8 @@ namespace FPoptimizer_CodeTree
                 // No guess which branch is chosen. Produce a spanning min & max.
                 range<Value_t> res1 = CalculateResultBoundaries( tree.GetParam(1) );
                 range<Value_t> res2 = CalculateResultBoundaries( tree.GetParam(2) );
-                if(!res2.has_min) res1.has_min = false; else if(res1.has_min && (res2.min) < res1.min) res1.min = res2.min;
-                if(!res2.has_max) res1.has_max = false; else if(res1.has_max && (res2.max) > res1.max) res1.max = res2.max;
+                if(!res2.min.known) res1.min.known = false; else if(res1.min.known && (res2.min.val) < res1.min.val) res1.min.val = res2.min.val;
+                if(!res2.max.known) res1.max.known = false; else if(res1.max.known && (res2.max.val) > res1.max.val) res1.max.val = res2.max.val;
                 return res1;
             }
 
@@ -507,18 +326,18 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
                     range<Value_t> m = CalculateResultBoundaries( tree.GetParam(a) );
-                    if(!m.has_min)
+                    if(!m.min.known)
                         has_unknown_min = true;
-                    else if(!result.has_min || (m.min) < result.min)
-                        result.min = m.min;
+                    else if(!result.min.known || (m.min.val) < result.min.val)
+                        result.min.val = m.min.val;
 
-                    if(!m.has_max)
+                    if(!m.max.known)
                         has_unknown_max = true;
-                    else if(!result.has_max || (m.max) < result.max)
-                        result.max = m.max;
+                    else if(!result.max.known || (m.max.val) < result.max.val)
+                        result.max.val = m.max.val;
                 }
-                if(has_unknown_min) result.has_min = false;
-                if(has_unknown_max) result.has_max = false;
+                if(has_unknown_min) result.min.known = false;
+                if(has_unknown_max) result.max.known = false;
                 return result;
             }
             case cMax:
@@ -530,18 +349,18 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
                     range<Value_t> m = CalculateResultBoundaries( tree.GetParam(a) );
-                    if(!m.has_min)
+                    if(!m.min.known)
                         has_unknown_min = true;
-                    else if(!result.has_min || m.min > result.min)
-                        result.min = m.min;
+                    else if(!result.min.known || m.min.val > result.min.val)
+                        result.min.val = m.min.val;
 
-                    if(!m.has_max)
+                    if(!m.max.known)
                         has_unknown_max = true;
-                    else if(!result.has_max || m.max > result.max)
-                        result.max = m.max;
+                    else if(!result.max.known || m.max.val > result.max.val)
+                        result.max.val = m.max.val;
                 }
-                if(has_unknown_min) result.has_min = false;
-                if(has_unknown_max) result.has_max = false;
+                if(has_unknown_min) result.min.known = false;
+                if(has_unknown_max) result.max.known = false;
                 return result;
             }
             case cAdd:
@@ -555,15 +374,15 @@ namespace FPoptimizer_CodeTree
                 {
                     range<Value_t> item = CalculateResultBoundaries( tree.GetParam(a) );
 
-                    if(item.has_min) result.min += item.min;
-                    else             result.has_min = false;
-                    if(item.has_max) result.max += item.max;
-                    else             result.has_max = false;
+                    if(item.min.known) result.min.val += item.min.val;
+                    else             result.min.known = false;
+                    if(item.max.known) result.max.val += item.max.val;
+                    else             result.max.known = false;
 
-                    if(!result.has_min && !result.has_max) break; // hopeless
+                    if(!result.min.known && !result.max.known) break; // hopeless
                 }
-                if(result.has_min && result.has_max
-                && result.min > result.max) std::swap(result.min, result.max);
+                if(result.min.known && result.max.known
+                && result.min.val > result.max.val) std::swap(result.min.val, result.max.val);
                 return result;
             }
             case cMul:
@@ -623,12 +442,12 @@ namespace FPoptimizer_CodeTree
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
                     range<Value_t> item = CalculateResultBoundaries( tree.GetParam(a) );
-                    if(!item.has_min && !item.has_max) return range<Value_t>(); // hopeless
+                    if(!item.min.known && !item.max.known) return range<Value_t>(); // hopeless
 
-                    Value minValue0 = result.has_min ? Value(result.min) : Value(Value::MinusInf);
-                    Value maxValue0 = result.has_max ? Value(result.max) : Value(Value::PlusInf);
-                    Value minValue1 = item.has_min ? Value(item.min) : Value(Value::MinusInf);
-                    Value maxValue1 = item.has_max ? Value(item.max) : Value(Value::PlusInf);
+                    Value minValue0 = result.min.known ? Value(result.min.val) : Value(Value::MinusInf);
+                    Value maxValue0 = result.max.known ? Value(result.max.val) : Value(Value::PlusInf);
+                    Value minValue1 = item.min.known ? Value(item.min.val) : Value(Value::MinusInf);
+                    Value maxValue1 = item.max.known ? Value(item.max.val) : Value(Value::PlusInf);
 
                     MultiplicationRange range;
                     range.multiply(minValue0, minValue1);
@@ -637,17 +456,17 @@ namespace FPoptimizer_CodeTree
                     range.multiply(maxValue0, maxValue1);
 
                     if(range.minValue.valueType == Value::Finite)
-                        result.min = range.minValue.value;
-                    else result.has_min = false;
+                        result.min.val = range.minValue.value;
+                    else result.min.known = false;
 
                     if(range.maxValue.valueType == Value::Finite)
-                        result.max = range.maxValue.value;
-                    else result.has_max = false;
+                        result.max.val = range.maxValue.value;
+                    else result.max.known = false;
 
-                    if(!result.has_min && !result.has_max) break; // hopeless
+                    if(!result.min.known && !result.max.known) break; // hopeless
                 }
-                if(result.has_min && result.has_max
-                && result.min > result.max) std::swap(result.min, result.max);
+                if(result.min.known && result.max.known
+                && result.min.val > result.max.val) std::swap(result.min.val, result.max.val);
                 return result;
             }
             case cMod:
@@ -657,21 +476,21 @@ namespace FPoptimizer_CodeTree
                 range<Value_t> x = CalculateResultBoundaries( tree.GetParam(0) );
                 range<Value_t> y = CalculateResultBoundaries( tree.GetParam(1) );
 
-                if(y.has_max)
+                if(y.max.known)
                 {
-                    if(y.max >= Value_t(0))
+                    if(y.max.val >= Value_t(0))
                     {
-                        if(!x.has_min || (x.min) < Value_t(0))
-                            return range<Value_t>(-y.max, y.max);
+                        if(!x.min.known || (x.min.val) < Value_t(0))
+                            return range<Value_t>(-y.max.val, y.max.val);
                         else
-                            return range<Value_t>(Value_t(0), y.max);
+                            return range<Value_t>(Value_t(0), y.max.val);
                     }
                     else
                     {
-                        if(!x.has_max || (x.max) >= Value_t(0))
-                            return range<Value_t>(y.max, -y.max);
+                        if(!x.max.known || (x.max.val) >= Value_t(0))
+                            return range<Value_t>(y.max.val, -y.max.val);
                         else
-                            return range<Value_t>(y.max, fp_const_negativezero<Value_t>());
+                            return range<Value_t>(y.max.val, fp_const_negativezero<Value_t>());
                     }
                 }
                 else
@@ -701,19 +520,19 @@ namespace FPoptimizer_CodeTree
                     Value_t exponent = tree.GetParam(1).GetImmed();
                     range<Value_t> tmp = CalculateResultBoundaries( tree.GetParam(0) );
                     range<Value_t> result;
-                    result.has_min = true;
-                    result.min = 0;
-                    if(tmp.has_min && tmp.min >= Value_t(0))
-                        result.min = fp_pow(tmp.min, exponent);
-                    else if(tmp.has_max && tmp.max <= Value_t(0))
-                        result.min = fp_pow(tmp.max, exponent);
+                    result.min.known = true;
+                    result.min.val = 0;
+                    if(tmp.min.known && tmp.min.val >= Value_t(0))
+                        result.min.val = fp_pow(tmp.min.val, exponent);
+                    else if(tmp.max.known && tmp.max.val <= Value_t(0))
+                        result.min.val = fp_pow(tmp.max.val, exponent);
 
-                    result.has_max = false;
-                    if(tmp.has_min && tmp.has_max)
+                    result.max.known = false;
+                    if(tmp.min.known && tmp.max.known)
                     {
-                        result.has_max = true;
-                        result.max     = fp_max(fp_abs(tmp.min), fp_abs(tmp.max));
-                        result.max     = fp_pow(result.max, exponent);
+                        result.max.known = true;
+                        result.max.val     = fp_max(fp_abs(tmp.min.val), fp_abs(tmp.max.val));
+                        result.max.val     = fp_pow(result.max.val, exponent);
                     }
                     return result;
                 }
@@ -721,8 +540,8 @@ namespace FPoptimizer_CodeTree
                 range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
                 range<Value_t> p1 = CalculateResultBoundaries( tree.GetParam(1) );
                 TriTruthValue p0_positivity =
-                    (p0.has_min && (p0.min) >= Value_t(0)) ? IsAlways
-                  : (p0.has_max && (p0.max) < Value_t(0) ? IsNever
+                    (p0.min.known && (p0.min.val) >= Value_t(0)) ? IsAlways
+                  : (p0.max.known && (p0.max.val) < Value_t(0) ? IsNever
                     : Unknown);
                 TriTruthValue p1_evenness = GetEvennessInfo(tree.GetParam(1));
 
@@ -799,15 +618,15 @@ namespace FPoptimizer_CodeTree
                         /* The result is always positive.
                          * Figure out whether we know the minimum value. */
                         Value_t min = Value_t(0);
-                        if(p0.has_min && p1.has_min)
+                        if(p0.min.known && p1.min.known)
                         {
-                            min = fp_pow(p0.min, p1.min);
-                            if(p0.min < Value_t(0) && (!p1.has_max || p1.max >= Value_t(0)) && min >= Value_t(0))
+                            min = fp_pow(p0.min.val, p1.min.val);
+                            if(p0.min.val < Value_t(0) && (!p1.max.known || p1.max.val >= Value_t(0)) && min >= Value_t(0))
                                 min = Value_t(0);
                         }
-                        if(p0.has_min && p0.min >= Value_t(0) && p0.has_max && p1.has_max)
+                        if(p0.min.known && p0.min.val >= Value_t(0) && p0.max.known && p1.max.known)
                         {
-                            Value_t max = fp_pow(p0.max, p1.max);
+                            Value_t max = fp_pow(p0.max.val, p1.max.val);
                             if(min > max) std::swap(min, max);
                             return range<Value_t>(min, max);
                         }
@@ -916,14 +735,15 @@ namespace FPoptimizer_CodeTree
                 // negative values for x, and produces those
                 // as well.
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                m.set_min_max(fp_cbrt);
+                m.min.set(fp_cbrt);
+                m.max.set(fp_cbrt);
                 return m;
             }
             case cSqrt: // converted into cPow x 0.5
             {
                 range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
-                if(m.has_min) m.min = (m.min) < Value_t(0) ? 0 : fp_sqrt(m.min);
-                if(m.has_max) m.max = (m.max) < Value_t(0) ? 0 : fp_sqrt(m.max);
+                if(m.min.known) m.min.val = (m.min.val) < Value_t(0) ? 0 : fp_sqrt(m.min.val);
+                if(m.max.known) m.max.val = (m.max.val) < Value_t(0) ? 0 : fp_sqrt(m.max.val);
                 return m;
             }
             case cRSqrt: // converted into cPow x -0.5

@@ -46,18 +46,18 @@ namespace
 
             range<Value_t> p0 = CalculateResultBoundaries(a);
             range<Value_t> p1 = CalculateResultBoundaries(b);
-            if(p0.has_max && p1.has_min)
+            if(p0.max.known && p1.min.known)
             {
-                if(p0.max <  p1.min && if_always[0] != Unchanged)
+                if(p0.max.val <  p1.min.val && if_always[0] != Unchanged)
                     return if_always[0]; // p0 < p1
-                if(p0.max <= p1.min && if_always[1] != Unchanged)
+                if(p0.max.val <= p1.min.val && if_always[1] != Unchanged)
                     return if_always[1]; // p0 <= p1
             }
-            if(p0.has_min && p1.has_max)
+            if(p0.min.known && p1.max.known)
             {
-                if(p0.min >  p1.max && if_always[2] != Unchanged)
+                if(p0.min.val >  p1.max.val && if_always[2] != Unchanged)
                     return if_always[2]; // p0 > p1
-                if(p0.min >= p1.max && if_always[3] != Unchanged)
+                if(p0.min.val >= p1.max.val && if_always[3] != Unchanged)
                     return if_always[3]; // p0 >= p1
             }
 
@@ -81,13 +81,13 @@ namespace
         template<typename Value_t>
         static bool TestCase(WhatDoWhenCase when, const range<Value_t>& p)
         {
-            if(!p.has_min || !p.has_max) return false;
+            if(!p.min.known || !p.max.known) return false;
             switch(when)
             {
-                case Eq0: return p.min==Value_t(0.0) && p.max==p.min;
-                case Eq1: return p.min==Value_t(1.0) && p.max==p.max;
-                case Gt0Le1: return p.min>Value_t(0) && p.max<=Value_t(1);
-                case Ge0Lt1: return p.min>=Value_t(0) && p.max<Value_t(1);
+                case Eq0: return p.min.val==Value_t(0.0) && p.max.val==p.min.val;
+                case Eq1: return p.min.val==Value_t(1.0) && p.max.val==p.max.val;
+                case Gt0Le1: return p.min.val>Value_t(0) && p.max.val<=Value_t(1);
+                case Ge0Lt1: return p.min.val>=Value_t(0) && p.max.val<Value_t(1);
                 default:;
             }
             return false;
@@ -242,10 +242,10 @@ namespace
                     tree.SetParam(0, tree.GetParam(0).GetParam(0));
                     tree.SetParam(1, CodeTreeImmed(fp_cos(tree.GetParam(1).GetImmed())));
                     tree.SetOpcode( tree.GetOpcode()==cLess ? cGreater
-                             : tree.GetOpcode()==cLessOrEq ? cGreaterOrEq
-                             : tree.GetOpcode()==cGreater ? cLess
-                             : tree.GetOpcode()==cGreaterOrEq ? cLessOrEq
-                             : tree.GetOpcode() );
+                                  : tree.GetOpcode()==cLessOrEq ? cGreaterOrEq
+                                  : tree.GetOpcode()==cGreater ? cLess
+                                  : tree.GetOpcode()==cGreaterOrEq ? cLessOrEq
+                                  : tree.GetOpcode() );
                     return true;
                 case cAtan:
                     tree.SetParam(0, tree.GetParam(0).GetParam(0));

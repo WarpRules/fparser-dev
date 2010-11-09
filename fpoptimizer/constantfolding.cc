@@ -114,10 +114,10 @@ namespace FPoptimizer_CodeTree
         if(tree.GetOpcode() != cImmed)
         {
             range<Value_t> p = CalculateResultBoundaries(tree);
-            if(p.has_min && p.has_max && p.min == p.max)
+            if(p.min.known && p.max.known && p.min.val == p.max.val)
             {
                 // Replace us with this immed
-                tree.ReplaceWithImmed(p.min);
+                tree.ReplaceWithImmed(p.min.val);
                 goto do_return;
             }
         }
@@ -463,17 +463,17 @@ namespace FPoptimizer_CodeTree
                     while(a+1 < tree.GetParamCount() && tree.GetParam(a).IsIdenticalTo(tree.GetParam(a+1)))
                         tree.DelParam(a+1);
                     range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
-                    if(p.has_max && (!smallest_maximum.has_max || (p.max) < smallest_maximum.max))
+                    if(p.max.known && (!smallest_maximum.max.known || (p.max.val) < smallest_maximum.max.val))
                     {
-                        smallest_maximum.max = p.max;
-                        smallest_maximum.has_max = true;
+                        smallest_maximum.max.val = p.max.val;
+                        smallest_maximum.max.known = true;
                         preserve=a;
                 }   }
-                if(smallest_maximum.has_max)
+                if(smallest_maximum.max.known)
                     for(size_t a=tree.GetParamCount(); a-- > 0; )
                     {
                         range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
-                        if(p.has_min && a != preserve && p.min >= smallest_maximum.max)
+                        if(p.min.known && a != preserve && p.min.val >= smallest_maximum.max.val)
                             tree.DelParam(a);
                     }
                 //fprintf(stderr, "Remains: %u\n", (unsigned)tree.GetParamCount());
@@ -504,21 +504,21 @@ namespace FPoptimizer_CodeTree
                     while(a+1 < tree.GetParamCount() && tree.GetParam(a).IsIdenticalTo(tree.GetParam(a+1)))
                         tree.DelParam(a+1);
                     range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
-                    if(p.has_min && (!biggest_minimum.has_min || p.min > biggest_minimum.min))
+                    if(p.min.known && (!biggest_minimum.min.known || p.min.val > biggest_minimum.min.val))
                     {
-                        biggest_minimum.min = p.min;
-                        biggest_minimum.has_min = true;
+                        biggest_minimum.min.val = p.min.val;
+                        biggest_minimum.min.known = true;
                         preserve=a;
                 }   }
-                if(biggest_minimum.has_min)
+                if(biggest_minimum.min.known)
                 {
-                    //fprintf(stderr, "Removing all where max < %g\n", biggest_minimum.min);
+                    //fprintf(stderr, "Removing all where max < %g\n", biggest_minimum.min.val);
                     for(size_t a=tree.GetParamCount(); a-- > 0; )
                     {
                         range<Value_t> p = CalculateResultBoundaries( tree.GetParam(a) );
-                        if(p.has_max && a != preserve && (p.max) < biggest_minimum.min)
+                        if(p.max.known && a != preserve && (p.max.val) < biggest_minimum.min.val)
                         {
-                            //fprintf(stderr, "Removing %g\n", p.max);
+                            //fprintf(stderr, "Removing %g\n", p.max.val);
                             tree.DelParam(a);
                         }
                     }
@@ -547,9 +547,9 @@ namespace FPoptimizer_CodeTree
                  * If we know the operand is always negative, use actual negation.
                  */
                 range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
-                if(p0.has_min && p0.min >= Value_t(0.0))
+                if(p0.min.known && p0.min.val >= Value_t(0.0))
                     goto ReplaceTreeWithParam0;
-                if(p0.has_max && p0.max <= fp_const_negativezero<Value_t>())
+                if(p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>())
                 {
                     /* abs(negative) = negative*-1 */
                     tree.SetOpcode(cMul);
@@ -571,9 +571,9 @@ namespace FPoptimizer_CodeTree
                     for(size_t a=0; a<p.GetParamCount(); ++a)
                     {
                         p0 = CalculateResultBoundaries( p.GetParam(a) );
-                        if(p0.has_min && p0.min >= Value_t(0.0))
+                        if(p0.min.known && p0.min.val >= Value_t(0.0))
                             { pos_set.push_back(p.GetParam(a)); }
-                        if(p0.has_max && p0.max <= fp_const_negativezero<Value_t>())
+                        if(p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>())
                             { neg_set.push_back(p.GetParam(a)); }
                     }
                 #ifdef DEBUG_SUBSTITUTIONS
@@ -593,8 +593,8 @@ namespace FPoptimizer_CodeTree
                         for(size_t a=0; a<p.GetParamCount(); ++a)
                         {
                             p0 = CalculateResultBoundaries( p.GetParam(a) );
-                            if((p0.has_min && p0.min >= Value_t(0.0))
-                            || (p0.has_max && p0.max <= fp_const_negativezero<Value_t>()))
+                            if((p0.min.known && p0.min.val >= Value_t(0.0))
+                            || (p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>()))
                                 {/*pclone.DelParam(a);*/}
                             else
                                 pclone.AddParam( p.GetParam(a) );
@@ -762,17 +762,17 @@ namespace FPoptimizer_CodeTree
                 if(tree.GetParam(0).IsImmed()
                 && fp_equal(tree.GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {
-                    if(p1.has_max && (p1.max) < Value_t(0))    // y == 0 && x < 0
+                    if(p1.max.known && (p1.max.val) < Value_t(0))    // y == 0 && x < 0
                         { tree.ReplaceWithImmed( fp_const_pi<Value_t>() ); goto do_return; }
-                    if(p1.has_min && p1.min >= Value_t(0.0))  // y == 0 && x >= 0.0
+                    if(p1.min.known && p1.min.val >= Value_t(0.0))  // y == 0 && x >= 0.0
                         { tree.ReplaceWithImmed( Value_t(0) ); goto do_return; }
                 }
                 if(tree.GetParam(1).IsImmed()
                 && fp_equal(tree.GetParam(1).GetImmed(), Value_t(0)))   // x == 0
                 {
-                    if(p0.has_max && (p0.max) < Value_t(0))   // y < 0 && x == 0
+                    if(p0.max.known && (p0.max.val) < Value_t(0))   // y < 0 && x == 0
                         { tree.ReplaceWithImmed( -fp_const_pihalf<Value_t>() ); goto do_return; }
-                    if(p0.has_min && p0.min > Value_t(0))     // y > 0 && x == 0
+                    if(p0.min.known && p0.min.val > Value_t(0))     // y > 0 && x == 0
                         { tree.ReplaceWithImmed(  fp_const_pihalf<Value_t>() ); goto do_return; }
                 }
                 if(tree.GetParam(0).IsImmed()
@@ -780,8 +780,8 @@ namespace FPoptimizer_CodeTree
                     { tree.ReplaceWithImmed( fp_atan2(tree.GetParam(0).GetImmed(),
                                              tree.GetParam(1).GetImmed()) );
                       goto do_return; }
-                if((p1.has_min && p1.min > Value_t(0))            // p1 != 0.0
-                || (p1.has_max && (p1.max) < fp_const_negativezero<Value_t>())) // become atan(p0 / p1)
+                if((p1.min.known && p1.min.val > Value_t(0))            // p1 != 0.0
+                || (p1.max.known && (p1.max.val) < fp_const_negativezero<Value_t>())) // become atan(p0 / p1)
                 {
                     CodeTree<Value_t> pow_tree;
                     pow_tree.SetOpcode(cPow);
