@@ -178,6 +178,7 @@ namespace FPoptimizer_Grammar
 
 /* BEGIN_EXPLICIT_INSTANTATION */
 #include "instantiate.hh"
+#include <complex>
 namespace FPoptimizer_Grammar
 {
 #define FP_INSTANTIATE(type) \
@@ -185,5 +186,11 @@ namespace FPoptimizer_Grammar
     template bool ParamSpec_Compare<type>(const void*, const void*, SpecialOpcode);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
+
+/* For tree_grammar_parser.y, instantiate complex versions */
+template bool ParamSpec_Compare<std::complex<double> >
+    (const void*, const void*, SpecialOpcode);
+template void DumpParams<std::complex<double> >
+    (unsigned, unsigned, std::ostream& );
 }
 /* END_EXPLICIT_INSTANTATION */

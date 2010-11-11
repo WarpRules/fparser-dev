@@ -467,6 +467,12 @@ namespace FUNCTIONPARSERTYPES
   #endif
 
     template<typename T>
+    inline const std::complex<T> fp_make_imag(const std::complex<T>& v)
+    {
+        return std::complex<T> ( T(), v.real() );
+    }
+
+    template<typename T>
     inline std::complex<T> fp_real(const std::complex<T>& x)
     {
         return x.real();
@@ -1047,6 +1053,12 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline const Value_t fp_absOr(const Value_t& a, const Value_t& b)
         { return Value_t(fp_absTruth(a) || fp_absTruth(b)); }
+
+    template<typename Value_t>
+    inline const Value_t fp_make_imag(const Value_t& ) // Imaginary 1. In real mode, always zero.
+    {
+        return Value_t();
+    }
 
     /////////////
     /* Opcode analysis functions are used by fp_opcode_add.inc */

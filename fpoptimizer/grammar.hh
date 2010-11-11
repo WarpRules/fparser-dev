@@ -1,12 +1,11 @@
-#ifndef FPOPT_NAN_CONST
+#ifndef FPOptimizer_GrammarHH
+#define FPOptimizer_GrammarHH
 
 #include <iostream>
 
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "fptypes.hh"
-
-#define FPOPT_NAN_CONST (-1712345.25) /* Would use 0.0 / 0.0 here, but some compilers don't accept it. */
 
 namespace FPoptimizer_CodeTree
 {

@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <complex>
 #include <map>
 #include <set>
 #include <algorithm>
@@ -50,7 +51,18 @@ namespace
 #include "fp_identifier_parser.inc"
         return 0;
     }
+}
 
+namespace
+{
+    struct mycomplex
+    {
+        double real, imag;
+    };
+    mycomplex operator -(const mycomplex& v)
+        { mycomplex res = {-v.real, -v.imag }; return res; }
+
+    typedef std::complex<double> stdcomplex;
 }
 
 namespace GrammarData
@@ -117,7 +129,7 @@ namespace GrammarData
         SpecialOpcode Opcode;      // specifies the type of the function
         union
         {
-            double ConstantValue;           // for NumConstant
+            mycomplex ConstantValue;// for NumConstant
             unsigned Index;                 // for ParamHolder
             FunctionType* Func;             // for SubFunction
         };
@@ -136,7 +148,7 @@ namespace GrammarData
         {
         }
 
-        ParamSpec(double d, unsigned constraints)
+        ParamSpec(mycomplex d, unsigned constraints)
             : DepMask(),
               Opcode(NumConstant),
               ConstantValue(d),
@@ -156,7 +168,7 @@ namespace GrammarData
             {
                 delete Func;
                 Opcode        = NumConstant;
-                ConstantValue = -p[0]->ConstantValue;
+                ConstantValue  = -p[0]->ConstantValue;
                 ImmedConstraint = p[0]->ImmedConstraint;
             }
             else
@@ -502,7 +514,7 @@ public:
 
             for(size_t b = 0; b < plist.size(); ++b)
                 if(plist[b].first == p.first
-                && ParamSpec_Compare<double>(plist[b].second, p.second, p.first))
+                && ParamSpec_Compare<stdcomplex>(plist[b].second, p.second, p.first))
                 {
                     paramno = (unsigned)b;
                     break;
@@ -540,8 +552,9 @@ public:
             }
             case NumConstant:
             {
-                ParamSpec_NumConstant<double>* result = new ParamSpec_NumConstant<double>;
-                result->constvalue     = p.ConstantValue;
+                typedef stdcomplex v;
+                ParamSpec_NumConstant<v>* result = new ParamSpec_NumConstant<v>;
+                result->constvalue     = v(p.ConstantValue.real, p.ConstantValue.imag);
                 result->modulo         = p.ImmedConstraint;
                 return std::make_pair(NumConstant, (void*)result);
             }
@@ -736,15 +749,17 @@ public:
         return result.str();
     }
 
-    static std::string ConstValueToString(double value)
+    static std::string ConstValueToString(const stdcomplex& value)
     {
         using namespace FUNCTIONPARSERTYPES;
         std::ostringstream result;
         result.precision(50);
+        double dvalue = value.real();
+        if(value.imag() != 0.0) goto NotAnyKnownConstant;
         #define Value_t double
         #define if_const(n) \
-            if(fp_equal(value, n)) result << #n; \
-            else if(fp_equal(value, -n)) result << "-" #n;
+            if(fp_equal(dvalue, n)) result << #n; \
+            else if(fp_equal(dvalue, -n)) result << "-" #n;
         if_const(fp_const_e<Value_t>())
         else if_const(fp_const_einv<Value_t>())
         else if_const(fp_const_twoe<Value_t>())
@@ -758,17 +773,22 @@ public:
         else if_const(fp_const_log10inv<Value_t>())
         else if_const(fp_const_rad_to_deg<Value_t>())
         else if_const(fp_const_deg_to_rad<Value_t>())
-        else if_const(FPOPT_NAN_CONST)
         #undef if_const
         #undef Value_t
-        else result << "Value_t(" << value << ")";
+        else
+        {
+        NotAnyKnownConstant:
+            result << "Value_t(" << value.real() << ")";
+            if(value.imag() != 0.0)
+                result << " + fp_make_imag(Value_t(" << value.imag() << "))";
+        }
         return result.str();
     }
 
     struct ParamCollection
     {
         std::vector<ParamSpec_ParamHolder>           plist_p;
-        std::vector<ParamSpec_NumConstant<double> >  plist_n;
+        std::vector<ParamSpec_NumConstant<stdcomplex> >  plist_n;
         std::vector<ParamSpec_SubFunction>           plist_s;
 
         void Populate(const ParamSpec& param)
@@ -776,7 +796,7 @@ public:
             #define set(when, type, list, code) \
                 case when: \
                   { for(size_t a=0; a<list.size(); ++a) \
-                        if(ParamSpec_Compare<double>(param.second, (const void*) &list[a], when)) \
+                        if(ParamSpec_Compare<stdcomplex>(param.second, (const void*) &list[a], when)) \
                             return; \
                     list.push_back( *(type*) param.second ); \
                     code; \
@@ -784,11 +804,11 @@ public:
             switch(param.first)
             {
                 set(ParamHolder, ParamSpec_ParamHolder,         plist_p, {} );
-                set(NumConstant, ParamSpec_NumConstant<double>, plist_n, {} );
+                set(NumConstant, ParamSpec_NumConstant<stdcomplex>, plist_n, {} );
                 set(SubFunction, ParamSpec_SubFunction,         plist_s,
                      ParamSpec_SubFunction* p = (ParamSpec_SubFunction*)param.second;
                      for(size_t a=0; a<p->data.param_count; ++a)
-                         Populate( ParamSpec_Extract<double>( p->data.param_list, a) );
+                         Populate( ParamSpec_Extract<stdcomplex>( p->data.param_list, a) );
                     );
             }
             #undef set
@@ -806,11 +826,14 @@ public:
             return 0;
         } };
         struct n_compare { int kind(
-            const ParamSpec_NumConstant<double>& a,
-            const ParamSpec_NumConstant<double>& b) const
+            const ParamSpec_NumConstant<stdcomplex>& a,
+            const ParamSpec_NumConstant<stdcomplex>& b) const
         {
             if(a.modulo != b.modulo) return a.modulo < b.modulo ? -1 : 1;
-            if(a.constvalue != b.constvalue) return a.constvalue < b.constvalue ? -1 : 1;
+            double av = std::norm(a.constvalue), bv = std::norm(b.constvalue);
+            if(a.constvalue.real() < 0) av = -av;
+            if(b.constvalue.real() < 0) bv = -bv;
+            if(av != bv) return av < bv ? -1 : 1;
             return 0;
         } };
         struct s_compare { int kind(
@@ -844,8 +867,8 @@ public:
 
             for(size_t c=0; c< min_param_count; ++c)
             {
-                ParamSpec aa = ParamSpec_Extract<double>(a.data.param_list, (unsigned)c);
-                ParamSpec bb = ParamSpec_Extract<double>(b.data.param_list, (unsigned)c);
+                ParamSpec aa = ParamSpec_Extract<stdcomplex>(a.data.param_list, (unsigned)c);
+                ParamSpec bb = ParamSpec_Extract<stdcomplex>(b.data.param_list, (unsigned)c);
                 if(aa.first != bb.first)
                     return aa.first < bb.first;
                 switch(aa.first)
@@ -858,8 +881,8 @@ public:
                         break;
                    }case NumConstant: {
                         int k = n_compare().kind
-                            (*(const ParamSpec_NumConstant<double>*)aa.second,
-                             *(const ParamSpec_NumConstant<double>*)bb.second);
+                            (*(const ParamSpec_NumConstant<stdcomplex>*)aa.second,
+                             *(const ParamSpec_NumConstant<stdcomplex>*)bb.second);
                         if(k) return k;
                         break;
                    }case SubFunction:{
@@ -893,13 +916,13 @@ public:
 
         unsigned ParamPtrToParamIndex(unsigned paramlist, unsigned index) const
         {
-            const ParamSpec& p = ParamSpec_Extract<double> (paramlist, index);
+            const ParamSpec& p = ParamSpec_Extract<stdcomplex> (paramlist, index);
             if(p.second)
             {
                 #define set(when, list, c) \
                     case when: \
                         for(size_t a=0; a<list.size(); ++a) \
-                            if(ParamSpec_Compare<double> (p.second, (const void*)&list[a], when)) \
+                            if(ParamSpec_Compare<stdcomplex> (p.second, (const void*)&list[a], when)) \
                                 return (a + c##offset); \
                         break;
                 unsigned Poffset = 0;
@@ -947,7 +970,7 @@ public:
             return result.str();
         }
 
-        std::string NumConstantToString(const ParamSpec_NumConstant<double>& i) const
+        std::string NumConstantToString(const ParamSpec_NumConstant<stdcomplex>& i) const
         {
             std::ostringstream result;
             result << "{" << ConstValueToString(i.constvalue)
@@ -990,9 +1013,9 @@ public:
         for(size_t a=0; a<rlist.size(); ++a)
         {
             for(unsigned b=0; b < rlist[a].match_tree.param_count; ++b)
-                collection.Populate( ParamSpec_Extract<double>(rlist[a].match_tree.param_list, b) );
+                collection.Populate( ParamSpec_Extract<stdcomplex>(rlist[a].match_tree.param_list, b) );
             for(unsigned b=0; b < rlist[a].repl_param_count; ++b)
-                collection.Populate( ParamSpec_Extract<double>(rlist[a].repl_param_list, b) );
+                collection.Populate( ParamSpec_Extract<stdcomplex>(rlist[a].repl_param_list, b) );
         }
         collection.Sort();
 
@@ -1026,7 +1049,7 @@ public:
                 std::cout << "    /* " << offset++ << "\t*/ " \
                           << collection.type##ToString(collection.list[a]) \
                           << ", /* "; \
-                FPoptimizer_Grammar::DumpParam<double>( ParamSpec(type, (const void*) &collection.list[a]), std::cout); \
+                FPoptimizer_Grammar::DumpParam<stdcomplex>( ParamSpec(type, (const void*) &collection.list[a]), std::cout); \
                 std::cout << " */\n"; \
             } \
             std::cout << \
@@ -1072,7 +1095,7 @@ public:
                 std::cout << "@F ";
             if(rlist[a].situation_flags & OnlyForIntegers)
                 std::cout << "@I ";
-            FPoptimizer_Grammar::DumpParam<double>
+            FPoptimizer_Grammar::DumpParam<stdcomplex>
                 ( ParamSpec(SubFunction, (const void*) &tmp) );
             switch(rlist[a].ruletype)
             {
@@ -1080,14 +1103,14 @@ public:
                     std::cout <<
                     "\n"
                     "         *\t->\t";
-                    FPoptimizer_Grammar::DumpParam<double>(
-                        ParamSpec_Extract<double>(rlist[a].repl_param_list, 0) );
+                    FPoptimizer_Grammar::DumpParam<stdcomplex>(
+                        ParamSpec_Extract<stdcomplex>(rlist[a].repl_param_list, 0) );
                     break;
                 case ReplaceParams: default:
                     std::cout <<
                     "\n"
                     "         *\t:\t";
-                    FPoptimizer_Grammar::DumpParams<double>
+                    FPoptimizer_Grammar::DumpParams<stdcomplex>
                         ( rlist[a].repl_param_list, rlist[a].repl_param_count);
                     break;
             }
@@ -1157,7 +1180,7 @@ static GrammarDumper dumper;
     GrammarData::MatchedParams* p;
     GrammarData::ParamSpec*     a;
 
-    double                       num;
+    mycomplex         num;
     unsigned                     index;
     FUNCTIONPARSERTYPES::OPCODE  opcode;
 }
@@ -1547,7 +1570,33 @@ static int yylex(YYSTYPE* lval)
                 std::ungetc(c, stdin);
                 break;
             }
-            lval->num = std::strtod(NumBuf.c_str(), 0);
+            lval->num.real = std::strtod(NumBuf.c_str(), 0);
+            lval->num.imag = 0.0;
+            if(c == 'i')
+            {
+                std::fgetc(stdin);
+                lval->num.imag = lval->num.real;
+                lval->num.real = 0.0;
+            }
+            else if(c == '-' || c == '+')
+            {
+                NumBuf.clear();
+                NumBuf += (char)c;
+                bool had_comma = false;
+                for(;;)
+                {
+                    c = std::fgetc(stdin);
+                    if(c >= '0' && c <= '9')  { NumBuf += (char)c; continue; }
+                    if(c == '.' && !had_comma){ had_comma = true; NumBuf += (char)c; continue; }
+                    std::ungetc(c, stdin);
+                    break;
+                }
+                if(c == 'i')
+                {
+                    lval->num.imag = std::strtod(NumBuf.c_str(), 0);
+                    std::fgetc(stdin);
+                }
+            }
             return NUMERIC_CONSTANT;
         }
         case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
@@ -1573,6 +1622,8 @@ static int yylex(YYSTYPE* lval)
                 std::ungetc(c, stdin);
                 break;
             }
+            lval->num.real = 0;
+            lval->num.imag = 0;
 
             /* This code figures out if this is a named constant,
                an opcode, or a parse-time function name,
@@ -1580,22 +1631,20 @@ static int yylex(YYSTYPE* lval)
              */
 
             /* Detect named constants */
-            if(IdBuf == "CONSTANT_E") { lval->num = FUNCTIONPARSERTYPES::fp_const_e<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_EI") { lval->num = FUNCTIONPARSERTYPES::fp_const_einv<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2E") { lval->num = FUNCTIONPARSERTYPES::fp_const_twoe<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2EI") { lval->num = FUNCTIONPARSERTYPES::fp_const_twoeinv<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_RD") { lval->num = FUNCTIONPARSERTYPES::fp_const_rad_to_deg<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_DR") { lval->num = FUNCTIONPARSERTYPES::fp_const_deg_to_rad<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_PI") { lval->num = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_PIHALF") { lval->num = FUNCTIONPARSERTYPES::fp_const_pihalf<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_TWOPI") { lval->num = FUNCTIONPARSERTYPES::fp_const_twopi<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L2I") { lval->num = FUNCTIONPARSERTYPES::fp_const_log2inv<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10I") { lval->num = FUNCTIONPARSERTYPES::fp_const_log10inv<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L2") { lval->num = FUNCTIONPARSERTYPES::fp_const_log2<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_L10") { lval->num = FUNCTIONPARSERTYPES::fp_const_log10<double>(); return NUMERIC_CONSTANT; }
-            //if(IdBuf == "CONSTANT_L10B") { lval->num = CONSTANT_L10B; return NUMERIC_CONSTANT; }
-            //if(IdBuf == "CONSTANT_L10BI") { lval->num = CONSTANT_L10BI; return NUMERIC_CONSTANT; }
-            if(IdBuf == "NaN") { lval->num = FPOPT_NAN_CONST; return NUMERIC_CONSTANT; }
+            if(IdBuf == "i")          { lval->num.imag = 1.0; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_E") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_e<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_EI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_einv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2E") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twoe<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_2EI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twoeinv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_RD") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_rad_to_deg<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_DR") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_deg_to_rad<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_PI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_PIHALF") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pihalf<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_TWOPI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twopi<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L2I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log2inv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log10inv<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L2") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log2<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_L10") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log10<double>(); return NUMERIC_CONSTANT; }
 
             /* Detect opcodes */
             if(IdBuf == "cAdd") { lval->opcode = FUNCTIONPARSERTYPES::cAdd; return OPCODE_TOKEN; }
@@ -1726,7 +1775,6 @@ unsigned GrammarData::ParamSpec::BuildDepMask()
     return DepMask;
 }
 
-#include "../fpoptimizer/instantiate.hh"
 namespace FPoptimizer_Grammar
 {
     template<typename Value_t>
@@ -1736,13 +1784,7 @@ namespace FPoptimizer_Grammar
                                % (1 << PARAM_INDEX_BITS);
         return plist[plist_index];
     }
-
-    /* BEGIN_EXPLICIT_INSTANTATION */
-#define FP_INSTANTIATE(type) \
-    template ParamSpec ParamSpec_Extract<type>(unsigned paramlist, unsigned index);
-    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
-#undef FP_INSTANTIATE
-    /* END_EXPLICIT_INSTANTATION */
+    template ParamSpec ParamSpec_Extract<stdcomplex>(unsigned paramlist, unsigned index);
 }
 
 int main()
