@@ -91,9 +91,9 @@ namespace
 
         size_t MinimumDepth() const
         {
-            size_t n_sincos = std::min(n_as_cos_param, n_as_sin_param)
-                            + std::min(n_as_cosh_param, n_as_sinh_param);
-            if(n_sincos == 0)
+            size_t n_sincos   = std::min(n_as_cos_param, n_as_sin_param);
+            size_t n_sinhcosh = std::min(n_as_cosh_param, n_as_sinh_param);
+            if(n_sincos == 0 && n_sinhcosh == 0)
                 return 2;
             return 1;
         }
@@ -109,28 +109,31 @@ namespace
     void FindTreeCounts(
         TreeCountType<Value_t>& TreeCounts,
         const CodeTree<Value_t>& tree,
-        OPCODE parent_opcode)
+        OPCODE parent_opcode,
+        bool skip_root = false)
     {
         typename TreeCountType<Value_t>::iterator
             i = TreeCounts.lower_bound(tree.GetHash());
-        bool found = false;
-        for(; i != TreeCounts.end() && i->first == tree.GetHash(); ++i)
+        if(!skip_root)
         {
-            if(tree.IsIdenticalTo( i->second.second ) )
+            bool found = false;
+            for(; i != TreeCounts.end() && i->first == tree.GetHash(); ++i)
             {
-                i->second.first.AddFrom(parent_opcode);
-                found = true;
-                break;
+                if(tree.IsIdenticalTo( i->second.second ) )
+                {
+                    i->second.first.AddFrom(parent_opcode);
+                    found = true;
+                    break;
+                }
+            }
+            if(!found)
+            {
+                TreeCountItem count;
+                count.AddFrom(parent_opcode);
+                TreeCounts.insert(i, std::make_pair(tree.GetHash(),
+                    std::make_pair(count, tree)));
             }
         }
-        if(!found)
-        {
-            TreeCountItem count;
-            count.AddFrom(parent_opcode);
-            TreeCounts.insert(i, std::make_pair(tree.GetHash(),
-                std::make_pair(count, tree)));
-        }
-
         for(size_t a=0; a<tree.GetParamCount(); ++a)
             FindTreeCounts(TreeCounts, tree.GetParam(a),
                            tree.GetOpcode());
@@ -300,34 +303,35 @@ namespace FPoptimizer_CodeTree
     size_t CodeTree<Value_t>::SynthCommonSubExpressions(
         FPoptimizer_ByteCode::ByteCodeSynth<Value_t>& synth) const
     {
+        if(GetParamCount() == 0) return 0; // No subexpressions to synthesize.
+
         size_t stacktop_before = synth.GetStackTop();
 
         /* Find common subtrees */
         TreeCountType<Value_t> TreeCounts;
-        FindTreeCounts(TreeCounts, *this, GetOpcode());
-
-    #ifdef DEBUG_SUBSTITUTIONS_CSE
-        DumpHashes(*this);
-    #endif
+        FindTreeCounts(TreeCounts, *this, GetOpcode(), true);
 
         /* Synthesize some of the most common ones */
         for(;;)
         {
             size_t best_score = 0;
-            typename TreeCountType<Value_t>::iterator synth_it;
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
+            std::cout << "Finding a CSE candidate, root is:" << std::endl;
+            DumpHashes(*this);
+    #endif
+            typename TreeCountType<Value_t>::iterator cs_it ( TreeCounts.end() );
             for(typename TreeCountType<Value_t>::iterator
-                j,i = TreeCounts.begin();
-                i != TreeCounts.end();
-                i=j)
+                j = TreeCounts.begin();
+                j != TreeCounts.end(); )
             {
-                j=i; ++j;
+                typename TreeCountType<Value_t>::iterator i( j++ );
 
                 const TreeCountItem& occ  = i->second.first;
                 size_t          score     = occ.GetCSEscore();
                 const CodeTree<Value_t>& tree = i->second.second;
 
     #ifdef DEBUG_SUBSTITUTIONS_CSE
-                std::cout << "Score " << score << ":\n";
+                std::cout << "Score " << score << ":\n" << std::flush;
                 DumpTreeWithIndent(tree);
     #endif
 
@@ -377,17 +381,23 @@ namespace FPoptimizer_CodeTree
                 // Is a candidate.
                 score *= tree.GetDepth();
                 if(score > best_score)
-                    { best_score = score; synth_it = i; }
+                    { best_score = score; cs_it = i; }
             }
 
-            if(best_score <= 0) break; // Didn't find anything.
-
-            const TreeCountItem& occ  = synth_it->second.first;
-            const CodeTree<Value_t>& tree = synth_it->second.second;
+            if(best_score <= 0)
+            {
     #ifdef DEBUG_SUBSTITUTIONS_CSE
-            std::cout << "Found Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << "\n";
+                std::cout << "No more CSE candidates.\n" << std::flush;
     #endif
+                break; // Didn't find anything.
+            }
 
+            const TreeCountItem& occ      = cs_it->second.first;
+            const CodeTree<Value_t>& tree = cs_it->second.second;
+    #ifdef DEBUG_SUBSTITUTIONS_CSE
+            std::cout << "Found Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << std::endl;
+    #endif
+          #if 0
             int needs_sincos   = occ.NeedsSinCos();
             int needs_sinhcosh = occ.NeedsSinhCosh();
             CodeTree<Value_t> sintree, costree, sinhtree, coshtree;
@@ -405,7 +415,7 @@ namespace FPoptimizer_CodeTree
                     {
                         // sin, cos already found, and we don't
                         // actually need _this_ tree by itself
-                        TreeCounts.erase(synth_it);
+                        TreeCounts.erase(cs_it);
                         continue;
                     }
                     needs_sincos = 0;
@@ -423,28 +433,31 @@ namespace FPoptimizer_CodeTree
                 {
                     if(needs_sinhcosh == 2)
                     {
-                        // sin, cos already found, and we don't
+                        // sinh, cosh already found, and we don't
                         // actually need _this_ tree by itself
-                        TreeCounts.erase(synth_it);
+                        TreeCounts.erase(cs_it);
                         continue;
                     }
                     needs_sinhcosh = 0;
                 }
             }
+          #endif
 
             /* Synthesize the selected tree */
             tree.SynthesizeByteCode(synth, false);
-            TreeCounts.erase(synth_it);
+            TreeCounts.erase(cs_it);
     #ifdef DEBUG_SUBSTITUTIONS_CSE
-            std::cout << "Done with Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << "\n";
+            synth.template Dump<0> ();
+            std::cout << "Done with Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << std::endl;
     #endif
+          #if 0
             if(needs_sincos)
             {
-                if(needs_sincos == 2)
+                if(needs_sincos == 2 || needs_sinhcosh)
                 {
                     // make a duplicate of the value, since it
                     // is also needed in addition to the sin/cos.
-                    synth.DoDup(synth.GetStackTop()-1);
+                    synth.FindAndDup(tree);
                 }
                 synth.AddOperation(cSinCos, 1, 2);
 
@@ -458,13 +471,14 @@ namespace FPoptimizer_CodeTree
                 {
                     // make a duplicate of the value, since it
                     // is also needed in addition to the sin/cos.
-                    synth.DoDup(synth.GetStackTop()-1);
+                    synth.FindAndDup(tree);
                 }
                 synth.AddOperation(cSinhCosh, 1, 2);
 
                 synth.StackTopIs(sinhtree, 1);
                 synth.StackTopIs(coshtree, 0);
             }
+          #endif
         }
 
         return synth.GetStackTop() - stacktop_before;

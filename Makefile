@@ -36,12 +36,14 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 
 #OPTIMIZATION+=-g
 #OPTIMIZATION=-g -O0 -fno-inline
+#OPTIMIZATION=-g -O0 -fno-inline -fno-inline-functions -fno-default-inline
 #OPTIMIZATION=-g -O2 -fno-inline -fno-inline-functions -fno-default-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
 
 CXX=g++
 LD=g++
+#LD=g++ -g
 
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 

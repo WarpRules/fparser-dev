@@ -39,6 +39,43 @@ namespace FPoptimizer_CodeTree
         min.val = -min.val;
         max.val = -max.val;
     }
+
+    template<typename Value_t>
+    bool IsLogicalTrueValue(const range<Value_t>& p, bool abs)
+    {
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        {
+            if(p.min.known && p.min.val >= Value_t(1)) return true;
+            if(!abs && p.max.known && p.max.val <= Value_t(-1)) return true;
+        }
+        else
+        {
+            if(p.min.known && p.min.val >= Value_t(0.5)) return true;
+            if(!abs && p.max.known && p.max.val <= Value_t(-0.5)) return true;
+        }
+        return false;
+    }
+
+    template<typename Value_t>
+    bool IsLogicalFalseValue(const range<Value_t>& p, bool abs)
+    {
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        {
+            if(abs)
+                return p.max.known && p.max.val < Value_t(1);
+            else
+                return p.min.known && p.max.known
+                  && p.min.val > Value_t(-1) && p.max.val < Value_t(1);
+        }
+        else
+        {
+            if(abs)
+                return p.max.known && p.max.val < Value_t(0.5);
+            else
+                return p.min.known && p.max.known
+                   && p.min.val > Value_t(-0.5) && p.max.val < Value_t(0.5);
+        }
+    }
 }
 
 /* BEGIN_EXPLICIT_INSTANTATION */
@@ -46,7 +83,9 @@ namespace FPoptimizer_CodeTree
 namespace FPoptimizer_CodeTree
 {
 #define FP_INSTANTIATE(type) \
-    template struct range<type>;
+    template struct range<type>; \
+    template bool IsLogicalTrueValue(const range<type> &, bool); \
+    template bool IsLogicalFalseValue(const range<type> &, bool);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
 }

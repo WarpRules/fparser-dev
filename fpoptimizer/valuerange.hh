@@ -130,6 +130,13 @@ namespace FPoptimizer_CodeTree
         /* Negate the range, i.e. -3..+5 becomes -5..+3 */
         void set_neg();
     };
+
+    /* Analysis functions for a range */
+    template<typename Value_t>
+    bool IsLogicalTrueValue(const range<Value_t>& p, bool abs);
+
+    template<typename Value_t>
+    bool IsLogicalFalseValue(const range<Value_t>& p, bool abs);
 }
 
 #endif

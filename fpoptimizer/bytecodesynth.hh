@@ -131,19 +131,35 @@ namespace FPoptimizer_ByteCode
             StackState[StackTop-1] = StackState[src_pos];
         }
 
-        size_t FindPos(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree) const
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
+        template<int/*defer*/>
+        void Dump()
         {
-            /*
-            std::cout << "Stack state now(" << StackTop << "):\n";
+            std::ostream& o = std::cout;
+            o << "Stack state now(" << StackTop << "):\n";
             for(size_t a=0; a<StackTop; ++a)
             {
-                std::cout << a << ": ";
+                o << a << ": ";
                 if(StackState[a].first)
-                    DumpTree(StackState[a].second);
+                {
+                    const FPoptimizer_CodeTree::CodeTree<Value_t>
+                        & tree = StackState[a].second;
+                    o << '[' << std::hex << (void*)(&tree.GetParams())
+                             << std::dec
+                             << ',' << tree.GetRefCount()
+                             << ']';
+                    DumpTree(tree, o);
+                }
                 else
-                    std::cout << "?";
-                std::cout << "\n";
-            }*/
+                    o << "?";
+                o << "\n";
+            }
+            o << std::flush;
+        }
+#endif
+
+        size_t FindPos(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree) const
+        {
             for(size_t a=StackTop; a-->0; )
                 if(StackState[a].first && StackState[a].second.IsIdenticalTo(tree))
                     return a;

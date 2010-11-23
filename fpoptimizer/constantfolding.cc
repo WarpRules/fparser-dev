@@ -93,7 +93,7 @@ namespace FPoptimizer_CodeTree
         std::cout << "[" << (&stackptr) << "]Runs ConstantFolding for: ";
         DumpTree(tree);
         std::cout << "\n";
-        DumpHashes(tree);
+        DumpHashes(tree); std::cout << std::flush;
     #endif
         if(false)
         {
