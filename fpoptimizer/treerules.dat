@@ -458,6 +458,14 @@ cMul (cPow [& y]) (cAdd {-1 (cPow [x@P z])}) : (cAdd (cMul (cPow[& y]) -1) (cPow
 cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})  %}) : % (cAdd       (cPow[& y])     (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
 cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])}) -%}) : % (cAdd (cMul (cPow[& y]) -1) (cPow[& (cAdd y (cMul z (cLog[x]) /LOG(&)))]))
 
+# exp(2*y) - 2*exp(y) = (exp(x)-1)^2 - 1
+# exp(2*y) - 6*exp(y) = (exp(x)-3)^2 - 9
+# exp(2*y) + 6*exp(y) = (exp(x)+3)^2 - 9
+# note: x^(2*y) = (x^2)^y      (especially: exp(2*y) = exp(2)^y)
+cAdd (cMul {% (cPow[x          y  ])}) (cPow[x (cMul {    2  y})]) : (cPow[(cAdd (cPow[x       y   ]) *(% 0.5)) 2]) -POW(*(% 0.5) 2)
+cAdd (cMul {% (cPow[x (cMul {& y})])}) (cPow[x (cMul {*(& 2) y})]) : (cPow[(cAdd (cPow[x (cMul y &)]) *(% 0.5)) 2]) -POW(*(% 0.5) 2)
+cAdd (cMul {% (cPow[&          y  ])}) (cPow[POW(& 2)        y  ]) : (cPow[(cAdd (cPow[&       y   ]) *(% 0.5)) 2]) -POW(*(% 0.5) 2)
+
 [BINOMIAL]
 
 # Opcodes we will NOT find in the intermediate stage:
@@ -505,8 +513,13 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul (cPow[x &@I]) <2>) : (cMul (cPow[x MIN(% 
 #   x^5*a + b*x^11 -> (x^6 * b + a)*x^5:  Eval time goes 0.060 -> 0.049
 #     srsly, what?
 
+# x^2 + N*y - y^2 = x^2 - (y + N* 0.5)^2 + (N/2)^2
+# x^2 + N*y + y^2 = x^2 + (y + N*-0.5)^2 - (N/2)^2
+@F cAdd (cMul {-1 (cPow[x 2])}) (cMul{% x}) : (cMul {-1 (cPow[(cAdd x *(% -0.5)) 2])})  POW(*(% 0.5) 2)
+@F cAdd           (cPow[x 2])   (cMul{% x}) :           (cPow[(cAdd x *(% 0.5)) 2])    -POW(*(% 0.5) 2)
 
-cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x             <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+#cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x             <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
+
 # The replacement expanded below:
 #  (cMul (cPow[x MIN(% 1)])
 #        (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))
