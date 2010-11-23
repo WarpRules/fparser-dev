@@ -794,25 +794,26 @@ public:
             #undef set
         }
 
-        struct p_compare { bool operator() (
+        struct p_compare { int kind(
             const ParamSpec_ParamHolder& a,
             const ParamSpec_ParamHolder& b) const
         {
-            if((a.index^2) != (b.index^2)) return (a.index^2) < (b.index^2);
+            if((a.index^2) != (b.index^2)) return (a.index^2) < (b.index^2) ? -1 : 1;
             // xor-2 is here to tweak the sorting order such that
             // the most used parameters (x,y) are first in the list,
             // resulting in smaller numbers for the parameter indexes,
             // and thus a smaller source code size for grammar data.
-            return false;
+            return 0;
         } };
-        struct n_compare { bool operator() (
+        struct n_compare { int kind(
             const ParamSpec_NumConstant<double>& a,
             const ParamSpec_NumConstant<double>& b) const
         {
-            if(a.modulo != b.modulo) return a.modulo < b.modulo;
-            return a.constvalue < b.constvalue;
+            if(a.modulo != b.modulo) return a.modulo < b.modulo ? -1 : 1;
+            if(a.constvalue != b.constvalue) return a.constvalue < b.constvalue ? -1 : 1;
+            return 0;
         } };
-        struct s_compare { bool operator() (
+        struct s_compare { int kind(
             const ParamSpec_SubFunction& a,
             const ParamSpec_SubFunction& b) const
         {
@@ -833,14 +834,14 @@ public:
             else b_opcode += 5;
 
             if(a_opcode != b_opcode)
-                return a_opcode < b_opcode;
+                return a_opcode < b_opcode ? -1 : 1;
             if(a.constraints != b.constraints)
-                return a.constraints < b.constraints;
+                return a.constraints < b.constraints ? -1 : 1;
             if(a.data.match_type != b.data.match_type)
-                return a.data.match_type < b.data.match_type;
-            size_t min_param_count = a.data.param_count;
-            if(b.data.param_count < min_param_count)
-                min_param_count = b.data.param_count;
+                return a.data.match_type < b.data.match_type ? -1 : 1;
+
+            size_t min_param_count = std::min(a.data.param_count, b.data.param_count);
+
             for(size_t c=0; c< min_param_count; ++c)
             {
                 ParamSpec aa = ParamSpec_Extract<double>(a.data.param_list, (unsigned)c);
@@ -849,33 +850,45 @@ public:
                     return aa.first < bb.first;
                 switch(aa.first)
                 {
-                    case ParamHolder:
-                        if(p_compare() (*(const ParamSpec_ParamHolder*)aa.second,
-                                        *(const ParamSpec_ParamHolder*)bb.second))
-                            return true;
+                    case ParamHolder: {
+                        int k = p_compare().kind
+                            (*(const ParamSpec_ParamHolder*)aa.second,
+                             *(const ParamSpec_ParamHolder*)bb.second);
+                        if(k) return k;
                         break;
-                    case NumConstant:
-                        if(n_compare() (*(const ParamSpec_NumConstant<double>*)aa.second,
-                                        *(const ParamSpec_NumConstant<double>*)bb.second))
-                            return true;
+                   }case NumConstant: {
+                        int k = n_compare().kind
+                            (*(const ParamSpec_NumConstant<double>*)aa.second,
+                             *(const ParamSpec_NumConstant<double>*)bb.second);
+                        if(k) return k;
                         break;
-                    case SubFunction:
-                        if(s_compare() (*(const ParamSpec_SubFunction*)aa.second,
-                                        *(const ParamSpec_SubFunction*)bb.second))
-                            return true;
+                   }case SubFunction:{
+                        int k = s_compare().kind
+                            (*(const ParamSpec_SubFunction*)aa.second,
+                             *(const ParamSpec_SubFunction*)bb.second);
+                        if(k) return k;
                         break;
-                }
+                }  }
             }
             if(a.data.param_count != b.data.param_count)
-                return a.data.param_count < b.data.param_count;
-            return false;
+                return a.data.param_count < b.data.param_count ? -1 : 1;
+            return 0;
         } };
+        template<typename T>
+        struct kind_compare
+        {
+            template<typename K>
+            bool operator() (const K& a, const K& b) const
+            {
+                return T().kind(a,b) < 0;
+            }
+        };
 
         void Sort()
         {
-            std::stable_sort(plist_p.begin(), plist_p.end(), p_compare());
-            std::stable_sort(plist_n.begin(), plist_n.end(), n_compare());
-            std::stable_sort(plist_s.begin(), plist_s.end(), s_compare());
+            std::stable_sort(plist_p.begin(), plist_p.end(), kind_compare<p_compare>());
+            std::stable_sort(plist_n.begin(), plist_n.end(), kind_compare<n_compare>());
+            std::stable_sort(plist_s.begin(), plist_s.end(), kind_compare<s_compare>());
         }
 
         unsigned ParamPtrToParamIndex(unsigned paramlist, unsigned index) const
@@ -1186,11 +1199,14 @@ static GrammarDumper dumper;
     rule_constraints:
       rule_constraints PARAM_CONSTRAINT
       {
-        if($2 == Value_Logical)
+        // Translate constraint flags to Rule Constraints.
+        // They were lexed as param constraints, which
+        // is why they have a different value.
+        if($2 == Value_Logical)         // @L
           $$ = $1 | LogicalContextOnly;
-        else if($2 == Value_NonInteger)
+        else if($2 == Value_NonInteger) // @F
           $$ = $1 | NotForIntegers;
-        else if($2 == Value_IsInteger)
+        else if($2 == Value_IsInteger) // @I
           $$ = $1 | OnlyForIntegers;
         else
         {
