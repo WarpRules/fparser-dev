@@ -520,6 +520,15 @@ cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul (cPow[x &@I]) <2>) : (cMul (cPow[x MIN(% 
 
 #cAdd (cMul (cPow[x %@P@I]) <1>)  (cMul x             <2>) : (cMul (cPow[x MIN(% 1)]) (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))  (cMul <2> (cPow[x (cAdd 1 -MIN(% 1))]))))
 
+
+# N*x^2 + M*x^2 = (x*sqrt(N) + y*sqrt(M))^2 - (2*sqrt(N*M))*x*y
+# N*x^2 + M*x*y = (x*sqrt(N) + y*0.5*M/sqrt(N))^2 - 0.25*M^2/N*y^2
+cAdd (cMul {%@P (cPow[x 2])}) (cMul {& x y}) : (cPow[(cAdd (cMul x SQRT(%)) (cMul y *(0.5 *(& /SQRT(%)))) ) 2]) (cMul (cPow[y 2]) *(*(-0.25 /%) POW(& 2)))
+
+# N*(x^2 + y^2) + M*x*y = N*(x+y)^2 + (2*N-M)*x*y
+cAdd (cMul {%@P (cAdd {(cPow[x 2]) (cPow[y 2])})}) (cMul {&@P x y}) : (cMul % (cPow[(cAdd x          y ) 2])) (cMul +(& *(-2 %)) x y)
+cAdd (cMul {%@P (cAdd {(cPow[x 2]) (cPow[y 2])})}) (cMul {&@N x y}) : (cMul % (cPow[(cAdd x (cMul -1 y)) 2])) (cMul +(& *( 2 %)) x y)
+
 # The replacement expanded below:
 #  (cMul (cPow[x MIN(% 1)])
 #        (cAdd (cMul <1> (cPow[x (cAdd % -MIN(% 1))]))
