@@ -368,5 +368,6 @@ testbed_tests.inc: $(TESTBED_TEST_FILES)
 	- g++ -MM $(CPPFLAGS) $(wildcard util/*.cc) | sed 's|^.*.o:|util/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard mpfr/*.cc) | sed 's|^.*.o:|mpfr/&|' >> .dep
 	- g++ -MM $(CPPFLAGS) $(wildcard lib/*.cc) | sed 's|^.*.o:|lib/&|' >> .dep
+	sed -i "s@`pwd`/@@" .dep
 
 -include .dep
