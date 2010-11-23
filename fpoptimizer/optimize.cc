@@ -246,20 +246,20 @@ namespace FPoptimizer_Optimize
                          tree,
                          OpcodeRuleCompare<Value_t> ());
 
+        std::vector<unsigned char> rules;
+        rules.reserve(range.second - range.first);
+        for(rulenumit r = range.first; r != range.second; ++r)
+        {
+            //if(grammar_rules[*r].match_tree.subfunc_opcode != tree.GetOpcode()) continue;
+            if(IsLogisticallyPlausibleParamsMatch(grammar_rules[*r].match_tree, tree))
+                rules.push_back(*r);
+        }
+        range.first  = !rules.empty() ? &rules[0]                : 0;
+        range.second = !rules.empty() ? &rules[rules.size()-1]+1 : 0;
+
         if(range.first != range.second)
         {
 #ifdef DEBUG_SUBSTITUTIONS
-            std::vector<unsigned char> rules;
-            rules.reserve(range.second - range.first);
-            for(rulenumit r = range.first; r != range.second; ++r)
-            {
-                //if(grammar_rules[*r].match_tree.subfunc_opcode != tree.GetOpcode()) continue;
-                if(IsLogisticallyPlausibleParamsMatch(grammar_rules[*r].match_tree, tree))
-                    rules.push_back(*r);
-            }
-            range.first = &rules[0];
-            range.second = &rules[rules.size()-1]+1;
-
             if(range.first != range.second)
             {
                 std::cout << "Input (" << FP_GetOpcodeName(tree.GetOpcode())
