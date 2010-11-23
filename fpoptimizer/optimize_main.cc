@@ -15,9 +15,18 @@ void FunctionParserBase<Value_t>::Optimize()
     CopyOnWrite();
 
     //PrintByteCode(std::cout);
+    /*std::fprintf(stderr,
+        "O:refCount:%u mVarCount:%u mfuncPtrs:%u mFuncParsers:%u mByteCode:%u mImmed:%u\n",
+        mData->mReferenceCounter,
+        mData->mVariablesAmount,
+        (unsigned)mData->mFuncPtrs.size(),
+        (unsigned)mData->mFuncParsers.size(),
+        (unsigned)mData->mByteCode.size(),
+        (unsigned)mData->mImmed.size()
+    );*/
 
     CodeTree<Value_t> tree;
-    tree.GenerateFrom(mData->mByteCode, mData->mImmed, *mData);
+    tree.GenerateFrom(*mData);
 
     FPoptimizer_Optimize::ApplyGrammars(tree);
 

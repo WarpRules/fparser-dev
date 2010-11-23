@@ -409,8 +409,6 @@ namespace FPoptimizer_CodeTree
 {
     template<typename Value_t>
     void CodeTree<Value_t>::GenerateFrom(
-        const std::vector<unsigned>& ByteCode,
-        const std::vector<Value_t>& Immed,
         const typename FunctionParserBase<Value_t>::Data& fpdata,
         bool keep_powi)
     {
@@ -420,17 +418,21 @@ namespace FPoptimizer_CodeTree
         {
             var_trees.push_back( CodeTreeVar<Value_t> (n+VarBegin) );
         }
-        GenerateFrom(ByteCode,Immed,fpdata,var_trees,keep_powi);
+        GenerateFrom(fpdata,var_trees,keep_powi);
     }
 
     template<typename Value_t>
     void CodeTree<Value_t>::GenerateFrom(
-        const std::vector<unsigned>& ByteCode,
-        const std::vector<Value_t>& Immed,
         const typename FunctionParserBase<Value_t>::Data& fpdata,
         const std::vector<CodeTree>& var_trees,
         bool keep_powi)
     {
+        const std::vector<unsigned>& ByteCode = fpdata.mByteCode;
+        const std::vector<Value_t>&  Immed    = fpdata.mImmed;
+
+        /*for(unsigned i=0; i<ByteCode.size(); ++i)
+            fprintf(stderr, "by[%u/%u]=%u\n", i, (unsigned)ByteCode.size(), (unsigned) ByteCode[i]);*/
+
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "ENTERS GenerateFrom()\n";
     #endif
@@ -496,7 +498,10 @@ namespace FPoptimizer_CodeTree
             }
             if(OPCODE(opcode) >= VarBegin)
             {
-                sim.Push(var_trees[opcode-VarBegin]);
+                unsigned index = opcode-VarBegin;
+                /*std::fprintf(stderr, "IP=%u, opcode=%u, VarBegin=%u, ind=%u\n",
+                    (unsigned)IP,(unsigned)opcode,(unsigned)VarBegin, (unsigned)index);*/
+                sim.Push(var_trees[index]);
             }
             else
             {
@@ -549,8 +554,7 @@ namespace FPoptimizer_CodeTree
                         /* Works because cPCalls can never recurse */
                         std::vector<CodeTree> paramlist = sim.Pop(params);
                         CodeTree pcall_tree;
-                        pcall_tree.GenerateFrom(p.mData->mByteCode, p.mData->mImmed, *p.mData,
-                                                paramlist);
+                        pcall_tree.GenerateFrom(*p.mData, paramlist);
                         sim.Push(pcall_tree);
                         break;
                     }
@@ -762,8 +766,6 @@ namespace FPoptimizer_CodeTree
 #define FP_INSTANTIATE(type) \
     template \
     void CodeTree<type>::GenerateFrom( \
-        const std::vector<unsigned>& ByteCode, \
-        const std::vector<type>& Immed, \
         const FunctionParserBase<type>::Data& fpdata, \
         bool keep_powi);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
