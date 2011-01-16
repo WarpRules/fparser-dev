@@ -18,9 +18,9 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
-using namespace std;
 
 #include "fptypes.hh"
+#include "fpaux.hh"
 using namespace FUNCTIONPARSERTYPES;
 
 #ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
@@ -444,22 +444,15 @@ namespace
     template<typename Value_t>
     inline Value_t fp_parseLiteral(const char* str, char** endptr)
     {
-        return strtod(str, endptr);
+        return std::strtod(str, endptr);
     }
 
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    template<>
-    inline float fp_parseLiteral<float>(const char* str, char** endptr)
-    {
-        return strtof(str, endptr);
-    }
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+#ifdef FP_USE_STRTOLD
     template<>
     inline long double fp_parseLiteral<long double>(const char* str,
                                                     char** endptr)
     {
+        using namespace std; // Just in case strtold() is not inside std::
         return strtold(str, endptr);
     }
 #endif
@@ -468,13 +461,14 @@ namespace
     template<>
     inline long fp_parseLiteral<long>(const char* str, char** endptr)
     {
-        return strtol(str, endptr, 10);
+        return std::strtol(str, endptr, 10);
     }
 #endif
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_parseComplexLiteral(const char* str, char** endptr)
+    inline std::complex<T> fp_parseComplexLiteral(const char* str,
+                                                  char** endptr)
     {
         T result = fp_parseLiteral<T> (str,endptr);
         const char* end = *endptr;
@@ -490,7 +484,8 @@ namespace
 
 #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
     template<>
-    inline std::complex<double> fp_parseLiteral<std::complex<double> >(const char* str, char** endptr)
+    inline std::complex<double> fp_parseLiteral<std::complex<double> >
+    (const char* str, char** endptr)
     {
         return fp_parseComplexLiteral<double> (str,endptr);
     }
@@ -498,7 +493,8 @@ namespace
 
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
     template<>
-    inline std::complex<float> fp_parseLiteral<std::complex<float> >(const char* str, char** endptr)
+    inline std::complex<float> fp_parseLiteral<std::complex<float> >
+    (const char* str, char** endptr)
     {
         return fp_parseComplexLiteral<float> (str,endptr);
     }
@@ -506,7 +502,8 @@ namespace
 
 #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
     template<>
-    inline std::complex<long double> fp_parseLiteral<std::complex<long double> >(const char* str, char** endptr)
+    inline std::complex<long double> fp_parseLiteral<std::complex<long double> >
+    (const char* str, char** endptr)
     {
         return fp_parseComplexLiteral<long double> (str,endptr);
     }
@@ -622,7 +619,7 @@ namespace
     template<>
     long parseHexLiteral<long>(const char* str, char** endptr)
     {
-        return strtol(str, endptr, 16);
+        return std::strtol(str, endptr, 16);
     }
 #endif
 
@@ -2003,8 +2000,8 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
 }
 
 /* Currently the power operator is skipped for integral types because its
-   usefulness with them is questionable, and in the case of GmpIng, for safety
-   reasons.
+   usefulness with them is questionable, and in the case of GmpInt, for safety
+   reasons:
    - With long int almost any power, except for very small ones, would
      overflow the result, so the usefulness of this is rather questionable.
    - With GmpInt the power operator could be easily abused to make the program

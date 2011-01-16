@@ -1623,15 +1623,17 @@ namespace
     template<typename Value_t> \
     Value_t tb_##Fname(const Value_t& a, const Value_t& b) \
         { return Value_t(FUNCTIONPARSERTYPES::Fname(a,b)); }
+
     BoolProxy(fp_less)
     BoolProxy(fp_lessOrEq)
     BoolProxy(fp_greater)
     BoolProxy(fp_greaterOrEq)
     BoolProxy(fp_equal)
     BoolProxy(fp_nequal)
+
     template<typename Value_t>
     Value_t fp_truth(const Value_t& a)
-        { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
+    { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
 
 // Maybe these should be used in the test files instead...
 #define fp_less tb_fp_less

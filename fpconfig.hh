@@ -34,6 +34,12 @@
 //#define FP_SUPPORT_COMPLEX_FLOAT_TYPE
 //#define FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
 
+/* If you are using FunctionParser_ld or FunctionParser_cld and your compiler
+   supports the strtold() function, you should uncomment the following line.
+ */
+//#define FP_USE_STRTOLD
+
+
 /* Uncomment this line of define it in your compiler settings if you want
    to disable compiling the basic double version of the library, in case
    one of the above types is used but not the double type. (If the double
