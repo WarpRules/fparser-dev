@@ -519,7 +519,7 @@ namespace
         if(*str == 'p' || *str == 'P')
         {
             const char* str2 = str+1;
-            long p_exponent = strtol(str2, (char**) &str2, 10);
+            long p_exponent = strtol(str2, const_cast<char**> (&str2), 10);
             if(str2 != str+1 && p_exponent == (long)(int)p_exponent)
             {
                 exponent += (int)p_exponent;
@@ -527,7 +527,7 @@ namespace
             }
         }
 
-        if(endptr) *endptr = (char*) str;
+        if(endptr) *endptr = const_cast<char*> (str);
 
         Value_t result = ldexp(Value_t(mantissa_buffer[0]), exponent);
         for(unsigned p=1; p<n_limbs; ++p)

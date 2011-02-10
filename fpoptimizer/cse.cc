@@ -392,7 +392,7 @@ namespace FPoptimizer_CodeTree
                 break; // Didn't find anything.
             }
 
-            const TreeCountItem& occ      = cs_it->second.first;
+            //const TreeCountItem& occ    = cs_it->second.first;
             const CodeTree<Value_t>& tree = cs_it->second.second;
     #ifdef DEBUG_SUBSTITUTIONS_CSE
             std::cout << "Found Common Subexpression:"; DumpTree<Value_t>(tree); std::cout << std::endl;
