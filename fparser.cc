@@ -37,7 +37,6 @@ using namespace FUNCTIONPARSERTYPES;
 # define unlikely(x) (x)
 #endif
 
-
 //=========================================================================
 // Opcode analysis functions
 //=========================================================================
@@ -340,6 +339,15 @@ ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
 //=========================================================================
 namespace
 {
+    const unsigned FP_ParamGuardMask = 1U << (sizeof(unsigned) * 8u - 1u);
+    // ^ This mask is used to prevent cFetch/other opcode's parameters
+    //   from being confused into opcodes or variable indices within the
+    //   bytecode optimizer. Because the way it is tested in bytecoderules.dat
+    //   for speed reasons, it must also be the sign-bit of the "int" datatype.
+    //   Perhaps an "assert(int(X | FP_ParamGuardMask) < 0)"
+    //   might be justified to put somewhere in the code, just in case?
+
+
     /* Reads an UTF8-encoded sequence which forms a valid identifier name from
        the given input string and returns its length. If bit 31 is set, the
        return value also contains the internal function opcode (defined in
@@ -1157,7 +1165,7 @@ int FunctionParserBase<Value_t>::ParseFunction(const char* function,
     if(mHasByteCodeFlags)
     {
         for(unsigned i = unsigned(mData->mByteCode.size()); i-- > 0; )
-            mData->mByteCode[i] &= ~0x80000000U;
+            mData->mByteCode[i] &= ~FP_ParamGuardMask;
     }
 
     if(mParseErrorType != FP_NO_ERROR) return int(mErrorLocation - function);
@@ -2298,7 +2306,7 @@ template<typename Value_t> template<bool PutFlag>
 inline void FunctionParserBase<Value_t>::PushOpcodeParam
     (unsigned value)
 {
-    mData->mByteCode.push_back(value | (PutFlag ? 0x80000000U : 0u));
+    mData->mByteCode.push_back(value | (PutFlag ? FP_ParamGuardMask : 0u));
     if(PutFlag) mHasByteCodeFlags = true;
 }
 
@@ -2306,7 +2314,7 @@ template<typename Value_t> template<bool PutFlag>
 inline void FunctionParserBase<Value_t>::PutOpcodeParamAt
     (unsigned value, unsigned offset)
 {
-    mData->mByteCode[offset] = value | (PutFlag ? 0x80000000U : 0u);
+    mData->mByteCode[offset] = value | (PutFlag ? FP_ParamGuardMask : 0u);
     if(PutFlag) mHasByteCodeFlags = true;
 }
 

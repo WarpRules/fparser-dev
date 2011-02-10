@@ -1065,7 +1065,9 @@ namespace
             {
                 if( isnamech(e[a])
                 && !isnamech(e[a+1])
-                && (a==0 || !isnamech(e[a-1])))
+                && (a==0 || (!isnamech(e[a-1])
+                          && !std::isdigit(e[a-1]))
+                   ))
                 {
                     std::string id(e, a, 1);
                     if(identifiers.find(id) == identifiers.end())
