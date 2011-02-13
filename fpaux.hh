@@ -628,6 +628,7 @@ namespace FUNCTIONPARSERTYPES
     bool IsAlwaysIntegerOpcode(unsigned op);
     bool IsUnaryOpcode(unsigned op);
     bool IsBinaryOpcode(unsigned op);
+    bool IsVarOpcode(unsigned op);
     bool IsCommutativeOrParamSwappableBinaryOpcode(unsigned op);
     unsigned GetParamSwappedBinaryOpcode(unsigned op);
     bool HasInvalidRangesOpcode(unsigned op);

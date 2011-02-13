@@ -61,10 +61,10 @@ cDup cMax ->				    # TEST 10/dupminmax
 cNeg cNeg ->                                # TEST 10/negneg
 IF(FP_FLOAT_VERSION) cInv  cInv ->          # TEST 10/invinv
 
-B [B==A] cDup A [int(A) >= VarBegin] cMin -> B cDup # TEST 10/dupminmax2
-B [B==A] cDup A [int(A) >= VarBegin] cMax -> B cDup # TEST 10/dupminmax2
-B [B==A] cMin A [int(A) >= VarBegin] cMin -> B cMin # TEST 10/dupminmax3
-B [B==A] cMax A [int(A) >= VarBegin] cMax -> B cMax # TEST 10/dupminmax3
+B [B==A] cDup A [IsVarOpcode(A)] cMin -> B cDup # TEST 10/dupminmax2
+B [B==A] cDup A [IsVarOpcode(A)] cMax -> B cDup # TEST 10/dupminmax2
+B [B==A] cMin A [IsVarOpcode(A)] cMin -> B cMin # TEST 10/dupminmax3
+B [B==A] cMax A [IsVarOpcode(A)] cMax -> B cMax # TEST 10/dupminmax3
 
 y [y*x==Value_t(1)] cMul x cMul ->              # TEST 10/mul1b
 
@@ -80,13 +80,13 @@ IF(FP_FLOAT_VERSION) cSinCos cHypot        -> [Value_t()] cMul [Value_t(1)] cAdd
 
 # Multiplications by zero: Undo as many operands as possible by peeling.
 # Some of these optimimizations can be disabled due to law of diminishing returns.
-A [int(A) >= VarBegin]                                                                                  x [x==Value_t()] cMul ->        [x]          # TEST 10/mul_zero VERIFY
+A [IsVarOpcode(A)]                                                                                      x [x==Value_t()] cMul ->        [x]          # TEST 10/mul_zero VERIFY
                                                  A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-B [int(B) >= VarBegin]                           A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+B [IsVarOpcode(B)]                               A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
 B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul -> A      [x] cMul     # TEST 10/mul_zero VERIFY
 y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-A [int(A) >= VarBegin]                                                                             cMul x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
-C [int(C) >= VarBegin]                           B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
+A [IsVarOpcode(A)]                                                                                 cMul x [x==Value_t()] cMul ->        [x] cMul     # TEST 10/mul_zero VERIFY
+C [IsVarOpcode(C)]                               B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
 C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul -> B A [x] cMul     # TEST 10/mul_zero VERIFY
 y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
 
@@ -225,23 +225,23 @@ IF(FP_FLOAT_VERSION) cCot cInv -> cTan        # TEST 10/invsincostan
 ###################
 
 # rdiv(x,y)/z --> rdiv(x*z,y)   (y/x/z = y/(x*z))
-IF(FP_FLOAT_VERSION) B [int(B) >= VarBegin] cRDiv A [int(A) >= VarBegin] cDiv -> A cMul  B cRDiv #TEST 11/23
-IF(FP_FLOAT_VERSION) x                      cRDiv A [int(A) >= VarBegin] cDiv -> A cMul [x] cRDiv #TEST 11/24
-IF(FP_FLOAT_VERSION) x                      cRDiv A [int(A) >= VarBegin] cMul -> [DO_STACKPLUS1] A [x] cMul cRDiv #TEST 11/25
+IF(FP_FLOAT_VERSION) B [IsVarOpcode(B)] cRDiv A [IsVarOpcode(A)] cDiv -> A cMul  B cRDiv #TEST 11/23
+IF(FP_FLOAT_VERSION) x                  cRDiv A [IsVarOpcode(A)] cDiv -> A cMul [x] cRDiv #TEST 11/24
+IF(FP_FLOAT_VERSION) x                  cRDiv A [IsVarOpcode(A)] cMul -> [DO_STACKPLUS1] A [x] cMul cRDiv #TEST 11/25
 x [x==Value_t(1)] cRDiv -> cInv
 
 # a/b/c = a/(b*c)
-IF(FP_FLOAT_VERSION) B [int(B) >= VarBegin] cDiv A [int(A) >= VarBegin] cDiv -> [DO_STACKPLUS1] B A cMul cDiv #TEST 11/26
+IF(FP_FLOAT_VERSION) B [IsVarOpcode(B)] cDiv A [IsVarOpcode(A)] cDiv -> [DO_STACKPLUS1] B A cMul cDiv #TEST 11/26
 
 # a/b*c = a*b/c  (increases chances of doing the div grouping if more divs come later)
-IF(FP_FLOAT_VERSION) B [int(B) >= VarBegin] cDiv A [int(A) >= VarBegin] cMul -> [DO_STACKPLUS1]   A cMul B cDiv #TEST 11/27
+IF(FP_FLOAT_VERSION) B [IsVarOpcode(B)] cDiv A [IsVarOpcode(A)] cMul -> [DO_STACKPLUS1]   A cMul B cDiv #TEST 11/27
 # The three rules below: same as above, but with immed instead of var A
 # (do only when there is an explicit optimization; otherwise we get an infinite loop)
-IF(FP_FLOAT_VERSION) y      B [int(B) >= VarBegin] cDiv x cMul -> [y*x]      B cDiv
-IF(FP_FLOAT_VERSION) y cMul B [int(B) >= VarBegin] cDiv x cMul -> [y*x] cMul B cDiv
-IF(FP_FLOAT_VERSION) cNeg   B [int(B) >= VarBegin] cDiv x cMul ->  [-x] cMul B cDiv #TEST 11/28
+IF(FP_FLOAT_VERSION) y      B [IsVarOpcode(B)] cDiv x cMul -> [y*x]      B cDiv
+IF(FP_FLOAT_VERSION) y cMul B [IsVarOpcode(B)] cDiv x cMul -> [y*x] cMul B cDiv
+IF(FP_FLOAT_VERSION) cNeg   B [IsVarOpcode(B)] cDiv x cMul ->  [-x] cMul B cDiv #TEST 11/28
 
-IF(FP_FLOAT_VERSION) cRDiv A [int(A) >= VarBegin] cMul -> [DO_STACKPLUS1]   A cMul cRDiv #TEST 11/29
+IF(FP_FLOAT_VERSION) cRDiv A [IsVarOpcode(A)] cMul -> [DO_STACKPLUS1]   A cMul cRDiv #TEST 11/29
 # The three rules below: same as above, but with immed instead of var A
 # (do only when there is an explicit optimization; otherwise we get an infinite loop)
 IF(FP_FLOAT_VERSION) y      cRDiv x cMul -> [y*x]      cRDiv #TEST 11/30
@@ -249,14 +249,14 @@ IF(FP_FLOAT_VERSION) y cMul cRDiv x cMul -> [y*x] cMul cRDiv
 IF(FP_FLOAT_VERSION) cNeg   cRDiv x cMul ->  [-x] cMul cRDiv #TEST 11/31
 
 # These below are just Add/Sub analogies of the above rules.
-x cRSub A [int(A) >= VarBegin] cSub -> A cAdd [x] cRSub #TEST 11/32
-x cRSub A [int(A) >= VarBegin] cAdd -> [DO_STACKPLUS1] A [x] cAdd cRSub #TEST 11/33
-y       B [int(B) >= VarBegin] cSub x cAdd -> [ y+x]      B cSub
-y cAdd  B [int(B) >= VarBegin] cSub x cAdd -> [ y+x] cAdd B cSub #TEST 11/34
-cNeg    B [int(B) >= VarBegin] cSub x cAdd ->   [-x] cAdd B cSub #TEST 11/35
+x cRSub A [IsVarOpcode(A)] cSub -> A cAdd [x] cRSub #TEST 11/32
+x cRSub A [IsVarOpcode(A)] cAdd -> [DO_STACKPLUS1] A [x] cAdd cRSub #TEST 11/33
+y       B [IsVarOpcode(B)] cSub x cAdd -> [ y+x]      B cSub
+y cAdd  B [IsVarOpcode(B)] cSub x cAdd -> [ y+x] cAdd B cSub #TEST 11/34
+cNeg    B [IsVarOpcode(B)] cSub x cAdd ->   [-x] cAdd B cSub #TEST 11/35
 
-cRSub A [int(A) >= VarBegin] cAdd -> [DO_STACKPLUS1]   A cAdd cRSub #TEST 11/32 (DUP)
-cRSub A [int(A) >= VarBegin] cSub -> [DO_STACKPLUS1]   A cSub cRSub #TEST 11/33 (DUP)
+cRSub A [IsVarOpcode(A)] cAdd -> [DO_STACKPLUS1]   A cAdd cRSub #TEST 11/32 (DUP)
+cRSub A [IsVarOpcode(A)] cSub -> [DO_STACKPLUS1]   A cSub cRSub #TEST 11/33 (DUP)
 y      cRSub x cAdd -> [ y+x]      cRSub #TEST 11/36
 y cAdd cRSub x cAdd -> [ y+x] cAdd cRSub #TEST 11/37
 cNeg   cRSub x cAdd ->  [-x] cAdd cRSub
@@ -346,8 +346,8 @@ IF(FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsCompari
 
 # (x+3)*4 -> x*4 + 12
                        y      cAdd x cMul -> [x] cMul   [y*x]      cAdd #TEST 11/39
-A [int(A) >= VarBegin] y cMul cAdd x cMul -> [x] cMul A [y*x] cMul cAdd #TEST 11/40
-A [int(A) >= VarBegin] y cMul cSub x cMul -> [x] cMul A [y*x] cMul cSub #TEST 11/41
+A [IsVarOpcode(A)] y cMul cAdd x cMul -> [x] cMul A [y*x] cMul cAdd #TEST 11/40
+A [IsVarOpcode(A)] y cMul cSub x cMul -> [x] cMul A [y*x] cMul cSub #TEST 11/41
 
 A [IsLogicalOpcode(A)]            cAbsNot cNot -> A              # TEST 10/absnot3
 A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot   # TEST 10/absnot4
@@ -418,26 +418,26 @@ IF(FP_FLOAT_VERSION) cAsinh cCosh -> [DO_STACKPLUS1] cSqr  [Value_t(1)] cAdd cSq
 IF(FP_FLOAT_VERSION) x cPow -> [DO_POWI]
 
 # x*x = x^2
-B [B==A]           A [int(A) >= VarBegin] cMul  -> B cSqr           # TEST 10/sqr_xx
+B [B==A]           A [IsVarOpcode(A)] cMul  -> B cSqr           # TEST 10/sqr_xx
 
 # ...*x*x = ...*x^2
-B [B==A]      cMul A [int(A) >= VarBegin] cMul  -> B cSqr cMul      # TEST 10/sqr_yxx
+B [B==A]      cMul A [IsVarOpcode(A)] cMul  -> B cSqr cMul      # TEST 10/sqr_yxx
 
 # -x*x = -(x^2)
-B [B==A] cNeg      A [int(A) >= VarBegin] cMul  -> B cSqr      cNeg # TEST 10/sqr_nxx
+B [B==A] cNeg      A [IsVarOpcode(A)] cMul  -> B cSqr      cNeg # TEST 10/sqr_nxx
 
 # x*-x = -(x^2)
-cDup cNeg cMul                             ->   cSqr      cNeg # TEST 10/sqr_xnx
+cDup cNeg cMul                              ->   cSqr      cNeg # TEST 10/sqr_xnx
 
 # ...*-x*x = ...*-(x^2)
-B [B==A] cNeg cMul A [int(A) >= VarBegin] cMul  -> B cSqr cMul cNeg # TEST 10/sqr_ynxx
+B [B==A] cNeg cMul A [IsVarOpcode(A)] cMul  -> B cSqr cMul cNeg # TEST 10/sqr_ynxx
 
 # ...*x*-x = ...*-(x^2)
-B [B==A] cMul A [int(A) >= VarBegin] cNeg cMul  -> B cSqr cMul cNeg # TEST 10/sqr_yxnx
+B [B==A] cMul A [IsVarOpcode(A)] cNeg cMul  -> B cSqr cMul cNeg # TEST 10/sqr_yxnx
 
-B [B==A] A [int(A) >= VarBegin && mData->mByteCode.size() > 0] -> B cDup                                                  # TEST 10/xxdup
-D [D==B] C [C==A]      B [int(B) >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup        # TEST 10/xxfdup
-D [D==B] C [C==A] cMul B [int(B) >= VarBegin && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul   # TEST 10/xxsqrdup
+B [B==A] A [IsVarOpcode(A) && mData->mByteCode.size() > 0] -> B cDup                                                  # TEST 10/xxdup
+D [D==B] C [C==A]      B [IsVarOpcode(B) && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)]      -> D C cDup        # TEST 10/xxfdup
+D [D==B] C [C==A] cMul B [IsVarOpcode(B) && mData->mByteCode.size() > 1] A [IsUnaryOpcode(A)] cMul -> D C cSqr cMul   # TEST 10/xxsqrdup
 
 IF(FP_FLOAT_VERSION) cExp2	 -> [DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp         # TEST 02/exp2
 IF(FP_FLOAT_VERSION) cExp cLog2	 -> [DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul  # TEST 10/explog2
@@ -454,23 +454,23 @@ IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog2  -> cLog2  [fp_log2(x)]  cAdd #
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog   -> cLog   [fp_log(x)]   cAdd # TEST 10/logmul
 IF(FP_FLOAT_VERSION) x [x>Value_t(0)] cMul cLog10 -> cLog10 [fp_log10(x)] cAdd # TEST 10/logmul10
 
-IF(FP_FLOAT_VERSION) B [B==A] cSin A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
-IF(FP_FLOAT_VERSION) B [B==A] cSin A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
-IF(FP_FLOAT_VERSION) B [B==A] cSin A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
-IF(FP_FLOAT_VERSION) B [B==A] cCos A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
-IF(FP_FLOAT_VERSION) B [B==A] cTan A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
-IF(FP_FLOAT_VERSION) B [B==A] cCsc A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
-IF(FP_FLOAT_VERSION) B [B==A] cSec A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
-IF(FP_FLOAT_VERSION) B [B==A] cCot A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cCos -> B cSinCos         # TEST 10/sincos_sc
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cSec -> B cSinCos cInv    # TEST 10/sincos_sci
+IF(FP_FLOAT_VERSION) B [B==A] cSin A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cCsc -> B cSin cDup cInv  # TEST 10/sincos_ssi
+IF(FP_FLOAT_VERSION) B [B==A] cCos A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cSec -> B cCos cDup cInv  # TEST 10/sincos_cci
+IF(FP_FLOAT_VERSION) B [B==A] cTan A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cCot -> B cTan cDup cInv  # TEST 10/sincos_tti
+IF(FP_FLOAT_VERSION) B [B==A] cCsc A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cSin -> B cCsc cDup cInv  # TEST 10/sincos_sis
+IF(FP_FLOAT_VERSION) B [B==A] cSec A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cCos -> B cSec cDup cInv  # TEST 10/sincos_cic
+IF(FP_FLOAT_VERSION) B [B==A] cCot A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cTan -> B cCot cDup cInv  # TEST 10/sincos_tit
 IF(FP_FLOAT_VERSION) cSinCos cDiv  -> cTan  # TEST 10/sincos_tan
 IF(FP_FLOAT_VERSION) cSinCos cRDiv -> cCot
 
-IF(FP_FLOAT_VERSION) B [B==A] cCos  A [int(A)>=VarBegin && mData->mByteCode.size() > 3] cSin  C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinCos {GetParamSwappedBinaryOpcode(C)}   # TEST 99/59
-IF(FP_FLOAT_VERSION) B [B==A] cCosh A [int(A)>=VarBegin && mData->mByteCode.size() > 3] cSinh C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinhCosh {GetParamSwappedBinaryOpcode(C)} # TEST 99/59
-IF(FP_FLOAT_VERSION) B [B==A] cSinh A [int(A)>=VarBegin && mData->mByteCode.size() > 2] cCosh -> B cSinhCosh
+IF(FP_FLOAT_VERSION) B [B==A] cCos  A [IsVarOpcode(A) && mData->mByteCode.size() > 3] cSin  C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinCos {GetParamSwappedBinaryOpcode(C)}   # TEST 99/59
+IF(FP_FLOAT_VERSION) B [B==A] cCosh A [IsVarOpcode(A) && mData->mByteCode.size() > 3] cSinh C [IsCommutativeOrParamSwappableBinaryOpcode(C)] -> B cSinhCosh {GetParamSwappedBinaryOpcode(C)} # TEST 99/59
+IF(FP_FLOAT_VERSION) B [B==A] cSinh A [IsVarOpcode(A) && mData->mByteCode.size() > 2] cCosh -> B cSinhCosh
+IF(FP_FLOAT_VERSION) B [B==A] cCos  A [IsVarOpcode(A) && mData->mByteCode.size() > 3] cCsc cMul -> B cCot
 IF(FP_FLOAT_VERSION) cSinhCosh cDiv   -> cTanh
 IF(FP_FLOAT_VERSION) cSinhCosh cRDiv  -> cTanh cInv
-IF(FP_FLOAT_VERSION) B [B==A] cCos  A [int(A)>=VarBegin && mData->mByteCode.size() > 3] cCsc cMul -> B cCot
 
-IF(FP_FLOAT_VERSION) cSqr A [int(A)>=VarBegin]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
-IF(FP_FLOAT_VERSION) cSqr A [int(A)>=VarBegin] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
+IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
+IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot

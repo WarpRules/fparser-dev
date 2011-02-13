@@ -154,6 +154,12 @@ bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
     return (op < FUNC_AMOUNT && Functions[op].params == 2);
 }
 
+bool FUNCTIONPARSERTYPES::IsVarOpcode(unsigned op)
+{
+    // See comment in declaration of FP_ParamGuardMask
+    return int(op) >= VarBegin;
+}
+
 bool FUNCTIONPARSERTYPES::IsCommutativeOrParamSwappableBinaryOpcode(unsigned op)
 {
     switch(op)
@@ -344,7 +350,7 @@ namespace
     //   from being confused into opcodes or variable indices within the
     //   bytecode optimizer. Because the way it is tested in bytecoderules.dat
     //   for speed reasons, it must also be the sign-bit of the "int" datatype.
-    //   Perhaps an "assert(int(X | FP_ParamGuardMask) < 0)"
+    //   Perhaps an "assert(IsVarOpcode(X | FP_ParamGuardMask) == false)"
     //   might be justified to put somewhere in the code, just in case?
 
 
@@ -3315,9 +3321,20 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                   }
 
               default:
-                  if(OPCODE(opcode) < VarBegin)
+                  if(IsVarOpcode(opcode))
                   {
-                      switch(opcode)
+                      if(showExpression)
+                      {
+                          stack.push_back(std::make_pair(0,
+                              (findName(mData->mNamePtrs, opcode,
+                                        NameData<Value_t>::VARIABLE))));
+                      }
+                      output << "push Var" << opcode-VarBegin;
+                      produces = 0;
+                  }
+                  else
+                  {
+                      switch(OPCODE(opcode))
                       {
                         case cNeg: n = "neg"; params = 1; break;
                         case cAdd: n = "add"; break;
@@ -3428,17 +3445,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                             params = Functions[opcode-cAbs].params;
                             out_params = params != 1;
                       }
-                  }
-                  else
-                  {
-                      if(showExpression)
-                      {
-                          stack.push_back(std::make_pair(0,
-                              (findName(mData->mNamePtrs, opcode,
-                                        NameData<Value_t>::VARIABLE))));
-                      }
-                      output << "push Var" << opcode-VarBegin;
-                      produces = 0;
                   }
             }
         }
