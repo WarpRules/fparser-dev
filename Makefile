@@ -288,23 +288,27 @@ set_version_string: util/version_changer
 pack: set_version_string distro_pack devel_pack
 
 distro_pack: $(RELEASE_PACK_FILES)
-	# Use KZIP (advsys.net/ken), if possible, to create a smaller zip file
+	zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES)
+	# Use KZIP&ZIPMIX (advsys.net/ken), if possible, to create a smaller zip file
 	if which kzip; then \
-	  rm -rf fparser$(RELEASE_VERSION).zip fparser-$(RELEASE_VERSION);\
+	  rm -rf fparser-$(RELEASE_VERSION);\
 	  mkdir fparser-$(RELEASE_VERSION); \
 	  tar cf - $(RELEASE_PACK_FILES) | tar -x -v -C fparser-$(RELEASE_VERSION) -f -; \
-	  for s in 0 128 256 512 1024; do \
+	  for s in -b0 -b128 -b256 -b512 -b1024 \
+	           -rn -rn -rn -rn -rn -rn -rn -rn \
+	           -rn -rn -rn -rn -rn -rn -rn -rn; do \
 	    (cd fparser-$(RELEASE_VERSION); \
-	    kzip -r -y -b"$$s" ../fparser$(RELEASE_VERSION)-tmp.zip * );\
-	    if [ ! -f fparser$(RELEASE_VERSION).zip \
-	        -o 0"`stat -c %s fparser$(RELEASE_VERSION).zip`" \
-	       -gt 0"`stat -c %s fparser$(RELEASE_VERSION)-tmp.zip`" ]; then \
-	      mv -f fparser$(RELEASE_VERSION)-tmp.zip fparser$(RELEASE_VERSION).zip ;\
-	    fi ;\
+	    kzip -r -y "$$s" ../fparser$(RELEASE_VERSION)-tmp.zip * );\
+	    wine /usr/local/bin/DeflOpt.exe ../fparser$(RELEASE_VERSION)-tmp.zip; \
+	    zipmix -y fparser$(RELEASE_VERSION).zip \
+	    	      fparser$(RELEASE_VERSION)-tmp.zip \
+	    	      fparser$(RELEASE_VERSION)-tmp2.zip; \
+	    if [ -f fparser$(RELEASE_VERSION)-tmp2.zip ]; then \
+	      mv -f fparser$(RELEASE_VERSION)-tmp2.zip fparser$(RELEASE_VERSION).zip; \
+	    fi; \
+	    ls -al fparser$(RELEASE_VERSION)*.zip; \
 	  done; \
 	  rm -f fparser$(RELEASE_VERSION)-tmp.zip; \
-	else \
-	  zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES) ;\
 	fi
 
 devel_pack:
