@@ -951,7 +951,7 @@ namespace
     template<typename Value_t>
     inline bool BeginsLiteral(unsigned byte)
     {
-        const unsigned n = sizeof(unsigned long)>=8 ? 0 : '.';
+        enum { n = sizeof(unsigned long)>=8 ? 0 : '.' };
         byte -= n;
         if(byte > (unsigned char)('9'-n)) return false;
         unsigned long shifted = 1UL << byte;
@@ -1000,7 +1000,7 @@ U+000B  \v
 */
         while(true)
         {
-            const unsigned n = sizeof(unsigned long)>=8 ? 0 : '\t';
+            enum { n = sizeof(unsigned long)>=8 ? 0 : '\t' };
             typedef signed char schar;
             unsigned byte = (unsigned char)*function;
             byte -= n;
