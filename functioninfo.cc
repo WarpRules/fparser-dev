@@ -231,7 +231,7 @@ namespace
     }
 
     unsigned gTimingCounter = 0;
-    size_t gTimingTotalCount;
+    std::size_t gTimingTotalCount;
 
     void printTimingInfo()
     {
@@ -324,14 +324,14 @@ namespace
     {
         std::vector<Value_t> result;
 
-        for(size_t a=0; a<functions.size(); ++a)
+        for(std::size_t a=0; a<functions.size(); ++a)
         {
             const std::string& functionString = functions[a].mFunctionString;
             const ParserWithConsts<Value_t>& parser = functions[a].mParser;
             const char* function = functionString.c_str();
-            size_t len = functionString.size();
+            std::size_t len = functionString.size();
 
-            for(size_t pos=0; pos<len; )
+            for(std::size_t pos=0; pos<len; )
             {
                 std::pair<const char*, Value_t>
                     literal = parser.ParseLiteral(function+pos);
@@ -436,7 +436,7 @@ namespace
                          const std::string& userGivenVarValuesString)
         {
             unsigned varsAmount = 1;
-            for(size_t i = 0; i < gVarString.length(); ++i)
+            for(std::size_t i = 0; i < gVarString.length(); ++i)
                 if(gVarString[i] == ',')
                     ++varsAmount;
 
@@ -461,17 +461,17 @@ namespace
 
             if(userGivenVarValues.empty())
             {
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                     functions[i].mValidVarValues = varValues;
             }
             else
             {
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                     functions[i].mValidVarValues = userGivenVarValues;
                 ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
             }
 
-            std::vector<size_t> immedCounter(varsAmount, 0);
+            std::vector<std::size_t> immedCounter(varsAmount, 0);
 
             while(true)
             {
@@ -479,7 +479,7 @@ namespace
                     varValues[i] = Value_t(doubleValues[i]);
 
                 bool wasOk = false;
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                 {
                     Value_t value = functions[i].mParser.Eval(&varValues[0]);
                     if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
@@ -498,7 +498,7 @@ namespace
                         return true;
                 }
 
-                size_t varIndex = 0;
+                std::size_t varIndex = 0;
                 while(true)
                 {
                     if(immedCounter[varIndex] == 0)
@@ -519,7 +519,7 @@ namespace
 
                     if(immedCounter[varIndex] < immedList.size())
                     {
-                        size_t& i = immedCounter[varIndex];
+                        std::size_t& i = immedCounter[varIndex];
                         doubleValues[varIndex] =
                             makeDoubleFrom (immedList[i] );
                         i += 1;
@@ -563,7 +563,7 @@ namespace
                          const std::string& userGivenVarValuesString)
         {
             unsigned varsAmount = 1;
-            for(size_t i = 0; i < gVarString.length(); ++i)
+            for(std::size_t i = 0; i < gVarString.length(); ++i)
                 if(gVarString[i] == ',')
                     ++varsAmount;
 
@@ -590,17 +590,17 @@ namespace
 
             if(userGivenVarValues.empty())
             {
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                     functions[i].mValidVarValues = varValues;
             }
             else
             {
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                     functions[i].mValidVarValues = userGivenVarValues;
                 ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
             }
 
-            std::vector<size_t> immedCounter(valuesAmount, 0);
+            std::vector<std::size_t> immedCounter(valuesAmount, 0);
 
             while(true)
             {
@@ -611,7 +611,7 @@ namespace
                     );
 
                 bool wasOk = false;
-                for(size_t i = 0; i < functions.size(); ++i)
+                for(std::size_t i = 0; i < functions.size(); ++i)
                 {
                     Value_t value = functions[i].mParser.Eval(&varValues[0]);
                     if(functions[i].mParser.EvalError() == 0 && valueIsOk(value))
@@ -630,7 +630,7 @@ namespace
                         return true;
                 }
 
-                size_t valueIndex = 0;
+                std::size_t valueIndex = 0;
                 while(true)
                 {
                     if(immedCounter[valueIndex] == 0)
@@ -651,7 +651,7 @@ namespace
 
                     if(immedCounter[valueIndex] < immedList.size())
                     {
-                        size_t& i = immedCounter[valueIndex];
+                        std::size_t& i = immedCounter[valueIndex];
                         doubleValues[valueIndex] =
                             (valueIndex & 1)
                                 ? makeDouble2From( immedList[i] )
@@ -736,14 +736,16 @@ namespace
 #endif
 
     template<typename Value_t>
-    bool compareFunctions(size_t function1Index, size_t function2Index,
+    bool compareFunctions(std::size_t function1Index,
+                          std::size_t function2Index,
                           ParserWithConsts<Value_t>& parser1,
                           const char* parser1Type,
                           ParserWithConsts<Value_t>& parser2,
                           const char* parser2Type)
     {
-        const size_t varsAmount = ParserData<Value_t>::gVarValues[0].size();
-        for(size_t varSetInd = 0;
+        const std::size_t varsAmount =
+            ParserData<Value_t>::gVarValues[0].size();
+        for(std::size_t varSetInd = 0;
             varSetInd < ParserData<Value_t>::gVarValues.size();
             ++varSetInd)
         {
@@ -763,7 +765,7 @@ namespace
 
                 using namespace FUNCTIONPARSERTYPES;
                 std::cout << SEPARATOR << "\n******* For variable values (";
-                for(size_t i = 0; i < varsAmount; ++i)
+                for(std::size_t i = 0; i < varsAmount; ++i)
                 {
                     if(i > 0) std::cout << ",";
                     std::cout << values[i];
@@ -806,7 +808,7 @@ namespace
         ParserWithConsts<Value_t> parser1, parser2, parser3;
 
         bool errors = false;
-        for(size_t ind1 = 0; ind1 < functions.size(); ++ind1)
+        for(std::size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
             parser1.Parse
                 (functions[ind1].mFunctionString, gVarString, gUseDegrees);
@@ -840,7 +842,7 @@ namespace
                                  parser2, optimized2))
                 errors = had_double_optimization_problems = true;
 
-            for(size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
+            for(std::size_t ind2 = ind1+1; ind2 < functions.size(); ++ind2)
             {
                 parser1.Parse(functions[ind1].mFunctionString, gVarString,
                               gUseDegrees);
@@ -872,7 +874,7 @@ namespace
         return !errors;
     }
 
-    void wrapLine(std::string& line, size_t cutter, std::string& wrap_buf,
+    void wrapLine(std::string& line, std::size_t cutter, std::string& wrap_buf,
                   bool always_cut = false)
     {
         if(line.size() <= cutter)
@@ -881,7 +883,7 @@ namespace
         {
             if(!always_cut)
             {
-                for(size_t wrap_at = cutter; wrap_at > 0; --wrap_at)
+                for(std::size_t wrap_at = cutter; wrap_at > 0; --wrap_at)
                 {
                     char c = line[wrap_at-1];
                     if(c == '*' || c == '+' || c == '/' || c == '('
@@ -922,7 +924,7 @@ namespace
         if(mode != print_no_cut_or_wrap)
             colors[0] = colors[1] = colors[2] = "";
 
-        for(size_t i = 0; i < functions.size(); ++i)
+        for(std::size_t i = 0; i < functions.size(); ++i)
         {
             std::cout << SEPARATOR << std::endl;
 
@@ -930,8 +932,8 @@ namespace
 
             parser.Parse(functions[i].mFunctionString, gVarString, gUseDegrees);
 
-            size_t one_column  = 38;
-            size_t two_columns = one_column * 2 + 2;
+            std::size_t one_column  = 38;
+            std::size_t two_columns = one_column * 2 + 2;
 
             streams[0] <<
                 "Function " << i+1 << " original\n"
@@ -1060,7 +1062,7 @@ namespace
         ("    ,------------------------------------------------------------------------,\n"
          "    |      Parse |      Eval |  Eval (O) | Eval (O2) |  Optimize |  Repeat O.|\n"
          ",---+------------+-----------+-----------+-----------+-----------+-----------+\n");
-        for(size_t i = 0; i < functions.size(); ++i)
+        for(std::size_t i = 0; i < functions.size(); ++i)
         {
             getTimingInfo(functions[i]);
             std::printf
@@ -1103,7 +1105,7 @@ namespace
         StrSet varNames;
         ParserWithConsts<Value_t> parser;
 
-        for(size_t funcInd = 0; funcInd < functions.size(); ++funcInd)
+        for(std::size_t funcInd = 0; funcInd < functions.size(); ++funcInd)
         {
             const std::string funcStr = functions[funcInd].mFunctionString;
             int oldIndex = -1;
@@ -1175,13 +1177,13 @@ int functionInfo(const char* const parserTypeString,
                  const std::string& userGivenVarValues)
 {
     std::vector<FunctionInfo<Value_t> > functions(functionStrings.size());
-    for(size_t i = 0; i < functions.size(); ++i)
+    for(std::size_t i = 0; i < functions.size(); ++i)
         functions[i].mFunctionString = functionStrings[i];
 
     if(gVarString.empty())
         deduceVariables(functions);
 
-    for(size_t i = 0; i < functions.size(); ++i)
+    for(std::size_t i = 0; i < functions.size(); ++i)
     {
         if(!checkFunctionValidity(functions[i]))
             return 1;
@@ -1192,11 +1194,11 @@ int functionInfo(const char* const parserTypeString,
 
     std::cout << SEPARATOR << std::endl
               << "Parser type: " << parserTypeString << std::endl;
-    for(size_t i = 0; i < functions.size(); ++i)
+    for(std::size_t i = 0; i < functions.size(); ++i)
         std::cout << "- Function " << i+1 << ": \""
                   << functions[i].mFunctionString << "\"\n";
-    const size_t varsAmount = ParserData<Value_t>::gVarValues[0].size();
-    const size_t varValueSetsAmount = ParserData<Value_t>::gVarValues.size();
+    const std::size_t varsAmount = ParserData<Value_t>::gVarValues[0].size();
+    const std::size_t varValueSetsAmount = ParserData<Value_t>::gVarValues.size();
     std::cout << "- Var string: \"" << gVarString << "\" ("
               << ParserData<Value_t>::gVarValues[0].size()
               << (varsAmount == 1 ? " var" : " vars")
@@ -1205,11 +1207,11 @@ int functionInfo(const char* const parserTypeString,
 
 #if 0
     std::cout << SEPARATOR << "\nTesting with variable values:\n";
-    for(size_t i = 0; i < ParserData<Value_t>::gVarValues.size(); ++i)
+    for(std::size_t i = 0; i < ParserData<Value_t>::gVarValues.size(); ++i)
     {
         if(i > 0) std::cout << (i%5==0 ? "\n" : " ");
         std::cout << "(";
-        for(size_t j = 0; j < ParserData<Value_t>::gVarValues[i].size(); ++j)
+        for(std::size_t j = 0; j < ParserData<Value_t>::gVarValues[i].size(); ++j)
         {
             if(j > 0) std::cout << ",";
             using namespace FUNCTIONPARSERTYPES;

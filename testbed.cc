@@ -537,7 +537,7 @@ int WhiteSpaceTest()
         if(function[i] == ' ')
         {
             function.erase(i, 1);
-            for(size_t a = 0; a < n_whitespaces; ++a)
+            for(std::size_t a = 0; a < n_whitespaces; ++a)
             {
                 if(!testWsFunc(fp, function)) return false;
                 int length = (int)WhiteSpaceTables[a][0];
@@ -1912,7 +1912,7 @@ static bool WildMatch_Dirmask(const char *pattern, const char *what)
 }
 bool IsSelectedTest(const char* testName)
 {
-    for(size_t a=0; a<selectedRegressionTests.size(); ++a)
+    for(std::size_t a=0; a<selectedRegressionTests.size(); ++a)
         if(WildMatch_Dirmask(selectedRegressionTests[a], testName))
             return true;
     return false;
@@ -1920,7 +1920,7 @@ bool IsSelectedTest(const char* testName)
 /* Asciibetical comparator, with in-string integer values sorted naturally */
 bool natcomp(const std::string& a, const std::string& b)
 {
-    size_t ap=0, bp=0;
+    std::size_t ap=0, bp=0;
     while(ap < a.size() && bp < b.size())
     {
         if(a[ap] >= '0' && a[ap] <= '9'
@@ -2606,16 +2606,16 @@ int testOptimizer3()
 void printAvailableTests(std::vector<std::string>& tests)
 {
     std::cout << "Available tests:\n";
-    size_t column=0;
+    std::size_t column=0;
     std::string prev_test_prefix;
 
     bool counting_tests = false;
     long last_count     = 0, count_length = 0;
 
-    for(size_t a=0; a<tests.size(); ++a)
+    for(std::size_t a=0; a<tests.size(); ++a)
     {
         std::string tn = tests[a];
-        size_t p = tn.rfind('/');
+        std::size_t p = tn.rfind('/');
         if(p == tn.npos)
             prev_test_prefix = "";
         else
@@ -2771,7 +2771,7 @@ int main(int argc, char* argv[])
             {
                 const char* t = argv[++i];
                 bool ok = false;
-                for(size_t a=0; a<tests.size(); ++a)
+                for(std::size_t a=0; a<tests.size(); ++a)
                     if(WildMatch_Dirmask(t, tests[a].c_str()))
                     { ok=true; break; }
                 if(!ok)

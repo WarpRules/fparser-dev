@@ -156,6 +156,9 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_abs(const Value_t& x) { return std::fabs(x); }
 
     template<typename Value_t>
+    inline Value_t fp_acos(const Value_t& x) { return std::acos(x); }
+
+    template<typename Value_t>
     inline Value_t fp_asin(const Value_t& x) { return std::asin(x); }
 
     template<typename Value_t>

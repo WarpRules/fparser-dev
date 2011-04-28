@@ -131,7 +131,7 @@ namespace
         std::ostringstream os;
         os << value;
         std::string result = os.str();
-        for(size_t i = result.size(); i > 3;)
+        for(std::size_t i = result.size(); i > 3;)
             result.insert(i -= 3, gPrintHTML ? "&nbsp;" : " ");
         return result;
     }

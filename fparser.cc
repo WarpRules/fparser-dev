@@ -729,7 +729,7 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
     {
         if(i->second.type == NameData<Value_t>::VARIABLE)
         {
-            const size_t variableStringOffset =
+            const std::size_t variableStringOffset =
                 i->first.name - rhs.mVariablesString.c_str();
             std::pair<NamePtr, NameData<Value_t> > tmp
                 (NamePtr(&mVariablesString[variableStringOffset],
@@ -2361,7 +2361,7 @@ FunctionParserBase<Value_t>::CompileComparison(const char* function)
 template<typename Value_t>
 inline const char* FunctionParserBase<Value_t>::CompileAnd(const char* function)
 {
-    size_t param0end=0;
+    std::size_t param0end=0;
     while(true)
     {
         function = CompileComparison(function);
@@ -2385,7 +2385,7 @@ inline const char* FunctionParserBase<Value_t>::CompileAnd(const char* function)
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileExpression(const char* function)
 {
-    size_t param0end=0;
+    std::size_t param0end=0;
     while(true)
     {
         SkipSpace(function);
@@ -3074,7 +3074,7 @@ namespace
 
     void padLine(std::ostringstream& dest, unsigned destLength)
     {
-        for(size_t currentLength = dest.str().length();
+        for(std::size_t currentLength = dest.str().length();
             currentLength < destLength;
             ++currentLength)
         {
@@ -3097,7 +3097,7 @@ namespace
         const PowiMuliType& opcodes,
         const std::vector<unsigned>& ByteCode, unsigned& IP,
         unsigned limit,
-        size_t factor_stack_base,
+        std::size_t factor_stack_base,
         std::vector<Value_t>& stack,
         bool IgnoreExcess)
     {
@@ -3144,7 +3144,7 @@ namespace
             {
                 unsigned index = ByteCode[++IP];
                 if(index < factor_stack_base
-                || size_t(index-factor_stack_base) >= stack.size())
+                || std::size_t(index-factor_stack_base) >= stack.size())
                 {
                     // It wasn't a powi-fetch after all
                     IP = dup_fetch_pos;
@@ -3190,7 +3190,7 @@ namespace
     template<typename Value_t>
     Value_t ParsePowiSequence(const std::vector<unsigned>& ByteCode,
                               unsigned& IP, unsigned limit,
-                              size_t factor_stack_base,
+                              std::size_t factor_stack_base,
                               bool IgnoreExcess = false)
     {
         std::vector<Value_t> stack;
@@ -3203,7 +3203,7 @@ namespace
     template<typename Value_t>
     Value_t ParseMuliSequence(const std::vector<unsigned>& ByteCode,
                               unsigned& IP, unsigned limit,
-                              size_t factor_stack_base,
+                              std::size_t factor_stack_base,
                               bool IgnoreExcess = false)
     {
         std::vector<Value_t> stack;
@@ -3541,8 +3541,8 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
                         case cPopNMov:
                         {
-                            size_t a = ByteCode[++IP];
-                            size_t b = ByteCode[++IP];
+                            std::size_t a = ByteCode[++IP];
+                            std::size_t b = ByteCode[++IP];
                             if(showExpression && b < stack.size())
                             {
                                 std::pair<int, std::string> stacktop(0, "?");
