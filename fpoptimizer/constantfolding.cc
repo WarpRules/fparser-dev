@@ -735,6 +735,17 @@ namespace FPoptimizer_CodeTree
                       goto do_return; }
                 break;
 
+            case cArg: HANDLE_UNARY_CONST_FUNC(fp_arg); break;
+            case cConj: HANDLE_UNARY_CONST_FUNC(fp_conj); break;
+            case cImag: HANDLE_UNARY_CONST_FUNC(fp_imag); break;
+            case cReal: HANDLE_UNARY_CONST_FUNC(fp_real); break;
+            case cPolar:
+                if(tree.GetParam(0).IsImmed()
+                && tree.GetParam(1).IsImmed())
+                    { tree.ReplaceWithImmed( fp_polar(tree.GetParam(0).GetImmed(), tree.GetParam(1).GetImmed() ) );
+                      goto do_return; }
+                break;
+
             case cMod: /* Can more be done than this? */
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed())

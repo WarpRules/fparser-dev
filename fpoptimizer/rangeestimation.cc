@@ -821,6 +821,14 @@ namespace FPoptimizer_CodeTree
             case VarBegin:
                 break; /* Should never occur */
 
+            /* Complex functions */
+            case cArg:
+            case cConj:
+            case cImag:
+            case cReal:
+            case cPolar:
+                break; /* Should never occur */
+
             /* Opcodes that are completely unpredictable */
             case cPCall:
                 break;
