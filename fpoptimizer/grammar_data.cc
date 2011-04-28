@@ -1405,19 +1405,19 @@ namespace FPoptimizer_Grammar
     struct grammar_optimize_abslogical_type
     {
         unsigned c;
-        unsigned char l[9];
+        unsigned short l[9];
     };
     extern "C"
     {
         grammar_optimize_abslogical_type grammar_optimize_abslogical =
         {
             9,
-            { 34,190,226,236,240,245,252,2,3
+            { 34,190,226,236,240,245,252,258,259
     }   };  }
     struct grammar_optimize_ignore_if_sideeffects_type
     {
         unsigned c;
-        unsigned char l[59];
+        unsigned short l[59];
     };
     extern "C"
     {
@@ -1429,12 +1429,12 @@ namespace FPoptimizer_Grammar
               44,78,79,122,123,158,159,161,162,163,
               164,165,166,167,176,177,178,198,202,210,
               214,222,234,235,237,238,241,242,243,244,
-              247,248,249,251,253,254,255,0,1
+              247,248,249,251,253,254,255,256,257
     }   };  }
     struct grammar_optimize_nonshortcut_logical_evaluation_type
     {
         unsigned c;
-        unsigned char l[56];
+        unsigned short l[56];
     };
     extern "C"
     {
@@ -1446,12 +1446,12 @@ namespace FPoptimizer_Grammar
               159,161,162,163,164,165,166,167,176,177,
               178,198,202,210,214,222,234,235,237,238,
               239,241,242,243,244,246,247,248,249,250,
-              251,253,254,255,0,1
+              251,253,254,255,256,257
     }   };  }
     struct grammar_optimize_round1_type
     {
         unsigned c;
-        unsigned char l[125];
+        unsigned short l[125];
     };
     extern "C"
     {
@@ -1470,12 +1470,12 @@ namespace FPoptimizer_Grammar
               158,159,160,161,162,163,164,165,166,167,
               176,177,178,198,202,210,214,222,234,235,
               237,238,241,242,243,244,247,248,249,251,
-              253,254,255,0,1
+              253,254,255,256,257
     }   };  }
     struct grammar_optimize_round2_type
     {
         unsigned c;
-        unsigned char l[103];
+        unsigned short l[103];
     };
     extern "C"
     {
@@ -1492,12 +1492,12 @@ namespace FPoptimizer_Grammar
               160,161,162,163,164,165,166,167,176,177,
               178,198,202,210,214,222,234,235,237,238,
               241,242,243,244,247,248,249,251,253,254,
-              255,0,1
+              255,256,257
     }   };  }
     struct grammar_optimize_round3_type
     {
         unsigned c;
-        unsigned char l[79];
+        unsigned short l[79];
     };
     extern "C"
     {
@@ -1516,7 +1516,7 @@ namespace FPoptimizer_Grammar
     struct grammar_optimize_round4_type
     {
         unsigned c;
-        unsigned char l[10];
+        unsigned short l[10];
     };
     extern "C"
     {
@@ -1528,7 +1528,7 @@ namespace FPoptimizer_Grammar
     struct grammar_optimize_shortcut_logical_evaluation_type
     {
         unsigned c;
-        unsigned char l[53];
+        unsigned short l[53];
     };
     extern "C"
     {
@@ -1540,7 +1540,7 @@ namespace FPoptimizer_Grammar
               159,161,162,163,164,165,166,167,176,177,
               178,198,202,210,214,222,234,235,237,238,
               241,242,243,244,247,248,249,251,253,254,
-              255,0,1
+              255,256,257
     }   };  }
 }
 namespace FPoptimizer_Grammar

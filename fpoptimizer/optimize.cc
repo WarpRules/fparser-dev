@@ -32,6 +32,15 @@ namespace
     std::pair<It, It>
     MyEqualRange(It first, It last, const T& val, Comp comp)
     {
+      /*while(first != last && comp(*first, val)) ++first;
+        while(first != last)
+        {
+            It temp = last; --temp;
+            if(!comp(val, *temp)) break;
+            last = temp;
+        }
+        return std::pair<It,It>(first,last);*/
+
         size_t len = last-first;
         while(len > 0)
         {
@@ -248,7 +257,12 @@ namespace FPoptimizer_Optimize
         }
 
         /* Figure out which rules _may_ match this tree */
-        typedef const unsigned char* rulenumit;
+        typedef const unsigned short* rulenumit;
+
+        /*std::cout << "---TEST:";
+        for(unsigned n=0; n<grammar.rule_count; ++n)
+            std::cout << ' ' << (unsigned)grammar.rule_list[n];
+        std::cout << "\n";*/
 
         std::pair<rulenumit, rulenumit> range =
             MyEqualRange(grammar.rule_list,
@@ -256,7 +270,7 @@ namespace FPoptimizer_Optimize
                          tree,
                          OpcodeRuleCompare<Value_t> ());
 
-        std::vector<unsigned char> rules;
+        std::vector<unsigned short> rules;
         rules.reserve(range.second - range.first);
         for(rulenumit r = range.first; r != range.second; ++r)
         {

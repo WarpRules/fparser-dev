@@ -217,7 +217,7 @@ namespace FPoptimizer_Grammar
     {
         /* The rules of this grammar */
         unsigned rule_count;
-        unsigned char rule_list[999]; // maximum limit...
+        unsigned short rule_list[999]; // maximum limit...
         /* Note: Changing the limit has no effect to performance of
          * fparser. The limit is only actually used within grammar_parser.
          * A too low limit causes a memory corruption during the parse.

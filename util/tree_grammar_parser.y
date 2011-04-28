@@ -1137,7 +1137,7 @@ public:
             std::cout << "    struct grammar_" << i->first << "_type\n"
                          "    {\n"
                          "        unsigned c;\n"
-                         "        unsigned char l[" << i->second.rule_count << "];\n"
+                         "        unsigned short l[" << i->second.rule_count << "];\n"
                          "    };\n"
                          "    extern \"C\"\n"
                          "    {\n"
