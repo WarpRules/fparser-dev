@@ -579,10 +579,10 @@ namespace
 
             if(operations[a].type == Operation::ImmedFunc)
             {
-                bool requires_var = false;
-                for(size_t a=0; a<opcode.size(); ++a)
-                    if(isalpha(opcode[a]))
-                        requires_var = true;
+                //bool requires_var = false;
+                //for(size_t a=0; a<opcode.size(); ++a)
+                //    if(isalpha(opcode[a]))
+                //        requires_var = true;
 
                 if(i_offset > 0)
                 {
@@ -592,7 +592,7 @@ namespace
                         i_redundant = true;
                     if(i_redundant)
                     {
-                        requires_var = false;
+                        //requires_var = false;
                         OutLine(Out)
                             << "/* " << Iexpr(i_offset-1) << " = " << opcode << "; */"
                             << " // redundant, matches " << so_far[i_offset].name

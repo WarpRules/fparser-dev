@@ -583,7 +583,7 @@ namespace
          */
         std::map<unsigned, length_rec> hash_results;
         long best_score=0;
-        size_t best_score_length=0;
+        //size_t best_score_length=0;
         unsigned best_hash=0;
 
         if(verbose) std::cerr << tokens.size() << " tokens\n";
@@ -653,7 +653,7 @@ namespace
                                 if (score > best_score)
                                 {
                                     best_score        = score;
-                                    best_score_length = string_len;
+                                    //best_score_length = string_len;
                                     best_hash         = hash;
                                 }
                             }
@@ -774,7 +774,7 @@ std::string CPPcompressor::Compress(const std::string& input)
     int tried_retoken_rounds = 0;
     std::string seq_name_buf = GenerateMacroName();
 
-    bool preserve_parens = false;
+    //bool preserve_parens = false;
 
     StringSeq result;
     while (true)
@@ -792,7 +792,7 @@ std::string CPPcompressor::Compress(const std::string& input)
         else
         {
             if (tried_retoken_rounds >= 4) break;
-            preserve_parens = true;
+            //preserve_parens = true;
 
             if(verbose) std::cerr << "Retokenizing\n";
             //static int counter=0; ++counter;

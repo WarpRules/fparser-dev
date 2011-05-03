@@ -20,3 +20,4 @@
 #ifdef FP_SUPPORT_OPTIMIZER
 #include "fparser.hh"
 #include "fptypes.hh"
+#include "fpaux.hh"

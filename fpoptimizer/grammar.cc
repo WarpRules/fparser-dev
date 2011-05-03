@@ -187,10 +187,12 @@ namespace FPoptimizer_Grammar
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
 
-/* For tree_grammar_parser.y, instantiate complex versions */
+// For tree_grammar_parser.y, instantiate complex versions
 template bool ParamSpec_Compare<std::complex<double> >
     (const void*, const void*, SpecialOpcode);
 template void DumpParams<std::complex<double> >
     (unsigned, unsigned, std::ostream& );
+template void DumpParam<std::complex<double> >
+    (const ParamSpec&, std::ostream& );
 }
 /* END_EXPLICIT_INSTANTATION */

@@ -846,7 +846,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                     bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
                     bool unitype = DataTypes.size() == 1;
 
-                    bool has_generic = false;
+                    //bool has_generic = false;
 
                     if(!unitype || !includes_mpfr)
                     {
@@ -870,7 +870,7 @@ void CompileTest(const std::string& testname, FILE* fp)
                             define_sections[""]
                                 .namespace_functions[funcname.first]
                                   += test_declaration(funcname.second) + "\n" + bodystr;
-                            has_generic = true;
+                            //has_generic = true;
                         }
                         else
                         {
