@@ -269,7 +269,11 @@ bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode(unsigned op)
     return false;
 }
 
+template bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode<false>(unsigned op);
+template bool FUNCTIONPARSERTYPES::HasInvalidRangesOpcode<true>(unsigned op);
 
+
+#if(0) // Implementation moved to fpaux.hh due to linker problems
 //=========================================================================
 // Mathematical template functions
 //=========================================================================
@@ -373,6 +377,7 @@ ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
     // It is used for producing error values and as a safe fallback.
     return fp_pow_base(x, y);
 }
+#endif
 
 
 //=========================================================================
@@ -606,7 +611,7 @@ namespace
 
         if(endptr) *endptr = const_cast<char*> (str);
 
-        Value_t result = ldexp(Value_t(mantissa_buffer[0]), exponent);
+        Value_t result = std::ldexp(Value_t(mantissa_buffer[0]), exponent);
         for(unsigned p=1; p<n_limbs; ++p)
         {
             exponent += limb_bits;

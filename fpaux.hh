@@ -16,9 +16,12 @@
 #ifndef ONCE_FPARSER_AUX_H_
 #define ONCE_FPARSER_AUX_H_
 
-#include <cmath>
-
 #include "fptypes.hh"
+
+#include <cmath>
+#ifdef FP_SUPPORT_TR1_MATH_FUNCS
+#include <tr1/cmath>
+#endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 #include "mpfr/MpfrFloat.hh"
@@ -66,8 +69,54 @@ namespace FUNCTIONPARSERTYPES
     };
 #endif
 
+    // Commented versions in fparser.cc
     template<typename Value_t>
-    Value_t fp_pow(const Value_t&, const Value_t&);
+    inline Value_t fp_pow_with_exp_log(const Value_t& x, const Value_t& y)
+    {
+        return fp_exp(fp_log(x) * y);
+    }
+
+    template<typename Value_t>
+    inline Value_t fp_powi(Value_t x, unsigned long y)
+    {
+        Value_t result(1);
+        while(y != 0)
+        {
+            if(y & 1) { result *= x; y -= 1; }
+            else      { x *= x;      y /= 2; }
+        }
+        return result;
+    }
+
+    template<typename Value_t>
+    Value_t fp_pow(const Value_t& x, const Value_t& y)
+    {
+        if(x == Value_t(1)) return Value_t(1);
+        if(isLongInteger(y))
+        {
+            if(y >= Value_t(0))
+                return fp_powi(x, makeLongInteger(y));
+            else
+                return Value_t(1) / fp_powi(x, -makeLongInteger(y));
+        }
+        if(y >= Value_t(0))
+        {
+            if(x > Value_t(0)) return fp_pow_with_exp_log(x, y);
+            if(x == Value_t(0)) return Value_t(0);
+            if(!isInteger(y*Value_t(16)))
+                return -fp_pow_with_exp_log(-x, y);
+        }
+        else
+        {
+            if(x > Value_t(0)) return fp_pow_with_exp_log(Value_t(1) / x, -y);
+            if(x < Value_t(0))
+            {
+                if(!isInteger(y*Value_t(-16)))
+                    return -fp_pow_with_exp_log(Value_t(-1) / x, -y);
+            }
+        }
+        return fp_pow_base(x, y);
+    }
 
 //==========================================================================
 // Constants
@@ -170,7 +219,7 @@ namespace FUNCTIONPARSERTYPES
 
 #ifdef FP_SUPPORT_CBRT
     template<typename Value_t>
-    inline Value_t fp_cbrt(const Value_t& x) { return std::cbrt(x); }
+    inline Value_t fp_cbrt(const Value_t& x) { return std::tr1::cbrt(x); }
 #else
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x)
@@ -220,13 +269,13 @@ namespace FUNCTIONPARSERTYPES
 
 #ifdef FP_SUPPORT_ASINH
     template<typename Value_t>
-    inline Value_t fp_asinh(const Value_t& x) { return std::asinh(x); }
+    inline Value_t fp_asinh(const Value_t& x) { return std::tr1::asinh(x); }
 
     template<typename Value_t>
-    inline Value_t fp_acosh(const Value_t& x) { return std::acosh(x); }
+    inline Value_t fp_acosh(const Value_t& x) { return std::tr1::acosh(x); }
 
     template<typename Value_t>
-    inline Value_t fp_atanh(const Value_t& x) { return std::atanh(x); }
+    inline Value_t fp_atanh(const Value_t& x) { return std::tr1::atanh(x); }
 #else
     template<typename Value_t>
     inline Value_t fp_asinh(const Value_t& x)
@@ -249,7 +298,7 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_HYPOT
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
-    { return std::hypot(x,y); }
+    { return std::tr1::hypot(x,y); }
 #else
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
@@ -262,19 +311,19 @@ namespace FUNCTIONPARSERTYPES
 
 #ifdef FP_SUPPORT_LOG2
     template<typename Value_t>
-    inline Value_t fp_log2(const Value_t& x) { return std::log2(x); }
+    inline Value_t fp_log2(const Value_t& x) { return std::tr1::log2(x); }
+#else
+    template<typename Value_t>
+    inline Value_t fp_log2(const Value_t& x)
+    {
+        return fp_log(x) * fp_const_log2inv<Value_t>();
+    }
 #endif // FP_SUPPORT_LOG2
 
     template<typename Value_t>
     inline Value_t fp_log10(const Value_t& x)
     {
         return fp_log(x) * fp_const_log10inv<Value_t>();
-    }
-
-    template<typename Value_t>
-    inline Value_t fp_log2(const Value_t& x)
-    {
-        return fp_log(x) * fp_const_log2inv<Value_t>();
     }
 
     template<typename Value_t>
@@ -348,16 +397,18 @@ namespace FUNCTIONPARSERTYPES
     inline long fp_asin(const long&) { return 0; }
     inline long fp_atan(const long&) { return 0; }
     inline long fp_atan2(const long&, const long&) { return 0; }
+    inline long fp_cbrt(const long&) { return 0; }
     inline long fp_ceil(const long& x) { return x; }
     inline long fp_cos(const long&) { return 0; }
     inline long fp_cosh(const long&) { return 0; }
     inline long fp_exp(const long&) { return 0; }
+    inline long fp_exp2(const long&) { return 0; }
     inline long fp_floor(const long& x) { return x; }
     inline long fp_log(const long&) { return 0; }
+    inline long fp_log2(const long&) { return 0; }
+    inline long fp_log10(const long&) { return 0; }
     inline long fp_mod(const long& x, const long& y) { return x % y; }
     inline long fp_pow(const long&, const long&) { return 0; }
-    template<>
-    inline long fp_pow<long>(const long&, const long&) { return 0; }
     inline long fp_sin(const long&) { return 0; }
     inline long fp_sinh(const long&) { return 0; }
     inline long fp_sqrt(const long&) { return 1; }
@@ -367,6 +418,8 @@ namespace FUNCTIONPARSERTYPES
     inline long fp_acosh(const long&) { return 0; }
     inline long fp_atanh(const long&) { return 0; }
     inline long fp_pow_base(const long&, const long&) { return 0; }
+    inline void fp_sinCos(long&, long&, const long&) {}
+    inline void fp_sinhCosh(long&, long&, const long&) {}
 
     template<> inline long fp_epsilon<long>() { return 0; }
 
@@ -377,20 +430,25 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_abs(const MpfrFloat& x) { return MpfrFloat::abs(x); }
     inline MpfrFloat fp_acos(const MpfrFloat& x) { return MpfrFloat::acos(x); }
+    inline MpfrFloat fp_acosh(const MpfrFloat& x) { return MpfrFloat::acosh(x); }
     inline MpfrFloat fp_asin(const MpfrFloat& x) { return MpfrFloat::asin(x); }
+    inline MpfrFloat fp_asinh(const MpfrFloat& x) { return MpfrFloat::asinh(x); }
     inline MpfrFloat fp_atan(const MpfrFloat& x) { return MpfrFloat::atan(x); }
     inline MpfrFloat fp_atan2(const MpfrFloat& x, const MpfrFloat& y)
-        { return MpfrFloat::atan2(x, y); }
+    { return MpfrFloat::atan2(x, y); }
+    inline MpfrFloat fp_atanh(const MpfrFloat& x) { return MpfrFloat::atanh(x); }
     inline MpfrFloat fp_cbrt(const MpfrFloat& x) { return MpfrFloat::cbrt(x); }
     inline MpfrFloat fp_ceil(const MpfrFloat& x) { return MpfrFloat::ceil(x); }
     inline MpfrFloat fp_cos(const MpfrFloat& x) { return MpfrFloat::cos(x); }
     inline MpfrFloat fp_cosh(const MpfrFloat& x) { return MpfrFloat::cosh(x); }
     inline MpfrFloat fp_exp(const MpfrFloat& x) { return MpfrFloat::exp(x); }
+    inline MpfrFloat fp_exp2(const MpfrFloat& x) { return MpfrFloat::exp2(x); }
     inline MpfrFloat fp_floor(const MpfrFloat& x) { return MpfrFloat::floor(x); }
     inline MpfrFloat fp_hypot(const MpfrFloat& x, const MpfrFloat& y)
     { return MpfrFloat::hypot(x, y); }
     inline MpfrFloat fp_int(const MpfrFloat& x) { return MpfrFloat::round(x); }
     inline MpfrFloat fp_log(const MpfrFloat& x) { return MpfrFloat::log(x); }
+    inline MpfrFloat fp_log2(const MpfrFloat& x) { return MpfrFloat::log2(x); }
     inline MpfrFloat fp_log10(const MpfrFloat& x) { return MpfrFloat::log10(x); }
     inline MpfrFloat fp_mod(const MpfrFloat& x, const MpfrFloat& y) { return x % y; }
     inline MpfrFloat fp_sin(const MpfrFloat& x) { return MpfrFloat::sin(x); }
@@ -398,19 +456,22 @@ namespace FUNCTIONPARSERTYPES
     inline MpfrFloat fp_sqrt(const MpfrFloat& x) { return MpfrFloat::sqrt(x); }
     inline MpfrFloat fp_tan(const MpfrFloat& x) { return MpfrFloat::tan(x); }
     inline MpfrFloat fp_tanh(const MpfrFloat& x) { return MpfrFloat::tanh(x); }
-    inline MpfrFloat fp_asinh(const MpfrFloat& x) { return MpfrFloat::asinh(x); }
-    inline MpfrFloat fp_acosh(const MpfrFloat& x) { return MpfrFloat::acosh(x); }
-    inline MpfrFloat fp_atanh(const MpfrFloat& x) { return MpfrFloat::atanh(x); }
     inline MpfrFloat fp_trunc(const MpfrFloat& x) { return MpfrFloat::trunc(x); }
 
     inline MpfrFloat fp_pow(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
     inline MpfrFloat fp_pow_base(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
 
-    inline MpfrFloat fp_exp2(const MpfrFloat& x) { return MpfrFloat::exp2(x); }
 
     inline void fp_sinCos(MpfrFloat& sin, MpfrFloat& cos, const MpfrFloat& a)
     {
         MpfrFloat::sincos(a, sin, cos);
+    }
+
+    inline void fp_sinhCosh(MpfrFloat& sinhvalue, MpfrFloat& coshvalue,
+                            const MpfrFloat& param)
+    {
+        sinhvalue = fp_sinh(param);
+        coshvalue = fp_cosh(param);
     }
 
     template<>
@@ -424,16 +485,24 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_abs(const GmpInt& x) { return GmpInt::abs(x); }
     inline GmpInt fp_acos(const GmpInt&) { return 0; }
+    inline GmpInt fp_acosh(const GmpInt&) { return 0; }
     inline GmpInt fp_asin(const GmpInt&) { return 0; }
+    inline GmpInt fp_asinh(const GmpInt&) { return 0; }
     inline GmpInt fp_atan(const GmpInt&) { return 0; }
     inline GmpInt fp_atan2(const GmpInt&, const GmpInt&) { return 0; }
+    inline GmpInt fp_atanh(const GmpInt&) { return 0; }
+    inline GmpInt fp_cbrt(const GmpInt&) { return 0; }
     inline GmpInt fp_ceil(const GmpInt& x) { return x; }
     inline GmpInt fp_cos(const GmpInt&) { return 0; }
     inline GmpInt fp_cosh(const GmpInt&) { return 0; }
     inline GmpInt fp_exp(const GmpInt&) { return 0; }
+    inline GmpInt fp_exp2(const GmpInt&) { return 0; }
     inline GmpInt fp_floor(const GmpInt& x) { return x; }
     inline GmpInt fp_hypot(const GmpInt&, const GmpInt&) { return 0; }
+    inline GmpInt fp_int(const GmpInt& x) { return x; }
     inline GmpInt fp_log(const GmpInt&) { return 0; }
+    inline GmpInt fp_log2(const GmpInt&) { return 0; }
+    inline GmpInt fp_log10(const GmpInt&) { return 0; }
     inline GmpInt fp_mod(const GmpInt& x, const GmpInt& y) { return x % y; }
     inline GmpInt fp_pow(const GmpInt&, const GmpInt&) { return 0; }
     inline GmpInt fp_sin(const GmpInt&) { return 0; }
@@ -441,10 +510,10 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_sqrt(const GmpInt&) { return 0; }
     inline GmpInt fp_tan(const GmpInt&) { return 0; }
     inline GmpInt fp_tanh(const GmpInt&) { return 0; }
-    inline GmpInt fp_asinh(const GmpInt&) { return 0; }
-    inline GmpInt fp_acosh(const GmpInt&) { return 0; }
-    inline GmpInt fp_atanh(const GmpInt&) { return 0; }
+    inline GmpInt fp_trunc(const GmpInt& x) { return x; }
     inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
+    inline void fp_sinCos(GmpInt&, GmpInt&, const GmpInt&) {}
+    inline void fp_sinhCosh(GmpInt&, GmpInt&, const GmpInt&) {}
 
     template<>
     inline GmpInt fp_epsilon<GmpInt>() { return 0; }
@@ -1197,7 +1266,7 @@ namespace FUNCTIONPARSERTYPES
 # define FUNCTIONPARSER_INSTANTIATE_CF(cd)
 #endif
 
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
 # define FUNCTIONPARSER_INSTANTIATE_CLD(cd) cd(std::complex<long double>)
 #else
 # define FUNCTIONPARSER_INSTANTIATE_CLD(cd)
