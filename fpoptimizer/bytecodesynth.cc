@@ -34,7 +34,8 @@ namespace FPoptimizer_ByteCode
 #define mImmed Immed
 
     template<typename Value_t>
-    void ByteCodeSynth<Value_t,false,false>::AddFunctionOpcode(unsigned opcode)
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
+         ByteCodeSynth<Value_t>::Specializer<false,false>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
@@ -45,7 +46,8 @@ namespace FPoptimizer_ByteCode
     }
 
     template<typename Value_t>
-    void ByteCodeSynth<Value_t,true,false>::AddFunctionOpcode(unsigned opcode)
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
+         ByteCodeSynth<Value_t>::Specializer<true,false>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
@@ -57,7 +59,8 @@ namespace FPoptimizer_ByteCode
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename Value_t>
-    void ByteCodeSynth<Value_t,false,true>::AddFunctionOpcode(unsigned opcode)
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
+         ByteCodeSynth<Value_t>::Specializer<false,true>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
@@ -68,7 +71,8 @@ namespace FPoptimizer_ByteCode
     }
 
     template<typename Value_t>
-    void ByteCodeSynth<Value_t,true,true>::AddFunctionOpcode(unsigned opcode)
+    void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
+         ByteCodeSynth<Value_t>::Specializer<true,true>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
@@ -615,18 +619,15 @@ namespace FPoptimizer_ByteCode
 #include "instantiate.hh"
 namespace FPoptimizer_ByteCode
 {
-#define bt(x) FUNCTIONPARSERTYPES::IsIntType<x>::result,\
-              FUNCTIONPARSERTYPES::IsComplexType<x>::result
 #define FP_INSTANTIATE(type) \
     template class SequenceOpcodes<type>; \
-    template void ByteCodeSynth<type,bt(type)>::AddFunctionOpcode(unsigned); \
+    template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned); \
     template void AssembleSequence( \
         long count, \
         const SequenceOpCode<type>& sequencing, \
         ByteCodeSynth<type>& synth);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
-#undef bt
 }
 /* END_EXPLICIT_INSTANTATION */
 

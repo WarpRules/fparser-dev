@@ -21,10 +21,7 @@ namespace FPoptimizer_Grammar
 
 namespace FPoptimizer_ByteCode
 {
-    template<
-        typename Value_t,
-        bool IsInteger = FUNCTIONPARSERTYPES::IsIntType<Value_t>::result,
-        bool IsComplex = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result>
+    template<typename Value_t>
     class ByteCodeSynth;
 }
 

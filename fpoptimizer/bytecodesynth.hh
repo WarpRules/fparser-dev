@@ -19,10 +19,10 @@ enum { MAX_MULI_BYTECODE_LENGTH = 3 };
 namespace FPoptimizer_ByteCode
 {
     template<typename Value_t>
-    class ByteCodeSynthBase
+    class ByteCodeSynth
     {
     public:
-        ByteCodeSynthBase()
+        ByteCodeSynth()
             : ByteCode(), Immed(), StackState(), StackTop(0), StackMax(0)
         {
             /* estimate the initial requirements as such */
@@ -267,38 +267,35 @@ namespace FPoptimizer_ByteCode
                    > StackState;
         size_t StackTop;
         size_t StackMax;
+    private:
+        void incStackPtr()
+        {
+            if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2);
+        }
+
+        template<bool IsIntType, bool IsComplexType>
+        struct Specializer { };
+    public:
+        void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
+        {
+            EatNParams(eat_count);
+            AddFunctionOpcode(opcode);
+            ProducedNParams(produce_count);
+        }
+
+        void AddFunctionOpcode(unsigned opcode, Specializer<false,false>);
+        void AddFunctionOpcode(unsigned opcode, Specializer<false,true>);
+        void AddFunctionOpcode(unsigned opcode, Specializer<true,false>);
+        void AddFunctionOpcode(unsigned opcode, Specializer<true,true>);
+        inline void AddFunctionOpcode(unsigned opcode)
+        {
+            AddFunctionOpcode(opcode,
+                Specializer< FUNCTIONPARSERTYPES::IsIntType<Value_t>::result,
+                             FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result
+                           > ()
+                         );
+        }
     };
-
-    template<typename Value_t, bool IsInteger, bool IsComplex>
-    class ByteCodeSynth { };
-
-    #define MakeByteCodeSynthClass(p1,p2) \
-    template<typename Value_t> \
-    class ByteCodeSynth<Value_t,p1,p2>: public ByteCodeSynthBase<Value_t> \
-    { \
-    protected: \
-        using ByteCodeSynthBase<Value_t>::StackTop; \
-        using ByteCodeSynthBase<Value_t>::StackMax; \
-        using ByteCodeSynthBase<Value_t>::StackState; \
-    private: \
-        void incStackPtr() \
-        { \
-            if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
-        } \
-    public: \
-        void AddFunctionOpcode(unsigned opcode); \
-        void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1) \
-        { \
-            ByteCodeSynthBase<Value_t>::EatNParams(eat_count); \
-            AddFunctionOpcode(opcode); \
-            ByteCodeSynthBase<Value_t>::ProducedNParams(produce_count); \
-        } \
-    }
-    MakeByteCodeSynthClass(false,false);
-    MakeByteCodeSynthClass(false,true);
-    MakeByteCodeSynthClass(true,false);
-    MakeByteCodeSynthClass(true,true);
-    #undef MakeByteCodeSynthClass
 
     template<typename Value_t>
     struct SequenceOpCode;
