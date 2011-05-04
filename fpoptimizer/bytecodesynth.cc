@@ -27,12 +27,6 @@ namespace FPoptimizer_ByteCode
           SequenceOpcodes<Value_t>::MulSequence = { Value_t(1), cInv, cMul, cMul, cDiv, cRDiv };
 
     /*******/
-#define StackTop ByteCodeSynthBase<Value_t>::StackTop
-#define StackMax ByteCodeSynthBase<Value_t>::StackMax
-#define StackState ByteCodeSynthBase<Value_t>::StackState
-#define incStackPtr() do { \
-        if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
-    } while(0)
 #define findName(a,b,c) "var"
 #define TryCompilePowi(o) false
 #define mData this
@@ -90,7 +84,6 @@ namespace FPoptimizer_ByteCode
 #undef mByteCode
 #undef mData
 #undef TryCompilePowi
-#undef incStackPtr
     /*******/
 }
 

@@ -276,6 +276,15 @@ namespace FPoptimizer_ByteCode
     template<typename Value_t> \
     class ByteCodeSynth<Value_t,p1,p2>: public ByteCodeSynthBase<Value_t> \
     { \
+    protected: \
+        using ByteCodeSynthBase<Value_t>::StackTop; \
+        using ByteCodeSynthBase<Value_t>::StackMax; \
+        using ByteCodeSynthBase<Value_t>::StackState; \
+    private: \
+        void incStackPtr() \
+        { \
+            if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2); \
+        } \
     public: \
         void AddFunctionOpcode(unsigned opcode); \
         void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1) \
