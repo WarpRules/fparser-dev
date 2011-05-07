@@ -784,8 +784,10 @@ void MpfrFloat::sincos(const MpfrFloat& value,
                        MpfrFloat& sin,
                        MpfrFloat& cos)
 {
-    mpfr_sin_cos(
-        sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    sin.copyIfShared();
+    cos.copyIfShared();
+    mpfr_sin_cos
+        (sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, GMP_RNDN);
 }
 
 MpfrFloat MpfrFloat::acos(const MpfrFloat& value)

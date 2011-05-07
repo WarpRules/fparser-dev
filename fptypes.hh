@@ -276,11 +276,8 @@ struct FunctionParserBase<Value_t>::Data
 
     struct FuncPtrData
     {
-        union
-        {
-            FunctionPtr mFuncPtr;
-            FunctionParserBase<Value_t>* mParserPtr;
-        };
+        FunctionPtr mFuncPtr;
+        FunctionParserBase<Value_t>* mParserPtr;
         unsigned mParams;
     };
 

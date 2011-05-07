@@ -59,7 +59,11 @@ class FunctionParserBase
     bool AddConstant(const std::string& name, Value_t value);
     bool AddUnit(const std::string& name, Value_t value);
 
+#ifndef FP_USER_DEFINED_FUNCTION_TYPE
     typedef Value_t (*FunctionPtr)(const Value_t*);
+#else
+    typedef FP_USER_DEFINED_FUNCTION_TYPE;
+#endif
 
     bool AddFunction(const std::string& name,
                      FunctionPtr, unsigned paramsAmount);

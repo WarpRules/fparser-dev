@@ -341,7 +341,8 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_int(const Value_t& x)
     {
-        return fp_floor(x + Value_t(0.5));
+        return x < Value_t() ?
+            fp_ceil(x - Value_t(0.5)) : fp_floor(x + Value_t(0.5));
     }
 
     template<typename Value_t>
@@ -470,8 +471,9 @@ namespace FUNCTIONPARSERTYPES
     inline void fp_sinhCosh(MpfrFloat& sinhvalue, MpfrFloat& coshvalue,
                             const MpfrFloat& param)
     {
-        sinhvalue = fp_sinh(param);
-        coshvalue = fp_cosh(param);
+        const MpfrFloat paramCopy = param;
+        sinhvalue = fp_sinh(paramCopy);
+        coshvalue = fp_cosh(paramCopy);
     }
 
     template<>

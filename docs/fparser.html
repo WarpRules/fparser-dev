@@ -73,9 +73,9 @@ Joel Yliluoma
       <code>double</code>, <code>float</code> and <code>long double</code>)
       as the numerical type, along with new complex-specific functions.
     <li>Removed all dependencies on C99 functions, making the non-double
-      versions of the library usable with older compilers (such as VC++ 2005).
-      (But consult the documentation on the <code>long double</code> literal
-      parsing accuracy.)
+      versions of the library usable with older compilers (such as Visual
+      Studio 2005). (But consult the documentation on the <code>long
+	double</code> literal parsing accuracy.)
     <li>Several minor bugfixes.
   </ul>
 
@@ -1284,8 +1284,8 @@ Without epsilon this comparison probably returns the wrong value.
   <td>Return the imaginary part of complex number A. Equivalent to <code>abs(A)*sin(arg(A))</code>.</td>
 </tr><tr>
   <td><code>int(A)</code></td>
-  <td>Rounds A to the closest integer. Equidistant values are rounded up.
-    E.g. -2.9 is rounded to -3.0; -2.5 and -2.1 are rounded to -2.0,
+  <td>Rounds A to the closest integer. Equidistant values are rounded away from
+    zero. E.g. -2.9 and -2.5 are rounded to -3.0; -2.1 is rounded to -2.0,
     and 2.9 and 2.5 are rounded to 3.0; 2.1 is rounded to 2.0.</td>
 </tr><tr>
   <td><code>log(A)</code></td>
