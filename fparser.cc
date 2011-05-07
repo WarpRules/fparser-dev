@@ -709,6 +709,12 @@ namespace
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::Data():
     mReferenceCounter(1),
+    mDelimiterChar(0),
+    mParseErrorType(NO_FUNCTION_PARSED_YET),
+    mEvalErrorType(0),
+    mUseDegreeConversion(false),
+    mEvalRecursionLevel(0),
+    mErrorLocation(0),
     mVariablesAmount(0),
     mStackSize(0)
 {}
@@ -716,6 +722,12 @@ FunctionParserBase<Value_t>::Data::Data():
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
     mReferenceCounter(0),
+    mDelimiterChar(rhs.mDelimiterChar),
+    mParseErrorType(rhs.mParseErrorType),
+    mEvalErrorType(rhs.mEvalErrorType),
+    mUseDegreeConversion(rhs.mUseDegreeConversion),
+    mEvalRecursionLevel(rhs.mEvalRecursionLevel),
+    mErrorLocation(rhs.mErrorLocation),
     mVariablesAmount(rhs.mVariablesAmount),
     mVariablesString(rhs.mVariablesString),
     mNamePtrs(),
@@ -772,12 +784,8 @@ FunctionParserBase<Value_t>::Data::~Data()
 //=========================================================================
 template<typename Value_t>
 FunctionParserBase<Value_t>::FunctionParserBase():
-    mDelimiterChar(0),
-    mParseErrorType(NO_FUNCTION_PARSED_YET), mEvalErrorType(0),
     mData(new Data),
-    mUseDegreeConversion(false),
-    mEvalRecursionLevel(0),
-    mStackPtr(0), mErrorLocation(0)
+    mStackPtr(0)
 {
 }
 
@@ -790,13 +798,8 @@ FunctionParserBase<Value_t>::~FunctionParserBase()
 
 template<typename Value_t>
 FunctionParserBase<Value_t>::FunctionParserBase(const FunctionParserBase& cpy):
-    mDelimiterChar(cpy.mDelimiterChar),
-    mParseErrorType(cpy.mParseErrorType),
-    mEvalErrorType(cpy.mEvalErrorType),
     mData(cpy.mData),
-    mUseDegreeConversion(cpy.mUseDegreeConversion),
-    mEvalRecursionLevel(0),
-    mStackPtr(0), mErrorLocation(0)
+    mStackPtr(0)
 {
     ++(mData->mReferenceCounter);
 }
@@ -809,24 +812,23 @@ FunctionParserBase<Value_t>::operator=(const FunctionParserBase& cpy)
     {
         if(--(mData->mReferenceCounter) == 0) delete mData;
 
-        mDelimiterChar = cpy.mDelimiterChar;
-        mParseErrorType = cpy.mParseErrorType;
-        mEvalErrorType = cpy.mEvalErrorType;
         mData = cpy.mData;
-        mUseDegreeConversion = cpy.mUseDegreeConversion;
-        mEvalRecursionLevel = cpy.mEvalRecursionLevel;
-
         ++(mData->mReferenceCounter);
     }
-
     return *this;
 }
 
+template<typename Value_t>
+typename FunctionParserBase<Value_t>::Data*
+FunctionParserBase<Value_t>::getParserData()
+{
+    return mData;
+}
 
 template<typename Value_t>
 void FunctionParserBase<Value_t>::setDelimiterChar(char c)
 {
-    mDelimiterChar = c;
+    mData->mDelimiterChar = c;
 }
 
 
@@ -1155,7 +1157,20 @@ U+000B  \v
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::ErrorMsg() const
 {
-    return ParseErrorMessage[mParseErrorType];
+    return ParseErrorMessage[mData->mParseErrorType];
+}
+
+template<typename Value_t>
+typename FunctionParserBase<Value_t>::ParseErrorType
+FunctionParserBase<Value_t>::GetParseErrorType() const
+{
+    return mData->mParseErrorType;
+}
+
+template<typename Value_t>
+int FunctionParserBase<Value_t>::EvalError() const
+{
+    return mData->mEvalErrorType;
 }
 
 
@@ -1227,7 +1242,7 @@ int FunctionParserBase<Value_t>::Parse(const char* Function,
 
     if(!ParseVariables(Vars))
     {
-        mParseErrorType = INVALID_VARS;
+        mData->mParseErrorType = INVALID_VARS;
         return int(strlen(Function));
     }
 
@@ -1243,7 +1258,7 @@ int FunctionParserBase<Value_t>::Parse(const std::string& Function,
 
     if(!ParseVariables(Vars))
     {
-        mParseErrorType = INVALID_VARS;
+        mData->mParseErrorType = INVALID_VARS;
         return int(Function.size());
     }
 
@@ -1258,32 +1273,33 @@ template<typename Value_t>
 int FunctionParserBase<Value_t>::ParseFunction(const char* function,
                                                bool useDegrees)
 {
-    mUseDegreeConversion = useDegrees;
-    mParseErrorType = FP_NO_ERROR;
+    mData->mUseDegreeConversion = useDegrees;
+    mData->mParseErrorType = FP_NO_ERROR;
 
     mData->mInlineVarNames.clear();
     mData->mByteCode.clear(); mData->mByteCode.reserve(128);
     mData->mImmed.clear(); mData->mImmed.reserve(128);
     mData->mStackSize = mStackPtr = 0;
 
-    mHasByteCodeFlags = false;
+    mData->mHasByteCodeFlags = false;
 
     const char* ptr = Compile(function);
     mData->mInlineVarNames.clear();
 
-    if(mHasByteCodeFlags)
+    if(mData->mHasByteCodeFlags)
     {
         for(unsigned i = unsigned(mData->mByteCode.size()); i-- > 0; )
             mData->mByteCode[i] &= ~FP_ParamGuardMask;
     }
 
-    if(mParseErrorType != FP_NO_ERROR) return int(mErrorLocation - function);
+    if(mData->mParseErrorType != FP_NO_ERROR)
+        return int(mData->mErrorLocation - function);
 
     assert(ptr); // Should never be null at this point. It's a bug otherwise.
     if(*ptr)
     {
-        if(mDelimiterChar == 0 || *ptr != mDelimiterChar)
-            mParseErrorType = EXPECT_OPERATOR;
+        if(mData->mDelimiterChar == 0 || *ptr != mData->mDelimiterChar)
+            mData->mParseErrorType = EXPECT_OPERATOR;
         return int(ptr - function);
     }
 
@@ -1302,8 +1318,8 @@ template<typename Value_t>
 inline const char* FunctionParserBase<Value_t>::SetErrorType(ParseErrorType t,
                                                              const char* pos)
 {
-    mParseErrorType = t;
-    mErrorLocation = pos;
+    mData->mParseErrorType = t;
+    mData->mErrorLocation = pos;
     return 0;
 }
 
@@ -1902,7 +1918,7 @@ inline const char* FunctionParserBase<Value_t>::CompileFunction
     function = CompileFunctionParams(function, requiredParams);
     if(!function) return 0;
 
-    if(mUseDegreeConversion)
+    if(mData->mUseDegreeConversion)
     {
         if(funcDef.flags & FuncDefinition::AngleIn)
             AddFunctionOpcode(cRad);
@@ -2461,7 +2477,7 @@ inline void FunctionParserBase<Value_t>::PushOpcodeParam
     (unsigned value)
 {
     mData->mByteCode.push_back(value | (PutFlag ? FP_ParamGuardMask : 0u));
-    if(PutFlag) mHasByteCodeFlags = true;
+    if(PutFlag) mData->mHasByteCodeFlags = true;
 }
 
 template<typename Value_t> template<bool PutFlag>
@@ -2469,7 +2485,7 @@ inline void FunctionParserBase<Value_t>::PutOpcodeParamAt
     (unsigned value, unsigned offset)
 {
     mData->mByteCode[offset] = value | (PutFlag ? FP_ParamGuardMask : 0u);
-    if(PutFlag) mHasByteCodeFlags = true;
+    if(PutFlag) mData->mHasByteCodeFlags = true;
 }
 
 //===========================================================================
@@ -2478,7 +2494,7 @@ inline void FunctionParserBase<Value_t>::PutOpcodeParamAt
 template<typename Value_t>
 Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 {
-    if(mParseErrorType != FP_NO_ERROR) return Value_t(0);
+    if(mData->mParseErrorType != FP_NO_ERROR) return Value_t(0);
 
     const unsigned* const byteCode = &(mData->mByteCode[0]);
     const Value_t* const immed = mData->mImmed.empty() ? 0 : &(mData->mImmed[0]);
@@ -2522,7 +2538,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(IsComplexType<Value_t>::result == false
               && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
-              { mEvalErrorType=4; return Value_t(0); }
+              { mData->mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acos(Stack[SP]); break;
 
@@ -2530,7 +2546,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(IsComplexType<Value_t>::result == false
               && Stack[SP] < Value_t(1))
-              { mEvalErrorType=4; return Value_t(0); }
+              { mData->mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_acosh(Stack[SP]); break;
 
@@ -2538,7 +2554,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(IsComplexType<Value_t>::result == false
               && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
-              { mEvalErrorType=4; return Value_t(0); }
+              { mData->mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_asin(Stack[SP]); break;
 
@@ -2554,7 +2570,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(IsComplexType<Value_t>::result
               ?  (Stack[SP] == Value_t(-1) || Stack[SP] == Value_t(1))
               :  (Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1)))
-              { mEvalErrorType=4; return Value_t(0); }
+              { mData->mEvalErrorType=4; return Value_t(0); }
 #           endif
               Stack[SP] = fp_atanh(Stack[SP]); break;
 
@@ -2570,7 +2586,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t t = fp_tan(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(t == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
+                  if(t == Value_t(0))
+                  { mData->mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/t; break;
               }
@@ -2579,7 +2596,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t s = fp_sin(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(s == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
+                  if(s == Value_t(0))
+                  { mData->mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/s; break;
               }
@@ -2590,13 +2608,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const unsigned varAmount = mData->mVariablesAmount;
                   Value_t retVal = Value_t(0);
-                  if(mEvalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
+                  if(mData->mEvalRecursionLevel == FP_EVAL_MAX_REC_LEVEL)
                   {
-                      mEvalErrorType = 5;
+                      mData->mEvalErrorType = 5;
                   }
                   else
                   {
-                      ++mEvalRecursionLevel;
+                      ++mData->mEvalRecursionLevel;
 #                   ifndef FP_USE_THREAD_SAFE_EVAL
                       /* Eval() will use mData->mStack for its storage.
                        * Swap the current stack with an empty one.
@@ -2614,7 +2632,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                        */
                       retVal = Eval(&Stack[SP - varAmount + 1]);
 #                   endif
-                      --mEvalRecursionLevel;
+                      --mData->mEvalRecursionLevel;
                   }
                   SP -= varAmount-1;
                   Stack[SP] = retVal;
@@ -2650,7 +2668,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(IsComplexType<Value_t>::result
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
-              { mEvalErrorType=3; return Value_t(0); }
+              { mData->mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log(Stack[SP]); break;
 
@@ -2659,7 +2677,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(IsComplexType<Value_t>::result
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
-              { mEvalErrorType=3; return Value_t(0); }
+              { mData->mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log10(Stack[SP]);
               break;
@@ -2669,7 +2687,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(IsComplexType<Value_t>::result
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
-              { mEvalErrorType=3; return Value_t(0); }
+              { mData->mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP] = fp_log2(Stack[SP]);
               break;
@@ -2692,7 +2710,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               // x:0 ^ y:negative is failure
               if(Stack[SP-1] == Value_t(0) &&
                  Stack[SP] < Value_t(0))
-              { mEvalErrorType=3; return Value_t(0); }
+              { mData->mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_pow(Stack[SP-1], Stack[SP]);
               --SP; break;
@@ -2703,7 +2721,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               {
                   const Value_t c = fp_cos(Stack[SP]);
 #               ifndef FP_NO_EVALUATION_CHECKS
-                  if(c == Value_t(0)) { mEvalErrorType=1; return Value_t(0); }
+                  if(c == Value_t(0))
+                  { mData->mEvalErrorType=1; return Value_t(0); }
 #               endif
                   Stack[SP] = Value_t(1)/c; break;
               }
@@ -2714,8 +2733,9 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case  cSqrt:
 #           ifndef FP_NO_EVALUATION_CHECKS
-              if(IsComplexType<Value_t>::result == false
-              && Stack[SP] < Value_t(0)) { mEvalErrorType=2; return Value_t(0); }
+              if(IsComplexType<Value_t>::result == false &&
+                 Stack[SP] < Value_t(0))
+              { mData->mEvalErrorType=2; return Value_t(0); }
 #           endif
               Stack[SP] = fp_sqrt(Stack[SP]); break;
 
@@ -2744,16 +2764,16 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cDiv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP-1] /= Stack[SP]; --SP; break;
 
           case   cMod:
               if(Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
               Stack[SP-1] = fp_mod(Stack[SP-1], Stack[SP]);
               --SP; break;
 
@@ -2822,7 +2842,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                       mData->mFuncParsers[index].mParserPtr->EvalError();
                   if(error)
                   {
-                      mEvalErrorType = error;
+                      mData->mEvalErrorType = error;
                       return 0;
                   }
                   break;
@@ -2851,7 +2871,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               if(IsComplexType<Value_t>::result
                ?   Stack[SP-1] == Value_t(0)
                :   !(Stack[SP-1] > Value_t(0)))
-              { mEvalErrorType=3; return Value_t(0); }
+              { mData->mEvalErrorType=3; return Value_t(0); }
 #           endif
               Stack[SP-1] = fp_log2(Stack[SP-1]) * Stack[SP];
               --SP;
@@ -2895,10 +2915,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cInv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP] = Value_t(1)/Stack[SP];
               break;
@@ -2910,10 +2930,10 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRDiv:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP-1] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           else
               if(IsIntType<Value_t>::result && Stack[SP-1] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP-1] = Stack[SP] / Stack[SP-1]; --SP; break;
 
@@ -2922,7 +2942,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRSqrt:
 #           ifndef FP_NO_EVALUATION_CHECKS
               if(Stack[SP] == Value_t(0))
-              { mEvalErrorType=1; return Value_t(0); }
+              { mData->mEvalErrorType=1; return Value_t(0); }
 #           endif
               Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
 
@@ -2943,7 +2963,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
         }
     }
 
-    mEvalErrorType=0;
+    mData->mEvalErrorType=0;
     return Stack[SP];
 }
 

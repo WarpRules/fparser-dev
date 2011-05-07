@@ -3,4 +3,4 @@ T=ld
 V=x
 R=-1, 1, 0.01
 F=asinh(x)
-C=r2d(asinhl(x))
+C=r2d(fp_asinh(x))

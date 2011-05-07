@@ -35,7 +35,7 @@ namespace FPoptimizer_ByteCode
 
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
-         ByteCodeSynth<Value_t>::Specializer<false,false>)
+                                                   Specializer<false,false>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
@@ -47,7 +47,7 @@ namespace FPoptimizer_ByteCode
 
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
-         ByteCodeSynth<Value_t>::Specializer<true,false>)
+                                                   Specializer<true,false>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
@@ -60,7 +60,7 @@ namespace FPoptimizer_ByteCode
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
-         ByteCodeSynth<Value_t>::Specializer<false,true>)
+                                                   Specializer<false,true>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
@@ -72,7 +72,7 @@ namespace FPoptimizer_ByteCode
 
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
-         ByteCodeSynth<Value_t>::Specializer<true,true>)
+                                                   Specializer<true,true>)
     {
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0

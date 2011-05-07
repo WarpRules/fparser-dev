@@ -253,6 +253,14 @@ struct FunctionParserBase<Value_t>::Data
 {
     unsigned mReferenceCounter;
 
+    char mDelimiterChar;
+    ParseErrorType mParseErrorType;
+    int mEvalErrorType;
+    bool mUseDegreeConversion;
+    bool mHasByteCodeFlags;
+    unsigned mEvalRecursionLevel;
+    const char* mErrorLocation;
+
     unsigned mVariablesAmount;
     std::string mVariablesString;
     FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> mNamePtrs;
@@ -281,12 +289,14 @@ struct FunctionParserBase<Value_t>::Data
 
     std::vector<unsigned> mByteCode;
     std::vector<Value_t> mImmed;
+
 #if !defined(FP_USE_THREAD_SAFE_EVAL) && \
     !defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
     std::vector<Value_t> mStack;
     // Note: When mStack exists,
     //       mStack.size() and mStackSize are mutually redundant.
 #endif
+
     unsigned mStackSize;
 
     Data();
