@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.3    </h1>
+<h1>Function Parser for C++ v4.4    </h1>
 
 <h2>What is this library?</h2>
 
@@ -47,10 +47,11 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.3.zip">fparser4.3.zip</a> v4.3
-(released 7 Sep 2010)
+<p>Download <a href="fparser4.4.zip">fparser4.4.zip</a> v4.4
+(released 8 May 2011)
 
 <p>(Older versions:
+<a href="fparser4.3.zip">v4.3</a>,
 <a href="fparser4.2.zip">v4.2</a>,
 <a href="fparser4.1.zip">v4.1</a>,
 <a href="fparser4.0.5.zip">v4.0.5</a>,
@@ -88,9 +89,21 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.3_devel.tar.bz2">fparser4.3_devel.tar.bz2</a>
+<a href="fparser4.4_devel.tar.bz2">fparser4.4_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v4.4
+  <ul>
+    <li>Added support for <code>std::complex</code> (of type
+      <code>double</code>, <code>float</code> and <code>long double</code>)
+      as the numerical type, along with new complex-specific functions.
+    <li>Removed all dependencies on C99 functions, making the non-double
+      versions of the library usable with older compilers (such as Visual
+      Studio 2005). (But consult the documentation on the <code>long
+	double</code> literal parsing accuracy.)
+    <li>Several minor bugfixes.
+  </ul>
 
 <p>What's new in v4.3
   <ul>
