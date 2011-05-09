@@ -5,6 +5,8 @@
 #include <set>
 #include <iostream>
 
+#include <stdio.h>
+
 namespace
 {
     std::string macro_prefix_chars = "qghdowam";
@@ -765,6 +767,9 @@ namespace
 
 std::string CPPcompressor::Compress(const std::string& input)
 {
+    FILE* fp = fopen("cpp_compress_disable", "r");
+    if(fp) { fclose(fp); return input; }
+
     reset_parametric_macro_list();
     macro_counter = 0;
 
