@@ -1777,6 +1777,13 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
         for(unsigned i = 0; i < testData.paramAmount; ++i)
             fp_vars[i] = vars[i];
 
+        if(verbosityLevel >= 4)
+        {
+            std::cout << "Trying (";
+            for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
+                std::cout << (ind>0 ? ", " : "") << vars[ind];
+            std::cout << ")\n" << std::flush;
+        }
         const Value_t v1 = testData.funcPtr(vars);
         if(true) /*test Eval() */
         {
@@ -2725,6 +2732,7 @@ int main(int argc, char* argv[])
         if(std::strcmp(argv[i], "-q") == 0) verbosityLevel = 0;
         else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel = 2;
         else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel = 3;
+        else if(std::strcmp(argv[i], "-vvv") == 0) verbosityLevel = 4;
         else if(std::strcmp(argv[i], "-noalgo") == 0) runAlgoTests = false;
         else if(std::strcmp(argv[i], "-skipSlowAlgo") == 0) skipSlowAlgo = true;
         else if(std::strcmp(argv[i], "-algo") == 0)
