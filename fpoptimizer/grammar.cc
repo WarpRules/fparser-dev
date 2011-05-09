@@ -11,7 +11,7 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_Grammar
 {
-    template<typename Value_t>
+    template<typename Value_t> // Used only by tree_grammar_parser.y
     bool ParamSpec_Compare(const void* aa, const void* bb, SpecialOpcode type)
     {
         switch(type)
@@ -28,7 +28,7 @@ namespace FPoptimizer_Grammar
             {
                 ParamSpec_NumConstant<Value_t>& a = *(ParamSpec_NumConstant<Value_t>*) aa;
                 ParamSpec_NumConstant<Value_t>& b = *(ParamSpec_NumConstant<Value_t>*) bb;
-                return fp_equal(a.constvalue, b.constvalue)
+                return a.constvalue == b.constvalue
                     && a.modulo == b.modulo;
             }
             case SubFunction:
