@@ -785,6 +785,18 @@ namespace FUNCTIONPARSERTYPES
         // const std::complex<T> exp2x=fp_exp(x+x);
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
+#ifdef FP_SUPPORT_ASINH
+    template<typename T>
+    inline std::complex<T> fp_acosh(const std::complex<T>& x)
+    { return fp_log(x + fp_sqrt(x*x - std::complex<T>(1))); }
+    template<typename T>
+    inline std::complex<T> fp_asinh(const std::complex<T>& x)
+    { return fp_log(x + fp_sqrt(x*x + std::complex<T>(1))); }
+    template<typename T>
+    inline std::complex<T> fp_atanh(const std::complex<T>& x)
+    { return fp_log( (std::complex<T>(1)+x) / (std::complex<T>(1)-x))
+           * std::complex<T>(0.5); }
+#endif
     template<typename T>
     inline std::complex<T> fp_pow(const std::complex<T>& x, const std::complex<T>& y)
     {
