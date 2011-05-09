@@ -149,8 +149,8 @@ namespace FPoptimizer_CodeTree
             }
             case cAtan2: /* too complicated to estimate */
             {
-                range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
-                range<Value_t> p1 = CalculateResultBoundaries( tree.GetParam(1) );
+                //range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
+                //range<Value_t> p1 = CalculateResultBoundaries( tree.GetParam(1) );
                 if(tree.GetParam(0).IsImmed()
                 && fp_equal(tree.GetParam(0).GetImmed(), Value_t(0)))   // y == 0
                 {
