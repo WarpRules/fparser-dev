@@ -350,13 +350,20 @@ namespace FPoptimizer_Optimize
         return false;
     }
 
+    // This function (void cast) helps avoid a type punning warning from GCC.
+    template<typename Value_t>
+    bool ApplyGrammar(const void* p, FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
+    {
+        return ApplyGrammar( *(const Grammar*) p, tree);
+    }
+
     template<typename Value_t>
     void ApplyGrammars(FPoptimizer_CodeTree::CodeTree<Value_t>& tree)
     {
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_round1\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_round1, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_round1, tree))
             { //std::cout << "Rerunning 1\n";
                 tree.FixIncompleteHashes();
             }
@@ -364,7 +371,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_round2\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_round2, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_round2, tree))
             { //std::cout << "Rerunning 2\n";
                 tree.FixIncompleteHashes();
             }
@@ -372,7 +379,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_round3\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_round3, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_round3, tree))
             { //std::cout << "Rerunning 3\n";
                 tree.FixIncompleteHashes();
             }
@@ -381,7 +388,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_nonshortcut_logical_evaluation\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_nonshortcut_logical_evaluation, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_nonshortcut_logical_evaluation, tree))
             { //std::cout << "Rerunning 3\n";
                 tree.FixIncompleteHashes();
             }
@@ -390,7 +397,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_round4\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_round4, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_round4, tree))
             { //std::cout << "Rerunning 4\n";
                 tree.FixIncompleteHashes();
             }
@@ -399,7 +406,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_shortcut_logical_evaluation\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_shortcut_logical_evaluation, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_shortcut_logical_evaluation, tree))
             { //std::cout << "Rerunning 3\n";
                 tree.FixIncompleteHashes();
             }
@@ -409,7 +416,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_ignore_if_sideeffects\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_ignore_if_sideeffects, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_ignore_if_sideeffects, tree))
             { //std::cout << "Rerunning 3\n";
                 tree.FixIncompleteHashes();
             }
@@ -418,7 +425,7 @@ namespace FPoptimizer_Optimize
         #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Applying grammar_optimize_abslogical\n";
         #endif
-        while(ApplyGrammar((const Grammar&)grammar_optimize_abslogical, tree))
+        while(ApplyGrammar((const void*)&grammar_optimize_abslogical, tree))
             { //std::cout << "Rerunning 3\n";
                 tree.FixIncompleteHashes();
             }
