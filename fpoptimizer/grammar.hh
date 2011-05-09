@@ -132,9 +132,9 @@ namespace FPoptimizer_Grammar
     template<typename Value_t>
     struct ParamSpec_NumConstant
     {
-        Value_t     constvalue;        // the value
-        unsigned    modulo;            // modulo mode
-    } PACKED_GRAMMAR_ATTRIBUTE;
+        Value_t     constvalue; // the value
+        unsigned    modulo;     // modulo mode
+    };// PACKED_GRAMMAR_ATTRIBUTE;
 
     struct ParamSpec_SubFunctionData
     {
