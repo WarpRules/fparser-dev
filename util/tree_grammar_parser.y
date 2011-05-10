@@ -9,7 +9,11 @@
 
 #include "../fpoptimizer/grammar.hh"
 #include "../fpoptimizer/consts.hh"
-#include "../fpoptimizer/opcodename.hh"
+
+#include "../fpoptimizer/grammar.cc"
+/* ^Note: including .cc file here in order to be able
+ *  to instantiate DumpParam and DumpParams for complex types.
+ */
 
 #include <cstdio>
 #include <cctype>
@@ -421,6 +425,45 @@ namespace GrammarData
         for(size_t a=0; a<Params.size(); ++a)
             if(Params[a]->Opcode == SubFunction)
                 Params[a]->Func->Params.BuildFinalDepMask();
+    }
+}
+
+namespace FPoptimizer_Grammar
+{
+    template<typename Value_t> // Used only by tree_grammar_parser.y
+    bool ParamSpec_Compare(const void* aa, const void* bb, SpecialOpcode type)
+    {
+        switch(type)
+        {
+            case ParamHolder:
+            {
+                ParamSpec_ParamHolder& a = *(ParamSpec_ParamHolder*) aa;
+                ParamSpec_ParamHolder& b = *(ParamSpec_ParamHolder*) bb;
+                return a.constraints == b.constraints
+                    && a.index       == b.index
+                    && a.depcode     == b.depcode;
+            }
+            case NumConstant:
+            {
+                ParamSpec_NumConstant<Value_t>& a = *(ParamSpec_NumConstant<Value_t>*) aa;
+                ParamSpec_NumConstant<Value_t>& b = *(ParamSpec_NumConstant<Value_t>*) bb;
+                return a.constvalue == b.constvalue
+                    && a.modulo == b.modulo;
+            }
+            case SubFunction:
+            {
+                ParamSpec_SubFunction& a = *(ParamSpec_SubFunction*) aa;
+                ParamSpec_SubFunction& b = *(ParamSpec_SubFunction*) bb;
+                return a.constraints    == b.constraints
+                    && a.data.subfunc_opcode   == b.data.subfunc_opcode
+                    && a.data.match_type       == b.data.match_type
+                    && a.data.param_count      == b.data.param_count
+                    && a.data.param_list       == b.data.param_list
+                    && a.data.restholder_index == b.data.restholder_index
+                    && a.depcode               == b.depcode;
+            }
+        }
+        return true;
     }
 }
 

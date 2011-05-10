@@ -46,8 +46,23 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 #OPTIMIZATION=-g -pg
 
 CXX=g++
+# -m32 -mfpmath=sse
+# -m32 -mfpmath=387
 LD=g++
 #LD=g++ -g
+# -m32 -mfpmath=sse
+# -m32 -mfpmath=387
+
+#OPTIMIZATION += -finline -finline-functions -fdefault-inline
+#OPTIMIZATION += -finline-limit=300000
+#OPTIMIZATION += --param max-inline-insns-auto=300000
+#OPTIMIZATION += --param max-inline-recursive-depth-auto=30
+#OPTIMIZATION += --param max-inline-insns-single=300000
+#OPTIMIZATION += --param inline-unit-growth=9000
+#OPTIMIZATION += --param max-early-inliner-iterations=30
+#OPTIMIZATION += --param early-inlining-insns=90000
+#OPTIMIZATION += -fkeep-inline-functions
+#OPTIMIZATION += -fimplement-inlines
 
 FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 
@@ -81,7 +96,7 @@ BOOST_THREAD_LIB = -lboost_thread-mt
 endif
 endif
 
-LD += -Xlinker --gc-sections
+#LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections
 # ^Use this option to list everything that GC removed.
 
@@ -237,7 +252,6 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 
 util/tree_grammar_parser: \
 		util/tree_grammar_parser.o \
-		fpoptimizer/grammar.o \
 		fpoptimizer/opcodename.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 

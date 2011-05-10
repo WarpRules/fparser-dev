@@ -11,42 +11,6 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace FPoptimizer_Grammar
 {
-    template<typename Value_t> // Used only by tree_grammar_parser.y
-    bool ParamSpec_Compare(const void* aa, const void* bb, SpecialOpcode type)
-    {
-        switch(type)
-        {
-            case ParamHolder:
-            {
-                ParamSpec_ParamHolder& a = *(ParamSpec_ParamHolder*) aa;
-                ParamSpec_ParamHolder& b = *(ParamSpec_ParamHolder*) bb;
-                return a.constraints == b.constraints
-                    && a.index       == b.index
-                    && a.depcode     == b.depcode;
-            }
-            case NumConstant:
-            {
-                ParamSpec_NumConstant<Value_t>& a = *(ParamSpec_NumConstant<Value_t>*) aa;
-                ParamSpec_NumConstant<Value_t>& b = *(ParamSpec_NumConstant<Value_t>*) bb;
-                return a.constvalue == b.constvalue
-                    && a.modulo == b.modulo;
-            }
-            case SubFunction:
-            {
-                ParamSpec_SubFunction& a = *(ParamSpec_SubFunction*) aa;
-                ParamSpec_SubFunction& b = *(ParamSpec_SubFunction*) bb;
-                return a.constraints    == b.constraints
-                    && a.data.subfunc_opcode   == b.data.subfunc_opcode
-                    && a.data.match_type       == b.data.match_type
-                    && a.data.param_count      == b.data.param_count
-                    && a.data.param_list       == b.data.param_list
-                    && a.data.restholder_index == b.data.restholder_index
-                    && a.depcode               == b.depcode;
-            }
-        }
-        return true;
-    }
-
     unsigned ParamSpec_GetDepCode(const ParamSpec& b)
     {
         switch(b.first)
@@ -183,16 +147,7 @@ namespace FPoptimizer_Grammar
 {
 #define FP_INSTANTIATE(type) \
     template void DumpParams<type>(unsigned, unsigned, std::ostream& ); \
-    template bool ParamSpec_Compare<type>(const void*, const void*, SpecialOpcode);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
-
-// For tree_grammar_parser.y, instantiate complex versions
-template bool ParamSpec_Compare<std::complex<double> >
-    (const void*, const void*, SpecialOpcode);
-template void DumpParams<std::complex<double> >
-    (unsigned, unsigned, std::ostream& );
-template void DumpParam<std::complex<double> >
-    (const ParamSpec&, std::ostream& );
 }
 /* END_EXPLICIT_INSTANTATION */
