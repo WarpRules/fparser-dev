@@ -303,7 +303,7 @@ distro_pack: $(RELEASE_PACK_FILES)
 	           -rn -rn -rn -rn -rn -rn -rn -rn; do \
 	    (cd fparser-$(RELEASE_VERSION); \
 	    kzip -r -y "$$s" ../fparser$(RELEASE_VERSION)-tmp.zip * );\
-	    wine /usr/local/bin/DeflOpt.exe ../fparser$(RELEASE_VERSION)-tmp.zip; \
+	    DeflOpt ../fparser$(RELEASE_VERSION)-tmp.zip; \
 	    zipmix -y fparser$(RELEASE_VERSION).zip \
 	    	      fparser$(RELEASE_VERSION)-tmp.zip \
 	    	      fparser$(RELEASE_VERSION)-tmp2.zip; \
