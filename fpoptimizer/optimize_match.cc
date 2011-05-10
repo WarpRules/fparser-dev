@@ -753,7 +753,11 @@ namespace FPoptimizer_Optimize
         const CodeTree<type> & tree, \
         const MatchPositionSpecBaseP& start_at, \
         MatchInfo<type>& info, \
-        bool TopLevel);
+        bool TopLevel); \
+    template \
+    bool IsLogisticallyPlausibleParamsMatch( \
+        const ParamSpec_SubFunctionData& params, \
+        const CodeTree<type>& tree);
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE
 }
