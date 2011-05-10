@@ -9,6 +9,20 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.4.1
+  <ul>
+    <li>Added missing documentation on complex literals.
+    <li>Fixed problem when using <code>std::complex</code> with TR1 math
+      functions enabled. (TR1 does not define any new math functions for
+      <code>std::complex</code> even though C++0x does. When attempting to
+      use them, the implementation of TR1 in the current gcc misbehaves
+      instead of giving a compiler error. This has now been replaced with
+      the equivalent formulas using standard math functions.)
+    <li>Fixed some compilation issues in the development version of the
+      library (which happened with certain combinations of disabled parsers
+      and compiler settings).
+  </ul>
+
 <p>What's new in v4.4
   <ul>
     <li>Added support for <code>std::complex</code> (of type
@@ -19,6 +33,7 @@
       Studio 2005). (But consult the documentation on the <code>long
 	double</code> literal parsing accuracy.)
     <li>Several minor bugfixes.
+    <li>Fixed some compilation issues with gcc&nbsp;4.6.
   </ul>
 
 <p>What's new in v4.3

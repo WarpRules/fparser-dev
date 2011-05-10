@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.4    </h1>
+<h1>Function Parser for C++ v4.4.1  </h1>
 
 <h2>What is this library?</h2>
 
@@ -47,8 +47,8 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.4.zip">fparser4.4.zip</a> v4.4
-(released 8 May 2011)
+<p>Download <a href="fparser4.4.1.zip">fparser4.4.1.zip</a> v4.4.1
+(released 10 May 2011)
 
 <p>(Older versions:
 <a href="fparser4.3.zip">v4.3</a>,
@@ -89,9 +89,23 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.4_devel.tar.bz2">fparser4.4_devel.tar.bz2</a>
+<a href="fparser4.4.1_devel.tar.bz2">fparser4.4.1_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v4.4.1
+  <ul>
+    <li>Added missing documentation on complex literals.
+    <li>Fixed problem when using <code>std::complex</code> with TR1 math
+      functions enabled. (TR1 does not define any new math functions for
+      <code>std::complex</code> even though C++0x does. When attempting to
+      use them, the implementation of TR1 in the current gcc misbehaves
+      instead of giving a compiler error. This has now been replaced with
+      the equivalent formulas using standard math functions.)
+    <li>Fixed some compilation issues in the development version of the
+      library (which happened with certain combinations of disabled parsers
+      and compiler settings).
+  </ul>
 
 <p>What's new in v4.4
   <ul>
@@ -103,15 +117,7 @@ testbed, a Makefile and other tools.
       Studio 2005). (But consult the documentation on the <code>long
 	double</code> literal parsing accuracy.)
     <li>Several minor bugfixes.
-  </ul>
-
-<p>What's new in v4.3
-  <ul>
-    <li>Function syntax enhancement: Added possibility of defining new
-      variables in the function string itself. (See documentation for details.)
-    <li>Fixed some bugs in the optimizer (among others,
-      <code>"atan2(-x,-y)"</code> was being wrongly optimized into
-      <code>"atan2(x,y)"</code>
+    <li>Fixed some compilation issues with gcc&nbsp;4.6.
   </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.
