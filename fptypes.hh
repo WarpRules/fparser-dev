@@ -110,6 +110,7 @@ namespace FUNCTIONPARSERTYPES
 
         inline bool enabled() const { return flags != 0; }
         inline bool okForInt() const { return (flags & OkForInt) != 0; }
+        inline bool complexOnly() const { return (flags & ComplexOnly) != 0; }
     };
 
 #ifndef FP_DISABLE_EVAL
