@@ -2887,21 +2887,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #endif // FP_SUPPORT_OPTIMIZER
 
           case cSinCos:
-              {
-                  fp_sinCosResult<Value_t> tmp ( fp_sinCos( Stack[SP] ) );
-                  Stack[SP]   = tmp.svalue;
-                  Stack[SP+1] = tmp.cvalue;
-                  ++SP;
-                  break;
-              }
+              fp_sinCos(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
           case cSinhCosh:
-              {
-                  fp_sinCosResult<Value_t> tmp ( fp_sinhCosh( Stack[SP] ) );
-                  Stack[SP]   = tmp.svalue;
-                  Stack[SP+1] = tmp.cvalue;
-                  ++SP;
-                  break;
-              }
+              fp_sinhCosh(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
 
           case cAbsNot:
               Stack[SP] = fp_absNot(Stack[SP]); break;
