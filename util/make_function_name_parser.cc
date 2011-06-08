@@ -33,9 +33,9 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
         && length == strlen(Functions[a].name))
         {
             std::string o = FP_GetOpcodeName(OPCODE(a));
-            outStream << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+            outStream << "return (" << o << "<<16) | 0x";
             outStream << std::hex << (0x80000000U | length);
-            outStream << std::dec << "U : " << length << ";";
+            outStream << std::dec << "U;";
             outStream << "\n    ";
             return;
         }
@@ -86,9 +86,9 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
                     }
 
                     std::string o = FP_GetOpcodeName(OPCODE(a));
-                    outStream << "return Functions[" << o << "].enabled() ? (" << o << "<<16) | 0x";
+                    outStream << "return (" << o << "<<16) | 0x";
                     outStream << std::hex << (0x80000000U | length);
-                    outStream << std::dec << "U : " << length << ";";
+                    outStream << std::dec << "U;";
                     outStream << "\n    return " << length << ";";
                     if(tmpbytes > 2) outStream << " }";
                     outStream << "\n    ";

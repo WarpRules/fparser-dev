@@ -424,6 +424,15 @@ namespace
         if( (value & 0x80000000U) != 0) // Function?
         {
             // Verify that the function actually exists for this datatype
+        #ifdef FP_DISABLE_EVAL
+            //if(!Functions[(value >> 16) & 0x7FFF].evalOnly())
+            if( value == ((cEval << 16) | 0x80000004U) ) // faster test
+            {
+                // If it's cEval, return it as an identifier instead
+                //return value & 0xFFFFu;
+                return 4;
+            }
+        #endif
             if(IsIntType<Value_t>::result
             && !Functions[(value >> 16) & 0x7FFF].okForInt())
             {
@@ -2887,21 +2896,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 #endif // FP_SUPPORT_OPTIMIZER
 
           case cSinCos:
-              {
-                  fp_sinCosResult<Value_t> tmp ( fp_sinCos( Stack[SP] ) );
-                  Stack[SP]   = tmp.svalue;
-                  Stack[SP+1] = tmp.cvalue;
-                  ++SP;
-                  break;
-              }
+              fp_sinCos(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
           case cSinhCosh:
-              {
-                  fp_sinCosResult<Value_t> tmp ( fp_sinhCosh( Stack[SP] ) );
-                  Stack[SP]   = tmp.svalue;
-                  Stack[SP+1] = tmp.cvalue;
-                  ++SP;
-                  break;
-              }
+              fp_sinhCosh(Stack[SP], Stack[SP+1], Stack[SP]);
+              ++SP;
+              break;
 
           case cAbsNot:
               Stack[SP] = fp_absNot(Stack[SP]); break;
