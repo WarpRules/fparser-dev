@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "2.2.2.10";
+static const char* const kVersionNumber = "2.2.3.11";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
@@ -80,6 +80,28 @@ namespace
 
     template<typename Value_t>
     Value_t userDefFuncValue(const Value_t*) { return 10; }
+
+
+    template<typename Value_t>
+    class UserDefFuncWrapper:
+        public FunctionParserBase<Value_t>::FunctionWrapper
+    {
+        Value_t (*mFuncPtr)(const Value_t*);
+        unsigned mCounter;
+
+     public:
+        UserDefFuncWrapper(Value_t (*funcPtr)(const Value_t*)) :
+            mFuncPtr(funcPtr), mCounter(0)
+        {}
+
+        virtual Value_t callFunction(const Value_t* values)
+        {
+            ++mCounter;
+            return mFuncPtr(values);
+        }
+
+        unsigned counter() const { return mCounter; }
+    };
 
 
     template<typename Value_t>
@@ -292,7 +314,8 @@ int TestErrorSituations()
     fp.AddUnit("unit", 2);
     fp.AddFunction("Value", userDefFuncValue<double>, 0);
     fp.AddFunction("Sqr", userDefFuncSqr<double>, 1);
-    fp.AddFunction("Sub", userDefFuncSub<double>, 2);
+    fp.AddFunctionWrapper
+        ("Sub", UserDefFuncWrapper<double>(userDefFuncSub<double>), 2);
     tmpfp.Parse("0", "x");
 
     static const struct
@@ -1990,12 +2013,22 @@ bool runRegressionTests(const std::string& valueType)
         return false;
     }
 
-    ret = fp.AddFunction("sub", userDefFuncSub<Value_t>, 2);
+    ret = fp.AddFunctionWrapper
+        ("sub", UserDefFuncWrapper<Value_t>(userDefFuncSub<Value_t>), 2);
     ret = ret && fp.AddFunction("sqr", userDefFuncSqr<Value_t>, 1);
     ret = ret && fp.AddFunction("value", userDefFuncValue<Value_t>, 0);
     if(!ret)
     {
         std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
+        return false;
+    }
+
+    UserDefFuncWrapper<Value_t>* wrapper =
+        dynamic_cast<UserDefFuncWrapper<Value_t>*>
+        (fp.GetFunctionWrapper("sub"));
+    if(!wrapper || wrapper->counter() != 0)
+    {
+        std::cout << "Ooops! AddFunctionWrapper() didn't work" << std::endl;
         return false;
     }
 
@@ -2168,6 +2201,13 @@ bool runRegressionTests(const std::string& valueType)
         if(verbosityLevel == 1) std::cout << "\n";
         std::cout << briefErrorMessages.str() << std::flush;
     }
+
+    /*
+    std::cout << "User-defined function \"sub\" was called "
+              << (dynamic_cast<UserDefFuncWrapper<Value_t>*>
+                  (fp.GetFunctionWrapper("sub"))->counter())
+              << " times." << std::endl;
+    */
 
     return allRegressionTestsOk;
 }

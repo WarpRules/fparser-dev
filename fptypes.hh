@@ -244,15 +244,30 @@ struct FunctionParserBase<Value_t>::Data
     typedef std::vector<InlineVariable> InlineVarNamesContainer;
     InlineVarNamesContainer mInlineVarNames;
 
-    struct FuncPtrData
+    struct FuncWrapperPtrData
     {
-        FunctionPtr mFuncPtr;
+        /* Only one of the pointers will point to a function, the other
+           will be null. (The raw function pointer could be implemented
+           as a FunctionWrapper specialization, but it's done like this
+           for efficiency.) */
+        FunctionPtr mRawFuncPtr;
+        FunctionWrapper* mFuncWrapperPtr;
+        unsigned mParams;
+
+        FuncWrapperPtrData();
+        ~FuncWrapperPtrData();
+        FuncWrapperPtrData(const FuncWrapperPtrData&);
+        FuncWrapperPtrData& operator=(const FuncWrapperPtrData&);
+    };
+
+    struct FuncParserPtrData
+    {
         FunctionParserBase<Value_t>* mParserPtr;
         unsigned mParams;
     };
 
-    std::vector<FuncPtrData> mFuncPtrs;
-    std::vector<FuncPtrData> mFuncParsers;
+    std::vector<FuncWrapperPtrData> mFuncPtrs;
+    std::vector<FuncParserPtrData> mFuncParsers;
 
     std::vector<unsigned> mByteCode;
     std::vector<Value_t> mImmed;

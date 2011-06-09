@@ -793,6 +793,45 @@ FunctionParserBase<Value_t>::Data::~Data()
     }
 }
 
+template<typename Value_t>
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData():
+    mRawFuncPtr(0), mFuncWrapperPtr(0), mParams(0)
+{}
+
+template<typename Value_t>
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::~FuncWrapperPtrData()
+{
+    if(mFuncWrapperPtr && --mFuncWrapperPtr->mReferenceCount == 0)
+        delete mFuncWrapperPtr;
+}
+
+template<typename Value_t>
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData
+(const FuncWrapperPtrData& rhs):
+    mRawFuncPtr(rhs.mRawFuncPtr),
+    mFuncWrapperPtr(rhs.mFuncWrapperPtr),
+    mParams(rhs.mParams)
+{
+    if(mFuncWrapperPtr) ++mFuncWrapperPtr->mReferenceCount;
+}
+
+template<typename Value_t>
+typename FunctionParserBase<Value_t>::Data::FuncWrapperPtrData&
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::operator=
+(const FuncWrapperPtrData& rhs)
+{
+    if(&rhs != this)
+    {
+        if(mFuncWrapperPtr && --mFuncWrapperPtr->mReferenceCount == 0)
+            delete mFuncWrapperPtr;
+        mRawFuncPtr = rhs.mRawFuncPtr;
+        mFuncWrapperPtr = rhs.mFuncWrapperPtr;
+        mParams = rhs.mParams;
+        if(mFuncWrapperPtr) ++mFuncWrapperPtr->mReferenceCount;
+    }
+    return *this;
+}
+
 
 //=========================================================================
 // FunctionParser constructors, destructor and assignment
@@ -914,11 +953,38 @@ bool FunctionParserBase<Value_t>::AddFunction
     const bool success = addNewNameData(mData->mNamePtrs, newName, false);
     if(success)
     {
-        mData->mFuncPtrs.push_back(typename Data::FuncPtrData());
-        mData->mFuncPtrs.back().mFuncPtr = ptr;
+        mData->mFuncPtrs.push_back(typename Data::FuncWrapperPtrData());
+        mData->mFuncPtrs.back().mRawFuncPtr = ptr;
         mData->mFuncPtrs.back().mParams = paramsAmount;
     }
     return success;
+}
+
+template<typename Value_t>
+bool FunctionParserBase<Value_t>::addFunctionWrapperPtr
+(const std::string& name, FunctionWrapper* wrapper, unsigned paramsAmount)
+{
+    if(!AddFunction(name, FunctionPtr(0), paramsAmount)) return false;
+    mData->mFuncPtrs.back().mFuncWrapperPtr = wrapper;
+    return true;
+}
+
+template<typename Value_t>
+typename FunctionParserBase<Value_t>::FunctionWrapper*
+FunctionParserBase<Value_t>::GetFunctionWrapper(const std::string& name)
+{
+    CopyOnWrite();
+    NamePtr namePtr(name.data(), unsigned(name.size()));
+
+    typename NamePtrsMap<Value_t>::iterator nameIter =
+        mData->mNamePtrs.find(namePtr);
+
+    if(nameIter != mData->mNamePtrs.end() &&
+       nameIter->second.type == NameData<Value_t>::FUNC_PTR)
+    {
+        return mData->mFuncPtrs[nameIter->second.index].mFuncWrapperPtr;
+    }
+    return 0;
 }
 
 template<typename Value_t>
@@ -949,7 +1015,7 @@ bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
     const bool success = addNewNameData(mData->mNamePtrs, newName, false);
     if(success)
     {
-        mData->mFuncParsers.push_back(typename Data::FuncPtrData());
+        mData->mFuncParsers.push_back(typename Data::FuncParserPtrData());
         mData->mFuncParsers.back().mParserPtr = &fp;
         mData->mFuncParsers.back().mParams = fp.mData->mVariablesAmount;
     }
@@ -963,8 +1029,8 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
 
     NamePtr namePtr(name.data(), unsigned(name.size()));
 
-    typename NamePtrsMap<Value_t>::iterator
-        nameIter = mData->mNamePtrs.find(namePtr);
+    typename NamePtrsMap<Value_t>::iterator nameIter =
+        mData->mNamePtrs.find(namePtr);
 
     if(nameIter != mData->mNamePtrs.end())
     {
@@ -2835,10 +2901,13 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 // User-defined function calls:
           case cFCall:
               {
-                  unsigned index = byteCode[++IP];
-                  unsigned params = mData->mFuncPtrs[index].mParams;
-                  Value_t retVal =
-                      mData->mFuncPtrs[index].mFuncPtr(&Stack[SP-params+1]);
+                  const unsigned index = byteCode[++IP];
+                  const unsigned params = mData->mFuncPtrs[index].mParams;
+                  const Value_t retVal =
+                      mData->mFuncPtrs[index].mRawFuncPtr ?
+                      mData->mFuncPtrs[index].mRawFuncPtr(&Stack[SP-params+1]) :
+                      mData->mFuncPtrs[index].mFuncWrapperPtr->callFunction
+                      (&Stack[SP-params+1]);
                   SP -= int(params)-1;
                   Stack[SP] = retVal;
                   break;
