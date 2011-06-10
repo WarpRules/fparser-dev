@@ -3,11 +3,11 @@
 <head>
  <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
  <link href="style.css" rel="stylesheet" type="text/css" title="normal" media=screen>
- <title>Function Parser for C++ v4.4.2  : Documentation</title>
+ <title>Function Parser for C++ v4.4.3  : Documentation</title>
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.4.2  </h1>
+<h1>Function Parser for C++ v4.4.3  </h1>
 
 <p>Authors: Juha Nieminen
 (<a href="http://iki.fi/warp/">http://iki.fi/warp/</a>),
@@ -45,6 +45,7 @@ Joel Yliluoma
 	  <li><a href="#longdesc_ParseAndDeduceVariables"><code>ParseAndDeduceVariables()</code></a>
         </ul>
       <li><a href="#functionobjects">Specialized function objects</a>
+      <li><a href="#base">FunctionParserBase</a>
      </ul>
  <li>Syntax
    <ul>
@@ -169,12 +170,12 @@ you also need to add <code>mpfr/MpfrFloat.cc</code> or
 they should not be added to the project.
 
 <p>Note that part of the library source code is inside several
-<code>.inc</code> files (these files contain auto-generated C++ code),
-provided in the library package. These files are used by
-<code>fparser.cc</code> and don't need to be added explicitly to the
-project in most IDEs (such as Visual Studio). Basically, you don't need
-to do anything with these files, other than keep them in the same directory
-as <code>fparser.cc</code>.
+<code>.inc</code> files inside the <code>extrasrc</code> subdirectory
+(these files contain auto-generated C++ code), provided in the library
+package. These files are used by <code>fparser.cc</code> and don't need
+to be added explicitly to the project in most IDEs (such as Visual Studio).
+Basically, you don't need to do anything with these files, other than keep
+them in the <code>extrasrc</code> subdirectory.
 
 <p>Simple usage example of the library:
 
@@ -1192,6 +1193,52 @@ accidentally try to downcast to the wrong type, the pointer will become null.)
 
 <p>The calling code is free to modify the object in any way it wants, but it
 must not delete it (because <code>FunctionParser</code> itself handles this).
+
+
+<!-- -------------------------------------------------------------------- -->
+<a name="base"></a>
+<h3>FunctionParserBase</h3>
+
+<p>All the different parser types are derived from a templated base class
+named <code>FunctionParserBase</code>. In normal use it's not necessary to
+directly refer to this base class in the calling code. However, if the calling
+code also needs to be templated (with respect to the numerical type), then
+using <code>FunctionParserBase</code> directly is the easiest way to achieve
+this.
+
+<p>For example, if you want to make a function that handles more than one
+type of parser, it can be done like this:
+
+<pre>
+template&lt;typename Value_t&gt;
+void someFunction(FunctionParserBase&lt;Value_t&gt& parser)
+{
+    // do something with 'parser' here
+}
+</pre>
+
+<p>Now it's convenient to call that function with more than one type of
+parser, for example:
+
+<pre>
+FunctionParser realParser;
+FunctionParser_cd complexParser;
+
+someFunction(realParser);
+someFunction(complexParser);
+</pre>
+
+<p>Another example is a class that inherits from <code>FunctionParser</code>
+which also wants to support different numerical types. Such class can be
+declared as:
+
+<pre>
+template&lt;typename Value_t&gt;
+class SpecializedParser: public FunctionParserBase&lt;Value_t&gt;
+{
+    ...
+};
+</pre>
 
 
 <!-- -------------------------------------------------------------------- -->
