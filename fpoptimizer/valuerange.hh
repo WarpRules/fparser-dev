@@ -2,7 +2,7 @@
 #define FPOptimizer_ValueRangeHH
 
 #include "fparser.hh"
-#include "fpaux.hh"
+#include "extrasrc/fpaux.hh"
 
 namespace FPoptimizer_CodeTree
 {

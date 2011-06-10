@@ -3,8 +3,8 @@
 
 #include "fpconfig.hh"
 #include "fparser.hh"
-#include "fptypes.hh"
-#include "fpaux.hh"
+#include "extrasrc/fptypes.hh"
+#include "extrasrc/fpaux.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 

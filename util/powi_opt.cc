@@ -3,7 +3,7 @@
 #define FP_GENERATING_POWI_TABLE
 #include "../fpoptimizer/bytecodesynth.cc"
 #include "../fpoptimizer/codetree.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 using namespace FPoptimizer_CodeTree;

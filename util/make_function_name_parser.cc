@@ -16,7 +16,7 @@
 
 #include "fparser.hh"
 #include "fpconfig.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 #include "../fpoptimizer/opcodename.cc"
 #include "../util/cpp_compress.hh"

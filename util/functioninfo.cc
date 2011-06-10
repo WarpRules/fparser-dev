@@ -12,7 +12,7 @@ static const char* const kVersionNumber = "1.2.0.4";
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
 #include "fparser_gmpint.hh"
-#include "fpaux.hh"
+#include "extrasrc/fpaux.hh"
 #include <iostream>
 #include <iomanip>
 #include <vector>

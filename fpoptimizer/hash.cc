@@ -3,7 +3,7 @@
 
 #include "constantfolding.hh"
 #include "codetree.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 #include "../lib/crc32.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER

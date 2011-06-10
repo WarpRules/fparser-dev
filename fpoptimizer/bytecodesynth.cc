@@ -40,7 +40,7 @@ namespace FPoptimizer_ByteCode
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
 # define FP_COMPLEX_VERSION 0
-# include "fp_opcode_add.inc"
+# include "extrasrc/fp_opcode_add.inc"
 # undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
     }
@@ -52,7 +52,7 @@ namespace FPoptimizer_ByteCode
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
 # define FP_COMPLEX_VERSION 0
-# include "fp_opcode_add.inc"
+# include "extrasrc/fp_opcode_add.inc"
 # undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
     }
@@ -65,7 +65,7 @@ namespace FPoptimizer_ByteCode
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
 # define FP_COMPLEX_VERSION 1
-# include "fp_opcode_add.inc"
+# include "extrasrc/fp_opcode_add.inc"
 # undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
     }
@@ -77,7 +77,7 @@ namespace FPoptimizer_ByteCode
         int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
 # define FP_COMPLEX_VERSION 1
-# include "fp_opcode_add.inc"
+# include "extrasrc/fp_opcode_add.inc"
 # undef FP_COMPLEX_VERSION
 # undef FP_FLOAT_VERSION
     }

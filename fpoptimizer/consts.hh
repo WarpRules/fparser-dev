@@ -1,5 +1,5 @@
 #include "fparser.hh"
-#include "fpaux.hh"
+#include "extrasrc/fpaux.hh"
 
 #ifndef M_PI
 #define M_PI 3.1415926535897932384626433832795

@@ -4,7 +4,6 @@
 #include "rangeestimation.hh"
 #include "optimize.hh" // for DEBUG_SUBSTITUTIONS
 #include "codetree.hh"
-#include "fptypes.hh"
 #include "consts.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER

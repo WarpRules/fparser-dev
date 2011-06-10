@@ -5,7 +5,7 @@
 #include "optimize.hh"
 #include "opcodename.hh"
 #include "grammar.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 #include "consts.hh"
 #include "fparser.hh"

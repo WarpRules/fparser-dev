@@ -173,6 +173,8 @@ class FunctionParserBase
     const char* Compile(const char*);
 
     bool addFunctionWrapperPtr(const std::string&, FunctionWrapper*, unsigned);
+    static void incFuncWrapperRefCount(FunctionWrapper*);
+    static unsigned decFuncWrapperRefCount(FunctionWrapper*);
 
 protected:
     // Parsing utility functions

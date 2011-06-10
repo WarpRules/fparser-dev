@@ -5,7 +5,7 @@
 
 #include "fpconfig.hh"
 #include "fparser.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 namespace FPoptimizer_CodeTree
 {

@@ -1,6 +1,6 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 #include "codetree.hh"
 #include "optimize.hh"

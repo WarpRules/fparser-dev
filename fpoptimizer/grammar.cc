@@ -1,5 +1,5 @@
 #include "fparser.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 #include "grammar.hh"
 #include "optimize.hh"
 

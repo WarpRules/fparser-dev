@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "codetree.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 #include "consts.hh"
 #include "optimize.hh"
 #include "bytecodesynth.hh"

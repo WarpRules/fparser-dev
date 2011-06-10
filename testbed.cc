@@ -19,7 +19,7 @@ static const char* const kVersionNumber = "2.2.3.11";
 #include "fparser_gmpint.hh"
 #endif
 
-#include "fpaux.hh"
+#include "extrasrc/fpaux.hh"
 
 #include <cmath>
 #include <iostream>

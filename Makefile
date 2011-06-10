@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison.
 #===========================================================================
 
-RELEASE_VERSION=4.4.2
+RELEASE_VERSION=4.4.3
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -135,10 +135,10 @@ FP_MODULES = 	fparser.o \
 
 RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
-	fpoptimizer.cc fpconfig.hh fptypes.hh fpaux.hh \
+	fpoptimizer.cc fpconfig.hh extrasrc/fptypes.hh extrasrc/fpaux.hh \
 	mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc mpfr/GmpInt.hh mpfr/GmpInt.cc \
-	fp_opcode_add.inc \
-	fp_identifier_parser.inc \
+	extrasrc/fp_opcode_add.inc \
+	extrasrc/fp_identifier_parser.inc \
 	docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
@@ -149,10 +149,10 @@ fpoptimizer.o: fpoptimizer.cc
 testbed_release: testbed.o fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
 
-speedtest: speedtest.o $(FP_MODULES)
+speedtest: util/speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-speedtest_release: speedtest.o fparser.o fpoptimizer.o
+speedtest_release: util/speedtest.o fparser.o fpoptimizer.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 examples/example: examples/example.o $(FP_MODULES)
@@ -161,16 +161,16 @@ examples/example: examples/example.o $(FP_MODULES)
 examples/example2: examples/example2.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-ftest: ftest.o $(FP_MODULES)
+ftest: util/ftest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-powi_speedtest: powi_speedtest.o $(FP_MODULES)
+powi_speedtest: util/powi_speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 koe: koe.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-functioninfo: functioninfo.o $(FP_MODULES)
+functioninfo: util/functioninfo.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 fpoptimizer/grammar_data.cc: \
@@ -178,7 +178,7 @@ fpoptimizer/grammar_data.cc: \
 		fpoptimizer/treerules.dat
 	util/tree_grammar_parser < fpoptimizer/treerules.dat > $@
 
-fp_opcode_add.inc: \
+extrasrc/fp_opcode_add.inc: \
 		util/bytecoderules_parser \
 		util/bytecoderules.dat \
 		util/bytecoderules_header.txt \
@@ -297,8 +297,8 @@ fpoptimizer_tests.sh: util/create_testrules_for_optimization_rules
 set_version_string: util/version_changer
 	util/version_changer $(RELEASE_VERSION) fparser.cc \
 		fparser.hh fparser_mpfr.hh fparser_gmpint.hh fpconfig.hh \
-		fpoptimizer.cc fptypes.hh fpaux.hh \
-		fp_opcode_add.inc \
+		fpoptimizer.cc extrasrc/fptypes.hh extrasrc/fpaux.hh \
+		extrasrc/fp_opcode_add.inc \
 		fpoptimizer/fpoptimizer_header.txt \
 		util/bytecoderules_header.txt \
 		docs/fparser.html webpage/index.html
@@ -335,11 +335,11 @@ devel_pack:
 		-cjvf fparser$(RELEASE_VERSION)_devel.tar.bz2 \
 		Makefile examples/example.cc examples/example2.cc fparser.cc \
 		fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
-		fpconfig.hh fptypes.hh fpaux.hh \
-		fp_opcode_add.inc \
-		fp_identifier_parser.inc \
+		fpconfig.hh extrasrc/fptypes.hh extrasrc/fpaux.hh \
+		extrasrc/fp_opcode_add.inc \
+		extrasrc/fp_identifier_parser.inc \
 		testbed_tests.inc \
-		speedtest.cc testbed.cc \
+		util/speedtest.cc testbed.cc \
 		tests/*.cc tests/*.txt tests/*/* \
 		util/*.cc util/*.hh util/*.dat util/*.txt util/*.y \
 		docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt \
@@ -350,7 +350,7 @@ devel_pack:
 		mpfr/MpfrFloat.hh mpfr/MpfrFloat.cc \
 		mpfr/GmpInt.hh mpfr/GmpInt.cc \
 		run_full_release_testing.sh \
-		functioninfo.cc
+		util/functioninfo.cc
 
 clean:
 	rm -f	testbed testbed_release \

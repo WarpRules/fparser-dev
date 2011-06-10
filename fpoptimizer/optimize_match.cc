@@ -1,6 +1,6 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 

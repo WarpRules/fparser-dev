@@ -5,7 +5,7 @@
 #include <iostream>
 
 #include "fpconfig.hh"
-#include "fptypes.hh"
+#include "extrasrc/fptypes.hh"
 
 #include "grammar.hh"
 #include "opcodename.hh"

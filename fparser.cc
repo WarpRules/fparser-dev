@@ -19,8 +19,8 @@
 #include <cassert>
 #include <limits>
 
-#include "fptypes.hh"
-#include "fpaux.hh"
+#include "extrasrc/fptypes.hh"
+#include "extrasrc/fpaux.hh"
 using namespace FUNCTIONPARSERTYPES;
 
 #ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
@@ -413,7 +413,7 @@ namespace
            If unsigned has more than 32 bits, the other
            higher order bits are to be assumed zero.
         */
-#include "fp_identifier_parser.inc"
+#include "extrasrc/fp_identifier_parser.inc"
         return 0;
     }
 
@@ -794,6 +794,20 @@ FunctionParserBase<Value_t>::Data::~Data()
 }
 
 template<typename Value_t>
+void FunctionParserBase<Value_t>::incFuncWrapperRefCount
+(FunctionWrapper* wrapper)
+{
+    ++wrapper->mReferenceCount;
+}
+
+template<typename Value_t>
+unsigned FunctionParserBase<Value_t>::decFuncWrapperRefCount
+(FunctionWrapper* wrapper)
+{
+    return --wrapper->mReferenceCount;
+}
+
+template<typename Value_t>
 FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData():
     mRawFuncPtr(0), mFuncWrapperPtr(0), mParams(0)
 {}
@@ -801,7 +815,8 @@ FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData():
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::~FuncWrapperPtrData()
 {
-    if(mFuncWrapperPtr && --mFuncWrapperPtr->mReferenceCount == 0)
+    if(mFuncWrapperPtr &&
+       FunctionParserBase::decFuncWrapperRefCount(mFuncWrapperPtr) == 0)
         delete mFuncWrapperPtr;
 }
 
@@ -812,7 +827,8 @@ FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData
     mFuncWrapperPtr(rhs.mFuncWrapperPtr),
     mParams(rhs.mParams)
 {
-    if(mFuncWrapperPtr) ++mFuncWrapperPtr->mReferenceCount;
+    if(mFuncWrapperPtr)
+        FunctionParserBase::incFuncWrapperRefCount(mFuncWrapperPtr);
 }
 
 template<typename Value_t>
@@ -822,12 +838,14 @@ FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::operator=
 {
     if(&rhs != this)
     {
-        if(mFuncWrapperPtr && --mFuncWrapperPtr->mReferenceCount == 0)
+        if(mFuncWrapperPtr &&
+           FunctionParserBase::decFuncWrapperRefCount(mFuncWrapperPtr) == 0)
             delete mFuncWrapperPtr;
         mRawFuncPtr = rhs.mRawFuncPtr;
         mFuncWrapperPtr = rhs.mFuncWrapperPtr;
         mParams = rhs.mParams;
-        if(mFuncWrapperPtr) ++mFuncWrapperPtr->mReferenceCount;
+        if(mFuncWrapperPtr)
+            FunctionParserBase::incFuncWrapperRefCount(mFuncWrapperPtr);
     }
     return *this;
 }
@@ -1627,7 +1645,7 @@ inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
 {
 #define FP_FLOAT_VERSION 1
 #define FP_COMPLEX_VERSION 0
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
@@ -1639,7 +1657,7 @@ inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
     typedef long Value_t;
 #define FP_FLOAT_VERSION 0
 #define FP_COMPLEX_VERSION 0
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
@@ -1652,7 +1670,7 @@ inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
     typedef GmpInt Value_t;
 #define FP_FLOAT_VERSION 0
 #define FP_COMPLEX_VERSION 0
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
@@ -1665,7 +1683,7 @@ inline void FunctionParserBase<std::complex<double> >::AddFunctionOpcode(unsigne
     typedef std::complex<double> Value_t;
 #define FP_FLOAT_VERSION 1
 #define FP_COMPLEX_VERSION 1
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
@@ -1678,7 +1696,7 @@ inline void FunctionParserBase<std::complex<float> >::AddFunctionOpcode(unsigned
     typedef std::complex<float> Value_t;
 #define FP_FLOAT_VERSION 1
 #define FP_COMPLEX_VERSION 1
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
@@ -1691,7 +1709,7 @@ inline void FunctionParserBase<std::complex<long double> >::AddFunctionOpcode(un
     typedef std::complex<long double> Value_t;
 #define FP_FLOAT_VERSION 1
 #define FP_COMPLEX_VERSION 1
-#include "fp_opcode_add.inc"
+#include "extrasrc/fp_opcode_add.inc"
 #undef FP_COMPLEX_VERSION
 #undef FP_FLOAT_VERSION
 }
