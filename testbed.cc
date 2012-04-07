@@ -384,9 +384,7 @@ int TestErrorSituations()
       { FunctionParser::UNKNOWN_IDENTIFIER,  0, "sub(1,2)" },
       { FunctionParser::UNKNOWN_IDENTIFIER,  0, "sinx(1)"  },
       { FunctionParser::UNKNOWN_IDENTIFIER,  2, "1+X"      },
-#ifdef FP_DISABLE_EVAL
       { FunctionParser::UNKNOWN_IDENTIFIER,  0, "eval(x)" }
-#endif
     };
     const unsigned amnt = sizeof(invalidFuncs)/sizeof(invalidFuncs[0]);
     for(unsigned i = 0; i < amnt; ++i)
@@ -2202,12 +2200,10 @@ bool runRegressionTests(const std::string& valueType)
         std::cout << briefErrorMessages.str() << std::flush;
     }
 
-    /*
     std::cout << "User-defined function \"sub\" was called "
               << (dynamic_cast<UserDefFuncWrapper<Value_t>*>
                   (fp.GetFunctionWrapper("sub"))->counter())
               << " times." << std::endl;
-    */
 
     return allRegressionTestsOk;
 }

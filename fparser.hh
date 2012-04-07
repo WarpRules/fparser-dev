@@ -50,6 +50,9 @@ class FunctionParserBase
 
     void setDelimiterChar(char);
 
+    static Value_t epsilon();
+    static void setEpsilon(Value_t);
+
     const char* ErrorMsg() const;
     ParseErrorType GetParseErrorType() const;
 
@@ -135,6 +138,7 @@ class FunctionParserBase
 // ------------
     Data* mData;
     unsigned mStackPtr;
+    static Value_t sEpsilon;
 
 
 // Private methods:

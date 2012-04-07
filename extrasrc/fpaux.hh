@@ -19,9 +19,6 @@
 #include "fptypes.hh"
 
 #include <cmath>
-#ifdef FP_SUPPORT_TR1_MATH_FUNCS
-#include <tr1/cmath>
-#endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 #include "mpfr/MpfrFloat.hh"
@@ -217,9 +214,9 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_atan2(const Value_t& x, const Value_t& y)
     { return std::atan2(x, y); }
 
-#ifdef FP_SUPPORT_CBRT
+#if __cplusplus > 201100
     template<typename Value_t>
-    inline Value_t fp_cbrt(const Value_t& x) { return std::tr1::cbrt(x); }
+    inline Value_t fp_cbrt(const Value_t& x) { return std::cbrt(x); }
 #else
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x)
@@ -267,15 +264,15 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_tanh(const Value_t& x) { return std::tanh(x); }
 
-#ifdef FP_SUPPORT_ASINH
+#if __cplusplus > 201100
     template<typename Value_t>
-    inline Value_t fp_asinh(const Value_t& x) { return std::tr1::asinh(x); }
+    inline Value_t fp_asinh(const Value_t& x) { return std::asinh(x); }
 
     template<typename Value_t>
-    inline Value_t fp_acosh(const Value_t& x) { return std::tr1::acosh(x); }
+    inline Value_t fp_acosh(const Value_t& x) { return std::acosh(x); }
 
     template<typename Value_t>
-    inline Value_t fp_atanh(const Value_t& x) { return std::tr1::atanh(x); }
+    inline Value_t fp_atanh(const Value_t& x) { return std::atanh(x); }
 #else
     template<typename Value_t>
     inline Value_t fp_asinh(const Value_t& x)
@@ -295,10 +292,10 @@ namespace FUNCTIONPARSERTYPES
     }
 #endif // FP_SUPPORT_ASINH
 
-#ifdef FP_SUPPORT_HYPOT
+#if __cplusplus > 201100
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
-    { return std::tr1::hypot(x,y); }
+    { return std::hypot(x,y); }
 #else
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
@@ -309,9 +306,9 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_pow_base(const Value_t& x, const Value_t& y)
     { return std::pow(x, y); }
 
-#ifdef FP_SUPPORT_LOG2
+#if __cplusplus > 201100
     template<typename Value_t>
-    inline Value_t fp_log2(const Value_t& x) { return std::tr1::log2(x); }
+    inline Value_t fp_log2(const Value_t& x) { return std::log2(x); }
 #else
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)
@@ -364,13 +361,11 @@ namespace FUNCTIONPARSERTYPES
         coshvalue = Value_t(0.5)*(ex+emx);
     }
 
-#ifdef FP_EPSILON
     template<typename Value_t>
-    inline Value_t fp_epsilon() { return Value_t(FP_EPSILON); }
-#else
-    template<typename Value_t>
-    inline Value_t fp_epsilon() { return Value_t(0); }
-#endif
+    inline Value_t fp_epsilon()
+    {
+        return FunctionParserBase<Value_t>::epsilon();
+    }
 
 
 #ifdef _GNU_SOURCE
@@ -785,7 +780,8 @@ namespace FUNCTIONPARSERTYPES
         // const std::complex<T> exp2x=fp_exp(x+x);
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
-#ifdef FP_SUPPORT_ASINH
+
+#if __cplusplus > 201100
     template<typename T>
     inline std::complex<T> fp_acosh(const std::complex<T>& x)
     { return fp_log(x + fp_sqrt(x*x - std::complex<T>(1))); }
@@ -970,7 +966,6 @@ namespace FUNCTIONPARSERTYPES
 // -------------------------------------------------------------------------
 // Comparison
 // -------------------------------------------------------------------------
-#ifdef FP_EPSILON
     template<typename Value_t>
     inline bool fp_equal(const Value_t& x, const Value_t& y)
     { return IsIntType<Value_t>::result
@@ -994,19 +989,7 @@ namespace FUNCTIONPARSERTYPES
     { return IsIntType<Value_t>::result
         ? (x <= y)
         : (x <= y + fp_epsilon<Value_t>()); }
-#else // FP_EPSILON
-    template<typename Value_t>
-    inline bool fp_equal(const Value_t& x, const Value_t& y) { return x == y; }
 
-    template<typename Value_t>
-    inline bool fp_nequal(const Value_t& x, const Value_t& y) { return x != y; }
-
-    template<typename Value_t>
-    inline bool fp_less(const Value_t& x, const Value_t& y) { return x < y; }
-
-    template<typename Value_t>
-    inline bool fp_lessOrEq(const Value_t& x, const Value_t& y) { return x <= y; }
-#endif // FP_EPSILON
 
     template<typename Value_t>
     inline bool fp_greater(const Value_t& x, const Value_t& y)
