@@ -16,7 +16,7 @@
 #ifndef ONCE_FPARSER_TYPES_H_
 #define ONCE_FPARSER_TYPES_H_
 
-#include "fpconfig.hh"
+#include "../fpconfig.hh"
 #include <cstring>
 
 #ifdef ONCE_FPARSER_H_

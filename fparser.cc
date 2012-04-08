@@ -936,7 +936,7 @@ FunctionParserBase<MpfrFloat>::sEpsilon(MpfrFloat::someEpsilon());
 #endif
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-template<> GmpInt FunctionParserBase<GmpInt>::sEpsilon;
+template<> GmpInt FunctionParserBase<GmpInt>::sEpsilon = 0;
 #endif
 
 template<typename Value_t>
