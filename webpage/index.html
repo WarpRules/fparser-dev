@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.4.3  </h1>
+<h1>Function Parser for C++ v4.5    </h1>
 
 <h2>What is this library?</h2>
 
@@ -49,11 +49,11 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.4.3.zip">fparser4.4.3.zip</a> v4.4.3
-(released 10 Jun 2011)
+<p>Download <a href="fparser4.5.zip">fparser4.5.zip</a> v4.5
+(released 9 Apr 2012)
 
 <p>(Older versions:
-<a href="fparser4.4.2.zip">v4.4.2</a>,
+<a href="fparser4.4.3.zip">v4.4.3</a>,
 <a href="fparser4.3.zip">v4.3</a>,
 <a href="fparser4.2.zip">v4.2</a>,
 <a href="fparser4.1.zip">v4.1</a>,
@@ -92,49 +92,27 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.4.3_devel.tar.bz2">fparser4.4.3_devel.tar.bz2</a>
+<a href="fparser4.5_devel.tar.bz2">fparser4.5_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
 
-<p>What's new in v4.4.3
+<p>What's new in v4.5
   <ul>
-    <li>Added support for user-specialized function pointer objects for
-      user-defined functions (besides the existing support for raw C++
-      function pointers). See documentation for details.
-  </ul>
-
-<p>What's new in v4.4.2
-  <ul>
-    <li>Complex-only internal functions were being not properly disabled in the
-      non-complex versions of the parser, causing mayhem if they were called
-      from those.
-  </ul>
-
-<p>What's new in v4.4.1
-  <ul>
-    <li>Added missing documentation on complex literals.
-    <li>Fixed problem when using <code>std::complex</code> with TR1 math
-      functions enabled. (TR1 does not define any new math functions for
-      <code>std::complex</code> even though C++0x does. When attempting to
-      use them, the implementation of TR1 in the current gcc misbehaves
-      instead of giving a compiler error. This has now been replaced with
-      the equivalent formulas using standard math functions.)
-    <li>Fixed some compilation issues in the development version of the
-      library (which happened with certain combinations of disabled parsers
-      and compiler settings).
-  </ul>
-
-<p>What's new in v4.4
-  <ul>
-    <li>Added support for <code>std::complex</code> (of type
-      <code>double</code>, <code>float</code> and <code>long double</code>)
-      as the numerical type, along with new complex-specific functions.
-    <li>Removed all dependencies on C99 functions, making the non-double
-      versions of the library usable with older compilers (such as Visual
-      Studio 2005). (But consult the documentation on the <code>long
-	double</code> literal parsing accuracy.)
-    <li>Several minor bugfixes.
-    <li>Fixed some compilation issues with gcc&nbsp;4.6.
+    <li>Removed support for the <code>"eval()"</code> function from the
+      supported syntax. (This function was too dangerous, too difficult to
+      maintain internally, not very useful, and more or less a gimmick in
+      the first place.)
+    <li>Removed several of the conditional compiling macro definitions, namely
+      <code>FP_SUPPORT_TR1_MATH</code>, <code>FP_ENABLE_EVAL</code>,
+      <code>FP_EVAL_MAX_REC_LEVEL</code>, <code>FP_NO_EVALUATION_CHECKS</code>
+      and <code>FP_EPSILON</code>.
+    <li>The epsilon value used in comparisons is now set with a member function
+      of FunctionParser (which allows setting different values for different
+      versions of the parser).
+    <li>The math functions previously turned on with
+      <code>FP_SUPPORT_TR1_MATH</code> are now automatically used if
+      <code>__cplusplus</code> indicates that C++11 is in use.
+    <li>Fixed some compilation problems with clang++.
   </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.

@@ -9,6 +9,25 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.5
+  <ul>
+    <li>Removed support for the <code>"eval()"</code> function from the
+      supported syntax. (This function was too dangerous, too difficult to
+      maintain internally, not very useful, and more or less a gimmick in
+      the first place.)
+    <li>Removed several of the conditional compiling macro definitions, namely
+      <code>FP_SUPPORT_TR1_MATH</code>, <code>FP_ENABLE_EVAL</code>,
+      <code>FP_EVAL_MAX_REC_LEVEL</code>, <code>FP_NO_EVALUATION_CHECKS</code>
+      and <code>FP_EPSILON</code>.
+    <li>The epsilon value used in comparisons is now set with a member function
+      of FunctionParser (which allows setting different values for different
+      versions of the parser).
+    <li>The math functions previously turned on with
+      <code>FP_SUPPORT_TR1_MATH</code> are now automatically used if
+      <code>__cplusplus</code> indicates that C++11 is in use.
+    <li>Fixed some compilation problems with clang++.
+  </ul>
+
 <p>What's new in v4.4.3
   <ul>
     <li>Added support for user-specialized function pointer objects for
