@@ -47,6 +47,43 @@ typedef FunctionParser_mpfr DefaultParser;
 #error "FunctionParserBase<double> was disabled and no viable floating point alternative has been defined"
 #endif
 
+#undef FP_TEST_WANT_FLOAT_TYPE
+#ifdef FP_SUPPORT_FLOAT_TYPE
+ #define FP_TEST_WANT_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_DOUBLE_TYPE
+#ifndef FP_DISABLE_DOUBLE_TYPE
+ #define FP_TEST_WANT_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_LONG_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_MPFR_FLOAT_TYPE
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+ #define FP_TEST_WANT_MPFR_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_GMP_INT_TYPE
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+ #define FP_TEST_WANT_GMP_INT_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_INT_TYPE
+#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
+ #define FP_TEST_WANT_LONG_INT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+ #define FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#endif
+
 typedef DefaultParser::value_type DefaultValue_t;
 
 
@@ -1694,15 +1731,7 @@ namespace
 #define fp_equal tb_fp_equal
 #define fp_nequal tb_fp_nequal
 
-#ifndef FP_DISABLE_DOUBLE_TYPE
- #define FP_SUPPORT_DOUBLE_TYPE
-#else
- #undef FP_SUPPORT_DOUBLE_TYPE
-#endif
-
 #include "testbed_tests.inc"
-
-#undef FP_SUPPORT_DOUBLE_TYPE
 
 #undef fp_less
 #undef fp_lessOrEq
@@ -2307,7 +2336,7 @@ namespace OptimizerTests
 
         const TestType<DefaultValue_t> testData =
         {
-            1, -4.0, 4.0, 0.49, false, &evaluateFunction, DBL_ONLY(0)LNG_ONLY(0)
+            1, -4.0, 4.0, 0.49, false, &evaluateFunction, DBL_ONLY(0)0,
             "x", "'trig. combo optimizer test'", funcString.c_str()
         };
 
