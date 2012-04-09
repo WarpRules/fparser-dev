@@ -1562,10 +1562,10 @@ struct TestType
     bool useDegrees;
 
     Value_t (*funcPtr)(const Value_t*);
-#ifndef FP_DISABLE_DOUBLE_TYPE
+#ifdef FP_TEST_WANT_DOUBLE_TYPE
     double (*doubleFuncPtr)(const double*);
 #endif
-#ifdef FP_SUPPORT_LONG_INT_TYPE
+#ifdef FP_TEST_WANT_LONG_INT_TYPE
     long (*longFuncPtr)(const long*);
 #endif
 
@@ -1747,7 +1747,7 @@ namespace
     void testAgainstDouble(Value_t*, Value_t, const TestType<Value_t>&,
                            std::ostream&) {}
 
-#if defined(FP_SUPPORT_MPFR_FLOAT_TYPE) && !defined(FP_DISABLE_DOUBLE_TYPE)
+#if defined(FP_TEST_WANT_MPFR_FLOAT_TYPE) && defined(FP_TEST_WANT_DOUBLE_TYPE)
     void testAgainstDouble(MpfrFloat* vars, MpfrFloat parserValue,
                            const TestType<MpfrFloat>& testData,
                            std::ostream& error)
@@ -1804,7 +1804,7 @@ namespace
     void testAgainstLongInt(Value_t*, Value_t, const TestType<Value_t>&,
                             std::ostream&) {}
 
-#if defined(FP_SUPPORT_GMP_INT_TYPE) && defined(FP_SUPPORT_LONG_INT_TYPE)
+#if defined(FP_TEST_WANT_GMP_INT_TYPE) && defined(FP_TEST_WANT_LONG_INT_TYPE)
     void testAgainstLongInt(GmpInt* vars, GmpInt parserValue,
                             const TestType<GmpInt>& testData,
                             std::ostream& error)
@@ -2336,7 +2336,7 @@ namespace OptimizerTests
 
         const TestType<DefaultValue_t> testData =
         {
-            1, -4.0, 4.0, 0.49, false, &evaluateFunction, DBL_ONLY(0)0,
+            1, -4.0, 4.0, 0.49, false, &evaluateFunction, DBL_ONLY(0)LNG_ONLY(0)
             "x", "'trig. combo optimizer test'", funcString.c_str()
         };
 
