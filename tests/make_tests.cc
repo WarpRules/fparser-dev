@@ -315,7 +315,9 @@ void ListTests(std::ostream& outStream)
                     << "    { " << testdata.ParamAmount
                     << ", " << ranges.str()
                     << ", " << (testdata.UseDegrees ? "true" : "false")
-                    << ", " << testdata.TestFuncName;
+                    << ", " << testdata.TestFuncName
+                    << ",";
+
                 if(/*type == "MpfrFloat"
                 &&*/ testdata.DataTypes.find("double")
                 != testdata.DataTypes.end())
@@ -323,12 +325,11 @@ void ListTests(std::ostream& outStream)
                     // If the same test is defined for both "double" and
                     // "MpfrFloat", include an extra pointer to the "double"
                     // test in the "MpfrFloat" test.
-                    linebuf << ", " << testdata.TestFuncName;
+                    linebuf << "DBL_ONLY(" << testdata.TestFuncName << ")";
                     //n_duplicates = 1;
                 }
                 else
-                    linebuf
-                        << ", 0";
+                    linebuf << "DBL_ONLY(0)";
 
                 if(/*type == "GmpInt"
                 &&*/ testdata.DataTypes.find("long")
@@ -337,15 +338,14 @@ void ListTests(std::ostream& outStream)
                     // If the same test is defined for both "long" and
                     // "GmpInt", include an extra pointer to the "long"
                     // test in the "GmpInt" test.
-                    linebuf << ", " << testdata.TestFuncName;
+                    linebuf << "LNG_ONLY(" << testdata.TestFuncName << ")";
                     //n_duplicates = 1;
                 }
                 else
-                    linebuf
-                        << ", 0";
+                    linebuf << "LNG_ONLY(0)";
 
                 linebuf
-                    << ",\n      " << TranslateString(testdata.ParamString)
+                    << "\n      " << TranslateString(testdata.ParamString)
                     << ", " << TranslateString(testdata.TestName)
                     << ", " << TranslateString(testdata.FuncString)
                     << " },\n";
@@ -1025,7 +1025,19 @@ int main(int argc, char* argv[])
         fclose(fp);
     }
 
-    out << "#define APP(x,y) x##y\n";
+    out <<
+        "#ifdef FP_SUPPORT_DOUBLE_TYPE\n"
+        " #define DBL_ONLY(p) p,\n"
+        "#else\n"
+        " #define DBL_ONLY(p)\n"
+        "#endif\n"
+        "#ifdef FP_SUPPORT_LONG_INT_TYPE\n"
+        " #define LNG_ONLY(p) p,\n"
+        "#else\n"
+        " #define LNG_ONLY(p)\n"
+        "#endif\n"
+        "\n"
+        "#define APP(x,y) x##y\n";
     for(std::map<std::string, std::pair<std::string,std::string> >::const_iterator
         i = class_declarations.begin();
         i != class_declarations.end();

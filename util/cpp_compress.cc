@@ -32,7 +32,7 @@ namespace
             "FP_TRACE_OPCODENAME",
             "FP_TRACE_BYTECODE_OPTIMIZATION",
             "FP_TRACE_BYTECODE_ADD",
-            "N","P",
+            "N","P", "DBL_ONLY", "LNG_ONLY",
             "incStackPtr", "TryCompilePowi","findName"
         };
         parametric_macro_list.clear();
