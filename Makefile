@@ -250,8 +250,7 @@ fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 
 util/tree_grammar_parser: \
 		util/tree_grammar_parser.o \
-		fpoptimizer/opcodename.o \
-		fparser.o
+		fpoptimizer/opcodename.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 util/tree_grammar_parser.cc: \

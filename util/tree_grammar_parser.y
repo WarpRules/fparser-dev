@@ -801,8 +801,8 @@ public:
         if(value.imag() != 0.0) goto NotAnyKnownConstant;
         #define Value_t double
         #define if_const(n) \
-            if(fp_equal(dvalue, n)) result << #n; \
-            else if(fp_equal(dvalue, -n)) result << "-" #n;
+            if((dvalue)==(n)) result << #n; \
+            else if((dvalue)==(-n)) result << "-" #n;
         if_const(fp_const_e<Value_t>())
         else if_const(fp_const_einv<Value_t>())
         else if_const(fp_const_twoe<Value_t>())
