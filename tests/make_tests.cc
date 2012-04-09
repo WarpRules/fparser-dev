@@ -18,6 +18,7 @@ namespace
         if(type == "float") return "FP_SUPPORT_FLOAT_TYPE";
         if(type == "long double") return "FP_SUPPORT_LONG_DOUBLE_TYPE";
         if(type == "long") return "FP_SUPPORT_LONG_INT_TYPE";
+        if(type == "double") return "FP_SUPPORT_DOUBLE_TYPE";
         if(type == "MpfrFloat") return "FP_SUPPORT_MPFR_FLOAT_TYPE";
         if(type == "GmpInt") return "FP_SUPPORT_GMP_INT_TYPE";
         if(type == "std::complex<double>") return "FP_SUPPORT_COMPLEX_DOUBLE_TYPE";
@@ -30,6 +31,7 @@ namespace
         if(def == "FP_SUPPORT_FLOAT_TYPE") return "float";
         if(def == "FP_SUPPORT_LONG_DOUBLE_TYPE") return "long double";
         if(def == "FP_SUPPORT_LONG_INT_TYPE") return "long";
+        if(def == "FP_SUPPORT_DOUBLE_TYPE") return "double";
         if(def == "FP_SUPPORT_MPFR_FLOAT_TYPE") return "MpfrFloat";
         if(def == "FP_SUPPORT_GMP_INT_TYPE") return "GmpInt";
         if(def == "FP_SUPPORT_COMPLEX_DOUBLE_TYPE") return "std::complex<double>";

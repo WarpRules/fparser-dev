@@ -1690,13 +1690,21 @@ namespace
 #define fp_equal tb_fp_equal
 #define fp_nequal tb_fp_nequal
 
-#if defined(FP_SUPPORT_GMP_INT_TYPE) && !defined(FP_SUPPORT_LONG_INT_TYPE)
-#define FP_SUPPORT_LONG_INT_TYPE
-#include "testbed_tests.inc"
-#undef FP_SUPPORT_LONG_INT_TYPE
+#ifndef FP_DISABLE_DOUBLE_TYPE
+ #define FP_SUPPORT_DOUBLE_TYPE
 #else
-#include "testbed_tests.inc"
+ #undef FP_SUPPORT_DOUBLE_TYPE
 #endif
+
+#if defined(FP_SUPPORT_GMP_INT_TYPE) && !defined(FP_SUPPORT_LONG_INT_TYPE)
+# define FP_SUPPORT_LONG_INT_TYPE
+# include "testbed_tests.inc"
+# undef FP_SUPPORT_LONG_INT_TYPE
+#else
+# include "testbed_tests.inc"
+#endif
+
+#undef FP_SUPPORT_DOUBLE_TYPE
 
 #undef fp_less
 #undef fp_lessOrEq
