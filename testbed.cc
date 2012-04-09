@@ -1700,13 +1700,7 @@ namespace
  #undef FP_SUPPORT_DOUBLE_TYPE
 #endif
 
-#if defined(FP_SUPPORT_GMP_INT_TYPE) && !defined(FP_SUPPORT_LONG_INT_TYPE)
-# define FP_SUPPORT_LONG_INT_TYPE
-# include "testbed_tests.inc"
-# undef FP_SUPPORT_LONG_INT_TYPE
-#else
-# include "testbed_tests.inc"
-#endif
+#include "testbed_tests.inc"
 
 #undef FP_SUPPORT_DOUBLE_TYPE
 
