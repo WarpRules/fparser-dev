@@ -295,10 +295,32 @@ namespace FUNCTIONPARSERTYPES
     }
 
     template<typename Value_t>
-    inline Value_t fp_epsilon()
+    struct Epsilon
     {
-        return FunctionParserBase<Value_t>::epsilon();
-    }
+        static Value_t value;
+        static Value_t defaultValue() { return 0; }
+    };
+
+    template<> inline double Epsilon<double>::defaultValue() { return 1E-12; }
+    template<> inline float Epsilon<float>::defaultValue() { return 1E-5F; }
+    template<> inline long double Epsilon<long double>::defaultValue() { return 1E-14L; }
+
+    template<> inline std::complex<double>
+    Epsilon<std::complex<double> >::defaultValue() { return 1E-12; }
+
+    template<> inline std::complex<float>
+    Epsilon<std::complex<float> >::defaultValue() { return 1E-5F; }
+
+    template<> inline std::complex<long double>
+    Epsilon<std::complex<long double> >::defaultValue() { return 1E-14L; }
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<> inline MpfrFloat
+    Epsilon<MpfrFloat>::defaultValue() { return MpfrFloat::someEpsilon(); }
+#endif
+
+    template<typename Value_t> Value_t Epsilon<Value_t>::value =
+        Epsilon<Value_t>::defaultValue();
 
 
 #ifdef _GNU_SOURCE
@@ -350,7 +372,7 @@ namespace FUNCTIONPARSERTYPES
     inline void fp_sinCos(long&, long&, const long&) {}
     inline void fp_sinhCosh(long&, long&, const long&) {}
 
-    template<> inline long fp_epsilon<long>() { return 0; }
+    //template<> inline long fp_epsilon<long>() { return 0; }
 
 
 // -------------------------------------------------------------------------
@@ -403,9 +425,6 @@ namespace FUNCTIONPARSERTYPES
         sinhvalue = fp_sinh(paramCopy);
         coshvalue = fp_cosh(paramCopy);
     }
-
-    template<>
-    inline MpfrFloat fp_epsilon<MpfrFloat>() { return MpfrFloat::someEpsilon(); }
 #endif // FP_SUPPORT_MPFR_FLOAT_TYPE
 
 
@@ -444,9 +463,6 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
     inline void fp_sinCos(GmpInt&, GmpInt&, const GmpInt&) {}
     inline void fp_sinhCosh(GmpInt&, GmpInt&, const GmpInt&) {}
-
-    template<>
-    inline GmpInt fp_epsilon<GmpInt>() { return 0; }
 #endif // FP_SUPPORT_GMP_INT_TYPE
 
 
@@ -916,26 +932,26 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline bool fp_equal(const Value_t& x, const Value_t& y)
     { return IsIntType<Value_t>::result
-        ? (x == y)
-        : (fp_abs(x - y) <= fp_epsilon<Value_t>()); }
+            ? (x == y)
+            : (fp_abs(x - y) <= Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_nequal(const Value_t& x, const Value_t& y)
     { return IsIntType<Value_t>::result
-        ? (x != y)
-        : (fp_abs(x - y) > fp_epsilon<Value_t>()); }
+            ? (x != y)
+            : (fp_abs(x - y) > Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_less(const Value_t& x, const Value_t& y)
     { return IsIntType<Value_t>::result
-        ? (x < y)
-        : (x < y - fp_epsilon<Value_t>()); }
+            ? (x < y)
+            : (x < y - Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_lessOrEq(const Value_t& x, const Value_t& y)
     { return IsIntType<Value_t>::result
-        ? (x <= y)
-        : (x <= y + fp_epsilon<Value_t>()); }
+            ? (x <= y)
+            : (x <= y + Epsilon<Value_t>::value); }
 
 
     template<typename Value_t>

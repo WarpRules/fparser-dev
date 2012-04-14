@@ -916,39 +916,16 @@ void FunctionParserBase<Value_t>::ForceDeepCopy()
 //=========================================================================
 // Epsilon
 //=========================================================================
-template<> double FunctionParserBase<double>::sEpsilon = 1E-12;
-template<> float FunctionParserBase<float>::sEpsilon = 1E-5F;
-template<> long double FunctionParserBase<long double>::sEpsilon = 1E-14L;
-template<> long FunctionParserBase<long>::sEpsilon = 0;
-
-template<> std::complex<double>
-FunctionParserBase<std::complex<double> >::sEpsilon = 1E-12;
-
-template<> std::complex<float>
-FunctionParserBase<std::complex<float> >::sEpsilon = 1E-5F;
-
-template<> std::complex<long double>
-FunctionParserBase<std::complex<long double> >::sEpsilon = 1E-14L;
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-template<> MpfrFloat
-FunctionParserBase<MpfrFloat>::sEpsilon(MpfrFloat::someEpsilon());
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-template<> GmpInt FunctionParserBase<GmpInt>::sEpsilon = 0;
-#endif
-
 template<typename Value_t>
 Value_t FunctionParserBase<Value_t>::epsilon()
 {
-    return sEpsilon;
+    return Epsilon<Value_t>::value;
 }
 
 template<typename Value_t>
 void FunctionParserBase<Value_t>::setEpsilon(Value_t value)
 {
-    sEpsilon = value;
+    Epsilon<Value_t>::value = value;
 }
 
 

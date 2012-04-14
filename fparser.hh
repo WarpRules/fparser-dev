@@ -138,7 +138,6 @@ class FunctionParserBase
 // ------------
     Data* mData;
     unsigned mStackPtr;
-    static Value_t sEpsilon;
 
 
 // Private methods:
