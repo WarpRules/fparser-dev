@@ -197,8 +197,8 @@ namespace
 
             if(Debug)
                 result += tok.meta.preproc
-                           ? (InDefineMode ? "¿" : "¡")
-                           : (InDefineMode ? "?" : "!");
+                           ? (InDefineMode ? "\xBF" : "\xA1")  // upside-down ? and !
+                           : (InDefineMode ? "\x3F" : "\x21"); // ?, !
             else if (!result.empty() && result[result.size()-1] != '\n')
             {
                 if (!InDefineMode && NewLines && value[0] == '#') result += '\n';
