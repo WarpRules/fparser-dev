@@ -178,13 +178,13 @@ namespace
     {
         return "template<typename Value_t> static Value_t "+name+"(const Value_t* vars)";
     }
-    std::string test_specialization(const std::string& name, const std::string& type)
+    /*std::string test_specialization(const std::string& name, const std::string& type)
     {
-        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars) /* " + type + " */";
-    }
+        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars) /""* " + type + " *""/";
+    }*/
     std::string test_specialized_declaration(const std::string& name, const std::string& type)
     {
-        return "Value_t "+name+"(const Value_t* vars) /* " + type + " */";
+        return "Value_t "+name+"(const Value_t* vars) /""* " + type + " *""/";
     }
 }
 

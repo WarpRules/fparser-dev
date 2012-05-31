@@ -192,7 +192,7 @@ namespace
 
 
 #ifndef _MSC_VER
-    void setAnsiColor(unsigned color)
+    /*void setAnsiColor(unsigned color)
     {
         static int bold = 0;
         std::cout << "\33[";
@@ -203,13 +203,13 @@ namespace
         }
         else if(bold) { std::cout << "0;"; bold=0; }
         std::cout << 30+color << "m";
-    }
+    }*/
 
     void setAnsiBold() { std::cout << "\33[1m"; }
 
     void resetAnsiColor() { std::cout << "\33[0m"; }
 #else
-    void setAnsiColor(unsigned) {}
+    /*void setAnsiColor(unsigned) {}*/
     void setAnsiBold() {}
     void resetAnsiColor() {}
 #endif

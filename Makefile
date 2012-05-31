@@ -32,9 +32,11 @@ else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
 
-OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
-	-fvpt -fomit-frame-pointer -ffunction-cse
+OPTIMIZATION=-O3 -ffast-math -march=native
 #       -ffunction-sections -fdata-sections
+
+# For GCC (not clang):
+OPTIMIZATION += -fexpensive-optimizations -fvpt -fomit-frame-pointer -ffunction-cse
 
 #OPTIMIZATION+=-g
 #OPTIMIZATION=-g -O0 -fno-inline
@@ -44,9 +46,12 @@ OPTIMIZATION=-O3 -ffast-math -march=native -fexpensive-optimizations \
 #OPTIMIZATION=-g -pg
 
 CXX=g++
+#CXX=clang++
 # -m32 -mfpmath=sse
 # -m32 -mfpmath=387
+
 LD=g++
+#LD=clang++
 #LD=g++ -g
 # -m32 -mfpmath=sse
 # -m32 -mfpmath=387

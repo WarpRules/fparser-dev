@@ -616,7 +616,7 @@ public:
 
     Rule CreateRule(const GrammarData::Rule& r)
     {
-        unsigned min_params = r.Input.Params.CalcRequiredParamsCount();
+        //unsigned min_params = r.Input.Params.CalcRequiredParamsCount();
 
         Rule ritem;
         memset(&ritem, 0, sizeof(ritem));
