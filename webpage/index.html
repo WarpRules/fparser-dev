@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.5    </h1>
+<h1>Function Parser for C++ v4.5.1  </h1>
 
 <h2>What is this library?</h2>
 
@@ -49,8 +49,8 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.5.zip">fparser4.5.zip</a> v4.5
-(released 9 Apr 2012)
+<p>Download <a href="fparser4.5.1.zip">fparser4.5.1.zip</a> v4.5.1
+(released 11 Nov 2012)
 
 <p>(Older versions:
 <a href="fparser4.4.3.zip">v4.4.3</a>,
@@ -95,6 +95,15 @@ testbed, a Makefile and other tools.
 <a href="fparser4.5_devel.tar.bz2">fparser4.5_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
+
+<p>What's new in v4.5.1
+  <ul>
+    <li>Reverted the automatic C++11 detection to a precompiler macro setting
+      (<code>FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS</code>) because not all
+      compilers yet fully support the C++11 math functions.
+    <li>Fixed a potential duplicate symbol problem that happens with explicit
+      template instantiations.
+  </ul>
 
 <p>What's new in v4.5
   <ul>

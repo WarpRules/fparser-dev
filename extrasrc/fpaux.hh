@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v4.5                                            *|
+|* Function Parser for C++ v4.5.1                                          *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 |*                                                                         *|
@@ -203,7 +203,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_tanh(const Value_t& x) { return std::tanh(x); }
 
-#if __cplusplus > 201100
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_asinh(const Value_t& x) { return std::asinh(x); }
 
@@ -231,7 +231,7 @@ namespace FUNCTIONPARSERTYPES
     }
 #endif // FP_SUPPORT_ASINH
 
-#if __cplusplus > 201100
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
     { return std::hypot(x,y); }
@@ -245,7 +245,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_pow_base(const Value_t& x, const Value_t& y)
     { return std::pow(x, y); }
 
-#if __cplusplus > 201100
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x) { return std::log2(x); }
 #else
@@ -466,7 +466,7 @@ namespace FUNCTIONPARSERTYPES
 #endif // FP_SUPPORT_GMP_INT_TYPE
 
 
-#if __cplusplus > 201100
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x) { return std::cbrt(x); }
 #else
@@ -744,7 +744,7 @@ namespace FUNCTIONPARSERTYPES
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
 
-#if __cplusplus > 201100
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename T>
     inline std::complex<T> fp_acosh(const std::complex<T>& x)
     { return fp_log(x + fp_sqrt(x*x - std::complex<T>(1))); }
@@ -1235,77 +1235,4 @@ namespace FUNCTIONPARSERTYPES
 } // namespace FUNCTIONPARSERTYPES
 
 #endif // ONCE_FPARSER_H_
-
-
-#ifndef FP_DISABLE_DOUBLE_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_D(g) g(double)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_D(g)
-#endif
-
-#ifdef FP_SUPPORT_FLOAT_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_F(g) g(float)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_F(g)
-#endif
-
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_LD(g) g(long double)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_LD(g)
-#endif
-
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_LI(g) g(long)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_LI(g)
-#endif
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_MF(g) g(MpfrFloat)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_MF(g)
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_GI(g) g(GmpInt)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_GI(g)
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_CD(cd) cd(std::complex<double>)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_CD(cd)
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_CF(cd) cd(std::complex<float>)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_CF(cd)
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-# define FUNCTIONPARSER_INSTANTIATE_CLD(cd) cd(std::complex<long double>)
-#else
-# define FUNCTIONPARSER_INSTANTIATE_CLD(cd)
-#endif
-
-/* Add 'FUNCTIONPARSER_INSTANTIATE_TYPES' at the end of all .cc files
-   containing FunctionParserBase implementations.
- */
-#define FUNCTIONPARSER_INSTANTIATE_BASE(type) \
-    template class FunctionParserBase<type>;
-
-#define FUNCTIONPARSER_INSTANTIATE_TYPES \
-    FUNCTIONPARSER_INSTANTIATE_D(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_F(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_LD(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_LI(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_MF(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_GI(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_CD(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_CF(FUNCTIONPARSER_INSTANTIATE_BASE) \
-    FUNCTIONPARSER_INSTANTIATE_CLD(FUNCTIONPARSER_INSTANTIATE_BASE)
-
 #endif // ONCE_FPARSER_AUX_H_

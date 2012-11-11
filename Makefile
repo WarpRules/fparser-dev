@@ -7,7 +7,7 @@
 # The optimizer code generator requires bison.
 #===========================================================================
 
-RELEASE_VERSION=4.5
+RELEASE_VERSION=4.5.1
 
 # The FP_FEATURE_FLAGS is set by run_full_release_testing.sh, but can be
 # used otherwise as well.
@@ -28,6 +28,7 @@ FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_FLOAT_TYPE
 FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_USE_STRTOLD
+#FEATURE_FLAGS += -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -97,6 +98,10 @@ else
 ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA,$(FEATURE_FLAGS)))
 BOOST_THREAD_LIB = -lboost_thread-mt
 endif
+endif
+
+ifneq (,$(findstring -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS,$(FEATURE_FLAGS)))
+CXXFLAGS += -std=c++0x
 endif
 
 #LD += -Xlinker --gc-sections

@@ -159,15 +159,11 @@ namespace
     template<typename Value_t>
     inline Value_t Epsilon() { return Value_t(1e-9); }
 
-#ifdef FP_SUPPORT_FLOAT_TYPE
     template<>
     inline float Epsilon<float>() { return 1e-3f; }
-#endif
 
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     template<>
     inline long double Epsilon<long double>() { return 1e-10l; }
-#endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>

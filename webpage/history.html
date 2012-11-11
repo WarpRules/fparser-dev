@@ -9,6 +9,15 @@
 <body>
 <h1>Version history</h1>
 
+<p>What's new in v4.5.1
+  <ul>
+    <li>Reverted the automatic C++11 detection to a precompiler macro setting
+      (<code>FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS</code>) because not all
+      compilers yet fully support the C++11 math functions.
+    <li>Fixed a potential duplicate symbol problem that happens with explicit
+      template instantiations.
+  </ul>
+
 <p>What's new in v4.5
   <ul>
     <li>Removed support for the <code>"eval()"</code> function from the

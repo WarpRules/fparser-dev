@@ -1,5 +1,5 @@
 /***************************************************************************\
-|* Function Parser for C++ v4.5                                            *|
+|* Function Parser for C++ v4.5.1                                          *|
 |*-------------------------------------------------------------------------*|
 |* Copyright: Juha Nieminen, Joel Yliluoma                                 *|
 |*                                                                         *|
@@ -456,7 +456,7 @@ namespace
         return std::strtod(str, endptr);
     }
 
-#if defined(FP_USE_STRTOLD) || __cplusplus > 201100
+#if defined(FP_USE_STRTOLD) || defined(FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS)
     template<>
     inline long double fp_parseLiteral<long double>(const char* str,
                                                     char** endptr)
@@ -3759,4 +3759,42 @@ void FunctionParserBase<Value_t>::Optimize()
 }
 #endif
 
-FUNCTIONPARSER_INSTANTIATE_TYPES
+
+#define FUNCTIONPARSER_INSTANTIATE_CLASS(type) \
+    template class FunctionParserBase< type >;
+
+#ifndef FP_DISABLE_DOUBLE_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(double)
+#endif
+
+#ifdef FP_SUPPORT_FLOAT_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(float)
+#endif
+
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(long double)
+#endif
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(long)
+#endif
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(MpfrFloat)
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(GmpInt)
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(std::complex<double>)
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(std::complex<float>)
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+FUNCTIONPARSER_INSTANTIATE_CLASS(std::complex<long double>)
+#endif
