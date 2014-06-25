@@ -57,8 +57,8 @@ namespace
     }
 }
 
-namespace
-{
+//namespace
+//{
     struct mycomplex
     {
         double real, imag;
@@ -67,7 +67,7 @@ namespace
         { mycomplex res = {-v.real, -v.imag }; return res; }
 
     typedef std::complex<double> stdcomplex;
-}
+//}
 
 namespace GrammarData
 {
@@ -1211,7 +1211,7 @@ static GrammarDumper dumper;
 
 %}
 
-%pure_parser
+%pure-parser
 
 %union {
     /* Note: Because bison's token type is an union or a simple type,
