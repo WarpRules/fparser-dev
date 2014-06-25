@@ -1,5 +1,5 @@
 # Bug: positiveinteger*terms1 + -sameinteger*terms2 incorrectly ungroups the terms in terms1
-# Fixed in commit c5d1610446f26d182a47a5f71f165d143a20fb4b
+# Fixed in commit 11d99dabc69750b8ac232570b3e523b026c51a2a
 
 T=f d li
 V=x,y,z
