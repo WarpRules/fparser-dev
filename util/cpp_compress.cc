@@ -307,13 +307,13 @@ namespace
         void Deactivate() { Active=false; ParamList.clear(); }
     };
 
-    std::vector<token>
+    std::vector<token>*
         Tokenize(const StringSeq& input,
                  DefineParsingMode& defmode,
                  bool SplitMacros,
                  bool SplitStrings)
     {
-        std::vector<token> result;
+        std::vector<token>* result = new std::vector<token>;
         size_t a=0, b=input.size();
         while(a < b)
         {
@@ -321,7 +321,7 @@ namespace
             {
                 size_t eat = 1;
                 while(input.IsSticky(a+eat)) ++eat;
-                result.push_back( input.substr(a, eat) );
+                result->push_back( input.substr(a, eat) );
                 a += eat;
                 continue;
             }*/
@@ -333,7 +333,7 @@ namespace
             if (defmode.Active && input[a]=='\n')
             {
                 defmode.Deactivate();
-                result.push_back( token("\n") );
+                result->push_back( token("\n") );
                 ++a;
                 continue;
             }
@@ -362,39 +362,42 @@ namespace
                 }
 
                 std::string name(input.GetString(), name_begin, a-name_begin);
-                result.push_back(name);
+                result->push_back(name);
 
                 if (defmode.Active && defmode.ParamList.find(name)
                                    != defmode.ParamList.end())
                 {
                     // Define params are immutable.
-                    result.back().meta.preproc = true;
+                    result->back().meta.preproc = true;
                 }
 
                 if (input[a] == '('
                 && parametric_macro_list.find(name)
                 != parametric_macro_list.end())
                 {
-                    std::vector<token> remains = Tokenize(input.substr(a), defmode, SplitMacros, SplitStrings);
+                    // This function is recursion-heavy, so we use "new".
+                    std::vector<token>* remains =
+                        Tokenize(input.substr(a), defmode, SplitMacros, SplitStrings);
                     int balance = 1;
                     size_t eat = 1;
-                    for(; eat < remains.size() && balance != 0; ++eat)
-                        balance += remains[eat].meta.balance;
+                    for(; eat < remains->size() && balance != 0; ++eat)
+                        balance += (*remains)[eat].meta.balance;
                     if(SplitMacros)
                     {
                         for(size_t c=0; c<eat; ++c)
-                            if(remains[c].meta.balance != 0
-                            || remains[c].meta.comma != 0)
-                                remains[c].meta.preproc = true;
-                        result.insert(result.end(), remains.begin(), remains.end());
+                            if((*remains)[c].meta.balance != 0
+                            || (*remains)[c].meta.comma != 0)
+                                (*remains)[c].meta.preproc = true;
+                        result->insert(result->end(), remains->begin(), remains->end());
                     }
                     else
                     {
-                        //result.push_back( GetSeq(remains.begin(), eat, false) );
-                        StringSeq tmp = GetSeq(remains.begin(), eat, false);
-                        result.back() = result.back().value + tmp.GetString();
-                        result.insert(result.end(), remains.begin()+eat, remains.end());
+                        //result->push_back( GetSeq(remains->begin(), eat, false) );
+                        StringSeq tmp = GetSeq(remains->begin(), eat, false);
+                        result->back() = result->back().value + tmp.GetString();
+                        result->insert(result->end(), remains->begin()+eat, remains->end());
                     }
+                    delete remains;
                     a = b; // done
                 }
                 continue;
@@ -416,45 +419,45 @@ namespace
                 }
                 StringSeq s = input.substr(value_begin, a-value_begin );
                 /* TODO: Convert hex to decimal */
-                result.push_back( s );
+                result->push_back( s );
                 continue;
             }
             if (a+1 < b && input[a] == '>' && input[a+1] == '>')
                 { int n = (a+2 < b && input[a+2] == '=') ? 3 : 2;
-                  result.push_back(input.substr(a, n)); a += n; continue; }
+                  result->push_back(input.substr(a, n)); a += n; continue; }
             if (a+1 < b && input[a] == '<' && input[a+1] == '<')
                 { int n = (a+2 < b && input[a+2] == '=') ? 3 : 2;
-                  result.push_back(input.substr(a, n)); a += n; continue; }
+                  result->push_back(input.substr(a, n)); a += n; continue; }
             if (a+1 < b && input[a] == '+' && input[a+1] == '+')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '-' && input[a+1] == '-')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '-' && input[a+1] == '>')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '#' && input[a+1] == '#')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '&' && input[a+1] == '&')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && input[a] == '|' && input[a+1] == '|')
-                { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && (input[a] == '>' || input[a] == '<'
                         || input[a] == '!' || input[a] == '='
                         || input[a] == '+' || input[a] == '-'
                         || input[a] == '*' || input[a] == '/'
                         || input[a] == '&' || input[a] == '|'))
                 if (input[a+1] == '=')
-                    { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                    { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (a+1 < b && (input[a] == ':' && input[a+1] == ':'))
-                    { result.push_back(input.substr(a, 2)); a += 2; continue; }
+                    { result->push_back(input.substr(a, 2)); a += 2; continue; }
             if (!defmode.Active && input[a] == '#')
             {
                 if (input.substr(a,8).GetString() == "#include")
                 {
                     size_t p = a;
                     while(p < b && input[p] != '\n') ++p;
-                    result.push_back( input.substr(a, p-a) );
-                    result.back().meta.preproc = true;
-                    result.push_back( token("\n") );
+                    result->push_back( input.substr(a, p-a) );
+                    result->back().meta.preproc = true;
+                    result->push_back( token("\n") );
                     a = p;
                     continue;
                 }
@@ -469,7 +472,7 @@ namespace
                         defmode.Activate();
                         std::string def = input.substr(a, p-a).GetString();
                         if(input[p] != '\n') def += ' ';
-                        result.push_back(def); /* #define, term name and a space */
+                        result->push_back(def); /* #define, term name and a space */
                         a = p;
                         continue;
                     }
@@ -503,7 +506,7 @@ namespace
                         defmode.Activate();
                         std::string def = input.substr(a, param_list_end-a).GetString();
                         if(input[p] != '\n') def += ' ';
-                        result.push_back(def); /* #define, term name, params and a space */
+                        result->push_back(def); /* #define, term name, params and a space */
                         a = p;
                         continue;
                     }
@@ -521,8 +524,8 @@ namespace
                 }
                 std::string stmt(input.GetString(), preproc_begin, a-preproc_begin);
                 if (stmt.substr(0,5) != "#line")
-                    result.push_back(stmt);
-                result.push_back( token("\n") );
+                    result->push_back(stmt);
+                result->push_back( token("\n") );
                 continue;
             }
             if (input[a] == '"')
@@ -541,22 +544,22 @@ namespace
                         size_t p = stringconst.find_first_of(" ,+-", 0, 1);
                         if(p == stringconst.npos) break;
                         if(p > 0)
-                            result.push_back( "\""+std::string(stringconst,0,p)+"\"" );
-                        result.push_back( "\""+std::string(stringconst,p,1)+"\"" );
+                            result->push_back( "\""+std::string(stringconst,0,p)+"\"" );
+                        result->push_back( "\""+std::string(stringconst,p,1)+"\"" );
                         stringconst.erase(0, p+1);
                     }
-                if(!stringconst.empty()) result.push_back("\""+stringconst+"\"");
+                if(!stringconst.empty()) result->push_back("\""+stringconst+"\"");
                 continue;
             }
             if (input[a] == '\'')
             {
                 size_t char_begin = a; a += 3;
                 if (input[a-2] == '\\') ++a;
-                result.push_back( std::string(input.GetString(), char_begin, a-char_begin) );
+                result->push_back( std::string(input.GetString(), char_begin, a-char_begin) );
                 continue;
             }
 
-            result.push_back( input.substr(a++, 1) );
+            result->push_back( input.substr(a++, 1) );
         }
         return result;
     }
@@ -779,7 +782,7 @@ std::string CPPcompressor::Compress(const std::string& input)
     macro_counter = 0;
 
     DefineParsingMode defmode;
-    std::vector<token> tokens = Tokenize(input, defmode, false, false);
+    std::vector<token>* tokens = Tokenize(input, defmode, false, false);
 
     int tried_retoken_rounds = 0;
     std::string seq_name_buf = GenerateMacroName();
@@ -789,12 +792,12 @@ std::string CPPcompressor::Compress(const std::string& input)
     StringSeq result;
     while (true)
     {
-        if (CompressWithNonparametricMacros(tokens, seq_name_buf))
+        if (CompressWithNonparametricMacros(*tokens, seq_name_buf))
         {
             tried_retoken_rounds = 0;
             seq_name_buf = GenerateMacroName();
         }
-        else if (CompressWithParametricMacros(tokens, seq_name_buf))
+        else if (CompressWithParametricMacros(*tokens, seq_name_buf))
         {
             tried_retoken_rounds = 0;
             seq_name_buf = GenerateMacroName();
@@ -807,14 +810,16 @@ std::string CPPcompressor::Compress(const std::string& input)
             if(verbose) std::cerr << "Retokenizing\n";
             //static int counter=0; ++counter;
             //if(counter>=1) {Debug=true;}
-            result = GetSeq(tokens.begin(), tokens.size(), true);
+            result = GetSeq(tokens->begin(), tokens->size(), true);
             //if(counter>=1) break;
 
             DefineParsingMode defmode;
+            delete tokens;
             tokens = Tokenize(result, defmode, tried_retoken_rounds&1, tried_retoken_rounds&2);
             ++tried_retoken_rounds;
         }
     }
+    delete tokens;
     return result.GetString();
 }
 
