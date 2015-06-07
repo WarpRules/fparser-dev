@@ -26,6 +26,7 @@ static const char* const kVersionNumber = "1.2.0.4";
 #include <sstream>
 #include <cassert>
 #include <algorithm>
+#include <cctype>
 
 #define SEPARATOR \
 "----------------------------------------------------------------------------"

@@ -157,17 +157,17 @@ namespace
 
 
     template<typename Value_t>
-    inline Value_t Epsilon() { return Value_t(1e-9); }
+    inline Value_t testbedEpsilon() { return Value_t(1e-9); }
 
     template<>
-    inline float Epsilon<float>() { return 1e-3f; }
+    inline float testbedEpsilon<float>() { return 1e-3f; }
 
     template<>
-    inline long double Epsilon<long double>() { return 1e-10l; }
+    inline long double testbedEpsilon<long double>() { return 1e-10l; }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
-    inline MpfrFloat Epsilon<MpfrFloat>()
+    inline MpfrFloat testbedEpsilon<MpfrFloat>()
     {
         static const MpfrFloat eps(2e-20);
         return eps;
@@ -176,14 +176,14 @@ namespace
 
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
     template<>
-    inline std::complex<float> Epsilon<std::complex<float> >()
-        { return Epsilon<float>(); }
+    inline std::complex<float> testbedEpsilon<std::complex<float> >()
+    { return testbedEpsilon<float>(); }
 #endif
 
 #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
     template<>
-    inline std::complex<long double> Epsilon<std::complex<long double> >()
-        { return Epsilon<long double>(); }
+    inline std::complex<long double> testbedEpsilon<std::complex<long double> >()
+    { return testbedEpsilon<long double>(); }
 #endif
 
 
@@ -219,7 +219,7 @@ bool TestCopyingNoDeepCopy(DefaultParser p)
 {
     DefaultValue_t vars[2] = { 3, 5 };
 
-    if(std::fabs(p.Eval(vars) - 13) > Epsilon<DefaultValue_t>())
+    if(std::fabs(p.Eval(vars) - 13) > testbedEpsilon<DefaultValue_t>())
     {
         if(verbosityLevel >= 2)
         {
@@ -241,7 +241,7 @@ bool TestCopyingDeepCopy(DefaultParser p)
 
     p.Parse("x*y-1", "x,y");
 
-    if(std::fabs(p.Eval(vars) - 14) > Epsilon<DefaultValue_t>())
+    if(std::fabs(p.Eval(vars) - 14) > testbedEpsilon<DefaultValue_t>())
     {
         if(verbosityLevel >= 2)
         {
@@ -261,7 +261,7 @@ int TestCopying()
 {
     bool retval = true;
     DefaultValue_t vars[2] = { 2, 5 };
-    const DefaultValue_t epsilon = Epsilon<DefaultValue_t>();
+    const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
 
     DefaultParser p1, p3;
     p1.Parse("x*y-2", "x,y");
@@ -567,7 +567,7 @@ bool testWsFunc(DefaultParser& fp, const std::string& function)
     DefaultValue_t vars[1];
     for(vars[0] = -2.0; vars[0] <= 2.0; vars[0] += .1)
         if(std::fabs(fp.Eval(vars) - wsFunc(vars[0])) >
-           Epsilon<DefaultValue_t>())
+           testbedEpsilon<DefaultValue_t>())
         {
             return false;
         }
@@ -633,7 +633,7 @@ bool compareExpValues(DefaultValue_t value,
                       DefaultValue_t v2,
                       bool isOptimized)
 {
-    const DefaultValue_t epsilon = Epsilon<DefaultValue_t>();
+    const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
     const DefaultValue_t diff =
         std::fabs(v1) < epsilon ?
         (std::fabs(v2) < epsilon ? std::fabs(v1 - v2) :
@@ -1203,7 +1203,7 @@ namespace
 
 int testUserDefinedFunctions()
 {
-    const DefaultValue_t epsilon = Epsilon<DefaultValue_t>();
+    const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
 
     DefaultParser nestedParser1, nestedParser2, nestedParser3;
     nestedParser1.Parse("x + 2.0*y + 3.0*z", "x, y, z");
@@ -1461,7 +1461,7 @@ class TestingThread
 
     void operator()()
     {
-        const DefaultValue_t epsilon = Epsilon<DefaultValue_t>();
+        const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
         DefaultValue_t vars[2];
         for(vars[0] = -10.0; vars[0] <= 10.0; vars[0] += 0.02)
         {
@@ -1473,8 +1473,8 @@ class TestingThread
                 const DefaultValue_t v2 = mFp->Eval(vars);
                 /*
                 const double scale = pow(10.0, floor(log10(fabs(v1))));
-                const double sv1 = fabs(v1) < Epsilon<double>() ? 0 : v1/scale;
-                const double sv2 = fabs(v2) < Epsilon<double>() ? 0 : v2/scale;
+                const double sv1 = fabs(v1) < testbedEpsilon<double>() ? 0 : v1/scale;
+                const double sv2 = fabs(v2) < testbedEpsilon<double>() ? 0 : v2/scale;
                 const double diff = fabs(sv2-sv1);
                 */
                 const DefaultValue_t diff =
@@ -1753,7 +1753,7 @@ namespace
         double doubleVars[10];
         for(unsigned i = 0; i < 10; ++i) doubleVars[i] = vars[i].toDouble();
 
-        const double Eps = Epsilon<double>();
+        const double Eps = testbedEpsilon<double>();
 
         const double v1 = testData.doubleFuncPtr(doubleVars);
         const double v2 = parserValue.toDouble();
@@ -2187,7 +2187,7 @@ bool runRegressionTests(const std::string& valueType)
 
         bool thisTestOk =
             runRegressionTest(fp, testData, valueType + ", not optimized",
-                              Epsilon<Value_t>(), briefErrorMessages);
+                              testbedEpsilon<Value_t>(), briefErrorMessages);
 
         if(thisTestOk)
         {
@@ -2202,7 +2202,7 @@ bool runRegressionTests(const std::string& valueType)
             thisTestOk =
                 runRegressionTest(fp, testData,
                                   valueType + ", after optimization",
-                                  Epsilon<Value_t>(), briefErrorMessages);
+                                  testbedEpsilon<Value_t>(), briefErrorMessages);
             if(thisTestOk)
             {
                 if(verbosityLevel >= 3)
@@ -2226,7 +2226,7 @@ bool runRegressionTests(const std::string& valueType)
                         runRegressionTest
                         (fp, testData,
                          valueType + ", after several optimization runs",
-                         Epsilon<Value_t>(), briefErrorMessages);
+                         testbedEpsilon<Value_t>(), briefErrorMessages);
                 }
 
                 if(thisTestOk)
@@ -2347,7 +2347,7 @@ namespace OptimizerTests
         std::ostringstream briefErrorMessages;
 
         if(!runRegressionTest(parser, testData, "DefaultValue_t",
-                              Epsilon<DefaultValue_t>(), briefErrorMessages))
+                              testbedEpsilon<DefaultValue_t>(), briefErrorMessages))
         {
             if(verbosityLevel == 1)
                 std::cout << "\n - " << briefErrorMessages.str() << std::flush;
