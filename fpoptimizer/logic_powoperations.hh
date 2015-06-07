@@ -25,12 +25,26 @@ namespace
     }
 
     template<typename Value_t>
-    bool fPExponentIsTooLarge(Value_t base, Value_t exponent)
+    bool fpExponentIsTooLarge(Value_t base, Value_t exponent)
     {
         if(base < Value_t(0)) return true;
         if(fp_equal(base, Value_t(0)) || fp_equal(base, Value_t(1)))
             return false;
         return exponent >= Value_t(maxFPExponent<Value_t>()) / fp_log2(base);
+    }
+
+    template<typename Value_t>
+    int fpEstimatePrecision(Value_t val)
+    {
+        int ex=0;
+        Value_t t = std::frexp(val, &ex);
+        unsigned long value = fp_abs(t) * (1u<<30), v0=value;
+        unsigned int result = 0;
+        while(!(value&1)) value >>= 1;
+        for(; value != 0; value >>= 1) ++result;
+        //printf("%g: t=%g, ex=%d, value=%ld, result=%d\n",
+        //    (double)val, (double)t, ex, v0, result);
+        return result;
     }
 
     template<typename Value_t>
@@ -87,12 +101,20 @@ namespace
                             break;
                         }
                         */
-                        if(fPExponentIsTooLarge(base_immed, imm))
+                        if(fpExponentIsTooLarge(base_immed, imm))
                             break;
 
                         Value_t new_base_immed = fp_pow(base_immed, imm);
                         if(fp_equal(new_base_immed, Value_t(0)))
                             break;
+
+                        if(fpEstimatePrecision(new_base_immed)
+                        <  (fpEstimatePrecision(base_immed) + fpEstimatePrecision(imm)) / 4)
+                        {
+                            // Bail out if we got an abrupt loss of precision,
+                            // such as with exp(2e-26 * x) -> pow(1, x).
+                            break;
+                        }
 
                         if(!changes)
                         {
@@ -142,7 +164,7 @@ namespace
                             break;
                         }
                         */
-                        if(fPExponentIsTooLarge(imm, exponent_immed))
+                        if(fpExponentIsTooLarge(imm, exponent_immed))
                             break;
 
                         Value_t new_factor_immed = fp_pow(imm, exponent_immed);
