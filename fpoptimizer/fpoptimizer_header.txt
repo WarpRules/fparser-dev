@@ -21,3 +21,4 @@
 #include "fparser.hh"
 #include "extrasrc/fptypes.hh"
 #include "extrasrc/fpaux.hh"
+#pragma GCC diagnostic ignored "-Wunused-variable"

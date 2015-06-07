@@ -73,7 +73,7 @@ FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 #LD +=  -fprofile -fprofile-values -fprofile-generate -ftest-coverage 
 
 CPPFLAGS=$(FEATURE_FLAGS)
-CXXFLAGS=-Wall -W -pedantic -ansi $(OPTIMIZATION)
+CXXFLAGS=-Wall -W -Wno-long-long -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 #CXXFLAGS += -std=c++0x
 
@@ -93,10 +93,10 @@ endif
 endif
 
 ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL,$(FEATURE_FLAGS)))
-BOOST_THREAD_LIB = -lboost_thread-mt
+BOOST_THREAD_LIB = -lboost_thread-mt -lboost_system
 else
 ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA,$(FEATURE_FLAGS)))
-BOOST_THREAD_LIB = -lboost_thread-mt
+BOOST_THREAD_LIB = -lboost_thread-mt -lboost_system
 endif
 endif
 

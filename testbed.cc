@@ -7,6 +7,8 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 static const char* const kVersionNumber = "2.3.0.12";
 
 #include "fpconfig.hh"
