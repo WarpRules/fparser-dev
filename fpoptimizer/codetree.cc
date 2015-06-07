@@ -299,7 +299,7 @@ namespace FPoptimizer_CodeTree
         /* This labor evades the need for refcount +1/-1 shuffling */
         Params[index].data = 0;
         for(size_t p=index; p+1<Params.size(); ++p)
-            Params[p].data.UnsafeSetP( &*Params[p+1].data );
+            Params[p].data.UnsafeSetP( Params[p+1].data.get() );
         Params[Params.size()-1].data.UnsafeSetP( 0 );
         Params.resize(Params.size()-1);
     #endif
@@ -314,8 +314,8 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool CodeTree<Value_t>::IsIdenticalTo(const CodeTree<Value_t>& b) const
     {
-        //if((!&*data) != (!&*b.data)) return false;
-        if(&*data == &*b.data) return true;
+        //if(data.isnull() != b.data.isnull()) return false;
+        if(data.get() == b.data.get()) return true;
         return data->IsIdenticalTo(*b.data);
     }
 
@@ -343,7 +343,7 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     void CodeTree<Value_t>::Become(const CodeTree<Value_t>& b)
     {
-        if(&b != this && &*data != &*b.data)
+        if(&b != this && data.get() != b.data.get())
         {
             DataP tmp = b.data;
             CopyOnWrite();

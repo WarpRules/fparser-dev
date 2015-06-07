@@ -375,7 +375,7 @@ namespace FPoptimizer_Optimize
                 }
                 else /* A subtree conforming these specs */
                 {
-                    if(!&*start_at)
+                    if(start_at.isnull())
                     {
                         if(!TestImmedConstraints(param.constraints, tree)) return false;
                         if(tree.GetOpcode() != param.data.subfunc_opcode) return false;
@@ -438,9 +438,9 @@ namespace FPoptimizer_Optimize
     {
         FPOPT_autoptr<MatchPositionSpec_AnyWhere> position;
         unsigned a;
-        if(&*start_at)
+        if(!start_at.isnull())
         {
-            position = (MatchPositionSpec_AnyWhere*) &*start_at;
+            position = (MatchPositionSpec_AnyWhere*) start_at.get();
             a = position->trypos;
             goto retry_anywhere_2;
         }
@@ -467,10 +467,10 @@ namespace FPoptimizer_Optimize
                 if(TopLevel) info.SaveMatchedParamIndex(a);
 
                 position->trypos = a; // in case of backtrack, try a again
-                return MatchResultType(true, &*position);
+                return MatchResultType(true, position.get());
             } }
         retry_anywhere_2:
-            if(&*(*position)[a].start_at) // is there another try?
+            if((*position)[a].start_at.get()) // is there another try?
             {
                 goto retry_anywhere;
             }
@@ -534,9 +534,9 @@ namespace FPoptimizer_Optimize
                 /* Simple: Test all given parameters in succession. */
                 FPOPT_autoptr<MatchPositionSpec_PositionalParams<Value_t> > position;
                 unsigned a;
-                if(&*start_at)
+                if(start_at.get())
                 {
-                    position = (MatchPositionSpec_PositionalParams<Value_t> *) &*start_at;
+                    position = (MatchPositionSpec_PositionalParams<Value_t> *) start_at.get();
                     a = model_tree.param_count - 1;
                     goto retry_positionalparams_2;
                 }
@@ -563,7 +563,7 @@ namespace FPoptimizer_Optimize
                   } }
                 retry_positionalparams_2:
                     // doesn't match
-                    if(&*(*position)[a].start_at) // is there another try?
+                    if((*position)[a].start_at.get()) // is there another try?
                     {
                         info = (*position)[a].info;
                         goto retry_positionalparams;
@@ -581,7 +581,7 @@ namespace FPoptimizer_Optimize
                 if(TopLevel)
                     for(unsigned a = 0; a < model_tree.param_count; ++a)
                         info.SaveMatchedParamIndex(a);
-                return MatchResultType(true, &*position);
+                return MatchResultType(true, position.get());
             }
             case SelectedParams:
                 // same as AnyParams, except that model_tree.count==tree.GetParamCount()
@@ -609,9 +609,9 @@ namespace FPoptimizer_Optimize
                 }
 
                 unsigned a;
-                if(&*start_at)
+                if(start_at.get())
                 {
-                    position = (MatchPositionSpec_AnyParams<Value_t>*) &*start_at;
+                    position = (MatchPositionSpec_AnyParams<Value_t>*) start_at.get();
                     if(model_tree.param_count == 0)
                     {
                         a = 0;
@@ -654,7 +654,7 @@ namespace FPoptimizer_Optimize
                   } }
                 retry_anyparams_2:
                     // doesn't match
-                    if(&*(*position)[a].start_at) // is there another try?
+                    if((*position)[a].start_at.get()) // is there another try?
                     {
                         info = (*position)[a].info;
                         used = (*position)[a].used;
@@ -732,7 +732,7 @@ namespace FPoptimizer_Optimize
                         //std::cout << " ... ok\n";
                     }
                 }
-                return MatchResultType(true, model_tree.param_count ? &*position : 0);
+                return MatchResultType(true, model_tree.param_count ? position.get() : 0);
             }
             case GroupFunction: // never occurs
                 break;

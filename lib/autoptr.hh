@@ -11,6 +11,8 @@ public:
 
     inline Ref& operator* () const { return *p; }
     inline Ref* operator->() const { return p; }
+    bool isnull() const { return !p; }
+    Ref* get() const { return p; }
 
     FPOPT_autoptr& operator= (Ref*        b) { Set(b); return *this; }
     FPOPT_autoptr& operator= (const FPOPT_autoptr& b) { Set(b.p); return *this; }
