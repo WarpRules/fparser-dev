@@ -361,10 +361,10 @@ namespace
                     break;
                 }
 
-                std::string name(input.GetString(), name_begin, a-name_begin);
-                result->push_back(name);
+                // name
+                result->push_back( std::string(input.GetString(), name_begin, a-name_begin) );
 
-                if (defmode.Active && defmode.ParamList.find(name)
+                if (defmode.Active && defmode.ParamList.find(result->back().value)
                                    != defmode.ParamList.end())
                 {
                     // Define params are immutable.
@@ -372,7 +372,7 @@ namespace
                 }
 
                 if (input[a] == '('
-                && parametric_macro_list.find(name)
+                && parametric_macro_list.find(result->back().value)
                 != parametric_macro_list.end())
                 {
                     // This function is recursion-heavy, so we use "new".
