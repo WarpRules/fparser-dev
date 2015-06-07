@@ -7,7 +7,7 @@
 </head>
 
 <body>
-<h1>Function Parser for C++ v4.5.1  </h1>
+<h1>Function Parser for C++ v4.5.2  </h1>
 
 <h2>What is this library?</h2>
 
@@ -49,8 +49,8 @@ standard-conforming C++ compiler.
 
 <h2>Download</h2>
 
-<p>Download <a href="fparser4.5.1.zip">fparser4.5.1.zip</a> v4.5.1
-(released 11 Nov 2012)
+<p>Download <a href="fparser4.5.2.zip">fparser4.5.2.zip</a> v4.5.2
+(released 7 Jun 2015)
 
 <p>(Older versions:
 <a href="fparser4.4.3.zip">v4.4.3</a>,
@@ -92,36 +92,14 @@ sources, optimizer rule generation tools, an extensive automatic regression
 testbed, a Makefile and other tools.
 
 <p>Download the development package:
-<a href="fparser4.5.1_devel.tar.bz2">fparser4.5.1_devel.tar.bz2</a>
+<a href="fparser4.5.2_devel.tar.bz2">fparser4.5.2_devel.tar.bz2</a>
 
 <h2>What's new?</h2>
 
-<p>What's new in v4.5.1
+<p>What's new in v4.5.2
   <ul>
-    <li>Reverted the automatic C++11 detection to a precompiler macro setting
-      (<code>FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS</code>) because not all
-      compilers yet fully support the C++11 math functions.
-    <li>Fixed a potential duplicate symbol problem that happens with explicit
-      template instantiations.
-  </ul>
-
-<p>What's new in v4.5
-  <ul>
-    <li>Removed support for the <code>"eval()"</code> function from the
-      supported syntax. (This function was too dangerous, too difficult to
-      maintain internally, not very useful, and more or less a gimmick in
-      the first place.)
-    <li>Removed several of the conditional compiling macro definitions, namely
-      <code>FP_SUPPORT_TR1_MATH</code>, <code>FP_ENABLE_EVAL</code>,
-      <code>FP_EVAL_MAX_REC_LEVEL</code>, <code>FP_NO_EVALUATION_CHECKS</code>
-      and <code>FP_EPSILON</code>.
-    <li>The epsilon value used in comparisons is now set with a member function
-      of FunctionParser (which allows setting different values for different
-      versions of the parser).
-    <li>The math functions previously turned on with
-      <code>FP_SUPPORT_TR1_MATH</code> are now automatically used if
-      <code>__cplusplus</code> indicates that C++11 is in use.
-    <li>Fixed some compilation problems with clang++.
+    <li>Fixed several optimizer bugs.
+    <li>Fixed compilation problems with Visual Studio 2013 and gcc.
   </ul>
 
 <p>You can also view the <a href="history.html">full version history</a>.
