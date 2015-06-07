@@ -46,6 +46,11 @@ namespace
 
             range<Value_t> p0 = CalculateResultBoundaries(a);
             range<Value_t> p1 = CalculateResultBoundaries(b);
+            /*printf("Analyze(a: min=%g,known=%s,max=%g,known=%s) (b: min=%g,known=%s,max=%g,known=%s)\n",
+                (double)p0.min.val,p0.min.known?"true":"false",
+                (double)p0.max.val,p0.max.known?"true":"false",
+                (double)p1.min.val,p1.min.known?"true":"false",
+                (double)p1.max.val,p1.max.known?"true":"false" );*/
             if(p0.max.known && p1.min.known)
             {
                 if(p0.max.val <  p1.min.val && if_always[0] != Unchanged)

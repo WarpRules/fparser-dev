@@ -617,6 +617,14 @@ namespace FPoptimizer_CodeTree
                     {
                         /* The result is always positive.
                          * Figure out whether we know the minimum value. */
+                        if((p1.max.known && p1.max.val < 0)
+                        || (p1.min.known && p1.min.val < 0))
+                        {
+                            // Fix regression 50/10:
+                            //  1/abs(x) must not be estimated to be >=inf
+                            // TODO: Better fix
+                            return range<Value_t>();
+                        }
                         Value_t min = Value_t(0);
                         if(p0.min.known && p1.min.known)
                         {
