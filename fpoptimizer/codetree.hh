@@ -49,7 +49,7 @@ namespace FPoptimizer_CodeTree
         explicit CodeTree(FUNCTIONPARSERTYPES::OPCODE o, unsigned f, FuncOpcodeTag);
         struct ImmedTag { };
         explicit CodeTree(const Value_t& v, ImmedTag); // produce an immed
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
+#if __cplusplus >= 201103L
         explicit CodeTree(Value_t&& v, ImmedTag); // produce an immed
 #endif
         struct VarTag { };
@@ -85,7 +85,7 @@ namespace FPoptimizer_CodeTree
         CodeTree GetUniqueRef();
         // ^use this when CodeTree tmp=x; tmp.CopyOnWrite(); does not do exactly what you want
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
+#if __cplusplus >= 201103L
         void SetParams(std::vector<CodeTree>&& RefParams);
 #endif
         void SetParam(size_t which, const CodeTree& b);
@@ -177,7 +177,7 @@ namespace FPoptimizer_CodeTree
         explicit CodeTreeData(FUNCTIONPARSERTYPES::OPCODE o);
         explicit CodeTreeData(FUNCTIONPARSERTYPES::OPCODE o, unsigned f);
         explicit CodeTreeData(const Value_t& i);
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
+#if __cplusplus >= 201103L
         explicit CodeTreeData(Value_t&& i);
         CodeTreeData(CodeTreeData&& b);
 #endif
@@ -197,7 +197,7 @@ namespace FPoptimizer_CodeTree
         return CodeTree<Value_t> (i, typename CodeTree<Value_t>::ImmedTag());
     }
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
+#if __cplusplus >= 201103L
     template<typename Value_t>
     static inline CodeTree<Value_t> CodeTreeImmed(Value_t&& i)
     {
