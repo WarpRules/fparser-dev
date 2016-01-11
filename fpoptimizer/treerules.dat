@@ -638,6 +638,24 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #        acos(x): atan((1-x*x)^0.5 * x^-1) - automatically converted to the above.
 @R @F cAtan2 [(cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5]) x] -> cAcos[x]
 
+# cos(atan(x)) = 1 / sqrt(x^2 + 1)
+# sin(atan(x)) = x / sqrt(x^2 + 1)
+@R @F cSin [(cAtan [x])] -> (cMul[x (cPow[(cAdd[1 (cPow[x 2])]) -0.5])])
+@R @F cCos [(cAtan [x])] ->         (cPow[(cAdd[1 (cPow[x 2])]) -0.5])
+
+# cos(atan(x/y)) =   abs(y) /      sqrt(x^2 + y^2)
+# sin(atan(x/y)) = x*abs(y) / (y * sqrt(x^2 + y^2))
+# cos(atan2(x,y)) = y / sqrt(x^2 + y^2)
+# sin(atan2(x,y)) = x / sqrt(x^2 + y^2)
+
+#@R @F cCos [(cAtan2[x y])] -> (cMul[   (cAbs[y])               (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5])        ])
+#@R @F cSin [(cAtan2[x y])] -> (cMul[x  (cAbs[y]) (cPow[(cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ]) -1])])
+
+#@R @F cCos [(cAtan[(cMul[x (cPow[y -1])])])] -> (cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
+#@R @F cSin [(cAtan[(cMul[x (cPow[y -1])])])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
+
+@R @F cCos [(cAtan2[x y])] -> (cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
+@R @F cSin [(cAtan2[x y])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
 
 [REGENERATE_TAN]
 
