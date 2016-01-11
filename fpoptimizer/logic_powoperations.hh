@@ -38,7 +38,7 @@ namespace
     {
         int ex=0;
         Value_t t = std::frexp(val, &ex);
-        unsigned long value = fp_abs(t) * (1u<<30), v0=value;
+        unsigned long value = fp_abs(t) * (1u<<30)/*, v0=value*/;
         unsigned int result = 0;
         while(!(value&1)) value >>= 1;
         for(; value != 0; value >>= 1) ++result;
