@@ -185,15 +185,31 @@ protected:
     static unsigned ParseIdentifier(const char*);
 };
 
+#ifndef FP_DISABLE_DOUBLE_TYPE
 class FunctionParser: public FunctionParserBase<double> {};
+#endif
+#ifdef FP_SUPPORT_FLOAT_TYPE
 class FunctionParser_f: public FunctionParserBase<float> {};
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
 class FunctionParser_ld: public FunctionParserBase<long double> {};
+#endif
+#ifdef FP_SUPPORT_LONG_INT_TYPE
 class FunctionParser_li: public FunctionParserBase<long> {};
+#endif
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
 #include <complex>
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
 class FunctionParser_cd: public FunctionParserBase<std::complex<double> > {};
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
 class FunctionParser_cf: public FunctionParserBase<std::complex<float> > {};
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
 class FunctionParser_cld: public FunctionParserBase<std::complex<long double> > {};
+#endif
+#endif
 
 
 

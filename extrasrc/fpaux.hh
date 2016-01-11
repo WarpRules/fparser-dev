@@ -236,10 +236,12 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
     { return std::hypot(x,y); }
 
+    #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename Value_t>
     inline std::complex<Value_t> fp_hypot
     (const std::complex<Value_t>& x, const std::complex<Value_t>& y)
     { return fp_sqrt(x*x + y*y); }
+    #endif
 #else
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
@@ -313,17 +315,27 @@ namespace FUNCTIONPARSERTYPES
     };
 
     template<> inline double Epsilon<double>::defaultValue() { return 1E-12; }
+    #ifdef FP_SUPPORT_FLOAT_TYPE
     template<> inline float Epsilon<float>::defaultValue() { return 1E-5F; }
+    #endif
+    #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
     template<> inline long double Epsilon<long double>::defaultValue() { return 1E-14L; }
+    #endif
 
+    #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
     template<> inline std::complex<double>
     Epsilon<std::complex<double> >::defaultValue() { return 1E-12; }
+    #endif
 
+    #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
     template<> inline std::complex<float>
     Epsilon<std::complex<float> >::defaultValue() { return 1E-5F; }
+    #endif
 
+    #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
     template<> inline std::complex<long double>
     Epsilon<std::complex<long double> >::defaultValue() { return 1E-14L; }
+    #endif
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<> inline MpfrFloat
@@ -925,6 +937,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_polar(const Value_t& x, const Value_t& y)
         { return x * fp_cos(y); } // This is of course a meaningless function.
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename Value_t>
     inline std::complex<Value_t> fp_atan2(const std::complex<Value_t>& y,
                                           const std::complex<Value_t>& x)
@@ -936,6 +949,7 @@ namespace FUNCTIONPARSERTYPES
         std::complex<Value_t> res( fp_atan(y / (fp_hypot(x,y) + x)) );
         return res+res;
     }
+#endif
 
 // -------------------------------------------------------------------------
 // Comparison

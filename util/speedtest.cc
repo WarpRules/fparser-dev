@@ -331,14 +331,26 @@ int main(int argc, char* argv[])
 
     switch(parserType)
     {
-      case FP_D: return run<FunctionParser>();
-#ifdef FP_SUPPORT_FLOAT_TYPE
-      case FP_F: return run<FunctionParser_f>();
+      case FP_D:
+#ifndef FP_DISABLE_DOUBLE_TYPE
+          return run<FunctionParser>();
+#else
+          break;
 #endif
+      case FP_F:
+#ifdef FP_SUPPORT_FLOAT_TYPE
+          return run<FunctionParser_f>();
+#else
+          break;
+#endif
+      case FP_LD:
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-      case FP_LD: return run<FunctionParser_ld>();
+          return run<FunctionParser_ld>();
+#else
+          break;
 #endif
     }
+    std::cerr << "Unsupported datatype (disabled in fpconfig.hh)\n";
 
     return 0;
 }
