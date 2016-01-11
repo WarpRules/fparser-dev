@@ -313,29 +313,46 @@ set_version_string: util/version_changer
 
 pack: set_version_string distro_pack devel_pack
 
-distro_pack: $(RELEASE_PACK_FILES)
-	zip -9 fparser$(RELEASE_VERSION).zip $(RELEASE_PACK_FILES)
-	# Use KZIP&ZIPMIX (advsys.net/ken), if possible, to create a smaller zip file
-	if which kzip; then \
-	  rm -rf fparser-$(RELEASE_VERSION);\
-	  mkdir fparser-$(RELEASE_VERSION); \
-	  tar cf - $(RELEASE_PACK_FILES) | tar -x -v -C fparser-$(RELEASE_VERSION) -f -; \
-	  for s in -b0 -b128 -b256 -b512 -b1024 \
-	           -rn -rn -rn -rn -rn -rn -rn -rn \
-	           -rn -rn -rn -rn -rn -rn -rn -rn; do \
-	    (cd fparser-$(RELEASE_VERSION); \
-	    kzip -r -y "$$s" ../fparser$(RELEASE_VERSION)-tmp.zip * );\
-	    DeflOpt ../fparser$(RELEASE_VERSION)-tmp.zip; \
-	    zipmix -y fparser$(RELEASE_VERSION).zip \
-	    	      fparser$(RELEASE_VERSION)-tmp.zip \
-	    	      fparser$(RELEASE_VERSION)-tmp2.zip; \
-	    if [ -f fparser$(RELEASE_VERSION)-tmp2.zip ]; then \
-	      mv -f fparser$(RELEASE_VERSION)-tmp2.zip fparser$(RELEASE_VERSION).zip; \
-	    fi; \
-	    ls -al fparser$(RELEASE_VERSION)*.zip; \
-	  done; \
-	  rm -f fparser$(RELEASE_VERSION)-tmp.zip; \
-	fi
+F=fparser$(RELEASE_VERSION).zip
+T=fparser$(RELEASE_VERSION)-tmp.zip
+T2=fparser$(RELEASE_VERSION)-tmp2.zip
+
+distro_pack: $(F) ;
+$(F): $(RELEASE_PACK_FILES) ; rm -f $@
+	# Use advzip (advancecomp), 7zip, or Info-ZIP, in that order, depending which one is available
+	# The list of programs to try is ordered from best compression to worst.
+	7z -mx -tzip a "$@" $^ || zip -9 "$@" $^
+	# Try further optimize the file with KZIP & ZIPMIX (from advsys.net/ken)
+	- $(MAKE) distro_pack_optimize_kzip_options
+	# Try further optimize the file with advzip (in-place)
+	- advzip -k -z4 -i8 "$@" || advzip -z3 -i8 "$@"
+	# Try further optimize the file with DeflOpt (in-place)
+	- DeflOpt "$@"
+distro_pack_optimize_kzip_options:
+	# Make sure ZIPMIX exists, before trying to run KZIP
+	zipmix /dev/null /dev/null
+	# Run KZIP with a number of different block sizes
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-b0
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-b128
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-b256
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-b512
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-b1024
+	# Run KZIP a couple of times with random options
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	$(MAKE) distro_pack_optimize_kzip KZIP_OPTION=-rn
+	# Clean up
+	- rm -f $(T) $(T2)
+distro_pack_optimize_kzip:
+	# Compress with KZIP into a temp file. Try also optimizing it with DeflOpt.
+	kzip -r -y $(KZIP_OPTION) $(T) $(RELEASE_PACK_FILES)
+	- DeflOpt $(T)
+	# Mix best compressions from target and temp file
+	zipmix -y $(F) $(T) $(T2)
+	mv -f $(T2) $(F)
 
 devel_pack:
 	tar --exclude='*~' \
