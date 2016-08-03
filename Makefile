@@ -19,16 +19,16 @@ FEATURE_FLAGS += -DFP_ENABLE_EVAL
 #FEATURE_FLAGS += -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
 #FEATURE_FLAGS += -D_GLIBCXX_DEBUG
 #FEATURE_FLAGS += -DFP_DISABLE_SHORTCUT_LOGICAL_EVALUATION
-#FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_FLOAT_TYPE
-#FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_FLOAT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_LONG_DOUBLE_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_LONG_INT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_MPFR_FLOAT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_GMP_INT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_DOUBLE_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_FLOAT_TYPE
+FEATURE_FLAGS += -DFP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
 FEATURE_FLAGS += -DFP_USE_STRTOLD
-#FEATURE_FLAGS += -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+FEATURE_FLAGS += -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
 else
 FEATURE_FLAGS = $(FP_FEATURE_FLAGS)
 endif
@@ -189,16 +189,14 @@ fpoptimizer/grammar_data.cc: \
 extrasrc/fp_opcode_add.inc: \
 		util/bytecoderules_parser \
 		util/bytecoderules.dat \
-		util/bytecoderules_header.txt \
-		util/cpp_compress
+		util/bytecoderules_header.txt
 	cat util/bytecoderules_header.txt > $@
 	util/bytecoderules_parser \
 		< util/bytecoderules.dat \
-		| util/cpp_compress \
 		>> $@
 
 tests/make_tests: \
-		tests/make_tests.o util/cpp_compress.o
+		tests/make_tests.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 testbed_tests.inc: tests/make_tests
@@ -245,17 +243,16 @@ FPOPTIMIZER_CC_FILES=\
 
 fpoptimizer.cc: fpoptimizer/fpoptimizer_header.txt \
 		fpoptimizer/fpoptimizer_footer.txt \
-		$(FPOPTIMIZER_CC_FILES) \
-		util/cpp_compress
+		$(FPOPTIMIZER_CC_FILES)
 	rm -f fpoptimizer.cc
 	cat fpoptimizer/fpoptimizer_header.txt  > $@
 	for file in $(FPOPTIMIZER_CC_FILES); do \
+		echo "/* Sourced from $$file */"; \
 		echo "#line 1 \"$$file\""; \
 		sed -r "s@^(#include \".*)@// line removed for fpoptimizer.cc: \\1@" < "$$file"; \
 		echo; \
 	done | sed 's@BEGIN_EXPLICIT_INSTANTATION.*@@;s@.*END_EXPLICIT_INSTANTATION@@' \
-	     | util/cpp_compress "lnxyceti" >> $@
-	#     >> $@
+	     >> $@
 	cat fpoptimizer/fpoptimizer_footer.txt >> $@
 
 util/tree_grammar_parser: \
@@ -268,10 +265,6 @@ util/tree_grammar_parser.cc: \
 	bison --output=$@ $<
 	sed -i 's/ *$$//' $@
 
-util/cpp_compress: \
-		util/cpp_compress.o util/cpp_compress_main.o
-	$(LD) -o $@ $^ $(LDFLAGS)
-
 util/bytecoderules_parser: util/bytecoderules_parser.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
@@ -279,7 +272,7 @@ util/bytecoderules_parser: util/bytecoderules_parser.o
 util/version_changer: util/version_changer.cc
 	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
-util/make_function_name_parser: util/make_function_name_parser.cc util/cpp_compress.o
+util/make_function_name_parser: util/make_function_name_parser.cc
 	g++ -O3 $^ -s -o $@ $(LDFLAGS) $(CXXFLAGS) $(CPPFLAGS)
 
 util/powi_opt: \
@@ -385,7 +378,6 @@ clean:
 		util/tree_grammar_parser \
 		tests/make_tests \
 		util/bytecoderules_parser \
-		util/cpp_compress \
 		util/make_function_name_parser \
 		examples/*.o \
 		fpoptimizer/*.o \

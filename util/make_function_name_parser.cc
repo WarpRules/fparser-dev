@@ -19,7 +19,6 @@
 #include "extrasrc/fptypes.hh"
 
 #include "../fpoptimizer/opcodename.cc"
-#include "../util/cpp_compress.hh"
 
 using namespace FUNCTIONPARSERTYPES;
 
@@ -171,7 +170,7 @@ int main()
 "        }\n"
 "        return nameLength;\n";
 
-    CPPcompressor Compressor;
-    //std::cout << outStream.str();
-    std::cout << Compressor.Compress(outStream.str(), "l");
+    //CPPcompressor Compressor;
+    std::cout << outStream.str();
+    //std::cout << Compressor.Compress(outStream.str(), "l");
 }

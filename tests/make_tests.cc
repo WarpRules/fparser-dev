@@ -969,8 +969,6 @@ bool natcomp(const std::string& a, const std::string& b)
     return (bp < b.size() && ap >= a.size());
 }
 
-#include "../util/cpp_compress.hh"
-
 int main(int argc, char* argv[])
 {
     const char* outputFileName = 0;
@@ -1090,10 +1088,7 @@ int main(int argc, char* argv[])
     //MakeStringBuffer(out);
     //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";
 
-    CPPcompressor Compressor;
-
-    //outStream << out.str();
-    outStream << Compressor.Compress(out.str());
+    outStream << out.str();
 
     return 0;
 }
