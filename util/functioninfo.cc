@@ -61,6 +61,12 @@ namespace
     const double kVarValuesDeltaFactor2 = 10.0;
     const double kVarValuesDeltaFactor2Threshold = 10.0;
 
+#ifndef __MINGW32__
+    const bool color_support = true;
+#else
+    const bool color_support = false;
+#endif
+
     bool gPrintByteCodeExpressions = true;
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
@@ -915,15 +921,15 @@ namespace
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
         ParserWithConsts<Value_t> parser;
         const char* const wall =
-            (mode == print_no_cut_or_wrap)
+            (mode == print_no_cut_or_wrap && color_support)
                 ? "\33[0m| "
                 : "| ";
         const char* const newline =
-            (mode == print_no_cut_or_wrap)
+            (mode == print_no_cut_or_wrap && color_support)
                 ? "\33[0m\n"
                 : "\n";
         const char* colors[3] = { "\33[37m", "\33[36m", "\33[32m" };
-        if(mode != print_no_cut_or_wrap)
+        if(mode != print_no_cut_or_wrap || !color_support)
             colors[0] = colors[1] = colors[2] = "";
 
         for(std::size_t i = 0; i < functions.size(); ++i)
