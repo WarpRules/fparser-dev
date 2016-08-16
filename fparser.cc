@@ -11,11 +11,7 @@
 #include "fpconfig.hh"
 #include "fparser.hh"
 
-#if __cplusplus >= 201103L
-# include <unordered_set>
-#else
-# include <set>
-#endif
+#include <set>
 #include <cstdlib>
 #include <cstring>
 #include <cctype>
@@ -3000,11 +2996,7 @@ namespace
                         std::vector<std::string>* destVarNames,
                         bool useDegrees)
     {
-#if __cplusplus >= 201103L
-        typedef std::unordered_set<std::string> StrSet;
-#else
         typedef std::set<std::string> StrSet;
-#endif
         StrSet varNames;
 
         int oldIndex = -1;
