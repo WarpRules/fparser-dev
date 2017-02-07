@@ -559,19 +559,19 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 
 #    a*b / (x + y + n*b)  -->  a / (x/b + y/b + n)
-cMul x (cPow[(cAdd (cMul x <1>) <2>) -1])      : (cPow[(cAdd (cMul (cAdd <2>) (cPow[x -1])) (cMul <1>)) -1])
+@F cMul x (cPow[(cAdd (cMul x <1>) <2>) -1])      : (cPow[(cAdd (cMul (cAdd <2>) (cPow[x -1])) (cMul <1>)) -1])
 
 #    a*b / (x + y +   b)  -->  a / (x/b + y/b + 1)
-cMul x (cPow[(cAdd       x      <1>) -1])      : (cPow[(cAdd (cMul (cAdd <1>) (cPow[x -1])) 1         ) -1])
+@F cMul x (cPow[(cAdd       x      <1>) -1])      : (cPow[(cAdd (cMul (cAdd <1>) (cPow[x -1])) 1         ) -1])
 
 #    (x + y + n*b) / (a*b)  -->  (x/b + y/b + n) / (a)
-cMul (cAdd (cMul x <1>) <2>) (cPow[(cMul x <3>) -1]) : (cAdd (cMul (cAdd <2>) (cPow[x -1])) (cMul <1>)) (cPow[(cMul <3>) -1])
+@F cMul (cAdd (cMul x <1>) <2>) (cPow[(cMul x <3>) -1]) : (cAdd (cMul (cAdd <2>) (cPow[x -1])) (cMul <1>)) (cPow[(cMul <3>) -1])
 
 #    (n + b) / (a*b)  -->  (n/b + 1) / (a)
-cMul (cAdd       x      <1>) (cPow[(cMul x <2>) -1]) : (cAdd (cMul (cAdd <1>) (cPow[x -1])) 1         ) (cPow[(cMul <2>) -1])
+@F cMul (cAdd       x      <1>) (cPow[(cMul x <2>) -1]) : (cAdd (cMul (cAdd <1>) (cPow[x -1])) 1         ) (cPow[(cMul <2>) -1])
 
 #    (n + x/y) / x        --> (n/x + 1/y)
-cMul (cPow[x -1]) (cAdd (cMul{x (cPow[y -1])}) <1>) : (cAdd (cPow[y -1]) (cMul (cAdd <1>) (cPow[x -1])))
+@F cMul (cPow[x -1]) (cAdd (cMul{x (cPow[y -1])}) <1>) : (cAdd (cPow[y -1]) (cMul (cAdd <1>) (cPow[x -1])))
 
 
 [TRIGONOMETRIC]
