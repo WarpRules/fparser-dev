@@ -574,6 +574,17 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cMul (cPow[x -1]) (cAdd (cMul{x (cPow[y -1])}) <1>) : (cAdd (cPow[y -1]) (cMul (cAdd <1>) (cPow[x -1])))
 
 
+# a * i^x + c*i^(x+y)  --> (a + c*i^y) * i^x
+@F cAdd (cMul (cPow[y x]) <1>) (cMul (cPow[y (cAdd x <2>)]) <3>) : (cMul (cPow[y x]) (cAdd (cMul (cPow[y (cAdd <2>)]) <3>) <1>))
+#     i^x + c*i^(x+y)  --> (1 + c*i^y) * i^x
+@F cAdd       (cPow[y x])      (cMul (cPow[y (cAdd x <2>)]) <3>) : (cMul (cPow[y x]) (cAdd (cMul (cPow[y (cAdd <2>)]) <3>) 1  ))
+# a * i^x +   i^(x+y)  --> (a +   i^y) * i^x
+@F cAdd (cMul (cPow[y x]) <1>)       (cPow[y (cAdd x <2>)])      : (cMul (cPow[y x]) (cAdd       (cPow[y (cAdd <2>)])      <1>))
+##     i^x +   i^(x+y)  --> (1 +   i^y) * i^x
+#@F cAdd       (cPow[y x])            (cPow[y (cAdd x <2>)])      : (cMul (cPow[y x]) (cAdd       (cPow[y (cAdd <2>)])      1  ))
+
+
+
 [TRIGONOMETRIC]
 
 # sin(-x) = -sin(x)
