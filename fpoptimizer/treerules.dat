@@ -625,13 +625,13 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 # sin(x)*cos(y) + cos(x)*sin(y) = sin(x+y)
 # sin(x)*cos(y) - cos(x)*sin(y) = sin(x-y)
-# cos(x)*cos(y) + sin(x)*sin(y) = cos(x+y)
-# cos(x)*cos(y) - sin(x)*sin(y) = cos(x-y)
+# cos(x)*cos(y) + sin(x)*sin(y) = cos(x-y)
+# cos(x)*cos(y) - sin(x)*sin(y) = cos(x+y)
 
 @F cAdd  (cMul {(cSin[x]) (cCos[y])}) (cMul {(cCos[x]) (cSin[y])   }) :  (cSin [(cAdd[x           y]  )])
 @F cAdd  (cMul {(cSin[x]) (cCos[y])}) (cMul {(cCos[x]) (cSin[y]) -1}) :  (cSin [(cAdd[x (cMul [-1 y])])])
-@F cAdd  (cMul {(cCos[x]) (cCos[y])}) (cMul {(cSin[x]) (cSin[y])   }) :  (cCos [(cAdd[x           y]  )])
-@F cAdd  (cMul {(cCos[x]) (cCos[y])}) (cMul {(cSin[x]) (cSin[y]) -1}) :  (cCos [(cAdd[x (cMul [-1 y])])])
+@F cAdd  (cMul {(cCos[x]) (cCos[y])}) (cMul {(cSin[x]) (cSin[y])   }) :  (cCos [(cAdd[x (cMul [-1 y])])])
+@F cAdd  (cMul {(cCos[x]) (cCos[y])}) (cMul {(cSin[x]) (cSin[y]) -1}) :  (cCos [(cAdd[x           y]  )])
 
 #@F cAdd  (cMul {(cSin[x]) (cCos[y]) -1}) (cMul {(cCos[x]) (cSin[y]) -1}) : (cMul [-1 (cSin [(cAdd[x           y]  )]) ])
 #@F cAdd  (cMul {(cCos[x]) (cCos[y]) -1}) (cMul {(cSin[x]) (cSin[y]) -1}) : (cMul [-1 (cCos [(cAdd[x           y]  )]) ])

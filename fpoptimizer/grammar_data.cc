@@ -264,7 +264,7 @@ namespace
     /* 214	*/ {{2,/*516,454    */465412    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cCos [y])}) */
     /* 215	*/ {{2,/*516,517    */529924    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y])}) */
     /* 216	*/ {{2,/*38,313     */320550    , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {-1 (cPow [x 2])}) */
-    /* 217	*/ {{2,/*38,456     */466982    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])}) */
+    /* 217	*/ {{2,/*38,455     */465958    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])}) */
     /* 218	*/ {{3,/*516,517,38 */40375812  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y]) -1}) */
     /* 219	*/ {{2,/*38,367     */375846    , cMul        ,SelectedParams  ,0}, 0, 0x6}, /* (cMul {-1 (cPow [/&@C x])}) */
     /* 220	*/ {{3,/*528,49,15  */15779344  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cMul {x LOG( & )@C})]) 2 %}) */
@@ -502,8 +502,8 @@ namespace
     /* 452	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [x]) */
     /* 453	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x4}, /* (cCos [x]) */
     /* 454	*/ {{1,/*7          */7         , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [y]) */
-    /* 455	*/ {{1,/*91         */91        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x y})]) */
-    /* 456	*/ {{1,/*82         */82        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x (cMul {-1 y})})]) */
+    /* 455	*/ {{1,/*82         */82        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x (cMul {-1 y})})]) */
+    /* 456	*/ {{1,/*91         */91        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x y})]) */
     /* 457	*/ {{1,/*124        */124       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd  <1>)]) */
     /* 458	*/ {{1,/*252        */252       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul {-%@C x})]) */
     /* 459	*/ {{1,/*274        */274       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul -%@C <1>)]) */
@@ -985,13 +985,13 @@ namespace FPoptimizer_Grammar
          *	:	(cSin [(cAdd {x (cMul {-1 y})})])
          */		 {ReplaceParams , 2, 1,/*519        */519       , {2,/*214,211    */216278    , cAdd        ,AnyParams       ,0}},
         /* 106:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
-         *	:	(cCos [(cAdd {x y})])
+         *	:	(cCos [(cAdd {x (cMul {-1 y})})])
          */		 {ReplaceParams , 2, 1,/*455        */455       , {2,/*208,215    */220368    , cAdd        ,AnyParams       ,0}},
         /* 107:	@F (cAdd (cMul {(cCos [x]) (cCos [y]) -1})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
          *	:	(cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])})
          */		 {ReplaceParams , 2, 1,/*217        */217       , {2,/*209,215    */220369    , cAdd        ,AnyParams       ,0}},
         /* 108:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y]) -1})@D12)
-         *	:	(cCos [(cAdd {x (cMul {-1 y})})])
+         *	:	(cCos [(cAdd {x y})])
          */		 {ReplaceParams , 2, 1,/*456        */456       , {2,/*208,218    */223440    , cAdd        ,AnyParams       ,0}},
         /* 109:	@F (cAdd (cPow [& x])@D6 (cMul {-1 (cPow [/&@C x])})@D6)
          *	:	(cMul {(cSinh [(cLog [(cPow [& x])])]) 2})
