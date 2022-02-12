@@ -641,6 +641,12 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #@F cAdd (cMul {(cSin[x]) (cCos[y]) -1}) (cMul {(cCos[x]) (cSin[y])   }) : (cMul [-1 (cSin [(cAdd[x (cMul [-1 y])])]) ])
 # ^This one is redudant: It just reaffirms that sin(x) = -sin(-x).
 
+# sin(x)*cos(x) = sin(2*x)/2
+#   Constraints: Only do if there is already a constant in the multiplication
+#                Don't do if x is a trivial expression such as "x"
+@F cMul (cSin[x@H]) (cCos[x@H])               : (cMul (cSin [(cMul x 2)]) 0.5)
+@F cMul (cSin[x]) (cCos[x]) %                 : (cMul (cSin [(cMul x 2)]) *(% 0.5))
+
 # sin(asin(x)) = x
 @F cSin [(cAsin [x])] -> x  # TEST 20/asinsin
 
