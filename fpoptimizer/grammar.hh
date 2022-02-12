@@ -24,7 +24,7 @@ namespace FPoptimizer_Grammar
         Value_IsInteger  = 0x3, // any integer-value (excludes e.g. 0.2)
         Value_NonInteger = 0x4, // any non-integer (excludes e.g. 1 or 5)
         Value_Logical    = 0x5  // a result of cNot,cNotNot,cAnd,cOr or comparators
-    };
+    }; // 3 bits
     enum ImmedConstraint_Sign
     {
         SignMask  = 0x18,
@@ -32,21 +32,27 @@ namespace FPoptimizer_Grammar
         Sign_Positive    = 0x08, // positive only
         Sign_Negative    = 0x10, // negative only
         Sign_NoIdea      = 0x18  // where sign cannot be guessed
-    };
+    }; // 2 bits
     enum ImmedConstraint_Oneness
     {
         OnenessMask   = 0x60,
         Oneness_Any      = 0x00,
         Oneness_One      = 0x20, // +1 or -1
         Oneness_NotOne   = 0x40  // anything but +1 or -1
-    };
+    }; // 2 bits
     enum ImmedConstraint_Constness
     {
         ConstnessMask = 0x180,
         Constness_Any    = 0x00,
         Constness_Const  = 0x80,
         Constness_NotConst=0x100
-    };
+    }; // 2 bits
+    enum ExpressionConstraint_Complexity
+    {
+        ComplexityMask = 0x200,
+        Complexity_Any     = 0x000,
+        Complexity_Complex = 0x200
+    }; // 1 bit
     enum Modulo_Mode
     {
         Modulo_None    = 0,
@@ -74,7 +80,7 @@ namespace FPoptimizer_Grammar
      *      must match the identical node.
      *      In synthesizing, the node matched by
      *      a NamedHolder with this ID must be synthesized.
-     *    SubFunction:
+     *   SubFunction:
      *      this describes a subtree
      *      that must be matched / synthesized.
      *      The subtree is described in subfunc_opcode,param_begin..+param_count.
@@ -84,7 +90,7 @@ namespace FPoptimizer_Grammar
     enum SpecialOpcode
     {
         NumConstant,        // Holds a particular value (syntax-time constant)
-        ParamHolder,        // Holds a particular named param
+        ParamHolder,        // Holds a particular named param such as x, y
         SubFunction         // Holds an opcode and the params
     };
 
@@ -124,8 +130,8 @@ namespace FPoptimizer_Grammar
 
     struct ParamSpec_ParamHolder
     {
-        unsigned index       : 8; // holder ID
-        unsigned constraints : 9; // constraints
+        unsigned index       : 7; // holder ID
+        unsigned constraints :10; // constraints
         unsigned depcode     :15;
     } PACKED_GRAMMAR_ATTRIBUTE;
 
@@ -173,8 +179,8 @@ namespace FPoptimizer_Grammar
     struct ParamSpec_SubFunction
     {
         ParamSpec_SubFunctionData data;
-        unsigned constraints : 9; // constraints
-        unsigned depcode     : 7;
+        unsigned constraints :10; // constraints
+        unsigned depcode     : 6;
     } PACKED_GRAMMAR_ATTRIBUTE; // 8 bytes
 
     /* Theoretical minimal sizes in each param_opcode cases:

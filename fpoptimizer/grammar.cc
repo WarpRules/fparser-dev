@@ -121,7 +121,13 @@ namespace FPoptimizer_Grammar
                 o << "@C";
                 break;
             case Constness_NotConst: o << "@V"; break;
-            case Oneness_Any: break;
+            case Constness_Any: break;
+        }
+        switch( ExpressionConstraint_Complexity(constraints & ComplexityMask) )
+        {
+            /*case ComplexityMask: break;*/
+            case Complexity_Any: break;
+            case Complexity_Complex: o << "@H"; break;
         }
     }
 

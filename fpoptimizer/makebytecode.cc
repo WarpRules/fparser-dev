@@ -77,6 +77,31 @@ namespace
         { cNop, cSinh, { cNop, cTanh, cCosh,cNop } },
         { cNop, cCosh, { cTanh,cSinh, cNop,cNop } }
     };
+    /*
+    TODO:
+    If we need to synthesize two of these three groups for the same parameter:
+      cSin cCsc
+      cCos cSec
+      cTan cCot
+    we can instead use cSinCos.
+
+    After cSinCos,
+          if we needed Sin, all done.
+          if we needed Cos, all done.
+          if we needed Tan,
+             - If there is no need for Sin,Cos,Csc,Sec, we do cDiv.
+             - If there is no need for     Cos,    Sec, we do cDup and cDiv.
+             - If there is no need for Sin,    Csc,     we use SinCosTanDataType
+          if we needed Cot,
+             - If there is no need for Sin,Cos,Csc,Sec, we do cRDiv.
+             - If there is no need for     Cos,    Sec, we do cDup and cRDiv.
+             - If there is no need for Sin,    Csc,     we use SinCosTanDataType
+
+
+          If we need Csc, we take
+          if we need Tan, we add cDiv.
+          if we need Cot, we take [2]/[1]
+    */
 }
 
 namespace FPoptimizer_CodeTree

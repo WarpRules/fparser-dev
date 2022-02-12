@@ -83,6 +83,13 @@ namespace
                 if(tree.IsImmed()) return false;
                 break;
         }
+        switch(bitmask & ComplexityMask)
+        {
+            case Complexity_Any: /*case ComplexityMask:*/ break;
+            case Complexity_Complex:
+                if(tree.IsImmed() || tree.IsVar()) return false;
+                break;
+        }
         return true;
     }
 

@@ -55,6 +55,7 @@
 #                                 @M  = (Multiple) value NOT evaluating to +1 or -1
 #                                 @C  = Const (x@C is similar to % and &)
 #                                 @V  = Explicitly non-const
+#                                 @H  = Heavy: Expression is not a constant nor a variable
 # %token CONST_CONSTRAINT     # constraint applicable to a numeric literal:
 #                                 @R  = Radians: Constant is tested after normalizing to -pi/2..pi/2 range
 #                             # they can be applied to IMMEDHOLDER_TOKENs and NAMEDHOLDER_TOKENs

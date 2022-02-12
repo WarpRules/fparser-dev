@@ -45,6 +45,7 @@ OPTIMIZATION += -fexpensive-optimizations -fvpt -fomit-frame-pointer -ffunction-
 #OPTIMIZATION=-g -O2 -fno-inline -fno-inline-functions -fno-default-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
+#OPTIMIZATION=-g -Og
 
 CXX=g++
 #CXX=clang++

@@ -775,6 +775,11 @@ public:
             case Constness_Const: result << sep << "Constness_Const"; sep=s; break;
             case Constness_NotConst: result << sep << "Constness_NotConst"; sep=s; break;
         }
+        switch( ExpressionConstraint_Complexity( constraints & ComplexityMask ) )
+        {
+            case Complexity_Any: /*case ComplexityMask:*/ break;
+            case Complexity_Complex: result << sep << "Complexity_Complex"; sep=s; break;
+        }
         if(!*sep) result << "0";
         return result.str();
     }
@@ -1570,16 +1575,17 @@ static int yylex(YYSTYPE* lval)
             {
                 case 'E': { lval->index = Value_EvenInt; return PARAM_CONSTRAINT; }
                 case 'O': { lval->index = Value_OddInt; return PARAM_CONSTRAINT; }
-                case 'I': { lval->index = Value_IsInteger; return PARAM_CONSTRAINT; }
-                case 'F': { lval->index = Value_NonInteger; return PARAM_CONSTRAINT; }
-                case 'L': { lval->index = Value_Logical; return PARAM_CONSTRAINT; }
+                case 'I': { lval->index = Value_IsInteger; return PARAM_CONSTRAINT; } // Or Rule: OnlyForIntegers
+                case 'F': { lval->index = Value_NonInteger; return PARAM_CONSTRAINT; } // Or Rule: NotForIntegers
+                case 'L': { lval->index = Value_Logical; return PARAM_CONSTRAINT; } // Or Rule: LogicalContextOnly
                 case 'P': { lval->index = Sign_Positive; return PARAM_CONSTRAINT; }
                 case 'N': { lval->index = Sign_Negative; return PARAM_CONSTRAINT; }
                 case 'Q': { lval->index = Sign_NoIdea; return PARAM_CONSTRAINT; }
                 case '1': { lval->index = Oneness_One; return PARAM_CONSTRAINT; }
                 case 'M': { lval->index = Oneness_NotOne; return PARAM_CONSTRAINT; }
-                case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; }
+                case 'C': { lval->index = Constness_Const; return PARAM_CONSTRAINT; } // Or Rule: OnlyForComplex
                 case 'V': { lval->index = Constness_NotConst; return PARAM_CONSTRAINT; }
+                case 'H': { lval->index = Complexity_Complex; return PARAM_CONSTRAINT; }
                 case 'R': { lval->index = Modulo_Radians; return CONST_CONSTRAINT; }
             }
             std::ungetc(c2, stdin);
