@@ -26,6 +26,7 @@ namespace FPoptimizer_Optimize
         std::vector<unsigned> matched_params;
     public:
         MatchInfo(): restholder_matches(), paramholder_matches(), matched_params() {}
+        MatchInfo(const MatchInfo& b) = default;
     public:
         /* These functions save data from matching */
         bool SaveOrTestRestHolder(

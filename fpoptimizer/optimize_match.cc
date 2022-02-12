@@ -487,7 +487,7 @@ namespace FPoptimizer_Optimize
         std::vector<bool>      used;     /* which params are remaining */
 
         explicit AnyParams_Rec(size_t nparams)
-            : start_at(), info(), used(nparams) { }
+            : start_at{}, info{}, used(nparams) { }
     };
     template<typename Value_t>
     class MatchPositionSpec_AnyParams

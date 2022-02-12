@@ -685,6 +685,7 @@ namespace FPoptimizer_CodeTree
                     case cRSub: // from fpoptimizer
                         sim.SwapLastTwoInStack();
                         // Passthru to cSub
+                        [[fallthrough]];
                     case cSub:
                         if(keep_powi) { sim.Eat(2, cSub); break; }
                         sim.AddConst(-1);
@@ -694,6 +695,7 @@ namespace FPoptimizer_CodeTree
                     case cRDiv: // from fpoptimizer
                         sim.SwapLastTwoInStack();
                         // Passthru to cDiv
+                        [[fallthrough]];
                     case cDiv:
                         if(keep_powi || IsIntType<Value_t>::result)
                         {
