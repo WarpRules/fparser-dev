@@ -427,7 +427,7 @@ namespace
                 OutLine(Out)  << "mData->mByteCode.pop_back();";
             else if(n > 0)
             {
-                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) mData->mByteCode.pop_back();";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) {mData->mByteCode.pop_back();}";
             }
           #endif
             if(know_bytecode_offset)
@@ -457,7 +457,7 @@ namespace
                 OutLine(Out)  << "mData->mImmed.pop_back();";
             else if(n > 0)
             {
-                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) mData->mImmed.pop_back();";
+                OutLine(Out) << "for(unsigned tmp=" << n << "; tmp-->0; ) {mData->mImmed.pop_back();}";
             }
          #endif
         #endif
@@ -813,6 +813,7 @@ namespace
                           OutLine(Out) << "mData->mByteCode.push_back(opcode);";
                         }
                         code << Indent(indent) << "}\n";
+                        code << Indent(indent) << "[[fallthrough]];\n";
                     }
                 #endif
                     if(needs_switchcase)
