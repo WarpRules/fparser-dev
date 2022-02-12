@@ -797,6 +797,11 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cAdd (cMul {% (cPow [& x])})  (cMul { -% (cPow [/& x])}) : (cMul (cSinh [(cMul x LOG(&))]) 2 %)
 @F cAdd (cMul {% (cPow [& x])})  (cMul {  % (cPow [/& x])}) : (cMul (cCosh [(cMul x LOG(&))]) 2 %)
 
+# 0.5 + 0.5*tanh(0.5*x) = (1/(1+exp(-x))  -- The logistic function
+# tanh(0.5*x) = (1/(1+exp(-x))-0.5)*2
+#             = 2/(1+exp(-x))-1
+@F cTanh (cMul <1>) -> (cAdd (cMul (cPow [(cAdd (cExp [(cMul -2 <1>)]) 1) -1]) 2) -1)
+
 
 # exp(x)  = cosh(x)+sinh(x)
 @F cAdd        (cCosh [x])             (cSinh [x])      :        (cPow [CONSTANT_E  x])
