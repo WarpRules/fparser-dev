@@ -1211,7 +1211,7 @@ static GrammarDumper dumper;
 
 %}
 
-%pure-parser
+%define api.pure
 
 %union {
     /* Note: Because bison's token type is an union or a simple type,
