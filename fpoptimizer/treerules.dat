@@ -584,8 +584,6 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 ##     i^x +   i^(x+y)  --> (1 +   i^y) * i^x
 #@F cAdd       (cPow[y x])            (cPow[y (cAdd x <2>)])      : (cMul (cPow[y x]) (cAdd       (cPow[y (cAdd <2>)])      1  ))
 
-
-
 [TRIGONOMETRIC]
 
 # sin(-x) = -sin(x)
@@ -808,7 +806,6 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 # tanh(0.5*x) = (1/(1+exp(-x))-0.5)*2
 #             = 2/(1+exp(-x))-1
 @F cTanh (cMul <1>) -> (cAdd (cMul (cPow [(cAdd (cExp [(cMul -2 <1>)]) 1) -1]) 2) -1)
-
 
 # exp(x)  = cosh(x)+sinh(x)
 @F cAdd        (cCosh [x])             (cSinh [x])      :        (cPow [CONSTANT_E  x])
@@ -1033,6 +1030,7 @@ $optimize_round3:
 SIMPLIFY_EQUATION
 REGENERATE_TAN
 REGENERATE_TANH
+BINOMIAL
 
 $optimize_round4:
 REGENERATE_HIGHLEVEL_OPCODES
