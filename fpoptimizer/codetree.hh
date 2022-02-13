@@ -149,22 +149,6 @@ namespace FPoptimizer_CodeTree
                                 // In case of cFCall or cPCall: function number
 
         // Parameters for the function
-        //  These use the sign:
-        //   For cAdd: operands to add together (0 to n)
-        //             sign indicates that the value is negated before adding (0-x)
-        //   For cMul: operands to multiply together (0 to n)
-        //             sign indicates that the value is inverted before multiplying (1/x)
-        //   For cAnd: operands to bitwise-and together (0 to n)
-        //             sign indicates that the value is inverted before anding (!x)
-        //   For cOr:  operands to bitwise-or together (0 to n)
-        //             sign indicates that the value is inverted before orring (!x)
-        //  These don't use the sign (sign is always false):
-        //   For cMin: operands to select the minimum of
-        //   For cMax: operands to select the maximum of
-        //   For cImmed, not used
-        //   For VarBegin, not used
-        //   For cIf:  operand 1 = condition, operand 2 = yes-branch, operand 3 = no-branch
-        //   For anything else: the parameters required by the operation/function
         std::vector<CodeTree<Value_t> > Params;
 
         /* Internal operation */
