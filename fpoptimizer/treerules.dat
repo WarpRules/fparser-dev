@@ -645,6 +645,9 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cMul (cSin[x@H]) (cCos[x@H])               : (cMul (cSin [(cMul x 2)]) 0.5)
 @F cMul (cSin[x]) (cCos[x]) %                 : (cMul (cSin [(cMul x 2)]) *(% 0.5))
 
+# sin(x)+cos(x) = sqrt(2)*sin(x + pi/4)  = sqrt(2)*cos(x - pi/4)
+@F cAdd (cSin[x]) (cCos[x])                   : (cMul (cSin [(cAdd x CONSTANT_PIQUARTER)]) CONSTANT_SQRT2)
+
 # sin(asin(x)) = x
 @F cSin [(cAsin [x])] -> x  # TEST 20/asinsin
 
@@ -688,6 +691,14 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 @R @F cCos [(cAtan2[x y])] -> (cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
 @R @F cSin [(cAtan2[x y])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
+
+# tan(acos(x))   = sqrt(1-x^2)/x
+#@R @F cTan [(cAcos [x])]             -> (cMul[ (cSqrt[(cAdd[1 (cMul[(cPow[x 2]) -1])])]) (cPow[x -1])])
+# ^Disabled: Incorrectly produces error when x = 0
+
+# tan(acos(x)/2) = sqrt((1-x)/(1+x))
+#@R @F cTan [(cMul[(cAcos [x]) 0.5])] -> (cSqrt[ (cMul[ (cAdd[1 (cMul[x -1])])  (cPow[(cAdd[x 1]) -1]) ])  ])
+# ^ Disabled: Incorrectly produces error when x = -1
 
 [REGENERATE_TAN]
 
@@ -858,6 +869,11 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #  simpler. The rationale is in allowing for further optimizations.
 @F cSinh [(cAcosh [x])] -> cPow [(cAdd [(cPow [x 2]) -1]) 0.5] # TEST 20/acoshsinh
 @F cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5] # TEST 20/asinhcosh
+
+# sinh(atanh(x)) = x / sqrt(1 - x^2)
+@F cSinh [(cAtanh [x])] -> (cMul[x (cPow[(cAdd[-1 (cMul -1 (cPow[x 2]))]) -0.5])])
+# cosh(atanh(x)) = 1 / sqrt(1 - x^2)
+@F cCosh [(cAtanh [x])] ->         (cPow[(cAdd[-1 (cMul -1 (cPow[x 2]))]) -0.5])
 
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#

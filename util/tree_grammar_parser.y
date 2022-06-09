@@ -814,6 +814,8 @@ public:
         else if_const(fp_const_twoeinv<Value_t>())
         else if_const(fp_const_pi<Value_t>())
         else if_const(fp_const_pihalf<Value_t>())
+        else if_const(fp_const_pihalf<Value_t>() / 2)
+        else if_const(Value_t(fp_sqrt(2.0)))
         else if_const(fp_const_twopi<Value_t>())
         else if_const(fp_const_log2<Value_t>())
         else if_const(fp_const_log2inv<Value_t>())
@@ -1689,6 +1691,8 @@ static int yylex(YYSTYPE* lval)
             if(IdBuf == "CONSTANT_DR") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_deg_to_rad<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PIHALF") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pihalf<double>(); return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_PIQUARTER") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pihalf<double>() / 2; return NUMERIC_CONSTANT; }
+            if(IdBuf == "CONSTANT_SQRT2") { lval->num.real = fp_sqrt(2.0); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_TWOPI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twopi<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log2inv<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log10inv<double>(); return NUMERIC_CONSTANT; }

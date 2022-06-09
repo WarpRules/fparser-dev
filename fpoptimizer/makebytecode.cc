@@ -96,11 +96,11 @@ namespace
              - If there is no need for Sin,Cos,Csc,Sec, we do cRDiv.
              - If there is no need for     Cos,    Sec, we do cDup and cRDiv.
              - If there is no need for Sin,    Csc,     we use SinCosTanDataType
-
-
-          If we need Csc, we take
+          If we need Csc, we take TODO
+          If we need Sec, we take TODO
           if we need Tan, we add cDiv.
           if we need Cot, we take [2]/[1]
+
     */
 }
 
@@ -158,6 +158,13 @@ namespace FPoptimizer_CodeTree
         {
             return;
         }
+
+        /* TODO:
+         * If this subtree has more than one parameter, recursively collect all
+         * {cSin,cCsc}, {cCos,cSec}, {cTan,cCot} subtrees from all parameters,
+         * and group them by their parameter.
+         *
+         */
 
         for(size_t a=0; a<12; ++a)
         {
