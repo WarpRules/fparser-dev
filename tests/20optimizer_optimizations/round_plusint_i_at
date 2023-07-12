@@ -1,0 +1,5 @@
+T=ld f mf cd cf cld
+V=x,y
+R=-1.5,1.5,0.5
+F=int(x+abs(trunc(y)))
+C=fp_int(x+fp_abs(fp_trunc(y)))

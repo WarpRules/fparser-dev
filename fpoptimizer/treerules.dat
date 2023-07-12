@@ -337,6 +337,18 @@ cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 @R @F cEqual       [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
 @R @F cNEqual      [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
 
+# floor(x + integer_expression) = floor(x) + integer_expression; same for ceil
+@F cFloor [(cAdd x@I <1>)] -> cAdd x (cFloor (cAdd <1>))  # TEST 20/round_plusint*
+@F cCeil [(cAdd x@I <1>)]  -> cAdd x (cCeil (cAdd <1>))   # TEST 20/round_plusint*
+# NOT for Trunc. These would be equal: 'trunc(x + 4)'  'trunc(x)+4 - (x<0 & x>-4)'
+
+# We can do int(x) -> floor(x+.5) if positive, floor(x-.5) if negative
+# Also trunc(x) -> floor(x) if positive, ceil(x) if negative
+@F cInt [x@P] -> cFloor (cAdd x 0.5) 	        # TEST 50/62
+@F cInt [x@N] -> cFloor (cAdd x -0.5)           # TEST 50/62
+@F cTrunc [x@P] -> cFloor x                     # TEST 50/62
+@F cTrunc [x@N] -> cCeil x                      # TEST 50/62
+
 [REMOVE_REDUNDANT]
 
 @R cMul (cAbs[x]) (cAbs[y]) : (cAbs[(cMul x y)])  # TEST 20/mergemultiabs

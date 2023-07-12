@@ -858,6 +858,9 @@ namespace FPoptimizer_CodeTree
             case cTrunc:
             case cInt:
                 return IsAlways;
+            case cAbs:
+                // Result is integer if parameter is integer
+                return GetIntegerInfo(tree.GetParam(0));
             case cAnd:
             case cOr:
             case cNot:

@@ -1,0 +1,5 @@
+T=ld f mf cd cf cld
+V=x,y
+R=-1.5,1.5,0.5
+F=ceil(x+(x<y))
+C=fp_ceil(x+fp_less(x,y))
