@@ -630,14 +630,29 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
-                    case cInt: // int(x) = floor(x + 0.5)
+                    case cInt:
+                        // int(x) = floor(x - 0.5)   if x is negative
+                        // int(x) = floor(x + 0.5)   if x is non-negative
                     #ifndef __x86_64
                         if(keep_powi) { sim.Eat(1, cInt); break; }
                     #endif
+                        /*
+                        Don't know which action to take
+                        */
+                        goto default_function_handling;
+                        /*
                         sim.AddConst( Value_t(0.5) );
                         sim.Eat(2, cAdd);
                         sim.Eat(1, cFloor);
+                        */
                         break;
+                    case cTrunc:
+                        // trunc(x) = ceil(x)      if x is negative
+                        // trunc(x) = floor(x)     if x is positive
+                        /*
+                        Don't know which action to take
+                        */
+                        goto default_function_handling;
                     case cLog10:
                         sim.Eat(1, cLog);
                         sim.AddConst(fp_const_log10inv<Value_t>());
