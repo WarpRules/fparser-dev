@@ -43,6 +43,8 @@ class MpfrFloat
     MpfrFloat(int value);
     MpfrFloat(const char* value, char** endptr);
 
+    MpfrFloat(MpfrFloat&&);
+
     ~MpfrFloat();
 
     MpfrFloat(const MpfrFloat&);
@@ -53,6 +55,8 @@ class MpfrFloat
     MpfrFloat& operator=(long value);
     MpfrFloat& operator=(int value);
     //MpfrFloat& operator=(const char* value);
+
+    MpfrFloat& operator=(MpfrFloat&&);
 
     void parseValue(const char* value);
     void parseValue(const char* value, char** endptr);

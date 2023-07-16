@@ -20,7 +20,9 @@ class GmpInt
     GmpInt(long double value);
 
     GmpInt(const GmpInt&);
+    GmpInt(GmpInt&&);
     GmpInt& operator=(const GmpInt&);
+    GmpInt& operator=(GmpInt&&);
     GmpInt& operator=(signed long value);
 
     ~GmpInt();

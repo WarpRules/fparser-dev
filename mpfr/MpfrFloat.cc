@@ -276,6 +276,13 @@ MpfrFloat::MpfrFloat(const MpfrFloat& rhs):
     ++(mData->mRefCount);
 }
 
+MpfrFloat::MpfrFloat(MpfrFloat&& rhs): mData(nullptr)
+{
+    mData = mpfrFloatDataContainer().const_0();
+    ++(mData->mRefCount);
+    std::swap(mData, rhs.mData);
+}
+
 MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
 {
     if(mData != rhs.mData)
@@ -283,6 +290,16 @@ MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
         mpfrFloatDataContainer().releaseMpfrFloatData(mData);
         mData = rhs.mData;
         ++(mData->mRefCount);
+    }
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator=(MpfrFloat&& rhs)
+{
+    if(this != &rhs)
+    {
+        std::swap(mData, rhs.mData);
+        rhs = 0.0;
     }
     return *this;
 }

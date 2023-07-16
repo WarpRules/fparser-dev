@@ -211,6 +211,14 @@ GmpInt::GmpInt(const GmpInt& rhs):
     ++(mData->mRefCount);
 }
 
+GmpInt::GmpInt(GmpInt&& rhs): mData(nullptr)
+{
+    mData = gmpIntDataContainer().const_0();
+    ++(mData->mRefCount);
+
+    std::swap(mData, rhs.mData);
+}
+
 GmpInt& GmpInt::operator=(const GmpInt& rhs)
 {
     if(mData != rhs.mData)
@@ -218,6 +226,16 @@ GmpInt& GmpInt::operator=(const GmpInt& rhs)
         gmpIntDataContainer().releaseGmpIntData(mData);
         mData = rhs.mData;
         ++(mData->mRefCount);
+    }
+    return *this;
+}
+
+GmpInt& GmpInt::operator=(GmpInt&& rhs)
+{
+    if(this != &rhs)
+    {
+        std::swap(mData, rhs.mData);
+        rhs = 0l;
     }
     return *this;
 }
