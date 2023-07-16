@@ -669,7 +669,7 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 # sin(x)*b + cos(x)*a = b*(sin(x) + cos(x)*(a/b))
 #                     = b*sin(x + atan(a/b))*sqrt((a/b)^2+1)
 #                     = b*sin(x + atan2(a,b))*sec(atan2(a,b))
-@F cAdd (cMul {(cSin[x]) %}) (cMul {(cCos[x]) &})   : (cMul (cSin [(cAdd x ATAN2(& %))]) *(% SEC(ATAN2(& %)))) # 20/add_sinc_cosc
+@F cAdd (cMul {(cSin[x]) %}) (cMul {(cCos[x]) &})   : (cMul (cSin [(cAdd x ATAN2(& %))]) *(% SEC(ATAN2(& %)))) # 20/add_sinc_cosc{1,2,3,4}
 
 # sin(x)*b + cos(x) = b*(sin(x) + cos(x)*(1/b))
 #                   = b*sin(x + atan(1/b))*sqrt(b^-2+1)
@@ -693,7 +693,7 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 # atan(x/y) = atan2(x,y) -- do this only when we don't know whether y is zero.
 #                           If we know that y is nonzero, ConstantFolding
 #                           will revert this optimization.
-@R @F cAtan [(cMul {x (cPow [y@Q %@N])})] -> cAtan2 [x (cPow [y -%])]
+@R @F cAtan [(cMul {x (cPow [y@P %@N])})] -> cAtan2 [x (cPow [y -%])]
 
 @R @F cAtan2 [(cMul  x@P   <1>) (cMul  x@P   <2>)]   : (cMul    <1>) (cMul    <2>)
 @R @F cAtan2 [(cMul  x@N@V <1>) (cMul  x@N@V <2>)]   : (cMul -1 <1>) (cMul -1 <2>)
@@ -708,13 +708,16 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 # cos(atan(x)) = 1 / sqrt(x^2 + 1)
 # sin(atan(x)) = x / sqrt(x^2 + 1)
-@R @F cSin [(cAtan [x])] -> (cMul[x (cPow[(cAdd[1 (cPow[x 2])]) -0.5])])
+#@R @F cSin [(cAtan [x@])] -> (cMul[x (cPow[(cAdd[1 (cPow[x 2])]) -0.5])])  -- disabled because it duplicates x which may be heavy
 @R @F cCos [(cAtan [x])] ->         (cPow[(cAdd[1 (cPow[x 2])]) -0.5])
 
-# cos(atan(x/y)) =   abs(y) /      sqrt(x^2 + y^2)
-# sin(atan(x/y)) = x*abs(y) / (y * sqrt(x^2 + y^2))
-# cos(atan2(x,y)) = y / sqrt(x^2 + y^2)
-# sin(atan2(x,y)) = x / sqrt(x^2 + y^2)
+# These rules don't seem to work properly on all signs:
+#   cos(atan(x/y)) =   abs(y) /      sqrt(x^2 + y^2)
+#   sin(atan(x/y)) = x*abs(y) / (y * sqrt(x^2 + y^2))
+#   cos(atan2(x,y)) = y / sqrt(x^2 + y^2)
+#   sin(atan2(x,y)) = x / sqrt(x^2 + y^2)
+# This does, however:
+#   cos(atan2(x,y)) = 1 / sqrt(1 + (x/y)^2)
 
 #@R @F cCos [(cAtan2[x y])] -> (cMul[   (cAbs[y])               (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5])        ])
 #@R @F cSin [(cAtan2[x y])] -> (cMul[x  (cAbs[y]) (cPow[(cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ]) -1])])
@@ -722,8 +725,9 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 #@R @F cCos [(cAtan[(cMul[x (cPow[y -1])])])] -> (cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
 #@R @F cSin [(cAtan[(cMul[x (cPow[y -1])])])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
 
-@R @F cCos [(cAtan2[x y])] -> (cMul[y (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
-@R @F cSin [(cAtan2[x y])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
+#@R @F cCos [(cAtan [x])] ->         (cPow [(cAdd 1 (cMul (cPow[x 2]) (cPow[y -2]))) -0.5])
+#@R @F cSin [(cAtan [x])]     -> (cMul[x (cPow [(cAdd 1 (cMul (cPow[x 2]))) -0.5])])
+#@R @F cSin [(cAtan2[x y])] -> (cMul[x (cPow[(cAdd[(cPow[x 2]) (cPow[y 2])]) -0.5]) ])
 
 # tan(acos(x))   = sqrt(1-x^2)/x
 #@R @F cTan [(cAcos [x])]             -> (cMul[ (cSqrt[(cAdd[1 (cMul[(cPow[x 2]) -1])])]) (cPow[x -1])])

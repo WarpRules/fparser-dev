@@ -1,0 +1,5 @@
+T=ld f mf cd cf cld
+V=x,y
+R=-1.5,1.5,0.25
+F=cos(1/atan2((x+0.1),y))
+C=fp_cos(Value_t(1.0)/fp_atan2((x+0.1),y))

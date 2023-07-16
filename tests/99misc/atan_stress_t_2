@@ -1,0 +1,5 @@
+T=ld f mf cd cf cld
+V=x,y
+R=-1.4,1.4,0.25
+F=tan(atan2((x+0.1),y))
+C=fp_tan(fp_atan2((x+0.1),y))

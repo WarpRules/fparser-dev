@@ -31,7 +31,7 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
-    const ParamSpec_ParamHolder plist_p[40] =
+    const ParamSpec_ParamHolder plist_p[39] =
     {
     /* 0	*/ {2, 0, 0x0}, /* x */
     /* 1	*/ {2, 0, 0x4}, /* x */
@@ -42,37 +42,36 @@ namespace
     /* 6	*/ {2, Sign_NoIdea, 0x0}, /* x */
     /* 7	*/ {2, Complexity_Complex, 0x0}, /* x@H */
     /* 8	*/ {2, Value_Logical, 0x0}, /* x@L */
-    /* 9	*/ {3, Sign_NoIdea, 0x0}, /* y */
+    /* 9	*/ {3, Sign_Positive, 0x0}, /* y@P */
     /* 10	*/ {3, 0, 0x0}, /* y */
     /* 11	*/ {3, Value_Logical, 0x0}, /* y@L */
     /* 12	*/ {3, 0, 0x8}, /* y */
     /* 13	*/ {3, Value_OddInt, 0x0}, /* y@O */
     /* 14	*/ {3, Value_NonInteger, 0x0}, /* y@F */
     /* 15	*/ {3, Value_EvenInt, 0x0}, /* y@E */
-    /* 16	*/ {3, Sign_Positive, 0x0}, /* y@P */
-    /* 17	*/ {0, Sign_Negative | Constness_Const, 0x0}, /* %@N */
-    /* 18	*/ {0, Constness_Const, 0x0}, /* % */
-    /* 19	*/ {0, Sign_Positive | Constness_Const, 0x0}, /* %@P */
-    /* 20	*/ {0, Value_EvenInt | Constness_Const, 0x0}, /* %@E */
-    /* 21	*/ {0, Constness_Const, 0x1}, /* % */
-    /* 22	*/ {0, Value_IsInteger | Sign_Positive | Constness_Const, 0x0}, /* %@I@P */
-    /* 23	*/ {0, Oneness_NotOne | Constness_Const, 0x1}, /* %@M */
-    /* 24	*/ {0, Oneness_NotOne | Constness_Const, 0x0}, /* %@M */
-    /* 25	*/ {0, Oneness_One | Constness_Const, 0x0}, /* %@1 */
-    /* 26	*/ {0, Value_Logical | Constness_Const, 0x0}, /* %@L */
-    /* 27	*/ {1, Constness_Const, 0x0}, /* & */
-    /* 28	*/ {1, Value_EvenInt | Constness_Const, 0x0}, /* &@E */
-    /* 29	*/ {1, Oneness_NotOne | Constness_Const, 0x0}, /* &@M */
-    /* 30	*/ {1, Value_IsInteger | Constness_Const, 0x0}, /* &@I */
-    /* 31	*/ {1, Sign_Positive | Constness_Const, 0x0}, /* &@P */
-    /* 32	*/ {1, Sign_Negative | Constness_Const, 0x0}, /* &@N */
-    /* 33	*/ {6, 0, 0x0}, /* b */
-    /* 34	*/ {4, 0, 0x0}, /* z */
-    /* 35	*/ {4, Value_IsInteger, 0x0}, /* z@I */
-    /* 36	*/ {4, Constness_Const, 0x0}, /* z@C */
-    /* 37	*/ {4, 0, 0x16}, /* z */
-    /* 38	*/ {5, 0, 0x0}, /* a */
-    /* 39	*/ {5, Constness_Const, 0x0}, /* a@C */
+    /* 16	*/ {0, Sign_Negative | Constness_Const, 0x0}, /* %@N */
+    /* 17	*/ {0, Constness_Const, 0x0}, /* % */
+    /* 18	*/ {0, Sign_Positive | Constness_Const, 0x0}, /* %@P */
+    /* 19	*/ {0, Value_EvenInt | Constness_Const, 0x0}, /* %@E */
+    /* 20	*/ {0, Constness_Const, 0x1}, /* % */
+    /* 21	*/ {0, Value_IsInteger | Sign_Positive | Constness_Const, 0x0}, /* %@I@P */
+    /* 22	*/ {0, Oneness_NotOne | Constness_Const, 0x1}, /* %@M */
+    /* 23	*/ {0, Oneness_NotOne | Constness_Const, 0x0}, /* %@M */
+    /* 24	*/ {0, Oneness_One | Constness_Const, 0x0}, /* %@1 */
+    /* 25	*/ {0, Value_Logical | Constness_Const, 0x0}, /* %@L */
+    /* 26	*/ {1, Constness_Const, 0x0}, /* & */
+    /* 27	*/ {1, Value_EvenInt | Constness_Const, 0x0}, /* &@E */
+    /* 28	*/ {1, Oneness_NotOne | Constness_Const, 0x0}, /* &@M */
+    /* 29	*/ {1, Value_IsInteger | Constness_Const, 0x0}, /* &@I */
+    /* 30	*/ {1, Sign_Positive | Constness_Const, 0x0}, /* &@P */
+    /* 31	*/ {1, Sign_Negative | Constness_Const, 0x0}, /* &@N */
+    /* 32	*/ {6, 0, 0x0}, /* b */
+    /* 33	*/ {4, 0, 0x0}, /* z */
+    /* 34	*/ {4, Value_IsInteger, 0x0}, /* z@I */
+    /* 35	*/ {4, Constness_Const, 0x0}, /* z@C */
+    /* 36	*/ {4, 0, 0x16}, /* z */
+    /* 37	*/ {5, 0, 0x0}, /* a */
+    /* 38	*/ {5, Constness_Const, 0x0}, /* a@C */
     };
 
     template<typename Value_t>
@@ -83,1511 +82,1498 @@ namespace
     template<typename Value_t>
     const ParamSpec_NumConstant <Value_t> plist_n_container<Value_t>::plist_n[22] =
     {
-    /* 40	*/ {Value_t(-2), 0}, /* -2 */
-    /* 41	*/ {Value_t(-1), 0}, /* -1 */
-    /* 42	*/ {Value_t(-0.5), 0}, /* -0.5 */
-    /* 43	*/ {Value_t(-0.25), 0}, /* -0.25 */
-    /* 44	*/ {Value_t(0), 0}, /* 0 */
-    /* 45	*/ {fp_const_deg_to_rad<Value_t>(), 0}, /* 0.01745329251994329547437168059786927187815 */
-    /* 46	*/ {fp_const_einv<Value_t>(), 0}, /* 0.3678794411714423340242774429498240351677 */
-    /* 47	*/ {fp_const_log10inv<Value_t>(), 0}, /* 0.4342944819032518166679324167489539831877 */
-    /* 48	*/ {Value_t(0.5), 0}, /* 0.5 */
-    /* 49	*/ {fp_const_log2<Value_t>(), 0}, /* 0.6931471805599452862267639829951804131269 */
-    /* 50	*/ {fp_const_pihalf<Value_t>() / Value_t(2), 0}, /* 0.7853981633974482789994908671360462903976 */
-    /* 51	*/ {Value_t(1), 0}, /* 1 */
-    /* 52	*/ {fp_sqrt(Value_t(2.0)), 0}, /* 1.414213562373095145474621858738828450441 */
-    /* 53	*/ {fp_const_log2inv<Value_t>(), 0}, /* 1.442695040888963387004650940070860087872 */
-    /* 54	*/ {Value_t(2), 0}, /* 2 */
-    /* 55	*/ {fp_const_log10<Value_t>(), 0}, /* 2.302585092994045901093613792909309267998 */
-    /* 56	*/ {fp_const_e<Value_t>(), 0}, /* 2.718281828459045090795598298427648842335 */
-    /* 57	*/ {fp_const_rad_to_deg<Value_t>(), 0}, /* 57.29577951308232286464772187173366546631 */
-    /* 58	*/ {-fp_const_pihalf<Value_t>(), Modulo_Radians}, /* -1.570796326794896557998981734272092580795 */
-    /* 59	*/ {Value_t(0), Modulo_Radians}, /* 0 */
-    /* 60	*/ {fp_const_pihalf<Value_t>(), Modulo_Radians}, /* 1.570796326794896557998981734272092580795 */
-    /* 61	*/ {fp_const_pi<Value_t>(), Modulo_Radians}, /* 3.141592653589793115997963468544185161591 */
+    /* 39	*/ {Value_t(-2), 0}, /* -2 */
+    /* 40	*/ {Value_t(-1), 0}, /* -1 */
+    /* 41	*/ {Value_t(-0.5), 0}, /* -0.5 */
+    /* 42	*/ {Value_t(-0.25), 0}, /* -0.25 */
+    /* 43	*/ {Value_t(0), 0}, /* 0 */
+    /* 44	*/ {fp_const_deg_to_rad<Value_t>(), 0}, /* 0.01745329251994329547437168059786927187815 */
+    /* 45	*/ {fp_const_einv<Value_t>(), 0}, /* 0.3678794411714423340242774429498240351677 */
+    /* 46	*/ {fp_const_log10inv<Value_t>(), 0}, /* 0.4342944819032518166679324167489539831877 */
+    /* 47	*/ {Value_t(0.5), 0}, /* 0.5 */
+    /* 48	*/ {fp_const_log2<Value_t>(), 0}, /* 0.6931471805599452862267639829951804131269 */
+    /* 49	*/ {fp_const_pihalf<Value_t>() / Value_t(2), 0}, /* 0.7853981633974482789994908671360462903976 */
+    /* 50	*/ {Value_t(1), 0}, /* 1 */
+    /* 51	*/ {fp_sqrt(Value_t(2.0)), 0}, /* 1.414213562373095145474621858738828450441 */
+    /* 52	*/ {fp_const_log2inv<Value_t>(), 0}, /* 1.442695040888963387004650940070860087872 */
+    /* 53	*/ {Value_t(2), 0}, /* 2 */
+    /* 54	*/ {fp_const_log10<Value_t>(), 0}, /* 2.302585092994045901093613792909309267998 */
+    /* 55	*/ {fp_const_e<Value_t>(), 0}, /* 2.718281828459045090795598298427648842335 */
+    /* 56	*/ {fp_const_rad_to_deg<Value_t>(), 0}, /* 57.29577951308232286464772187173366546631 */
+    /* 57	*/ {-fp_const_pihalf<Value_t>(), Modulo_Radians}, /* -1.570796326794896557998981734272092580795 */
+    /* 58	*/ {Value_t(0), Modulo_Radians}, /* 0 */
+    /* 59	*/ {fp_const_pihalf<Value_t>(), Modulo_Radians}, /* 1.570796326794896557998981734272092580795 */
+    /* 60	*/ {fp_const_pi<Value_t>(), Modulo_Radians}, /* 3.141592653589793115997963468544185161591 */
     };
 
-    const ParamSpec_SubFunction plist_s[605] =
+    const ParamSpec_SubFunction plist_s[601] =
     {
-    /* 62	*/ {{1,/*18         */18        , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -%@C */
-    /* 63	*/ {{1,/*471        */471       , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -POW( MUL( % 0.5 )@C 2 )@C@C */
-    /* 64	*/ {{1,/*561        */561       , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -MIN( % & )@C@C */
-    /* 65	*/ {{1,/*18         */18        , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x1}, /* -%@C */
-    /* 66	*/ {{1,/*18         */18        , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /%@C */
-    /* 67	*/ {{1,/*27         */27        , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /&@C */
-    /* 68	*/ {{1,/*549        */549       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /LOG( % )@C@C */
-    /* 69	*/ {{1,/*550        */550       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /LOG( & )@C@C */
-    /* 70	*/ {{1,/*591        */591       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /SQRT( % )@C@C */
-    /* 71	*/ {{2,/*367,376    */385391    , cAdd        ,PositionalParams,0}, 0, 0x0}, /* (cAdd [(cPow [x %@E]) (cPow [y &@E])]) */
-    /* 72	*/ {{2,/*174,51     */52398     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [x 2]) -1}) 1}) */
-    /* 73	*/ {{2,/*0,488      */499712    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cCeil [(cAdd  <1>)])}) */
-    /* 74	*/ {{2,/*51,346     */354355    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [x 2])}) */
-    /* 75	*/ {{2,/*60,303     */310332    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul %@N <1>)}) */
-    /* 76	*/ {{2,/*179,180    */184499    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {x SQRT( % )@C}) (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C})}) */
-    /* 77	*/ {{2,/*206,205    */210126    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {a@C (cPow [x %@E])}) (cMul {z@C (cPow [y &@E])})}) */
-    /* 78	*/ {{2,/*221,41     */42205     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) 2}) -1}) */
-    /* 79	*/ {{2,/*367,205    */210287    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x %@E]) (cMul {z@C (cPow [y &@E])})}) */
-    /* 80	*/ {{2,/*346,352    */360794    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) (cPow [y 2])}) */
-    /* 81	*/ {{2,/*346,41     */42330     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) -1}) */
-    /* 82	*/ {{2,/*346,51     */52570     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) 1}) */
-    /* 83	*/ {{2,/*41,182     */186409    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cMul {-1 (cPow [x 2])})}) */
-    /* 84	*/ {{2,/*0,514      */526336    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cFloor [(cAdd  <1>)])}) */
-    /* 85	*/ {{2,/*0,42       */43008     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x -0.5}) */
-    /* 86	*/ {{2,/*0,48       */49152     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x 0.5}) */
-    /* 87	*/ {{2,/*191,543    */556223    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {LOG( % )@C y}) (cLog [(cMul  <1>)])}) */
-    /* 88	*/ {{2,/*357,1      */1381      , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [(cAdd {-1 (cPow [x 2])}) 0.5])@D4 x@D4}) */
-    /* 89	*/ {{2,/*509,51     */52733     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cExp [(cMul -2 <1>)]) 1}) */
-    /* 90	*/ {{2,/*543,549    */562719    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [(cMul  <1>)]) LOG( % )@C}) */
-    /* 91	*/ {{2,/*41,346     */354345    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [x 2])}) */
-    /* 92	*/ {{2,/*51,0       */51        , cAdd        ,SelectedParams  ,0}, 0, 0x4}, /* (cAdd {1 x}) */
-    /* 93	*/ {{2,/*51,194     */198707    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cMul {-1 x})}) */
-    /* 94	*/ {{2,/*544,27     */28192     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [x]) &}) */
-    /* 95	*/ {{2,/*0,10       */10240     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x y}) */
-    /* 96	*/ {{2,/*0,211      */216064    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cMul {-1 y})}) */
-    /* 97	*/ {{2,/*0,50       */51200     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x 0.7853981633974482789994908671360462903976}) */
-    /* 98	*/ {{2,/*0,341      */349184    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x MUL( % -0.5 )@C}) */
-    /* 99	*/ {{2,/*0,331      */338944    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x MUL( % 0.5 )@C}) */
-    /* 100	*/ {{2,/*0,482      */493568    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN( /%@C )@C}) */
-    /* 101	*/ {{2,/*0,483      */494592    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN( % )@C}) */
-    /* 102	*/ {{2,/*0,486      */497664    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN2( & % )@C}) */
-    /* 103	*/ {{2,/*230,294    */301286    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) */
-    /* 104	*/ {{2,/*231,51     */52455     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) */
-    /* 105	*/ {{2,/*232,406    */415976    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [x y]) %}) (cPow [x (cAdd {y z})])}) */
-    /* 106	*/ {{2,/*233,259    */265449    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAbs [x]) -%@C}) (cMul {x (cAdd  <1>)})}) */
-    /* 107	*/ {{2,/*264,259    */265480    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAbs [x]) %}) (cMul {x (cAdd  <1>)})}) */
-    /* 108	*/ {{2,/*328,282    */289096    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul % & <1>) (cMul {& (cAdd  <2>)})}) */
-    /* 109	*/ {{2,/*342,283    */290134    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {MUL( % & )@C (cMul {& (cAdd  <1>)})}) */
-    /* 110	*/ {{2,/*10,34      */34826     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y z}) */
-    /* 111	*/ {{2,/*10,38      */38922     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y a}) */
-    /* 112	*/ {{2,/*18,64      */65554     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {% -MIN( % & )@C@C}) */
-    /* 113	*/ {{2,/*25,424     */434201    , cAdd        ,SelectedParams  ,0}, 0, 0x4}, /* (cAdd {%@1 (cPow [x z])}) */
-    /* 114	*/ {{2,/*27,64      */65563     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {& -MIN( % & )@C@C}) */
-    /* 115	*/ {{2,/*34,33      */33826     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {z b}) */
-    /* 116	*/ {{2,/*41,458     */469033    , cAdd        ,SelectedParams  ,0}, 0, 0x5}, /* (cAdd {-1 (cPow [% x])}) */
-    /* 117	*/ {{2,/*41,458     */469033    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [% x])}) */
-    /* 118	*/ {{2,/*51,408     */417843    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [x@P z])}) */
-    /* 119	*/ {{2,/*262,21     */21766     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {% (cPow [x@P z])})@D1 %@D1}) */
-    /* 120	*/ {{2,/*262,65     */66822     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {% (cPow [x@P z])})@D1 -%@C@D1}) */
-    /* 121	*/ {{2,/*294,302    */309542    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul  <1>) (cMul -1 <2>)}) */
-    /* 122	*/ {{2,/*320,321    */329024    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>)}) */
-    /* 123	*/ {{2,/*378,231    */236922    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [y -1]) (cMul {(cAdd  <1>) (cPow [x -1])})}) */
-    /* 124	*/ {{2,/*391,425    */435591    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [& y]) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])}) */
-    /* 125	*/ {{2,/*10,285     */291850    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})}) */
-    /* 126	*/ {{2,/*41,408     */417833    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [x@P z])}) */
-    /* 127	*/ {{2,/*51,302     */309299    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cMul -1 <2>)}) */
-    /* 128	*/ {{2,/*288,425    */435488    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [& y]) -1}) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])}) */
-    /* 129	*/ {{2,/*308,51     */52532     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul (cPow [y (cAdd  <2>)]) <3>) 1}) */
-    /* 130	*/ {{2,/*366,331    */339310    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x y]) MUL( % 0.5 )@C}) */
-    /* 131	*/ {{2,/*385,331    */339329    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x (cMul {y &})]) MUL( % 0.5 )@C}) */
-    /* 132	*/ {{2,/*391,331    */339335    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [& y]) MUL( % 0.5 )@C}) */
-    /* 133	*/ {{2,/*51,289     */295987    , cAdd        ,SelectedParams  ,0}, 0, 0x1}, /* (cAdd {1 (cMul {(cLog [x]) /%@C})}) */
-    /* 134	*/ {{2,/*51,396     */405555    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [(cAdd  <1>) 2])}) */
-    /* 135	*/ {{2,/*544,18     */18976     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [x]) %}) */
-    /* 136	*/ {{2,/*51,458     */469043    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [% x])}) */
-    /* 137	*/ {{2,/*51,458     */469043    , cAdd        ,SelectedParams  ,0}, 0, 0x5}, /* (cAdd {1 (cPow [% x])}) */
-    /* 138	*/ {{2,/*60,194     */198716    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})}) */
-    /* 139	*/ {{2,/*60,301     */308284    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)}) */
-    /* 140	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd  <1>) */
-    /* 141	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd  <2>) */
-    /* 142	*/ {{1,/*4          */4         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd x@I <1>) */
-    /* 143	*/ {{1,/*48         */48        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 0.5 <1>) */
-    /* 144	*/ {{1,/*58         */58        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd -1.570796326794896557998981734272092580795 <1>) */
-    /* 145	*/ {{1,/*59         */59        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 0 <1>) */
-    /* 146	*/ {{1,/*60         */60        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 1.570796326794896557998981734272092580795 <1>) */
-    /* 147	*/ {{1,/*61         */61        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 3.141592653589793115997963468544185161591 <1>) */
-    /* 148	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd x <2>) */
-    /* 149	*/ {{1,/*29         */29        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd &@M <1>) */
-    /* 150	*/ {{1,/*218        */218       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cMul {x (cPow [y -1])}) <1>) */
-    /* 151	*/ {{1,/*311        */311       , cAdd        ,AnyParams       ,1}, 0, 0x16}, /* (cAdd (cMul (cPow [(cLog [z]) -1]) <2>) <1>) */
-    /* 152	*/ {{1,/*308        */308       , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd (cMul (cPow [y (cAdd  <2>)]) <3>) <1>) */
-    /* 153	*/ {{1,/*314        */314       , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd (cMul x <1>) <2>) */
-    /* 154	*/ {{1,/*326        */326       , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd (cMul %@M <1>) <2>) */
-    /* 155	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd x <1>) */
-    /* 156	*/ {{1,/*24         */24        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd %@M <1>) */
-    /* 157	*/ {{1,/*314        */314       , cAdd        ,AnyParams       ,2}, 0, 0x4}, /* (cAdd (cMul x <1>) <2>) */
-    /* 158	*/ {{1,/*384        */384       , cAdd        ,AnyParams       ,1}, 0, 0x16}, /* (cAdd (cPow [(cLog [z]) -1]) <1>) */
-    /* 159	*/ {{1,/*454        */454       , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd (cPow [y (cAdd  <2>)]) <1>) */
-    /* 160	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd x <1>) */
-    /* 161	*/ {{1,/*531        */531       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cIf [(cLess [x 0]) %@D1 -%@C@D1]) <1>) */
-    /* 162	*/ {{1,/*533        */533       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) <1>) */
-    /* 163	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,2}, 0, 0x4}, /* (cAdd x <2>) */
-    /* 164	*/ {{1,/*18         */18        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd % <1>) */
-    /* 165	*/ {{1,/*27         */27        , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd & <2>) */
-    /* 166	*/ {{2,/*27,62      */63515     , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd & -%@C <2>) */
-    /* 167	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,1}, Sign_Positive, 0x0}, /* (cAdd  <1>)@P */
-    /* 168	*/ {{2,/*18,27      */27666     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % & )@C */
-    /* 169	*/ {{2,/*18,36      */36882     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % z@C )@C */
-    /* 170	*/ {{2,/*18,51      */52242     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % 1 )@C */
-    /* 171	*/ {{2,/*27,333     */341019    , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( & MUL( -2 % )@C )@C */
-    /* 172	*/ {{2,/*27,338     */346139    , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( & MUL( 2 % )@C )@C */
-    /* 173	*/ {{2,/*0,347      */355328    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [y %@N])}) */
-    /* 174	*/ {{2,/*346,41     */42330     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x 2]) -1}) */
-    /* 175	*/ {{2,/*41,140     */143401    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cAdd  <1>)}) */
-    /* 176	*/ {{2,/*41,489     */500777    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCeil [(cMul  <1>)])}) */
-    /* 177	*/ {{2,/*41,497     */508969    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd  <1>)])}) */
-    /* 178	*/ {{2,/*41,515     */527401    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cFloor [(cMul  <1>)])}) */
-    /* 179	*/ {{2,/*0,591      */605184    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x SQRT( % )@C}) */
-    /* 180	*/ {{2,/*10,334     */342026    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C}) */
-    /* 181	*/ {{2,/*10,351     */359434    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y (cPow [(cAdd {(cPow [x 2]) (cPow [y 2])}) -0.5])}) */
-    /* 182	*/ {{2,/*41,346     */354345    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [x 2])}) */
-    /* 183	*/ {{2,/*92,358     */366684    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd {1 x})@D4 (cPow [(cAdd {1 (cMul {-1 x})}) -1])@D4}) */
-    /* 184	*/ {{3,/*171,0,10   */10485931  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {ADD( & MUL( -2 % )@C )@C x y}) */
-    /* 185	*/ {{2,/*453,129    */132549    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd {(cMul (cPow [y (cAdd  <2>)]) <3>) 1})}) */
-    /* 186	*/ {{2,/*453,152    */156101    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd (cMul (cPow [y (cAdd  <2>)]) <3>) <1>)}) */
-    /* 187	*/ {{2,/*453,159    */163269    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd (cPow [y (cAdd  <2>)]) <1>)}) */
-    /* 188	*/ {{2,/*352,336    */344416    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y 2]) MUL( MUL( -0.25 /%@C )@C POW( & 2 )@C )@C}) */
-    /* 189	*/ {{2,/*467,362    */371155    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [(cMul  <1>) &])}) */
-    /* 190	*/ {{2,/*467,379    */388563    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [% (cAdd  <1>)])}) */
-    /* 191	*/ {{2,/*549,10     */10789     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {LOG( % )@C y}) */
-    /* 192	*/ {{2,/*631,10     */10871     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cNot [x]) y}) */
-    /* 193	*/ {{2,/*655,10     */10895     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cNotNot [x]) y}) */
-    /* 194	*/ {{2,/*41,0       */41        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 x}) */
-    /* 195	*/ {{2,/*487,54     */55783     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAtanh [x]) 2}) */
-    /* 196	*/ {{2,/*0,470      */481280    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x POW( a@C /%@C )@C}) */
-    /* 197	*/ {{2,/*0,10       */10240     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x y}) */
-    /* 198	*/ {{2,/*10,34      */34826     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y z}) */
-    /* 199	*/ {{2,/*10,469     */480266    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y POW( z@C /&@C )@C}) */
-    /* 200	*/ {{2,/*19,80      */81939     , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})}) */
-    /* 201	*/ {{2,/*18,359     */367634    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cPow [(cAdd {x y}) 2])}) */
-    /* 202	*/ {{2,/*18,360     */368658    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cPow [(cAdd {x (cMul {-1 y})}) 2])}) */
-    /* 203	*/ {{3,/*31,0,10    */10485791  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {&@P x y}) */
-    /* 204	*/ {{3,/*32,0,10    */10485792  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {&@N x y}) */
-    /* 205	*/ {{2,/*36,376     */385060    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z@C (cPow [y &@E])}) */
-    /* 206	*/ {{2,/*39,367     */375847    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {a@C (cPow [x %@E])}) */
+    /* 61	*/ {{1,/*17         */17        , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -%@C */
+    /* 62	*/ {{1,/*466        */466       , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -POW( MUL( % 0.5 )@C 2 )@C@C */
+    /* 63	*/ {{1,/*556        */556       , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* -MIN( % & )@C@C */
+    /* 64	*/ {{1,/*17         */17        , cNeg        ,GroupFunction   ,0}, Constness_Const, 0x1}, /* -%@C */
+    /* 65	*/ {{1,/*17         */17        , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /%@C */
+    /* 66	*/ {{1,/*26         */26        , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /&@C */
+    /* 67	*/ {{1,/*544        */544       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /LOG( % )@C@C */
+    /* 68	*/ {{1,/*545        */545       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /LOG( & )@C@C */
+    /* 69	*/ {{1,/*586        */586       , cInv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* /SQRT( % )@C@C */
+    /* 70	*/ {{2,/*347,357    */365915    , cAdd        ,PositionalParams,0}, 0, 0x0}, /* (cAdd [(cPow [x %@E]) (cPow [y &@E])]) */
+    /* 71	*/ {{2,/*174,50     */51374     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [x 2]) -1}) 1}) */
+    /* 72	*/ {{2,/*0,483      */494592    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cCeil [(cAdd  <1>)])}) */
+    /* 73	*/ {{2,/*50,342     */350258    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [x 2])}) */
+    /* 74	*/ {{2,/*59,299     */306235    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul %@N <1>)}) */
+    /* 75	*/ {{2,/*205,204    */209101    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {a@C (cPow [x %@E])}) (cMul {z@C (cPow [y &@E])})}) */
+    /* 76	*/ {{2,/*216,40     */41176     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) 2}) -1}) */
+    /* 77	*/ {{2,/*218,219    */224474    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {x SQRT( % )@C}) (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C})}) */
+    /* 78	*/ {{2,/*290,298    */305442    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul  <1>) (cMul -1 <2>)}) */
+    /* 79	*/ {{2,/*317,318    */325949    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>)}) */
+    /* 80	*/ {{2,/*304,50     */51504     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul (cPow [y (cAdd  <2>)]) <3>) 1}) */
+    /* 81	*/ {{2,/*342,50     */51542     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) 1}) */
+    /* 82	*/ {{2,/*40,176     */180264    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cMul {-1 (cPow [x 2])})}) */
+    /* 83	*/ {{2,/*0,508      */520192    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cFloor [(cAdd  <1>)])}) */
+    /* 84	*/ {{2,/*0,41       */41984     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x -0.5}) */
+    /* 85	*/ {{2,/*0,47       */48128     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x 0.5}) */
+    /* 86	*/ {{2,/*187,538    */551099    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {LOG( % )@C y}) (cLog [(cMul  <1>)])}) */
+    /* 87	*/ {{2,/*361,1      */1385      , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [(cAdd {-1 (cPow [x 2])}) 0.5])@D4 x@D4}) */
+    /* 88	*/ {{2,/*347,204    */209243    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x %@E]) (cMul {z@C (cPow [y &@E])})}) */
+    /* 89	*/ {{2,/*342,40     */41302     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) -1}) */
+    /* 90	*/ {{2,/*373,327    */335221    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x (cMul {y &})]) MUL( % 0.5 )@C}) */
+    /* 91	*/ {{2,/*342,359    */367958    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x 2]) (cPow [y 2])}) */
+    /* 92	*/ {{2,/*504,50     */51704     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cExp [(cMul -2 <1>)]) 1}) */
+    /* 93	*/ {{2,/*538,544    */557594    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [(cMul  <1>)]) LOG( % )@C}) */
+    /* 94	*/ {{2,/*40,342     */350248    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [x 2])}) */
+    /* 95	*/ {{2,/*50,0       */50        , cAdd        ,SelectedParams  ,0}, 0, 0x4}, /* (cAdd {1 x}) */
+    /* 96	*/ {{2,/*50,190     */194610    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cMul {-1 x})}) */
+    /* 97	*/ {{2,/*539,26     */27163     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [x]) &}) */
+    /* 98	*/ {{2,/*0,10       */10240     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x y}) */
+    /* 99	*/ {{2,/*0,225      */230400    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x (cMul {-1 y})}) */
+    /* 100	*/ {{2,/*0,49       */50176     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x 0.7853981633974482789994908671360462903976}) */
+    /* 101	*/ {{2,/*0,337      */345088    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x MUL( % -0.5 )@C}) */
+    /* 102	*/ {{2,/*0,327      */334848    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x MUL( % 0.5 )@C}) */
+    /* 103	*/ {{2,/*0,477      */488448    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN( /%@C )@C}) */
+    /* 104	*/ {{2,/*0,478      */489472    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN( % )@C}) */
+    /* 105	*/ {{2,/*0,481      */492544    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {x ATAN2( & % )@C}) */
+    /* 106	*/ {{2,/*233,254    */260329    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAbs [x]) -%@C}) (cMul {x (cAdd  <1>)})}) */
+    /* 107	*/ {{2,/*259,254    */260355    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAbs [x]) %}) (cMul {x (cAdd  <1>)})}) */
+    /* 108	*/ {{2,/*324,275    */281924    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul % & <1>) (cMul {& (cAdd  <2>)})}) */
+    /* 109	*/ {{2,/*338,276    */282962    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {MUL( % & )@C (cMul {& (cAdd  <1>)})}) */
+    /* 110	*/ {{2,/*10,33      */33802     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y z}) */
+    /* 111	*/ {{2,/*10,37      */37898     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y a}) */
+    /* 112	*/ {{2,/*17,63      */64529     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {% -MIN( % & )@C@C}) */
+    /* 113	*/ {{2,/*24,423     */433176    , cAdd        ,SelectedParams  ,0}, 0, 0x4}, /* (cAdd {%@1 (cPow [x z])}) */
+    /* 114	*/ {{2,/*26,63      */64538     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {& -MIN( % & )@C@C}) */
+    /* 115	*/ {{2,/*33,32      */32801     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {z b}) */
+    /* 116	*/ {{2,/*278,406    */416022    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [x y]) %}) (cPow [x (cAdd {y z})])}) */
+    /* 117	*/ {{2,/*40,408     */417832    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [x@P z])}) */
+    /* 118	*/ {{2,/*40,451     */461864    , cAdd        ,SelectedParams  ,0}, 0, 0x5}, /* (cAdd {-1 (cPow [% x])}) */
+    /* 119	*/ {{2,/*40,451     */461864    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {-1 (cPow [% x])}) */
+    /* 120	*/ {{2,/*50,298     */305202    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cMul -1 <2>)}) */
+    /* 121	*/ {{2,/*50,408     */417842    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [x@P z])}) */
+    /* 122	*/ {{2,/*281,290    */297241    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) */
+    /* 123	*/ {{2,/*282,50     */51482     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) */
+    /* 124	*/ {{2,/*284,424    */434460    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {(cPow [& y]) -1}) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])}) */
+    /* 125	*/ {{2,/*285,20     */20765     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {% (cPow [x@P z])})@D1 %@D1}) */
+    /* 126	*/ {{2,/*285,64     */65821     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cMul {% (cPow [x@P z])})@D1 -%@C@D1}) */
+    /* 127	*/ {{2,/*346,327    */335194    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [x y]) MUL( % 0.5 )@C}) */
+    /* 128	*/ {{2,/*381,282    */289149    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [y -1]) (cMul {(cAdd  <1>) (cPow [x -1])})}) */
+    /* 129	*/ {{2,/*387,327    */335235    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [& y]) MUL( % 0.5 )@C}) */
+    /* 130	*/ {{2,/*387,424    */434563    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cPow [& y]) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])}) */
+    /* 131	*/ {{2,/*10,279     */285706    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})}) */
+    /* 132	*/ {{2,/*50,286     */292914    , cAdd        ,SelectedParams  ,0}, 0, 0x1}, /* (cAdd {1 (cMul {(cLog [x]) /%@C})}) */
+    /* 133	*/ {{2,/*50,395     */404530    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [(cAdd  <1>) 2])}) */
+    /* 134	*/ {{2,/*539,17     */17947     , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {(cLog [x]) %}) */
+    /* 135	*/ {{2,/*50,451     */461874    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1 (cPow [% x])}) */
+    /* 136	*/ {{2,/*50,451     */461874    , cAdd        ,SelectedParams  ,0}, 0, 0x5}, /* (cAdd {1 (cPow [% x])}) */
+    /* 137	*/ {{2,/*59,190     */194619    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})}) */
+    /* 138	*/ {{2,/*59,297     */304187    , cAdd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)}) */
+    /* 139	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd  <1>) */
+    /* 140	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd  <2>) */
+    /* 141	*/ {{1,/*4          */4         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd x@I <1>) */
+    /* 142	*/ {{1,/*47         */47        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 0.5 <1>) */
+    /* 143	*/ {{1,/*57         */57        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd -1.570796326794896557998981734272092580795 <1>) */
+    /* 144	*/ {{1,/*58         */58        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 0 <1>) */
+    /* 145	*/ {{1,/*59         */59        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 1.570796326794896557998981734272092580795 <1>) */
+    /* 146	*/ {{1,/*60         */60        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd 3.141592653589793115997963468544185161591 <1>) */
+    /* 147	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd x <2>) */
+    /* 148	*/ {{1,/*28         */28        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd &@M <1>) */
+    /* 149	*/ {{1,/*214        */214       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cMul {x (cPow [y -1])}) <1>) */
+    /* 150	*/ {{1,/*307        */307       , cAdd        ,AnyParams       ,1}, 0, 0x16}, /* (cAdd (cMul (cPow [(cLog [z]) -1]) <2>) <1>) */
+    /* 151	*/ {{1,/*304        */304       , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd (cMul (cPow [y (cAdd  <2>)]) <3>) <1>) */
+    /* 152	*/ {{1,/*310        */310       , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd (cMul x <1>) <2>) */
+    /* 153	*/ {{1,/*322        */322       , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd (cMul %@M <1>) <2>) */
+    /* 154	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd x <1>) */
+    /* 155	*/ {{1,/*23         */23        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd %@M <1>) */
+    /* 156	*/ {{1,/*310        */310       , cAdd        ,AnyParams       ,2}, 0, 0x4}, /* (cAdd (cMul x <1>) <2>) */
+    /* 157	*/ {{1,/*375        */375       , cAdd        ,AnyParams       ,1}, 0, 0x16}, /* (cAdd (cPow [(cLog [z]) -1]) <1>) */
+    /* 158	*/ {{1,/*383        */383       , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd (cPow [y (cAdd  <2>)]) <1>) */
+    /* 159	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd x <1>) */
+    /* 160	*/ {{1,/*526        */526       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cIf [(cLess [x 0]) %@D1 -%@C@D1]) <1>) */
+    /* 161	*/ {{1,/*528        */528       , cAdd        ,AnyParams       ,1}, 0, 0x4}, /* (cAdd (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) <1>) */
+    /* 162	*/ {{1,/*0          */0         , cAdd        ,AnyParams       ,2}, 0, 0x4}, /* (cAdd x <2>) */
+    /* 163	*/ {{1,/*17         */17        , cAdd        ,AnyParams       ,1}, 0, 0x0}, /* (cAdd % <1>) */
+    /* 164	*/ {{1,/*26         */26        , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd & <2>) */
+    /* 165	*/ {{2,/*26,61      */62490     , cAdd        ,AnyParams       ,2}, 0, 0x0}, /* (cAdd & -%@C <2>) */
+    /* 166	*/ {{0,/*           */0         , cAdd        ,AnyParams       ,1}, Sign_Positive, 0x0}, /* (cAdd  <1>)@P */
+    /* 167	*/ {{2,/*17,26      */26641     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % & )@C */
+    /* 168	*/ {{2,/*17,35      */35857     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % z@C )@C */
+    /* 169	*/ {{2,/*17,50      */51217     , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( % 1 )@C */
+    /* 170	*/ {{2,/*26,332     */339994    , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( & MUL( -2 % )@C )@C */
+    /* 171	*/ {{2,/*26,334     */342042    , cAdd        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ADD( & MUL( 2 % )@C )@C */
+    /* 172	*/ {{2,/*0,351      */359424    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [y@P %@N])}) */
+    /* 173	*/ {{2,/*95,362     */370783    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd {1 x})@D4 (cPow [(cAdd {1 (cMul {-1 x})}) -1])@D4}) */
+    /* 174	*/ {{2,/*342,40     */41302     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x 2]) -1}) */
+    /* 175	*/ {{2,/*40,139     */142376    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cAdd  <1>)}) */
+    /* 176	*/ {{2,/*40,342     */350248    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [x 2])}) */
+    /* 177	*/ {{2,/*40,484     */495656    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCeil [(cMul  <1>)])}) */
+    /* 178	*/ {{2,/*40,492     */503848    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd  <1>)])}) */
+    /* 179	*/ {{2,/*40,509     */521256    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cFloor [(cMul  <1>)])}) */
+    /* 180	*/ {{2,/*382,80     */82302     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd {(cMul (cPow [y (cAdd  <2>)]) <3>) 1})}) */
+    /* 181	*/ {{2,/*382,151    */155006    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd (cMul (cPow [y (cAdd  <2>)]) <3>) <1>)}) */
+    /* 182	*/ {{2,/*382,158    */162174    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y x]) (cAdd (cPow [y (cAdd  <2>)]) <1>)}) */
+    /* 183	*/ {{2,/*359,331    */339303    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [y 2]) MUL( MUL( -0.25 /%@C )@C POW( & 2 )@C )@C}) */
+    /* 184	*/ {{2,/*462,365    */374222    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [(cMul  <1>) &])}) */
+    /* 185	*/ {{2,/*462,367    */376270    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [% (cAdd  <1>)])}) */
+    /* 186	*/ {{2,/*482,53     */54754     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAtanh [x]) 2}) */
+    /* 187	*/ {{2,/*544,10     */10784     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {LOG( % )@C y}) */
+    /* 188	*/ {{2,/*626,10     */10866     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cNot [x]) y}) */
+    /* 189	*/ {{2,/*650,10     */10890     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cNotNot [x]) y}) */
+    /* 190	*/ {{2,/*40,0       */40        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 x}) */
+    /* 191	*/ {{2,/*0,356      */364544    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5])}) */
+    /* 192	*/ {{2,/*0,465      */476160    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x POW( a@C /%@C )@C}) */
+    /* 193	*/ {{2,/*0,10       */10240     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x y}) */
+    /* 194	*/ {{2,/*10,26      */26634     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y &}) */
+    /* 195	*/ {{2,/*10,33      */33802     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y z}) */
+    /* 196	*/ {{2,/*10,464     */475146    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y POW( z@C /&@C )@C}) */
+    /* 197	*/ {{2,/*18,91      */93202     , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})}) */
+    /* 198	*/ {{2,/*17,363     */371729    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cPow [(cAdd {x y}) 2])}) */
+    /* 199	*/ {{2,/*17,364     */372753    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cPow [(cAdd {x (cMul {-1 y})}) 2])}) */
+    /* 200	*/ {{2,/*17,346     */354321    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {% (cPow [x y])}) */
+    /* 201	*/ {{2,/*17,348     */356369    , cMul        ,SelectedParams  ,0}, 0, 0x14}, /* (cMul {% (cPow [x (cMul {& y})])}) */
+    /* 202	*/ {{2,/*17,387     */396305    , cMul        ,SelectedParams  ,0}, 0, 0x10}, /* (cMul {% (cPow [& y])}) */
+    /* 203	*/ {{3,/*30,0,10    */10485790  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {&@P x y}) */
+    /* 204	*/ {{2,/*35,357     */365603    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z@C (cPow [y &@E])}) */
+    /* 205	*/ {{2,/*38,347     */355366    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {a@C (cPow [x %@E])}) */
+    /* 206	*/ {{3,/*170,0,10   */10485930  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {ADD( & MUL( -2 % )@C )@C x y}) */
     /* 207	*/ {{2,/*388,389    */398724    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [z (cAdd  <1>)]) (cPow [2.718281828459045090795598298427648842335 (cMul  <2>)])}) */
-    /* 208	*/ {{2,/*467,370    */379347    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [x LOG( % )@C])}) */
-    /* 209	*/ {{2,/*41,574     */587817    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSin [(cAdd  <1>)])}) */
-    /* 210	*/ {{2,/*41,580     */593961    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSin [(cMul  <1>)])}) */
-    /* 211	*/ {{2,/*41,10      */10281     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 y}) */
-    /* 212	*/ {{2,/*56,388     */397368    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {2.718281828459045090795598298427648842335 (cPow [z (cAdd  <1>)])}) */
-    /* 213	*/ {{2,/*0,355      */363520    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5])}) */
-    /* 214	*/ {{2,/*0,350      */358400    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [(cAdd {1 (cPow [x 2])}) -0.5])}) */
-    /* 215	*/ {{2,/*0,351      */359424    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [(cAdd {(cPow [x 2]) (cPow [y 2])}) -0.5])}) */
-    /* 216	*/ {{2,/*41,585     */599081    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSinh [(cMul  <1>)])}) */
-    /* 217	*/ {{2,/*41,597     */611369    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cTan [(cMul  <1>)])}) */
-    /* 218	*/ {{2,/*0,378      */387072    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [y -1])}) */
-    /* 219	*/ {{2,/*41,605     */619561    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cTanh [(cMul  <1>)])}) */
-    /* 220	*/ {{3,/*172,0,10   */10485932  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {ADD( & MUL( 2 % )@C )@C x y}) */
-    /* 221	*/ {{2,/*382,54     */55678     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) 2}) */
-    /* 222	*/ {{2,/*375,122    */125303    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x MIN( % & )@C]) (cAdd {(cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>)})}) */
-    /* 223	*/ {{2,/*18,121     */123922    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cAdd {(cMul  <1>) (cMul -1 <2>)})}) */
-    /* 224	*/ {{2,/*18,127     */130066    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cAdd {1 (cMul -1 <2>)})}) */
-    /* 225	*/ {{2,/*19,346     */354323    , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {%@P (cPow [x 2])}) */
-    /* 226	*/ {{2,/*18,366     */374802    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {% (cPow [x y])}) */
-    /* 227	*/ {{3,/*27,0,10    */10485787  , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {& x y}) */
-    /* 228	*/ {{2,/*41,403     */412713    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cCos [x]) 2])}) */
-    /* 229	*/ {{2,/*41,405     */414761    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cSin [x]) 2])}) */
-    /* 230	*/ {{2,/*141,443    */453773    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd  <2>) (cPow [x -1])}) */
-    /* 231	*/ {{2,/*140,443    */453772    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd  <1>) (cPow [x -1])}) */
-    /* 232	*/ {{2,/*366,18     */18798     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x y]) %}) */
-    /* 233	*/ {{2,/*473,62     */63961     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAbs [x]) -%@C}) */
-    /* 234	*/ {{2,/*492,494    */506348    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cCos [y])}) */
-    /* 235	*/ {{3,/*492,494,41 */43497964  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cCos [y]) -1}) */
-    /* 236	*/ {{2,/*492,566    */580076    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cSin [y])}) */
-    /* 237	*/ {{3,/*492,566,41 */43571692  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cSin [y]) -1}) */
-    /* 238	*/ {{2,/*492,18     */18924     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCos [x]) %}) */
-    /* 239	*/ {{2,/*492,27     */28140     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCos [x]) &}) */
-    /* 240	*/ {{2,/*571,339    */347707    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN( /%@C )@C})]) MUL( % SEC( ATAN( /%@C )@C )@C )@C}) */
-    /* 241	*/ {{2,/*565,494    */506421    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cCos [y])}) */
-    /* 242	*/ {{2,/*572,563    */577084    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN( % )@C})]) SEC( ATAN( % )@C )@C}) */
-    /* 243	*/ {{2,/*573,340    */348733    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN2( & % )@C})]) MUL( % SEC( ATAN2( & % )@C )@C )@C}) */
-    /* 244	*/ {{2,/*565,566    */580149    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y])}) */
-    /* 245	*/ {{2,/*41,410     */419881    , cMul        ,SelectedParams  ,0}, 0, 0x6}, /* (cMul {-1 (cPow [/&@C x])}) */
-    /* 246	*/ {{2,/*41,411     */420905    , cMul        ,SelectedParams  ,0}, 0, 0x6}, /* (cMul {-1 (cPow [& x])}) */
-    /* 247	*/ {{2,/*41,495     */506921    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])}) */
-    /* 248	*/ {{2,/*54,10      */10294     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {2 y}) */
-    /* 249	*/ {{2,/*62,410     */419902    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {-%@C (cPow [/&@C x])}) */
-    /* 250	*/ {{2,/*413,41     */42397     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1}) */
-    /* 251	*/ {{2,/*416,41     */42400     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1}) */
-    /* 252	*/ {{2,/*503,54     */55799     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cCosh [(cLog [(cPow [& x])])]) 2}) */
-    /* 253	*/ {{2,/*505,41     */42489     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCosh [x]) -1}) */
-    /* 254	*/ {{3,/*565,566,41 */43571765  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y]) -1}) */
-    /* 255	*/ {{2,/*570,52     */53818     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x 0.7853981633974482789994908671360462903976})]) 1.414213562373095145474621858738828450441}) */
-    /* 256	*/ {{2,/*565,18     */18997     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cSin [x]) %}) */
-    /* 257	*/ {{2,/*583,40     */41543     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cMul {x LOG( & )@C})]) -2}) */
-    /* 258	*/ {{2,/*588,54     */55884     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cLog [(cPow [& x])])]) 2}) */
-    /* 259	*/ {{2,/*0,140      */143360    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cAdd  <1>)}) */
-    /* 260	*/ {{2,/*0,550      */563200    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x LOG( & )@C}) */
-    /* 261	*/ {{2,/*10,38      */38922     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y a}) */
-    /* 262	*/ {{2,/*18,408     */417810    , cMul        ,SelectedParams  ,0}, 0, 0x1}, /* (cMul {% (cPow [x@P z])}) */
-    /* 263	*/ {{2,/*18,411     */420882    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {% (cPow [& x])}) */
-    /* 264	*/ {{2,/*473,18     */18905     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAbs [x]) %}) */
-    /* 265	*/ {{3,/*583,54,18  */18930247  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cMul {x LOG( & )@C})]) 2 %}) */
-    /* 266	*/ {{3,/*0,48,66    */69255168  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x 0.5 /%@C}) */
-    /* 267	*/ {{2,/*0,648      */663552    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cAnd  <1>)}) */
-    /* 268	*/ {{2,/*10,27      */27658     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y &}) */
-    /* 269	*/ {{2,/*18,386     */395282    , cMul        ,SelectedParams  ,0}, 0, 0x14}, /* (cMul {% (cPow [x (cMul {& y})])}) */
-    /* 270	*/ {{2,/*18,391     */400402    , cMul        ,SelectedParams  ,0}, 0, 0x10}, /* (cMul {% (cPow [& y])}) */
-    /* 271	*/ {{2,/*18,410     */419858    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {% (cPow [/&@C x])}) */
-    /* 272	*/ {{3,/*501,54,18  */18930165  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cCosh [(cMul {x LOG( & )@C})]) 2 %}) */
-    /* 273	*/ {{2,/*41,346     */354345    , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {-1 (cPow [x 2])}) */
-    /* 274	*/ {{2,/*41,505     */517161    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCosh [x])}) */
-    /* 275	*/ {{2,/*41,590     */604201    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSinh [x])}) */
-    /* 276	*/ {{2,/*413,41     */42397     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1}) */
-    /* 277	*/ {{2,/*590,41     */42574     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cSinh [x]) -1}) */
-    /* 278	*/ {{2,/*18,0       */18        , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {% x}) */
-    /* 279	*/ {{2,/*41,418     */428073    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cAdd {x MUL( % -0.5 )@C}) 2])}) */
-    /* 280	*/ {{2,/*18,0       */18        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% x}) */
-    /* 281	*/ {{2,/*27,10      */10267     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& y}) */
-    /* 282	*/ {{2,/*27,141     */144411    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& (cAdd  <2>)}) */
-    /* 283	*/ {{2,/*27,140     */143387    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& (cAdd  <1>)}) */
-    /* 284	*/ {{2,/*34,33      */33826     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z b}) */
-    /* 285	*/ {{3,/*34,544,69  */72908834  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z (cLog [x]) /LOG( & )@C@C}) */
-    /* 286	*/ {{2,/*62,0       */62        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-%@C x}) */
-    /* 287	*/ {{2,/*344,10     */10584     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {MUL( & 2 )@C y}) */
-    /* 288	*/ {{2,/*391,41     */42375     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [& y]) -1}) */
-    /* 289	*/ {{2,/*544,66     */68128     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cLog [x]) /%@C}) */
-    /* 290	*/ {{2,/*579,48     */49731     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cMul {x 2})]) 0.5}) */
-    /* 291	*/ {{2,/*0,54       */55296     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x 2}) */
-    /* 292	*/ {{3,/*0,549,48   */50893824  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x LOG( % )@C 0.5}) */
-    /* 293	*/ {{2,/*579,331    */339523    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cMul {x 2})]) MUL( % 0.5 )@C}) */
-    /* 294	*/ {{0,/*           */0         , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul  <1>) */
-    /* 295	*/ {{0,/*           */0         , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul  <2>) */
-    /* 296	*/ {{0,/*           */0         , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul  <3>) */
-    /* 297	*/ {{1,/*2          */2         , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul x@P <1>) */
-    /* 298	*/ {{1,/*2          */2         , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul x@P <2>) */
-    /* 299	*/ {{1,/*3          */3         , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul x@N@V <1>) */
-    /* 300	*/ {{1,/*3          */3         , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul x@N@V <2>) */
-    /* 301	*/ {{1,/*41         */41        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -1 <1>) */
-    /* 302	*/ {{1,/*41         */41        , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul -1 <2>) */
-    /* 303	*/ {{1,/*17         */17        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@N <1>) */
-    /* 304	*/ {{1,/*62         */62        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -%@C <1>) */
-    /* 305	*/ {{1,/*19         */19        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@P <1>) */
-    /* 306	*/ {{2,/*68,544     */557124    , cMul        ,AnyParams       ,1}, 0, 0x1}, /* (cMul /LOG( % )@C@C (cLog [x]) <1>) */
-    /* 307	*/ {{1,/*453        */453       , cMul        ,AnyParams       ,1}, 0, 0x12}, /* (cMul (cPow [y x]) <1>) */
-    /* 308	*/ {{1,/*454        */454       , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul (cPow [y (cAdd  <2>)]) <3>) */
-    /* 309	*/ {{1,/*455        */455       , cMul        ,AnyParams       ,3}, 0, 0x12}, /* (cMul (cPow [y (cAdd x <2>)]) <3>) */
-    /* 310	*/ {{1,/*356        */356       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cPow [% y]) <1>) */
-    /* 311	*/ {{1,/*384        */384       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul (cPow [(cLog [z]) -1]) <2>) */
-    /* 312	*/ {{2,/*384,544    */557440    , cMul        ,AnyParams       ,1}, 0, 0x16}, /* (cMul (cPow [(cLog [z]) -1]) (cLog [x]) <1>) */
-    /* 313	*/ {{1,/*473        */473       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cAbs [x]) <1>) */
-    /* 314	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul x <1>) */
-    /* 315	*/ {{1,/*544        */544       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cLog [x]) <1>) */
-    /* 316	*/ {{1,/*549        */549       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul LOG( % )@C <1>) */
-    /* 317	*/ {{1,/*40         */40        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -2 <1>) */
-    /* 318	*/ {{1,/*371        */371       , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul (cPow [x %@I@P]) <1>) */
-    /* 319	*/ {{1,/*372        */372       , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul (cPow [x &@I]) <2>) */
-    /* 320	*/ {{1,/*373        */373       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) */
-    /* 321	*/ {{1,/*374        */374       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>) */
-    /* 322	*/ {{1,/*19         */19        , cMul        ,AnyParams       ,1}, 0, 0x1}, /* (cMul %@P <1>) */
-    /* 323	*/ {{1,/*62         */62        , cMul        ,AnyParams       ,2}, 0, 0x1}, /* (cMul -%@C <2>) */
-    /* 324	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul x <2>) */
-    /* 325	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul x <3>) */
-    /* 326	*/ {{1,/*24         */24        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@M <1>) */
-    /* 327	*/ {{1,/*18         */18        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul % <1>) */
-    /* 328	*/ {{2,/*18,27      */27666     , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul % & <1>) */
-    /* 329	*/ {{1,/*27         */27        , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul & <2>) */
-    /* 330	*/ {{1,/*610        */610       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul DIV( & % )@C <2>) */
-    /* 331	*/ {{2,/*18,48      */49170     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % 0.5 )@C */
-    /* 332	*/ {{2,/*27,48      */49179     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & 0.5 )@C */
-    /* 333	*/ {{2,/*40,18      */18472     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( -2 % )@C */
-    /* 334	*/ {{2,/*48,335     */343088    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C */
-    /* 335	*/ {{2,/*27,70      */71707     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & /SQRT( % )@C@C )@C */
-    /* 336	*/ {{2,/*337,468    */479569    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( MUL( -0.25 /%@C )@C POW( & 2 )@C )@C */
-    /* 337	*/ {{2,/*43,66      */67627     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( -0.25 /%@C )@C */
-    /* 338	*/ {{2,/*54,18      */18486     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 2 % )@C */
-    /* 339	*/ {{2,/*18,562     */575506    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % SEC( ATAN( /%@C )@C )@C )@C */
-    /* 340	*/ {{2,/*18,564     */577554    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % SEC( ATAN2( & % )@C )@C )@C */
-    /* 341	*/ {{2,/*18,42      */43026     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % -0.5 )@C */
-    /* 342	*/ {{2,/*18,27      */27666     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % & )@C */
-    /* 343	*/ {{2,/*18,36      */36882     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % z@C )@C */
-    /* 344	*/ {{2,/*27,54      */55323     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & 2 )@C */
-    /* 345	*/ {{2,/*48,66      */67632     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 0.5 /%@C )@C */
-    /* 346	*/ {{2,/*0,54       */55296     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x 2]) */
-    /* 347	*/ {{2,/*9,17       */17417     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y %@N]) */
-    /* 348	*/ {{2,/*10,62      */63498     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y -%@C]) */
-    /* 349	*/ {{2,/*72,48      */49224     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5]) */
-    /* 350	*/ {{2,/*74,42      */43082     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [x 2])}) -0.5]) */
-    /* 351	*/ {{2,/*80,42      */43088     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x 2]) (cPow [y 2])}) -0.5]) */
-    /* 352	*/ {{2,/*10,54      */55306     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y 2]) */
-    /* 353	*/ {{2,/*81,48      */49233     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) */
-    /* 354	*/ {{2,/*82,48      */49234     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x 2]) 1}) 0.5]) */
-    /* 355	*/ {{2,/*83,42      */43091     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5]) */
-    /* 356	*/ {{2,/*18,10      */10258     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% y]) */
-    /* 357	*/ {{2,/*91,48      */49243     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {-1 (cPow [x 2])}) 0.5]) */
-    /* 358	*/ {{2,/*93,41      */42077     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cMul {-1 x})}) -1]) */
-    /* 359	*/ {{2,/*95,54      */55391     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x y}) 2]) */
-    /* 360	*/ {{2,/*96,54      */55392     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x (cMul {-1 y})}) 2]) */
-    /* 361	*/ {{2,/*196,331    */339140    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul {x POW( a@C /%@C )@C}) MUL( % 0.5 )@C]) */
-    /* 362	*/ {{2,/*294,27     */27942     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <1>) &]) */
-    /* 363	*/ {{2,/*0,13       */13312     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y@O]) */
-    /* 364	*/ {{2,/*0,14       */14336     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y@F]) */
-    /* 365	*/ {{2,/*2,10       */10242     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x@P y]) */
-    /* 366	*/ {{2,/*0,10       */10240     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y]) */
-    /* 367	*/ {{2,/*0,20       */20480     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@E]) */
-    /* 368	*/ {{2,/*0,248      */253952    , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [x (cMul {2 y})]) */
-    /* 369	*/ {{2,/*0,331      */338944    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x MUL( % 0.5 )@C]) */
-    /* 370	*/ {{2,/*0,549      */562176    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x LOG( % )@C]) */
-    /* 371	*/ {{2,/*0,22       */22528     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@I@P]) */
-    /* 372	*/ {{2,/*0,30       */30720     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x &@I]) */
-    /* 373	*/ {{2,/*0,112      */114688    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cAdd {% -MIN( % & )@C@C})]) */
-    /* 374	*/ {{2,/*0,114      */116736    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cAdd {& -MIN( % & )@C@C})]) */
-    /* 375	*/ {{2,/*0,561      */574464    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x MIN( % & )@C]) */
-    /* 376	*/ {{2,/*10,28      */28682     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y &@E]) */
-    /* 377	*/ {{2,/*10,332     */339978    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y MUL( & 0.5 )@C]) */
-    /* 378	*/ {{2,/*10,41      */41994     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y -1]) */
-    /* 379	*/ {{2,/*18,140     */143378    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% (cAdd  <1>)]) */
-    /* 380	*/ {{2,/*76,54      */55372     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {x SQRT( % )@C}) (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C})}) 2]) */
-    /* 381	*/ {{2,/*130,54     */55426     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x y]) MUL( % 0.5 )@C}) 2]) */
-    /* 382	*/ {{2,/*89,41      */42073     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) */
-    /* 383	*/ {{2,/*199,332    */340167    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C]) */
-    /* 384	*/ {{2,/*546,41     */42530     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog [z]) -1]) */
-    /* 385	*/ {{2,/*0,268      */274432    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cMul {y &})]) */
-    /* 386	*/ {{2,/*0,281      */287744    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cMul {& y})]) */
-    /* 387	*/ {{2,/*0,287      */293888    , cPow        ,PositionalParams,0}, 0, 0x14}, /* (cPow [x (cMul {MUL( & 2 )@C y})]) */
-    /* 388	*/ {{2,/*34,140     */143394    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [z (cAdd  <1>)]) */
-    /* 389	*/ {{2,/*56,295     */302136    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cMul  <2>)]) */
-    /* 390	*/ {{2,/*131,54     */55427     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x (cMul {y &})]) MUL( % 0.5 )@C}) 2]) */
-    /* 391	*/ {{2,/*27,10      */10267     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& y]) */
-    /* 392	*/ {{2,/*132,54     */55428     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [& y]) MUL( % 0.5 )@C}) 2]) */
-    /* 393	*/ {{2,/*134,48     */49286     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) 0.5]) */
-    /* 394	*/ {{2,/*74,42      */43082     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cPow [x 2])}) -0.5]) */
-    /* 395	*/ {{2,/*74,48      */49226     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cPow [x 2])}) 0.5]) */
-    /* 396	*/ {{2,/*140,54     */55436     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd  <1>) 2]) */
-    /* 397	*/ {{2,/*468,10     */10708     , cPow        ,PositionalParams,0}, 0, 0x10}, /* (cPow [POW( & 2 )@C y]) */
-    /* 398	*/ {{2,/*46,479     */490542    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 (cAsinh [x])]) */
-    /* 399	*/ {{2,/*56,480     */491576    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cAsinh [(cAdd  <1>)])]) */
-    /* 400	*/ {{2,/*134,42     */43142     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) -0.5]) */
-    /* 401	*/ {{2,/*46,480     */491566    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 (cAsinh [(cAdd  <1>)])]) */
-    /* 402	*/ {{2,/*492,54     */55788     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCos [x]) 2]) */
-    /* 403	*/ {{2,/*492,54     */55788     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCos [x]) 2]) */
-    /* 404	*/ {{2,/*565,54     */55861     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSin [x]) 2]) */
-    /* 405	*/ {{2,/*565,54     */55861     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cSin [x]) 2]) */
+    /* 208	*/ {{2,/*462,374    */383438    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {POW( % & )@C (cPow [x LOG( % )@C])}) */
+    /* 209	*/ {{2,/*40,560     */573480    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSin [(cAdd  <1>)])}) */
+    /* 210	*/ {{2,/*40,562     */575528    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSin [(cMul  <1>)])}) */
+    /* 211	*/ {{2,/*40,580     */593960    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSinh [(cMul  <1>)])}) */
+    /* 212	*/ {{2,/*40,592     */606248    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cTan [(cMul  <1>)])}) */
+    /* 213	*/ {{2,/*55,388     */397367    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {2.718281828459045090795598298427648842335 (cPow [z (cAdd  <1>)])}) */
+    /* 214	*/ {{2,/*0,381      */390144    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cPow [y -1])}) */
+    /* 215	*/ {{2,/*40,600     */614440    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cTanh [(cMul  <1>)])}) */
+    /* 216	*/ {{2,/*392,53     */54664     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) 2}) */
+    /* 217	*/ {{2,/*380,79     */81276     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x MIN( % & )@C]) (cAdd {(cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>)})}) */
+    /* 218	*/ {{2,/*0,586      */600064    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x SQRT( % )@C}) */
+    /* 219	*/ {{2,/*10,329     */336906    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C}) */
+    /* 220	*/ {{2,/*17,78      */79889     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cAdd {(cMul  <1>) (cMul -1 <2>)})}) */
+    /* 221	*/ {{2,/*17,120     */122897    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% (cAdd {1 (cMul -1 <2>)})}) */
+    /* 222	*/ {{2,/*18,342     */350226    , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {%@P (cPow [x 2])}) */
+    /* 223	*/ {{3,/*26,0,10    */10485786  , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {& x y}) */
+    /* 224	*/ {{3,/*31,0,10    */10485791  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {&@N x y}) */
+    /* 225	*/ {{2,/*40,10      */10280     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 y}) */
+    /* 226	*/ {{2,/*40,404     */413736    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cCos [x]) 2])}) */
+    /* 227	*/ {{2,/*40,405     */414760    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cSin [x]) 2])}) */
+    /* 228	*/ {{2,/*61,410     */419901    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {-%@C (cPow [/&@C x])}) */
+    /* 229	*/ {{3,/*171,0,10   */10485931  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {ADD( & MUL( 2 % )@C )@C x y}) */
+    /* 230	*/ {{2,/*413,40     */41373     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1}) */
+    /* 231	*/ {{2,/*413,40     */41373     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1}) */
+    /* 232	*/ {{2,/*415,40     */41375     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1}) */
+    /* 233	*/ {{2,/*468,61     */62932     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAbs [x]) -%@C}) */
+    /* 234	*/ {{2,/*487,489    */501223    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cCos [y])}) */
+    /* 235	*/ {{3,/*487,489,40 */42444263  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cCos [y]) -1}) */
+    /* 236	*/ {{2,/*487,566    */580071    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cSin [y])}) */
+    /* 237	*/ {{3,/*487,566,40 */42523111  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cCos [x]) (cSin [y]) -1}) */
+    /* 238	*/ {{2,/*487,17     */17895     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCos [x]) %}) */
+    /* 239	*/ {{2,/*487,26     */27111     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCos [x]) &}) */
+    /* 240	*/ {{2,/*564,489    */501300    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cCos [y])}) */
+    /* 241	*/ {{2,/*571,558    */571963    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN( % )@C})]) SEC( ATAN( % )@C )@C}) */
+    /* 242	*/ {{2,/*572,336    */344636    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN2( & % )@C})]) MUL( % SEC( ATAN2( & % )@C )@C )@C}) */
+    /* 243	*/ {{2,/*564,566    */580148    , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y])}) */
+    /* 244	*/ {{2,/*40,410     */419880    , cMul        ,SelectedParams  ,0}, 0, 0x6}, /* (cMul {-1 (cPow [/&@C x])}) */
+    /* 245	*/ {{2,/*40,490     */501800    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])}) */
+    /* 246	*/ {{2,/*498,53     */54770     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cCosh [(cLog [(cPow [& x])])]) 2}) */
+    /* 247	*/ {{3,/*564,566,40 */42523188  , cMul        ,SelectedParams  ,0}, 0, 0x12}, /* (cMul {(cSin [x]) (cSin [y]) -1}) */
+    /* 248	*/ {{2,/*569,51     */52793     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x 0.7853981633974482789994908671360462903976})]) 1.414213562373095145474621858738828450441}) */
+    /* 249	*/ {{2,/*564,17     */17972     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cSin [x]) %}) */
+    /* 250	*/ {{2,/*570,335    */343610    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cAdd {x ATAN( /%@C )@C})]) MUL( % SEC( ATAN( /%@C )@C )@C )@C}) */
+    /* 251	*/ {{2,/*578,39     */40514     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cMul {x LOG( & )@C})]) -2}) */
+    /* 252	*/ {{2,/*583,53     */54855     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cLog [(cPow [& x])])]) 2}) */
+    /* 253	*/ {{2,/*40,411     */420904    , cMul        ,SelectedParams  ,0}, 0, 0x6}, /* (cMul {-1 (cPow [& x])}) */
+    /* 254	*/ {{2,/*0,139      */142336    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cAdd  <1>)}) */
+    /* 255	*/ {{3,/*0,544,47   */49840128  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x LOG( % )@C 0.5}) */
+    /* 256	*/ {{2,/*0,545      */558080    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x LOG( & )@C}) */
+    /* 257	*/ {{2,/*10,37      */37898     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {y a}) */
+    /* 258	*/ {{2,/*17,411     */420881    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {% (cPow [& x])}) */
+    /* 259	*/ {{2,/*468,17     */17876     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAbs [x]) %}) */
+    /* 260	*/ {{3,/*578,53,17  */17880642  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSinh [(cMul {x LOG( & )@C})]) 2 %}) */
+    /* 261	*/ {{3,/*0,47,65    */68205568  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x 0.5 /%@C}) */
+    /* 262	*/ {{2,/*0,643      */658432    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x (cAnd  <1>)}) */
+    /* 263	*/ {{2,/*17,410     */419857    , cMul        ,SelectedParams  ,0}, 0, 0x7}, /* (cMul {% (cPow [/&@C x])}) */
+    /* 264	*/ {{3,/*496,53,17  */17880560  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cCosh [(cMul {x LOG( & )@C})]) 2 %}) */
+    /* 265	*/ {{2,/*500,40     */41460     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cCosh [x]) -1}) */
+    /* 266	*/ {{2,/*40,500     */512040    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cCosh [x])}) */
+    /* 267	*/ {{2,/*40,585     */599080    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cSinh [x])}) */
+    /* 268	*/ {{2,/*585,40     */41545     , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {(cSinh [x]) -1}) */
+    /* 269	*/ {{2,/*40,342     */350248    , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {-1 (cPow [x 2])}) */
+    /* 270	*/ {{2,/*17,0       */17        , cMul        ,SelectedParams  ,0}, 0, 0x4}, /* (cMul {% x}) */
+    /* 271	*/ {{2,/*40,417     */427048    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-1 (cPow [(cAdd {x MUL( % -0.5 )@C}) 2])}) */
+    /* 272	*/ {{2,/*53,10      */10293     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {2 y}) */
+    /* 273	*/ {{2,/*17,0       */17        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {% x}) */
+    /* 274	*/ {{2,/*26,10      */10266     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& y}) */
+    /* 275	*/ {{2,/*26,140     */143386    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& (cAdd  <2>)}) */
+    /* 276	*/ {{2,/*26,139     */142362    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {& (cAdd  <1>)}) */
+    /* 277	*/ {{2,/*33,32      */32801     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z b}) */
+    /* 278	*/ {{2,/*346,17     */17754     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [x y]) %}) */
+    /* 279	*/ {{3,/*33,539,68  */71855137  , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {z (cLog [x]) /LOG( & )@C@C}) */
+    /* 280	*/ {{2,/*61,0       */61        , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {-%@C x}) */
+    /* 281	*/ {{2,/*140,440    */450700    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd  <2>) (cPow [x -1])}) */
+    /* 282	*/ {{2,/*139,440    */450699    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cAdd  <1>) (cPow [x -1])}) */
+    /* 283	*/ {{2,/*340,10     */10580     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {MUL( & 2 )@C y}) */
+    /* 284	*/ {{2,/*387,40     */41347     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cPow [& y]) -1}) */
+    /* 285	*/ {{2,/*17,408     */417809    , cMul        ,SelectedParams  ,0}, 0, 0x1}, /* (cMul {% (cPow [x@P z])}) */
+    /* 286	*/ {{2,/*539,65     */67099     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cLog [x]) /%@C}) */
+    /* 287	*/ {{2,/*573,47     */48701     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cMul {x 2})]) 0.5}) */
+    /* 288	*/ {{2,/*0,53       */54272     , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {x 2}) */
+    /* 289	*/ {{2,/*573,327    */335421    , cMul        ,SelectedParams  ,0}, 0, 0x0}, /* (cMul {(cSin [(cMul {x 2})]) MUL( % 0.5 )@C}) */
+    /* 290	*/ {{0,/*           */0         , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul  <1>) */
+    /* 291	*/ {{0,/*           */0         , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul  <2>) */
+    /* 292	*/ {{0,/*           */0         , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul  <3>) */
+    /* 293	*/ {{1,/*2          */2         , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul x@P <1>) */
+    /* 294	*/ {{1,/*2          */2         , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul x@P <2>) */
+    /* 295	*/ {{1,/*3          */3         , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul x@N@V <1>) */
+    /* 296	*/ {{1,/*3          */3         , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul x@N@V <2>) */
+    /* 297	*/ {{1,/*40         */40        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -1 <1>) */
+    /* 298	*/ {{1,/*40         */40        , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul -1 <2>) */
+    /* 299	*/ {{1,/*16         */16        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@N <1>) */
+    /* 300	*/ {{1,/*61         */61        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -%@C <1>) */
+    /* 301	*/ {{1,/*18         */18        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@P <1>) */
+    /* 302	*/ {{2,/*67,539     */552003    , cMul        ,AnyParams       ,1}, 0, 0x1}, /* (cMul /LOG( % )@C@C (cLog [x]) <1>) */
+    /* 303	*/ {{1,/*382        */382       , cMul        ,AnyParams       ,1}, 0, 0x12}, /* (cMul (cPow [y x]) <1>) */
+    /* 304	*/ {{1,/*383        */383       , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul (cPow [y (cAdd  <2>)]) <3>) */
+    /* 305	*/ {{1,/*384        */384       , cMul        ,AnyParams       ,3}, 0, 0x12}, /* (cMul (cPow [y (cAdd x <2>)]) <3>) */
+    /* 306	*/ {{1,/*360        */360       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cPow [% y]) <1>) */
+    /* 307	*/ {{1,/*375        */375       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul (cPow [(cLog [z]) -1]) <2>) */
+    /* 308	*/ {{2,/*375,539    */552311    , cMul        ,AnyParams       ,1}, 0, 0x16}, /* (cMul (cPow [(cLog [z]) -1]) (cLog [x]) <1>) */
+    /* 309	*/ {{1,/*468        */468       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cAbs [x]) <1>) */
+    /* 310	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul x <1>) */
+    /* 311	*/ {{1,/*539        */539       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cLog [x]) <1>) */
+    /* 312	*/ {{1,/*544        */544       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul LOG( % )@C <1>) */
+    /* 313	*/ {{1,/*39         */39        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul -2 <1>) */
+    /* 314	*/ {{1,/*61         */61        , cMul        ,AnyParams       ,2}, 0, 0x1}, /* (cMul -%@C <2>) */
+    /* 315	*/ {{1,/*376        */376       , cMul        ,AnyParams       ,1}, 0, 0x4}, /* (cMul (cPow [x %@I@P]) <1>) */
+    /* 316	*/ {{1,/*377        */377       , cMul        ,AnyParams       ,2}, 0, 0x4}, /* (cMul (cPow [x &@I]) <2>) */
+    /* 317	*/ {{1,/*378        */378       , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) */
+    /* 318	*/ {{1,/*379        */379       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>) */
+    /* 319	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul x <2>) */
+    /* 320	*/ {{1,/*0          */0         , cMul        ,AnyParams       ,3}, 0, 0x0}, /* (cMul x <3>) */
+    /* 321	*/ {{1,/*18         */18        , cMul        ,AnyParams       ,1}, 0, 0x1}, /* (cMul %@P <1>) */
+    /* 322	*/ {{1,/*23         */23        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul %@M <1>) */
+    /* 323	*/ {{1,/*17         */17        , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul % <1>) */
+    /* 324	*/ {{2,/*17,26      */26641     , cMul        ,AnyParams       ,1}, 0, 0x0}, /* (cMul % & <1>) */
+    /* 325	*/ {{1,/*26         */26        , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul & <2>) */
+    /* 326	*/ {{1,/*605        */605       , cMul        ,AnyParams       ,2}, 0, 0x0}, /* (cMul DIV( & % )@C <2>) */
+    /* 327	*/ {{2,/*17,47      */48145     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % 0.5 )@C */
+    /* 328	*/ {{2,/*26,47      */48154     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & 0.5 )@C */
+    /* 329	*/ {{2,/*47,330     */337967    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C */
+    /* 330	*/ {{2,/*26,69      */70682     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & /SQRT( % )@C@C )@C */
+    /* 331	*/ {{2,/*333,463    */474445    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( MUL( -0.25 /%@C )@C POW( & 2 )@C )@C */
+    /* 332	*/ {{2,/*39,17      */17447     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( -2 % )@C */
+    /* 333	*/ {{2,/*42,65      */66602     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( -0.25 /%@C )@C */
+    /* 334	*/ {{2,/*53,17      */17461     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 2 % )@C */
+    /* 335	*/ {{2,/*17,557     */570385    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % SEC( ATAN( /%@C )@C )@C )@C */
+    /* 336	*/ {{2,/*17,559     */572433    , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % SEC( ATAN2( & % )@C )@C )@C */
+    /* 337	*/ {{2,/*17,41      */42001     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % -0.5 )@C */
+    /* 338	*/ {{2,/*17,26      */26641     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % & )@C */
+    /* 339	*/ {{2,/*17,35      */35857     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( % z@C )@C */
+    /* 340	*/ {{2,/*26,53      */54298     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( & 2 )@C */
+    /* 341	*/ {{2,/*47,65      */66607     , cMul        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MUL( 0.5 /%@C )@C */
+    /* 342	*/ {{2,/*0,53       */54272     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x 2]) */
+    /* 343	*/ {{2,/*0,13       */13312     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y@O]) */
+    /* 344	*/ {{2,/*0,14       */14336     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y@F]) */
+    /* 345	*/ {{2,/*2,10       */10242     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x@P y]) */
+    /* 346	*/ {{2,/*0,10       */10240     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x y]) */
+    /* 347	*/ {{2,/*0,19       */19456     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@E]) */
+    /* 348	*/ {{2,/*0,274      */280576    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cMul {& y})]) */
+    /* 349	*/ {{2,/*0,283      */289792    , cPow        ,PositionalParams,0}, 0, 0x14}, /* (cPow [x (cMul {MUL( & 2 )@C y})]) */
+    /* 350	*/ {{2,/*0,327      */334848    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x MUL( % 0.5 )@C]) */
+    /* 351	*/ {{2,/*9,16       */16393     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y@P %@N]) */
+    /* 352	*/ {{2,/*10,61      */62474     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y -%@C]) */
+    /* 353	*/ {{2,/*71,47      */48199     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5]) */
+    /* 354	*/ {{2,/*73,41      */42057     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [x 2])}) -0.5]) */
+    /* 355	*/ {{2,/*81,47      */48209     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x 2]) 1}) 0.5]) */
+    /* 356	*/ {{2,/*82,41      */42066     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5]) */
+    /* 357	*/ {{2,/*10,27      */27658     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y &@E]) */
+    /* 358	*/ {{2,/*10,328     */335882    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y MUL( & 0.5 )@C]) */
+    /* 359	*/ {{2,/*10,53      */54282     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y 2]) */
+    /* 360	*/ {{2,/*17,10      */10257     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% y]) */
+    /* 361	*/ {{2,/*94,47      */48222     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {-1 (cPow [x 2])}) 0.5]) */
+    /* 362	*/ {{2,/*96,40      */41056     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cMul {-1 x})}) -1]) */
+    /* 363	*/ {{2,/*98,53      */54370     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x y}) 2]) */
+    /* 364	*/ {{2,/*99,53      */54371     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x (cMul {-1 y})}) 2]) */
+    /* 365	*/ {{2,/*290,26     */26914     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <1>) &]) */
+    /* 366	*/ {{2,/*0,272      */278528    , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [x (cMul {2 y})]) */
+    /* 367	*/ {{2,/*17,139     */142353    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% (cAdd  <1>)]) */
+    /* 368	*/ {{2,/*89,47      */48217     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x 2]) -1}) 0.5]) */
+    /* 369	*/ {{2,/*127,53     */54399     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x y]) MUL( % 0.5 )@C}) 2]) */
+    /* 370	*/ {{2,/*90,53      */54362     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [x (cMul {y &})]) MUL( % 0.5 )@C}) 2]) */
+    /* 371	*/ {{2,/*192,327    */335040    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul {x POW( a@C /%@C )@C}) MUL( % 0.5 )@C]) */
+    /* 372	*/ {{2,/*196,328    */336068    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C]) */
+    /* 373	*/ {{2,/*0,194      */198656    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cMul {y &})]) */
+    /* 374	*/ {{2,/*0,544      */557056    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x LOG( % )@C]) */
+    /* 375	*/ {{2,/*541,40     */41501     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog [z]) -1]) */
+    /* 376	*/ {{2,/*0,21       */21504     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@I@P]) */
+    /* 377	*/ {{2,/*0,29       */29696     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x &@I]) */
+    /* 378	*/ {{2,/*0,112      */114688    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cAdd {% -MIN( % & )@C@C})]) */
+    /* 379	*/ {{2,/*0,114      */116736    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cAdd {& -MIN( % & )@C@C})]) */
+    /* 380	*/ {{2,/*0,556      */569344    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x MIN( % & )@C]) */
+    /* 381	*/ {{2,/*10,40      */40970     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y -1]) */
+    /* 382	*/ {{2,/*10,0       */10        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y x]) */
+    /* 383	*/ {{2,/*10,140     */143370    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y (cAdd  <2>)]) */
+    /* 384	*/ {{2,/*10,147     */150538    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y (cAdd x <2>)]) */
+    /* 385	*/ {{2,/*10,0       */10        , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [y x]) */
+    /* 386	*/ {{2,/*10,147     */150538    , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [y (cAdd x <2>)]) */
+    /* 387	*/ {{2,/*26,10      */10266     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& y]) */
+    /* 388	*/ {{2,/*33,139     */142369    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [z (cAdd  <1>)]) */
+    /* 389	*/ {{2,/*55,291     */298039    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cMul  <2>)]) */
+    /* 390	*/ {{2,/*77,53      */54349     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {x SQRT( % )@C}) (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C})}) 2]) */
+    /* 391	*/ {{2,/*129,53     */54401     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cPow [& y]) MUL( % 0.5 )@C}) 2]) */
+    /* 392	*/ {{2,/*92,40      */41052     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) */
+    /* 393	*/ {{2,/*133,41     */42117     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) -0.5]) */
+    /* 394	*/ {{2,/*133,47     */48261     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) 0.5]) */
+    /* 395	*/ {{2,/*139,53     */54411     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd  <1>) 2]) */
+    /* 396	*/ {{2,/*463,10     */10703     , cPow        ,PositionalParams,0}, 0, 0x10}, /* (cPow [POW( & 2 )@C y]) */
+    /* 397	*/ {{2,/*45,475     */486445    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 (cAsinh [(cAdd  <1>)])]) */
+    /* 398	*/ {{2,/*55,475     */486455    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cAsinh [(cAdd  <1>)])]) */
+    /* 399	*/ {{2,/*73,47      */48201     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cPow [x 2])}) 0.5]) */
+    /* 400	*/ {{2,/*55,474     */485431    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cAsinh [x])]) */
+    /* 401	*/ {{2,/*73,41      */42057     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd {1 (cPow [x 2])}) -0.5]) */
+    /* 402	*/ {{2,/*45,474     */485421    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 (cAsinh [x])]) */
+    /* 403	*/ {{2,/*487,53     */54759     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCos [x]) 2]) */
+    /* 404	*/ {{2,/*487,53     */54759     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCos [x]) 2]) */
+    /* 405	*/ {{2,/*564,53     */54836     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cSin [x]) 2]) */
     /* 406	*/ {{2,/*0,110      */112640    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x (cAdd {y z})]) */
-    /* 407	*/ {{2,/*0,19       */19456     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@P]) */
-    /* 408	*/ {{2,/*2,34       */34818     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x@P z]) */
-    /* 409	*/ {{2,/*27,0       */27        , cPow        ,PositionalParams,0}, 0, 0x6}, /* (cPow [& x]) */
-    /* 410	*/ {{2,/*67,0       */67        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [/&@C x]) */
-    /* 411	*/ {{2,/*27,0       */27        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& x]) */
-    /* 412	*/ {{2,/*67,0       */67        , cPow        ,PositionalParams,0}, 0, 0x6}, /* (cPow [/&@C x]) */
-    /* 413	*/ {{2,/*46,0       */46        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 x]) */
-    /* 414	*/ {{2,/*46,0       */46        , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [0.3678794411714423340242774429498240351677 x]) */
-    /* 415	*/ {{2,/*56,479     */490552    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 (cAsinh [x])]) */
-    /* 416	*/ {{2,/*56,0       */56        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 x]) */
-    /* 417	*/ {{2,/*56,0       */56        , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [2.718281828459045090795598298427648842335 x]) */
-    /* 418	*/ {{2,/*98,54      */55394     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x MUL( % -0.5 )@C}) 2]) */
-    /* 419	*/ {{2,/*0,54       */55296     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x 2]) */
-    /* 420	*/ {{2,/*99,54      */55395     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x MUL( % 0.5 )@C}) 2]) */
-    /* 421	*/ {{2,/*295,41     */42279     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <2>) -1]) */
-    /* 422	*/ {{2,/*324,41     */42308     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cMul x <2>) -1]) */
-    /* 423	*/ {{2,/*0,10       */10240     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x y]) */
-    /* 424	*/ {{2,/*0,34       */34816     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x z]) */
-    /* 425	*/ {{2,/*27,125     */128027    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})]) */
-    /* 426	*/ {{2,/*103,41     */42087     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) -1]) */
-    /* 427	*/ {{2,/*104,41     */42088     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) -1]) */
-    /* 428	*/ {{2,/*117,41     */42101     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cAdd {-1 (cPow [% x])}) -1]) */
-    /* 429	*/ {{2,/*153,41     */42137     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd (cMul x <1>) <2>) -1]) */
-    /* 430	*/ {{2,/*296,41     */42280     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <3>) -1]) */
-    /* 431	*/ {{2,/*325,41     */42309     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cMul x <3>) -1]) */
-    /* 432	*/ {{2,/*452,66     */68036     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cPow [x %]) /%@C]) */
-    /* 433	*/ {{2,/*492,41     */42476     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCos [x]) -1]) */
-    /* 434	*/ {{2,/*492,41     */42476     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCos [x]) -1]) */
-    /* 435	*/ {{2,/*499,41     */42483     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cCos [(cMul {-%@C x})]) -1]) */
-    /* 436	*/ {{2,/*500,41     */42484     , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [(cCos [(cMul -%@C <1>)]) -1]) */
-    /* 437	*/ {{2,/*505,41     */42489     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCosh [x]) -1]) */
-    /* 438	*/ {{2,/*505,41     */42489     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCosh [x]) -1]) */
-    /* 439	*/ {{2,/*502,41     */42486     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cCosh [(cMul {-%@C x})]) -1]) */
-    /* 440	*/ {{2,/*544,41     */42528     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog [x]) -1]) */
-    /* 441	*/ {{2,/*551,41     */42535     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog10 [x]) -1]) */
-    /* 442	*/ {{2,/*552,41     */42536     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog2 [x]) -1]) */
-    /* 443	*/ {{2,/*0,41       */41984     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x -1]) */
-    /* 444	*/ {{2,/*155,41     */42139     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd x <1>) -1]) */
-    /* 445	*/ {{2,/*0,41       */41984     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x -1]) */
-    /* 446	*/ {{2,/*565,41     */42549     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSin [x]) -1]) */
-    /* 447	*/ {{2,/*590,41     */42574     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSinh [x]) -1]) */
-    /* 448	*/ {{2,/*592,41     */42576     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cTan [x]) -1]) */
-    /* 449	*/ {{2,/*592,41     */42576     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTan [x]) -1]) */
-    /* 450	*/ {{2,/*601,41     */42585     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTanh [x]) -1]) */
-    /* 451	*/ {{2,/*601,41     */42585     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cTanh [x]) -1]) */
-    /* 452	*/ {{2,/*0,18       */18432     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %]) */
-    /* 453	*/ {{2,/*10,0       */10        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y x]) */
-    /* 454	*/ {{2,/*10,141     */144394    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y (cAdd  <2>)]) */
-    /* 455	*/ {{2,/*10,148     */151562    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [y (cAdd x <2>)]) */
-    /* 456	*/ {{2,/*10,0       */10        , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [y x]) */
-    /* 457	*/ {{2,/*10,148     */151562    , cPow        ,PositionalParams,0}, 0, 0x12}, /* (cPow [y (cAdd x <2>)]) */
-    /* 458	*/ {{2,/*18,0       */18        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% x]) */
-    /* 459	*/ {{2,/*136,41     */42120     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cAdd {1 (cPow [% x])}) -1]) */
-    /* 460	*/ {{2,/*505,18     */18937     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCosh [x]) %]) */
-    /* 461	*/ {{2,/*505,170    */174585    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCosh [x]) ADD( % 1 )@C]) */
-    /* 462	*/ {{2,/*603,41     */42587     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTanh [(cMul {x LOG( % )@C 0.5})]) -1]) */
-    /* 463	*/ {{2,/*18,0       */18        , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [% x]) */
-    /* 464	*/ {{2,/*19,0       */19        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [%@P x]) */
-    /* 465	*/ {{2,/*18,10      */10258     , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [% y]) */
-    /* 466	*/ {{2,/*6,10       */10246     , cPow        ,PositionalParams,0}, Sign_Positive, 0x0}, /* (cPow [x y])@P */
-    /* 467	*/ {{2,/*18,27      */27666     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( % & )@C */
-    /* 468	*/ {{2,/*27,54      */55323     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( & 2 )@C */
-    /* 469	*/ {{2,/*36,67      */68644     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( z@C /&@C )@C */
-    /* 470	*/ {{2,/*39,66      */67623     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( a@C /%@C )@C */
-    /* 471	*/ {{2,/*331,54     */55627     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( MUL( % 0.5 )@C 2 )@C */
-    /* 472	*/ {{2,/*27,66      */67611     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( & /%@C )@C */
-    /* 473	*/ {{1,/*0          */0         , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [x]) */
-    /* 474	*/ {{1,/*10         */10        , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [y]) */
-    /* 475	*/ {{1,/*197        */197       , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [(cMul {x y})]) */
-    /* 476	*/ {{1,/*0          */0         , cAcos       ,PositionalParams,0}, 0, 0x0}, /* (cAcos [x]) */
-    /* 477	*/ {{1,/*0          */0         , cAcosh      ,PositionalParams,0}, 0, 0x0}, /* (cAcosh [x]) */
-    /* 478	*/ {{1,/*0          */0         , cAsin       ,PositionalParams,0}, 0, 0x0}, /* (cAsin [x]) */
-    /* 479	*/ {{1,/*0          */0         , cAsinh      ,PositionalParams,0}, 0, 0x0}, /* (cAsinh [x]) */
-    /* 480	*/ {{1,/*140        */140       , cAsinh      ,PositionalParams,0}, 0, 0x0}, /* (cAsinh [(cAdd  <1>)]) */
-    /* 481	*/ {{1,/*0          */0         , cAtan       ,PositionalParams,0}, 0, 0x0}, /* (cAtan [x]) */
-    /* 482	*/ {{1,/*66         */66        , cAtan       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN( /%@C )@C */
-    /* 483	*/ {{1,/*18         */18        , cAtan       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN( % )@C */
-    /* 484	*/ {{2,/*0,348      */356352    , cAtan2      ,PositionalParams,0}, 0, 0x0}, /* (cAtan2 [x (cPow [y -%@C])]) */
-    /* 485	*/ {{2,/*0,10       */10240     , cAtan2      ,PositionalParams,0}, 0, 0x0}, /* (cAtan2 [x y]) */
-    /* 486	*/ {{2,/*27,18      */18459     , cAtan2      ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN2( & % )@C */
-    /* 487	*/ {{1,/*0          */0         , cAtanh      ,PositionalParams,0}, 0, 0x0}, /* (cAtanh [x]) */
-    /* 488	*/ {{1,/*140        */140       , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [(cAdd  <1>)]) */
-    /* 489	*/ {{1,/*294        */294       , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [(cMul  <1>)]) */
-    /* 490	*/ {{1,/*0          */0         , cCeil       ,PositionalParams,0}, 0, 0x4}, /* (cCeil [x]) */
-    /* 491	*/ {{1,/*0          */0         , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [x]) */
-    /* 492	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [x]) */
-    /* 493	*/ {{1,/*7          */7         , cCos        ,PositionalParams,0}, 0, 0x4}, /* (cCos [x@H]) */
-    /* 494	*/ {{1,/*10         */10        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [y]) */
-    /* 495	*/ {{1,/*96         */96        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x (cMul {-1 y})})]) */
-    /* 496	*/ {{1,/*95         */95        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x y})]) */
-    /* 497	*/ {{1,/*140        */140       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd  <1>)]) */
-    /* 498	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x4}, /* (cCos [x]) */
-    /* 499	*/ {{1,/*286        */286       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul {-%@C x})]) */
-    /* 500	*/ {{1,/*304        */304       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul -%@C <1>)]) */
-    /* 501	*/ {{1,/*260        */260       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cMul {x LOG( & )@C})]) */
-    /* 502	*/ {{1,/*286        */286       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cMul {-%@C x})]) */
-    /* 503	*/ {{1,/*548        */548       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cLog [(cPow [& x])])]) */
-    /* 504	*/ {{1,/*0          */0         , cCosh       ,PositionalParams,0}, 0, 0x4}, /* (cCosh [x]) */
-    /* 505	*/ {{1,/*0          */0         , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [x]) */
-    /* 506	*/ {{1,/*0          */0         , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [x]) */
-    /* 507	*/ {{1,/*10         */10        , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [y]) */
-    /* 508	*/ {{1,/*95         */95        , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [(cAdd {x y})]) */
-    /* 509	*/ {{1,/*317        */317       , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [(cMul -2 <1>)]) */
-    /* 510	*/ {{1,/*0          */0         , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [x]) */
-    /* 511	*/ {{1,/*10         */10        , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [y]) */
-    /* 512	*/ {{1,/*95         */95        , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [(cAdd {x y})]) */
-    /* 513	*/ {{1,/*85         */85        , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd {x -0.5})]) */
-    /* 514	*/ {{1,/*140        */140       , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd  <1>)]) */
-    /* 515	*/ {{1,/*294        */294       , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cMul  <1>)]) */
-    /* 516	*/ {{1,/*0          */0         , cFloor      ,PositionalParams,0}, 0, 0x4}, /* (cFloor [x]) */
-    /* 517	*/ {{1,/*86         */86        , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd {x 0.5})]) */
-    /* 518	*/ {{1,/*0          */0         , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [x]) */
-    /* 519	*/ {{2,/*369,377    */386417    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [y MUL( & 0.5 )@C])]) */
-    /* 520	*/ {{2,/*369,383    */392561    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])]) */
-    /* 521	*/ {{2,/*361,383    */392553    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [(cMul {x POW( a@C /%@C )@C}) MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])]) */
-    /* 522	*/ {{3,/*0,10,34    */35661824  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [x y z]) */
-    /* 523	*/ {{3,/*0,27,36    */37776384  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x & z@C]) */
-    /* 524	*/ {{3,/*0,38,33    */34641920  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [x a b]) */
-    /* 525	*/ {{3,/*0,111,115  */120699904 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cAdd {y a}) (cAdd {z b})]) */
-    /* 526	*/ {{3,/*0,168,169  */177381376 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x ADD( % & )@C ADD( % z@C )@C]) */
-    /* 527	*/ {{3,/*0,261,284  */298062848 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMul {y a}) (cMul {z b})]) */
-    /* 528	*/ {{3,/*0,342,343  */360011776 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x MUL( % & )@C MUL( % z@C )@C]) */
-    /* 529	*/ {{3,/*0,554,555  */582526976 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMax [y a]) (cMax [z b])]) */
-    /* 530	*/ {{3,/*0,558,559  */586725376 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMin [y a]) (cMin [z b])]) */
-    /* 531	*/ {{3,/*621,21,65  */68179565  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [(cLess [x 0]) %@D1 -%@C@D1]) */
-    /* 532	*/ {{3,/*621,21,65  */68179565  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [(cLess [x 0]) %@D1 -%@C@D1]) */
-    /* 533	*/ {{3,/*627,21,65  */68179571  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) */
-    /* 534	*/ {{3,/*627,21,65  */68179571  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) */
-    /* 535	*/ {{3,/*0,633,26   */27911168  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cNot [y]) %@L]) */
-    /* 536	*/ {{3,/*0,644,645  */676990976 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cAnd {y a}) (cAnd {z b})]) */
-    /* 537	*/ {{3,/*0,10,635   */665856000 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x y (cNot [%])]) */
-    /* 538	*/ {{3,/*0,10,34    */35661824  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x y z]) */
-    /* 539	*/ {{3,/*0,26,633   */663775232 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x %@L (cNot [y])]) */
-    /* 540	*/ {{3,/*0,635,10   */11136000  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cNot [%]) y]) */
-    /* 541	*/ {{3,/*0,651,654  */686435328 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cOr {y a}) (cOr {z b})]) */
-    /* 542	*/ {{1,/*140        */140       , cInt        ,PositionalParams,0}, 0, 0x0}, /* (cInt [(cAdd  <1>)]) */
-    /* 543	*/ {{1,/*294        */294       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cMul  <1>)]) */
-    /* 544	*/ {{1,/*0          */0         , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [x]) */
-    /* 545	*/ {{1,/*10         */10        , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [y]) */
-    /* 546	*/ {{1,/*34         */34        , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [z]) */
-    /* 547	*/ {{1,/*197        */197       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cMul {x y})]) */
-    /* 548	*/ {{1,/*411        */411       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cPow [& x])]) */
-    /* 549	*/ {{1,/*18         */18        , cLog        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* LOG( % )@C */
-    /* 550	*/ {{1,/*27         */27        , cLog        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* LOG( & )@C */
-    /* 551	*/ {{1,/*0          */0         , cLog10      ,PositionalParams,0}, 0, 0x0}, /* (cLog10 [x]) */
-    /* 552	*/ {{1,/*0          */0         , cLog2       ,PositionalParams,0}, 0, 0x0}, /* (cLog2 [x]) */
-    /* 553	*/ {{2,/*0,10       */10240     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [x y]) */
-    /* 554	*/ {{2,/*10,38      */38922     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [y a]) */
-    /* 555	*/ {{2,/*34,33      */33826     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [z b]) */
-    /* 556	*/ {{1,/*0          */0         , cMax        ,AnyParams       ,1}, 0, 0x4}, /* (cMax x <1>) */
-    /* 557	*/ {{2,/*0,10       */10240     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [x y]) */
-    /* 558	*/ {{2,/*10,38      */38922     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [y a]) */
-    /* 559	*/ {{2,/*34,33      */33826     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [z b]) */
-    /* 560	*/ {{1,/*0          */0         , cMin        ,AnyParams       ,1}, 0, 0x4}, /* (cMin x <1>) */
-    /* 561	*/ {{2,/*18,27      */27666     , cMin        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MIN( % & )@C */
-    /* 562	*/ {{1,/*482        */482       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN( /%@C )@C )@C */
-    /* 563	*/ {{1,/*483        */483       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN( % )@C )@C */
-    /* 564	*/ {{1,/*486        */486       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN2( & % )@C )@C */
-    /* 565	*/ {{1,/*0          */0         , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [x]) */
+    /* 407	*/ {{2,/*0,18       */18432     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %@P]) */
+    /* 408	*/ {{2,/*2,33       */33794     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x@P z]) */
+    /* 409	*/ {{2,/*26,0       */26        , cPow        ,PositionalParams,0}, 0, 0x6}, /* (cPow [& x]) */
+    /* 410	*/ {{2,/*66,0       */66        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [/&@C x]) */
+    /* 411	*/ {{2,/*26,0       */26        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& x]) */
+    /* 412	*/ {{2,/*66,0       */66        , cPow        ,PositionalParams,0}, 0, 0x6}, /* (cPow [/&@C x]) */
+    /* 413	*/ {{2,/*45,0       */45        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [0.3678794411714423340242774429498240351677 x]) */
+    /* 414	*/ {{2,/*45,0       */45        , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [0.3678794411714423340242774429498240351677 x]) */
+    /* 415	*/ {{2,/*55,0       */55        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [2.718281828459045090795598298427648842335 x]) */
+    /* 416	*/ {{2,/*55,0       */55        , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [2.718281828459045090795598298427648842335 x]) */
+    /* 417	*/ {{2,/*101,53     */54373     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x MUL( % -0.5 )@C}) 2]) */
+    /* 418	*/ {{2,/*0,53       */54272     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x 2]) */
+    /* 419	*/ {{2,/*102,53     */54374     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {x MUL( % 0.5 )@C}) 2]) */
+    /* 420	*/ {{2,/*291,40     */41251     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <2>) -1]) */
+    /* 421	*/ {{2,/*319,40     */41279     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cMul x <2>) -1]) */
+    /* 422	*/ {{2,/*0,10       */10240     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x y]) */
+    /* 423	*/ {{2,/*0,33       */33792     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x z]) */
+    /* 424	*/ {{2,/*26,131     */134170    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})]) */
+    /* 425	*/ {{2,/*122,40     */41082     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) -1]) */
+    /* 426	*/ {{2,/*152,40     */41112     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd (cMul x <1>) <2>) -1]) */
+    /* 427	*/ {{2,/*292,40     */41252     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cMul  <3>) -1]) */
+    /* 428	*/ {{2,/*320,40     */41280     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cMul x <3>) -1]) */
+    /* 429	*/ {{2,/*450,65     */67010     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cPow [x %]) /%@C]) */
+    /* 430	*/ {{2,/*487,40     */41447     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCos [x]) -1]) */
+    /* 431	*/ {{2,/*487,40     */41447     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCos [x]) -1]) */
+    /* 432	*/ {{2,/*494,40     */41454     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cCos [(cMul {-%@C x})]) -1]) */
+    /* 433	*/ {{2,/*495,40     */41455     , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [(cCos [(cMul -%@C <1>)]) -1]) */
+    /* 434	*/ {{2,/*500,40     */41460     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCosh [x]) -1]) */
+    /* 435	*/ {{2,/*500,40     */41460     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCosh [x]) -1]) */
+    /* 436	*/ {{2,/*497,40     */41457     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cCosh [(cMul {-%@C x})]) -1]) */
+    /* 437	*/ {{2,/*539,40     */41499     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog [x]) -1]) */
+    /* 438	*/ {{2,/*546,40     */41506     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog10 [x]) -1]) */
+    /* 439	*/ {{2,/*547,40     */41507     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cLog2 [x]) -1]) */
+    /* 440	*/ {{2,/*0,40       */40960     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x -1]) */
+    /* 441	*/ {{2,/*123,40     */41083     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) -1]) */
+    /* 442	*/ {{2,/*154,40     */41114     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cAdd x <1>) -1]) */
+    /* 443	*/ {{2,/*0,40       */40960     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [x -1]) */
+    /* 444	*/ {{2,/*564,40     */41524     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSin [x]) -1]) */
+    /* 445	*/ {{2,/*585,40     */41545     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSinh [x]) -1]) */
+    /* 446	*/ {{2,/*587,40     */41547     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cTan [x]) -1]) */
+    /* 447	*/ {{2,/*587,40     */41547     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTan [x]) -1]) */
+    /* 448	*/ {{2,/*596,40     */41556     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTanh [x]) -1]) */
+    /* 449	*/ {{2,/*596,40     */41556     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cTanh [x]) -1]) */
+    /* 450	*/ {{2,/*0,17       */17408     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [x %]) */
+    /* 451	*/ {{2,/*17,0       */17        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [% x]) */
+    /* 452	*/ {{2,/*119,40     */41079     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cAdd {-1 (cPow [% x])}) -1]) */
+    /* 453	*/ {{2,/*135,40     */41095     , cPow        ,PositionalParams,0}, 0, 0x5}, /* (cPow [(cAdd {1 (cPow [% x])}) -1]) */
+    /* 454	*/ {{2,/*500,17     */17908     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cCosh [x]) %]) */
+    /* 455	*/ {{2,/*500,169    */173556    , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cCosh [x]) ADD( % 1 )@C]) */
+    /* 456	*/ {{2,/*564,53     */54836     , cPow        ,PositionalParams,0}, 0, 0x4}, /* (cPow [(cSin [x]) 2]) */
+    /* 457	*/ {{2,/*598,40     */41558     , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [(cTanh [(cMul {x LOG( % )@C 0.5})]) -1]) */
+    /* 458	*/ {{2,/*17,0       */17        , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [% x]) */
+    /* 459	*/ {{2,/*18,0       */18        , cPow        ,PositionalParams,0}, 0, 0x0}, /* (cPow [%@P x]) */
+    /* 460	*/ {{2,/*17,10      */10257     , cPow        ,PositionalParams,0}, 0, 0x1}, /* (cPow [% y]) */
+    /* 461	*/ {{2,/*6,10       */10246     , cPow        ,PositionalParams,0}, Sign_Positive, 0x0}, /* (cPow [x y])@P */
+    /* 462	*/ {{2,/*17,26      */26641     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( % & )@C */
+    /* 463	*/ {{2,/*26,53      */54298     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( & 2 )@C */
+    /* 464	*/ {{2,/*35,66      */67619     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( z@C /&@C )@C */
+    /* 465	*/ {{2,/*38,65      */66598     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( a@C /%@C )@C */
+    /* 466	*/ {{2,/*327,53     */54599     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( MUL( % 0.5 )@C 2 )@C */
+    /* 467	*/ {{2,/*26,65      */66586     , cPow        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* POW( & /%@C )@C */
+    /* 468	*/ {{1,/*0          */0         , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [x]) */
+    /* 469	*/ {{1,/*10         */10        , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [y]) */
+    /* 470	*/ {{1,/*193        */193       , cAbs        ,PositionalParams,0}, 0, 0x0}, /* (cAbs [(cMul {x y})]) */
+    /* 471	*/ {{1,/*0          */0         , cAcos       ,PositionalParams,0}, 0, 0x0}, /* (cAcos [x]) */
+    /* 472	*/ {{1,/*0          */0         , cAcosh      ,PositionalParams,0}, 0, 0x0}, /* (cAcosh [x]) */
+    /* 473	*/ {{1,/*0          */0         , cAsin       ,PositionalParams,0}, 0, 0x0}, /* (cAsin [x]) */
+    /* 474	*/ {{1,/*0          */0         , cAsinh      ,PositionalParams,0}, 0, 0x0}, /* (cAsinh [x]) */
+    /* 475	*/ {{1,/*139        */139       , cAsinh      ,PositionalParams,0}, 0, 0x0}, /* (cAsinh [(cAdd  <1>)]) */
+    /* 476	*/ {{1,/*0          */0         , cAtan       ,PositionalParams,0}, 0, 0x0}, /* (cAtan [x]) */
+    /* 477	*/ {{1,/*65         */65        , cAtan       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN( /%@C )@C */
+    /* 478	*/ {{1,/*17         */17        , cAtan       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN( % )@C */
+    /* 479	*/ {{2,/*0,352      */360448    , cAtan2      ,PositionalParams,0}, 0, 0x0}, /* (cAtan2 [x (cPow [y -%@C])]) */
+    /* 480	*/ {{2,/*0,10       */10240     , cAtan2      ,PositionalParams,0}, 0, 0x0}, /* (cAtan2 [x y]) */
+    /* 481	*/ {{2,/*26,17      */17434     , cAtan2      ,GroupFunction   ,0}, Constness_Const, 0x0}, /* ATAN2( & % )@C */
+    /* 482	*/ {{1,/*0          */0         , cAtanh      ,PositionalParams,0}, 0, 0x0}, /* (cAtanh [x]) */
+    /* 483	*/ {{1,/*139        */139       , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [(cAdd  <1>)]) */
+    /* 484	*/ {{1,/*290        */290       , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [(cMul  <1>)]) */
+    /* 485	*/ {{1,/*0          */0         , cCeil       ,PositionalParams,0}, 0, 0x4}, /* (cCeil [x]) */
+    /* 486	*/ {{1,/*0          */0         , cCeil       ,PositionalParams,0}, 0, 0x0}, /* (cCeil [x]) */
+    /* 487	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [x]) */
+    /* 488	*/ {{1,/*7          */7         , cCos        ,PositionalParams,0}, 0, 0x4}, /* (cCos [x@H]) */
+    /* 489	*/ {{1,/*10         */10        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [y]) */
+    /* 490	*/ {{1,/*99         */99        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x (cMul {-1 y})})]) */
+    /* 491	*/ {{1,/*98         */98        , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd {x y})]) */
+    /* 492	*/ {{1,/*139        */139       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cAdd  <1>)]) */
+    /* 493	*/ {{1,/*0          */0         , cCos        ,PositionalParams,0}, 0, 0x4}, /* (cCos [x]) */
+    /* 494	*/ {{1,/*280        */280       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul {-%@C x})]) */
+    /* 495	*/ {{1,/*300        */300       , cCos        ,PositionalParams,0}, 0, 0x0}, /* (cCos [(cMul -%@C <1>)]) */
+    /* 496	*/ {{1,/*256        */256       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cMul {x LOG( & )@C})]) */
+    /* 497	*/ {{1,/*280        */280       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cMul {-%@C x})]) */
+    /* 498	*/ {{1,/*543        */543       , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [(cLog [(cPow [& x])])]) */
+    /* 499	*/ {{1,/*0          */0         , cCosh       ,PositionalParams,0}, 0, 0x4}, /* (cCosh [x]) */
+    /* 500	*/ {{1,/*0          */0         , cCosh       ,PositionalParams,0}, 0, 0x0}, /* (cCosh [x]) */
+    /* 501	*/ {{1,/*0          */0         , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [x]) */
+    /* 502	*/ {{1,/*10         */10        , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [y]) */
+    /* 503	*/ {{1,/*98         */98        , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [(cAdd {x y})]) */
+    /* 504	*/ {{1,/*313        */313       , cExp        ,PositionalParams,0}, 0, 0x0}, /* (cExp [(cMul -2 <1>)]) */
+    /* 505	*/ {{1,/*0          */0         , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [x]) */
+    /* 506	*/ {{1,/*10         */10        , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [y]) */
+    /* 507	*/ {{1,/*98         */98        , cExp2       ,PositionalParams,0}, 0, 0x0}, /* (cExp2 [(cAdd {x y})]) */
+    /* 508	*/ {{1,/*139        */139       , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd  <1>)]) */
+    /* 509	*/ {{1,/*290        */290       , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cMul  <1>)]) */
+    /* 510	*/ {{1,/*0          */0         , cFloor      ,PositionalParams,0}, 0, 0x4}, /* (cFloor [x]) */
+    /* 511	*/ {{1,/*84         */84        , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd {x -0.5})]) */
+    /* 512	*/ {{1,/*85         */85        , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [(cAdd {x 0.5})]) */
+    /* 513	*/ {{1,/*0          */0         , cFloor      ,PositionalParams,0}, 0, 0x0}, /* (cFloor [x]) */
+    /* 514	*/ {{2,/*350,358    */366942    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [y MUL( & 0.5 )@C])]) */
+    /* 515	*/ {{2,/*350,372    */381278    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])]) */
+    /* 516	*/ {{2,/*371,372    */381299    , cHypot      ,PositionalParams,0}, 0, 0x0}, /* (cHypot [(cPow [(cMul {x POW( a@C /%@C )@C}) MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])]) */
+    /* 517	*/ {{3,/*0,10,33    */34613248  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [x y z]) */
+    /* 518	*/ {{3,/*0,26,35    */36726784  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x & z@C]) */
+    /* 519	*/ {{3,/*0,37,32    */33592320  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [x a b]) */
+    /* 520	*/ {{3,/*0,111,115  */120699904 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cAdd {y a}) (cAdd {z b})]) */
+    /* 521	*/ {{3,/*0,167,168  */176331776 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x ADD( % & )@C ADD( % z@C )@C]) */
+    /* 522	*/ {{3,/*0,257,277  */290718720 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMul {y a}) (cMul {z b})]) */
+    /* 523	*/ {{3,/*0,338,339  */355813376 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x MUL( % & )@C MUL( % z@C )@C]) */
+    /* 524	*/ {{3,/*0,549,550  */577278976 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMax [y a]) (cMax [z b])]) */
+    /* 525	*/ {{3,/*0,553,554  */581477376 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cMin [y a]) (cMin [z b])]) */
+    /* 526	*/ {{3,/*616,20,64  */67129960  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [(cLess [x 0]) %@D1 -%@C@D1]) */
+    /* 527	*/ {{3,/*616,20,64  */67129960  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [(cLess [x 0]) %@D1 -%@C@D1]) */
+    /* 528	*/ {{3,/*622,20,64  */67129966  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) */
+    /* 529	*/ {{3,/*622,20,64  */67129966  , cIf         ,PositionalParams,0}, 0, 0x4}, /* (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) */
+    /* 530	*/ {{3,/*0,628,25   */26857472  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cNot [y]) %@L]) */
+    /* 531	*/ {{3,/*0,635,10   */11136000  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cNot [%]) y]) */
+    /* 532	*/ {{3,/*0,639,640  */671742976 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cAnd {y a}) (cAnd {z b})]) */
+    /* 533	*/ {{3,/*0,10,635   */665856000 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x y (cNot [%])]) */
+    /* 534	*/ {{3,/*0,25,628   */658531328 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x %@L (cNot [y])]) */
+    /* 535	*/ {{3,/*0,646,649  */681187328 , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x (cOr {y a}) (cOr {z b})]) */
+    /* 536	*/ {{3,/*0,10,33    */34613248  , cIf         ,PositionalParams,0}, 0, 0x0}, /* (cIf [x y z]) */
+    /* 537	*/ {{1,/*139        */139       , cInt        ,PositionalParams,0}, 0, 0x0}, /* (cInt [(cAdd  <1>)]) */
+    /* 538	*/ {{1,/*290        */290       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cMul  <1>)]) */
+    /* 539	*/ {{1,/*0          */0         , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [x]) */
+    /* 540	*/ {{1,/*10         */10        , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [y]) */
+    /* 541	*/ {{1,/*33         */33        , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [z]) */
+    /* 542	*/ {{1,/*193        */193       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cMul {x y})]) */
+    /* 543	*/ {{1,/*411        */411       , cLog        ,PositionalParams,0}, 0, 0x0}, /* (cLog [(cPow [& x])]) */
+    /* 544	*/ {{1,/*17         */17        , cLog        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* LOG( % )@C */
+    /* 545	*/ {{1,/*26         */26        , cLog        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* LOG( & )@C */
+    /* 546	*/ {{1,/*0          */0         , cLog10      ,PositionalParams,0}, 0, 0x0}, /* (cLog10 [x]) */
+    /* 547	*/ {{1,/*0          */0         , cLog2       ,PositionalParams,0}, 0, 0x0}, /* (cLog2 [x]) */
+    /* 548	*/ {{2,/*0,10       */10240     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [x y]) */
+    /* 549	*/ {{2,/*10,37      */37898     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [y a]) */
+    /* 550	*/ {{2,/*33,32      */32801     , cMax        ,PositionalParams,0}, 0, 0x0}, /* (cMax [z b]) */
+    /* 551	*/ {{1,/*0          */0         , cMax        ,AnyParams       ,1}, 0, 0x4}, /* (cMax x <1>) */
+    /* 552	*/ {{2,/*0,10       */10240     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [x y]) */
+    /* 553	*/ {{2,/*10,37      */37898     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [y a]) */
+    /* 554	*/ {{2,/*33,32      */32801     , cMin        ,PositionalParams,0}, 0, 0x0}, /* (cMin [z b]) */
+    /* 555	*/ {{1,/*0          */0         , cMin        ,AnyParams       ,1}, 0, 0x4}, /* (cMin x <1>) */
+    /* 556	*/ {{2,/*17,26      */26641     , cMin        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* MIN( % & )@C */
+    /* 557	*/ {{1,/*477        */477       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN( /%@C )@C )@C */
+    /* 558	*/ {{1,/*478        */478       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN( % )@C )@C */
+    /* 559	*/ {{1,/*481        */481       , cSec        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SEC( ATAN2( & % )@C )@C */
+    /* 560	*/ {{1,/*139        */139       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd  <1>)]) */
+    /* 561	*/ {{1,/*175        */175       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul {-1 (cAdd  <1>)})]) */
+    /* 562	*/ {{1,/*290        */290       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul  <1>)]) */
+    /* 563	*/ {{1,/*300        */300       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul -%@C <1>)]) */
+    /* 564	*/ {{1,/*0          */0         , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [x]) */
+    /* 565	*/ {{1,/*0          */0         , cSin        ,PositionalParams,0}, 0, 0x4}, /* (cSin [x]) */
     /* 566	*/ {{1,/*10         */10        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [y]) */
-    /* 567	*/ {{1,/*95         */95        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x y})]) */
-    /* 568	*/ {{1,/*96         */96        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x (cMul {-1 y})})]) */
-    /* 569	*/ {{1,/*0          */0         , cSin        ,PositionalParams,0}, 0, 0x4}, /* (cSin [x]) */
-    /* 570	*/ {{1,/*97         */97        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x 0.7853981633974482789994908671360462903976})]) */
-    /* 571	*/ {{1,/*100        */100       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN( /%@C )@C})]) */
-    /* 572	*/ {{1,/*101        */101       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN( % )@C})]) */
-    /* 573	*/ {{1,/*102        */102       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN2( & % )@C})]) */
-    /* 574	*/ {{1,/*140        */140       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd  <1>)]) */
-    /* 575	*/ {{1,/*175        */175       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul {-1 (cAdd  <1>)})]) */
-    /* 576	*/ {{1,/*280        */280       , cSin        ,PositionalParams,0}, 0, 0x5}, /* (cSin [(cMul {% x})]) */
-    /* 577	*/ {{1,/*303        */303       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul %@N <1>)]) */
-    /* 578	*/ {{1,/*7          */7         , cSin        ,PositionalParams,0}, 0, 0x4}, /* (cSin [x@H]) */
-    /* 579	*/ {{1,/*291        */291       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul {x 2})]) */
-    /* 580	*/ {{1,/*294        */294       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul  <1>)]) */
-    /* 581	*/ {{1,/*304        */304       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul -%@C <1>)]) */
-    /* 582	*/ {{1,/*327        */327       , cSin        ,PositionalParams,0}, 0, 0x1}, /* (cSin [(cMul % <1>)]) */
-    /* 583	*/ {{1,/*260        */260       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul {x LOG( & )@C})]) */
-    /* 584	*/ {{1,/*280        */280       , cSinh       ,PositionalParams,0}, 0, 0x5}, /* (cSinh [(cMul {% x})]) */
-    /* 585	*/ {{1,/*294        */294       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul  <1>)]) */
-    /* 586	*/ {{1,/*303        */303       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul %@N <1>)]) */
-    /* 587	*/ {{1,/*304        */304       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul -%@C <1>)]) */
-    /* 588	*/ {{1,/*548        */548       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cLog [(cPow [& x])])]) */
-    /* 589	*/ {{1,/*0          */0         , cSinh       ,PositionalParams,0}, 0, 0x4}, /* (cSinh [x]) */
-    /* 590	*/ {{1,/*0          */0         , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [x]) */
-    /* 591	*/ {{1,/*18         */18        , cSqrt       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SQRT( % )@C */
-    /* 592	*/ {{1,/*0          */0         , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [x]) */
-    /* 593	*/ {{1,/*0          */0         , cTan        ,PositionalParams,0}, 0, 0x4}, /* (cTan [x]) */
-    /* 594	*/ {{1,/*138        */138       , cTan        ,PositionalParams,0}, 0, 0x4}, /* (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})})]) */
-    /* 595	*/ {{1,/*139        */139       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)})]) */
-    /* 596	*/ {{1,/*280        */280       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul {% x})]) */
-    /* 597	*/ {{1,/*294        */294       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul  <1>)]) */
-    /* 598	*/ {{1,/*327        */327       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul % <1>)]) */
-    /* 599	*/ {{1,/*303        */303       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul %@N <1>)]) */
-    /* 600	*/ {{1,/*304        */304       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul -%@C <1>)]) */
-    /* 601	*/ {{1,/*0          */0         , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [x]) */
-    /* 602	*/ {{1,/*0          */0         , cTanh       ,PositionalParams,0}, 0, 0x4}, /* (cTanh [x]) */
-    /* 603	*/ {{1,/*292        */292       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul {x LOG( % )@C 0.5})]) */
-    /* 604	*/ {{1,/*280        */280       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul {% x})]) */
-    /* 605	*/ {{1,/*294        */294       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul  <1>)]) */
-    /* 606	*/ {{1,/*303        */303       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul %@N <1>)]) */
-    /* 607	*/ {{1,/*304        */304       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul -%@C <1>)]) */
-    /* 608	*/ {{1,/*0          */0         , cTrunc      ,PositionalParams,0}, 0, 0x0}, /* (cTrunc [x]) */
-    /* 609	*/ {{2,/*27,18      */18459     , cSub        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SUB( & % )@C */
-    /* 610	*/ {{2,/*27,18      */18459     , cDiv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* DIV( & % )@C */
-    /* 611	*/ {{2,/*550,549    */562726    , cDiv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* DIV( LOG( & )@C LOG( % )@C )@C */
-    /* 612	*/ {{2,/*62,140     */143422    , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [-%@C (cAdd  <1>)]) */
-    /* 613	*/ {{2,/*0,10       */10240     , cEqual      ,PositionalParams,0}, 0, 0x12}, /* (cEqual [x y]) */
-    /* 614	*/ {{2,/*0,10       */10240     , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [x y]) */
-    /* 615	*/ {{2,/*0,34       */34816     , cEqual      ,PositionalParams,0}, 0, 0x20}, /* (cEqual [x z]) */
-    /* 616	*/ {{2,/*10,34      */34826     , cEqual      ,PositionalParams,0}, 0, 0x24}, /* (cEqual [y z]) */
-    /* 617	*/ {{2,/*10,34      */34826     , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [y z]) */
-    /* 618	*/ {{2,/*62,140     */143422    , cNEqual     ,PositionalParams,0}, 0, 0x0}, /* (cNEqual [-%@C (cAdd  <1>)]) */
-    /* 619	*/ {{2,/*0,10       */10240     , cLess       ,PositionalParams,0}, 0, 0x12}, /* (cLess [x y]) */
-    /* 620	*/ {{2,/*0,44       */45056     , cLess       ,PositionalParams,0}, 0, 0x4}, /* (cLess [x 0]) */
-    /* 621	*/ {{2,/*0,44       */45056     , cLess       ,PositionalParams,0}, 0, 0x0}, /* (cLess [x 0]) */
-    /* 622	*/ {{2,/*10,0       */10        , cLess       ,PositionalParams,0}, 0, 0x0}, /* (cLess [y x]) */
-    /* 623	*/ {{2,/*0,10       */10240     , cLessOrEq   ,PositionalParams,0}, 0, 0x0}, /* (cLessOrEq [x y]) */
-    /* 624	*/ {{2,/*294,345    */353574    , cLessOrEq   ,PositionalParams,0}, 0, 0x0}, /* (cLessOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C]) */
-    /* 625	*/ {{2,/*0,10       */10240     , cGreater    ,PositionalParams,0}, 0, 0x12}, /* (cGreater [x y]) */
-    /* 626	*/ {{2,/*0,44       */45056     , cGreater    ,PositionalParams,0}, 0, 0x4}, /* (cGreater [x 0]) */
-    /* 627	*/ {{2,/*0,44       */45056     , cGreater    ,PositionalParams,0}, 0, 0x0}, /* (cGreater [x 0]) */
-    /* 628	*/ {{2,/*10,0       */10        , cGreater    ,PositionalParams,0}, 0, 0x0}, /* (cGreater [y x]) */
-    /* 629	*/ {{2,/*0,10       */10240     , cGreaterOrEq,PositionalParams,0}, 0, 0x0}, /* (cGreaterOrEq [x y]) */
-    /* 630	*/ {{2,/*294,345    */353574    , cGreaterOrEq,PositionalParams,0}, 0, 0x0}, /* (cGreaterOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C]) */
-    /* 631	*/ {{1,/*0          */0         , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [x]) */
-    /* 632	*/ {{1,/*266        */266       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cMul {x 0.5 /%@C})]) */
-    /* 633	*/ {{1,/*10         */10        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [y]) */
-    /* 634	*/ {{1,/*649        */649       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {x y})]) */
-    /* 635	*/ {{1,/*18         */18        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [%]) */
-    /* 636	*/ {{1,/*34         */34        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [z]) */
-    /* 637	*/ {{1,/*643        */643       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {x y})]) */
-    /* 638	*/ {{1,/*646        */646       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {z (cIf [x y (cNot [%])])})]) */
-    /* 639	*/ {{1,/*647        */647       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {z (cIf [x (cNot [%]) y])})]) */
-    /* 640	*/ {{1,/*652        */652       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {z (cIf [x y (cNot [%])])})]) */
-    /* 641	*/ {{1,/*653        */653       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {z (cIf [x (cNot [%]) y])})]) */
-    /* 642	*/ {{2,/*631,10     */10871     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {(cNot [x]) y}) */
-    /* 643	*/ {{2,/*0,10       */10240     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {x y}) */
-    /* 644	*/ {{2,/*10,38      */38922     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {y a}) */
-    /* 645	*/ {{2,/*34,33      */33826     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z b}) */
-    /* 646	*/ {{2,/*34,537     */549922    , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z (cIf [x y (cNot [%])])}) */
-    /* 647	*/ {{2,/*34,540     */552994    , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z (cIf [x (cNot [%]) y])}) */
-    /* 648	*/ {{0,/*           */0         , cAnd        ,AnyParams       ,1}, 0, 0x0}, /* (cAnd  <1>) */
-    /* 649	*/ {{2,/*0,10       */10240     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {x y}) */
-    /* 650	*/ {{2,/*631,10     */10871     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {(cNot [x]) y}) */
-    /* 651	*/ {{2,/*10,38      */38922     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {y a}) */
-    /* 652	*/ {{2,/*34,537     */549922    , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z (cIf [x y (cNot [%])])}) */
-    /* 653	*/ {{2,/*34,540     */552994    , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z (cIf [x (cNot [%]) y])}) */
-    /* 654	*/ {{2,/*34,33      */33826     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z b}) */
-    /* 655	*/ {{1,/*0          */0         , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [x]) */
-    /* 656	*/ {{1,/*95         */95        , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cAdd {x y})]) */
-    /* 657	*/ {{1,/*155        */155       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cAdd x <1>)]) */
-    /* 658	*/ {{1,/*266        */266       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cMul {x 0.5 /%@C})]) */
-    /* 659	*/ {{1,/*267        */267       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cMul {x (cAnd  <1>)})]) */
-    /* 660	*/ {{1,/*294        */294       , cDeg        ,PositionalParams,0}, 0, 0x0}, /* (cDeg [(cMul  <1>)]) */
-    /* 661	*/ {{1,/*294        */294       , cRad        ,PositionalParams,0}, 0, 0x0}, /* (cRad [(cMul  <1>)]) */
-    /* 662	*/ {{2,/*0,10       */10240     , cAbsAnd     ,SelectedParams  ,0}, 0, 0x0}, /* (cAbsAnd {x y}) */
-    /* 663	*/ {{2,/*0,10       */10240     , cAbsOr      ,SelectedParams  ,0}, 0, 0x0}, /* (cAbsOr {x y}) */
-    /* 664	*/ {{1,/*0          */0         , cAbsNot     ,PositionalParams,0}, 0, 0x0}, /* (cAbsNot [x]) */
-    /* 665	*/ {{1,/*0          */0         , cAbsNotNot  ,PositionalParams,0}, 0, 0x0}, /* (cAbsNotNot [x]) */
-    /* 666	*/ {{3,/*0,10,34    */35661824  , cAbsIf      ,PositionalParams,0}, 0, 0x0}, /* (cAbsIf [x y z]) */
+    /* 567	*/ {{1,/*98         */98        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x y})]) */
+    /* 568	*/ {{1,/*99         */99        , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x (cMul {-1 y})})]) */
+    /* 569	*/ {{1,/*100        */100       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x 0.7853981633974482789994908671360462903976})]) */
+    /* 570	*/ {{1,/*103        */103       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN( /%@C )@C})]) */
+    /* 571	*/ {{1,/*104        */104       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN( % )@C})]) */
+    /* 572	*/ {{1,/*105        */105       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cAdd {x ATAN2( & % )@C})]) */
+    /* 573	*/ {{1,/*288        */288       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul {x 2})]) */
+    /* 574	*/ {{1,/*273        */273       , cSin        ,PositionalParams,0}, 0, 0x5}, /* (cSin [(cMul {% x})]) */
+    /* 575	*/ {{1,/*299        */299       , cSin        ,PositionalParams,0}, 0, 0x0}, /* (cSin [(cMul %@N <1>)]) */
+    /* 576	*/ {{1,/*7          */7         , cSin        ,PositionalParams,0}, 0, 0x4}, /* (cSin [x@H]) */
+    /* 577	*/ {{1,/*323        */323       , cSin        ,PositionalParams,0}, 0, 0x1}, /* (cSin [(cMul % <1>)]) */
+    /* 578	*/ {{1,/*256        */256       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul {x LOG( & )@C})]) */
+    /* 579	*/ {{1,/*273        */273       , cSinh       ,PositionalParams,0}, 0, 0x5}, /* (cSinh [(cMul {% x})]) */
+    /* 580	*/ {{1,/*290        */290       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul  <1>)]) */
+    /* 581	*/ {{1,/*299        */299       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul %@N <1>)]) */
+    /* 582	*/ {{1,/*300        */300       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cMul -%@C <1>)]) */
+    /* 583	*/ {{1,/*543        */543       , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [(cLog [(cPow [& x])])]) */
+    /* 584	*/ {{1,/*0          */0         , cSinh       ,PositionalParams,0}, 0, 0x4}, /* (cSinh [x]) */
+    /* 585	*/ {{1,/*0          */0         , cSinh       ,PositionalParams,0}, 0, 0x0}, /* (cSinh [x]) */
+    /* 586	*/ {{1,/*17         */17        , cSqrt       ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SQRT( % )@C */
+    /* 587	*/ {{1,/*0          */0         , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [x]) */
+    /* 588	*/ {{1,/*0          */0         , cTan        ,PositionalParams,0}, 0, 0x4}, /* (cTan [x]) */
+    /* 589	*/ {{1,/*137        */137       , cTan        ,PositionalParams,0}, 0, 0x4}, /* (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})})]) */
+    /* 590	*/ {{1,/*138        */138       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)})]) */
+    /* 591	*/ {{1,/*273        */273       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul {% x})]) */
+    /* 592	*/ {{1,/*290        */290       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul  <1>)]) */
+    /* 593	*/ {{1,/*323        */323       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul % <1>)]) */
+    /* 594	*/ {{1,/*299        */299       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul %@N <1>)]) */
+    /* 595	*/ {{1,/*300        */300       , cTan        ,PositionalParams,0}, 0, 0x0}, /* (cTan [(cMul -%@C <1>)]) */
+    /* 596	*/ {{1,/*0          */0         , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [x]) */
+    /* 597	*/ {{1,/*0          */0         , cTanh       ,PositionalParams,0}, 0, 0x4}, /* (cTanh [x]) */
+    /* 598	*/ {{1,/*255        */255       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul {x LOG( % )@C 0.5})]) */
+    /* 599	*/ {{1,/*273        */273       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul {% x})]) */
+    /* 600	*/ {{1,/*290        */290       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul  <1>)]) */
+    /* 601	*/ {{1,/*299        */299       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul %@N <1>)]) */
+    /* 602	*/ {{1,/*300        */300       , cTanh       ,PositionalParams,0}, 0, 0x0}, /* (cTanh [(cMul -%@C <1>)]) */
+    /* 603	*/ {{1,/*0          */0         , cTrunc      ,PositionalParams,0}, 0, 0x0}, /* (cTrunc [x]) */
+    /* 604	*/ {{2,/*26,17      */17434     , cSub        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* SUB( & % )@C */
+    /* 605	*/ {{2,/*26,17      */17434     , cDiv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* DIV( & % )@C */
+    /* 606	*/ {{2,/*545,544    */557601    , cDiv        ,GroupFunction   ,0}, Constness_Const, 0x0}, /* DIV( LOG( & )@C LOG( % )@C )@C */
+    /* 607	*/ {{2,/*61,139     */142397    , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [-%@C (cAdd  <1>)]) */
+    /* 608	*/ {{2,/*0,10       */10240     , cEqual      ,PositionalParams,0}, 0, 0x12}, /* (cEqual [x y]) */
+    /* 609	*/ {{2,/*0,10       */10240     , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [x y]) */
+    /* 610	*/ {{2,/*0,33       */33792     , cEqual      ,PositionalParams,0}, 0, 0x20}, /* (cEqual [x z]) */
+    /* 611	*/ {{2,/*10,33      */33802     , cEqual      ,PositionalParams,0}, 0, 0x24}, /* (cEqual [y z]) */
+    /* 612	*/ {{2,/*10,33      */33802     , cEqual      ,PositionalParams,0}, 0, 0x0}, /* (cEqual [y z]) */
+    /* 613	*/ {{2,/*61,139     */142397    , cNEqual     ,PositionalParams,0}, 0, 0x0}, /* (cNEqual [-%@C (cAdd  <1>)]) */
+    /* 614	*/ {{2,/*0,10       */10240     , cLess       ,PositionalParams,0}, 0, 0x12}, /* (cLess [x y]) */
+    /* 615	*/ {{2,/*0,43       */44032     , cLess       ,PositionalParams,0}, 0, 0x4}, /* (cLess [x 0]) */
+    /* 616	*/ {{2,/*0,43       */44032     , cLess       ,PositionalParams,0}, 0, 0x0}, /* (cLess [x 0]) */
+    /* 617	*/ {{2,/*10,0       */10        , cLess       ,PositionalParams,0}, 0, 0x0}, /* (cLess [y x]) */
+    /* 618	*/ {{2,/*0,10       */10240     , cLessOrEq   ,PositionalParams,0}, 0, 0x0}, /* (cLessOrEq [x y]) */
+    /* 619	*/ {{2,/*290,341    */349474    , cLessOrEq   ,PositionalParams,0}, 0, 0x0}, /* (cLessOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C]) */
+    /* 620	*/ {{2,/*0,10       */10240     , cGreater    ,PositionalParams,0}, 0, 0x12}, /* (cGreater [x y]) */
+    /* 621	*/ {{2,/*0,43       */44032     , cGreater    ,PositionalParams,0}, 0, 0x4}, /* (cGreater [x 0]) */
+    /* 622	*/ {{2,/*0,43       */44032     , cGreater    ,PositionalParams,0}, 0, 0x0}, /* (cGreater [x 0]) */
+    /* 623	*/ {{2,/*10,0       */10        , cGreater    ,PositionalParams,0}, 0, 0x0}, /* (cGreater [y x]) */
+    /* 624	*/ {{2,/*0,10       */10240     , cGreaterOrEq,PositionalParams,0}, 0, 0x0}, /* (cGreaterOrEq [x y]) */
+    /* 625	*/ {{2,/*290,341    */349474    , cGreaterOrEq,PositionalParams,0}, 0, 0x0}, /* (cGreaterOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C]) */
+    /* 626	*/ {{1,/*0          */0         , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [x]) */
+    /* 627	*/ {{1,/*261        */261       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cMul {x 0.5 /%@C})]) */
+    /* 628	*/ {{1,/*10         */10        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [y]) */
+    /* 629	*/ {{1,/*638        */638       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {x y})]) */
+    /* 630	*/ {{1,/*641        */641       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {z (cIf [x y (cNot [%])])})]) */
+    /* 631	*/ {{1,/*642        */642       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cAnd {z (cIf [x (cNot [%]) y])})]) */
+    /* 632	*/ {{1,/*644        */644       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {x y})]) */
+    /* 633	*/ {{1,/*33         */33        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [z]) */
+    /* 634	*/ {{1,/*647        */647       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {z (cIf [x y (cNot [%])])})]) */
+    /* 635	*/ {{1,/*17         */17        , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [%]) */
+    /* 636	*/ {{1,/*648        */648       , cNot        ,PositionalParams,0}, 0, 0x0}, /* (cNot [(cOr {z (cIf [x (cNot [%]) y])})]) */
+    /* 637	*/ {{2,/*626,10     */10866     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {(cNot [x]) y}) */
+    /* 638	*/ {{2,/*0,10       */10240     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {x y}) */
+    /* 639	*/ {{2,/*10,37      */37898     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {y a}) */
+    /* 640	*/ {{2,/*33,32      */32801     , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z b}) */
+    /* 641	*/ {{2,/*33,533     */545825    , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z (cIf [x y (cNot [%])])}) */
+    /* 642	*/ {{2,/*33,531     */543777    , cAnd        ,SelectedParams  ,0}, 0, 0x0}, /* (cAnd {z (cIf [x (cNot [%]) y])}) */
+    /* 643	*/ {{0,/*           */0         , cAnd        ,AnyParams       ,1}, 0, 0x0}, /* (cAnd  <1>) */
+    /* 644	*/ {{2,/*0,10       */10240     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {x y}) */
+    /* 645	*/ {{2,/*626,10     */10866     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {(cNot [x]) y}) */
+    /* 646	*/ {{2,/*10,37      */37898     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {y a}) */
+    /* 647	*/ {{2,/*33,533     */545825    , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z (cIf [x y (cNot [%])])}) */
+    /* 648	*/ {{2,/*33,531     */543777    , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z (cIf [x (cNot [%]) y])}) */
+    /* 649	*/ {{2,/*33,32      */32801     , cOr         ,SelectedParams  ,0}, 0, 0x0}, /* (cOr {z b}) */
+    /* 650	*/ {{1,/*0          */0         , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [x]) */
+    /* 651	*/ {{1,/*98         */98        , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cAdd {x y})]) */
+    /* 652	*/ {{1,/*154        */154       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cAdd x <1>)]) */
+    /* 653	*/ {{1,/*261        */261       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cMul {x 0.5 /%@C})]) */
+    /* 654	*/ {{1,/*262        */262       , cNotNot     ,PositionalParams,0}, 0, 0x0}, /* (cNotNot [(cMul {x (cAnd  <1>)})]) */
+    /* 655	*/ {{1,/*290        */290       , cDeg        ,PositionalParams,0}, 0, 0x0}, /* (cDeg [(cMul  <1>)]) */
+    /* 656	*/ {{1,/*290        */290       , cRad        ,PositionalParams,0}, 0, 0x0}, /* (cRad [(cMul  <1>)]) */
+    /* 657	*/ {{2,/*0,10       */10240     , cAbsAnd     ,SelectedParams  ,0}, 0, 0x0}, /* (cAbsAnd {x y}) */
+    /* 658	*/ {{2,/*0,10       */10240     , cAbsOr      ,SelectedParams  ,0}, 0, 0x0}, /* (cAbsOr {x y}) */
+    /* 659	*/ {{1,/*0          */0         , cAbsNot     ,PositionalParams,0}, 0, 0x0}, /* (cAbsNot [x]) */
+    /* 660	*/ {{1,/*0          */0         , cAbsNotNot  ,PositionalParams,0}, 0, 0x0}, /* (cAbsNotNot [x]) */
+    /* 661	*/ {{3,/*0,10,33    */34613248  , cAbsIf      ,PositionalParams,0}, 0, 0x0}, /* (cAbsIf [x y z]) */
     };
 
 }
 namespace FPoptimizer_Grammar
 {
-    const Rule grammar_rules[289] =
+    const Rule grammar_rules[286] =
     {
         /* 0:	@R @L (cAbs [x])
          *	->	x
          */		 {ProduceNewTree, 17, 1,/*0          */0         , {1,/*0          */0         , cAbs        ,PositionalParams,0}},
-        /* 1:	@R @F (cAtan [(cMul {x (cPow [y %@N])})])
+        /* 1:	@R @F (cAtan [(cMul {x (cPow [y@P %@N])})])
          *	->	(cAtan2 [x (cPow [y -%@C])])
-         */		 {ProduceNewTree, 18, 1,/*484        */484       , {1,/*173        */173       , cAtan       ,PositionalParams,0}},
+         */		 {ProduceNewTree, 18, 1,/*479        */479       , {1,/*172        */172       , cAtan       ,PositionalParams,0}},
         /* 2:	@R @F (cAtan2 [(cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5])@D4 x@D4])
          *	->	(cAcos [x])
-         */		 {ProduceNewTree, 18, 1,/*476        */476       , {2,/*349,1      */1373      , cAtan2      ,PositionalParams,0}},
+         */		 {ProduceNewTree, 18, 1,/*471        */471       , {2,/*353,1      */1377      , cAtan2      ,PositionalParams,0}},
         /* 3:	@R @F (cAtan2 [x@D4 (cPow [(cAdd {(cMul {(cPow [x 2]) -1}) 1}) 0.5])@D4])
          *	->	(cAsin [x])
-         */		 {ProduceNewTree, 18, 1,/*478        */478       , {2,/*1,349      */357377    , cAtan2      ,PositionalParams,0}},
+         */		 {ProduceNewTree, 18, 1,/*473        */473       , {2,/*1,353      */361473    , cAtan2      ,PositionalParams,0}},
         /* 4:	@R @F (cAtan2 [(cMul x@P <1>)@D4 (cMul x@P <2>)@D4])
          *	:	(cMul  <1>) (cMul  <2>)
-         */		 {ReplaceParams , 18, 2,/*294,295    */302374    , {2,/*297,298    */305449    , cAtan2      ,PositionalParams,0}},
+         */		 {ReplaceParams , 18, 2,/*290,291    */298274    , {2,/*293,294    */301349    , cAtan2      ,PositionalParams,0}},
         /* 5:	@R @F (cAtan2 [(cMul x@N@V <1>)@D4 (cMul x@N@V <2>)@D4])
          *	:	(cMul -1 <1>) (cMul -1 <2>)
-         */		 {ReplaceParams , 18, 2,/*301,302    */309549    , {2,/*299,300    */307499    , cAtan2      ,PositionalParams,0}},
+         */		 {ReplaceParams , 18, 2,/*297,298    */305449    , {2,/*295,296    */303399    , cAtan2      ,PositionalParams,0}},
         /* 6:	@F (cCeil [(cAdd x@I <1>)])
          *	->	(cAdd {x (cCeil [(cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*73         */73        , {1,/*142        */142       , cCeil       ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*72         */72        , {1,/*141        */141       , cCeil       ,PositionalParams,0}},
         /* 7:	@R @F (cCeil [(cMul -1 <1>)])
          *	->	(cMul {-1 (cFloor [(cMul  <1>)])})
-         */		 {ProduceNewTree, 18, 1,/*178        */178       , {1,/*301        */301       , cCeil       ,PositionalParams,0}},
+         */		 {ProduceNewTree, 18, 1,/*179        */179       , {1,/*297        */297       , cCeil       ,PositionalParams,0}},
         /* 8:	@F (cCos [(cAdd {1.570796326794896557998981734272092580795 (cMul %@N <1>)})])
          *	->	(cSin [(cMul -%@C <1>)])
-         */		 {ProduceNewTree, 2, 1,/*581        */581       , {1,/*75         */75        , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*563        */563       , {1,/*74         */74        , cCos        ,PositionalParams,0}},
         /* 9:	@F (cCos [(cAdd -1.570796326794896557998981734272092580795 <1>)])
          *	->	(cSin [(cAdd  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*574        */574       , {1,/*144        */144       , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*560        */560       , {1,/*143        */143       , cCos        ,PositionalParams,0}},
         /* 10:	@F (cCos [(cAdd 1.570796326794896557998981734272092580795 <1>)])
          *	->	(cSin [(cMul {-1 (cAdd  <1>)})])
-         */		 {ProduceNewTree, 2, 1,/*575        */575       , {1,/*146        */146       , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*561        */561       , {1,/*145        */145       , cCos        ,PositionalParams,0}},
         /* 11:	@F (cCos [(cAdd 3.141592653589793115997963468544185161591 <1>)])
          *	->	(cMul {-1 (cCos [(cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*177        */177       , {1,/*147        */147       , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*178        */178       , {1,/*146        */146       , cCos        ,PositionalParams,0}},
         /* 12:	@F (cCos [(cAdd 0 <1>)])
          *	->	(cCos [(cAdd  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*497        */497       , {1,/*145        */145       , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*492        */492       , {1,/*144        */144       , cCos        ,PositionalParams,0}},
         /* 13:	@F (cCos [(cAcos [x])])
          *	->	x
-         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*476        */476       , cCos        ,PositionalParams,0}},
+         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*471        */471       , cCos        ,PositionalParams,0}},
         /* 14:	@F (cCos [(cMul -1 <1>)])
          *	:	(cMul  <1>)
-         */		 {ReplaceParams , 2, 1,/*294        */294       , {1,/*301        */301       , cCos        ,PositionalParams,0}},
+         */		 {ReplaceParams , 2, 1,/*290        */290       , {1,/*297        */297       , cCos        ,PositionalParams,0}},
         /* 15:	@R @F (cCos [(cAtan [x])])
          *	->	(cPow [(cAdd {1 (cPow [x 2])}) -0.5])
-         */		 {ProduceNewTree, 18, 1,/*350        */350       , {1,/*481        */481       , cCos        ,PositionalParams,0}},
-        /* 16:	@R @F (cCos [(cAtan2 [x y])])
-         *	->	(cMul {y (cPow [(cAdd {(cPow [x 2]) (cPow [y 2])}) -0.5])})
-         */		 {ProduceNewTree, 18, 1,/*181        */181       , {1,/*485        */485       , cCos        ,PositionalParams,0}},
-        /* 17:	@R @F (cCos [(cAbs [x])])
+         */		 {ProduceNewTree, 18, 1,/*354        */354       , {1,/*476        */476       , cCos        ,PositionalParams,0}},
+        /* 16:	@R @F (cCos [(cAbs [x])])
          *	:	x
-         */		 {ReplaceParams , 18, 1,/*0          */0         , {1,/*473        */473       , cCos        ,PositionalParams,0}},
-        /* 18:	@F (cCosh [(cAsinh [x])])
+         */		 {ReplaceParams , 18, 1,/*0          */0         , {1,/*468        */468       , cCos        ,PositionalParams,0}},
+        /* 17:	@F (cCosh [(cAsinh [x])])
          *	->	(cPow [(cAdd {(cPow [x 2]) 1}) 0.5])
-         */		 {ProduceNewTree, 2, 1,/*354        */354       , {1,/*479        */479       , cCosh       ,PositionalParams,0}},
-        /* 19:	@F (cCosh [(cAtanh [x])])
+         */		 {ProduceNewTree, 2, 1,/*355        */355       , {1,/*474        */474       , cCosh       ,PositionalParams,0}},
+        /* 18:	@F (cCosh [(cAtanh [x])])
          *	->	(cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5])
-         */		 {ProduceNewTree, 2, 1,/*355        */355       , {1,/*487        */487       , cCosh       ,PositionalParams,0}},
-        /* 20:	@F (cCosh [(cMul -1 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*356        */356       , {1,/*482        */482       , cCosh       ,PositionalParams,0}},
+        /* 19:	@F (cCosh [(cMul -1 <1>)])
          *	:	(cMul  <1>)
-         */		 {ReplaceParams , 2, 1,/*294        */294       , {1,/*301        */301       , cCosh       ,PositionalParams,0}},
-        /* 21:	@R @F (cCosh [(cAbs [x])])
+         */		 {ReplaceParams , 2, 1,/*290        */290       , {1,/*297        */297       , cCosh       ,PositionalParams,0}},
+        /* 20:	@R @F (cCosh [(cAbs [x])])
          *	:	x
-         */		 {ReplaceParams , 18, 1,/*0          */0         , {1,/*473        */473       , cCosh       ,PositionalParams,0}},
-        /* 22:	@F (cFloor [(cAdd 0.5 <1>)])
+         */		 {ReplaceParams , 18, 1,/*0          */0         , {1,/*468        */468       , cCosh       ,PositionalParams,0}},
+        /* 21:	@F (cFloor [(cAdd 0.5 <1>)])
          *	->	(cInt [(cAdd  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*542        */542       , {1,/*143        */143       , cFloor      ,PositionalParams,0}},
-        /* 23:	@F (cFloor [(cAdd x@I <1>)])
+         */		 {ProduceNewTree, 2, 1,/*537        */537       , {1,/*142        */142       , cFloor      ,PositionalParams,0}},
+        /* 22:	@F (cFloor [(cAdd x@I <1>)])
          *	->	(cAdd {x (cFloor [(cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*84         */84        , {1,/*142        */142       , cFloor      ,PositionalParams,0}},
-        /* 24:	@R @F (cFloor [(cMul -1 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*83         */83        , {1,/*141        */141       , cFloor      ,PositionalParams,0}},
+        /* 23:	@R @F (cFloor [(cMul -1 <1>)])
          *	->	(cMul {-1 (cCeil [(cMul  <1>)])})
-         */		 {ProduceNewTree, 18, 1,/*176        */176       , {1,/*301        */301       , cFloor      ,PositionalParams,0}},
-        /* 25:	(cIf [x 0 y])
+         */		 {ProduceNewTree, 18, 1,/*177        */177       , {1,/*297        */297       , cFloor      ,PositionalParams,0}},
+        /* 24:	(cIf [x 0 y])
          *	->	(cMul {(cNot [x]) y})
-         */		 {ProduceNewTree, 0, 1,/*192        */192       , {3,/*0,44,10    */10530816  , cIf         ,PositionalParams,0}},
-        /* 26:	(cIf [x 0 y@L])
+         */		 {ProduceNewTree, 0, 1,/*188        */188       , {3,/*0,43,10    */10529792  , cIf         ,PositionalParams,0}},
+        /* 25:	(cIf [x 0 y@L])
          *	->	(cAnd {(cNot [x]) y})
-         */		 {ProduceNewTree, 0, 1,/*642        */642       , {3,/*0,44,11    */11579392  , cIf         ,PositionalParams,0}},
-        /* 27:	(cIf [x 1 y@L])
+         */		 {ProduceNewTree, 0, 1,/*637        */637       , {3,/*0,43,11    */11578368  , cIf         ,PositionalParams,0}},
+        /* 26:	(cIf [x 1 y@L])
          *	->	(cOr {x y})
-         */		 {ProduceNewTree, 0, 1,/*649        */649       , {3,/*0,51,11    */11586560  , cIf         ,PositionalParams,0}},
-        /* 28:	(cIf [x y 0])
+         */		 {ProduceNewTree, 0, 1,/*644        */644       , {3,/*0,50,11    */11585536  , cIf         ,PositionalParams,0}},
+        /* 27:	(cIf [x y 0])
          *	->	(cMul {(cNotNot [x]) y})
-         */		 {ProduceNewTree, 0, 1,/*193        */193       , {3,/*0,10,44    */46147584  , cIf         ,PositionalParams,0}},
-        /* 29:	(cIf [x y@L 0])
+         */		 {ProduceNewTree, 0, 1,/*189        */189       , {3,/*0,10,43    */45099008  , cIf         ,PositionalParams,0}},
+        /* 28:	(cIf [x y@L 0])
          *	->	(cAnd {x y})
-         */		 {ProduceNewTree, 0, 1,/*643        */643       , {3,/*0,11,44    */46148608  , cIf         ,PositionalParams,0}},
-        /* 30:	(cIf [x 1 0])
+         */		 {ProduceNewTree, 0, 1,/*638        */638       , {3,/*0,11,43    */45100032  , cIf         ,PositionalParams,0}},
+        /* 29:	(cIf [x 1 0])
          *	->	(cNotNot [x])
-         */		 {ProduceNewTree, 0, 1,/*655        */655       , {3,/*0,51,44    */46189568  , cIf         ,PositionalParams,0}},
-        /* 31:	(cIf [x y@L 1])
+         */		 {ProduceNewTree, 0, 1,/*650        */650       , {3,/*0,50,43    */45139968  , cIf         ,PositionalParams,0}},
+        /* 30:	(cIf [x y@L 1])
          *	->	(cOr {(cNot [x]) y})
-         */		 {ProduceNewTree, 0, 1,/*650        */650       , {3,/*0,11,51    */53488640  , cIf         ,PositionalParams,0}},
-        /* 32:	(cIf [x 0 1])
+         */		 {ProduceNewTree, 0, 1,/*645        */645       , {3,/*0,11,50    */52440064  , cIf         ,PositionalParams,0}},
+        /* 31:	(cIf [x 0 1])
          *	->	(cNot [x])
-         */		 {ProduceNewTree, 0, 1,/*631        */631       , {3,/*0,44,51    */53522432  , cIf         ,PositionalParams,0}},
-        /* 33:	(cIf [(cLess [x y])@D12 y@D8 x@D4])
+         */		 {ProduceNewTree, 0, 1,/*626        */626       , {3,/*0,43,50    */52472832  , cIf         ,PositionalParams,0}},
+        /* 32:	(cIf [(cLess [x y])@D12 y@D8 x@D4])
          *	->	(cMax [x y])
-         */		 {ProduceNewTree, 0, 1,/*553        */553       , {3,/*619,12,1   */1061483   , cIf         ,PositionalParams,0}},
-        /* 34:	(cIf [(cGreater [x y])@D12 y@D8 x@D4])
+         */		 {ProduceNewTree, 0, 1,/*548        */548       , {3,/*614,12,1   */1061478   , cIf         ,PositionalParams,0}},
+        /* 33:	(cIf [(cGreater [x y])@D12 y@D8 x@D4])
          *	->	(cMin [x y])
-         */		 {ProduceNewTree, 0, 1,/*557        */557       , {3,/*625,12,1   */1061489   , cIf         ,PositionalParams,0}},
-        /* 35:	(cIf [(cLess [x y])@D12 x@D4 y@D8])
+         */		 {ProduceNewTree, 0, 1,/*552        */552       , {3,/*620,12,1   */1061484   , cIf         ,PositionalParams,0}},
+        /* 34:	(cIf [(cLess [x y])@D12 x@D4 y@D8])
          *	->	(cMin [x y])
-         */		 {ProduceNewTree, 0, 1,/*557        */557       , {3,/*619,1,12   */12584555  , cIf         ,PositionalParams,0}},
-        /* 36:	(cIf [(cGreater [x y])@D12 x@D4 y@D8])
+         */		 {ProduceNewTree, 0, 1,/*552        */552       , {3,/*614,1,12   */12584550  , cIf         ,PositionalParams,0}},
+        /* 35:	(cIf [(cGreater [x y])@D12 x@D4 y@D8])
          *	->	(cMax [x y])
-         */		 {ProduceNewTree, 0, 1,/*553        */553       , {3,/*625,1,12   */12584561  , cIf         ,PositionalParams,0}},
-        /* 37:	(cIf [(cLessOrEq [x y]) z a])
+         */		 {ProduceNewTree, 0, 1,/*548        */548       , {3,/*620,1,12   */12584556  , cIf         ,PositionalParams,0}},
+        /* 36:	(cIf [(cLessOrEq [x y]) z a])
          *	:	(cLess [y x]) a z
-         */		 {ReplaceParams , 0, 3,/*622,38,34  */35691118  , {3,/*623,34,38  */39881327  , cIf         ,PositionalParams,0}},
-        /* 38:	(cIf [(cGreaterOrEq [x y]) z a])
+         */		 {ReplaceParams , 0, 3,/*617,37,33  */34641513  , {3,/*618,33,37  */38831722  , cIf         ,PositionalParams,0}},
+        /* 37:	(cIf [(cGreaterOrEq [x y]) z a])
          *	:	(cGreater [y x]) a z
-         */		 {ReplaceParams , 0, 3,/*628,38,34  */35691124  , {3,/*629,34,38  */39881333  , cIf         ,PositionalParams,0}},
-        /* 39:	@R (cIf [x@P y z])
+         */		 {ReplaceParams , 0, 3,/*623,37,33  */34641519  , {3,/*624,33,37  */38831728  , cIf         ,PositionalParams,0}},
+        /* 38:	@R (cIf [x@P y z])
          *	->	(cAbsIf [x y z])
-         */		 {ProduceNewTree, 16, 1,/*666        */666       , {3,/*2,10,34    */35661826  , cIf         ,PositionalParams,0}},
-        /* 40:	@R (cIf [(cLess [x 0])@D4 (cCeil [x])@D4 (cFloor [x])@D4])
+         */		 {ProduceNewTree, 16, 1,/*661        */661       , {3,/*2,10,33    */34613250  , cIf         ,PositionalParams,0}},
+        /* 39:	@R (cIf [(cLess [x 0])@D4 (cCeil [x])@D4 (cFloor [x])@D4])
          *	->	(cTrunc [x])
-         */		 {ProduceNewTree, 16, 1,/*608        */608       , {3,/*620,490,516*/541567596 , cIf         ,PositionalParams,0}},
-        /* 41:	@R (cIf [(cGreater [x 0])@D4 (cFloor [x])@D4 (cCeil [x])@D4])
+         */		 {ProduceNewTree, 16, 1,/*603        */603       , {3,/*615,485,510*/535271015 , cIf         ,PositionalParams,0}},
+        /* 40:	@R (cIf [(cGreater [x 0])@D4 (cFloor [x])@D4 (cCeil [x])@D4])
          *	->	(cTrunc [x])
-         */		 {ProduceNewTree, 16, 1,/*608        */608       , {3,/*626,516,490*/514331250 , cIf         ,PositionalParams,0}},
-        /* 42:	@F (cInt [x@P])
+         */		 {ProduceNewTree, 16, 1,/*603        */603       , {3,/*621,510,485*/509082221 , cIf         ,PositionalParams,0}},
+        /* 41:	@F (cInt [x@P])
          *	->	(cFloor [(cAdd {x 0.5})])
-         */		 {ProduceNewTree, 2, 1,/*517        */517       , {1,/*2          */2         , cInt        ,PositionalParams,0}},
-        /* 43:	@F (cInt [x@N])
+         */		 {ProduceNewTree, 2, 1,/*512        */512       , {1,/*2          */2         , cInt        ,PositionalParams,0}},
+        /* 42:	@F (cInt [x@N])
          *	->	(cFloor [(cAdd {x -0.5})])
-         */		 {ProduceNewTree, 2, 1,/*513        */513       , {1,/*5          */5         , cInt        ,PositionalParams,0}},
-        /* 44:	@F (cLog [(cMul %@P <1>)])
+         */		 {ProduceNewTree, 2, 1,/*511        */511       , {1,/*5          */5         , cInt        ,PositionalParams,0}},
+        /* 43:	@F (cLog [(cMul %@P <1>)])
          *	->	(cAdd {(cLog [(cMul  <1>)]) LOG( % )@C})
-         */		 {ProduceNewTree, 2, 1,/*90         */90        , {1,/*305        */305       , cLog        ,PositionalParams,0}},
-        /* 45:	@F (cLog [(cMul (cPow [% y]) <1>)])
+         */		 {ProduceNewTree, 2, 1,/*93         */93        , {1,/*301        */301       , cLog        ,PositionalParams,0}},
+        /* 44:	@F (cLog [(cMul (cPow [% y]) <1>)])
          *	->	(cAdd {(cMul {LOG( % )@C y}) (cLog [(cMul  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*87         */87        , {1,/*310        */310       , cLog        ,PositionalParams,0}},
-        /* 46:	@F (cLog [(cAdd {(cPow [(cAdd {-1 (cPow [x 2])}) 0.5])@D4 x@D4})])
+         */		 {ProduceNewTree, 2, 1,/*86         */86        , {1,/*306        */306       , cLog        ,PositionalParams,0}},
+        /* 45:	@F (cLog [(cAdd {(cPow [(cAdd {-1 (cPow [x 2])}) 0.5])@D4 x@D4})])
          *	->	(cAcosh [x])
-         */		 {ProduceNewTree, 2, 1,/*477        */477       , {1,/*88         */88        , cLog        ,PositionalParams,0}},
-        /* 47:	@F (cLog [(cMul {(cAdd {1 x})@D4 (cPow [(cAdd {1 (cMul {-1 x})}) -1])@D4})])
+         */		 {ProduceNewTree, 2, 1,/*472        */472       , {1,/*87         */87        , cLog        ,PositionalParams,0}},
+        /* 46:	@F (cLog [(cMul {(cAdd {1 x})@D4 (cPow [(cAdd {1 (cMul {-1 x})}) -1])@D4})])
          *	->	(cMul {(cAtanh [x]) 2})
-         */		 {ProduceNewTree, 2, 1,/*195        */195       , {1,/*183        */183       , cLog        ,PositionalParams,0}},
-        /* 48:	(cMax x@D4 (cMin x <1>)@D4)
+         */		 {ProduceNewTree, 2, 1,/*186        */186       , {1,/*173        */173       , cLog        ,PositionalParams,0}},
+        /* 47:	(cMax x@D4 (cMin x <1>)@D4)
          *	:	x
-         */		 {ReplaceParams , 0, 1,/*0          */0         , {2,/*1,560      */573441    , cMax        ,AnyParams       ,0}},
-        /* 49:	@R (cMax (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ReplaceParams , 0, 1,/*0          */0         , {2,/*1,555      */568321    , cMax        ,AnyParams       ,0}},
+        /* 48:	@R (cMax (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cMax [y a]) (cMax [z b])])
-         */		 {ReplaceParams , 16, 1,/*529        */529       , {2,/*522,524    */537098    , cMax        ,AnyParams       ,0}},
-        /* 50:	(cMin x@D4 (cMax x <1>)@D4)
+         */		 {ReplaceParams , 16, 1,/*524        */524       , {2,/*517,519    */531973    , cMax        ,AnyParams       ,0}},
+        /* 49:	(cMin x@D4 (cMax x <1>)@D4)
          *	:	x
-         */		 {ReplaceParams , 0, 1,/*0          */0         , {2,/*1,556      */569345    , cMin        ,AnyParams       ,0}},
-        /* 51:	@R (cMin (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ReplaceParams , 0, 1,/*0          */0         , {2,/*1,551      */564225    , cMin        ,AnyParams       ,0}},
+        /* 50:	@R (cMin (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cMin [y a]) (cMin [z b])])
-         */		 {ReplaceParams , 16, 1,/*530        */530       , {2,/*522,524    */537098    , cMin        ,AnyParams       ,0}},
-        /* 52:	(cPow [(cMul %@P <1>) &])
+         */		 {ReplaceParams , 16, 1,/*525        */525       , {2,/*517,519    */531973    , cMin        ,AnyParams       ,0}},
+        /* 51:	(cPow [(cMul %@P <1>) &])
          *	->	(cMul {POW( % & )@C (cPow [(cMul  <1>) &])})
-         */		 {ProduceNewTree, 0, 1,/*189        */189       , {2,/*305,27     */27953     , cPow        ,PositionalParams,0}},
-        /* 53:	(cPow [(cMul %@N <1>) &@E])
+         */		 {ProduceNewTree, 0, 1,/*184        */184       , {2,/*301,26     */26925     , cPow        ,PositionalParams,0}},
+        /* 52:	(cPow [(cMul %@N <1>) &@E])
          *	->	(cMul {POW( % & )@C (cPow [(cMul  <1>) &])})
-         */		 {ProduceNewTree, 0, 1,/*189        */189       , {2,/*303,28     */28975     , cPow        ,PositionalParams,0}},
-        /* 54:	(cPow [% (cAdd &@M <1>)])
+         */		 {ProduceNewTree, 0, 1,/*184        */184       , {2,/*299,27     */27947     , cPow        ,PositionalParams,0}},
+        /* 53:	(cPow [% (cAdd &@M <1>)])
          *	->	(cMul {POW( % & )@C (cPow [% (cAdd  <1>)])})
-         */		 {ProduceNewTree, 0, 1,/*190        */190       , {2,/*18,149     */152594    , cPow        ,PositionalParams,0}},
-        /* 55:	(cPow [(cPow [x y@O]) z])
+         */		 {ProduceNewTree, 0, 1,/*185        */185       , {2,/*17,148     */151569    , cPow        ,PositionalParams,0}},
+        /* 54:	(cPow [(cPow [x y@O]) z])
          *	:	x (cMul {y z})
-         */		 {ReplaceParams , 0, 2,/*0,198      */202752    , {2,/*363,34     */35179     , cPow        ,PositionalParams,0}},
-        /* 56:	(cPow [(cPow [x y@F]) z])
+         */		 {ReplaceParams , 0, 2,/*0,195      */199680    , {2,/*343,33     */34135     , cPow        ,PositionalParams,0}},
+        /* 55:	(cPow [(cPow [x y@F]) z])
          *	:	x (cMul {y z})
-         */		 {ReplaceParams , 0, 2,/*0,198      */202752    , {2,/*364,34     */35180     , cPow        ,PositionalParams,0}},
-        /* 57:	(cPow [(cPow [x@P y]) z])
+         */		 {ReplaceParams , 0, 2,/*0,195      */199680    , {2,/*344,33     */34136     , cPow        ,PositionalParams,0}},
+        /* 56:	(cPow [(cPow [x@P y]) z])
          *	:	x (cMul {y z})
-         */		 {ReplaceParams , 0, 2,/*0,198      */202752    , {2,/*365,34     */35181     , cPow        ,PositionalParams,0}},
-        /* 58:	(cPow [(cPow [x y])@P z])
+         */		 {ReplaceParams , 0, 2,/*0,195      */199680    , {2,/*345,33     */34137     , cPow        ,PositionalParams,0}},
+        /* 57:	(cPow [(cPow [x y])@P z])
          *	:	(cAbs [x]) (cMul {y z})
-         */		 {ReplaceParams , 0, 2,/*473,198    */203225    , {2,/*466,34     */35282     , cPow        ,PositionalParams,0}},
-        /* 59:	(cPow [(cPow [x y]) z@I])
+         */		 {ReplaceParams , 0, 2,/*468,195    */200148    , {2,/*461,33     */34253     , cPow        ,PositionalParams,0}},
+        /* 58:	(cPow [(cPow [x y]) z@I])
          *	:	x (cMul {y z})
-         */		 {ReplaceParams , 0, 2,/*0,198      */202752    , {2,/*366,35     */36206     , cPow        ,PositionalParams,0}},
-        /* 60:	(cPow [(cAbs [x]) y@E])
+         */		 {ReplaceParams , 0, 2,/*0,195      */199680    , {2,/*346,34     */35162     , cPow        ,PositionalParams,0}},
+        /* 59:	(cPow [(cAbs [x]) y@E])
          *	:	x y
-         */		 {ReplaceParams , 0, 2,/*0,10       */10240     , {2,/*473,15     */15833     , cPow        ,PositionalParams,0}},
-        /* 61:	(cPow [(cMul (cAbs [x]) <1>) y@E])
+         */		 {ReplaceParams , 0, 2,/*0,10       */10240     , {2,/*468,15     */15828     , cPow        ,PositionalParams,0}},
+        /* 60:	(cPow [(cMul (cAbs [x]) <1>) y@E])
          *	:	(cMul x <1>) y
-         */		 {ReplaceParams , 0, 2,/*314,10     */10554     , {2,/*313,15     */15673     , cPow        ,PositionalParams,0}},
-        /* 62:	@F (cPow [(cAdd [(cPow [x %@E]) (cPow [y &@E])]) 0.5])
+         */		 {ReplaceParams , 0, 2,/*310,10     */10550     , {2,/*309,15     */15669     , cPow        ,PositionalParams,0}},
+        /* 61:	@F (cPow [(cAdd [(cPow [x %@E]) (cPow [y &@E])]) 0.5])
          *	->	(cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [y MUL( & 0.5 )@C])])
-         */		 {ProduceNewTree, 2, 1,/*519        */519       , {2,/*71,48      */49223     , cPow        ,PositionalParams,0}},
-        /* 63:	@F (cPow [(cAdd {(cPow [x %@E]) (cMul {z@C (cPow [y &@E])})}) 0.5])
+         */		 {ProduceNewTree, 2, 1,/*514        */514       , {2,/*70,47      */48198     , cPow        ,PositionalParams,0}},
+        /* 62:	@F (cPow [(cAdd {(cPow [x %@E]) (cMul {z@C (cPow [y &@E])})}) 0.5])
          *	->	(cHypot [(cPow [x MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])])
-         */		 {ProduceNewTree, 2, 1,/*520        */520       , {2,/*79,48      */49231     , cPow        ,PositionalParams,0}},
-        /* 64:	@F (cPow [(cAdd {(cMul {a@C (cPow [x %@E])}) (cMul {z@C (cPow [y &@E])})}) 0.5])
+         */		 {ProduceNewTree, 2, 1,/*515        */515       , {2,/*88,47      */48216     , cPow        ,PositionalParams,0}},
+        /* 63:	@F (cPow [(cAdd {(cMul {a@C (cPow [x %@E])}) (cMul {z@C (cPow [y &@E])})}) 0.5])
          *	->	(cHypot [(cPow [(cMul {x POW( a@C /%@C )@C}) MUL( % 0.5 )@C]) (cPow [(cMul {y POW( z@C /&@C )@C}) MUL( & 0.5 )@C])])
-         */		 {ProduceNewTree, 2, 1,/*521        */521       , {2,/*77,48      */49229     , cPow        ,PositionalParams,0}},
-        /* 65:	@F (cPow [% (cAdd {(cLog [x]) &})])
+         */		 {ProduceNewTree, 2, 1,/*516        */516       , {2,/*75,47      */48203     , cPow        ,PositionalParams,0}},
+        /* 64:	@F (cPow [% (cAdd {(cLog [x]) &})])
          *	->	(cMul {POW( % & )@C (cPow [x LOG( % )@C])})
-         */		 {ProduceNewTree, 2, 1,/*208        */208       , {2,/*18,94      */96274     , cPow        ,PositionalParams,0}},
-        /* 66:	@F (cPow [z@D16 (cAdd (cMul (cPow [(cLog [z]) -1]) <2>) <1>)@D16])
+         */		 {ProduceNewTree, 2, 1,/*208        */208       , {2,/*17,97      */99345     , cPow        ,PositionalParams,0}},
+        /* 65:	@F (cPow [z@D16 (cAdd (cMul (cPow [(cLog [z]) -1]) <2>) <1>)@D16])
          *	->	(cMul {(cPow [z (cAdd  <1>)]) (cPow [2.718281828459045090795598298427648842335 (cMul  <2>)])})
-         */		 {ProduceNewTree, 2, 1,/*207        */207       , {2,/*37,151     */154661    , cPow        ,PositionalParams,0}},
-        /* 67:	@F (cPow [z@D16 (cAdd (cPow [(cLog [z]) -1]) <1>)@D16])
+         */		 {ProduceNewTree, 2, 1,/*207        */207       , {2,/*36,150     */153636    , cPow        ,PositionalParams,0}},
+        /* 66:	@F (cPow [z@D16 (cAdd (cPow [(cLog [z]) -1]) <1>)@D16])
          *	->	(cMul {2.718281828459045090795598298427648842335 (cPow [z (cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*212        */212       , {2,/*37,158     */161829    , cPow        ,PositionalParams,0}},
-        /* 68:	@F (cPow [% (cLog [x])])
+         */		 {ProduceNewTree, 2, 1,/*213        */213       , {2,/*36,157     */160804    , cPow        ,PositionalParams,0}},
+        /* 67:	@F (cPow [% (cLog [x])])
          *	:	x LOG( % )@C
-         */		 {ReplaceParams , 2, 2,/*0,549      */562176    , {2,/*18,544     */557074    , cPow        ,PositionalParams,0}},
-        /* 69:	@F (cPow [% (cMul (cLog [x]) <1>)])
+         */		 {ReplaceParams , 2, 2,/*0,544      */557056    , {2,/*17,539     */551953    , cPow        ,PositionalParams,0}},
+        /* 68:	@F (cPow [% (cMul (cLog [x]) <1>)])
          *	:	x (cMul LOG( % )@C <1>)
-         */		 {ReplaceParams , 2, 2,/*0,316      */323584    , {2,/*18,315     */322578    , cPow        ,PositionalParams,0}},
-        /* 70:	@F (cPow [z@D16 (cMul (cPow [(cLog [z]) -1]) (cLog [x]) <1>)@D16])
+         */		 {ReplaceParams , 2, 2,/*0,312      */319488    , {2,/*17,311     */318481    , cPow        ,PositionalParams,0}},
+        /* 69:	@F (cPow [z@D16 (cMul (cPow [(cLog [z]) -1]) (cLog [x]) <1>)@D16])
          *	:	x (cMul  <1>)
-         */		 {ReplaceParams , 2, 2,/*0,294      */301056    , {2,/*37,312     */319525    , cPow        ,PositionalParams,0}},
-        /* 71:	@F (cPow [%@D1 (cMul /LOG( % )@C@C (cLog [x]) <1>)@D1])
+         */		 {ReplaceParams , 2, 2,/*0,290      */296960    , {2,/*36,308     */315428    , cPow        ,PositionalParams,0}},
+        /* 70:	@F (cPow [%@D1 (cMul /LOG( % )@C@C (cLog [x]) <1>)@D1])
          *	:	x (cMul  <1>)
-         */		 {ReplaceParams , 2, 2,/*0,294      */301056    , {2,/*21,306     */313365    , cPow        ,PositionalParams,0}},
-        /* 72:	@F (cSin [(cMul -1 <1>)])
+         */		 {ReplaceParams , 2, 2,/*0,290      */296960    , {2,/*20,302     */309268    , cPow        ,PositionalParams,0}},
+        /* 71:	@F (cSin [(cMul -1 <1>)])
          *	->	(cMul {-1 (cSin [(cMul  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*210        */210       , {1,/*301        */301       , cSin        ,PositionalParams,0}},
-        /* 73:	@F (cSin [(cAdd {1.570796326794896557998981734272092580795 (cMul %@N <1>)})])
+         */		 {ProduceNewTree, 2, 1,/*210        */210       , {1,/*297        */297       , cSin        ,PositionalParams,0}},
+        /* 72:	@F (cSin [(cAdd {1.570796326794896557998981734272092580795 (cMul %@N <1>)})])
          *	->	(cCos [(cMul -%@C <1>)])
-         */		 {ProduceNewTree, 2, 1,/*500        */500       , {1,/*75         */75        , cSin        ,PositionalParams,0}},
-        /* 74:	@F (cSin [(cAdd -1.570796326794896557998981734272092580795 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*495        */495       , {1,/*74         */74        , cSin        ,PositionalParams,0}},
+        /* 73:	@F (cSin [(cAdd -1.570796326794896557998981734272092580795 <1>)])
          *	->	(cMul {-1 (cCos [(cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*177        */177       , {1,/*144        */144       , cSin        ,PositionalParams,0}},
-        /* 75:	@F (cSin [(cAdd 1.570796326794896557998981734272092580795 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*178        */178       , {1,/*143        */143       , cSin        ,PositionalParams,0}},
+        /* 74:	@F (cSin [(cAdd 1.570796326794896557998981734272092580795 <1>)])
          *	->	(cCos [(cAdd  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*497        */497       , {1,/*146        */146       , cSin        ,PositionalParams,0}},
-        /* 76:	@F (cSin [(cAdd 3.141592653589793115997963468544185161591 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*492        */492       , {1,/*145        */145       , cSin        ,PositionalParams,0}},
+        /* 75:	@F (cSin [(cAdd 3.141592653589793115997963468544185161591 <1>)])
          *	->	(cMul {-1 (cSin [(cAdd  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*209        */209       , {1,/*147        */147       , cSin        ,PositionalParams,0}},
-        /* 77:	@F (cSin [(cAdd 0 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*209        */209       , {1,/*146        */146       , cSin        ,PositionalParams,0}},
+        /* 76:	@F (cSin [(cAdd 0 <1>)])
          *	->	(cSin [(cAdd  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*574        */574       , {1,/*145        */145       , cSin        ,PositionalParams,0}},
-        /* 78:	@F (cSin [(cAsin [x])])
+         */		 {ProduceNewTree, 2, 1,/*560        */560       , {1,/*144        */144       , cSin        ,PositionalParams,0}},
+        /* 77:	@F (cSin [(cAsin [x])])
          *	->	x
-         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*478        */478       , cSin        ,PositionalParams,0}},
-        /* 79:	@R @F (cSin [(cAtan [x])])
-         *	->	(cMul {x (cPow [(cAdd {1 (cPow [x 2])}) -0.5])})
-         */		 {ProduceNewTree, 18, 1,/*214        */214       , {1,/*481        */481       , cSin        ,PositionalParams,0}},
-        /* 80:	@R @F (cSin [(cAtan2 [x y])])
-         *	->	(cMul {x (cPow [(cAdd {(cPow [x 2]) (cPow [y 2])}) -0.5])})
-         */		 {ProduceNewTree, 18, 1,/*215        */215       , {1,/*485        */485       , cSin        ,PositionalParams,0}},
-        /* 81:	@F (cSinh [(cMul -1 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*473        */473       , cSin        ,PositionalParams,0}},
+        /* 78:	@F (cSinh [(cMul -1 <1>)])
          *	->	(cMul {-1 (cSinh [(cMul  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*216        */216       , {1,/*301        */301       , cSinh       ,PositionalParams,0}},
-        /* 82:	@F (cSinh [(cAcosh [x])])
+         */		 {ProduceNewTree, 2, 1,/*211        */211       , {1,/*297        */297       , cSinh       ,PositionalParams,0}},
+        /* 79:	@F (cSinh [(cAcosh [x])])
          *	->	(cPow [(cAdd {(cPow [x 2]) -1}) 0.5])
-         */		 {ProduceNewTree, 2, 1,/*353        */353       , {1,/*477        */477       , cSinh       ,PositionalParams,0}},
-        /* 83:	@F (cSinh [(cAtanh [x])])
+         */		 {ProduceNewTree, 2, 1,/*368        */368       , {1,/*472        */472       , cSinh       ,PositionalParams,0}},
+        /* 80:	@F (cSinh [(cAtanh [x])])
          *	->	(cMul {x (cPow [(cAdd {-1 (cMul {-1 (cPow [x 2])})}) -0.5])})
-         */		 {ProduceNewTree, 2, 1,/*213        */213       , {1,/*487        */487       , cSinh       ,PositionalParams,0}},
-        /* 84:	@F (cTan [(cMul -1 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*191        */191       , {1,/*482        */482       , cSinh       ,PositionalParams,0}},
+        /* 81:	@F (cTan [(cMul -1 <1>)])
          *	->	(cMul {-1 (cTan [(cMul  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*217        */217       , {1,/*301        */301       , cTan        ,PositionalParams,0}},
-        /* 85:	@F (cTan [(cAtan [x])])
+         */		 {ProduceNewTree, 2, 1,/*212        */212       , {1,/*297        */297       , cTan        ,PositionalParams,0}},
+        /* 82:	@F (cTan [(cAtan [x])])
          *	->	x
-         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*481        */481       , cTan        ,PositionalParams,0}},
-        /* 86:	@F (cTan [(cAtan2 [x y])])
+         */		 {ProduceNewTree, 2, 1,/*0          */0         , {1,/*476        */476       , cTan        ,PositionalParams,0}},
+        /* 83:	@F (cTan [(cAtan2 [x y])])
          *	->	(cMul {x (cPow [y -1])})
-         */		 {ProduceNewTree, 2, 1,/*218        */218       , {1,/*485        */485       , cTan        ,PositionalParams,0}},
-        /* 87:	@F (cTanh [(cMul -1 <1>)])
+         */		 {ProduceNewTree, 2, 1,/*214        */214       , {1,/*480        */480       , cTan        ,PositionalParams,0}},
+        /* 84:	@F (cTanh [(cMul -1 <1>)])
          *	->	(cMul {-1 (cTanh [(cMul  <1>)])})
-         */		 {ProduceNewTree, 2, 1,/*219        */219       , {1,/*301        */301       , cTanh       ,PositionalParams,0}},
-        /* 88:	@F (cTanh (cMul  <1>))
+         */		 {ProduceNewTree, 2, 1,/*215        */215       , {1,/*297        */297       , cTanh       ,PositionalParams,0}},
+        /* 85:	@F (cTanh (cMul  <1>))
          *	->	(cAdd {(cMul {(cPow [(cAdd {(cExp [(cMul -2 <1>)]) 1}) -1]) 2}) -1})
-         */		 {ProduceNewTree, 2, 1,/*78         */78        , {1,/*294        */294       , cTanh       ,AnyParams       ,0}},
-        /* 89:	@F (cTrunc [x@P])
+         */		 {ProduceNewTree, 2, 1,/*76         */76        , {1,/*290        */290       , cTanh       ,AnyParams       ,0}},
+        /* 86:	@F (cTrunc [x@P])
          *	->	(cFloor [x])
-         */		 {ProduceNewTree, 2, 1,/*518        */518       , {1,/*2          */2         , cTrunc      ,PositionalParams,0}},
-        /* 90:	@F (cTrunc [x@N])
+         */		 {ProduceNewTree, 2, 1,/*513        */513       , {1,/*2          */2         , cTrunc      ,PositionalParams,0}},
+        /* 87:	@F (cTrunc [x@N])
          *	->	(cCeil [x])
-         */		 {ProduceNewTree, 2, 1,/*491        */491       , {1,/*5          */5         , cTrunc      ,PositionalParams,0}},
-        /* 91:	(cAdd % (cIf [x & z@C]))
+         */		 {ProduceNewTree, 2, 1,/*486        */486       , {1,/*5          */5         , cTrunc      ,PositionalParams,0}},
+        /* 88:	(cAdd % (cIf [x & z@C]))
          *	:	(cIf [x ADD( % & )@C ADD( % z@C )@C])
-         */		 {ReplaceParams , 0, 1,/*526        */526       , {2,/*18,523     */535570    , cAdd        ,AnyParams       ,0}},
-        /* 92:	(cAdd (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ReplaceParams , 0, 1,/*521        */521       , {2,/*17,518     */530449    , cAdd        ,AnyParams       ,0}},
+        /* 89:	(cAdd (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cAdd {y a}) (cAdd {z b})])
-         */		 {ReplaceParams , 0, 1,/*525        */525       , {2,/*522,524    */537098    , cAdd        ,AnyParams       ,0}},
-        /* 93:	(cAdd (cMul (cPow [x %@I@P]) <1>)@D4 (cMul (cPow [x &@I]) <2>)@D4)
+         */		 {ReplaceParams , 0, 1,/*520        */520       , {2,/*517,519    */531973    , cAdd        ,AnyParams       ,0}},
+        /* 90:	(cAdd (cMul (cPow [x %@I@P]) <1>)@D4 (cMul (cPow [x &@I]) <2>)@D4)
          *	:	(cMul {(cPow [x MIN( % & )@C]) (cAdd {(cMul (cPow [x (cAdd {% -MIN( % & )@C@C})]) <1>) (cMul (cPow [x (cAdd {& -MIN( % & )@C@C})]) <2>)})})
-         */		 {ReplaceParams , 0, 1,/*222        */222       , {2,/*318,319    */326974    , cAdd        ,AnyParams       ,0}},
-        /* 94:	(cAdd (cMul %@P <1>)@D1 (cMul -%@C <2>)@D1)
+         */		 {ReplaceParams , 0, 1,/*217        */217       , {2,/*315,316    */323899    , cAdd        ,AnyParams       ,0}},
+        /* 91:	(cAdd (cMul %@P <1>)@D1 (cMul -%@C <2>)@D1)
          *	:	(cMul {% (cAdd {(cMul  <1>) (cMul -1 <2>)})})
-         */		 {ReplaceParams , 0, 1,/*223        */223       , {2,/*322,323    */331074    , cAdd        ,AnyParams       ,0}},
-        /* 95:	(cAdd %@M@D1 (cMul -%@C <2>)@D1)
+         */		 {ReplaceParams , 0, 1,/*220        */220       , {2,/*321,314    */321857    , cAdd        ,AnyParams       ,0}},
+        /* 92:	(cAdd %@M@D1 (cMul -%@C <2>)@D1)
          *	:	(cMul {% (cAdd {1 (cMul -1 <2>)})})
-         */		 {ReplaceParams , 0, 1,/*224        */224       , {2,/*23,323     */330775    , cAdd        ,AnyParams       ,0}},
-        /* 96:	(cAdd (cMul {%@P (cPow [x 2])})@D4 (cMul {& x y})@D4)
+         */		 {ReplaceParams , 0, 1,/*221        */221       , {2,/*22,314     */321558    , cAdd        ,AnyParams       ,0}},
+        /* 93:	(cAdd (cMul {%@P (cPow [x 2])})@D4 (cMul {& x y})@D4)
          *	:	(cPow [(cAdd {(cMul {x SQRT( % )@C}) (cMul {y MUL( 0.5 MUL( & /SQRT( % )@C@C )@C )@C})}) 2]) (cMul {(cPow [y 2]) MUL( MUL( -0.25 /%@C )@C POW( & 2 )@C )@C})
-         */		 {ReplaceParams , 0, 2,/*380,188    */192892    , {2,/*225,227    */232673    , cAdd        ,AnyParams       ,0}},
-        /* 97:	(cAdd (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})})@D12 (cMul {&@P x y})@D12)
+         */		 {ReplaceParams , 0, 2,/*390,183    */187782    , {2,/*222,223    */228574    , cAdd        ,AnyParams       ,0}},
+        /* 94:	(cAdd (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})})@D12 (cMul {&@P x y})@D12)
          *	:	(cMul {% (cPow [(cAdd {x y}) 2])}) (cMul {ADD( & MUL( -2 % )@C )@C x y})
-         */		 {ReplaceParams , 0, 2,/*201,184    */188617    , {2,/*200,203    */208072    , cAdd        ,AnyParams       ,0}},
-        /* 98:	(cAdd (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})})@D12 (cMul {&@N x y})@D12)
+         */		 {ReplaceParams , 0, 2,/*198,206    */211142    , {2,/*197,203    */208069    , cAdd        ,AnyParams       ,0}},
+        /* 95:	(cAdd (cMul {%@P (cAdd {(cPow [x 2]) (cPow [y 2])})})@D12 (cMul {&@N x y})@D12)
          *	:	(cMul {% (cPow [(cAdd {x (cMul {-1 y})}) 2])}) (cMul {ADD( & MUL( 2 % )@C )@C x y})
-         */		 {ReplaceParams , 0, 2,/*202,220    */225482    , {2,/*200,204    */209096    , cAdd        ,AnyParams       ,0}},
-        /* 99:	(cAdd (cMul {% (cPow [x y])})@D12 (cPow [x (cMul {2 y})])@D12)
+         */		 {ReplaceParams , 0, 2,/*199,229    */234695    , {2,/*197,224    */229573    , cAdd        ,AnyParams       ,0}},
+        /* 96:	(cAdd (cMul {% (cPow [x y])})@D12 (cPow [x (cMul {2 y})])@D12)
          *	:	(cPow [(cAdd {(cPow [x y]) MUL( % 0.5 )@C}) 2]) -POW( MUL( % 0.5 )@C 2 )@C@C
-         */		 {ReplaceParams , 0, 2,/*381,63     */64893     , {2,/*226,368    */377058    , cAdd        ,AnyParams       ,0}},
-        /* 100:	(cAdd (cMul {% (cPow [x (cMul {& y})])})@D14 (cPow [x (cMul {MUL( & 2 )@C y})])@D14)
+         */		 {ReplaceParams , 0, 2,/*369,62     */63857     , {2,/*200,366    */374984    , cAdd        ,AnyParams       ,0}},
+        /* 97:	(cAdd (cMul {% (cPow [x (cMul {& y})])})@D14 (cPow [x (cMul {MUL( & 2 )@C y})])@D14)
          *	:	(cPow [(cAdd {(cPow [x (cMul {y &})]) MUL( % 0.5 )@C}) 2]) -POW( MUL( % 0.5 )@C 2 )@C@C
-         */		 {ReplaceParams , 0, 2,/*390,63     */64902     , {2,/*269,387    */396557    , cAdd        ,AnyParams       ,0}},
-        /* 101:	(cAdd (cMul {% (cPow [& y])})@D10 (cPow [POW( & 2 )@C y])@D10)
+         */		 {ReplaceParams , 0, 2,/*370,62     */63858     , {2,/*201,349    */357577    , cAdd        ,AnyParams       ,0}},
+        /* 98:	(cAdd (cMul {% (cPow [& y])})@D10 (cPow [POW( & 2 )@C y])@D10)
          *	:	(cPow [(cAdd {(cPow [& y]) MUL( % 0.5 )@C}) 2]) -POW( MUL( % 0.5 )@C 2 )@C@C
-         */		 {ReplaceParams , 0, 2,/*392,63     */64904     , {2,/*270,397    */406798    , cAdd        ,AnyParams       ,0}},
-        /* 102:	@F (cAdd (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) 0.5]) <1>)
+         */		 {ReplaceParams , 0, 2,/*391,62     */63879     , {2,/*202,396    */405706    , cAdd        ,AnyParams       ,0}},
+        /* 99:	@F (cAdd (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) 0.5]) <1>)
          *	->	(cPow [2.718281828459045090795598298427648842335 (cAsinh [(cAdd  <1>)])])
-         */		 {ProduceNewTree, 2, 1,/*399        */399       , {1,/*393        */393       , cAdd        ,AnyParams       ,1}},
-        /* 103:	@F (cAdd (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) -0.5]) <1>)
+         */		 {ProduceNewTree, 2, 1,/*398        */398       , {1,/*394        */394       , cAdd        ,AnyParams       ,1}},
+        /* 100:	@F (cAdd (cPow [(cAdd {1 (cPow [(cAdd  <1>) 2])}) -0.5]) <1>)
          *	->	(cPow [0.3678794411714423340242774429498240351677 (cAsinh [(cAdd  <1>)])])
-         */		 {ProduceNewTree, 2, 1,/*401        */401       , {1,/*400        */400       , cAdd        ,AnyParams       ,1}},
-        /* 104:	@F (cAdd (cPow [(cAdd {1 (cPow [x 2])}) 0.5])@D4 x@D4)
+         */		 {ProduceNewTree, 2, 1,/*397        */397       , {1,/*393        */393       , cAdd        ,AnyParams       ,1}},
+        /* 101:	@F (cAdd (cPow [(cAdd {1 (cPow [x 2])}) 0.5])@D4 x@D4)
          *	:	(cPow [2.718281828459045090795598298427648842335 (cAsinh [x])])
-         */		 {ReplaceParams , 2, 1,/*415        */415       , {2,/*395,1      */1419      , cAdd        ,AnyParams       ,0}},
-        /* 105:	@F (cAdd (cPow [(cAdd {1 (cPow [x 2])}) -0.5])@D4 x@D4)
+         */		 {ReplaceParams , 2, 1,/*400        */400       , {2,/*399,1      */1423      , cAdd        ,AnyParams       ,0}},
+        /* 102:	@F (cAdd (cPow [(cAdd {1 (cPow [x 2])}) -0.5])@D4 x@D4)
          *	:	(cPow [0.3678794411714423340242774429498240351677 (cAsinh [x])])
-         */		 {ReplaceParams , 2, 1,/*398        */398       , {2,/*394,1      */1418      , cAdd        ,AnyParams       ,0}},
-        /* 106:	@F (cAdd (cMul (cPow [y x]) <1>)@D12 (cMul (cPow [y (cAdd x <2>)]) <3>)@D12)
+         */		 {ReplaceParams , 2, 1,/*402        */402       , {2,/*401,1      */1425      , cAdd        ,AnyParams       ,0}},
+        /* 103:	@F (cAdd (cMul (cPow [y x]) <1>)@D12 (cMul (cPow [y (cAdd x <2>)]) <3>)@D12)
          *	:	(cMul {(cPow [y x]) (cAdd (cMul (cPow [y (cAdd  <2>)]) <3>) <1>)})
-         */		 {ReplaceParams , 2, 1,/*186        */186       , {2,/*307,309    */316723    , cAdd        ,AnyParams       ,0}},
-        /* 107:	@F (cAdd (cPow [y x])@D12 (cMul (cPow [y (cAdd x <2>)]) <3>)@D12)
+         */		 {ReplaceParams , 2, 1,/*181        */181       , {2,/*303,305    */312623    , cAdd        ,AnyParams       ,0}},
+        /* 104:	@F (cAdd (cPow [y x])@D12 (cMul (cPow [y (cAdd x <2>)]) <3>)@D12)
          *	:	(cMul {(cPow [y x]) (cAdd {(cMul (cPow [y (cAdd  <2>)]) <3>) 1})})
-         */		 {ReplaceParams , 2, 1,/*185        */185       , {2,/*456,309    */316872    , cAdd        ,AnyParams       ,0}},
-        /* 108:	@F (cAdd (cMul (cPow [y x]) <1>)@D12 (cPow [y (cAdd x <2>)])@D12)
+         */		 {ReplaceParams , 2, 1,/*180        */180       , {2,/*385,305    */312705    , cAdd        ,AnyParams       ,0}},
+        /* 105:	@F (cAdd (cMul (cPow [y x]) <1>)@D12 (cPow [y (cAdd x <2>)])@D12)
          *	:	(cMul {(cPow [y x]) (cAdd (cPow [y (cAdd  <2>)]) <1>)})
-         */		 {ReplaceParams , 2, 1,/*187        */187       , {2,/*307,457    */468275    , cAdd        ,AnyParams       ,0}},
-        /* 109:	@F (cAdd (cLog [x]) (cLog [y]))
+         */		 {ReplaceParams , 2, 1,/*182        */182       , {2,/*303,386    */395567    , cAdd        ,AnyParams       ,0}},
+        /* 106:	@F (cAdd (cLog [x]) (cLog [y]))
          *	:	(cLog [(cMul {x y})])
-         */		 {ReplaceParams , 2, 1,/*547        */547       , {2,/*544,545    */558624    , cAdd        ,AnyParams       ,0}},
-        /* 110:	@F (cAdd (cPow [(cSin [x]) 2])@D4 (cPow [(cCos [x]) 2])@D4)
+         */		 {ReplaceParams , 2, 1,/*542        */542       , {2,/*539,540    */553499    , cAdd        ,AnyParams       ,0}},
+        /* 107:	@F (cAdd (cPow [(cSin [x]) 2])@D4 (cPow [(cCos [x]) 2])@D4)
          *	:	1
-         */		 {ReplaceParams , 2, 1,/*51         */51        , {2,/*404,402    */412052    , cAdd        ,AnyParams       ,0}},
-        /* 111:	@F (cAdd 1 (cMul {-1 (cPow [(cSin [x]) 2])}))
+         */		 {ReplaceParams , 2, 1,/*50         */50        , {2,/*456,403    */413128    , cAdd        ,AnyParams       ,0}},
+        /* 108:	@F (cAdd 1 (cMul {-1 (cPow [(cSin [x]) 2])}))
          *	:	(cPow [(cCos [x]) 2])
-         */		 {ReplaceParams , 2, 1,/*403        */403       , {2,/*51,229     */234547    , cAdd        ,AnyParams       ,0}},
-        /* 112:	@F (cAdd 1 (cMul {-1 (cPow [(cCos [x]) 2])}))
+         */		 {ReplaceParams , 2, 1,/*404        */404       , {2,/*50,227     */232498    , cAdd        ,AnyParams       ,0}},
+        /* 109:	@F (cAdd 1 (cMul {-1 (cPow [(cCos [x]) 2])}))
          *	:	(cPow [(cSin [x]) 2])
-         */		 {ReplaceParams , 2, 1,/*405        */405       , {2,/*51,228     */233523    , cAdd        ,AnyParams       ,0}},
-        /* 113:	@F (cAdd (cMul {(cSin [x]) (cCos [y])})@D12 (cMul {(cCos [x]) (cSin [y])})@D12)
+         */		 {ReplaceParams , 2, 1,/*405        */405       , {2,/*50,226     */231474    , cAdd        ,AnyParams       ,0}},
+        /* 110:	@F (cAdd (cMul {(cSin [x]) (cCos [y])})@D12 (cMul {(cCos [x]) (cSin [y])})@D12)
          *	:	(cSin [(cAdd {x y})])
-         */		 {ReplaceParams , 2, 1,/*567        */567       , {2,/*241,236    */241905    , cAdd        ,AnyParams       ,0}},
-        /* 114:	@F (cAdd (cMul {(cSin [x]) (cCos [y])})@D12 (cMul {(cCos [x]) (cSin [y]) -1})@D12)
+         */		 {ReplaceParams , 2, 1,/*567        */567       , {2,/*240,236    */241904    , cAdd        ,AnyParams       ,0}},
+        /* 111:	@F (cAdd (cMul {(cSin [x]) (cCos [y])})@D12 (cMul {(cCos [x]) (cSin [y]) -1})@D12)
          *	:	(cSin [(cAdd {x (cMul {-1 y})})])
-         */		 {ReplaceParams , 2, 1,/*568        */568       , {2,/*241,237    */242929    , cAdd        ,AnyParams       ,0}},
-        /* 115:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
+         */		 {ReplaceParams , 2, 1,/*568        */568       , {2,/*240,237    */242928    , cAdd        ,AnyParams       ,0}},
+        /* 112:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
          *	:	(cCos [(cAdd {x (cMul {-1 y})})])
-         */		 {ReplaceParams , 2, 1,/*495        */495       , {2,/*234,244    */250090    , cAdd        ,AnyParams       ,0}},
-        /* 116:	@F (cAdd (cMul {(cCos [x]) (cCos [y]) -1})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
+         */		 {ReplaceParams , 2, 1,/*490        */490       , {2,/*234,243    */249066    , cAdd        ,AnyParams       ,0}},
+        /* 113:	@F (cAdd (cMul {(cCos [x]) (cCos [y]) -1})@D12 (cMul {(cSin [x]) (cSin [y])})@D12)
          *	:	(cMul {-1 (cCos [(cAdd {x (cMul {-1 y})})])})
-         */		 {ReplaceParams , 2, 1,/*247        */247       , {2,/*235,244    */250091    , cAdd        ,AnyParams       ,0}},
-        /* 117:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y]) -1})@D12)
+         */		 {ReplaceParams , 2, 1,/*245        */245       , {2,/*235,243    */249067    , cAdd        ,AnyParams       ,0}},
+        /* 114:	@F (cAdd (cMul {(cCos [x]) (cCos [y])})@D12 (cMul {(cSin [x]) (cSin [y]) -1})@D12)
          *	:	(cCos [(cAdd {x y})])
-         */		 {ReplaceParams , 2, 1,/*496        */496       , {2,/*234,254    */260330    , cAdd        ,AnyParams       ,0}},
-        /* 118:	@F (cAdd (cSin [x])@D4 (cCos [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*491        */491       , {2,/*234,247    */253162    , cAdd        ,AnyParams       ,0}},
+        /* 115:	@F (cAdd (cSin [x])@D4 (cCos [x])@D4)
          *	:	(cMul {(cSin [(cAdd {x 0.7853981633974482789994908671360462903976})]) 1.414213562373095145474621858738828450441})
-         */		 {ReplaceParams , 2, 1,/*255        */255       , {2,/*569,498    */510521    , cAdd        ,AnyParams       ,0}},
-        /* 119:	@F (cAdd (cMul {(cSin [x]) %})@D4 (cCos [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*248        */248       , {2,/*565,493    */505397    , cAdd        ,AnyParams       ,0}},
+        /* 116:	@F (cAdd (cMul {(cSin [x]) %})@D4 (cCos [x])@D4)
          *	:	(cMul {(cSin [(cAdd {x ATAN( /%@C )@C})]) MUL( % SEC( ATAN( /%@C )@C )@C )@C})
-         */		 {ReplaceParams , 2, 1,/*240        */240       , {2,/*256,498    */510208    , cAdd        ,AnyParams       ,0}},
-        /* 120:	@F (cAdd (cSin [x])@D4 (cMul {(cCos [x]) %})@D4)
+         */		 {ReplaceParams , 2, 1,/*250        */250       , {2,/*249,493    */505081    , cAdd        ,AnyParams       ,0}},
+        /* 117:	@F (cAdd (cSin [x])@D4 (cMul {(cCos [x]) %})@D4)
          *	:	(cMul {(cSin [(cAdd {x ATAN( % )@C})]) SEC( ATAN( % )@C )@C})
-         */		 {ReplaceParams , 2, 1,/*242        */242       , {2,/*569,238    */244281    , cAdd        ,AnyParams       ,0}},
-        /* 121:	@F (cAdd (cMul {(cSin [x]) %})@D4 (cMul {(cCos [x]) &})@D4)
+         */		 {ReplaceParams , 2, 1,/*241        */241       , {2,/*565,238    */244277    , cAdd        ,AnyParams       ,0}},
+        /* 118:	@F (cAdd (cMul {(cSin [x]) %})@D4 (cMul {(cCos [x]) &})@D4)
          *	:	(cMul {(cSin [(cAdd {x ATAN2( & % )@C})]) MUL( % SEC( ATAN2( & % )@C )@C )@C})
-         */		 {ReplaceParams , 2, 1,/*243        */243       , {2,/*256,239    */244992    , cAdd        ,AnyParams       ,0}},
-        /* 122:	@F (cAdd (cPow [& x])@D6 (cMul {-1 (cPow [/&@C x])})@D6)
+         */		 {ReplaceParams , 2, 1,/*242        */242       , {2,/*249,239    */244985    , cAdd        ,AnyParams       ,0}},
+        /* 119:	@F (cAdd (cPow [& x])@D6 (cMul {-1 (cPow [/&@C x])})@D6)
          *	:	(cMul {(cSinh [(cLog [(cPow [& x])])]) 2})
-         */		 {ReplaceParams , 2, 1,/*258        */258       , {2,/*409,245    */251289    , cAdd        ,AnyParams       ,0}},
-        /* 123:	@F (cAdd (cPow [& x])@D6 (cPow [/&@C x])@D6)
+         */		 {ReplaceParams , 2, 1,/*252        */252       , {2,/*409,244    */250265    , cAdd        ,AnyParams       ,0}},
+        /* 120:	@F (cAdd (cPow [& x])@D6 (cPow [/&@C x])@D6)
          *	:	(cMul {(cCosh [(cLog [(cPow [& x])])]) 2})
-         */		 {ReplaceParams , 2, 1,/*252        */252       , {2,/*409,412    */422297    , cAdd        ,AnyParams       ,0}},
-        /* 124:	@F (cAdd (cMul {-1 (cPow [& x])})@D6 (cPow [/&@C x])@D6)
+         */		 {ReplaceParams , 2, 1,/*246        */246       , {2,/*409,412    */422297    , cAdd        ,AnyParams       ,0}},
+        /* 121:	@F (cAdd (cMul {-1 (cPow [& x])})@D6 (cPow [/&@C x])@D6)
          *	:	(cMul {(cSinh [(cMul {x LOG( & )@C})]) -2})
-         */		 {ReplaceParams , 2, 1,/*257        */257       , {2,/*246,412    */422134    , cAdd        ,AnyParams       ,0}},
-        /* 125:	@F (cAdd (cMul {% (cPow [& x])})@D7 (cMul {-%@C (cPow [/&@C x])})@D7)
+         */		 {ReplaceParams , 2, 1,/*251        */251       , {2,/*253,412    */422141    , cAdd        ,AnyParams       ,0}},
+        /* 122:	@F (cAdd (cMul {% (cPow [& x])})@D7 (cMul {-%@C (cPow [/&@C x])})@D7)
          *	:	(cMul {(cSinh [(cMul {x LOG( & )@C})]) 2 %})
-         */		 {ReplaceParams , 2, 1,/*265        */265       , {2,/*263,249    */255239    , cAdd        ,AnyParams       ,0}},
-        /* 126:	@F (cAdd (cMul {% (cPow [& x])})@D7 (cMul {% (cPow [/&@C x])})@D7)
+         */		 {ReplaceParams , 2, 1,/*260        */260       , {2,/*258,228    */233730    , cAdd        ,AnyParams       ,0}},
+        /* 123:	@F (cAdd (cMul {% (cPow [& x])})@D7 (cMul {% (cPow [/&@C x])})@D7)
          *	:	(cMul {(cCosh [(cMul {x LOG( & )@C})]) 2 %})
-         */		 {ReplaceParams , 2, 1,/*272        */272       , {2,/*263,271    */277767    , cAdd        ,AnyParams       ,0}},
-        /* 127:	@F (cAdd (cCosh [x])@D4 (cSinh [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*264        */264       , {2,/*258,263    */269570    , cAdd        ,AnyParams       ,0}},
+        /* 124:	@F (cAdd (cCosh [x])@D4 (cSinh [x])@D4)
          *	:	(cPow [2.718281828459045090795598298427648842335 x])
-         */		 {ReplaceParams , 2, 1,/*416        */416       , {2,/*504,589    */603640    , cAdd        ,AnyParams       ,0}},
-        /* 128:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cSinh [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*415        */415       , {2,/*499,584    */598515    , cAdd        ,AnyParams       ,0}},
+        /* 125:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cSinh [x])@D4)
          *	:	(cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1})
-         */		 {ReplaceParams , 2, 1,/*250        */250       , {2,/*253,589    */603389    , cAdd        ,AnyParams       ,0}},
-        /* 129:	@F (cAdd (cCosh [x])@D4 (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1})@D4)
+         */		 {ReplaceParams , 2, 1,/*230        */230       , {2,/*265,584    */598281    , cAdd        ,AnyParams       ,0}},
+        /* 126:	@F (cAdd (cCosh [x])@D4 (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1})@D4)
          *	:	(cMul {-1 (cSinh [x])})
-         */		 {ReplaceParams , 2, 1,/*275        */275       , {2,/*504,251    */257528    , cAdd        ,AnyParams       ,0}},
-        /* 130:	@F (cAdd (cSinh [x])@D4 (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1})@D4)
+         */		 {ReplaceParams , 2, 1,/*267        */267       , {2,/*499,232    */238067    , cAdd        ,AnyParams       ,0}},
+        /* 127:	@F (cAdd (cSinh [x])@D4 (cMul {(cPow [2.718281828459045090795598298427648842335 x]) -1})@D4)
          *	:	(cMul {-1 (cCosh [x])})
-         */		 {ReplaceParams , 2, 1,/*274        */274       , {2,/*589,251    */257613    , cAdd        ,AnyParams       ,0}},
-        /* 131:	@F (cAdd (cCosh [x])@D4 (cMul {(cSinh [x]) -1})@D4)
+         */		 {ReplaceParams , 2, 1,/*266        */266       , {2,/*584,232    */238152    , cAdd        ,AnyParams       ,0}},
+        /* 128:	@F (cAdd (cCosh [x])@D4 (cMul {(cSinh [x]) -1})@D4)
          *	:	(cPow [0.3678794411714423340242774429498240351677 x])
-         */		 {ReplaceParams , 2, 1,/*413        */413       , {2,/*504,277    */284152    , cAdd        ,AnyParams       ,0}},
-        /* 132:	@F (cAdd (cMul {(cSinh [x]) -1})@D4 (cPow [2.718281828459045090795598298427648842335 x])@D4)
+         */		 {ReplaceParams , 2, 1,/*413        */413       , {2,/*499,268    */274931    , cAdd        ,AnyParams       ,0}},
+        /* 129:	@F (cAdd (cMul {(cSinh [x]) -1})@D4 (cPow [2.718281828459045090795598298427648842335 x])@D4)
          *	:	(cCosh [x])
-         */		 {ReplaceParams , 2, 1,/*505        */505       , {2,/*277,417    */427285    , cAdd        ,AnyParams       ,0}},
-        /* 133:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cPow [2.718281828459045090795598298427648842335 x])@D4)
+         */		 {ReplaceParams , 2, 1,/*500        */500       , {2,/*268,416    */426252    , cAdd        ,AnyParams       ,0}},
+        /* 130:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cPow [2.718281828459045090795598298427648842335 x])@D4)
          *	:	(cSinh [x])
-         */		 {ReplaceParams , 2, 1,/*590        */590       , {2,/*253,417    */427261    , cAdd        ,AnyParams       ,0}},
-        /* 134:	@F (cAdd (cCosh [x])@D4 (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1})@D4)
+         */		 {ReplaceParams , 2, 1,/*585        */585       , {2,/*265,416    */426249    , cAdd        ,AnyParams       ,0}},
+        /* 131:	@F (cAdd (cCosh [x])@D4 (cMul {(cPow [0.3678794411714423340242774429498240351677 x]) -1})@D4)
          *	:	(cSinh [x])
-         */		 {ReplaceParams , 2, 1,/*590        */590       , {2,/*504,276    */283128    , cAdd        ,AnyParams       ,0}},
-        /* 135:	@F (cAdd (cSinh [x])@D4 (cPow [0.3678794411714423340242774429498240351677 x])@D4)
+         */		 {ReplaceParams , 2, 1,/*585        */585       , {2,/*499,231    */237043    , cAdd        ,AnyParams       ,0}},
+        /* 132:	@F (cAdd (cSinh [x])@D4 (cPow [0.3678794411714423340242774429498240351677 x])@D4)
          *	:	(cCosh [x])
-         */		 {ReplaceParams , 2, 1,/*505        */505       , {2,/*589,414    */424525    , cAdd        ,AnyParams       ,0}},
-        /* 136:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cPow [0.3678794411714423340242774429498240351677 x])@D4)
+         */		 {ReplaceParams , 2, 1,/*500        */500       , {2,/*584,414    */424520    , cAdd        ,AnyParams       ,0}},
+        /* 133:	@F (cAdd (cMul {(cCosh [x]) -1})@D4 (cPow [0.3678794411714423340242774429498240351677 x])@D4)
          *	:	(cMul {-1 (cSinh [x])})
-         */		 {ReplaceParams , 2, 1,/*275        */275       , {2,/*253,414    */424189    , cAdd        ,AnyParams       ,0}},
-        /* 137:	@F (cAdd (cMul {-1 (cPow [x 2])})@D4 (cMul {% x})@D4)
+         */		 {ReplaceParams , 2, 1,/*267        */267       , {2,/*265,414    */424201    , cAdd        ,AnyParams       ,0}},
+        /* 134:	@F (cAdd (cMul {-1 (cPow [x 2])})@D4 (cMul {% x})@D4)
          *	:	(cMul {-1 (cPow [(cAdd {x MUL( % -0.5 )@C}) 2])}) POW( MUL( % 0.5 )@C 2 )@C
-         */		 {ReplaceParams , 2, 2,/*279,471    */482583    , {2,/*273,278    */284945    , cAdd        ,AnyParams       ,0}},
-        /* 138:	@F (cAdd (cPow [x 2])@D4 (cMul {% x})@D4)
+         */		 {ReplaceParams , 2, 2,/*271,466    */477455    , {2,/*269,270    */276749    , cAdd        ,AnyParams       ,0}},
+        /* 135:	@F (cAdd (cPow [x 2])@D4 (cMul {% x})@D4)
          *	:	(cPow [(cAdd {x MUL( % 0.5 )@C}) 2]) -POW( MUL( % 0.5 )@C 2 )@C@C
-         */		 {ReplaceParams , 2, 2,/*420,63     */64932     , {2,/*419,278    */285091    , cAdd        ,AnyParams       ,0}},
-        /* 139:	(cMul (cPow [(cMul x <2>) -1])@D4 x@D4)
+         */		 {ReplaceParams , 2, 2,/*419,62     */63907     , {2,/*418,270    */276898    , cAdd        ,AnyParams       ,0}},
+        /* 136:	(cMul (cPow [(cMul x <2>) -1])@D4 x@D4)
          *	:	(cPow [(cMul  <2>) -1])
-         */		 {ReplaceParams , 0, 1,/*421        */421       , {2,/*422,1      */1446      , cMul        ,AnyParams       ,0}},
-        /* 140:	(cMul (cAdd (cMul %@M <1>) <2>) &)
+         */		 {ReplaceParams , 0, 1,/*420        */420       , {2,/*421,1      */1445      , cMul        ,AnyParams       ,0}},
+        /* 137:	(cMul (cAdd (cMul %@M <1>) <2>) &)
          *	:	(cAdd {(cMul % & <1>) (cMul {& (cAdd  <2>)})})
-         */		 {ReplaceParams , 0, 1,/*108        */108       , {2,/*154,27     */27802     , cMul        ,AnyParams       ,0}},
-        /* 141:	(cMul (cAdd %@M <1>) &)
+         */		 {ReplaceParams , 0, 1,/*108        */108       , {2,/*153,26     */26777     , cMul        ,AnyParams       ,0}},
+        /* 138:	(cMul (cAdd %@M <1>) &)
          *	:	(cAdd {MUL( % & )@C (cMul {& (cAdd  <1>)})})
-         */		 {ReplaceParams , 0, 1,/*109        */109       , {2,/*156,27     */27804     , cMul        ,AnyParams       ,0}},
-        /* 142:	(cMul % (cIf [x & z@C]))
+         */		 {ReplaceParams , 0, 1,/*109        */109       , {2,/*155,26     */26779     , cMul        ,AnyParams       ,0}},
+        /* 139:	(cMul % (cIf [x & z@C]))
          *	:	(cIf [x MUL( % & )@C MUL( % z@C )@C])
-         */		 {ReplaceParams , 0, 1,/*528        */528       , {2,/*18,523     */535570    , cMul        ,AnyParams       ,0}},
-        /* 143:	(cMul (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ReplaceParams , 0, 1,/*523        */523       , {2,/*17,518     */530449    , cMul        ,AnyParams       ,0}},
+        /* 140:	(cMul (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cMul {y a}) (cMul {z b})])
-         */		 {ReplaceParams , 0, 1,/*527        */527       , {2,/*522,524    */537098    , cMul        ,AnyParams       ,0}},
-        /* 144:	(cMul (cPow [x y])@D4 (cAdd {%@1 (cPow [x z])})@D4)
+         */		 {ReplaceParams , 0, 1,/*522        */522       , {2,/*517,519    */531973    , cMul        ,AnyParams       ,0}},
+        /* 141:	(cMul (cPow [x y])@D4 (cAdd {%@1 (cPow [x z])})@D4)
          *	:	(cAdd {(cMul {(cPow [x y]) %}) (cPow [x (cAdd {y z})])})
-         */		 {ReplaceParams , 0, 1,/*105        */105       , {2,/*423,113    */116135    , cMul        ,AnyParams       ,0}},
-        /* 145:	(cMul (cPow [& y]) (cAdd {1 (cPow [x@P z])}))
+         */		 {ReplaceParams , 0, 1,/*116        */116       , {2,/*422,113    */116134    , cMul        ,AnyParams       ,0}},
+        /* 142:	(cMul (cPow [& y]) (cAdd {1 (cPow [x@P z])}))
          *	:	(cAdd {(cPow [& y]) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])})
-         */		 {ReplaceParams , 0, 1,/*124        */124       , {2,/*391,118    */121223    , cMul        ,AnyParams       ,0}},
-        /* 146:	(cMul (cPow [& y]) (cAdd {-1 (cPow [x@P z])}))
+         */		 {ReplaceParams , 0, 1,/*130        */130       , {2,/*387,121    */124291    , cMul        ,AnyParams       ,0}},
+        /* 143:	(cMul (cPow [& y]) (cAdd {-1 (cPow [x@P z])}))
          *	:	(cAdd {(cMul {(cPow [& y]) -1}) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])})
-         */		 {ReplaceParams , 0, 1,/*128        */128       , {2,/*391,126    */129415    , cMul        ,AnyParams       ,0}},
-        /* 147:	(cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})@D1 %@D1}))
+         */		 {ReplaceParams , 0, 1,/*124        */124       , {2,/*387,117    */120195    , cMul        ,AnyParams       ,0}},
+        /* 144:	(cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})@D1 %@D1}))
          *	:	% (cAdd {(cPow [& y]) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])})
-         */		 {ReplaceParams , 0, 2,/*18,124     */126994    , {2,/*391,119    */122247    , cMul        ,AnyParams       ,0}},
-        /* 148:	(cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})@D1 -%@C@D1}))
+         */		 {ReplaceParams , 0, 2,/*17,130     */133137    , {2,/*387,125    */128387    , cMul        ,AnyParams       ,0}},
+        /* 145:	(cMul (cPow [& y]) (cAdd {(cMul {% (cPow [x@P z])})@D1 -%@C@D1}))
          *	:	% (cAdd {(cMul {(cPow [& y]) -1}) (cPow [& (cAdd {y (cMul {z (cLog [x]) /LOG( & )@C@C})})])})
-         */		 {ReplaceParams , 0, 2,/*18,128     */131090    , {2,/*391,120    */123271    , cMul        ,AnyParams       ,0}},
-        /* 149:	@F (cMul {%@D1 (cAdd {1 (cMul {(cLog [x]) /%@C})})@D1})
+         */		 {ReplaceParams , 0, 2,/*17,124     */126993    , {2,/*387,126    */129411    , cMul        ,AnyParams       ,0}},
+        /* 146:	@F (cMul {%@D1 (cAdd {1 (cMul {(cLog [x]) /%@C})})@D1})
          *	->	(cAdd {(cLog [x]) %})
-         */		 {ProduceNewTree, 2, 1,/*135        */135       , {2,/*21,133     */136213    , cMul        ,SelectedParams  ,0}},
-        /* 150:	@F (cMul 57.29577951308232286464772187173366546631 <1>)
+         */		 {ProduceNewTree, 2, 1,/*134        */134       , {2,/*20,132     */135188    , cMul        ,SelectedParams  ,0}},
+        /* 147:	@F (cMul 57.29577951308232286464772187173366546631 <1>)
          *	->	(cDeg [(cMul  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*660        */660       , {1,/*57         */57        , cMul        ,AnyParams       ,1}},
-        /* 151:	@F (cMul 0.01745329251994329547437168059786927187815 <1>)
+         */		 {ProduceNewTree, 2, 1,/*655        */655       , {1,/*56         */56        , cMul        ,AnyParams       ,1}},
+        /* 148:	@F (cMul 0.01745329251994329547437168059786927187815 <1>)
          *	->	(cRad [(cMul  <1>)])
-         */		 {ProduceNewTree, 2, 1,/*661        */661       , {1,/*45         */45        , cMul        ,AnyParams       ,1}},
-        /* 152:	@F (cMul (cLog [x]) 0.4342944819032518166679324167489539831877)
+         */		 {ProduceNewTree, 2, 1,/*656        */656       , {1,/*44         */44        , cMul        ,AnyParams       ,1}},
+        /* 149:	@F (cMul (cLog [x]) 0.4342944819032518166679324167489539831877)
          *	:	(cLog10 [x])
-         */		 {ReplaceParams , 2, 1,/*551        */551       , {2,/*544,47     */48672     , cMul        ,AnyParams       ,0}},
-        /* 153:	@F (cMul (cPow [(cLog [x]) -1]) 2.302585092994045901093613792909309267998)
+         */		 {ReplaceParams , 2, 1,/*546        */546       , {2,/*539,46     */47643     , cMul        ,AnyParams       ,0}},
+        /* 150:	@F (cMul (cPow [(cLog [x]) -1]) 2.302585092994045901093613792909309267998)
          *	:	(cPow [(cLog10 [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*441        */441       , {2,/*440,55     */56760     , cMul        ,AnyParams       ,0}},
-        /* 154:	@F (cMul (cLog [x]) 1.442695040888963387004650940070860087872)
+         */		 {ReplaceParams , 2, 1,/*438        */438       , {2,/*437,54     */55733     , cMul        ,AnyParams       ,0}},
+        /* 151:	@F (cMul (cLog [x]) 1.442695040888963387004650940070860087872)
          *	:	(cLog2 [x])
-         */		 {ReplaceParams , 2, 1,/*552        */552       , {2,/*544,53     */54816     , cMul        ,AnyParams       ,0}},
-        /* 155:	@F (cMul (cPow [(cLog [x]) -1]) 0.6931471805599452862267639829951804131269)
+         */		 {ReplaceParams , 2, 1,/*547        */547       , {2,/*539,52     */53787     , cMul        ,AnyParams       ,0}},
+        /* 152:	@F (cMul (cPow [(cLog [x]) -1]) 0.6931471805599452862267639829951804131269)
          *	:	(cPow [(cLog2 [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*442        */442       , {2,/*440,49     */50616     , cMul        ,AnyParams       ,0}},
-        /* 156:	@F (cMul (cExp [x]) (cExp [y]))
+         */		 {ReplaceParams , 2, 1,/*439        */439       , {2,/*437,48     */49589     , cMul        ,AnyParams       ,0}},
+        /* 153:	@F (cMul (cExp [x]) (cExp [y]))
          *	:	(cExp [(cAdd {x y})])
-         */		 {ReplaceParams , 2, 1,/*508        */508       , {2,/*506,507    */519674    , cMul        ,AnyParams       ,0}},
-        /* 157:	@F (cMul (cExp2 [x]) (cExp2 [y]))
+         */		 {ReplaceParams , 2, 1,/*503        */503       , {2,/*501,502    */514549    , cMul        ,AnyParams       ,0}},
+        /* 154:	@F (cMul (cExp2 [x]) (cExp2 [y]))
          *	:	(cExp2 [(cAdd {x y})])
-         */		 {ReplaceParams , 2, 1,/*512        */512       , {2,/*510,511    */523774    , cMul        ,AnyParams       ,0}},
-        /* 158:	@F (cMul x@D4 (cPow [(cAdd (cMul x <1>) <2>) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*507        */507       , {2,/*505,506    */518649    , cMul        ,AnyParams       ,0}},
+        /* 155:	@F (cMul x@D4 (cPow [(cAdd (cMul x <1>) <2>) -1])@D4)
          *	:	(cPow [(cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) -1])
-         */		 {ReplaceParams , 2, 1,/*426        */426       , {2,/*1,429      */439297    , cMul        ,AnyParams       ,0}},
-        /* 159:	@F (cMul x@D4 (cPow [(cAdd x <1>) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*425        */425       , {2,/*1,426      */436225    , cMul        ,AnyParams       ,0}},
+        /* 156:	@F (cMul x@D4 (cPow [(cAdd x <1>) -1])@D4)
          *	:	(cPow [(cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) -1])
-         */		 {ReplaceParams , 2, 1,/*427        */427       , {2,/*1,444      */454657    , cMul        ,AnyParams       ,0}},
-        /* 160:	@F (cMul (cPow [x -1])@D4 (cAdd (cMul {x (cPow [y -1])}) <1>)@D4)
+         */		 {ReplaceParams , 2, 1,/*441        */441       , {2,/*1,442      */452609    , cMul        ,AnyParams       ,0}},
+        /* 157:	@F (cMul (cPow [x -1])@D4 (cAdd (cMul {x (cPow [y -1])}) <1>)@D4)
          *	:	(cAdd {(cPow [y -1]) (cMul {(cAdd  <1>) (cPow [x -1])})})
-         */		 {ReplaceParams , 2, 1,/*123        */123       , {2,/*445,150    */154045    , cMul        ,AnyParams       ,0}},
-        /* 161:	@F (cMul -1 (cSin [(cMul %@N <1>)]))
+         */		 {ReplaceParams , 2, 1,/*128        */128       , {2,/*443,149    */153019    , cMul        ,AnyParams       ,0}},
+        /* 158:	@F (cMul -1 (cSin [(cMul %@N <1>)]))
          *	:	(cSin [(cMul -%@C <1>)])
-         */		 {ReplaceParams , 2, 1,/*581        */581       , {2,/*41,577     */590889    , cMul        ,AnyParams       ,0}},
-        /* 162:	@F (cMul (cSin [x@H])@D4 (cCos [x@H])@D4)
+         */		 {ReplaceParams , 2, 1,/*563        */563       , {2,/*40,575     */588840    , cMul        ,AnyParams       ,0}},
+        /* 159:	@F (cMul (cSin [x@H])@D4 (cCos [x@H])@D4)
          *	:	(cMul {(cSin [(cMul {x 2})]) 0.5})
-         */		 {ReplaceParams , 2, 1,/*290        */290       , {2,/*578,493    */505410    , cMul        ,AnyParams       ,0}},
-        /* 163:	@F (cMul (cPow [(cTan [x]) -1])@D4 (cSin [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*287        */287       , {2,/*576,488    */500288    , cMul        ,AnyParams       ,0}},
+        /* 160:	@F (cMul (cPow [(cTan [x]) -1])@D4 (cSin [x])@D4)
          *	:	(cCos [x])
-         */		 {ReplaceParams , 2, 1,/*492        */492       , {2,/*448,569    */583104    , cMul        ,AnyParams       ,0}},
-        /* 164:	@F (cMul (cPow [(cSin [x]) -1])@D4 (cCos [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*487        */487       , {2,/*446,565    */579006    , cMul        ,AnyParams       ,0}},
+        /* 161:	@F (cMul (cPow [(cSin [x]) -1])@D4 (cCos [x])@D4)
          *	:	(cPow [(cTan [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*449        */449       , {2,/*446,498    */510398    , cMul        ,AnyParams       ,0}},
-        /* 165:	@F (cMul (cTan [x])@D4 (cCos [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*447        */447       , {2,/*444,493    */505276    , cMul        ,AnyParams       ,0}},
+        /* 162:	@F (cMul (cTan [x])@D4 (cCos [x])@D4)
          *	:	(cSin [x])
-         */		 {ReplaceParams , 2, 1,/*565        */565       , {2,/*593,498    */510545    , cMul        ,AnyParams       ,0}},
-        /* 166:	@F (cMul -1 (cSinh [(cMul %@N <1>)]))
+         */		 {ReplaceParams , 2, 1,/*564        */564       , {2,/*588,493    */505420    , cMul        ,AnyParams       ,0}},
+        /* 163:	@F (cMul -1 (cSinh [(cMul %@N <1>)]))
          *	:	(cSinh [(cMul -%@C <1>)])
-         */		 {ReplaceParams , 2, 1,/*587        */587       , {2,/*41,586     */600105    , cMul        ,AnyParams       ,0}},
-        /* 167:	@F (cMul (cPow [(cSinh [x]) -1])@D4 (cCosh [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*582        */582       , {2,/*40,581     */594984    , cMul        ,AnyParams       ,0}},
+        /* 164:	@F (cMul (cPow [(cSinh [x]) -1])@D4 (cCosh [x])@D4)
          *	:	(cPow [(cTanh [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*450        */450       , {2,/*447,504    */516543    , cMul        ,AnyParams       ,0}},
-        /* 168:	@F (cMul (cTanh [x])@D4 (cCosh [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*448        */448       , {2,/*445,499    */511421    , cMul        ,AnyParams       ,0}},
+        /* 165:	@F (cMul (cTanh [x])@D4 (cCosh [x])@D4)
          *	:	(cSinh [x])
-         */		 {ReplaceParams , 2, 1,/*590        */590       , {2,/*602,504    */516698    , cMul        ,AnyParams       ,0}},
-        /* 169:	@F (cMul (cPow [(cTanh [x]) -1])@D4 (cSinh [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*585        */585       , {2,/*597,499    */511573    , cMul        ,AnyParams       ,0}},
+        /* 166:	@F (cMul (cPow [(cTanh [x]) -1])@D4 (cSinh [x])@D4)
          *	:	(cCosh [x])
-         */		 {ReplaceParams , 2, 1,/*505        */505       , {2,/*451,589    */603587    , cMul        ,AnyParams       ,0}},
-        /* 170:	@F (cMul (cSin [x])@D4 (cPow [(cCos [x]) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*500        */500       , {2,/*449,584    */598465    , cMul        ,AnyParams       ,0}},
+        /* 167:	@F (cMul (cSin [x])@D4 (cPow [(cCos [x]) -1])@D4)
          *	:	(cTan [x])
-         */		 {ReplaceParams , 2, 1,/*592        */592       , {2,/*569,433    */443961    , cMul        ,AnyParams       ,0}},
-        /* 171:	@F (cMul (cTan [x])@D4 (cPow [(cSin [x]) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*587        */587       , {2,/*565,430    */440885    , cMul        ,AnyParams       ,0}},
+        /* 168:	@F (cMul (cTan [x])@D4 (cPow [(cSin [x]) -1])@D4)
          *	:	(cPow [(cCos [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*434        */434       , {2,/*593,446    */457297    , cMul        ,AnyParams       ,0}},
-        /* 172:	@F (cMul (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})})])@D4 (cTan [x])@D4)
+         */		 {ReplaceParams , 2, 1,/*431        */431       , {2,/*588,444    */455244    , cMul        ,AnyParams       ,0}},
+        /* 169:	@F (cMul (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul {-1 x})})])@D4 (cTan [x])@D4)
          *	:	1
-         */		 {ReplaceParams , 2, 1,/*51         */51        , {2,/*594,593    */607826    , cMul        ,AnyParams       ,0}},
-        /* 173:	@F (cMul (cSin [(cMul % <1>)])@D1 (cPow [(cCos [(cMul -%@C <1>)]) -1])@D1)
+         */		 {ReplaceParams , 2, 1,/*50         */50        , {2,/*589,588    */602701    , cMul        ,AnyParams       ,0}},
+        /* 170:	@F (cMul (cSin [(cMul % <1>)])@D1 (cPow [(cCos [(cMul -%@C <1>)]) -1])@D1)
          *	:	(cTan [(cMul % <1>)])
-         */		 {ReplaceParams , 2, 1,/*598        */598       , {2,/*582,436    */447046    , cMul        ,AnyParams       ,0}},
-        /* 174:	@F (cMul (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)})]) (cTan [(cMul  <1>)]))
+         */		 {ReplaceParams , 2, 1,/*593        */593       , {2,/*577,433    */443969    , cMul        ,AnyParams       ,0}},
+        /* 171:	@F (cMul (cTan [(cAdd {1.570796326794896557998981734272092580795 (cMul -1 <1>)})]) (cTan [(cMul  <1>)]))
          *	:	1
-         */		 {ReplaceParams , 2, 1,/*51         */51        , {2,/*595,597    */611923    , cMul        ,AnyParams       ,0}},
-        /* 175:	@F (cMul -1 (cTan [(cMul %@N <1>)]))
+         */		 {ReplaceParams , 2, 1,/*50         */50        , {2,/*590,592    */606798    , cMul        ,AnyParams       ,0}},
+        /* 172:	@F (cMul -1 (cTan [(cMul %@N <1>)]))
          *	:	(cTan [(cMul -%@C <1>)])
-         */		 {ReplaceParams , 2, 1,/*600        */600       , {2,/*41,599     */613417    , cMul        ,AnyParams       ,0}},
-        /* 176:	@F (cMul (cSinh [x])@D4 (cPow [(cCosh [x]) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*595        */595       , {2,/*40,594     */608296    , cMul        ,AnyParams       ,0}},
+        /* 173:	@F (cMul (cSinh [x])@D4 (cPow [(cCosh [x]) -1])@D4)
          *	:	(cTanh [x])
-         */		 {ReplaceParams , 2, 1,/*601        */601       , {2,/*589,437    */448077    , cMul        ,AnyParams       ,0}},
-        /* 177:	@F (cMul (cTanh [x])@D4 (cPow [(cSinh [x]) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*596        */596       , {2,/*584,434    */445000    , cMul        ,AnyParams       ,0}},
+        /* 174:	@F (cMul (cTanh [x])@D4 (cPow [(cSinh [x]) -1])@D4)
          *	:	(cPow [(cCosh [x]) -1])
-         */		 {ReplaceParams , 2, 1,/*438        */438       , {2,/*602,447    */458330    , cMul        ,AnyParams       ,0}},
-        /* 178:	@F (cMul (cSinh [(cMul {% x})])@D5 (cPow [(cCosh [(cMul {-%@C x})]) -1])@D5)
+         */		 {ReplaceParams , 2, 1,/*435        */435       , {2,/*597,445    */456277    , cMul        ,AnyParams       ,0}},
+        /* 175:	@F (cMul (cSinh [(cMul {% x})])@D5 (cPow [(cCosh [(cMul {-%@C x})]) -1])@D5)
          *	:	(cTanh [(cMul {% x})])
-         */		 {ReplaceParams , 2, 1,/*604        */604       , {2,/*584,439    */450120    , cMul        ,AnyParams       ,0}},
-        /* 179:	@F (cMul (cSin [(cMul {% x})])@D5 (cPow [(cCos [(cMul {-%@C x})]) -1])@D5)
+         */		 {ReplaceParams , 2, 1,/*599        */599       , {2,/*579,436    */447043    , cMul        ,AnyParams       ,0}},
+        /* 176:	@F (cMul (cSin [(cMul {% x})])@D5 (cPow [(cCos [(cMul {-%@C x})]) -1])@D5)
          *	:	(cTan [(cMul {% x})])
-         */		 {ReplaceParams , 2, 1,/*596        */596       , {2,/*576,435    */446016    , cMul        ,AnyParams       ,0}},
-        /* 180:	@F (cMul -1 (cTanh [(cMul %@N <1>)]))
+         */		 {ReplaceParams , 2, 1,/*591        */591       , {2,/*574,432    */442942    , cMul        ,AnyParams       ,0}},
+        /* 177:	@F (cMul -1 (cTanh [(cMul %@N <1>)]))
          *	:	(cTanh [(cMul -%@C <1>)])
-         */		 {ReplaceParams , 2, 1,/*607        */607       , {2,/*41,606     */620585    , cMul        ,AnyParams       ,0}},
-        /* 181:	@F (cMul (cAdd {-1 (cPow [% x])})@D5 (cPow [(cAdd {1 (cPow [% x])}) -1])@D5)
+         */		 {ReplaceParams , 2, 1,/*602        */602       , {2,/*40,601     */615464    , cMul        ,AnyParams       ,0}},
+        /* 178:	@F (cMul (cAdd {-1 (cPow [% x])})@D5 (cPow [(cAdd {1 (cPow [% x])}) -1])@D5)
          *	:	(cTanh [(cMul {x LOG( % )@C 0.5})])
-         */		 {ReplaceParams , 2, 1,/*603        */603       , {2,/*116,459    */470132    , cMul        ,AnyParams       ,0}},
-        /* 182:	@F (cMul (cAdd {1 (cPow [% x])})@D5 (cPow [(cAdd {-1 (cPow [% x])}) -1])@D5)
+         */		 {ReplaceParams , 2, 1,/*598        */598       , {2,/*118,453    */463990    , cMul        ,AnyParams       ,0}},
+        /* 179:	@F (cMul (cAdd {1 (cPow [% x])})@D5 (cPow [(cAdd {-1 (cPow [% x])}) -1])@D5)
          *	:	(cPow [(cTanh [(cMul {x LOG( % )@C 0.5})]) -1])
-         */		 {ReplaceParams , 2, 1,/*462        */462       , {2,/*137,428    */438409    , cMul        ,AnyParams       ,0}},
-        /* 183:	@F (cMul (cAdd (cMul x <1>) <2>)@D4 (cPow [(cMul x <3>) -1])@D4)
+         */		 {ReplaceParams , 2, 1,/*457        */457       , {2,/*136,452    */462984    , cMul        ,AnyParams       ,0}},
+        /* 180:	@F (cMul (cAdd (cMul x <1>) <2>)@D4 (cPow [(cMul x <3>) -1])@D4)
          *	:	(cAdd {(cMul {(cAdd  <2>) (cPow [x -1])}) (cMul  <1>)}) (cPow [(cMul  <3>) -1])
-         */		 {ReplaceParams , 2, 2,/*103,430    */440423    , {2,/*157,431    */441501    , cMul        ,AnyParams       ,0}},
-        /* 184:	@F (cMul (cAdd x <1>)@D4 (cPow [(cMul x <2>) -1])@D4)
+         */		 {ReplaceParams , 2, 2,/*122,427    */437370    , {2,/*156,428    */438428    , cMul        ,AnyParams       ,0}},
+        /* 181:	@F (cMul (cAdd x <1>)@D4 (cPow [(cMul x <2>) -1])@D4)
          *	:	(cAdd {(cMul {(cAdd  <1>) (cPow [x -1])}) 1}) (cPow [(cMul  <2>) -1])
-         */		 {ReplaceParams , 2, 2,/*104,421    */431208    , {2,/*160,422    */432288    , cMul        ,AnyParams       ,0}},
-        /* 185:	@F (cMul (cSinh [x])@D4 (cPow [(cCosh [x]) %])@D4)
+         */		 {ReplaceParams , 2, 2,/*123,420    */430203    , {2,/*159,421    */431263    , cMul        ,AnyParams       ,0}},
+        /* 182:	@F (cMul (cSinh [x])@D4 (cPow [(cCosh [x]) %])@D4)
          *	:	(cTanh [x]) (cPow [(cCosh [x]) ADD( % 1 )@C])
-         */		 {ReplaceParams , 2, 2,/*601,461    */472665    , {2,/*589,460    */471629    , cMul        ,AnyParams       ,0}},
-        /* 186:	@F (cMul (cSin [x])@D4 (cCos [x])@D4 %)
+         */		 {ReplaceParams , 2, 2,/*596,455    */466516    , {2,/*584,454    */465480    , cMul        ,AnyParams       ,0}},
+        /* 183:	@F (cMul (cSin [x])@D4 (cCos [x])@D4 %)
          *	:	(cMul {(cSin [(cMul {x 2})]) MUL( % 0.5 )@C})
-         */		 {ReplaceParams , 2, 1,/*293        */293       , {3,/*569,498,18 */19384889  , cMul        ,AnyParams       ,0}},
-        /* 187:	@R (cMul (cAdd (cIf [(cLess [x 0]) %@D1 -%@C@D1]) <1>)@D4 x@D4)
+         */		 {ReplaceParams , 2, 1,/*289        */289       , {3,/*565,493,17 */18331189  , cMul        ,AnyParams       ,0}},
+        /* 184:	@R (cMul (cAdd (cIf [(cLess [x 0]) %@D1 -%@C@D1]) <1>)@D4 x@D4)
          *	:	(cAdd {(cMul {(cAbs [x]) -%@C}) (cMul {x (cAdd  <1>)})})
-         */		 {ReplaceParams , 16, 1,/*106        */106       , {2,/*161,1      */1185      , cMul        ,AnyParams       ,0}},
-        /* 188:	@R (cMul (cAdd (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) <1>)@D4 x@D4)
+         */		 {ReplaceParams , 16, 1,/*106        */106       , {2,/*160,1      */1184      , cMul        ,AnyParams       ,0}},
+        /* 185:	@R (cMul (cAdd (cIf [(cGreater [x 0]) %@D1 -%@C@D1]) <1>)@D4 x@D4)
          *	:	(cAdd {(cMul {(cAbs [x]) %}) (cMul {x (cAdd  <1>)})})
-         */		 {ReplaceParams , 16, 1,/*107        */107       , {2,/*162,1      */1186      , cMul        ,AnyParams       ,0}},
-        /* 189:	@R (cMul (cAbs [x]) (cAbs [y]))
+         */		 {ReplaceParams , 16, 1,/*107        */107       , {2,/*161,1      */1185      , cMul        ,AnyParams       ,0}},
+        /* 186:	@R (cMul (cAbs [x]) (cAbs [y]))
          *	:	(cAbs [(cMul {x y})])
-         */		 {ReplaceParams , 16, 1,/*475        */475       , {2,/*473,474    */485849    , cMul        ,AnyParams       ,0}},
-        /* 190:	@R (cMul (cIf [(cLess [x 0]) %@D1 -%@C@D1])@D4 x@D4)
+         */		 {ReplaceParams , 16, 1,/*470        */470       , {2,/*468,469    */480724    , cMul        ,AnyParams       ,0}},
+        /* 187:	@R (cMul (cIf [(cLess [x 0]) %@D1 -%@C@D1])@D4 x@D4)
          *	:	(cAbs [x]) -%@C
-         */		 {ReplaceParams , 16, 2,/*473,62     */63961     , {2,/*532,1      */1556      , cMul        ,AnyParams       ,0}},
-        /* 191:	@R (cMul (cIf [(cGreater [x 0]) %@D1 -%@C@D1])@D4 x@D4)
+         */		 {ReplaceParams , 16, 2,/*468,61     */62932     , {2,/*527,1      */1551      , cMul        ,AnyParams       ,0}},
+        /* 188:	@R (cMul (cIf [(cGreater [x 0]) %@D1 -%@C@D1])@D4 x@D4)
          *	:	(cAbs [x]) %
-         */		 {ReplaceParams , 16, 2,/*473,18     */18905     , {2,/*534,1      */1558      , cMul        ,AnyParams       ,0}},
-        /* 192:	@R @L (cMul (cAbs [x]))
+         */		 {ReplaceParams , 16, 2,/*468,17     */17876     , {2,/*529,1      */1553      , cMul        ,AnyParams       ,0}},
+        /* 189:	@R @L (cMul (cAbs [x]))
          *	:	x
-         */		 {ReplaceParams , 17, 1,/*0          */0         , {1,/*473        */473       , cMul        ,AnyParams       ,0}},
-        /* 193:	@R @L (cMul %@N)
+         */		 {ReplaceParams , 17, 1,/*0          */0         , {1,/*468        */468       , cMul        ,AnyParams       ,0}},
+        /* 190:	@R @L (cMul %@N)
          *	:	-%@C
-         */		 {ReplaceParams , 17, 1,/*62         */62        , {1,/*17         */17        , cMul        ,AnyParams       ,0}},
-        /* 194:	@I (cEqual [0 x])
+         */		 {ReplaceParams , 17, 1,/*61         */61        , {1,/*16         */16        , cMul        ,AnyParams       ,0}},
+        /* 191:	@I (cEqual [0 x])
          *	->	(cNot [x])
-         */		 {ProduceNewTree, 4, 1,/*631        */631       , {2,/*44,0       */44        , cEqual      ,PositionalParams,0}},
-        /* 195:	@I (cEqual [1 x@L])
+         */		 {ProduceNewTree, 4, 1,/*626        */626       , {2,/*43,0       */43        , cEqual      ,PositionalParams,0}},
+        /* 192:	@I (cEqual [1 x@L])
          *	->	x
-         */		 {ProduceNewTree, 4, 1,/*0          */0         , {2,/*51,8       */8243      , cEqual      ,PositionalParams,0}},
-        /* 196:	@R (cEqual [0 (cAbs [x])])
+         */		 {ProduceNewTree, 4, 1,/*0          */0         , {2,/*50,8       */8242      , cEqual      ,PositionalParams,0}},
+        /* 193:	@R (cEqual [0 (cAbs [x])])
          *	:	x 0
-         */		 {ReplaceParams , 16, 2,/*0,44       */45056     , {2,/*44,473     */484396    , cEqual      ,PositionalParams,0}},
-        /* 197:	@R (cEqual [(cAdd % <1>) &])
+         */		 {ReplaceParams , 16, 2,/*0,43       */44032     , {2,/*43,468     */479275    , cEqual      ,PositionalParams,0}},
+        /* 194:	@R (cEqual [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cEqual      ,PositionalParams,0}},
-        /* 198:	@R (cEqual [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cEqual      ,PositionalParams,0}},
+        /* 195:	@R (cEqual [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cEqual      ,PositionalParams,0}},
-        /* 199:	@R (cEqual [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cEqual      ,PositionalParams,0}},
+        /* 196:	@R (cEqual [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cEqual      ,PositionalParams,0}},
-        /* 200:	@R @F (cEqual [(cMul % <1>) &])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cEqual      ,PositionalParams,0}},
+        /* 197:	@R @F (cEqual [(cMul % <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*327,27     */27975     , cEqual      ,PositionalParams,0}},
-        /* 201:	@R @F (cEqual [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*323,26     */26947     , cEqual      ,PositionalParams,0}},
+        /* 198:	@R @F (cEqual [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cEqual      ,PositionalParams,0}},
-        /* 202:	@R @F (cEqual [(cMul % <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cEqual      ,PositionalParams,0}},
+        /* 199:	@R @F (cEqual [(cMul % <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*327,329    */337223    , cEqual      ,PositionalParams,0}},
-        /* 203:	@R @F (cEqual [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*323,325    */333123    , cEqual      ,PositionalParams,0}},
+        /* 200:	@R @F (cEqual [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cEqual      ,PositionalParams,0}},
-        /* 204:	@R @F (cEqual [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cEqual      ,PositionalParams,0}},
+        /* 201:	@R @F (cEqual [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cEqual      ,PositionalParams,0}},
-        /* 205:	@I (cNEqual [0 x])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cEqual      ,PositionalParams,0}},
+        /* 202:	@I (cNEqual [0 x])
          *	->	(cNotNot [x])
-         */		 {ProduceNewTree, 4, 1,/*655        */655       , {2,/*44,0       */44        , cNEqual     ,PositionalParams,0}},
-        /* 206:	@I (cNEqual [1 x@L])
+         */		 {ProduceNewTree, 4, 1,/*650        */650       , {2,/*43,0       */43        , cNEqual     ,PositionalParams,0}},
+        /* 203:	@I (cNEqual [1 x@L])
          *	->	(cNot [x])
-         */		 {ProduceNewTree, 4, 1,/*631        */631       , {2,/*51,8       */8243      , cNEqual     ,PositionalParams,0}},
-        /* 207:	@R (cNEqual [0 (cAbs [x])])
+         */		 {ProduceNewTree, 4, 1,/*626        */626       , {2,/*50,8       */8242      , cNEqual     ,PositionalParams,0}},
+        /* 204:	@R (cNEqual [0 (cAbs [x])])
          *	:	x 0
-         */		 {ReplaceParams , 16, 2,/*0,44       */45056     , {2,/*44,473     */484396    , cNEqual     ,PositionalParams,0}},
-        /* 208:	@R (cNEqual [(cAdd % <1>) &])
+         */		 {ReplaceParams , 16, 2,/*0,43       */44032     , {2,/*43,468     */479275    , cNEqual     ,PositionalParams,0}},
+        /* 205:	@R (cNEqual [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cNEqual     ,PositionalParams,0}},
-        /* 209:	@R (cNEqual [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cNEqual     ,PositionalParams,0}},
+        /* 206:	@R (cNEqual [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cNEqual     ,PositionalParams,0}},
-        /* 210:	@R (cNEqual [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cNEqual     ,PositionalParams,0}},
+        /* 207:	@R (cNEqual [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cNEqual     ,PositionalParams,0}},
-        /* 211:	@R @F (cNEqual [(cMul % <1>) &])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cNEqual     ,PositionalParams,0}},
+        /* 208:	@R @F (cNEqual [(cMul % <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*327,27     */27975     , cNEqual     ,PositionalParams,0}},
-        /* 212:	@R @F (cNEqual [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*323,26     */26947     , cNEqual     ,PositionalParams,0}},
+        /* 209:	@R @F (cNEqual [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cNEqual     ,PositionalParams,0}},
-        /* 213:	@R @F (cNEqual [(cMul % <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cNEqual     ,PositionalParams,0}},
+        /* 210:	@R @F (cNEqual [(cMul % <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*327,329    */337223    , cNEqual     ,PositionalParams,0}},
-        /* 214:	@R @F (cNEqual [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*323,325    */333123    , cNEqual     ,PositionalParams,0}},
+        /* 211:	@R @F (cNEqual [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cNEqual     ,PositionalParams,0}},
-        /* 215:	@R @F (cNEqual [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cNEqual     ,PositionalParams,0}},
+        /* 212:	@R @F (cNEqual [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cNEqual     ,PositionalParams,0}},
-        /* 216:	@R (cLess [(cAdd % <1>) &])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cNEqual     ,PositionalParams,0}},
+        /* 213:	@R (cLess [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cLess       ,PositionalParams,0}},
-        /* 217:	@R (cLess [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cLess       ,PositionalParams,0}},
+        /* 214:	@R (cLess [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cLess       ,PositionalParams,0}},
-        /* 218:	@R (cLess [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cLess       ,PositionalParams,0}},
+        /* 215:	@R (cLess [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cLess       ,PositionalParams,0}},
-        /* 219:	@R @F (cLess [x 0.5])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cLess       ,PositionalParams,0}},
+        /* 216:	@R @F (cLess [x 0.5])
          *	->	(cAbsNot [x])
-         */		 {ProduceNewTree, 18, 1,/*664        */664       , {2,/*0,48       */49152     , cLess       ,PositionalParams,0}},
-        /* 220:	@R @F (cLess [(cMul %@P <1>) &])
+         */		 {ProduceNewTree, 18, 1,/*659        */659       , {2,/*0,47       */48128     , cLess       ,PositionalParams,0}},
+        /* 217:	@R @F (cLess [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*305,27     */27953     , cLess       ,PositionalParams,0}},
-        /* 221:	@R @F (cLess [(cMul %@N <1>) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*301,26     */26925     , cLess       ,PositionalParams,0}},
+        /* 218:	@R @F (cLess [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*610,294    */301666    , {2,/*303,27     */27951     , cLess       ,PositionalParams,0}},
-        /* 222:	@R @F (cLess [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*605,290    */297565    , {2,/*299,26     */26923     , cLess       ,PositionalParams,0}},
+        /* 219:	@R @F (cLess [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cLess       ,PositionalParams,0}},
-        /* 223:	@R @F (cLess [(cMul %@P <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cLess       ,PositionalParams,0}},
+        /* 220:	@R @F (cLess [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*305,329    */337201    , cLess       ,PositionalParams,0}},
-        /* 224:	@R @F (cLess [(cMul %@N <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*301,325    */333101    , cLess       ,PositionalParams,0}},
+        /* 221:	@R @F (cLess [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*330,294    */301386    , {2,/*303,329    */337199    , cLess       ,PositionalParams,0}},
-        /* 225:	@R @F (cLess [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*326,290    */297286    , {2,/*299,325    */333099    , cLess       ,PositionalParams,0}},
+        /* 222:	@R @F (cLess [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cLess       ,PositionalParams,0}},
-        /* 226:	@R @F (cLess [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cLess       ,PositionalParams,0}},
+        /* 223:	@R @F (cLess [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cLess       ,PositionalParams,0}},
-        /* 227:	@R @I (cLess [0 (cAbs [x])])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cLess       ,PositionalParams,0}},
+        /* 224:	@R @I (cLess [0 (cAbs [x])])
          *	->	(cNotNot [x])
-         */		 {ProduceNewTree, 20, 1,/*655        */655       , {2,/*44,473     */484396    , cLess       ,PositionalParams,0}},
-        /* 228:	@R (cLessOrEq [(cAdd % <1>) &])
+         */		 {ProduceNewTree, 20, 1,/*650        */650       , {2,/*43,468     */479275    , cLess       ,PositionalParams,0}},
+        /* 225:	@R (cLessOrEq [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cLessOrEq   ,PositionalParams,0}},
-        /* 229:	@R (cLessOrEq [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cLessOrEq   ,PositionalParams,0}},
+        /* 226:	@R (cLessOrEq [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cLessOrEq   ,PositionalParams,0}},
-        /* 230:	@R (cLessOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cLessOrEq   ,PositionalParams,0}},
+        /* 227:	@R (cLessOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cLessOrEq   ,PositionalParams,0}},
-        /* 231:	@R @F (cLessOrEq [% (cAbs [x])])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cLessOrEq   ,PositionalParams,0}},
+        /* 228:	@R @F (cLessOrEq [% (cAbs [x])])
          *	->	(cNotNot [(cMul {x 0.5 /%@C})])
-         */		 {ProduceNewTree, 18, 1,/*658        */658       , {2,/*18,473     */484370    , cLessOrEq   ,PositionalParams,0}},
-        /* 232:	@R @F (cLessOrEq [(cMul %@P <1>) &])
+         */		 {ProduceNewTree, 18, 1,/*653        */653       , {2,/*17,468     */479249    , cLessOrEq   ,PositionalParams,0}},
+        /* 229:	@R @F (cLessOrEq [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*305,27     */27953     , cLessOrEq   ,PositionalParams,0}},
-        /* 233:	@R @F (cLessOrEq [(cMul %@N <1>) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*301,26     */26925     , cLessOrEq   ,PositionalParams,0}},
+        /* 230:	@R @F (cLessOrEq [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*610,294    */301666    , {2,/*303,27     */27951     , cLessOrEq   ,PositionalParams,0}},
-        /* 234:	@R @F (cLessOrEq [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*605,290    */297565    , {2,/*299,26     */26923     , cLessOrEq   ,PositionalParams,0}},
+        /* 231:	@R @F (cLessOrEq [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cLessOrEq   ,PositionalParams,0}},
-        /* 235:	@R @F (cLessOrEq [(cMul %@P <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cLessOrEq   ,PositionalParams,0}},
+        /* 232:	@R @F (cLessOrEq [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*305,329    */337201    , cLessOrEq   ,PositionalParams,0}},
-        /* 236:	@R @F (cLessOrEq [(cMul %@N <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*301,325    */333101    , cLessOrEq   ,PositionalParams,0}},
+        /* 233:	@R @F (cLessOrEq [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*330,294    */301386    , {2,/*303,329    */337199    , cLessOrEq   ,PositionalParams,0}},
-        /* 237:	@R @F (cLessOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*326,290    */297286    , {2,/*299,325    */333099    , cLessOrEq   ,PositionalParams,0}},
+        /* 234:	@R @F (cLessOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cLessOrEq   ,PositionalParams,0}},
-        /* 238:	@R @F (cLessOrEq [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cLessOrEq   ,PositionalParams,0}},
+        /* 235:	@R @F (cLessOrEq [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cLessOrEq   ,PositionalParams,0}},
-        /* 239:	@R @I (cLessOrEq [1 (cAbs [x])])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cLessOrEq   ,PositionalParams,0}},
+        /* 236:	@R @I (cLessOrEq [1 (cAbs [x])])
          *	->	(cNotNot [x])
-         */		 {ProduceNewTree, 20, 1,/*655        */655       , {2,/*51,473     */484403    , cLessOrEq   ,PositionalParams,0}},
-        /* 240:	@R (cGreater [(cAdd % <1>) &])
+         */		 {ProduceNewTree, 20, 1,/*650        */650       , {2,/*50,468     */479282    , cLessOrEq   ,PositionalParams,0}},
+        /* 237:	@R (cGreater [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cGreater    ,PositionalParams,0}},
-        /* 241:	@R (cGreater [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cGreater    ,PositionalParams,0}},
+        /* 238:	@R (cGreater [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cGreater    ,PositionalParams,0}},
-        /* 242:	@R (cGreater [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cGreater    ,PositionalParams,0}},
+        /* 239:	@R (cGreater [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cGreater    ,PositionalParams,0}},
-        /* 243:	@R @F (cGreater [% (cAbs [x])])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cGreater    ,PositionalParams,0}},
+        /* 240:	@R @F (cGreater [% (cAbs [x])])
          *	->	(cNot [(cMul {x 0.5 /%@C})])
-         */		 {ProduceNewTree, 18, 1,/*632        */632       , {2,/*18,473     */484370    , cGreater    ,PositionalParams,0}},
-        /* 244:	@R @F (cGreater [(cMul %@P <1>) &])
+         */		 {ProduceNewTree, 18, 1,/*627        */627       , {2,/*17,468     */479249    , cGreater    ,PositionalParams,0}},
+        /* 241:	@R @F (cGreater [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*305,27     */27953     , cGreater    ,PositionalParams,0}},
-        /* 245:	@R @F (cGreater [(cMul %@N <1>) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*301,26     */26925     , cGreater    ,PositionalParams,0}},
+        /* 242:	@R @F (cGreater [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*610,294    */301666    , {2,/*303,27     */27951     , cGreater    ,PositionalParams,0}},
-        /* 246:	@R @F (cGreater [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*605,290    */297565    , {2,/*299,26     */26923     , cGreater    ,PositionalParams,0}},
+        /* 243:	@R @F (cGreater [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cGreater    ,PositionalParams,0}},
-        /* 247:	@R @F (cGreater [(cMul %@P <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cGreater    ,PositionalParams,0}},
+        /* 244:	@R @F (cGreater [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*305,329    */337201    , cGreater    ,PositionalParams,0}},
-        /* 248:	@R @F (cGreater [(cMul %@N <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*301,325    */333101    , cGreater    ,PositionalParams,0}},
+        /* 245:	@R @F (cGreater [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*330,294    */301386    , {2,/*303,329    */337199    , cGreater    ,PositionalParams,0}},
-        /* 249:	@R @F (cGreater [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*326,290    */297286    , {2,/*299,325    */333099    , cGreater    ,PositionalParams,0}},
+        /* 246:	@R @F (cGreater [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cGreater    ,PositionalParams,0}},
-        /* 250:	@R @F (cGreater [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cGreater    ,PositionalParams,0}},
+        /* 247:	@R @F (cGreater [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cGreater    ,PositionalParams,0}},
-        /* 251:	@R @I (cGreater [1 (cAbs [x])])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cGreater    ,PositionalParams,0}},
+        /* 248:	@R @I (cGreater [1 (cAbs [x])])
          *	->	(cNot [x])
-         */		 {ProduceNewTree, 20, 1,/*631        */631       , {2,/*51,473     */484403    , cGreater    ,PositionalParams,0}},
-        /* 252:	@R (cGreaterOrEq [(cAdd % <1>) &])
+         */		 {ProduceNewTree, 20, 1,/*626        */626       , {2,/*50,468     */479282    , cGreater    ,PositionalParams,0}},
+        /* 249:	@R (cGreaterOrEq [(cAdd % <1>) &])
          *	:	(cAdd  <1>) SUB( & % )@C
-         */		 {ReplaceParams , 16, 2,/*140,609    */623756    , {2,/*164,27     */27812     , cGreaterOrEq,PositionalParams,0}},
-        /* 253:	@R (cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)])
+         */		 {ReplaceParams , 16, 2,/*139,604    */618635    , {2,/*163,26     */26787     , cGreaterOrEq,PositionalParams,0}},
+        /* 250:	@R (cGreaterOrEq [(cAdd % <1>) (cAdd & <2>)])
          *	:	(cAdd  <1>) (cAdd & -%@C <2>)
-         */		 {ReplaceParams , 16, 2,/*140,166    */170124    , {2,/*164,165    */169124    , cGreaterOrEq,PositionalParams,0}},
-        /* 254:	@R (cGreaterOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
+         */		 {ReplaceParams , 16, 2,/*139,165    */169099    , {2,/*163,164    */168099    , cGreaterOrEq,PositionalParams,0}},
+        /* 251:	@R (cGreaterOrEq [(cAdd x <1>)@D4 (cAdd x <2>)@D4])
          *	:	(cAdd  <1>) (cAdd  <2>)
-         */		 {ReplaceParams , 16, 2,/*140,141    */144524    , {2,/*160,163    */167072    , cGreaterOrEq,PositionalParams,0}},
-        /* 255:	@R @F (cGreaterOrEq [x 0.5])
+         */		 {ReplaceParams , 16, 2,/*139,140    */143499    , {2,/*159,162    */166047    , cGreaterOrEq,PositionalParams,0}},
+        /* 252:	@R @F (cGreaterOrEq [x 0.5])
          *	->	(cAbsNotNot [x])
-         */		 {ProduceNewTree, 18, 1,/*665        */665       , {2,/*0,48       */49152     , cGreaterOrEq,PositionalParams,0}},
-        /* 256:	@R @F (cGreaterOrEq [(cMul %@P <1>) &])
+         */		 {ProduceNewTree, 18, 1,/*660        */660       , {2,/*0,47       */48128     , cGreaterOrEq,PositionalParams,0}},
+        /* 253:	@R @F (cGreaterOrEq [(cMul %@P <1>) &])
          *	:	(cMul  <1>) DIV( & % )@C
-         */		 {ReplaceParams , 18, 2,/*294,610    */624934    , {2,/*305,27     */27953     , cGreaterOrEq,PositionalParams,0}},
-        /* 257:	@R @F (cGreaterOrEq [(cMul %@N <1>) &])
+         */		 {ReplaceParams , 18, 2,/*290,605    */619810    , {2,/*301,26     */26925     , cGreaterOrEq,PositionalParams,0}},
+        /* 254:	@R @F (cGreaterOrEq [(cMul %@N <1>) &])
          *	:	DIV( & % )@C (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*610,294    */301666    , {2,/*303,27     */27951     , cGreaterOrEq,PositionalParams,0}},
-        /* 258:	@R @F (cGreaterOrEq [(cPow [x %@P]) &])
+         */		 {ReplaceParams , 18, 2,/*605,290    */297565    , {2,/*299,26     */26923     , cGreaterOrEq,PositionalParams,0}},
+        /* 255:	@R @F (cGreaterOrEq [(cPow [x %@P]) &])
          *	:	(cPow [(cPow [x %]) /%@C]) POW( & /%@C )@C
-         */		 {ReplaceParams , 18, 2,/*432,472    */483760    , {2,/*407,27     */28055     , cGreaterOrEq,PositionalParams,0}},
-        /* 259:	@R @F (cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*429,467    */478637    , {2,/*407,26     */27031     , cGreaterOrEq,PositionalParams,0}},
+        /* 256:	@R @F (cGreaterOrEq [(cMul %@P <1>) (cMul & <2>)])
          *	:	(cMul  <1>) (cMul DIV( & % )@C <2>)
-         */		 {ReplaceParams , 18, 2,/*294,330    */338214    , {2,/*305,329    */337201    , cGreaterOrEq,PositionalParams,0}},
-        /* 260:	@R @F (cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)])
+         */		 {ReplaceParams , 18, 2,/*290,326    */334114    , {2,/*301,325    */333101    , cGreaterOrEq,PositionalParams,0}},
+        /* 257:	@R @F (cGreaterOrEq [(cMul %@N <1>) (cMul & <2>)])
          *	:	(cMul DIV( & % )@C <2>) (cMul  <1>)
-         */		 {ReplaceParams , 18, 2,/*330,294    */301386    , {2,/*303,329    */337199    , cGreaterOrEq,PositionalParams,0}},
-        /* 261:	@R @F (cGreaterOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
+         */		 {ReplaceParams , 18, 2,/*326,290    */297286    , {2,/*299,325    */333099    , cGreaterOrEq,PositionalParams,0}},
+        /* 258:	@R @F (cGreaterOrEq [(cPow [% x])@D1 (cPow [% y])@D1])
          *	:	x y
-         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*463,465    */476623    , cGreaterOrEq,PositionalParams,0}},
-        /* 262:	@R @F (cGreaterOrEq [&@P (cPow [%@P x])])
+         */		 {ReplaceParams , 18, 2,/*0,10       */10240     , {2,/*458,460    */471498    , cGreaterOrEq,PositionalParams,0}},
+        /* 259:	@R @F (cGreaterOrEq [&@P (cPow [%@P x])])
          *	:	DIV( LOG( & )@C LOG( % )@C )@C x
-         */		 {ReplaceParams , 18, 2,/*611,0      */611       , {2,/*31,464     */475167    , cGreaterOrEq,PositionalParams,0}},
-        /* 263:	@R @I (cGreaterOrEq [0 (cAbs [x])])
+         */		 {ReplaceParams , 18, 2,/*606,0      */606       , {2,/*30,459     */470046    , cGreaterOrEq,PositionalParams,0}},
+        /* 260:	@R @I (cGreaterOrEq [0 (cAbs [x])])
          *	->	(cNot [x])
-         */		 {ProduceNewTree, 20, 1,/*631        */631       , {2,/*44,473     */484396    , cGreaterOrEq,PositionalParams,0}},
-        /* 264:	@I (cNot [(cAdd % <1>)])
+         */		 {ProduceNewTree, 20, 1,/*626        */626       , {2,/*43,468     */479275    , cGreaterOrEq,PositionalParams,0}},
+        /* 261:	@I (cNot [(cAdd % <1>)])
          *	->	(cEqual [-%@C (cAdd  <1>)])
-         */		 {ProduceNewTree, 4, 1,/*612        */612       , {1,/*164        */164       , cNot        ,PositionalParams,0}},
-        /* 265:	@R (cNot [x@P])
+         */		 {ProduceNewTree, 4, 1,/*607        */607       , {1,/*163        */163       , cNot        ,PositionalParams,0}},
+        /* 262:	@R (cNot [x@P])
          *	->	(cAbsNot [x])
-         */		 {ProduceNewTree, 16, 1,/*664        */664       , {1,/*2          */2         , cNot        ,PositionalParams,0}},
-        /* 266:	(cAnd (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ProduceNewTree, 16, 1,/*659        */659       , {1,/*2          */2         , cNot        ,PositionalParams,0}},
+        /* 263:	(cAnd (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cAnd {y a}) (cAnd {z b})])
-         */		 {ReplaceParams , 0, 1,/*536        */536       , {2,/*522,524    */537098    , cAnd        ,AnyParams       ,0}},
-        /* 267:	(cAnd (cEqual [x y])@D12 (cEqual [y z])@D24 (cEqual [x z])@D20)
+         */		 {ReplaceParams , 0, 1,/*532        */532       , {2,/*517,519    */531973    , cAnd        ,AnyParams       ,0}},
+        /* 264:	(cAnd (cEqual [x y])@D12 (cEqual [y z])@D24 (cEqual [x z])@D20)
          *	:	(cEqual [x y]) (cEqual [y z])
-         */		 {ReplaceParams , 0, 2,/*614,617    */632422    , {3,/*613,616,615*/645505637 , cAnd        ,AnyParams       ,0}},
-        /* 268:	@R (cAnd x@L <1>)
+         */		 {ReplaceParams , 0, 2,/*609,612    */627297    , {3,/*608,611,610*/640257632 , cAnd        ,AnyParams       ,0}},
+        /* 265:	@R (cAnd x@L <1>)
          *	->	(cNotNot [(cMul {x (cAnd  <1>)})])
-         */		 {ProduceNewTree, 16, 1,/*659        */659       , {1,/*8          */8         , cAnd        ,AnyParams       ,1}},
-        /* 269:	@R (cAnd x@P y@P)
+         */		 {ProduceNewTree, 16, 1,/*654        */654       , {1,/*8          */8         , cAnd        ,AnyParams       ,1}},
+        /* 266:	@R (cAnd x@P y@P)
          *	:	(cAbsAnd {x y})
-         */		 {ReplaceParams , 16, 1,/*662        */662       , {2,/*2,16       */16386     , cAnd        ,AnyParams       ,0}},
-        /* 270:	@R (cAnd (cNot [x]) (cNot [y]))
+         */		 {ReplaceParams , 16, 1,/*657        */657       , {2,/*2,9        */9218      , cAnd        ,AnyParams       ,0}},
+        /* 267:	@R (cAnd (cNot [x]) (cNot [y]))
          *	:	(cNot [(cOr {x y})])
-         */		 {ReplaceParams , 16, 1,/*634        */634       , {2,/*631,633    */648823    , cAnd        ,AnyParams       ,0}},
-        /* 271:	@R (cAnd (cNot [z]) (cIf [x (cNot [y]) %@L]))
+         */		 {ReplaceParams , 16, 1,/*632        */632       , {2,/*626,628    */643698    , cAnd        ,AnyParams       ,0}},
+        /* 268:	@R (cAnd (cNot [z]) (cIf [x (cNot [y]) %@L]))
          *	:	(cNot [(cOr {z (cIf [x y (cNot [%])])})])
-         */		 {ReplaceParams , 16, 1,/*640        */640       , {2,/*636,535    */548476    , cAnd        ,AnyParams       ,0}},
-        /* 272:	@R (cAnd (cNot [z]) (cIf [x %@L (cNot [y])]))
+         */		 {ReplaceParams , 16, 1,/*634        */634       , {2,/*633,530    */543353    , cAnd        ,AnyParams       ,0}},
+        /* 269:	@R (cAnd (cNot [z]) (cIf [x %@L (cNot [y])]))
          *	:	(cNot [(cOr {z (cIf [x (cNot [%]) y])})])
-         */		 {ReplaceParams , 16, 1,/*641        */641       , {2,/*636,539    */552572    , cAnd        ,AnyParams       ,0}},
-        /* 273:	(cOr (cIf [x y z])@D4 (cIf [x a b])@D4)
+         */		 {ReplaceParams , 16, 1,/*636        */636       , {2,/*633,534    */547449    , cAnd        ,AnyParams       ,0}},
+        /* 270:	(cOr (cIf [x y z])@D4 (cIf [x a b])@D4)
          *	:	(cIf [x (cOr {y a}) (cOr {z b})])
-         */		 {ReplaceParams , 0, 1,/*541        */541       , {2,/*522,524    */537098    , cOr         ,AnyParams       ,0}},
-        /* 274:	@R (cOr x@P y@P)
+         */		 {ReplaceParams , 0, 1,/*535        */535       , {2,/*517,519    */531973    , cOr         ,AnyParams       ,0}},
+        /* 271:	@R (cOr x@P y@P)
          *	:	(cAbsOr {x y})
-         */		 {ReplaceParams , 16, 1,/*663        */663       , {2,/*2,16       */16386     , cOr         ,AnyParams       ,0}},
-        /* 275:	@R (cOr x@L y@L)
+         */		 {ReplaceParams , 16, 1,/*658        */658       , {2,/*2,9        */9218      , cOr         ,AnyParams       ,0}},
+        /* 272:	@R (cOr x@L y@L)
          *	:	(cNotNot [(cAdd {x y})])
-         */		 {ReplaceParams , 16, 1,/*656        */656       , {2,/*8,11       */11272     , cOr         ,AnyParams       ,0}},
-        /* 276:	@R (cOr (cNot [x]) (cNot [y]))
+         */		 {ReplaceParams , 16, 1,/*651        */651       , {2,/*8,11       */11272     , cOr         ,AnyParams       ,0}},
+        /* 273:	@R (cOr (cNot [x]) (cNot [y]))
          *	:	(cNot [(cAnd {x y})])
-         */		 {ReplaceParams , 16, 1,/*637        */637       , {2,/*631,633    */648823    , cOr         ,AnyParams       ,0}},
-        /* 277:	@R (cOr (cNot [z]) (cIf [x (cNot [y]) %@L]))
+         */		 {ReplaceParams , 16, 1,/*629        */629       , {2,/*626,628    */643698    , cOr         ,AnyParams       ,0}},
+        /* 274:	@R (cOr (cNot [z]) (cIf [x (cNot [y]) %@L]))
          *	:	(cNot [(cAnd {z (cIf [x y (cNot [%])])})])
-         */		 {ReplaceParams , 16, 1,/*638        */638       , {2,/*636,535    */548476    , cOr         ,AnyParams       ,0}},
-        /* 278:	@R (cOr (cNot [z]) (cIf [x %@L (cNot [y])]))
+         */		 {ReplaceParams , 16, 1,/*630        */630       , {2,/*633,530    */543353    , cOr         ,AnyParams       ,0}},
+        /* 275:	@R (cOr (cNot [z]) (cIf [x %@L (cNot [y])]))
          *	:	(cNot [(cAnd {z (cIf [x (cNot [%]) y])})])
-         */		 {ReplaceParams , 16, 1,/*639        */639       , {2,/*636,539    */552572    , cOr         ,AnyParams       ,0}},
-        /* 279:	@R (cOr x@L (cAdd  <1>)@P)
+         */		 {ReplaceParams , 16, 1,/*631        */631       , {2,/*633,534    */547449    , cOr         ,AnyParams       ,0}},
+        /* 276:	@R (cOr x@L (cAdd  <1>)@P)
          *	:	(cNotNot [(cAdd x <1>)])
-         */		 {ReplaceParams , 16, 1,/*657        */657       , {2,/*8,167      */171016    , cOr         ,AnyParams       ,0}},
-        /* 280:	@I (cNotNot [(cAdd % <1>)])
+         */		 {ReplaceParams , 16, 1,/*652        */652       , {2,/*8,166      */169992    , cOr         ,AnyParams       ,0}},
+        /* 277:	@I (cNotNot [(cAdd % <1>)])
          *	->	(cNEqual [-%@C (cAdd  <1>)])
-         */		 {ProduceNewTree, 4, 1,/*618        */618       , {1,/*164        */164       , cNotNot     ,PositionalParams,0}},
-        /* 281:	@R (cNotNot [x@P])
+         */		 {ProduceNewTree, 4, 1,/*613        */613       , {1,/*163        */163       , cNotNot     ,PositionalParams,0}},
+        /* 278:	@R (cNotNot [x@P])
          *	->	(cAbsNotNot [x])
-         */		 {ProduceNewTree, 16, 1,/*665        */665       , {1,/*2          */2         , cNotNot     ,PositionalParams,0}},
-        /* 282:	@R @L (cNotNot [x])
+         */		 {ProduceNewTree, 16, 1,/*660        */660       , {1,/*2          */2         , cNotNot     ,PositionalParams,0}},
+        /* 279:	@R @L (cNotNot [x])
          *	->	x
          */		 {ProduceNewTree, 17, 1,/*0          */0         , {1,/*0          */0         , cNotNot     ,PositionalParams,0}},
-        /* 283:	@R @F (cAbsNotNot (cMul %@P <1>))
+        /* 280:	@R @F (cAbsNotNot (cMul %@P <1>))
          *	->	(cGreaterOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C])
-         */		 {ProduceNewTree, 18, 1,/*630        */630       , {1,/*305        */305       , cAbsNotNot  ,AnyParams       ,0}},
-        /* 284:	@R @F (cAbsNotNot (cMul %@N <1>))
+         */		 {ProduceNewTree, 18, 1,/*625        */625       , {1,/*301        */301       , cAbsNotNot  ,AnyParams       ,0}},
+        /* 281:	@R @F (cAbsNotNot (cMul %@N <1>))
          *	->	(cLessOrEq [(cMul  <1>) MUL( 0.5 /%@C )@C])
-         */		 {ProduceNewTree, 18, 1,/*624        */624       , {1,/*303        */303       , cAbsNotNot  ,AnyParams       ,0}},
-        /* 285:	(cAbsIf [x 1 0])
+         */		 {ProduceNewTree, 18, 1,/*619        */619       , {1,/*299        */299       , cAbsNotNot  ,AnyParams       ,0}},
+        /* 282:	(cAbsIf [x 1 0])
          *	->	(cAbsNotNot [x])
-         */		 {ProduceNewTree, 0, 1,/*665        */665       , {3,/*0,51,44    */46189568  , cAbsIf      ,PositionalParams,0}},
-        /* 286:	(cAbsIf [x 0 1])
+         */		 {ProduceNewTree, 0, 1,/*660        */660       , {3,/*0,50,43    */45139968  , cAbsIf      ,PositionalParams,0}},
+        /* 283:	(cAbsIf [x 0 1])
          *	->	(cAbsNot [x])
-         */		 {ProduceNewTree, 0, 1,/*664        */664       , {3,/*0,44,51    */53522432  , cAbsIf      ,PositionalParams,0}},
-        /* 287:	@R (cAbsIf [(cNotNot [x]) y z])
+         */		 {ProduceNewTree, 0, 1,/*659        */659       , {3,/*0,43,50    */52472832  , cAbsIf      ,PositionalParams,0}},
+        /* 284:	@R (cAbsIf [(cNotNot [x]) y z])
          *	->	(cIf [x y z])
-         */		 {ProduceNewTree, 16, 1,/*538        */538       , {3,/*655,10,34  */35662479  , cAbsIf      ,PositionalParams,0}},
-        /* 288:	@R (cAbsIf [(cLessOrEq [x y]) z a])
+         */		 {ProduceNewTree, 16, 1,/*536        */536       , {3,/*650,10,33  */34613898  , cAbsIf      ,PositionalParams,0}},
+        /* 285:	@R (cAbsIf [(cLessOrEq [x y]) z a])
          *	:	(cLess [y x]) a z
-         */		 {ReplaceParams , 16, 3,/*622,38,34  */35691118  , {3,/*623,34,38  */39881327  , cAbsIf      ,PositionalParams,0}},
+         */		 {ReplaceParams , 16, 3,/*617,37,33  */34641513  , {3,/*618,33,37  */38831722  , cAbsIf      ,PositionalParams,0}},
     };
 
     struct grammar_optimize_abslogical_type
@@ -1600,7 +1586,7 @@ namespace FPoptimizer_Grammar
         grammar_optimize_abslogical_type grammar_optimize_abslogical =
         {
             9,
-            { 39,219,255,265,269,274,281,287,288
+            { 38,216,252,262,266,271,278,284,285
     }   };  }
     struct grammar_optimize_ignore_if_sideeffects_type
     {
@@ -1612,12 +1598,12 @@ namespace FPoptimizer_Grammar
         grammar_optimize_ignore_if_sideeffects_type grammar_optimize_ignore_if_sideeffects =
         {
             59,
-            { 0,25,26,27,28,29,30,31,32,33,
-              34,35,36,37,38,40,41,48,49,50,
-              51,91,92,142,143,187,188,190,191,192,
-              193,194,195,196,205,206,207,227,231,239,
-              243,251,263,264,266,267,270,271,272,273,
-              276,277,278,280,282,283,284,285,286
+            { 0,24,25,26,27,28,29,30,31,32,
+              33,34,35,36,37,39,40,47,48,49,
+              50,88,89,139,140,184,185,187,188,189,
+              190,191,192,193,202,203,204,224,228,236,
+              240,248,260,261,263,264,267,268,269,270,
+              273,274,275,277,279,280,281,282,283
     }   };  }
     struct grammar_optimize_nonshortcut_logical_evaluation_type
     {
@@ -1629,12 +1615,12 @@ namespace FPoptimizer_Grammar
         grammar_optimize_nonshortcut_logical_evaluation_type grammar_optimize_nonshortcut_logical_evaluation =
         {
             56,
-            { 0,30,32,33,34,35,36,37,38,40,
-              41,48,49,50,51,91,92,142,143,187,
-              188,190,191,192,193,194,195,196,205,206,
-              207,227,231,239,243,251,263,264,266,267,
-              268,270,271,272,273,275,276,277,278,279,
-              280,282,283,284,285,286
+            { 0,29,31,32,33,34,35,36,37,39,
+              40,47,48,49,50,88,89,139,140,184,
+              185,187,188,189,190,191,192,193,202,203,
+              204,224,228,236,240,248,260,261,263,264,
+              265,267,268,269,270,272,273,274,275,276,
+              277,279,280,281,282,283
     }   };  }
     struct grammar_optimize_recreate_type
     {
@@ -1646,35 +1632,34 @@ namespace FPoptimizer_Grammar
         grammar_optimize_recreate_type grammar_optimize_recreate =
         {
             30,
-            { 22,62,63,64,93,94,95,96,97,98,
-              106,107,108,137,138,140,141,150,151,152,
-              153,154,155,156,157,158,159,160,183,184
+            { 21,61,62,63,90,91,92,93,94,95,
+              103,104,105,134,135,137,138,147,148,149,
+              150,151,152,153,154,155,156,157,180,181
     }   };  }
     struct grammar_optimize_round1_type
     {
         unsigned c;
-        unsigned short l[143];
+        unsigned short l[140];
     };
     extern "C"
     {
         grammar_optimize_round1_type grammar_optimize_round1 =
         {
-            143,
+            140,
             { 0,1,2,3,4,5,7,8,9,10,
-              11,12,13,14,15,16,17,24,30,32,
-              33,34,35,36,37,38,40,41,44,45,
+              11,12,13,14,15,16,23,29,31,32,
+              33,34,35,36,37,39,40,43,44,47,
               48,49,50,51,52,53,54,55,56,57,
-              58,59,60,61,65,66,67,68,69,70,
-              71,72,73,74,75,76,77,78,79,80,
-              91,92,93,94,95,96,97,98,99,100,
-              101,106,107,108,109,110,111,112,113,114,
-              115,116,117,118,119,120,121,137,138,139,
-              140,141,142,143,144,145,146,147,148,149,
-              158,159,160,161,162,183,184,186,187,188,
-              189,190,191,192,193,194,195,196,205,206,
-              207,227,231,239,243,251,263,264,266,267,
-              270,271,272,273,276,277,278,280,282,283,
-              284,285,286
+              58,59,60,64,65,66,67,68,69,70,
+              71,72,73,74,75,76,77,88,89,90,
+              91,92,93,94,95,96,97,98,103,104,
+              105,106,107,108,109,110,111,112,113,114,
+              115,116,117,118,134,135,136,137,138,139,
+              140,141,142,143,144,145,146,155,156,157,
+              158,159,180,181,183,184,185,186,187,188,
+              189,190,191,192,193,202,203,204,224,228,
+              236,240,248,260,261,263,264,267,268,269,
+              270,273,274,275,277,279,280,281,282,283
     }   };  }
     struct grammar_optimize_round2_type
     {
@@ -1686,17 +1671,17 @@ namespace FPoptimizer_Grammar
         grammar_optimize_round2_type grammar_optimize_round2 =
         {
             106,
-            { 0,18,19,20,21,30,32,33,34,35,
-              36,37,38,40,41,46,47,48,49,50,
-              51,52,53,54,55,56,57,58,59,60,
-              61,66,67,81,82,83,88,91,92,99,
-              100,101,102,103,104,105,122,123,124,125,
-              126,127,128,129,130,131,132,133,134,135,
-              136,139,142,143,144,145,146,147,148,166,
-              185,187,188,189,190,191,192,193,194,195,
-              196,205,206,207,227,231,239,243,251,263,
-              264,266,267,270,271,272,273,276,277,278,
-              280,282,283,284,285,286
+            { 0,17,18,19,20,29,31,32,33,34,
+              35,36,37,39,40,45,46,47,48,49,
+              50,51,52,53,54,55,56,57,58,59,
+              60,65,66,78,79,80,85,88,89,96,
+              97,98,99,100,101,102,119,120,121,122,
+              123,124,125,126,127,128,129,130,131,132,
+              133,136,139,140,141,142,143,144,145,163,
+              182,184,185,186,187,188,189,190,191,192,
+              193,202,203,204,224,228,236,240,248,260,
+              261,263,264,267,268,269,270,273,274,275,
+              277,279,280,281,282,283
     }   };  }
     struct grammar_optimize_round3_type
     {
@@ -1708,17 +1693,17 @@ namespace FPoptimizer_Grammar
         grammar_optimize_round3_type grammar_optimize_round3 =
         {
             103,
-            { 6,23,42,43,84,85,86,87,89,90,
-              93,94,95,96,97,98,106,107,108,137,
-              138,140,141,158,159,160,163,164,165,167,
-              168,169,170,171,172,173,174,175,176,177,
-              178,179,180,181,182,183,184,197,198,199,
-              200,201,202,203,204,208,209,210,211,212,
-              213,214,215,216,217,218,220,221,222,223,
-              224,225,226,228,229,230,232,233,234,235,
-              236,237,238,240,241,242,244,245,246,247,
-              248,249,250,252,253,254,256,257,258,259,
-              260,261,262
+            { 6,22,41,42,81,82,83,84,86,87,
+              90,91,92,93,94,95,103,104,105,134,
+              135,137,138,155,156,157,160,161,162,164,
+              165,166,167,168,169,170,171,172,173,174,
+              175,176,177,178,179,180,181,194,195,196,
+              197,198,199,200,201,205,206,207,208,209,
+              210,211,212,213,214,215,217,218,219,220,
+              221,222,223,225,226,227,229,230,231,232,
+              233,234,235,237,238,239,241,242,243,244,
+              245,246,247,249,250,251,253,254,255,256,
+              257,258,259
     }   };  }
     struct grammar_optimize_round4_type
     {
@@ -1730,8 +1715,8 @@ namespace FPoptimizer_Grammar
         grammar_optimize_round4_type grammar_optimize_round4 =
         {
             12,
-            { 22,62,63,64,150,151,152,153,154,155,
-              156,157
+            { 21,61,62,63,147,148,149,150,151,152,
+              153,154
     }   };  }
     struct grammar_optimize_shortcut_logical_evaluation_type
     {
@@ -1743,12 +1728,12 @@ namespace FPoptimizer_Grammar
         grammar_optimize_shortcut_logical_evaluation_type grammar_optimize_shortcut_logical_evaluation =
         {
             53,
-            { 0,30,32,33,34,35,36,37,38,40,
-              41,48,49,50,51,91,92,142,143,187,
-              188,190,191,192,193,194,195,196,205,206,
-              207,227,231,239,243,251,263,264,266,267,
-              270,271,272,273,276,277,278,280,282,283,
-              284,285,286
+            { 0,29,31,32,33,34,35,36,37,39,
+              40,47,48,49,50,88,89,139,140,184,
+              185,187,188,189,190,191,192,193,202,203,
+              204,224,228,236,240,248,260,261,263,264,
+              267,268,269,270,273,274,275,277,279,280,
+              281,282,283
     }   };  }
 }
 namespace FPoptimizer_Grammar
@@ -1757,10 +1742,10 @@ namespace FPoptimizer_Grammar
     ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)
     {
         index = (paramlist >> (index * 10)) & 1023 /* % (1 << 10) */;
-        if(index >= 62)
-            return ParamSpec(SubFunction,(const void*)&plist_s[index-62]);
-        if(index >= 40)
-            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-40]);
+        if(index >= 61)
+            return ParamSpec(SubFunction,(const void*)&plist_s[index-61]);
+        if(index >= 39)
+            return ParamSpec(NumConstant,(const void*)&plist_n_container<Value_t>::plist_n[index-39]);
         return ParamSpec(ParamHolder,(const void*)&plist_p[index]);
     }
 }
