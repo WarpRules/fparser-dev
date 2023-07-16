@@ -1250,6 +1250,11 @@ int functionInfo(const char* const parserTypeString,
         printFunctionTimings(functions);
     }
 
+    /* Release all global references to Value_t() _before_
+     * the global destructors for GmpInt and MpfrFloat are run
+     */
+    ParserData<Value_t>::gVarValues.clear();
+
     return 0;
 }
 
