@@ -141,12 +141,20 @@ namespace FPoptimizer_CodeTree
             NewHash.second  = raw->_mpfr_prec;
             NewHash.second += (long)(raw->_mpfr_exp)  << 24;
             NewHash.second += (long)(raw->_mpfr_sign) << 56;
-            int num = raw->_mpfr_prec;
+            int num = (raw->_mpfr_prec + GMP_LIMB_BITS - 1) / GMP_LIMB_BITS;
+            /*fprintf(stderr, "prec=%ld sign=%d exp=%ld num=%d:\t",
+                raw->_mpfr_prec,
+                raw->_mpfr_sign,
+                raw->_mpfr_exp,
+                num);*/
             for(int n=0; n<num; ++n)
             {
+                /* 2^64 / phi = 11400714819323198485.9xx */
                 NewHash.first = NewHash.first * 11400714819323198485ul + data[n];
                 NewHash.second ^= NewHash.first;
             }
+            /*fprintf(stderr, "Produced %16lx,%16lx\n",
+                NewHash.first, NewHash.second);*/
         }
     };
 #endif

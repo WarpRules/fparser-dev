@@ -67,6 +67,8 @@ namespace
     const bool color_support = false;
 #endif
 
+    bool ignore_errors = false;
+
     bool gPrintByteCodeExpressions = true;
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
@@ -768,6 +770,10 @@ namespace
                 {
                     // If the source expression returns an error,
                     // ignore this "failure"
+                    continue;
+                }
+                if(parser1.EvalError() != parser2.EvalError() && ignore_errors)
+                {
                     continue;
                 }
 

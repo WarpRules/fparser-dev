@@ -72,6 +72,7 @@ namespace FPoptimizer_CodeTree
         switch(tree.GetOpcode())
         {
             case cImmed:
+                o.precision(512);
                 o << tree.GetImmed();
                 /*
                 o << "(" << std::hex

@@ -1,0 +1,5 @@
+T=d ld f mf cd cf cld
+V=x
+R=-3,3,2
+F=sin(x)*2.7+cos(x)
+C=fp_sin(x)*2.7+fp_cos(x)
