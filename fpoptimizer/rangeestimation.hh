@@ -4,6 +4,7 @@
 #include "codetree.hh"
 #include "valuerange.hh"
 
+#include <type_traits>
 namespace FPoptimizer_CodeTree
 {
     enum TriTruthValue { IsAlways, IsNever, Unknown };

@@ -2814,7 +2814,7 @@ int main(int argc, char* argv[])
         "    -h, --help        This help\n";
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    MpfrFloat::setDefaultMantissaBits(80);
+    MpfrFloat::setDefaultMantissaBits(96);
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     GmpInt::setDefaultNumberOfBits(80);

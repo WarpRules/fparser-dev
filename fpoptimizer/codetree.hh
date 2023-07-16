@@ -159,6 +159,7 @@ namespace FPoptimizer_CodeTree
         explicit CodeTreeData(const Value_t& i);
         explicit CodeTreeData(Value_t&& i);
         CodeTreeData(CodeTreeData&& b);
+        ~CodeTreeData();
 
         bool IsIdenticalTo(const CodeTreeData& b) const;
         void Sort();

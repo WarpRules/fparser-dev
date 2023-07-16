@@ -991,3 +991,6 @@ MpfrFloat MpfrFloat::someEpsilon()
 {
     return mpfrFloatDataContainer().const_epsilon();
 }
+
+// Explicit instantiation
+template void MpfrFloat::template get_raw_mpfr_data<mpfr_t>(mpfr_t&);

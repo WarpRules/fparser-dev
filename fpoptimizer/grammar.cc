@@ -9,6 +9,11 @@ using namespace FUNCTIONPARSERTYPES;
 
 #include <cctype>
 
+/* These functions must not be hidden behind DEBUG_SUBSTITUTIONS,
+ * from CodeTree, otherwise tree_grammar_parser (standalone program)
+ * will not link.
+ */
+
 namespace FPoptimizer_Grammar
 {
     unsigned ParamSpec_GetDepCode(const ParamSpec& b)
@@ -42,8 +47,9 @@ namespace FPoptimizer_Grammar
             case NumConstant:
               { const ParamSpec_NumConstant<Value_t>& param = *(const ParamSpec_NumConstant<Value_t>*) parampair.second;
                 using namespace FUNCTIONPARSERTYPES;
-                o.precision(12);
-                o << param.constvalue; break; }
+                o.precision(40);
+                o << param.constvalue;
+                break; }
             case ParamHolder:
               { const ParamSpec_ParamHolder& param = *(const ParamSpec_ParamHolder*) parampair.second;
                 o << ParamHolderNames[param.index];

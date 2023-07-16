@@ -799,7 +799,6 @@ public:
     {
         using namespace FUNCTIONPARSERTYPES;
         std::ostringstream result;
-        result.precision(50);
         double dvalue = value.real();
         if(value.imag() != 0.0) goto NotAnyKnownConstant;
         #define Value_t double
@@ -812,8 +811,8 @@ public:
         else if_const(fp_const_twoeinv<Value_t>())
         else if_const(fp_const_pi<Value_t>())
         else if_const(fp_const_pihalf<Value_t>())
-        else if_const(fp_const_pihalf<Value_t>() / 2)
-        else if_const(Value_t(fp_sqrt(2.0)))
+        else if_const(fp_const_pihalf<Value_t>() / Value_t(2))
+        else if_const(fp_sqrt(Value_t(2.0)))
         else if_const(fp_const_twopi<Value_t>())
         else if_const(fp_const_log2<Value_t>())
         else if_const(fp_const_log2inv<Value_t>())
@@ -826,6 +825,7 @@ public:
         else
         {
         NotAnyKnownConstant:
+            result.precision(50);
             result << "Value_t(" << value.real() << ")";
             if(value.imag() != 0.0)
                 result << " + fp_make_imag(Value_t(" << value.imag() << "))";

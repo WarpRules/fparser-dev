@@ -46,6 +46,36 @@ namespace
         //    (double)val, (double)t, ex, v0, result);
         return result;
     }
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    int fpEstimatePrecision(const MpfrFloat& )
+    {
+        return 0;
+    }
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    int fpEstimatePrecision(const GmpInt& )
+    {
+        return 0;
+    }
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    int fpEstimatePrecision(const std::complex<float>& )
+    {
+        return 0;
+    }
+#endif
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    int fpEstimatePrecision(const std::complex<double>& )
+    {
+        return 0;
+    }
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    int fpEstimatePrecision(const std::complex<long double>& )
+    {
+        return 0;
+    }
+#endif
 
     template<typename Value_t>
     bool ConstantFolding_PowOperations(CodeTree<Value_t>& tree)
@@ -108,8 +138,18 @@ namespace
                         if(fp_equal(new_base_immed, Value_t(0)))
                             break;
 
-                        if(fpEstimatePrecision(new_base_immed)
-                        <  (fpEstimatePrecision(base_immed) + fpEstimatePrecision(imm)) / 4)
+                        if(
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+                           std::is_same<Value_t, MpfrFloat>::value
+                        ||
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+                           std::is_same<Value_t, GmpInt>::value
+                        ||
+#endif
+                           fpEstimatePrecision(new_base_immed)
+                        <  (fpEstimatePrecision(base_immed) + fpEstimatePrecision(imm)) / 4
+                          )
                         {
                             // Bail out if we got an abrupt loss of precision,
                             // such as with exp(2e-26 * x) -> pow(1, x).

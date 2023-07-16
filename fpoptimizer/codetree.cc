@@ -43,6 +43,36 @@ namespace
         o << "(" << std::hex << ld << std::dec << ")";
     }
   #endif
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    void OutFloatHex(std::ostream& o, const MpfrFloat& p)
+    {
+        o << "(" << std::hex << p << std::dec << ")";
+    }
+  #endif
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
+    void OutFloatHex(std::ostream& o, const GmpInt& p)
+    {
+        o << "(" << std::hex << p << std::dec << ")";
+    }
+  #endif
+  #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    void OutFloatHex(std::ostream& o, const std::complex<float>& p)
+    {
+        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
+    }
+  #endif
+  #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    void OutFloatHex(std::ostream& o, const std::complex<double>& p)
+    {
+        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
+    }
+  #endif
+  #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    void OutFloatHex(std::ostream& o, const std::complex<long double>& p)
+    {
+        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
+    }
+  #endif
 
 #endif
 }
@@ -229,36 +259,6 @@ namespace FPoptimizer_CodeTree
         DataP slot_holder ( data->Params[replacing_slot].data );
         DelParam(replacing_slot);
         AddParamsMove(RefParams);
-    /*
-        const size_t n_added = RefParams.size();
-        const size_t oldsize = data->Params.size();
-        const size_t newsize = oldsize + n_added - 1;
-        if(RefParams.empty())
-            DelParam(replacing_slot);
-        else
-        {
-            //    0 1 2 3 4 5 6 7 8 9 10 11
-            //    a a a a X b b b b b
-            //    a a a a Y Y Y b b b b  b
-            //
-            //   replacing_slot = 4
-            //   n_added = 3
-            //   oldsize = 10
-            //   newsize = 12
-            //   tail_length = 5
-
-            data->Params.resize(newsize);
-            data->Params[replacing_slot].data = 0;
-            const size_t tail_length = oldsize - replacing_slot -1;
-            for(size_t tail=0; tail<tail_length; ++tail)
-                data->Params[newsize-1-tail].data.UnsafeSetP(
-                &*data->Params[newsize-1-tail-(n_added-1)].data);
-            for(size_t head=1; head<n_added; ++head)
-                data->Params[replacing_slot+head].data.UnsafeSetP( 0 );
-            for(size_t p=0; p<n_added; ++p)
-                data->Params[replacing_slot+p].swap( RefParams[p] );
-        }
-    */
     }
 
     template<typename Value_t>
@@ -421,6 +421,11 @@ namespace FPoptimizer_CodeTree
           Opcode(o),
           Value(), Var_or_Funcno(f),
           Params(), Hash(), Depth(1), OptimizedUsing(0)
+    {
+    }
+
+    template<typename Value_t>
+    CodeTreeData<Value_t>::~CodeTreeData()
     {
     }
 }

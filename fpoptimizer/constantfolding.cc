@@ -130,8 +130,8 @@ namespace FPoptimizer_CodeTree
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "Before replace: ";
                 std::cout << std::hex
-                          << '[' << tree.GetHash().hash1
-                          << ',' << tree.GetHash().hash2
+                          << '[' << tree.GetHash().first
+                          << ',' << tree.GetHash().second
                           << ']' << std::dec;
                 DumpTree(tree);
                 std::cout << "\n";
@@ -140,8 +140,8 @@ namespace FPoptimizer_CodeTree
               #ifdef DEBUG_SUBSTITUTIONS
                 std::cout << "After replace: ";
                 std::cout << std::hex
-                          << '[' << tree.GetHash().hash1
-                          << ',' << tree.GetHash().hash2
+                          << '[' << tree.GetHash().first
+                          << ',' << tree.GetHash().second
                           << ']' << std::dec;
                 DumpTree(tree);
                 std::cout << "\n";

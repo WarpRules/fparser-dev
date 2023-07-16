@@ -1181,6 +1181,58 @@ namespace FUNCTIONPARSERTYPES
     }
 #endif
 
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    template<>
+    inline bool isInteger(const std::complex<double>& value)
+    {
+        return !value.imag() && isInteger(value.real());
+    }
+    template<>
+    inline bool isEvenInteger(const std::complex<double>& value)
+    {
+        return !value.imag() && isEvenInteger(value.real());
+    }
+    template<>
+    inline bool isOddInteger(const std::complex<double>& value)
+    {
+        return !value.imag() && isOddInteger(value.real());
+    }
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    template<>
+    inline bool isInteger(const std::complex<float>& value)
+    {
+        return !value.imag() && isInteger(value.real());
+    }
+    template<>
+    inline bool isEvenInteger(const std::complex<float>& value)
+    {
+        return !value.imag() && isEvenInteger(value.real());
+    }
+    template<>
+    inline bool isOddInteger(const std::complex<float>& value)
+    {
+        return !value.imag() && isOddInteger(value.real());
+    }
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    template<>
+    inline bool isInteger(const std::complex<long double>& value)
+    {
+        return !value.imag() && isInteger(value.real());
+    }
+    template<>
+    inline bool isEvenInteger(const std::complex<long double>& value)
+    {
+        return !value.imag() && isEvenInteger(value.real());
+    }
+    template<>
+    inline bool isOddInteger(const std::complex<long double>& value)
+    {
+        return !value.imag() && isOddInteger(value.real());
+    }
+#endif
+
 
 // -------------------------------------------------------------------------
 // fp_pow

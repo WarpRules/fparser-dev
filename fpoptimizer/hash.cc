@@ -1,11 +1,21 @@
 #include <list>
+#include <bitset>
 #include <algorithm>
 
 #include "constantfolding.hh"
 #include "codetree.hh"
 #include "extrasrc/fptypes.hh"
 
+
 #ifdef FP_SUPPORT_OPTIMIZER
+
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+# include <gmp.h>
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+# include <mpfr.h>
+#endif
 
 using namespace FUNCTIONPARSERTYPES;
 //using namespace FPoptimizer_Grammar;
@@ -114,6 +124,33 @@ namespace FPoptimizer_CodeTree
         }
     };
 
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    struct ImmedHashGenerator<MpfrFloat>
+    {
+        static void MakeHash(
+            FUNCTIONPARSERTYPES::fphash_t& NewHash,
+            const MpfrFloat& Value)
+        {
+            mpfr_t raw;
+            (const_cast<MpfrFloat&>(Value)).get_raw_mpfr_data(raw);
+            const mp_limb_t* data = raw->_mpfr_d;
+            NewHash.first  =  raw->_mpfr_exp;
+            NewHash.first  += (long)(raw->_mpfr_sign) << 32;
+            NewHash.first  += (long)(raw->_mpfr_prec) << 48;
+            NewHash.second  = raw->_mpfr_prec;
+            NewHash.second += (long)(raw->_mpfr_exp)  << 24;
+            NewHash.second += (long)(raw->_mpfr_sign) << 56;
+            int num = raw->_mpfr_prec;
+            for(int n=0; n<num; ++n)
+            {
+                NewHash.first = NewHash.first * 11400714819323198485ul + data[n];
+                NewHash.second ^= NewHash.first;
+            }
+        }
+    };
+#endif
+
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     struct ImmedHashGenerator< std::complex<T> >
@@ -160,15 +197,17 @@ namespace FPoptimizer_CodeTree
             FUNCTIONPARSERTYPES::fphash_t& NewHash,
             const GmpInt& Value)
         {
-            fphash_value_t key = Value.toInt();
-            /* Key = 56-bit unsigned integer value
-             *       that is directly proportional
-             *       to the floating point value.
-             */
-            NewHash.first |= key;
-            //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
-            fphash_value_t crc = (key >> 10) | (key << (64-10));
-            NewHash.second += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+            mpz_t raw;
+            (const_cast<GmpInt&>(Value)).get_raw_mpfr_data(raw);
+            const mp_limb_t* data = raw->_mp_d;
+            const int        num  = raw->_mp_size;
+            NewHash.first = 0;
+            NewHash.second = num;
+            for(int n=0; n<num; ++n)
+            {
+                NewHash.first = NewHash.first * 11400714819323198485ul + data[n];
+                NewHash.second ^= NewHash.first;
+            }
         }
     };
 #endif

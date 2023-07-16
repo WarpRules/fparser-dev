@@ -11,11 +11,22 @@ using namespace FPoptimizer_CodeTree;
 namespace FPoptimizer_CodeTree
 {
     template<typename Value_t, bool Complex>
-    range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree)
-#ifdef DEBUG_SUBSTITUTIONS_extra_verbose
+    struct BoundaryMaker
     {
+        range<Value_t> Estimate(const CodeTree<Value_t>& tree) const;
+    };
+    template<typename Value_t>
+    struct BoundaryMaker<Value_t,true>
+    {
+        range<Value_t> Estimate(const CodeTree<Value_t>& tree) const;
+    };
+
+    template<typename Value_t, bool Complex>
+    range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree)
+    {
+#ifdef DEBUG_SUBSTITUTIONS_extra_verbose
         using namespace FUNCTIONPARSERTYPES;
-        range<Value_t> tmp = CalculateResultBoundaries_do(tree);
+        range<Value_t> tmp = BoundaryMaker<Value_t,Complex>().Estimate(tree);
         std::cout << "Estimated boundaries: ";
         if(tmp.min.known) std::cout << tmp.min.val; else std::cout << "-inf";
         std::cout << " .. ";
@@ -24,10 +35,13 @@ namespace FPoptimizer_CodeTree
         DumpTree(tree);
         std::cout << std::endl;
         return tmp;
-    }
-    template<typename Value_t>
-    range<Value_t> CodeTree<Value_t>::CalculateResultBoundaries_do(const CodeTree<Value_t>& tree)
+#else
+        return BoundaryMaker<Value_t,Complex>().Estimate(tree);
 #endif
+    }
+
+    template<typename Value_t, bool Complex>
+    range<Value_t> BoundaryMaker<Value_t,Complex>::Estimate(const CodeTree<Value_t>& tree) const
     {
         static const range<Value_t> pihalf_limits
             (-fp_const_pihalf<Value_t>(),
@@ -842,6 +856,80 @@ namespace FPoptimizer_CodeTree
                 break;
             case cFCall:
                 break; // Cannot deduce
+        }
+        return range<Value_t>(); /* Cannot deduce */
+    }
+
+    /* For complex types, make a reduced function */
+    template<typename Value_t>
+    range<Value_t> BoundaryMaker<Value_t, true>::Estimate(const CodeTree<Value_t>& tree) const
+    {
+        using namespace std;
+        switch( tree.GetOpcode() )
+        {
+            case cImmed:
+                return range<Value_t>(tree.GetImmed(), tree.GetImmed()); // a definite value.
+            case cAnd:
+            case cAbsAnd:
+            case cOr:
+            case cAbsOr:
+            case cNot:
+            case cAbsNot:
+            case cNotNot:
+            case cAbsNotNot:
+            case cEqual:
+            case cNEqual:
+            case cLess:
+            case cLessOrEq:
+            case cGreater:
+            case cGreaterOrEq:
+            {
+                /* These operations always produce truth values (0 or 1) */
+                /* Narrowing them down is a matter of performing Constant optimization */
+                return range<Value_t>( Value_t(0), Value_t(1) );
+            }
+            case cCeil:
+            {
+                range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
+                m.max.set(fp_ceil); // ceil() may increase the value, may not decrease
+                return m;
+            }
+            case cFloor:
+            {
+                range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
+                m.min.set(fp_floor); // floor() may decrease the value, may not increase
+                return m;
+            }
+            case cTrunc:
+            {
+                range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
+                m.min.set(fp_floor); // trunc() may either increase or decrease the value
+                m.max.set(fp_ceil); // for safety, we assume both
+                return m;
+            }
+            case cInt:
+            {
+                range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
+                m.min.set(fp_floor); // int() may either increase or decrease the value
+                m.max.set(fp_ceil); // for safety, we assume both
+                return m;
+            }
+
+            /* The following opcodes are processed by GenerateFrom()
+             * within fpoptimizer_bytecode_to_codetree.cc and thus
+             * they will never occur in the calling context for the
+             * most of the parsing context. They may however occur
+             * at the late phase, so we deal with them.
+             */
+            case cNeg:
+            {
+                range<Value_t> m = CalculateResultBoundaries( tree.GetParam(0) );
+                m.set_neg();
+                return m;
+            }
+
+            default:
+                break; // Unsupported
         }
         return range<Value_t>(); /* Cannot deduce */
     }

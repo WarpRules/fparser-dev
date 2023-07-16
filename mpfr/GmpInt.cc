@@ -726,3 +726,6 @@ GmpInt operator%(long lhs, const GmpInt& rhs)
 {
     return GmpInt(lhs) % rhs;
 }
+
+// Explicit instantiation
+template void GmpInt::template get_raw_mpfr_data<mpz_t>(mpz_t&);
