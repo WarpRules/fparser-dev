@@ -138,29 +138,29 @@
 # This way, the only comparison opcodes appearing in cIf
 # are cEqual,cNEqual,cLess.
 # cNEqual could be changed to cEqual, but we see no need.
-cIf [(cLessOrEq[x y]) z a] : (cLess[y x]) a z
+cIf [(cLessOrEq[x y]) z a]    : (cLess[y x]) a z
 cIf [(cGreaterOrEq[x y]) z a] : (cGreater[y x]) a z
 #cIf [(cNEqual[x y]) z a]   : (cEqual[y x]) a z
 
+# Detect min()/max() patterns
 cIf [(cLess[x y]) x y] -> cMin x y             # TEST 20/cmp*_minmax
 cIf [(cLess[x y]) y x] -> cMax x y             # TEST 20/cmp*_minmax
-#cIf [(cLessOrEq[x y]) x y] -> cMin x y         # TEST 20/cmp*_minmax
-#cIf [(cLessOrEq[x y]) y x] -> cMax x y         # TEST 20/cmp*_minmax
 cIf [(cGreater[x y]) y x] -> cMin x y          # TEST 20/cmp*_minmax
 cIf [(cGreater[x y]) x y] -> cMax x y          # TEST 20/cmp*_minmax
-#cIf [(cGreaterOrEq[x y]) y x] -> cMin x y      # TEST 20/cmp*_minmax
-#cIf [(cGreaterOrEq[x y]) x y] -> cMax x y      # TEST 20/cmp*_minmax
 
-#  abs(x) = (x<0 ? -x : x)
-#  abs(x) = x * (x<0 ? -1 : 1)
-#           x * (x<0 ? -5 : 5) = abs(x)*5
-#           x * ((x<0 ? -5 : 5) + y) = abs(x)*5 + x*y
 
 #x<0 ? -x : x   POS
 #x>0 ?  x : -x  POS
 #x<0 ?  x : -x  NEG
 #x>0 ? -x : x   NEG
 
+# Detect abs() patterns:
+#  abs(x) = (x<0 ? -x : x)    -- done where?
+#  abs(x) = x * (x<0 ? -1 : 1)
+#           x * (x<0 ? -5 : 5) = abs(x)*5
+#           x * ((x<0 ? -5 : 5) + y) = abs(x)*5 + x*y
+
+# (x<0 ? y : -y) * x  --> y*abs(x)
 @R cMul (cIf [(cLess[x 0])    % -%]) x : (cAbs[x]) -%      # TEST 20/ifabs
 @R cMul (cIf [(cGreater[x 0]) % -%]) x : (cAbs[x])  %      # TEST 20/ifabs
 
@@ -171,9 +171,7 @@ cMul % (cIf [x & z@C]) : (cIf [x *(% &) *(% z@C)])       # TEST 20/if_join_mul2,
 cAdd % (cIf [x & z@C]) : (cIf [x +(% &) +(% z@C)])       # TEST 20/if_join_add2
 
 @R cIf [(cGreater[x 0])     (cFloor[x]) (cCeil[x])] -> cTrunc x  # TEST 20/trunc_from_if
-#@R cIf [(cGreaterOrEq[x 0]) (cFloor[x]) (cCeil[x])] -> cTrunc x # TEST 20/trunc_from_if
 @R cIf [(cLess[x 0])     (cCeil[x]) (cFloor[x])] -> cTrunc x     # TEST 20/trunc_from_if
-#@R cIf [(cLessOrEq[x 0]) (cCeil[x]) (cFloor[x])] -> cTrunc x    # TEST 20/trunc_from_if
 
 cAdd (cIf[x y z]) (cIf[x a b]) : (cIf [x (cAdd y a) (cAdd z b)]) # TEST 20/if_join_add
 cMul (cIf[x y z]) (cIf[x a b]) : (cIf [x (cMul y a) (cMul z b)]) # TEST 20/if_join_mul
