@@ -291,8 +291,8 @@ namespace FPoptimizer_ByteCode
         {
             AddFunctionOpcode
                 (opcode,
-                 Specializer< bool(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result),
-                              bool(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result)
+                 Specializer< bool(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value),
+                              bool(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value)
                            > ()
                          );
         }

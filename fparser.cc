@@ -422,13 +422,13 @@ namespace
         if( (value & 0x80000000U) != 0) // Function?
         {
             // Verify that the function actually exists for this datatype
-            if(IsIntType<Value_t>::result
+            if(IsIntType<Value_t>::value
             && !Functions[(value >> 16) & 0x7FFF].okForInt())
             {
                 // If it does not exist, return it as an identifier instead
                 return value & 0xFFFFu;
             }
-            if(!IsComplexType<Value_t>::result
+            if(!IsComplexType<Value_t>::value
             && Functions[(value >> 16) & 0x7FFF].complexOnly())
             {
                 // If it does not exist, return it as an identifier instead
@@ -2177,7 +2177,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
         if(pending_immed != Value_t(1)) \
         { \
             unsigned op = cMul; \
-            if(!IsIntType<Value_t>::result && mData->mByteCode.back() == cInv) \
+            if(!IsIntType<Value_t>::value && mData->mByteCode.back() == cInv) \
             { \
                 /* (...) cInv 5 cMul -> (...) 5 cRDiv */ \
                 /*           ^               ^      | */ \
@@ -2206,7 +2206,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
         }
         if(c != '*' && c != '/') break;
 
-        bool safe_cumulation = (c == '*' || !IsIntType<Value_t>::result);
+        bool safe_cumulation = (c == '*' || !IsIntType<Value_t>::value);
         if(!safe_cumulation)
         {
             FP_FlushImmed(true);
@@ -2246,7 +2246,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
         // cDiv is not tested here because the bytecode
         // optimizer will convert this kind of cDivs into cMuls.
         bool lhs_inverted = false;
-        if(!IsIntType<Value_t>::result && c == '*'
+        if(!IsIntType<Value_t>::value && c == '*'
         && mData->mByteCode.back() == cInv)
         {
             // (:::) cInv (...) cMul -> (:::) (...) cRDiv
@@ -2627,19 +2627,19 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cAbs: Stack[SP] = fp_abs(Stack[SP]); break;
 
           case  cAcos:
-              if(IsComplexType<Value_t>::result == false
+              if(IsComplexType<Value_t>::value == false
               && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
               { mData->mEvalErrorType=4; return Value_t(0); }
               Stack[SP] = fp_acos(Stack[SP]); break;
 
           case cAcosh:
-              if(IsComplexType<Value_t>::result == false
+              if(IsComplexType<Value_t>::value == false
               && Stack[SP] < Value_t(1))
               { mData->mEvalErrorType=4; return Value_t(0); }
               Stack[SP] = fp_acosh(Stack[SP]); break;
 
           case  cAsin:
-              if(IsComplexType<Value_t>::result == false
+              if(IsComplexType<Value_t>::value == false
               && (Stack[SP] < Value_t(-1) || Stack[SP] > Value_t(1)))
               { mData->mEvalErrorType=4; return Value_t(0); }
               Stack[SP] = fp_asin(Stack[SP]); break;
@@ -2652,7 +2652,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                        --SP; break;
 
           case cAtanh:
-              if(IsComplexType<Value_t>::result
+              if(IsComplexType<Value_t>::value
               ?  (Stack[SP] == Value_t(-1) || Stack[SP] == Value_t(1))
               :  (Stack[SP] <= Value_t(-1) || Stack[SP] >= Value_t(1)))
               { mData->mEvalErrorType=4; return Value_t(0); }
@@ -2707,14 +2707,14 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cInt: Stack[SP] = fp_int(Stack[SP]); break;
 
           case   cLog:
-              if(IsComplexType<Value_t>::result
+              if(IsComplexType<Value_t>::value
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
               { mData->mEvalErrorType=3; return Value_t(0); }
               Stack[SP] = fp_log(Stack[SP]); break;
 
           case cLog10:
-              if(IsComplexType<Value_t>::result
+              if(IsComplexType<Value_t>::value
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
               { mData->mEvalErrorType=3; return Value_t(0); }
@@ -2722,7 +2722,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               break;
 
           case  cLog2:
-              if(IsComplexType<Value_t>::result
+              if(IsComplexType<Value_t>::value
                ?   Stack[SP] == Value_t(0)
                :   !(Stack[SP] > Value_t(0)))
               { mData->mEvalErrorType=3; return Value_t(0); }
@@ -2738,7 +2738,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cPow:
               // x:Negative ^ y:NonInteger is failure,
               // except when the reciprocal of y forms an integer
-              /*if(IsComplexType<Value_t>::result == false
+              /*if(IsComplexType<Value_t>::value == false
               && Stack[SP-1] < Value_t(0) &&
                  !isInteger(Stack[SP]) &&
                  !isInteger(1.0 / Stack[SP]))
@@ -2765,7 +2765,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case  cSinh: Stack[SP] = fp_sinh(Stack[SP]); break;
 
           case  cSqrt:
-              if(IsComplexType<Value_t>::result == false &&
+              if(IsComplexType<Value_t>::value == false &&
                  Stack[SP] < Value_t(0))
               { mData->mEvalErrorType=2; return Value_t(0); }
               Stack[SP] = fp_sqrt(Stack[SP]); break;
@@ -2896,7 +2896,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               }
 
           case  cLog2by:
-              if(IsComplexType<Value_t>::result
+              if(IsComplexType<Value_t>::value
                ?   Stack[SP-1] == Value_t(0)
                :   !(Stack[SP-1] > Value_t(0)))
               { mData->mEvalErrorType=3; return Value_t(0); }

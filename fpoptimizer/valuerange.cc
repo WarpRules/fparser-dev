@@ -43,7 +43,7 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool IsLogicalTrueValue(const range<Value_t>& p, bool abs)
     {
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
         {
             if(p.min.known && p.min.val >= Value_t(1)) return true;
             if(!abs && p.max.known && p.max.val <= Value_t(-1)) return true;
@@ -59,7 +59,7 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool IsLogicalFalseValue(const range<Value_t>& p, bool abs)
     {
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
         {
             if(abs)
                 return p.max.known && p.max.val < Value_t(1);

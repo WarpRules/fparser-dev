@@ -435,7 +435,7 @@ namespace
 
     template<typename Value_t
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
-     , bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result
+     , bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
 #endif
             >
     struct findValidVarValuesAux

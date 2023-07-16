@@ -19,6 +19,7 @@
 #include "fptypes.hh"
 
 #include <cmath>
+#include <type_traits>
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
 #include "mpfr/MpfrFloat.hh"
@@ -36,34 +37,19 @@
 namespace FUNCTIONPARSERTYPES
 {
     template<typename>
-    struct IsIntType
-    {
-        enum { result = false };
-    };
+    struct IsIntType: public std::false_type { };
     template<>
-    struct IsIntType<long>
-    {
-        enum { result = true };
-    };
+    struct IsIntType<long>: public std::true_type { };
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
-    struct IsIntType<GmpInt>
-    {
-        enum { result = true };
-    };
+    struct IsIntType<GmpInt>: public std::true_type { };
 #endif
 
     template<typename>
-    struct IsComplexType
-    {
-        enum { result = false };
-    };
+    struct IsComplexType: public std::false_type { };
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    struct IsComplexType<std::complex<T> >
-    {
-        enum { result = true };
-    };
+    struct IsComplexType<std::complex<T> >: public std::true_type { };
 #endif
 
 
@@ -525,8 +511,7 @@ namespace FUNCTIONPARSERTYPES
     */
 
     template<typename T>
-    struct FP_ProbablyHasFastLibcComplex
-    { enum { result = false }; };
+    struct FP_ProbablyHasFastLibcComplex: public std::false_type {};
     /* The generic sqrt() etc. implementations in libstdc++
      * are very plain and non-optimized; however, it contains
      * callbacks to libc complex math functions where possible,
@@ -535,12 +520,9 @@ namespace FUNCTIONPARSERTYPES
      * and otherwise we use our own optimized implementations.
      */
 #ifdef __GNUC__
-    template<> struct FP_ProbablyHasFastLibcComplex<float>
-    { enum { result = true }; };
-    template<> struct FP_ProbablyHasFastLibcComplex<double>
-    { enum { result = true }; };
-    template<> struct FP_ProbablyHasFastLibcComplex<long double>
-    { enum { result = true }; };
+    template<> struct FP_ProbablyHasFastLibcComplex<float>: public std::true_type {};
+    template<> struct FP_ProbablyHasFastLibcComplex<double>: public std::true_type {};
+    template<> struct FP_ProbablyHasFastLibcComplex<long double>: public std::true_type {};
 #endif
 
     template<typename T>
@@ -616,14 +598,14 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_exp(const std::complex<T>& x)
     {
-        if(FP_ProbablyHasFastLibcComplex<T>::result)
+        if(FP_ProbablyHasFastLibcComplex<T>::value)
             return std::exp(x);
         return fp_polar<T,true>(fp_exp(x.real()), x.imag());
     }
     template<typename T>
     inline std::complex<T> fp_log(const std::complex<T>& x)
     {
-        if(FP_ProbablyHasFastLibcComplex<T>::result)
+        if(FP_ProbablyHasFastLibcComplex<T>::value)
             return std::log(x);
         // log(abs(x))        + i*arg(x)
         // log(Xr^2+Xi^2)*0.5 + i*arg(x)
@@ -637,7 +619,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_sqrt(const std::complex<T>& x)
     {
-        if(FP_ProbablyHasFastLibcComplex<T>::result)
+        if(FP_ProbablyHasFastLibcComplex<T>::value)
             return std::sqrt(x);
         return fp_polar<T,true> (fp_sqrt(fp_abs(x).real()),
                                  T(0.5)*fp_arg(x).real());
@@ -956,25 +938,25 @@ namespace FUNCTIONPARSERTYPES
 // -------------------------------------------------------------------------
     template<typename Value_t>
     inline bool fp_equal(const Value_t& x, const Value_t& y)
-    { return IsIntType<Value_t>::result
+    { return IsIntType<Value_t>::value
             ? (x == y)
             : (fp_abs(x - y) <= Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_nequal(const Value_t& x, const Value_t& y)
-    { return IsIntType<Value_t>::result
+    { return IsIntType<Value_t>::value
             ? (x != y)
             : (fp_abs(x - y) > Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_less(const Value_t& x, const Value_t& y)
-    { return IsIntType<Value_t>::result
+    { return IsIntType<Value_t>::value
             ? (x < y)
             : (x < y - Epsilon<Value_t>::value); }
 
     template<typename Value_t>
     inline bool fp_lessOrEq(const Value_t& x, const Value_t& y)
-    { return IsIntType<Value_t>::result
+    { return IsIntType<Value_t>::value
             ? (x <= y)
             : (x <= y + Epsilon<Value_t>::value); }
 
@@ -990,7 +972,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline bool fp_truth(const Value_t& d)
     {
-        return IsIntType<Value_t>::result
+        return IsIntType<Value_t>::value
                 ? d != Value_t()
                 : fp_abs(d) >= Value_t(0.5);
     }
@@ -998,7 +980,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline bool fp_absTruth(const Value_t& abs_d)
     {
-        return IsIntType<Value_t>::result
+        return IsIntType<Value_t>::value
                 ? abs_d > Value_t()
                 : abs_d >= Value_t(0.5);
     }

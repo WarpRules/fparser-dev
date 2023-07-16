@@ -1876,7 +1876,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 error << "EvalError " << fp.EvalError() << " ("
                       << getEvalErrorName(fp.EvalError()) << ")";
             }
-            else if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+            else if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
             {
                 if(v1 != v2)
                 {
@@ -2526,7 +2526,7 @@ namespace OptimizerTests
                                         const std::string& functionString,
                                         bool optimized)
     {
-        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::value;
         const unsigned varValuesToTest = isIntegral ? 3 : 4;
 
         static const Value_t values[] =
@@ -2557,7 +2557,7 @@ namespace OptimizerTests
             if(FUNCTIONPARSERTYPES::fp_nequal(parserValue, correctValue))
             {
                 const bool isIntegral =
-                    FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+                    FUNCTIONPARSERTYPES::IsIntType<Value_t>::value;
                 if(verbosityLevel >= 2)
                 {
                     using namespace FUNCTIONPARSERTYPES;
@@ -2611,7 +2611,7 @@ namespace OptimizerTests
     template<typename Value_t>
     bool runBooleanComparisonTestsForType()
     {
-        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::result;
+        const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::value;
         const unsigned maxOperandIndex = isIntegral ? 20 : 32;
 
         const char varNames[] = { 'x', 'y', 'z' };

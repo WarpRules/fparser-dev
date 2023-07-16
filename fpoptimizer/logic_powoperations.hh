@@ -19,7 +19,7 @@ namespace
     /**************************************/
 
     template<typename Value_t>
-    int maxFPExponent()
+    constexpr int maxFPExponent()
     {
         return std::numeric_limits<Value_t>::max_exponent;
     }

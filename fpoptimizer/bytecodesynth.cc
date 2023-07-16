@@ -623,8 +623,8 @@ namespace FPoptimizer_ByteCode
     template struct SequenceOpcodes<type>; \
     template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned); \
     template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned, \
-                 Specializer< bool(FUNCTIONPARSERTYPES::IsIntType<type>::result), \
-                              bool(FUNCTIONPARSERTYPES::IsComplexType<type>::result) \
+                 Specializer< bool(FUNCTIONPARSERTYPES::IsIntType<type>::value), \
+                              bool(FUNCTIONPARSERTYPES::IsComplexType<type>::value) \
                            > ); \
     template void AssembleSequence( \
         long count, \

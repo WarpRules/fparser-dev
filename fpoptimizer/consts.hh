@@ -18,26 +18,26 @@
 namespace FUNCTIONPARSERTYPES
 {
     template<typename Value_t>
-    inline Value_t fp_const_pihalf() // CONSTANT_PIHALF
+    inline constexpr Value_t fp_const_pihalf() // CONSTANT_PIHALF
     {
         return fp_const_pi<Value_t>() * Value_t(0.5);
     }
     template<typename Value_t>
-    inline Value_t fp_const_twopi() // CONSTANT_TWOPI
+    inline constexpr Value_t fp_const_twopi() // CONSTANT_TWOPI
     {
         Value_t result( fp_const_pi<Value_t>() );
         result += result;
         return result;
     }
     template<typename Value_t>
-    inline Value_t fp_const_twoe() // CONSTANT_2E
+    inline constexpr Value_t fp_const_twoe() // CONSTANT_2E
     {
         Value_t result( fp_const_e<Value_t>() );
         result += result;
         return result;
     }
     template<typename Value_t>
-    inline Value_t fp_const_twoeinv() // CONSTANT_2EI
+    inline constexpr Value_t fp_const_twoeinv() // CONSTANT_2EI
     {
         Value_t result( fp_const_einv<Value_t>() );
         result += result;
@@ -45,7 +45,7 @@ namespace FUNCTIONPARSERTYPES
     }
 
     template<typename Value_t>
-    inline Value_t fp_const_negativezero()
+    inline constexpr Value_t fp_const_negativezero()
     {
         return -Epsilon<Value_t>::value;
     }

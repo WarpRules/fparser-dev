@@ -10,7 +10,7 @@ using namespace FPoptimizer_CodeTree;
 
 namespace FPoptimizer_CodeTree
 {
-    template<typename Value_t>
+    template<typename Value_t, bool Complex>
     range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree)
 #ifdef DEBUG_SUBSTITUTIONS_extra_verbose
     {

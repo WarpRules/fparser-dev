@@ -4,7 +4,6 @@
 #include "constantfolding.hh"
 #include "codetree.hh"
 #include "extrasrc/fptypes.hh"
-#include "../lib/crc32.hh"
 
 #ifdef FP_SUPPORT_OPTIMIZER
 
@@ -68,7 +67,7 @@ namespace FPoptimizer_CodeTree
             /* TODO: For non-POD types, convert the value
              * into a base-62 string (or something) and hash that.
              */
-            NewHash.hash1 = 0; // Try to ensure immeds gets always sorted first
+            NewHash.first = 0; // Try to ensure immeds gets always sorted first
           #if 0
             long double value = Value;
             fphash_value_t key = crc32::calc((const unsigned char*)&value, sizeof(value));
@@ -108,10 +107,10 @@ namespace FPoptimizer_CodeTree
              *       that is directly proportional
              *       to the floating point value.
              */
-            NewHash.hash1 |= key;
+            NewHash.first |= key;
             //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
             fphash_value_t crc = (key >> 10) | (key << (64-10));
-            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+            NewHash.second += ((~fphash_value_t(crc)) * 3) ^ 1234567;
         }
     };
 
@@ -126,8 +125,8 @@ namespace FPoptimizer_CodeTree
             ImmedHashGenerator<T>::MakeHash(NewHash, Value.real());
             FUNCTIONPARSERTYPES::fphash_t temp;
             ImmedHashGenerator<T>::MakeHash(temp, Value.imag());
-            NewHash.hash1 ^= temp.hash2;
-            NewHash.hash2 ^= temp.hash1;
+            NewHash.first ^= temp.second;
+            NewHash.second ^= temp.first;
         }
     };
 #endif
@@ -145,10 +144,10 @@ namespace FPoptimizer_CodeTree
              *       that is directly proportional
              *       to the floating point value.
              */
-            NewHash.hash1 |= key;
+            NewHash.first |= key;
             //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
             fphash_value_t crc = (key >> 10) | (key << (64-10));
-            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+            NewHash.second += ((~fphash_value_t(crc)) * 3) ^ 1234567;
         }
     };
 #endif
@@ -166,10 +165,10 @@ namespace FPoptimizer_CodeTree
              *       that is directly proportional
              *       to the floating point value.
              */
-            NewHash.hash1 |= key;
+            NewHash.first |= key;
             //crc32_t crc = crc32::calc((const unsigned char*)&Value, sizeof(Value));
             fphash_value_t crc = (key >> 10) | (key << (64-10));
-            NewHash.hash2 += ((~fphash_value_t(crc)) * 3) ^ 1234567;
+            NewHash.second += ((~fphash_value_t(crc)) * 3) ^ 1234567;
         }
     };
 #endif
@@ -178,9 +177,9 @@ namespace FPoptimizer_CodeTree
     void CodeTreeData<Value_t>::Recalculate_Hash_NoRecursion()
     {
         /* Hash structure:
-         *     hash1: sorting key (8 bytes, 64 bits)
+         *     first: sorting key (8 bytes, 64 bits)
          *              byte 1: opcode
-         *     hash2: unique value
+         *     second: unique value
          */
         fphash_t NewHash ( fphash_value_t(Opcode) << 56,
                            Opcode * FPHASH_CONST(0x1131462E270012B) );
@@ -194,30 +193,33 @@ namespace FPoptimizer_CodeTree
             }
             case VarBegin:            // Var_or_Funcno
             {
-                NewHash.hash1 |= fphash_value_t(Var_or_Funcno) << 48;
-                NewHash.hash2 += ((fphash_value_t(Var_or_Funcno)) * 11)
+                NewHash.first |= fphash_value_t(Var_or_Funcno) << 48;
+                NewHash.second += ((fphash_value_t(Var_or_Funcno)) * 11)
                                    ^ FPHASH_CONST(0x3A83A83A83A83A0);
                 break; // no params
             }
             case cFCall: case cPCall: // Var_or_Funcno
             {
-                NewHash.hash1 |= fphash_value_t(Var_or_Funcno) << 48;
-                NewHash.hash2 += ((~fphash_value_t(Var_or_Funcno)) * 7) ^ 3456789;
+                NewHash.first |= fphash_value_t(Var_or_Funcno) << 48;
+                NewHash.second += ((~fphash_value_t(Var_or_Funcno)) * 7) ^ 3456789;
                 /* passthru */
+                goto dfl; // suppress a warning
+                /* [[fallthrough]]; */ //c++17 only
             }
             default:
             {
+            dfl:;
                 size_t MaxChildDepth = 0;
                 for(size_t a=0; a<Params.size(); ++a)
                 {
                     if(Params[a].GetDepth() > MaxChildDepth)
                         MaxChildDepth = Params[a].GetDepth();
 
-                    NewHash.hash1 += ((Params[a].GetHash().hash1*(a+1)) >> 12);
-                    NewHash.hash2 += Params[a].GetHash().hash1;
-                    NewHash.hash2 += (3)*FPHASH_CONST(0x9ABCD801357);
-                    NewHash.hash2 *= FPHASH_CONST(0xECADB912345);
-                    NewHash.hash2 += (~Params[a].GetHash().hash2) ^ 4567890;
+                    NewHash.first += ((Params[a].GetHash().first*(a+1)) >> 12);
+                    NewHash.second += Params[a].GetHash().first;
+                    NewHash.second += (3)*FPHASH_CONST(0x9ABCD801357);
+                    NewHash.second *= FPHASH_CONST(0xECADB912345);
+                    NewHash.second += (~Params[a].GetHash().second) ^ 4567890;
                 }
                 Depth += MaxChildDepth;
             }

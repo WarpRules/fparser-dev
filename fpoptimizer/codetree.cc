@@ -62,14 +62,12 @@ namespace FPoptimizer_CodeTree
         data->Recalculate_Hash_NoRecursion();
     }
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
     template<typename Value_t>
     CodeTree<Value_t>::CodeTree(Value_t&& i, typename CodeTree<Value_t>::ImmedTag)
         : data(new CodeTreeData<Value_t>(std::move(i)))
     {
         data->Recalculate_Hash_NoRecursion();
     }
-#endif
 
     template<typename Value_t>
     CodeTree<Value_t>::CodeTree(unsigned v, typename CodeTree<Value_t>::VarTag)
@@ -278,31 +276,20 @@ namespace FPoptimizer_CodeTree
         RefParams.clear();
     }
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
     template<typename Value_t>
     void CodeTree<Value_t>::SetParams(std::vector<CodeTree<Value_t> >&& RefParams)
     {
         //std::cout << "SetParams&& called\n";
         SetParamsMove(RefParams);
     }
-#endif
 
     template<typename Value_t>
     void CodeTree<Value_t>::DelParam(size_t index)
     {
         std::vector<CodeTree<Value_t> >& Params = data->Params;
         //std::cout << "DelParam(" << index << ") called\n";
-    #if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
         /* rvalue reference semantics makes this optimal */
         Params.erase( Params.begin() + index );
-    #else
-        /* This labor evades the need for refcount +1/-1 shuffling */
-        Params[index].data = 0;
-        for(size_t p=index; p+1<Params.size(); ++p)
-            Params[p].data.UnsafeSetP( Params[p+1].data.get() );
-        Params[Params.size()-1].data.UnsafeSetP( 0 );
-        Params.resize(Params.size()-1);
-    #endif
     }
 
     template<typename Value_t>
@@ -397,7 +384,6 @@ namespace FPoptimizer_CodeTree
     {
     }
 
-#if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
     template<typename Value_t>
     CodeTreeData<Value_t>::CodeTreeData(CodeTreeData<Value_t>&& b)
         : RefCount(0),
@@ -419,7 +405,6 @@ namespace FPoptimizer_CodeTree
           Params(), Hash(), Depth(1), OptimizedUsing(0)
     {
     }
-#endif
 
     template<typename Value_t>
     CodeTreeData<Value_t>::CodeTreeData(FUNCTIONPARSERTYPES::OPCODE o)

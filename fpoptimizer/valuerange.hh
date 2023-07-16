@@ -11,27 +11,27 @@ namespace FPoptimizer_CodeTree
         template<unsigned Compare> struct Comp { };
         template<>struct Comp<FUNCTIONPARSERTYPES::cLess> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a<b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_less(a,b); }
         };
         template<>struct Comp<FUNCTIONPARSERTYPES::cLessOrEq> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a<=b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_lessOrEq(a,b); }
         };
         template<>struct Comp<FUNCTIONPARSERTYPES::cGreater> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a>b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_greater(a,b); }
         };
         template<>struct Comp<FUNCTIONPARSERTYPES::cGreaterOrEq> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a>=b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_greaterOrEq(a,b); }
         };
         template<>struct Comp<FUNCTIONPARSERTYPES::cEqual> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a==b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_equal(a,b); }
         };
         template<>struct Comp<FUNCTIONPARSERTYPES::cNEqual> {
             template<typename Value_t>
-            inline bool operator() (const Value_t& a, const Value_t& b) { return a!=b; }
+            inline bool operator() (const Value_t& a, const Value_t& b) { return FUNCTIONPARSERTYPES::fp_nequal(a,b); }
         };
     }
 

@@ -102,7 +102,7 @@ endif
 endif
 
 ifneq (,$(findstring -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS,$(FEATURE_FLAGS)))
-CXXFLAGS += -std=c++0x
+CXXFLAGS += -std=c++11
 endif
 
 #LD += -Xlinker --gc-sections

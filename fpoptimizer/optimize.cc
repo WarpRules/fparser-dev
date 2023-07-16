@@ -150,7 +150,7 @@ namespace
              */
             goto fail;
         }
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::result)
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
         {
             if(rule.situation_flags & NotForIntegers)
                 goto fail;
@@ -160,7 +160,7 @@ namespace
             if(rule.situation_flags & OnlyForIntegers)
                 goto fail;
         }
-        if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::result)
+        if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value)
         {
             if(rule.situation_flags & NotForComplex)
                 goto fail;

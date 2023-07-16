@@ -462,7 +462,7 @@ namespace FPoptimizer_CodeTree
 
             unsigned opcode = ByteCode[IP];
             if((opcode == cSqr || opcode == cDup
-             || (opcode == cInv && !IsIntType<Value_t>::result)
+             || (opcode == cInv && !IsIntType<Value_t>::value)
              || opcode == cNeg
              || opcode == cSqrt || opcode == cRSqrt
              || opcode == cFetch))
@@ -712,7 +712,7 @@ namespace FPoptimizer_CodeTree
                         // Passthru to cDiv
                         [[fallthrough]];
                     case cDiv:
-                        if(keep_powi || IsIntType<Value_t>::result)
+                        if(keep_powi || IsIntType<Value_t>::value)
                         {
                             sim.Eat(2, cDiv);
                             break;

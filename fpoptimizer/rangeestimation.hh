@@ -12,7 +12,7 @@ namespace FPoptimizer_CodeTree
      * of the tree's result. If an estimate cannot be made,
      * -inf..+inf is assumed (min.known=max.known=false).
      */
-    template<typename Value_t>
+    template<typename Value_t, bool Complex = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value>
     range<Value_t> CalculateResultBoundaries(const CodeTree<Value_t>& tree);
 
     template<typename Value_t>
@@ -35,8 +35,11 @@ namespace FPoptimizer_CodeTree
     inline TriTruthValue GetPositivityInfo(const CodeTree<Value_t>& tree)
     {
         range<Value_t> p = CalculateResultBoundaries(tree);
-        if(p.min.known && p.min.val >= Value_t()) return IsAlways;
-        if(p.max.known && p.max.val <  Value_t()) return IsNever;
+        if(!FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value)
+        {
+            if(p.min.known && FUNCTIONPARSERTYPES::fp_greater(p.min.val, Value_t())) return IsAlways;
+            if(p.max.known && FUNCTIONPARSERTYPES::fp_less(   p.max.val, Value_t())) return IsNever;
+        }
         return Unknown;
     }
 

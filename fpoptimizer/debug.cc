@@ -51,8 +51,8 @@ namespace FPoptimizer_CodeTree
                 j != flist.end();
                 ++j)
             {
-                o << '[' << std::hex << i->first.hash1
-                              << ',' << i->first.hash2
+                o << '[' << std::hex << i->first.first
+                              << ',' << i->first.second
                               << ']' << std::dec;
                 o << ": " << *j << "\n";
             }

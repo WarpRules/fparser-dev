@@ -9,10 +9,9 @@ static const char* const kVersionNumber = "1.0.0.0";
 #include <sstream>
 #include <vector>
 #include <assert.h>
+#include <functional>
 #include <map>
 #include <set>
-
-#include "../lib/crc32.hh"
 
 //#define USE_CONTINUATIONS
 
@@ -253,7 +252,7 @@ namespace
         }
         std::string GenLabel(const std::string& code)
         {
-            return GenLabel(crc32::calc((const unsigned char*)&code[0], code.size()), 20);
+            return GenLabel(std::hash<std::string>()(code), 20);
         }
         std::string ChangeLabel(const std::string& orig)
         {
