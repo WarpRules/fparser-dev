@@ -903,7 +903,7 @@ MpfrFloat MpfrFloat::cbrt(const MpfrFloat& value)
 MpfrFloat MpfrFloat::root(const MpfrFloat& value, unsigned long root)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_root(retval.mData->mFloat, value.mData->mFloat, root, GMP_RNDN);
+    mpfr_rootn_ui(retval.mData->mFloat, value.mData->mFloat, root, GMP_RNDN);
     return retval;
 }
 
