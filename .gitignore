@@ -1,0 +1,11 @@
+*.o
+.dep
+functioninfo
+speedtest
+testbed
+testbed_tests.inc
+tests/make_tests
+util/bytecoderules_parser
+util/tree_grammar_parser
+util/tree_grammar_parser.cc
+util/version_changer
