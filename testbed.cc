@@ -2207,8 +2207,6 @@ bool runRegressionTests(unsigned n_threads,
         if(i % n_threads != thread_index) continue;
 
         const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
-        if(!testData.testName) break;
-
         if(!IsSelectedTest(testData.testName)) continue;
 
         const Value_t paramMin = (fp.Parse(testData.paramMin, ""),fp.Eval(nullptr));
@@ -2658,8 +2656,8 @@ namespace OptimizerTests
         static const Value_t values[] =
             { -1, 0, 1, Value_t(0.5), Value_t(-0.5) };
 
-        unsigned valueIndices[varsAmount];
-        Value_t variableValues[varsAmount];
+        unsigned valueIndices[varsAmount] = {};
+        Value_t variableValues[varsAmount] = {};
         for(unsigned i = 0; i < operands; ++i) valueIndices[i] = 0;
 
         bool stop = false;
@@ -2976,33 +2974,36 @@ int main(int argc, char* argv[])
 
             std::vector<std::string> tests;
 #ifndef FP_DISABLE_DOUBLE_TYPE
-            for(unsigned a=0; RegressionTests<double>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<double>::Tests[a].testName);
+            for(auto& t: RegressionTests<double>::Tests) tests.push_back(t.testName);
 #endif
 #ifdef FP_SUPPORT_FLOAT_TYPE
-            for(unsigned a=0; RegressionTests<float>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<float>::Tests[a].testName);
+            for(auto& t: RegressionTests<float>::Tests) tests.push_back(t.testName);
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-            for(unsigned a=0; RegressionTests<long double>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<long double>::Tests[a].testName);
+            for(auto& t: RegressionTests<long double>::Tests) tests.push_back(t.testName);
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-            for(unsigned a=0; RegressionTests<long>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<long>::Tests[a].testName);
+            for(auto& t: RegressionTests<long>::Tests) tests.push_back(t.testName);
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-            for(unsigned a=0; RegressionTests<MpfrFloat>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<MpfrFloat>::Tests[a].testName);
+            for(auto& t: RegressionTests<MpfrFloat>::Tests) tests.push_back(t.testName);
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-            for(unsigned a=0; RegressionTests<GmpInt>::Tests[a].testName; ++a)
-                tests.push_back(RegressionTests<GmpInt>::Tests[a].testName);
+            for(auto& t: RegressionTests<GmpInt>::Tests) tests.push_back(t.testName);
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+            for(auto& t: RegressionTests<std::complex<float>>::Tests) tests.push_back(t.testName);
+#endif
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+            for(auto& t: RegressionTests<std::complex<double>>::Tests) tests.push_back(t.testName);
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+            for(auto& t: RegressionTests<std::complex<long double>>::Tests) tests.push_back(t.testName);
 #endif
             std::sort(tests.begin(), tests.end(), natcomp);
             tests.erase(std::unique(tests.begin(), tests.end()), tests.end());
 
-            if(std::strcmp(argv[i+1], "help") == 0)
+            if(!argv[i+1] || std::strcmp(argv[i+1], "help") == 0)
             {
                 printAvailableTests(tests);
                 return 0;
