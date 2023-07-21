@@ -396,6 +396,11 @@ IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cFloor-> A  # TEST 10/intfl
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cCeil -> A  # TEST 10/intceil
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cInt  -> A  # TEST 10/intint
 
+IF(FP_FLOAT_VERSION) A [IsVarOpcode(A)] B [IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cFloor  -> cFloor A B cAdd   # TEST 20/round_plusint*
+IF(FP_FLOAT_VERSION) A [IsVarOpcode(A)] B [IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cCeil   -> cCeil  A B cAdd   # TEST 20/round_plusint*
+#IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)] B [IsVarOpcode(B)] cAdd cFloor  -> A B cFloor cAdd # TEST 20/round_plusint*
+#IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)] B [IsVarOpcode(B)] cAdd cCeil   -> A B cCeil  cAdd # TEST 20/round_plusint*
+
 #IF(FP_FLOAT_VERSION) x cMul cFloor cNeg -> [-x] cMul cCeil
 #IF(FP_FLOAT_VERSION) x cMul cCeil  cNeg -> [-x] cMul cFloor
 IF(FP_FLOAT_VERSION) cNeg cFloor -> cCeil cNeg     # TEST 10/negfloor, 10/floorneg
@@ -418,8 +423,10 @@ IF(!FP_COMPLEX_VERSION && !FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x
 IF(!FP_COMPLEX_VERSION && !FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cGreaterOrEq -> A cNotNot # TEST 10/ge1_pos, 10/ge1_neg
 IF(!FP_COMPLEX_VERSION && !FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(1)] cLess     -> A cNot       # TEST 10/gt1_pos, 10/gt1_neg
 IF(!FP_COMPLEX_VERSION && !FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x [x==Value_t(0)] cLessOrEq -> A cNot       # TEST 10/ge0_pos, 10/ge0_neg
-IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cEqual  -> A      # TEST 10/eq1
-IF(!FP_FLOAT_VERSION) A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot # TEST 10/neq1
+                      A [IsLogicalOpcode(A)] x [x==Value_t(1)] cEqual  -> A      # TEST 10/eq1
+                      A [IsLogicalOpcode(A)] x [x==Value_t(1)] cNEqual -> A cNot # TEST 10/neq1
+                      A [IsLogicalOpcode(A)] x [x==Value_t(0)] cEqual  -> A cNot # TEST 10/eq0
+                      A [IsLogicalOpcode(A)] x [x==Value_t(0)] cNEqual -> A      # TEST 10/neq0
 IF(!FP_FLOAT_VERSION) x cAdd cNotNot -> [-x] cNEqual # TEST 10/xaddnotnot
 IF(!FP_FLOAT_VERSION) x cAdd cNot    -> [-x] cEqual  # TEST 10/xaddnot
 

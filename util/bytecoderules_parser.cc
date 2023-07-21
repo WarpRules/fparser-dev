@@ -235,8 +235,8 @@ namespace
             static const char table[] =
                 /*"0123456789"*/
                 /*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/
-                "abcdefghijklmnopq"
-                /*"rstuvwxyz_"*/;
+                "abcdefghijklmnopqr"
+                /*"stuvwxyz_"*/;
             char result[16] = {0};
             int o=15;
             while(true)
