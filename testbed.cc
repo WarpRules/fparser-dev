@@ -2325,7 +2325,7 @@ bool runRegressionTests(unsigned n_threads,
             out << (thisTestOk ? "." : "!") << std::flush;
     } // for(unsigned i = 0; i < maxtests; ++i)
 
-    if(verbosityLevel >= 2)
+    if(verbosityLevel >= 2 && n_threads == 1)
         out << "User-defined function \"sub\" was called "
             << (dynamic_cast<UserDefFuncWrapper<Value_t>*>
                 (fp.GetFunctionWrapper("sub"))->counter())
