@@ -87,6 +87,7 @@ namespace GrammarData
         MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
 
         const std::vector<ParamSpec*>& GetParams() const { return Params; }
+        std::vector<ParamSpec*>&& GetParams() { return std::move(Params); }
 
         void RecursivelySetDefaultParamMatchingType();
         bool EnsureNoRepeatedNamedHolders(std::set<unsigned>& used) const;
@@ -159,7 +160,7 @@ namespace GrammarData
         {
         }
 
-        ParamSpec(FUNCTIONPARSERTYPES::OPCODE o, const std::vector<ParamSpec*>& p)
+        ParamSpec(FUNCTIONPARSERTYPES::OPCODE o, std::vector<ParamSpec*>&& p)
             : DepMask(),
               Opcode(SubFunction),
               Func(new FunctionType(o, MatchedParams(PositionalParams))),
@@ -175,7 +176,7 @@ namespace GrammarData
             }
             else
             {
-                Func->Params.Params = p;
+                Func->Params.Params = std::move(p);
                 /*
                 if(o == cAdd && p[1]->Opcode == SubFunction
                              && p[1]->Func->Opcode == cNeg
@@ -324,11 +325,16 @@ namespace GrammarData
     public:
         Grammar(): rules() { }
 
+        void AddRule(Rule&& r) { rules.push_back(std::move(r)); }
         void AddRule(const Rule& r) { rules.push_back(r); }
         void BuildFinalDepMask()
         {
             for(size_t a=0; a<rules.size(); ++a)
                 rules[a].BuildFinalDepMask();
+        }
+        void clear()
+        {
+            rules.clear();
         }
     };
 
@@ -1258,13 +1264,13 @@ static GrammarDumper dumper;
     grammar:
       grammar substitution
       {
-        grammar.AddRule(*$2);
+        grammar.AddRule(std::move(*$2));
         delete $2;
       }
     | grammar rule_constraints substitution
       {
         $3->SetSituationFlags($2);
-        grammar.AddRule(*$3);
+        grammar.AddRule(std::move(*$3));
         delete $3;
       }
     | grammar NEWLINE
@@ -1428,7 +1434,7 @@ static GrammarDumper dumper;
     |  BUILTIN_FUNC_NAME '(' paramlist ')'  /* literal logarithm/sin/etc. of the provided immed-type params -- also sum/product/minimum/maximum */
        {
          /* Verify that $3 consists of constants */
-         $$ = new GrammarData::ParamSpec($1, $3->GetParams() );
+         $$ = new GrammarData::ParamSpec($1, std::move(std::move(*$3).GetParams()) );
          if(!$$->VerifyIsConstant())
          {
              char msg[] = "Not constant";
@@ -1456,7 +1462,7 @@ static GrammarDumper dumper;
          }
          std::vector<GrammarData::ParamSpec*> tmp;
          tmp.push_back($2);
-         $$ = new GrammarData::ParamSpec($1, tmp);
+         $$ = new GrammarData::ParamSpec($1, std::move(tmp));
        }
     ;
 
@@ -1846,12 +1852,12 @@ int main()
 
     for(;;)
     {
-        grammar = GrammarData::Grammar();
+        grammar.clear();
 
         yyparse();
 
         grammar.BuildFinalDepMask();
-        sections[sectionname] = grammar;
+        sections[sectionname] = std::move(grammar);
 
         int c = std::fgetc(stdin);
         if(c != '[')

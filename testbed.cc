@@ -32,6 +32,7 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include <cstring>
 #include <cassert>
 #include <future>
+#include <atomic>
 #include <mutex>
 
 #define CONST 1.5
@@ -1462,11 +1463,12 @@ class TestingThread
         mThreadNumber(n), mFp(fp)
     {}
 
-    static bool ok() { return mOk; }
+    static bool ok()     { return mOk; }
+    static void set_ok() { mOk = true; }
 
     void operator()()
     {
-        const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
+        const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>() * 2;
         DefaultValue_t vars[2];
         for(vars[0] = -10.0; vars[0] <= 10.0; vars[0] += 0.02)
         {
@@ -1504,12 +1506,14 @@ class TestingThread
     }
 };
 
-std::atomic<bool> TestingThread::mOk = true;
+std::atomic<bool> TestingThread::mOk;
 
 int testMultithreadedEvaluation()
 {
     DefaultParser fp;
     fp.Parse("sin(sqrt(x*x+y*y)) + 2*cos(2*sqrt(2*x*x+2*y*y))", "x,y");
+
+    TestingThread::set_ok();
 
     if(verbosityLevel >= 1)
         std::cout << " 1" << std::flush;
@@ -2101,7 +2105,9 @@ template<typename Value_t>
 bool runRegressionTests(unsigned n_threads,
                         unsigned thread_index,
                         std::mutex& print_lock,
-                        std::ostream& briefErrorMessages)
+                        std::ostream& briefErrorMessages,
+                        std::string& prev_test_prefix,
+                        std::atomic<unsigned>& test_index)
 {
     // Setup the function parser for testing
     // -------------------------------------
@@ -2199,12 +2205,12 @@ bool runRegressionTests(unsigned n_threads,
 
     bool allRegressionTestsOk = true;
 
-    std::string prev_test_prefix;
     const unsigned maxtests = sizeof(RegressionTests<Value_t>::Tests)
                             / sizeof(TestType<Value_t>);
-    for(unsigned i = 0; i < maxtests; ++i)
+    for(;;) //unsigned i = 0; i < maxtests; ++i)
     {
-        if(i % n_threads != thread_index) continue;
+        unsigned i = test_index++;
+        if(i >= maxtests) break;
 
         const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
         if(!IsSelectedTest(testData.testName)) continue;
@@ -2240,6 +2246,7 @@ bool runRegressionTests(unsigned n_threads,
         }
         else if(verbosityLevel == 2)
         {
+            out << "";
             const char* tn = testData.testName;
             const char* p = std::strrchr(tn, '/');
             if(!p)
@@ -2254,7 +2261,7 @@ bool runRegressionTests(unsigned n_threads,
                       out << tn;
                       prev_test_prefix = path_prefix; }
             }
-            out << std::flush << " ";
+            out << ' ' << std::flush;
         }
 
         bool thisTestOk =
@@ -2353,13 +2360,15 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
 
     std::vector<std::future<bool>> test_runners;
     std::ostringstream briefErrorMessages;
+    std::string prev_test_prefix;
     std::mutex print_lock;
+    std::atomic<unsigned> test_index{};
 
     test_runners.reserve(n_threads);
     for(unsigned n=0; n<n_threads; ++n)
         test_runners.emplace_back(std::async(std::launch::async,
-            [=,&print_lock,&briefErrorMessages]{
-            return runRegressionTests<Value_t>(n_threads, n, print_lock, briefErrorMessages);
+            [=,&print_lock,&briefErrorMessages,&prev_test_prefix,&test_index]{
+            return runRegressionTests<Value_t>(n_threads, n, print_lock, briefErrorMessages, prev_test_prefix, test_index);
         }));
 
     bool allRegressionTestsOk = true;

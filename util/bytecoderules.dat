@@ -204,7 +204,9 @@ cNeg cSqr -> cSqr                                          # TEST 10/negsqr
 cAbs cSqr -> cSqr                                          # TEST 10/abssqr
 
 IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt
+IF(FP_FLOAT_VERSION) cInv cSqrt -> cRSqrt
 IF(FP_FLOAT_VERSION) cRSqrt cInv -> cSqrt
+IF(FP_FLOAT_VERSION) cInv cRSqrt -> cSqrt
 IF(FP_FLOAT_VERSION) x [x==fp_const_rad_to_deg<Value_t>()] cMul -> cDeg #TEST 10/deg
 IF(FP_FLOAT_VERSION) x [x==fp_const_deg_to_rad<Value_t>()] cMul -> cRad #TEST 10/rad
 IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul # TEST 10/degxmul
@@ -523,13 +525,13 @@ IF(FP_FLOAT_VERSION) cSinhCosh cRDiv  -> cTanh cInv
 IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
 IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
 
-IF(FP_FLOAT_VERSION) cAtan cSec    -> cSqr [Value_t(1)] cAdd cSqrt   # TEST 10/as_*
-IF(FP_FLOAT_VERSION) cAtan cCos    -> cSqr [Value_t(1)] cAdd cRSqrt  # TEST 10/as_*
-IF(FP_FLOAT_VERSION) x cHypot      -> cSqr [x*x]        cAdd cSqrt   # TEST 10/as_*
-IF(FP_FLOAT_VERSION) x cHypot cInv -> cSqr [x*x]        cAdd cRSqrt  # TEST 10/as_*
+IF(FP_FLOAT_VERSION) cAtan cSec    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt   # TEST 10/as_*
+IF(FP_FLOAT_VERSION) cAtan cCos    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt  # TEST 10/as_*
+IF(FP_FLOAT_VERSION) x cHypot      -> cSqr [x*x]                        cAdd cSqrt   # TEST 10/as_*
+IF(FP_FLOAT_VERSION) x cHypot cInv -> cSqr [x*x]                        cAdd cRSqrt  # TEST 10/as_*
 
-#IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cSin -> A cSqr cInv [Value_t(1)] cAdd cRSqrt # TEST 10/as_*
-IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cCsc -> A cSqr cInv [Value_t(1)] cAdd cSqrt  # TEST 10/as_*
+#IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cSin -> A cSqr cInv [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt # TEST 10/as_*
+IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cCsc -> A cSqr cInv  [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt  # TEST 10/as_*
 # ^ cInv freaks out if A produces zero, but then, so does cCsc.
 
 A [IsComparisonOpcode(A)] cSqr -> A
