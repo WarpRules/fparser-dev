@@ -197,7 +197,6 @@ testbed_tests.inc: tests/make_tests
 	tests/make_tests tests/*/* -o $@
 
 FPOPTIMIZER_CC_FILES=\
-	    lib/crc32.hh \
 	    lib/autoptr.hh \
 	    lib/functional.hh \
 	    fpoptimizer/hash.hh \
