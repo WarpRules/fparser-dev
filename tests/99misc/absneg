@@ -1,0 +1,6 @@
+# make sure abs(-4 + sin(x)) does not get optimized to -4 + sin(x)
+T=d f ld mf
+V=x
+R=-10,10,.1
+F=abs(-4 + sin(x))
+C=fp_abs(-4 + fp_sin(x))

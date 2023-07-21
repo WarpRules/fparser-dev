@@ -1,0 +1,5 @@
+T=d ld f
+V=x,y
+R=-2,2,0.5
+F=cosh(x<y)
+C=fp_cosh(fp_less(x,y))

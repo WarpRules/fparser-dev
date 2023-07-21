@@ -993,8 +993,11 @@ namespace FPoptimizer_CodeTree
         switch(tree.GetOpcode())
         {
             case cImmed:
-                return fp_equal(tree.GetImmed(), Value_t(0))
-                    || fp_equal(tree.GetImmed(), Value_t(1));
+                /* This comparison must be done without fp_equal, i.e. without epsilon.
+                 * Otherwise e.g. 2e-26 gets interpreted as logical "false" value.
+                 */
+                return tree.GetImmed()==Value_t(0)
+                    || tree.GetImmed()==Value_t(1);
             case cAnd:
             case cOr:
             case cNot:

@@ -335,6 +335,13 @@ cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 @R @F cEqual       [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
 @R @F cNEqual      [&@P (cPow [%@P x])] : DIV(LOG(&) LOG(%)) x # TEST 20/cmp*_pow_imm_pospos_base
 
+   cPow [x@L y@I]            -> x
+@F cPow [x@L y@F]            -> cIf x (cPow[1 y]) 0
+   cPow [(cIf x@L % &) z@C]  -> cIf x (cPow[% z]) (cPow[& z])
+
+@F cPow [(cAdd {x@L %}) y@F] -> cIf x (cPow[+(% 1) y]) (cPow[% y])
+  #cPow [(cMul {x@L %}) y@F] -> cIf x (cPow[%      y]) 1
+
 # floor(x + integer_expression) = floor(x) + integer_expression; same for ceil
 @F cFloor [(cAdd x@I <1>)] -> cAdd x (cFloor (cAdd <1>))  # TEST 20/round_plusint*
 @F cCeil [(cAdd x@I <1>)]  -> cAdd x (cCeil (cAdd <1>))   # TEST 20/round_plusint*
@@ -661,17 +668,20 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 # sin(x) + cos(x)*a = sin(x + atan(a)) * sqrt(a^2+1)
 #                   = sin(x + atan(a)) / cos(atan(a))
 #                   = sin(x + atan(a)) * sec(atan(a))
+#                   = sin(x + atan(a)) * hypot(1,a)
 # Useful only if a is const
 @F cAdd (cSin[x])            (cMul {(cCos[x]) %})   : (cMul (cSin [(cAdd x ATAN(%))]) SEC(ATAN(%))) # 20/add_sin_cosc
 
 # sin(x)*b + cos(x)*a = b*(sin(x) + cos(x)*(a/b))
 #                     = b*sin(x + atan(a/b))*sqrt((a/b)^2+1)
 #                     = b*sin(x + atan2(a,b))*sec(atan2(a,b))
+#                     = sin(x + atan2(a,b))*hypot(a,b)*sign(b)
 @F cAdd (cMul {(cSin[x]) %}) (cMul {(cCos[x]) &})   : (cMul (cSin [(cAdd x ATAN2(& %))]) *(% SEC(ATAN2(& %)))) # 20/add_sinc_cosc{1,2,3,4}
 
 # sin(x)*b + cos(x) = b*(sin(x) + cos(x)*(1/b))
 #                   = b*sin(x + atan(1/b))*sqrt(b^-2+1)
 #                   = b*sin(x + atan(1/b))*sec(atan(1/b))
+#                   = sin(x + atan(1/b))*hypot(1,b)*sign(b)
 @F cAdd (cMul {(cSin[x]) %}) (cCos[x])              : (cMul (cSin [(cAdd x ATAN(/%))]) *(% SEC(ATAN(/%)))) # 20/add_sinc_cos
 
 ## sin(x)*a + cos(x)*a = a*sqrt(2)*sin(x + pi/4)

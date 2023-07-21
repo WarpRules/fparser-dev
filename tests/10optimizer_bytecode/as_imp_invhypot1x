@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-2,2,0.5
+F=(1/hypot(1,x))
+C=(1/fp_hypot(1,x))

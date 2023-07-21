@@ -548,12 +548,20 @@ namespace FPoptimizer_CodeTree
                  */
                 range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
                 if(p0.min.known && p0.min.val >= Value_t(0.0))
+                {
+                #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "Abs: always positive: minimum value is " << p0.min.val << '\n';
+                #endif
                     goto ReplaceTreeWithParam0;
+                }
                 if(p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>())
                 {
+                #ifdef DEBUG_SUBSTITUTIONS
+                    std::cout << "Abs: always negative: maximum value is " << p0.max.val << '\n';
+                #endif
                     /* abs(negative) = negative*-1 */
                     tree.SetOpcode(cMul);
-                    tree.AddParam( CodeTreeImmed(Value_t(1)) );
+                    tree.AddParam( CodeTreeImmed(Value_t(-1)) );
                     /* The caller of ConstantFolding() will do Sort() and Rehash() next.
                      * Thus, no need to do it here. */
                     /* We were changed into a cMul group. Do cMul folding. */
@@ -638,10 +646,68 @@ namespace FPoptimizer_CodeTree
                 break;
             }
 
+            /* Truthvalues:
+                sin(truthvalue)                     -> if(truthvalue, sin(1), sin(0))
+                sin(truthvalue * anything)          -> if(truthvalue, sin(anything), sin(0))
+                sin(truthvalue + const1)            -> if(truthvalue, sin(1+const1), sin(const1))
+                sin(if(truthvalue, const1, const2)) -> if(truthvalue, sin(const1), sin(const2))
+              */
             #define HANDLE_UNARY_CONST_FUNC(funcname) \
-                if(tree.GetParam(0).IsImmed()) \
-                    { tree.ReplaceWithImmed( funcname(tree.GetParam(0).GetImmed()) ); \
-                      goto do_return; }
+                switch(tree.GetParam(0).GetOpcode()) \
+                { \
+                    case cImmed: \
+                        tree.ReplaceWithImmed( funcname(tree.GetParam(0).GetImmed()) ); \
+                        goto do_return; \
+                    case cIf: \
+                        if(tree.GetParam(0).GetParam(1).IsImmed() \
+                        && tree.GetParam(0).GetParam(2).IsImmed()) \
+                          { CodeTree<Value_t> p1(funcname(tree.GetParam(0).GetParam(1).GetImmed()), typename CodeTree<Value_t>::ImmedTag{}); \
+                            CodeTree<Value_t> p2(funcname(tree.GetParam(0).GetParam(2).GetImmed()), typename CodeTree<Value_t>::ImmedTag{}); \
+                            tree.SetOpcode(cIf); \
+                            tree.SetParam(0, tree.GetParam(0).GetParam(0)); \
+                            tree.AddParamMove(p1); \
+                            tree.AddParamMove(p2); \
+                            goto do_return; } \
+                        break;\
+                    case cMul: \
+                        /* sin(mul(logical, xyz)) -> if(logical, sin(mul(xyz)), sin(0)) */ \
+                        for(std::size_t n=0; n<tree.GetParam(0).GetParamCount(); ++n) \
+                            if(IsLogicalValue(tree.GetParam(0).GetParam(n))) \
+                              { CodeTree<Value_t> mul; mul.Become(tree.GetParam(0)); \
+                                tree.SetParamMove(0, mul.GetParam(n)); \
+                                mul.DelParam(n); \
+                                mul.Rehash(); \
+                                CodeTree<Value_t> func(tree.GetOpcode(), typename CodeTree<Value_t>::OpcodeTag{}); \
+                                func.AddParamMove(mul); \
+                                func.Rehash(); \
+                                tree.SetOpcode(cIf); \
+                                tree.AddParamMove(func); \
+                                CodeTree<Value_t> p2(funcname(Value_t(0)), typename CodeTree<Value_t>::ImmedTag{}); \
+                                tree.AddParamMove(p2); \
+                                goto do_return; } \
+                        break; \
+                    case cAdd: \
+                        if(tree.GetParam(0).GetParamCount() == 2 \
+                        && tree.GetParam(0).GetParam(0).IsImmed() \
+                        && IsLogicalValue(tree.GetParam(0).GetParam(1))) \
+                          { CodeTree<Value_t> p1(funcname(Value_t(1) + tree.GetParam(0).GetParam(0).GetImmed()), typename CodeTree<Value_t>::ImmedTag{}); \
+                            CodeTree<Value_t> p2(funcname(tree.GetParam(0).GetParam(0).GetImmed()), typename CodeTree<Value_t>::ImmedTag{}); \
+                            tree.SetOpcode(cIf); \
+                            tree.SetParam(0, tree.GetParam(0).GetParam(1)); \
+                            tree.AddParamMove(p1); \
+                            tree.AddParamMove(p2); \
+                            goto do_return; } \
+                        break; \
+                    default: \
+                        if(IsLogicalValue(tree.GetParam(0))) \
+                          { CodeTree<Value_t> p1(funcname(Value_t(1)), typename CodeTree<Value_t>::ImmedTag{}); \
+                            CodeTree<Value_t> p2(funcname(Value_t(0)), typename CodeTree<Value_t>::ImmedTag{}); \
+                            tree.SetOpcode(cIf); \
+                            tree.AddParamMove(p1); \
+                            tree.AddParamMove(p2); \
+                            goto do_return; } \
+                        break; \
+                }
 
             case cLog:
                 HANDLE_UNARY_CONST_FUNC(fp_log);
@@ -662,8 +728,7 @@ namespace FPoptimizer_CodeTree
                     if(GetEvennessInfo(pow.GetParam(1)) == IsAlways) // log(x ^ even) = even*log(abs(x))
                     {
                         pow.CopyOnWrite();
-                        CodeTree<Value_t> abs;
-                        abs.SetOpcode(cAbs);
+                        CodeTree<Value_t> abs(cAbs, typename CodeTree<Value_t>::OpcodeTag{});
                         abs.AddParamMove(pow.GetParam(0));
                         abs.Rehash();
                         pow.SetOpcode(cLog);
@@ -683,8 +748,7 @@ namespace FPoptimizer_CodeTree
                     if(pow.GetOpcode() == cPow)
                     {
                         pow.CopyOnWrite();
-                        CodeTree<Value_t> abs;
-                        abs.SetOpcode(cAbs);
+                        CodeTree<Value_t> abs(cAbs, typename CodeTree<Value_t>::OpcodeTag{});
                         abs.AddParamMove(pow.GetParam(0));
                         abs.Rehash();
                         pow.SetOpcode(cLog);
@@ -794,13 +858,11 @@ namespace FPoptimizer_CodeTree
                 if((p1.min.known && p1.min.val > Value_t(0))            // p1 != 0.0
                 || (p1.max.known && (p1.max.val) < fp_const_negativezero<Value_t>())) // become atan(p0 / p1)
                 {
-                    CodeTree<Value_t> pow_tree;
-                    pow_tree.SetOpcode(cPow);
+                    CodeTree<Value_t> pow_tree(cPow, typename CodeTree<Value_t>::OpcodeTag{});
                     pow_tree.AddParamMove(tree.GetParam(1));
                     pow_tree.AddParam(CodeTreeImmed(Value_t(-1)));
                     pow_tree.Rehash();
-                    CodeTree<Value_t> div_tree;
-                    div_tree.SetOpcode(cMul);
+                    CodeTree<Value_t> div_tree(cMul, typename CodeTree<Value_t>::OpcodeTag{});
                     div_tree.AddParamMove(tree.GetParam(0));
                     div_tree.AddParamMove(pow_tree);
                     div_tree.Rehash();

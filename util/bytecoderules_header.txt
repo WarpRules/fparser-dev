@@ -19,9 +19,9 @@ is available in the development package.
         : findName(mData->mNamePtrs,op,NameData<Value_t>::VARIABLE))
 #define FP_TRACE_BYTECODE_ADD(opcode) \
     /*std::cout << "Adding opcode: " << FP_TRACE_OPCODENAME(opcode) \
-                << ", bytecode length " << data->ByteCode.size() \
+                << ", bytecode length " << mData->mByteCode.size() \
                 << ", pointer is " << (void*)ByteCodePtr \
-                << ", code is " << (data->ByteCode.empty() \
+                << ", code is " << (mData->mByteCode.empty() \
                                        ? (void*)0 \
-                                       : (void*)&data->ByteCode[0]) \
+                                       : (void*)&mData->mByteCode[0]) \
                 << std::endl*/

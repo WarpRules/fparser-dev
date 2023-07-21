@@ -1,5 +1,0 @@
-T=ld f mf cd cf cld
-V=x,y
-R=-1.4,1.4,0.25
-F=csc(atan(((x+0.1)+0.1)/y))
-C=1/fp_sin(fp_atan(((x+0.1)+0.1)/y))
