@@ -45,7 +45,8 @@ OPTIMIZATION += -fexpensive-optimizations -fvpt -fomit-frame-pointer -ffunction-
 #OPTIMIZATION=-g -O2 -fno-inline -fno-inline-functions -fno-default-inline
 #OPTIMIZATION=-g -pg -fprofile -fprofile-values -fprofile-generate -ftest-coverage
 #OPTIMIZATION=-g -pg
-#OPTIMIZATION=-g -Og
+#OPTIMIZATION=-g -Og -fsanitize=thread,address
+#LDFLAGS += -fsanitize=thread
 
 CXX=g++
 #CXX=clang++
@@ -90,14 +91,6 @@ else
 ifneq (,$(findstring -DFP_SUPPORT_GMP_INT_TYPE,$(FEATURE_FLAGS)))
 LDFLAGS += -lgmp
 ADDITIONAL_MODULES = mpfr/GmpInt.o
-endif
-endif
-
-ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL,$(FEATURE_FLAGS)))
-BOOST_THREAD_LIB = -lboost_thread-mt -lboost_system
-else
-ifneq (,$(findstring -DFP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA,$(FEATURE_FLAGS)))
-BOOST_THREAD_LIB = -lboost_thread-mt -lboost_system
 endif
 endif
 
@@ -151,12 +144,12 @@ RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
-	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 fpoptimizer.o: fpoptimizer.cc
 
 testbed_release: testbed.o fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
-	$(LD) -o $@ $^ $(LDFLAGS) $(BOOST_THREAD_LIB)
+	$(LD) -o $@ $^ $(LDFLAGS)
 
 speedtest: util/speedtest.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)

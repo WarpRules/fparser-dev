@@ -270,12 +270,13 @@ void ListTests(std::ostream& outStream)
         //listbuffer << "#define Value_t " << type << "\n";
         listbuffer <<
             "template<>\n"
-            "const TestType<Value_t>\n"
-            "    RegressionTests<Value_t>::Tests[]";
+            "struct RegressionTests<Value_t>\n"
+            "{\n"
+            "    static constexpr const TestType<Value_t> Tests[]";
         if(n_tests == 0)
         {
             listbuffer <<
-                " = { TestType<Value_t>() };\n";
+                " = { };\n";
         }
         else
         {
@@ -302,7 +303,8 @@ void ListTests(std::ostream& outStream)
                             std::strtod(endptr, &endptr);
                             if(*endptr == 'i' || *endptr == 'I') ++endptr;
                         }
-                        ranges << NumConst(type, std::string(rangesdata,endptr-rangesdata));
+                        while(*rangesdata == ' ') ++rangesdata; // skip spaces
+                        ranges << '"' << std::string(rangesdata,endptr-rangesdata) << '"';
                         rangesdata = endptr;
                     }
                     else
@@ -404,8 +406,10 @@ void ListTests(std::ostream& outStream)
                 if(!testdata.IfDef.empty())
                     listbuffer << "#endif /*" << testdata.IfDef << " */\n";
             }
-            listbuffer << "    TestType<Value_t>()\n};\n";
+            listbuffer << "};\n";
         }
+        listbuffer << "};\n";
+        listbuffer << "constexpr const TestType<Value_t> RegressionTests<Value_t>::Tests[];\n";
 
         //listbuffer << "#undef Value_t\n";
         define_sections[defines].test_list += listbuffer.str();
@@ -484,6 +488,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
             || (*funcstr == '-' && funcstr[-1] == '(')
               )
                 std::strtod(funcstr, &endptr);
+
             if(endptr && endptr != funcstr)
             {
                 if(limited_to_datatype == "MpfrFloat")

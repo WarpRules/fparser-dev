@@ -31,6 +31,8 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include <algorithm>
 #include <cstring>
 #include <cassert>
+#include <future>
+#include <mutex>
 
 #define CONST 1.5
 
@@ -1440,13 +1442,14 @@ int testUserDefinedFunctions()
 //=========================================================================
 #if defined(FP_USE_THREAD_SAFE_EVAL) || \
     defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
-#include <boost/thread.hpp>
+#include <thread>
+#include <atomic>
 
 class TestingThread
 {
     int mThreadNumber;
     DefaultParser* mFp;
-    volatile static bool mOk;
+    static std::atomic<bool> mOk;
 
     static DefaultValue_t function(const DefaultValue_t* vars)
     {
@@ -1501,7 +1504,7 @@ class TestingThread
     }
 };
 
-volatile bool TestingThread::mOk = true;
+std::atomic<bool> TestingThread::mOk = true;
 
 int testMultithreadedEvaluation()
 {
@@ -1510,14 +1513,14 @@ int testMultithreadedEvaluation()
 
     if(verbosityLevel >= 1)
         std::cout << " 1" << std::flush;
-    boost::thread t1(TestingThread(1, &fp)), t2(TestingThread(2, &fp));
+    std::thread t1(TestingThread(1, &fp)), t2(TestingThread(2, &fp));
     t1.join();
     t2.join();
     if(!TestingThread::ok()) return false;
 
     if(verbosityLevel >= 1)
         std::cout << " 2" << std::flush;
-    boost::thread
+    std::thread
         t3(TestingThread(3, &fp)), t4(TestingThread(4, &fp)),
         t5(TestingThread(5, &fp)), t6(TestingThread(6, &fp));
     t3.join();
@@ -1529,7 +1532,7 @@ int testMultithreadedEvaluation()
     if(verbosityLevel >= 1)
         std::cout << " 3" << std::flush;
     fp.Optimize();
-    boost::thread
+    std::thread
         t7(TestingThread(7, &fp)), t8(TestingThread(8, &fp)),
         t9(TestingThread(9, &fp));
     t7.join();
@@ -1556,7 +1559,9 @@ template<typename Value_t>
 struct TestType
 {
     unsigned paramAmount;
-    Value_t paramMin, paramMax, paramStep;
+    const char* paramMin;
+    const char* paramMax;
+    const char* paramStep;
     bool useDegrees;
 
     Value_t (*funcPtr)(const Value_t*);
@@ -1621,8 +1626,8 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
                            const TestType<Value_t>& testData,
                            std::ostream& briefErrorMessages)
 {
-    static std::string variablesString;
-    static std::vector<std::string> variables;
+    static thread_local std::string variablesString;
+    static thread_local std::vector<std::string> variables;
 
     if(verbosityLevel >= 3)
         std::cout << "(Variable deduction)" << std::flush;
@@ -1689,10 +1694,8 @@ namespace
     template<typename Value_t>
     struct RegressionTests
     {
-        static const TestType<Value_t> Tests[];
+        static constexpr const TestType<Value_t> Tests[] = { };
     };
-    template<typename Value_t>
-    const TestType<Value_t> RegressionTests<Value_t>::Tests[] = { TestType<Value_t>() };
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat makeMF(const char* str)
@@ -1826,18 +1829,20 @@ namespace
 #endif
 }
 
-template<typename Value_t>
+template<typename OutStream, typename Value_t>
 bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                        const TestType<Value_t>& testData,
+                       const Value_t& paramMin, const Value_t& paramMax, const Value_t& paramStep,
                        const std::string& valueType,
                        const Value_t Eps,
+                       OutStream&    out,
                        std::ostream& briefErrorMessages)
 {
     Value_t vars[10];
     Value_t fp_vars[10];
 
     for(unsigned i = 0; i < testData.paramAmount; ++i)
-        vars[i] = testData.paramMin;
+        vars[i] = paramMin;
 
     while(true)
     {
@@ -1847,9 +1852,9 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             using namespace FUNCTIONPARSERTYPES;
             /* ^ Import a possible <= operator from that
              *   namespace for this particular comparison only */
-            vars[paramInd] += testData.paramStep;
-            if(vars[paramInd] <= testData.paramMax) break;
-            vars[paramInd++] = testData.paramMin;
+            vars[paramInd] += paramStep;
+            if(vars[paramInd] <= paramMax) break;
+            vars[paramInd++] = paramMin;
         }
 
         if(paramInd == testData.paramAmount) break;
@@ -1859,10 +1864,10 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
 
         if(verbosityLevel >= 4)
         {
-            std::cout << "Trying (";
+            out << "Trying (";
             for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                std::cout << (ind>0 ? ", " : "") << vars[ind];
-            std::cout << ")\n" << std::flush;
+                out << (ind>0 ? ", " : "") << vars[ind];
+            out << ")\n" << std::flush;
         }
         const Value_t v1 = testData.funcPtr(vars);
         if(true) /*test Eval() */
@@ -1941,33 +1946,36 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             if(!error.str().empty())
             {
                 if(verbosityLevel == 2)
-                    std::cout << "\n****************************\nTest "
-                              << testData.testName
-                              << ", function:\n\"" << testData.funcString
-                              << "\"\n(" << valueType << ")";
+                    out << "\n****************************\nTest "
+                        << testData.testName
+                        << ", function:\n\"" << testData.funcString
+                        << "\"\n(" << valueType << ")";
 
                 if(verbosityLevel >= 2)
                 {
                     using namespace FUNCTIONPARSERTYPES;
                     // ^ For output of complex numbers according to fparser practice
 
-                    std::cout << std::endl << "Error: For (" << std::setprecision(20);
+                    out << "\nError: For (" << std::setprecision(20);
                     for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
-                        std::cout << (ind>0 ? ", " : "") << vars[ind];
-                    std::cout << ")\nthe library returned " << error.str()
-                              << std::endl;
+                        out << (ind>0 ? ", " : "") << vars[ind];
+                    out << ")\nthe library returned " << error.str()
+                        << '\n';
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                     fp.PrintByteCode(std::cout);
 #endif
+                    out << std::flush;
                 }
                 else
                 {
                     using namespace FUNCTIONPARSERTYPES;
 
+                    out << "";         // lock
                     briefErrorMessages << "- " << testData.testName << " (";
                     for(unsigned ind = 0; ind < testData.paramAmount; ++ind)
                         briefErrorMessages << (ind>0 ? "," : "") << vars[ind];
                     briefErrorMessages << "): " << error.str() << "\n";
+                    out << std::flush; // unlock
                 }
                 return false;
             }
@@ -1993,9 +2001,15 @@ static bool WildMatch(const char *pattern, const char *what)
 }
 static bool WildMatch_Dirmask(const char *pattern, const char *what)
 {
-    std::string testmask = pattern;
-    if(testmask.find('/') == testmask.npos) testmask = "*/" + testmask;
-    return WildMatch(testmask.c_str(), what);
+    const char* slashpos = std::strchr(pattern, '/');
+    if(slashpos) // Pattern contains a slash?
+        return WildMatch(pattern, what);
+    else
+    {
+        // Pattern does not contain a slash. Use */pattern
+        std::string temp = std::string("*/") + pattern;
+        return WildMatch(temp.c_str(), what);
+    }
 }
 bool IsSelectedTest(const char* testName)
 {
@@ -2031,21 +2045,48 @@ bool natcomp(const std::string& a, const std::string& b)
     return (bp < b.size() && ap >= a.size());
 }
 
+struct locked_cout
+{
+    locked_cout(std::mutex& lock) : lk(lock)
+    {
+        lk.unlock();
+    }
+
+    template<typename t> // Using lowercase t because testbed_tests.inc defines T identifier.
+    locked_cout& operator<< (t&& value)
+    {
+        if(!lk.owns_lock())
+        {
+            lk.lock();
+        }
+        std::cout << value;
+        return *this;
+    }
+
+    std::unique_lock<std::mutex> lk;
+};
+
+locked_cout& operator<< (locked_cout& out, std::ostream& (*pf)(std::ostream&))
+{
+    std::cout << pf;
+    if(out.lk.owns_lock())
+    {
+        out.lk.unlock();
+    }
+    return out;
+}
 
 template<typename Value_t>
-bool runRegressionTests(const std::string& valueType)
+bool runRegressionTests(const std::string& valueType,
+                        unsigned n_threads,
+                        unsigned thread_index,
+                        std::mutex& print_lock,
+                        std::ostream& briefErrorMessages)
 {
     // Setup the function parser for testing
     // -------------------------------------
     FunctionParserBase<Value_t> fp;
-
-    if(verbosityLevel >= 1)
-    {
-        setAnsiBold();
-        std::cout << "==================== Parser type \"" << valueType
-                  << "\" ====================" << std::endl;
-        resetAnsiColor();
-    }
+    locked_cout out(print_lock);
 
     bool ret = fp.AddConstant("pi",
                               FUNCTIONPARSERTYPES::fp_const_pi<Value_t>());
@@ -2058,7 +2099,8 @@ bool runRegressionTests(const std::string& valueType)
     ret = ret && fp.AddConstant("CONST", Value_t(CONST));
     if(!ret)
     {
-        std::cout << "Ooops! AddConstant() didn't work" << std::endl;
+        if(thread_index == 0)
+            out << "Ooops! AddConstant() didn't work" << std::endl;
         return false;
     }
 
@@ -2066,7 +2108,8 @@ bool runRegressionTests(const std::string& valueType)
     ret = ret && fp.AddUnit("tripled", 3);
     if(!ret)
     {
-        std::cout << "Ooops! AddUnit() didn't work" << std::endl;
+        if(thread_index == 0)
+            out << "Ooops! AddUnit() didn't work" << std::endl;
         return false;
     }
 
@@ -2076,7 +2119,8 @@ bool runRegressionTests(const std::string& valueType)
     ret = ret && fp.AddFunction("value", userDefFuncValue<Value_t>, 0);
     if(!ret)
     {
-        std::cout << "Ooops! AddFunction(ptr) didn't work" << std::endl;
+        if(thread_index == 0)
+            out << "Ooops! AddFunction(ptr) didn't work" << std::endl;
         return false;
     }
 
@@ -2085,25 +2129,27 @@ bool runRegressionTests(const std::string& valueType)
         (fp.GetFunctionWrapper("sub"));
     if(!wrapper || wrapper->counter() != 0)
     {
-        std::cout << "Ooops! AddFunctionWrapper() didn't work" << std::endl;
+        if(thread_index == 0)
+            out << "Ooops! AddFunctionWrapper() didn't work" << std::endl;
         return false;
     }
 
     FunctionParserBase<Value_t> SqrFun, SubFun, ValueFun;
-    if(verbosityLevel >= 3) std::cout << "Parsing SqrFun... ";
+    if(verbosityLevel >= 3 && thread_index == 0) out << "Parsing SqrFun... ";
     SqrFun.Parse("x*x", "x");
-    if(verbosityLevel >= 3) std::cout << "\nParsing SubFun... ";
+    if(verbosityLevel >= 3 && thread_index == 0) out << "\nParsing SubFun... ";
     SubFun.Parse("x-y", "x,y");
-    if(verbosityLevel >= 3) std::cout << "\nParsing ValueFun... ";
+    if(verbosityLevel >= 3 && thread_index == 0) out << "\nParsing ValueFun... ";
     ValueFun.Parse("5", "");
-    if(verbosityLevel >= 3) std::cout << std::endl;
+    if(verbosityLevel >= 3 && thread_index == 0) out << std::endl;
 
     ret = fp.AddFunction("psqr", SqrFun);
     ret = ret && fp.AddFunction("psub", SubFun);
     ret = ret && fp.AddFunction("pvalue", ValueFun);
     if(!ret)
     {
-        std::cout << "Ooops! AddFunction(parser) didn't work" << std::endl;
+        if(thread_index == 0)
+            out << "Ooops! AddFunction(parser) didn't work" << std::endl;
         return false;
     }
 
@@ -2114,39 +2160,47 @@ bool runRegressionTests(const std::string& valueType)
     {
         if(!fp.AddConstant("TestConstant", value))
         {
-            std::cout << "Ooops2! AddConstant() didn't work" << std::endl;
+            if(thread_index == 0)
+                out << "Ooops2! AddConstant() didn't work" << std::endl;
             return false;
         }
 
         fp.Parse("TestConstant", "");
-        if(fp.Eval(0) != value)
+        if(fp.Eval(nullptr) != value)
         {
-            if(value == Value_t(0)) std::cout << "Usage of 'TestConstant' failed\n";
-            else std::cout << "Changing the value of 'TestConstant' failed\n";
+            if(thread_index == 0)
+            {
+                if(value == Value_t(0)) out << "Usage of 'TestConstant' failed" << std::endl;
+                else out << "Changing the value of 'TestConstant' failed" << std::endl;
+            }
             return false;
         }
     }}
 
     bool allRegressionTestsOk = true;
-    std::ostringstream briefErrorMessages;
 
     std::string prev_test_prefix;
-    const unsigned maxtests = ~0U; // unknown
-    /*    sizeof(RegressionTests<Value_t>::Tests)
-      / sizeof(RegressionTests<Value_t>::Tests[0]); */
+    const unsigned maxtests = sizeof(RegressionTests<Value_t>::Tests)
+                            / sizeof(TestType<Value_t>);
     for(unsigned i = 0; i < maxtests; ++i)
     {
+        if(i % n_threads != thread_index) continue;
+
         const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
         if(!testData.testName) break;
 
         if(!IsSelectedTest(testData.testName)) continue;
+
+        const Value_t paramMin = (fp.Parse(testData.paramMin, ""),fp.Eval(nullptr));
+        const Value_t paramMax = (fp.Parse(testData.paramMax, ""),fp.Eval(nullptr));
+        const Value_t paramStep = (fp.Parse(testData.paramStep, ""),fp.Eval(nullptr));
 
         const int retval =
             fp.Parse(testData.funcString, testData.paramString,
                      testData.useDegrees);
         if(retval >= 0)
         {
-            std::cout <<
+            out <<
                 "With FunctionParserBase<" << valueType << ">"
                 "\nin \"" << testData.funcString <<
                 "\" (\"" << testData.paramString <<
@@ -2158,14 +2212,12 @@ bool runRegressionTests(const std::string& valueType)
         //fp.PrintByteCode(std::cout);
         if(verbosityLevel >= 3)
         {
-            std::cout
+            out
                 << /*std::right <<*/ std::setw(2)
                 << testData.testName << ": \""
                 << testData.funcString << "\" ("
-                << FUNCTIONPARSERTYPES::fp_pow
-                ((testData.paramMax - testData.paramMin) /
-                 testData.paramStep,
-                 Value_t( (int) testData.paramAmount))
+                << FUNCTIONPARSERTYPES::fp_pow((paramMax - paramMin) / paramStep,
+                                               Value_t( (int) testData.paramAmount))
                 << " param. combinations): " << std::flush;
         }
         else if(verbosityLevel == 2)
@@ -2173,42 +2225,46 @@ bool runRegressionTests(const std::string& valueType)
             const char* tn = testData.testName;
             const char* p = std::strrchr(tn, '/');
             if(!p)
-                { prev_test_prefix = ""; std::cout << tn; }
+                { prev_test_prefix = ""; out << tn; }
             else
             {
                 std::string path_prefix(tn, p-tn);
                 if(path_prefix == prev_test_prefix)
-                    std::cout << (p+1);
+                    out << (p+1);
                 else
-                    { if(!prev_test_prefix.empty()) std::cout << std::endl;
-                      std::cout << tn;
+                    { if(!prev_test_prefix.empty()) out << std::endl;
+                      out << tn;
                       prev_test_prefix = path_prefix; }
             }
-            std::cout << std::flush << " ";
+            out << std::flush << " ";
         }
 
         bool thisTestOk =
-            runRegressionTest(fp, testData, valueType + ", not optimized",
-                              testbedEpsilon<Value_t>(), briefErrorMessages);
+            runRegressionTest(fp, testData,
+                              paramMin, paramMax, paramStep,
+                              valueType + ", not optimized",
+                              testbedEpsilon<Value_t>(),
+                              out, briefErrorMessages);
 
         if(thisTestOk)
         {
-            if(verbosityLevel >= 3) std::cout << "Ok." << std::endl;
+            if(verbosityLevel >= 3) out << "Ok." << std::endl;
 
             fp.Optimize();
-            //fp.PrintByteCode(std::cout);
+            //fp.PrintByteCode(out);
 
             if(verbosityLevel >= 3)
-                std::cout << "    Optimized: " << std::flush;
+                out << "    Optimized: " << std::flush;
 
             thisTestOk =
                 runRegressionTest(fp, testData,
+                                  paramMin, paramMax, paramStep,
                                   valueType + ", after optimization",
-                                  testbedEpsilon<Value_t>(), briefErrorMessages);
+                                  testbedEpsilon<Value_t>(), out, briefErrorMessages);
             if(thisTestOk)
             {
                 if(verbosityLevel >= 3)
-                    std::cout << "(Calling Optimize() several times) "
+                    out << "(Calling Optimize() several times) "
                               << std::flush;
 
                 for(int j = 0; j < 20; ++j)
@@ -2222,13 +2278,14 @@ bool runRegressionTests(const std::string& valueType)
                    because the drift just causes differences larger than
                    epsilon...
                 */
-                if(valueType != "float")
+                if(!std::is_same<Value_t, float>::value)
                 {
                     thisTestOk =
                         runRegressionTest
                         (fp, testData,
+                         paramMin, paramMax, paramStep,
                          valueType + ", after several optimization runs",
-                         testbedEpsilon<Value_t>(), briefErrorMessages);
+                         testbedEpsilon<Value_t>(), out, briefErrorMessages);
                 }
 
                 if(thisTestOk)
@@ -2237,7 +2294,7 @@ bool runRegressionTests(const std::string& valueType)
                         testVariableDeduction(fp, testData, briefErrorMessages);
 
                     if(thisTestOk && verbosityLevel >= 3)
-                        std::cout << "Ok." << std::endl;
+                        out << "Ok." << std::endl;
                 }
             }
         } // if(thisTestOk)
@@ -2245,8 +2302,51 @@ bool runRegressionTests(const std::string& valueType)
         if(!thisTestOk) allRegressionTestsOk = false;
 
         if(verbosityLevel == 1)
-            std::cout << (thisTestOk ? "." : "!") << std::flush;
+            out << (thisTestOk ? "." : "!") << std::flush;
     } // for(unsigned i = 0; i < maxtests; ++i)
+
+    if(verbosityLevel >= 2)
+        out << "User-defined function \"sub\" was called "
+            << (dynamic_cast<UserDefFuncWrapper<Value_t>*>
+                (fp.GetFunctionWrapper("sub"))->counter())
+            << " times." << std::endl;
+
+    return allRegressionTestsOk;
+}
+
+template<typename Value_t>
+bool runRegressionTests(const std::string& valueType,
+                        unsigned n_threads = std::thread::hardware_concurrency())
+{
+    if(valueType == "MpfrFloat" || valueType == "GmpInt")
+    {
+        // These types are not thread-safe.
+        n_threads = 1;
+    }
+
+    if(verbosityLevel >= 1)
+    {
+        setAnsiBold();
+        std::cout << "==================== Parser type \"" << valueType
+                  << "\" ====================" << std::endl;
+        resetAnsiColor();
+    }
+
+    std::vector<std::future<bool>> test_runners;
+    std::ostringstream briefErrorMessages;
+    std::mutex print_lock;
+
+    test_runners.reserve(n_threads);
+    for(unsigned n=0; n<n_threads; ++n)
+        test_runners.emplace_back(std::async(std::launch::async,
+            [=,&print_lock,&briefErrorMessages]{
+            return runRegressionTests<Value_t>(valueType, n_threads, n, print_lock, briefErrorMessages);
+        }));
+
+    bool allRegressionTestsOk = true;
+    for(auto& v: test_runners)
+        if(!v.get())
+            allRegressionTestsOk = false;
 
     if(allRegressionTestsOk)
     {
@@ -2255,18 +2355,12 @@ bool runRegressionTests(const std::string& valueType)
     }
     else if(verbosityLevel <= 1)
     {
-        if(verbosityLevel == 1) std::cout << "\n";
+        if(verbosityLevel == 1) std::cout << std::endl;
         std::cout << briefErrorMessages.str() << std::flush;
     }
-
-    if(verbosityLevel >= 2)
-        std::cout << "User-defined function \"sub\" was called "
-                  << (dynamic_cast<UserDefFuncWrapper<Value_t>*>
-                      (fp.GetFunctionWrapper("sub"))->counter())
-                  << " times." << std::endl;
-
     return allRegressionTestsOk;
 }
+
 
 //=========================================================================
 // Optimizer tests
@@ -2334,11 +2428,16 @@ namespace OptimizerTests
 
         const TestType<DefaultValue_t> testData =
         {
-            1, -4.0, 4.0, 0.49, false, &evaluateFunction, DBL_ONLY(0)LNG_ONLY(0)
+            1, "-4.0","4.0","0.49", false, &evaluateFunction, DBL_ONLY(0)LNG_ONLY(0)
             "x", "'trig. combo optimizer test'", funcString.c_str()
         };
 
         DefaultParser parser;
+
+        const DefaultValue_t paramMin = (parser.Parse(testData.paramMin, ""),parser.Eval(nullptr));
+        const DefaultValue_t paramMax = (parser.Parse(testData.paramMax, ""),parser.Eval(nullptr));
+        const DefaultValue_t paramStep = (parser.Parse(testData.paramStep, ""),parser.Eval(nullptr));
+
         if(parser.Parse(funcString, "x") >= 0)
         {
             std::cout << "Oops: Function \"" << funcString
@@ -2348,8 +2447,10 @@ namespace OptimizerTests
 
         std::ostringstream briefErrorMessages;
 
-        if(!runRegressionTest(parser, testData, "DefaultValue_t",
-                              testbedEpsilon<DefaultValue_t>(), briefErrorMessages))
+        if(!runRegressionTest(parser, testData,
+                              paramMin, paramMax, paramStep,
+                              "DefaultValue_t",
+                              testbedEpsilon<DefaultValue_t>(), std::cout, briefErrorMessages))
         {
             if(verbosityLevel == 1)
                 std::cout << "\n - " << briefErrorMessages.str() << std::flush;
@@ -2414,7 +2515,7 @@ namespace OptimizerTests
     {
         if(opIndex <= 2)
         {
-            static char operand[] = "!!x";
+            static thread_local char operand[] = "!!x";
             operand[2] = varName;
             return operand + (2 - opIndex);
         }
@@ -2427,7 +2528,7 @@ namespace OptimizerTests
             { "< ", "<=", "= ", "!=", "> ", ">=" };
         static const char* const value[] =
             { "-1 ", "0  ", "1  ", ".5 ", "-.5" };
-        static char expression[] = "(x<=-.5)";
+        static thread_local char expression[] = "(x<=-.5)";
 
         expression[1] = varName;
         expression[2] = comp[compIndex][0];
@@ -2531,8 +2632,8 @@ namespace OptimizerTests
 
         static const Value_t values[] =
             { -1, 0, 1, Value_t(0.5), Value_t(-0.5) };
-        static unsigned valueIndices[varsAmount];
-        static Value_t variableValues[varsAmount];
+        static thread_local unsigned valueIndices[varsAmount];
+        static thread_local Value_t variableValues[varsAmount];
 
         for(unsigned i = 0; i < operands; ++i) valueIndices[i] = 0;
 
@@ -2944,7 +3045,7 @@ int main(int argc, char* argv[])
     DefaultParser fp0;
 
     // Test that the parser doesn't crash if Eval() is called before Parse():
-    fp0.Eval(0);
+    fp0.Eval(nullptr);
 
     const char* const delimiterTestFunction = "x+y } ";
     fp0.setDelimiterChar('}');

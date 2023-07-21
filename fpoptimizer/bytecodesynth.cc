@@ -33,6 +33,7 @@ namespace FPoptimizer_ByteCode
 #define mByteCode ByteCode
 #define mImmed Immed
 
+    /* Specializer<bool,bool>: The bools are IsIntType, IsComplexType. */
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
                                                    Specializer<false,false>)

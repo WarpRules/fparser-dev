@@ -5,13 +5,15 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
+#include <atomic>
 
 //===========================================================================
 // Auxiliary structs
 //===========================================================================
 struct MpfrFloat::MpfrFloatData
 {
-    unsigned mRefCount;
+    std::atomic<unsigned> mRefCount;
+
     MpfrFloatData* nextFreeNode;
     mpfr_t mFloat;
 
@@ -57,7 +59,7 @@ class MpfrFloat::MpfrFloatDataContainer
             return node;
         }
 
-        mData.push_back(MpfrFloatData());
+        mData.emplace_back(); // push_back(MpfrFloatData());
         mpfr_init2(mData.back().mFloat, mDefaultPrecision);
         if(initToZero) mpfr_set_si(mData.back().mFloat, 0, GMP_RNDN);
         return &mData.back();
@@ -423,11 +425,11 @@ void MpfrFloat::get_raw_mpfr_data<mpfr_t>(mpfr_t& dest_mpfr_t)
 const char* MpfrFloat::getAsString(unsigned precision) const
 {
 #if(MPFR_VERSION_MAJOR < 2 || (MPFR_VERSION_MAJOR == 2 && MPFR_VERSION_MINOR < 4))
-    static const char* retval =
+    static const char* const retval =
         "[mpfr_snprintf() is not supported in mpfr versions prior to 2.4]";
     return retval;
 #else
-    static std::vector<char> str;
+    static thread_local std::vector<char> str;
     str.resize(precision+30);
     mpfr_snprintf(&(str[0]), precision+30, "%.*RNg", precision, mData->mFloat);
     return &(str[0]);
