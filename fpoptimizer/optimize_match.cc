@@ -178,7 +178,7 @@ namespace
     Needs& CreateNeedList(const ParamSpec_SubFunctionData& params)
     {
         typedef std::map<const ParamSpec_SubFunctionData*, Needs> needlist_cached_t;
-        static needlist_cached_t needlist_cached;
+        static thread_local needlist_cached_t needlist_cached;
 
         needlist_cached_t::iterator i = needlist_cached.lower_bound(&params);
         if(i != needlist_cached.end() && i->first == &params)

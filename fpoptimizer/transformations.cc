@@ -266,7 +266,7 @@ namespace
     private:
         static cost_t CalculatePowiFactorCost(int_exponent_t int_exponent)
         {
-            static std::map<int_exponent_t, cost_t> cache;
+            static thread_local std::map<int_exponent_t, cost_t> cache;
             if(int_exponent < 0)
             {
                 cost_t cost = 22; // division cost
