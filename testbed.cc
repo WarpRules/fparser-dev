@@ -1829,11 +1829,32 @@ namespace
 #endif
 }
 
+template<typename Value_t>
+const char* valueType()
+{
+    if(std::is_same<Value_t, long>::value) return "long int";
+    if(std::is_same<Value_t, float>::value) return "float";
+    if(std::is_same<Value_t, double>::value) return "double";
+    if(std::is_same<Value_t, long double>::value) return "long double";
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    if(std::is_same<Value_t, GmpInt>::value) return "GmpInt";
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    if(std::is_same<Value_t, MpfrFloat>::value) return "MpfrFloat";
+#endif
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    if(std::is_same<Value_t, std::complex<double>>::value) return "std::complex<double>";
+    if(std::is_same<Value_t, std::complex<float>>::value) return "std::complex<float>";
+    if(std::is_same<Value_t, std::complex<long double>>::value) return "std::complex<long double>";
+#endif
+    return "unknown value type";
+}
+
 template<typename OutStream, typename Value_t>
 bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                        const TestType<Value_t>& testData,
                        const Value_t& paramMin, const Value_t& paramMax, const Value_t& paramStep,
-                       const std::string& valueType,
+                       const std::string& testType,
                        const Value_t Eps,
                        OutStream&    out,
                        std::ostream& briefErrorMessages)
@@ -1949,7 +1970,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                     out << "\n****************************\nTest "
                         << testData.testName
                         << ", function:\n\"" << testData.funcString
-                        << "\"\n(" << valueType << ")";
+                        << "\"\n(" << valueType<Value_t>() << testType << ")";
 
                 if(verbosityLevel >= 2)
                 {
@@ -2077,8 +2098,7 @@ locked_cout& operator<< (locked_cout& out, std::ostream& (*pf)(std::ostream&))
 }
 
 template<typename Value_t>
-bool runRegressionTests(const std::string& valueType,
-                        unsigned n_threads,
+bool runRegressionTests(unsigned n_threads,
                         unsigned thread_index,
                         std::mutex& print_lock,
                         std::ostream& briefErrorMessages)
@@ -2201,7 +2221,7 @@ bool runRegressionTests(const std::string& valueType,
         if(retval >= 0)
         {
             out <<
-                "With FunctionParserBase<" << valueType << ">"
+                "With FunctionParserBase<" << valueType<Value_t>() << ">"
                 "\nin \"" << testData.funcString <<
                 "\" (\"" << testData.paramString <<
                 "\"), col " << retval <<
@@ -2242,7 +2262,7 @@ bool runRegressionTests(const std::string& valueType,
         bool thisTestOk =
             runRegressionTest(fp, testData,
                               paramMin, paramMax, paramStep,
-                              valueType + ", not optimized",
+                              ", not optimized",
                               testbedEpsilon<Value_t>(),
                               out, briefErrorMessages);
 
@@ -2259,7 +2279,7 @@ bool runRegressionTests(const std::string& valueType,
             thisTestOk =
                 runRegressionTest(fp, testData,
                                   paramMin, paramMax, paramStep,
-                                  valueType + ", after optimization",
+                                  ", after optimization",
                                   testbedEpsilon<Value_t>(), out, briefErrorMessages);
             if(thisTestOk)
             {
@@ -2284,7 +2304,7 @@ bool runRegressionTests(const std::string& valueType,
                         runRegressionTest
                         (fp, testData,
                          paramMin, paramMax, paramStep,
-                         valueType + ", after several optimization runs",
+                         ", after several optimization runs",
                          testbedEpsilon<Value_t>(), out, briefErrorMessages);
                 }
 
@@ -2315,19 +2335,20 @@ bool runRegressionTests(const std::string& valueType,
 }
 
 template<typename Value_t>
-bool runRegressionTests(const std::string& valueType,
-                        unsigned n_threads = std::thread::hardware_concurrency())
+bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency())
 {
-    if(valueType == "MpfrFloat" || valueType == "GmpInt")
-    {
-        // These types are not thread-safe.
-        n_threads = 1;
-    }
+    // These types are not thread-safe:
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    if(std::is_same<Value_t, MpfrFloat>::value) n_threads = 1;
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    if(std::is_same<Value_t, GmpInt>::value) n_threads = 1;
+#endif
 
     if(verbosityLevel >= 1)
     {
         setAnsiBold();
-        std::cout << "==================== Parser type \"" << valueType
+        std::cout << "==================== Parser type \"" << valueType<Value_t>()
                   << "\" ====================" << std::endl;
         resetAnsiColor();
     }
@@ -2340,7 +2361,7 @@ bool runRegressionTests(const std::string& valueType,
     for(unsigned n=0; n<n_threads; ++n)
         test_runners.emplace_back(std::async(std::launch::async,
             [=,&print_lock,&briefErrorMessages]{
-            return runRegressionTests<Value_t>(valueType, n_threads, n, print_lock, briefErrorMessages);
+            return runRegressionTests<Value_t>(n_threads, n, print_lock, briefErrorMessages);
         }));
 
     bool allRegressionTestsOk = true;
@@ -2449,7 +2470,7 @@ namespace OptimizerTests
 
         if(!runRegressionTest(parser, testData,
                               paramMin, paramMax, paramStep,
-                              "DefaultValue_t",
+                              ", default type",
                               testbedEpsilon<DefaultValue_t>(), std::cout, briefErrorMessages))
         {
             if(verbosityLevel == 1)
@@ -2511,13 +2532,15 @@ namespace OptimizerTests
        op = { and, or, not and, not or }
     */
     // opIndex = 0-32 for doubles, 0-20 for ints
-    const char* getOperandString(char varName, unsigned opIndex)
+    const char* getOperandString(char expression[9], char varName, unsigned opIndex)
     {
         if(opIndex <= 2)
         {
-            static thread_local char operand[] = "!!x";
-            operand[2] = varName;
-            return operand + (2 - opIndex);
+            expression[0] = '!';
+            expression[1] = '!';
+            expression[2] = varName;
+            expression[3] = '\0';
+            return expression + (2 - opIndex);
         }
 
         opIndex -= 3;
@@ -2528,14 +2551,16 @@ namespace OptimizerTests
             { "< ", "<=", "= ", "!=", "> ", ">=" };
         static const char* const value[] =
             { "-1 ", "0  ", "1  ", ".5 ", "-.5" };
-        static thread_local char expression[] = "(x<=-.5)";
 
+        expression[0] = '(';
         expression[1] = varName;
         expression[2] = comp[compIndex][0];
         expression[3] = comp[compIndex][1];
         expression[4] = value[valueIndex][0];
         expression[5] = value[valueIndex][1];
         expression[6] = value[valueIndex][2];
+        expression[7] = ')';
+        expression[8] = '\0';
         return expression;
     }
 
@@ -2628,13 +2653,13 @@ namespace OptimizerTests
                                         bool optimized)
     {
         const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::value;
-        const unsigned varValuesToTest = isIntegral ? 3 : 4;
+        const unsigned varValuesToTest = isIntegral ? 3 : 5;
 
         static const Value_t values[] =
             { -1, 0, 1, Value_t(0.5), Value_t(-0.5) };
-        static thread_local unsigned valueIndices[varsAmount];
-        static thread_local Value_t variableValues[varsAmount];
 
+        unsigned valueIndices[varsAmount];
+        Value_t variableValues[varsAmount];
         for(unsigned i = 0; i < operands; ++i) valueIndices[i] = 0;
 
         bool stop = false;
@@ -2701,7 +2726,7 @@ namespace OptimizerTests
             for(unsigned i = 0; i < operands; ++i)
             {
                 if(++valueIndices[i] < varValuesToTest)
-                { stop = false; break; }
+                    { stop = false; break; }
                 valueIndices[i] = 0;
             }
         }
@@ -2715,8 +2740,8 @@ namespace OptimizerTests
         const bool isIntegral = FUNCTIONPARSERTYPES::IsIntType<Value_t>::value;
         const unsigned maxOperandIndex = isIntegral ? 20 : 32;
 
-        const char varNames[] = { 'x', 'y', 'z' };
-        const char* const varString = "x,y,z";
+        static const char varNames[] = { 'x', 'y', 'z' };
+        static const char varString[] = "x,y,z";
         const unsigned varsAmount = sizeof(varNames) / sizeof(varNames[0]);
 
         unsigned operandIndices[varsAmount];
@@ -2735,15 +2760,18 @@ namespace OptimizerTests
             do
             {
                 // Generate function string:
+                char operandBuffer[9];
                 std::string functionString =
-                    getOperandString(varNames[0], operandIndices[0]);
+                    getOperandString(operandBuffer, varNames[0], operandIndices[0]);
 
                 for(unsigned i = 1; i < operands; ++i)
+                {
                     functionString =
                         getBooleanExpression
-                        (i == 1 ? functionString : "(" + functionString + ")",
-                         getOperandString(varNames[i], operandIndices[i]),
-                         exprIndices[i-1]);
+                            (i == 1 ? functionString : "(" + functionString + ")",
+                             getOperandString(operandBuffer, varNames[i], operandIndices[i]),
+                             exprIndices[i-1]);
+                }
 
                 //std::cout << '"' << functionString << "\"\n";
 
@@ -3071,47 +3099,47 @@ int main(int argc, char* argv[])
     {
 #ifndef FP_DISABLE_DOUBLE_TYPE
         if(runAllTypes || run_d)
-            if(!runRegressionTests<double>("double"))
+            if(!runRegressionTests<double>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_FLOAT_TYPE
         if(runAllTypes || run_f)
-            if(!runRegressionTests<float>("float"))
+            if(!runRegressionTests<float>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
         if(runAllTypes || run_ld)
-            if(!runRegressionTests<long double>("long double"))
+            if(!runRegressionTests<long double>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
         if(runAllTypes || run_li)
-            if(!runRegressionTests<long>("long int"))
+            if(!runRegressionTests<long>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
         if(runAllTypes || run_mf)
-            if(!runRegressionTests<MpfrFloat>("MpfrFloat"))
+            if(!runRegressionTests<MpfrFloat>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
         if(runAllTypes || run_gi)
-            if(!runRegressionTests<GmpInt>("GmpInt"))
+            if(!runRegressionTests<GmpInt>())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
         if(runAllTypes || run_cd)
-            if(!runRegressionTests<std::complex<double> >("std::complex<double>"))
+            if(!runRegressionTests<std::complex<double> >())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
         if(runAllTypes || run_cf)
-            if(!runRegressionTests<std::complex<float> >("std::complex<float>"))
+            if(!runRegressionTests<std::complex<float> >())
                 allTestsOk = false;
 #endif
 #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
         if(runAllTypes || run_cld)
-            if(!runRegressionTests<std::complex<long double> >("std::complex<long double>"))
+            if(!runRegressionTests<std::complex<long double> >())
                 allTestsOk = false;
 #endif
     }
