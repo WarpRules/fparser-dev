@@ -2357,6 +2357,10 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
                   << "\" ====================" << std::endl;
         resetAnsiColor();
     }
+    if(verbosityLevel >= 3)
+    {
+        n_threads = 1;
+    }
 
     std::vector<std::future<bool>> test_runners;
     std::ostringstream briefErrorMessages;

@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=0.25,3.25,0.5
+F=csc(log2(x))
+C=1/fp_sin(fp_log2(x))

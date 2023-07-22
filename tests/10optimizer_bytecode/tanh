@@ -1,5 +1,5 @@
-T=d
+T=d f ld mf
 V=x
 R=0,1,1
 F=tanh(1.1)+x
-C=tanh(1.1)+x
+C=fp_tanh(1.1)+x

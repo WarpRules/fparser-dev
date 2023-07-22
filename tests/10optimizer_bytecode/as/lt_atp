@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-3,3,2
+F=log10(atan(abs(x)))
+C=fp_log10(fp_atan(fp_abs(x)))

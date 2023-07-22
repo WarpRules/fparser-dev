@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=0,0.75,0.25
+F=sqrt(atanh(x))
+C=fp_sqrt(fp_atanh(x))

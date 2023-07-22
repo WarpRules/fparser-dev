@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-1.7,0,0.125
+F=asin(exp(x))
+C=fp_asin(fp_exp(x))

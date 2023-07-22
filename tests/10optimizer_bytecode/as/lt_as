@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=0.5,1,0.25
+F=log10(asin(x))
+C=fp_log10(fp_asin(x))

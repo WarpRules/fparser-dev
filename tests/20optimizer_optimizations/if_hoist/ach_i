@@ -1,0 +1,5 @@
+T=d ld f
+V=x,y
+R=0,2,0.5
+F=acosh(if(x<y, 1, 1.4))
+C=fp_acosh((fp_less(x,y)!=0 ? 1 : 1.4))

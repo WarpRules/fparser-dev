@@ -1,5 +1,5 @@
-T=d
+T=d f ld mf
 V=x
 R=0,1,1
 F=ceil(1.1)+x
-C=ceil(1.1)+x
+C=2+x

@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x,y
+R=0.5,2,0.5
+F=log10(atan(x/y))
+C=fp_log10(fp_atan(x*(1/y)))

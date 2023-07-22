@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x,y
+R=-2,2,0.5
+F=atan(cosh(x<y))
+C=fp_atan(fp_cosh(fp_less(x,y)))

@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=1,10.1,0.125
+F=exp(acosh(x))
+C=fp_exp(fp_acosh(x))

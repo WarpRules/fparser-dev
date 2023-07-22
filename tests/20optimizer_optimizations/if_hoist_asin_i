@@ -1,5 +1,0 @@
-T=d ld f
-V=x,y
-R=-2,2,0.5
-F=asin(if(x<y, -0.5, 0.3))
-C=fp_asin((fp_less(x,y)!=0 ? -0.5 : 0.3))

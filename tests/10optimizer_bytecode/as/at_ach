@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=1,8.9,0.125
+F=atan(acosh(x))
+C=fp_atan(fp_acosh(x))

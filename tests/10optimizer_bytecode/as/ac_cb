@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=0,1,0.5
+F=acos(cbrt(x))
+C=fp_acos(fp_cbrt(x))

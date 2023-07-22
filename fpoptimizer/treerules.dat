@@ -700,8 +700,9 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 # atan(x/y) = atan2(x,y) -- do this only when we don't know whether y is zero.
 #                           If we know that y is nonzero, ConstantFolding
-#                           will revert this optimization.
-@R @F cAtan [(cMul {x (cPow [y@P %@N])})] -> cAtan2 [x (cPow [y -%])]
+#                           will revert this optimization causing an infinite loop.
+#@R @F cAtan [(cMul {x (cPow [y@P %@N])})] -> cAtan2 [x (cPow [y -%])]
+# ^ Rule disabled, causes infinite loop with atan(sinh(x)/cosh(x)).
 
 @R @F cAtan2 [(cMul  x@P   <1>) (cMul  x@P   <2>)]   : (cMul    <1>) (cMul    <2>)
 @R @F cAtan2 [(cMul  x@N@V <1>) (cMul  x@N@V <2>)]   : (cMul -1 <1>) (cMul -1 <2>)
@@ -916,9 +917,9 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cCosh [(cAsinh [x])] -> cPow [(cAdd [(cPow [x 2])  1]) 0.5] # TEST 20/asinhcosh
 
 # sinh(atanh(x)) = x / sqrt(1 - x^2)
-@F cSinh [(cAtanh [x])] -> (cMul[x (cPow[(cAdd[-1 (cMul -1 (cPow[x 2]))]) -0.5])])
+@F cSinh [(cAtanh [x])] -> (cMul[x (cPow[(cAdd[1 (cMul -1 (cPow[x 2]))]) -0.5])])
 # cosh(atanh(x)) = 1 / sqrt(1 - x^2)
-@F cCosh [(cAtanh [x])] ->         (cPow[(cAdd[-1 (cMul -1 (cPow[x 2]))]) -0.5])
+@F cCosh [(cAtanh [x])] ->         (cPow[(cAdd[1 (cMul -1 (cPow[x 2]))]) -0.5])
 
 #        asinh: log(x + sqrt(x*x + 1))
 #        exp(asinh): x + sqrt(x*x + 1)#

@@ -1,5 +1,0 @@
-T=d ld f
-V=x,y
-R=-2,2,0.5
-F=acos(if(x<y, 0.1, -0.3))
-C=fp_acos((fp_less(x,y)!=0 ? 0.1 : -0.3))

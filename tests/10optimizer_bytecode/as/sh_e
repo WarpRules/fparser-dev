@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-2,2,0.5
+F=sinh(sec(x))
+C=fp_sinh(1/fp_cos(x))

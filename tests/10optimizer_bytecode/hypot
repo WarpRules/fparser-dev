@@ -1,5 +1,5 @@
-T=d
+T=d f ld mf
 V=x
 R=0,1,1
 F=hypot(5,4)+x
-C=sqrt(5*5+4*4)+x
+C=fp_hypot(5,4)+x

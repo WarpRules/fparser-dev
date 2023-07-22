@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=1,7.1,0.125
+F=sqrt(log10(x))
+C=fp_sqrt(fp_log10(x))

@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x,y
+R=-2,2,0.5
+F=sinh(acos(x<y))
+C=fp_sinh(fp_acos(fp_less(x,y)))

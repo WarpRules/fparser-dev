@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-2,2,0.5
+F=sin(sin(x))
+C=fp_sin(fp_sin(x))

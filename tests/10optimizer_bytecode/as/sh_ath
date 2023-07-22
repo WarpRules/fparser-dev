@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-0.75,0.75,0.25
+F=sinh(atanh(x))
+C=fp_sinh(fp_atanh(x))

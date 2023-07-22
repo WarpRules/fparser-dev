@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-1,1,0.5
+F=atan(acos(x))
+C=fp_atan(fp_acos(x))

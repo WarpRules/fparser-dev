@@ -1,0 +1,6 @@
+# cInv cRSqrt -> cSqrt
+T=d
+V=x
+R=0.01,10,0.05
+F=1/sqrt(1/x)
+C=1/fp_sqrt(1/x)

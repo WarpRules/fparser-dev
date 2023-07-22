@@ -1,5 +1,5 @@
-T=d
+T=d f ld mf
 V=x
 R=0,1,1
 F=acos(0.7)+x
-C=acos(0.7)+x
+C=fp_acos(0.7)+x

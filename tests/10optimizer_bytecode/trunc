@@ -1,4 +1,4 @@
-T=d
+T=d f ld mf
 V=x
 R=0,1,1
 F=trunc(1.1)+x

@@ -1,0 +1,5 @@
+T=d ld f
+V=x,y
+R=-2,2,0.5
+F=log(if(x<y, 1.1, 0.9))
+C=fp_log((fp_less(x,y)!=0 ? 1.1 : 0.9))

@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=1,10.4,0.125
+F=acosh(sqrt(x))
+C=fp_acosh(fp_sqrt(x))

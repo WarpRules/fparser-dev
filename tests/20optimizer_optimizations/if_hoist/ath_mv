@@ -1,0 +1,5 @@
+T=d ld f
+V=x,y
+R=-1,1,0.5
+F=atanh((x<y)*x*y*0.4)
+C=fp_atanh(fp_less(x,y)*x*y*0.4)

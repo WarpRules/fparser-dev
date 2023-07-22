@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-1.9,-0.4,0.125
+F=acos(exp2(x))
+C=fp_acos(fp_exp2(x))

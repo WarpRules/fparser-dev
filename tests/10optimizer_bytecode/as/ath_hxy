@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x,y
+R=-0.7,0.6,0.125
+F=atanh(hypot(x,y))
+C=fp_atanh(fp_hypot(x,y))

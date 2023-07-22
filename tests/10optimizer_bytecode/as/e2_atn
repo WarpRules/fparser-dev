@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=-2,2,0.5
+F=exp2(atan(-abs(x)))
+C=fp_exp2(fp_atan(-fp_abs(x)))

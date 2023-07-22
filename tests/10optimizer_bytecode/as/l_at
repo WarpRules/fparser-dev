@@ -1,0 +1,5 @@
+T=d ld f mf cf cd cld
+V=x
+R=0.5,2,0.5
+F=log(atan(x))
+C=fp_log(fp_atan(x))
