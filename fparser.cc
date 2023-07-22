@@ -2652,12 +2652,12 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
     /* If Eval() may be called by multiple threads simultaneously,
      * then Eval() must allocate its own stack.
      */
-#ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
+  #ifdef FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA
     /* alloca() allocates room from the hardware stack.
      * It is automatically freed when the function returns.
      */
     Value_t* const Stack = (Value_t*)alloca(mData->mStackSize*sizeof(Value_t));
-#else
+  #else
     /* Allocate from the heap. Ensure that it is freed
      * automatically no matter which exit path is taken.
      */
@@ -2667,7 +2667,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
         ~AutoDealloc() { delete[] ptr; }
     } AutoDeallocStack = { new Value_t[mData->mStackSize] };
     Value_t*& Stack = AutoDeallocStack.ptr;
-#endif
+  #endif
 #else
     /* No thread safety, so use a global stack. */
     std::vector<Value_t>& Stack = mData->mStack;

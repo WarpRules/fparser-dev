@@ -2349,6 +2349,10 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     if(std::is_same<Value_t, GmpInt>::value) n_threads = 1;
 #endif
+#if !(defined(FP_USE_THREAD_SAFE_EVAL) || \
+      defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA))
+    n_threads = 1;
+#endif
 
     if(verbosityLevel >= 1)
     {

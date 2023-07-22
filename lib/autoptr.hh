@@ -90,7 +90,14 @@ inline void FPOPT_autoptr<Ref>::Release(Ref*& p2)
 {
     if(p2)
     {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free" /* This warning is bogus */
+#endif
         --(p2->RefCount);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
         if(!p2->RefCount)
         {
             delete p2;
@@ -101,14 +108,31 @@ inline void FPOPT_autoptr<Ref>::Release(Ref*& p2)
 template<typename Ref>
 inline void FPOPT_autoptr<Ref>::Reserve(Ref* p2)
 {
-    if(p2) ++(p2->RefCount);
+    if(p2)
+    {
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free" /* This warning is bogus */
+#endif
+        ++(p2->RefCount);
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+    }
 }
 template<typename Ref>
 inline void FPOPT_autoptr<Ref>::ChangeTo(Ref* p2)
 {
     Reserve(p2);
     Release(p);
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuse-after-free" /* This warning is bogus */
+#endif
     p = p2;
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
 }
 
 #endif

@@ -242,11 +242,13 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x) { return std::log2(x); }
 
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename Value_t>
     inline std::complex<Value_t> fp_log2(const std::complex<Value_t>& x)
     {
         return fp_log(x) * fp_const_log2inv<Value_t>();
     }
+  #endif
 #else
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)
