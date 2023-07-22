@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=-0.75,0.75,0.25
+F=b:=z+1.88+1i*w;a:=x+1.88+1i*y;asinh(hypot(a,b))
+C=fp_asinh(fp_hypot(Value_t(x.real(), y.real())+1.88, Value_t(z.real(), w.real())+1.88))

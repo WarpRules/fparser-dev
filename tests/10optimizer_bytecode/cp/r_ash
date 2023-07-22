@@ -1,5 +1,5 @@
 T=cf cd cld
 V=x,y
-R=-3,3,2
-F=a:=x+1i*y;real(asinh(a))
-C=fp_real(fp_asinh(Value_t(x.real(), y.real())))
+R=-2,2,0.5
+F=a:=x+0.16+1i*y;real(asinh(a))
+C=fp_real(fp_asinh(Value_t(x.real(), y.real())+0.16))

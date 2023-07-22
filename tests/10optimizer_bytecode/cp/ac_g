@@ -1,0 +1,5 @@
+T=cf cd cld
+V=x,y
+R=-1,1,0.5
+F=a:=x+1.92+1i*y;acos(arg(a))
+C=fp_acos(fp_arg(Value_t(x.real(), y.real())+1.92))

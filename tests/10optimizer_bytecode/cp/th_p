@@ -1,5 +1,5 @@
 T=cf cd cld
 V=w,x,y,z
-R=-3,3,2
-F=b:=z+1i*w;a:=x+1i*y;tanh(pow(a,b))
-C=fp_tanh(fp_pow(Value_t(x.real(), y.real()), Value_t(z.real(), w.real())))
+R=-1,1,0.5
+F=b:=z+1.64+1i*w;a:=x+1.64+1i*y;tanh(pow(a,b))
+C=fp_tanh(fp_pow(Value_t(x.real(), y.real())+1.64, Value_t(z.real(), w.real())+1.64))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=-0.75,0.75,0.25
+F=b:=z+-1.92+1i*w;a:=x+-1.92+1i*y;sin(atan2(a,b))
+C=fp_sin(fp_atan2(Value_t(x.real(), y.real())+-1.92, Value_t(z.real(), w.real())+-1.92))

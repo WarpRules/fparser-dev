@@ -1,0 +1,5 @@
+T=cf cd cld
+V=x,y
+R=0.25,0.75,0.125
+F=a:=x+-0.68+1i*y;asin(abs(a))
+C=fp_asin(fp_abs(Value_t(x.real(), y.real())+-0.68))

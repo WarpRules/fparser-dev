@@ -1,5 +1,5 @@
 T=cf cd cld
 V=x,y
-R=-3,3,2
-F=a:=x+1i*y;csc(cot(a))
-C=1/fp_sin(1/fp_tan(Value_t(x.real(), y.real())))
+R=-2,2,0.5
+F=a:=x+-0.28+1i*y;csc(cot(a))
+C=1/fp_sin(1/fp_tan(Value_t(x.real(), y.real())+-0.28))

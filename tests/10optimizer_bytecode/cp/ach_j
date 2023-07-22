@@ -1,5 +1,5 @@
 T=cf cd cld
 V=x,y
 R=-3,3,2
-F=a:=x+1i*y;acosh(conj(a))
-C=fp_acosh(fp_conj(Value_t(x.real(), y.real())))
+F=a:=x+0+1i*y;acosh(conj(a))
+C=fp_acosh(fp_conj(Value_t(x.real(), y.real())+0))

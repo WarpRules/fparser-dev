@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=0,1,0.5
+F=b:=z+1.16+1i*w;a:=x+1.16+1i*y;log10(atan2(a,b))
+C=fp_log10(fp_atan2(Value_t(x.real(), y.real())+1.16, Value_t(z.real(), w.real())+1.16))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=0,2,0.5
+F=b:=z+-0.08+1i*w;a:=x+-0.08+1i*y;cos(hypot(a,b))
+C=fp_cos(fp_hypot(Value_t(x.real(), y.real())+-0.08, Value_t(z.real(), w.real())+-0.08))

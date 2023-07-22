@@ -1,0 +1,5 @@
+T=cf cd cld
+V=x,y
+R=-1,1,0.5
+F=a:=x+1.12+1i*y;acosh(exp2(a))
+C=fp_acosh(fp_exp2(Value_t(x.real(), y.real())+1.12))

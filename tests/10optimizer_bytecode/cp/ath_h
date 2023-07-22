@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=0,0.75,0.25
+F=b:=z+-0.16+1i*w;a:=x+-0.16+1i*y;atanh(hypot(a,b))
+C=fp_atanh(fp_hypot(Value_t(x.real(), y.real())+-0.16, Value_t(z.real(), w.real())+-0.16))

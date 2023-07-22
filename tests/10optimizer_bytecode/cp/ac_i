@@ -1,0 +1,5 @@
+T=cf cd cld
+V=x,y
+R=-0.75,0.75,0.25
+F=a:=x+0+1i*y;acos(imag(a))
+C=fp_acos(fp_imag(Value_t(x.real(), y.real())+0))

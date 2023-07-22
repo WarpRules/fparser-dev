@@ -1,0 +1,5 @@
+T=cf cd cld
+V=w,x,y,z
+R=0,2,0.5
+F=b:=z+-1.04+1i*w;a:=x+-1.04+1i*y;conj(atan2(a,b))
+C=fp_conj(fp_atan2(Value_t(x.real(), y.real())+-1.04, Value_t(z.real(), w.real())+-1.04))

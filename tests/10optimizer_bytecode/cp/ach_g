@@ -1,0 +1,5 @@
+T=cf cd cld
+V=x,y
+R=0.5,1,0.25
+F=a:=x+-1.2+1i*y;acosh(arg(a))
+C=fp_acosh(fp_arg(Value_t(x.real(), y.real())+-1.2))
