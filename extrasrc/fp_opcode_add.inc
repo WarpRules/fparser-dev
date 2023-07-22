@@ -53,12 +53,12 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cAbs", "cAbs", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAbs", "cAbs", "");
 			/* opcode = cAbs; */ // redundant, matches cAbs @ 0
 			goto Lab;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(132,
+			FP_TRACE_BYTECODE_OPTIMIZATION(130,
 				"x cAbs",
 				"[fp_abs(x)]",
 				"    with x = " << x << "\n");
@@ -68,7 +68,7 @@ is available in the development package.
 			A = ByteCodePtr[0];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(399,
+				FP_TRACE_BYTECODE_OPTIMIZATION(212,
 					"A[IsNeverNegativeValueOpcode(A)] cAbs",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -92,7 +92,7 @@ is available in the development package.
 			case cAdd:
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(313,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
+					FP_TRACE_BYTECODE_OPTIMIZATION(317,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
 					goto Lad;
 				}
 				break;
@@ -101,7 +101,7 @@ is available in the development package.
 				{
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(314,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
+						FP_TRACE_BYTECODE_OPTIMIZATION(318,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
 						goto Lae;
 					}
 				}
@@ -114,7 +114,7 @@ is available in the development package.
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(316,
+					FP_TRACE_BYTECODE_OPTIMIZATION(320,
 						"cDup x cMul cAdd",
 						"[x+Value_t(1)] cMul",
 						"    with x = " << x << "\n");
@@ -123,7 +123,7 @@ is available in the development package.
 			}
 			goto Default1;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAdd", "cSub", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(197,"cNeg cAdd", "cSub", "");
 			goto Lag;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -133,7 +133,7 @@ is available in the development package.
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(127,
+					FP_TRACE_BYTECODE_OPTIMIZATION(125,
 						"y cAdd x cAdd",
 						"[y+x] cAdd",
 						"    with x = " << x
@@ -151,7 +151,7 @@ is available in the development package.
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(301,
+						FP_TRACE_BYTECODE_OPTIMIZATION(305,
 							"y cAdd cRSub x cAdd",
 							"[ y+x] cAdd cRSub",
 							"    with x = " << x
@@ -162,14 +162,14 @@ is available in the development package.
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(302,
+					FP_TRACE_BYTECODE_OPTIMIZATION(306,
 						"cNeg cRSub x cAdd",
 						"[-x] cAdd cRSub",
 						"    with x = " << x << "\n");
 					goto Laj;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(300,
+					FP_TRACE_BYTECODE_OPTIMIZATION(304,
 						"y cRSub x cAdd",
 						"[ y+x] cRSub",
 						"    with x = " << x
@@ -189,7 +189,7 @@ is available in the development package.
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(295,
+							FP_TRACE_BYTECODE_OPTIMIZATION(299,
 								"y cAdd B[IsVarOpcode(B)] cSub x cAdd",
 								"[ y+x] cAdd B cSub",
 								"    with x = " << x
@@ -201,7 +201,7 @@ is available in the development package.
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(296,
+						FP_TRACE_BYTECODE_OPTIMIZATION(300,
 							"cNeg B[IsVarOpcode(B)] cSub x cAdd",
 							"[-x] cAdd B cSub",
 							"    with x = " << x
@@ -210,7 +210,7 @@ is available in the development package.
 						goto Lam;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(294,
+						FP_TRACE_BYTECODE_OPTIMIZATION(298,
 							"y B[IsVarOpcode(B)] cSub x cAdd",
 							"[ y+x] B cSub",
 							"    with x = " << x
@@ -224,7 +224,7 @@ is available in the development package.
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(105,
+				FP_TRACE_BYTECODE_OPTIMIZATION(103,
 					"y x cAdd",
 					"[y+x]",
 					"    with x = " << x
@@ -235,7 +235,7 @@ is available in the development package.
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(57,
+				FP_TRACE_BYTECODE_OPTIMIZATION(55,
 					"x[x==Value_t()] cAdd",
 					"",
 					"    with x = " << x << "\n");
@@ -251,7 +251,7 @@ is available in the development package.
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(293,
+						FP_TRACE_BYTECODE_OPTIMIZATION(297,
 							"x cRSub A[IsVarOpcode(A)] cAdd",
 							"[DO_STACKPLUS1] A [x] cAdd cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -261,7 +261,7 @@ is available in the development package.
 						--mStackPtr;
 						goto Laq;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(298,
+					FP_TRACE_BYTECODE_OPTIMIZATION(302,
 						"cRSub A[IsVarOpcode(A)] cAdd",
 						"[DO_STACKPLUS1] A cAdd cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -282,14 +282,14 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cDup cAnd", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(231,"cDup cAnd", "cNotNot", "");
 			goto Lba;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(117,
+				FP_TRACE_BYTECODE_OPTIMIZATION(115,
 					"y x cAnd",
 					"[fp_and(x,y)]",
 					"    with x = " << x
@@ -311,7 +311,7 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(78,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -320,7 +320,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(125,
+					FP_TRACE_BYTECODE_OPTIMIZATION(123,
 						"cNeg x[x!=Value_t()] cDiv",
 						"[-x] cDiv",
 						"    with x = " << x << "\n");
@@ -328,7 +328,7 @@ is available in the development package.
 					goto Lbd;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(103,
+					FP_TRACE_BYTECODE_OPTIMIZATION(101,
 						"y x[x!=Value_t()] cDiv",
 						"[y/x]",
 						"    with x = " << x
@@ -340,7 +340,7 @@ is available in the development package.
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(56,
+				FP_TRACE_BYTECODE_OPTIMIZATION(54,
 					"x[x==Value_t(1)] cDiv",
 					"",
 					"    with x = " << x << "\n");
@@ -364,7 +364,7 @@ is available in the development package.
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(432,
+					FP_TRACE_BYTECODE_OPTIMIZATION(435,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cEqual",
 						"A",
 						"    with x = " << x
@@ -377,7 +377,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(115,
+				FP_TRACE_BYTECODE_OPTIMIZATION(113,
 					"y x cEqual",
 					"[fp_equal(y,x)]",
 					"    with x = " << x
@@ -391,7 +391,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(365,
+					FP_TRACE_BYTECODE_OPTIMIZATION(369,
 						"cAbs x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -399,7 +399,7 @@ is available in the development package.
 					/* opcode = cEqual; */ // redundant, matches cEqual @ 0
 					goto Lbg;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(367,
+					FP_TRACE_BYTECODE_OPTIMIZATION(371,
 						"cSqr x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -410,7 +410,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(434,
+						FP_TRACE_BYTECODE_OPTIMIZATION(437,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cEqual",
 							"A cNot",
 							"    with x = " << x
@@ -420,7 +420,7 @@ is available in the development package.
 						goto Lbh;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(422,
+				FP_TRACE_BYTECODE_OPTIMIZATION(425,
 					"x[x==Value_t(0)] cEqual",
 					"cNot",
 					"    with x = " << x << "\n");
@@ -443,7 +443,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(424,
+					FP_TRACE_BYTECODE_OPTIMIZATION(427,
 						"cAbs x[x==Value_t(0)] cGreater",
 						"cNotNot",
 						"    with x = " << x << "\n");
@@ -452,7 +452,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsNeverNegativeValueOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(428,
+						FP_TRACE_BYTECODE_OPTIMIZATION(431,
 							"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cGreater",
 							"A cNotNot",
 							"    with x = " << x
@@ -466,7 +466,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(113,
+				FP_TRACE_BYTECODE_OPTIMIZATION(111,
 					"y x cGreater",
 					"[fp_less(x,y)]",
 					"    with x = " << x
@@ -492,7 +492,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(425,
+					FP_TRACE_BYTECODE_OPTIMIZATION(428,
 						"cAbs x[x==Value_t(1)] cGreaterOrEq",
 						"cNotNot",
 						"    with x = " << x << "\n");
@@ -501,7 +501,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsNeverNegativeValueOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(429,
+						FP_TRACE_BYTECODE_OPTIMIZATION(432,
 							"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(1)] cGreaterOrEq",
 							"A cNotNot",
 							"    with x = " << x
@@ -515,7 +515,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(114,
+				FP_TRACE_BYTECODE_OPTIMIZATION(112,
 					"y x cGreaterOrEq",
 					"[fp_lessOrEq(x,y)]",
 					"    with x = " << x
@@ -538,7 +538,7 @@ is available in the development package.
 			x = ImmedPtr[0];
 			if(x!=Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(101,
+				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
 					"[Value_t(1)/x]",
 					"    with x = " << x << "\n");
@@ -562,7 +562,7 @@ is available in the development package.
 				A = ByteCodePtr[-1];
 				if(IsNeverNegativeValueOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(304,
+					FP_TRACE_BYTECODE_OPTIMIZATION(308,
 						"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLess",
 						"A [x] cMul",
 						"    with x = " << x
@@ -579,7 +579,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(426,
+					FP_TRACE_BYTECODE_OPTIMIZATION(429,
 						"cAbs x[x==Value_t(1)] cLess",
 						"cNot",
 						"    with x = " << x << "\n");
@@ -588,7 +588,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsNeverNegativeValueOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(430,
+						FP_TRACE_BYTECODE_OPTIMIZATION(433,
 							"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(1)] cLess",
 							"A cNot",
 							"    with x = " << x
@@ -602,7 +602,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(111,
+				FP_TRACE_BYTECODE_OPTIMIZATION(109,
 					"y x cLess",
 					"[fp_less(y,x)]",
 					"    with x = " << x
@@ -628,7 +628,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(427,
+					FP_TRACE_BYTECODE_OPTIMIZATION(430,
 						"cAbs x[x==Value_t(0)] cLessOrEq",
 						"cNot",
 						"    with x = " << x << "\n");
@@ -637,7 +637,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsNeverNegativeValueOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(431,
+						FP_TRACE_BYTECODE_OPTIMIZATION(434,
 							"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLessOrEq",
 							"A cNot",
 							"    with x = " << x
@@ -651,7 +651,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(112,
+				FP_TRACE_BYTECODE_OPTIMIZATION(110,
 					"y x cLessOrEq",
 					"[fp_lessOrEq(y,x)]",
 					"    with x = " << x
@@ -672,14 +672,14 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cDup cMax", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(58,"cDup cMax", "", "");
 			goto Lbr;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(141,
+				FP_TRACE_BYTECODE_OPTIMIZATION(139,
 					"y x cMax",
 					"[fp_max(x,y)]",
 					"    with x = " << x
@@ -699,7 +699,7 @@ is available in the development package.
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(66,
+						FP_TRACE_BYTECODE_OPTIMIZATION(64,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMax",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -714,7 +714,7 @@ is available in the development package.
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(68,
+						FP_TRACE_BYTECODE_OPTIMIZATION(66,
 							"B[B==A] cMax A[IsVarOpcode(A)] cMax",
 							"B cMax",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -739,14 +739,14 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cDup cMin", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(57,"cDup cMin", "", "");
 			goto Lbr;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(140,
+				FP_TRACE_BYTECODE_OPTIMIZATION(138,
 					"y x cMin",
 					"[fp_min(x,y)]",
 					"    with x = " << x
@@ -766,7 +766,7 @@ is available in the development package.
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(65,
+						FP_TRACE_BYTECODE_OPTIMIZATION(63,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMin",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -781,7 +781,7 @@ is available in the development package.
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(67,
+						FP_TRACE_BYTECODE_OPTIMIZATION(65,
 							"B[B==A] cMin A[IsVarOpcode(A)] cMin",
 							"B cMin",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -811,7 +811,7 @@ is available in the development package.
 				if(ByteCodePtr[-1] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(104,
+					FP_TRACE_BYTECODE_OPTIMIZATION(102,
 						"y x[x!=Value_t()] cMod",
 						"[fp_mod(y,x)]",
 						"    with x = " << x
@@ -833,13 +833,13 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cDup cMul", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cDup cMul", "cSqr", "");
 			goto Lcd;
 		case cNeg:
 			switch(ByteCodePtr[-1])
 			{
 			case cDup:
-				FP_TRACE_BYTECODE_OPTIMIZATION(480,"cDup cNeg cMul", "cSqr cNeg", "");
+				FP_TRACE_BYTECODE_OPTIMIZATION(483,"cDup cNeg cMul", "cSqr cNeg", "");
 				goto Lce;
 			default:
 				A = ByteCodePtr[-1];
@@ -850,7 +850,7 @@ is available in the development package.
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(486,
+							FP_TRACE_BYTECODE_OPTIMIZATION(489,
 								"B[B==A] cMul A[IsVarOpcode(A)] cNeg cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -869,7 +869,7 @@ is available in the development package.
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(317,
+					FP_TRACE_BYTECODE_OPTIMIZATION(321,
 						"cDup x cPow cMul",
 						"[x+Value_t(1)] cPow",
 						"    with x = " << x << "\n");
@@ -887,7 +887,7 @@ is available in the development package.
 					A = ByteCodePtr[-2];
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(93,
+						FP_TRACE_BYTECODE_OPTIMIZATION(91,
 							"A[IsVarOpcode(A)] cMul x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -906,7 +906,7 @@ is available in the development package.
 						{
 						case cImmed:
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(92,
+							FP_TRACE_BYTECODE_OPTIMIZATION(90,
 								"y A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 								"[x] cMul",
 								"    with x = " << x
@@ -924,7 +924,7 @@ is available in the development package.
 								{
 								case cImmed:
 									y = ImmedPtr[-1];
-									FP_TRACE_BYTECODE_OPTIMIZATION(96,
+									FP_TRACE_BYTECODE_OPTIMIZATION(94,
 										"y B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 										"A [x] cMul",
 										"    with x = " << x
@@ -938,7 +938,7 @@ is available in the development package.
 									C = ByteCodePtr[-3];
 									if(IsVarOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(94,
+										FP_TRACE_BYTECODE_OPTIMIZATION(92,
 											"C[IsVarOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"A [x] cMul",
 											"    with x = " << x
@@ -951,7 +951,7 @@ is available in the development package.
 									}
 									if(IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(95,
+										FP_TRACE_BYTECODE_OPTIMIZATION(93,
 											"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"B A [x] cMul",
 											"    with x = " << x
@@ -966,7 +966,7 @@ is available in the development package.
 							}
 							if(IsVarOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(90,
+								FP_TRACE_BYTECODE_OPTIMIZATION(88,
 									"B[IsVarOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"[x] cMul",
 									"    with x = " << x
@@ -979,7 +979,7 @@ is available in the development package.
 							}
 							if(IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(91,
+								FP_TRACE_BYTECODE_OPTIMIZATION(89,
 									"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"A [x] cMul",
 									"    with x = " << x
@@ -993,7 +993,7 @@ is available in the development package.
 					}
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(88,
+						FP_TRACE_BYTECODE_OPTIMIZATION(86,
 							"A[IsVarOpcode(A)] x[x==Value_t()] cMul",
 							"[x]",
 							"    with x = " << x
@@ -1004,7 +1004,7 @@ is available in the development package.
 					}
 					if(IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(89,
+						FP_TRACE_BYTECODE_OPTIMIZATION(87,
 							"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -1022,7 +1022,7 @@ is available in the development package.
 				switch(ByteCodePtr[-2])
 				{
 				case cDup:
-					FP_TRACE_BYTECODE_OPTIMIZATION(320,
+					FP_TRACE_BYTECODE_OPTIMIZATION(324,
 						"cDup cAdd x cMul",
 						"[x+x] cMul",
 						"    with x = " << x << "\n");
@@ -1035,7 +1035,7 @@ is available in the development package.
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(392,
+							FP_TRACE_BYTECODE_OPTIMIZATION(396,
 								"A[IsVarOpcode(A)] y cMul cAdd x cMul",
 								"[x] cMul A [y*x] cMul cAdd",
 								"    with x = " << x
@@ -1048,7 +1048,7 @@ is available in the development package.
 					break;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(391,
+					FP_TRACE_BYTECODE_OPTIMIZATION(395,
 						"y cAdd x cMul",
 						"[x] cMul [y*x] cAdd",
 						"    with x = " << x
@@ -1064,7 +1064,7 @@ is available in the development package.
 				case cAdd:
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(322,
+						FP_TRACE_BYTECODE_OPTIMIZATION(326,
 							"cDup cAdd cMul x cMul",
 							"cMul [x+x] cMul",
 							"    with x = " << x << "\n");
@@ -1076,7 +1076,7 @@ is available in the development package.
 					y = ImmedPtr[-1];
 					if(y*x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(70,
+						FP_TRACE_BYTECODE_OPTIMIZATION(68,
 							"y[y*x==Value_t(1)] cMul x cMul",
 							"",
 							"    with x = " << x
@@ -1084,7 +1084,7 @@ is available in the development package.
 							    << "\n");
 						goto Ldb;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(128,
+					FP_TRACE_BYTECODE_OPTIMIZATION(126,
 						"y cMul x cMul",
 						"[y*x] cMul",
 						"    with x = " << x
@@ -1096,7 +1096,7 @@ is available in the development package.
 				}
 				break;
 			case cNeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(122,
+				FP_TRACE_BYTECODE_OPTIMIZATION(120,
 					"cNeg x cMul",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -1111,7 +1111,7 @@ is available in the development package.
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(393,
+							FP_TRACE_BYTECODE_OPTIMIZATION(397,
 								"A[IsVarOpcode(A)] y cMul cSub x cMul",
 								"[x] cMul A [y*x] cMul cSub",
 								"    with x = " << x
@@ -1125,7 +1125,7 @@ is available in the development package.
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(102,
+				FP_TRACE_BYTECODE_OPTIMIZATION(100,
 					"y x cMul",
 					"[y*x]",
 					"    with x = " << x
@@ -1136,7 +1136,7 @@ is available in the development package.
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(55,
+				FP_TRACE_BYTECODE_OPTIMIZATION(53,
 					"x[x==Value_t(1)] cMul",
 					"",
 					"    with x = " << x << "\n");
@@ -1144,7 +1144,7 @@ is available in the development package.
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(124,
+				FP_TRACE_BYTECODE_OPTIMIZATION(122,
 					"x[x==Value_t(-1)] cMul",
 					"cNeg",
 					"    with x = " << x << "\n");
@@ -1152,7 +1152,7 @@ is available in the development package.
 			}
 			if(x==Value_t(2))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(198,
+				FP_TRACE_BYTECODE_OPTIMIZATION(196,
 					"x[x==Value_t(2)] cMul",
 					"cDup cAdd",
 					"    with x = " << x << "\n");
@@ -1172,7 +1172,7 @@ is available in the development package.
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(483,
+							FP_TRACE_BYTECODE_OPTIMIZATION(486,
 								"B[B==A] cNeg cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1186,7 +1186,7 @@ is available in the development package.
 						B = ByteCodePtr[-2];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(474,
+							FP_TRACE_BYTECODE_OPTIMIZATION(477,
 								"B[B==A] cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1202,7 +1202,7 @@ is available in the development package.
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(477,
+						FP_TRACE_BYTECODE_OPTIMIZATION(480,
 							"B[B==A] cNeg A[IsVarOpcode(A)] cMul",
 							"B cSqr cNeg",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1216,7 +1216,7 @@ is available in the development package.
 					B = ByteCodePtr[-1];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(471,
+						FP_TRACE_BYTECODE_OPTIMIZATION(474,
 							"B[B==A] A[IsVarOpcode(A)] cMul",
 							"B cSqr",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1240,7 +1240,7 @@ is available in the development package.
 							D = ByteCodePtr[-4];
 							if(D==B)
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(490,
+								FP_TRACE_BYTECODE_OPTIMIZATION(493,
 									"D[D==B] C[C==A] cMul B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1274,7 +1274,7 @@ is available in the development package.
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(433,
+					FP_TRACE_BYTECODE_OPTIMIZATION(436,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cNEqual",
 						"A cNot",
 						"    with x = " << x
@@ -1287,7 +1287,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(116,
+				FP_TRACE_BYTECODE_OPTIMIZATION(114,
 					"y x cNEqual",
 					"[fp_nequal(y,x)]",
 					"    with x = " << x
@@ -1301,7 +1301,7 @@ is available in the development package.
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(366,
+					FP_TRACE_BYTECODE_OPTIMIZATION(370,
 						"cAbs x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -1309,7 +1309,7 @@ is available in the development package.
 					/* opcode = cNEqual; */ // redundant, matches cNEqual @ 0
 					goto Ldl;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(368,
+					FP_TRACE_BYTECODE_OPTIMIZATION(372,
 						"cSqr x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -1320,7 +1320,7 @@ is available in the development package.
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(435,
+						FP_TRACE_BYTECODE_OPTIMIZATION(438,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cNEqual",
 							"A",
 							"    with x = " << x
@@ -1330,7 +1330,7 @@ is available in the development package.
 						goto Lap;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(423,
+				FP_TRACE_BYTECODE_OPTIMIZATION(426,
 					"x[x==Value_t(0)] cNEqual",
 					"cNotNot",
 					"    with x = " << x << "\n");
@@ -1351,7 +1351,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(123,
+				FP_TRACE_BYTECODE_OPTIMIZATION(121,
 					"x cMul cNeg",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -1360,11 +1360,11 @@ is available in the development package.
 			}
 			break;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cNeg cNeg", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cNeg cNeg", "", "");
 			goto Lbr;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(100,
+			FP_TRACE_BYTECODE_OPTIMIZATION(98,
 				"x cNeg",
 				"[-x]",
 				"    with x = " << x << "\n");
@@ -1382,14 +1382,14 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cAbs cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbs cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ldo;
 		case cAbsNot:
 			A = ByteCodePtr[-1];
 			if(IsLogicalOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(395,
+				FP_TRACE_BYTECODE_OPTIMIZATION(399,
 					"A[IsLogicalOpcode(A)] cAbsNot cNot",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -1398,7 +1398,7 @@ is available in the development package.
 			}
 			if(A!=cImmed)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(396,
+				FP_TRACE_BYTECODE_OPTIMIZATION(400,
 					"A[A!=cImmed] cAbsNot cNot",
 					"A cAbsNotNot",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -1407,13 +1407,13 @@ is available in the development package.
 			}
 			goto Default6;
 		case cAbsNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbsNotNot cNot", "cAbsNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(238,"cAbsNotNot cNot", "cAbsNot", "");
 			goto Ldq;
 		case cAdd:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(437,
+				FP_TRACE_BYTECODE_OPTIMIZATION(440,
 					"x cAdd cNot",
 					"[-x] cEqual",
 					"    with x = " << x << "\n");
@@ -1422,37 +1422,37 @@ is available in the development package.
 			}
 			goto Default6;
 		case cEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cEqual cNot", "cNEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cEqual cNot", "cNEqual", "");
 			goto Lea;
 		case cGreater:
-			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cGreater cNot", "cLessOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(225,"cGreater cNot", "cLessOrEq", "");
 			goto Leb;
 		case cGreaterOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(222,"cGreaterOrEq cNot", "cLess", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cGreaterOrEq cNot", "cLess", "");
 			goto Lec;
 		case cLess:
-			FP_TRACE_BYTECODE_OPTIMIZATION(219,"cLess cNot", "cGreaterOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cLess cNot", "cGreaterOrEq", "");
 			goto Led;
 		case cLessOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cLessOrEq cNot", "cGreater", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cLessOrEq cNot", "cGreater", "");
 			goto Lee;
 		case cNEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cNEqual cNot", "cEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(228,"cNEqual cNot", "cEqual", "");
 			goto Lef;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(229,"cNeg cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNeg cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ldo;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(232,"cNot cNot", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(236,"cNot cNot", "cNotNot", "");
 			goto Lba;
 		case cNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNotNot cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(237,"cNotNot cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ldo;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(107,
+			FP_TRACE_BYTECODE_OPTIMIZATION(105,
 				"x cNot",
 				"[fp_not(x)]",
 				"    with x = " << x << "\n");
@@ -1462,7 +1462,7 @@ is available in the development package.
 			A = ByteCodePtr[0];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(397,
+				FP_TRACE_BYTECODE_OPTIMIZATION(401,
 					"A[IsNeverNegativeValueOpcode(A)] cNot",
 					"A cAbsNot",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -1484,7 +1484,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(436,
+				FP_TRACE_BYTECODE_OPTIMIZATION(439,
 					"x cAdd cNotNot",
 					"[-x] cNEqual",
 					"    with x = " << x << "\n");
@@ -1493,7 +1493,7 @@ is available in the development package.
 			}
 			break;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(235,"cNot cNotNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(239,"cNot cNotNot", "cNot", "");
 			/* ByteCodePtr[0] = cNot; */ // redundant, matches cNot @ 1
 			return;
 		}
@@ -1508,14 +1508,14 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cDup cOr", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cDup cOr", "cNotNot", "");
 			goto Lba;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(118,
+				FP_TRACE_BYTECODE_OPTIMIZATION(116,
 					"y x cOr",
 					"[fp_or(x,y)]",
 					"    with x = " << x
@@ -1539,7 +1539,7 @@ is available in the development package.
 			x = ImmedPtr[0];
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(271,
+				FP_TRACE_BYTECODE_OPTIMIZATION(275,
 					"x[x==Value_t(1)] cRDiv",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -1556,7 +1556,7 @@ is available in the development package.
 	case cRSub:
 		if(ByteCodePtr[0] == cDup)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(77,"cDup cRSub", "[Value_t()] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(75,"cDup cRSub", "[Value_t()] cMul", "");
 			goto Lel;
 		}
 		goto Default0;
@@ -1570,18 +1570,18 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cAbs cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cAbs cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
 			goto Lem;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(203,"cNeg cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
 			goto Lem;
 		default:
 			A = ByteCodePtr[0];
 			if(IsComparisonOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(537,
+				FP_TRACE_BYTECODE_OPTIMIZATION(540,
 					"A[IsComparisonOpcode(A)] cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -1600,16 +1600,16 @@ is available in the development package.
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cSub", "[Value_t()] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(74,"cDup cSub", "[Value_t()] cMul", "");
 			goto Lel;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cNeg cSub", "cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(198,"cNeg cSub", "cAdd", "");
 			goto Len;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(58,
+				FP_TRACE_BYTECODE_OPTIMIZATION(56,
 					"x[x==Value_t()] cSub",
 					"",
 					"    with x = " << x << "\n");
@@ -1618,7 +1618,7 @@ is available in the development package.
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(106,
+				FP_TRACE_BYTECODE_OPTIMIZATION(104,
 					"y x cSub",
 					"[y-x]",
 					"    with x = " << x
@@ -1627,7 +1627,7 @@ is available in the development package.
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Leo;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(51,
+			FP_TRACE_BYTECODE_OPTIMIZATION(49,
 				"x cSub",
 				"[-x] cAdd",
 				"    with x = " << x << "\n");
@@ -1642,7 +1642,7 @@ is available in the development package.
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(292,
+						FP_TRACE_BYTECODE_OPTIMIZATION(296,
 							"x cRSub A[IsVarOpcode(A)] cSub",
 							"A cAdd [x] cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1650,7 +1650,7 @@ is available in the development package.
 							    << "\n");
 						goto Leq;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(299,
+					FP_TRACE_BYTECODE_OPTIMIZATION(303,
 						"cRSub A[IsVarOpcode(A)] cSub",
 						"[DO_STACKPLUS1] A cSub cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -1674,7 +1674,7 @@ is available in the development package.
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(370,
+						FP_TRACE_BYTECODE_OPTIMIZATION(374,
 							"y cAdd x A[IsComparisonOpcode(A)]",
 							"[x-y] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1686,7 +1686,7 @@ is available in the development package.
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(371,
+					FP_TRACE_BYTECODE_OPTIMIZATION(375,
 						"cNeg x A[IsComparisonOpcode(A)]",
 						"[-x] {OppositeComparisonOpcode(A)}",
 						"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1701,7 +1701,7 @@ is available in the development package.
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(488,
+				FP_TRACE_BYTECODE_OPTIMIZATION(491,
 					"B[B==A] A[IsVarOpcode(A)&&mData->mByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -1722,7 +1722,7 @@ is available in the development package.
 					D = ByteCodePtr[-2];
 					if(D==B)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(489,
+						FP_TRACE_BYTECODE_OPTIMIZATION(492,
 							"D[D==B] C[C==A] B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2044,12 +2044,12 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cAbs", "cAbs", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAbs", "cAbs", "");
 			/* opcode = cAbs; */ // redundant, matches cAbs @ 0
 			goto Lab;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(132,
+			FP_TRACE_BYTECODE_OPTIMIZATION(130,
 				"x cAbs",
 				"[fp_abs(x)]",
 				"    with x = " << x << "\n");
@@ -2072,7 +2072,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			case cAdd:
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(313,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
+					FP_TRACE_BYTECODE_OPTIMIZATION(317,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
 					goto Lad;
 				}
 				break;
@@ -2081,7 +2081,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				{
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(314,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
+						FP_TRACE_BYTECODE_OPTIMIZATION(318,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
 						goto Lae;
 					}
 				}
@@ -2094,7 +2094,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(316,
+					FP_TRACE_BYTECODE_OPTIMIZATION(320,
 						"cDup x cMul cAdd",
 						"[x+Value_t(1)] cMul",
 						"    with x = " << x << "\n");
@@ -2103,7 +2103,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			goto Default1;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAdd", "cSub", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(197,"cNeg cAdd", "cSub", "");
 			goto Lag;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -2113,7 +2113,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(127,
+					FP_TRACE_BYTECODE_OPTIMIZATION(125,
 						"y cAdd x cAdd",
 						"[y+x] cAdd",
 						"    with x = " << x
@@ -2131,7 +2131,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(301,
+						FP_TRACE_BYTECODE_OPTIMIZATION(305,
 							"y cAdd cRSub x cAdd",
 							"[ y+x] cAdd cRSub",
 							"    with x = " << x
@@ -2142,14 +2142,14 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(302,
+					FP_TRACE_BYTECODE_OPTIMIZATION(306,
 						"cNeg cRSub x cAdd",
 						"[-x] cAdd cRSub",
 						"    with x = " << x << "\n");
 					goto Laj;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(300,
+					FP_TRACE_BYTECODE_OPTIMIZATION(304,
 						"y cRSub x cAdd",
 						"[ y+x] cRSub",
 						"    with x = " << x
@@ -2169,7 +2169,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(295,
+							FP_TRACE_BYTECODE_OPTIMIZATION(299,
 								"y cAdd B[IsVarOpcode(B)] cSub x cAdd",
 								"[ y+x] cAdd B cSub",
 								"    with x = " << x
@@ -2181,7 +2181,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(296,
+						FP_TRACE_BYTECODE_OPTIMIZATION(300,
 							"cNeg B[IsVarOpcode(B)] cSub x cAdd",
 							"[-x] cAdd B cSub",
 							"    with x = " << x
@@ -2190,7 +2190,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						goto Lam;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(294,
+						FP_TRACE_BYTECODE_OPTIMIZATION(298,
 							"y B[IsVarOpcode(B)] cSub x cAdd",
 							"[ y+x] B cSub",
 							"    with x = " << x
@@ -2204,7 +2204,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(105,
+				FP_TRACE_BYTECODE_OPTIMIZATION(103,
 					"y x cAdd",
 					"[y+x]",
 					"    with x = " << x
@@ -2215,7 +2215,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(57,
+				FP_TRACE_BYTECODE_OPTIMIZATION(55,
 					"x[x==Value_t()] cAdd",
 					"",
 					"    with x = " << x << "\n");
@@ -2231,7 +2231,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(293,
+						FP_TRACE_BYTECODE_OPTIMIZATION(297,
 							"x cRSub A[IsVarOpcode(A)] cAdd",
 							"[DO_STACKPLUS1] A [x] cAdd cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2241,7 +2241,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						--mStackPtr;
 						goto Laq;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(298,
+					FP_TRACE_BYTECODE_OPTIMIZATION(302,
 						"cRSub A[IsVarOpcode(A)] cAdd",
 						"[DO_STACKPLUS1] A cAdd cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -2262,14 +2262,14 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cDup cAnd", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(231,"cDup cAnd", "cNotNot", "");
 			goto Lba;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(117,
+				FP_TRACE_BYTECODE_OPTIMIZATION(115,
 					"y x cAnd",
 					"[fp_and(x,y)]",
 					"    with x = " << x
@@ -2291,11 +2291,11 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cConj:
-			FP_TRACE_BYTECODE_OPTIMIZATION(63,"cConj cConj", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cConj cConj", "", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(193,
+			FP_TRACE_BYTECODE_OPTIMIZATION(191,
 				"x cConj",
 				"[fp_conj(x)]",
 				"    with x = " << x << "\n");
@@ -2313,7 +2313,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(78,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
 			goto Lbe;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -2322,7 +2322,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(125,
+					FP_TRACE_BYTECODE_OPTIMIZATION(123,
 						"cNeg x[x!=Value_t()] cDiv",
 						"[-x] cDiv",
 						"    with x = " << x << "\n");
@@ -2330,7 +2330,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					goto Lbf;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(103,
+					FP_TRACE_BYTECODE_OPTIMIZATION(101,
 						"y x[x!=Value_t()] cDiv",
 						"[y/x]",
 						"    with x = " << x
@@ -2342,7 +2342,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(56,
+				FP_TRACE_BYTECODE_OPTIMIZATION(54,
 					"x[x==Value_t(1)] cDiv",
 					"",
 					"    with x = " << x << "\n");
@@ -2366,7 +2366,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(432,
+					FP_TRACE_BYTECODE_OPTIMIZATION(435,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cEqual",
 						"A",
 						"    with x = " << x
@@ -2379,7 +2379,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(115,
+				FP_TRACE_BYTECODE_OPTIMIZATION(113,
 					"y x cEqual",
 					"[fp_equal(y,x)]",
 					"    with x = " << x
@@ -2393,7 +2393,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(365,
+					FP_TRACE_BYTECODE_OPTIMIZATION(369,
 						"cAbs x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -2401,7 +2401,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					/* opcode = cEqual; */ // redundant, matches cEqual @ 0
 					goto Lbi;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(367,
+					FP_TRACE_BYTECODE_OPTIMIZATION(371,
 						"cSqr x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -2412,7 +2412,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(434,
+						FP_TRACE_BYTECODE_OPTIMIZATION(437,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cEqual",
 							"A cNot",
 							"    with x = " << x
@@ -2422,7 +2422,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						goto Lbj;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(422,
+				FP_TRACE_BYTECODE_OPTIMIZATION(425,
 					"x[x==Value_t(0)] cEqual",
 					"cNot",
 					"    with x = " << x << "\n");
@@ -2443,7 +2443,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(113,
+				FP_TRACE_BYTECODE_OPTIMIZATION(111,
 					"y x cGreater",
 					"[fp_less(x,y)]",
 					"    with x = " << x
@@ -2467,7 +2467,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(114,
+				FP_TRACE_BYTECODE_OPTIMIZATION(112,
 					"y x cGreaterOrEq",
 					"[fp_lessOrEq(x,y)]",
 					"    with x = " << x
@@ -2487,20 +2487,28 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 	case cImag:
 		switch(ByteCodePtr[0])
 		{
-		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(81,"cAbs cImag", "[Value_t()] cMul", "");
-			goto Lbm;
-		case cReal:
-			FP_TRACE_BYTECODE_OPTIMIZATION(80,"cReal cImag", "[Value_t()] cMul", "");
-			goto Lbm;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(192,
+			FP_TRACE_BYTECODE_OPTIMIZATION(190,
 				"x cImag",
 				"[fp_imag(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lbn;
+			goto Lbm;
+		default:
+			A = ByteCodePtr[0];
+			if(IsAlwaysRealOpcode(A))
+			{
+				FP_TRACE_BYTECODE_OPTIMIZATION(78,
+					"A[IsAlwaysRealOpcode(A)] cImag",
+					"[DO_STACKPLUS2] [Value_t()] cMul",
+					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
+				incStackPtr();
+				incStackPtr();
+				--mStackPtr;
+				--mStackPtr;
+				goto Lbn;
+			}
 		}
 		goto Default0;
 	TailCall_cInv:
@@ -2515,7 +2523,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(x!=Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(101,
+				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
 					"[Value_t(1)/x]",
 					"    with x = " << x << "\n");
@@ -2539,7 +2547,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsNeverNegativeValueOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(304,
+					FP_TRACE_BYTECODE_OPTIMIZATION(308,
 						"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLess",
 						"A [x] cMul",
 						"    with x = " << x
@@ -2554,7 +2562,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(111,
+				FP_TRACE_BYTECODE_OPTIMIZATION(109,
 					"y x cLess",
 					"[fp_less(y,x)]",
 					"    with x = " << x
@@ -2578,7 +2586,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(112,
+				FP_TRACE_BYTECODE_OPTIMIZATION(110,
 					"y x cLessOrEq",
 					"[fp_lessOrEq(y,x)]",
 					"    with x = " << x
@@ -2599,14 +2607,14 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cDup cMax", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(58,"cDup cMax", "", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(141,
+				FP_TRACE_BYTECODE_OPTIMIZATION(139,
 					"y x cMax",
 					"[fp_max(x,y)]",
 					"    with x = " << x
@@ -2626,7 +2634,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(66,
+						FP_TRACE_BYTECODE_OPTIMIZATION(64,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMax",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2641,7 +2649,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(68,
+						FP_TRACE_BYTECODE_OPTIMIZATION(66,
 							"B[B==A] cMax A[IsVarOpcode(A)] cMax",
 							"B cMax",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2666,14 +2674,14 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cDup cMin", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(57,"cDup cMin", "", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(140,
+				FP_TRACE_BYTECODE_OPTIMIZATION(138,
 					"y x cMin",
 					"[fp_min(x,y)]",
 					"    with x = " << x
@@ -2693,7 +2701,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(65,
+						FP_TRACE_BYTECODE_OPTIMIZATION(63,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMin",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2708,7 +2716,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(67,
+						FP_TRACE_BYTECODE_OPTIMIZATION(65,
 							"B[B==A] cMin A[IsVarOpcode(A)] cMin",
 							"B cMin",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2738,7 +2746,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				if(ByteCodePtr[-1] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(104,
+					FP_TRACE_BYTECODE_OPTIMIZATION(102,
 						"y x[x!=Value_t()] cMod",
 						"[fp_mod(y,x)]",
 						"    with x = " << x
@@ -2760,13 +2768,13 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cDup cMul", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cDup cMul", "cSqr", "");
 			goto Lcd;
 		case cNeg:
 			switch(ByteCodePtr[-1])
 			{
 			case cDup:
-				FP_TRACE_BYTECODE_OPTIMIZATION(480,"cDup cNeg cMul", "cSqr cNeg", "");
+				FP_TRACE_BYTECODE_OPTIMIZATION(483,"cDup cNeg cMul", "cSqr cNeg", "");
 				goto Lce;
 			default:
 				A = ByteCodePtr[-1];
@@ -2777,7 +2785,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(486,
+							FP_TRACE_BYTECODE_OPTIMIZATION(489,
 								"B[B==A] cMul A[IsVarOpcode(A)] cNeg cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -2796,7 +2804,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(317,
+					FP_TRACE_BYTECODE_OPTIMIZATION(321,
 						"cDup x cPow cMul",
 						"[x+Value_t(1)] cPow",
 						"    with x = " << x << "\n");
@@ -2814,7 +2822,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					A = ByteCodePtr[-2];
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(93,
+						FP_TRACE_BYTECODE_OPTIMIZATION(91,
 							"A[IsVarOpcode(A)] cMul x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -2833,7 +2841,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						{
 						case cImmed:
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(92,
+							FP_TRACE_BYTECODE_OPTIMIZATION(90,
 								"y A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 								"[x] cMul",
 								"    with x = " << x
@@ -2851,7 +2859,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 								{
 								case cImmed:
 									y = ImmedPtr[-1];
-									FP_TRACE_BYTECODE_OPTIMIZATION(96,
+									FP_TRACE_BYTECODE_OPTIMIZATION(94,
 										"y B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 										"A [x] cMul",
 										"    with x = " << x
@@ -2865,7 +2873,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 									C = ByteCodePtr[-3];
 									if(IsVarOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(94,
+										FP_TRACE_BYTECODE_OPTIMIZATION(92,
 											"C[IsVarOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"A [x] cMul",
 											"    with x = " << x
@@ -2878,7 +2886,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 									}
 									if(IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(95,
+										FP_TRACE_BYTECODE_OPTIMIZATION(93,
 											"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"B A [x] cMul",
 											"    with x = " << x
@@ -2893,7 +2901,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 							}
 							if(IsVarOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(90,
+								FP_TRACE_BYTECODE_OPTIMIZATION(88,
 									"B[IsVarOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"[x] cMul",
 									"    with x = " << x
@@ -2906,7 +2914,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 							}
 							if(IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(91,
+								FP_TRACE_BYTECODE_OPTIMIZATION(89,
 									"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"A [x] cMul",
 									"    with x = " << x
@@ -2920,7 +2928,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					}
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(88,
+						FP_TRACE_BYTECODE_OPTIMIZATION(86,
 							"A[IsVarOpcode(A)] x[x==Value_t()] cMul",
 							"[x]",
 							"    with x = " << x
@@ -2931,7 +2939,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					}
 					if(IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(89,
+						FP_TRACE_BYTECODE_OPTIMIZATION(87,
 							"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -2949,7 +2957,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				switch(ByteCodePtr[-2])
 				{
 				case cDup:
-					FP_TRACE_BYTECODE_OPTIMIZATION(320,
+					FP_TRACE_BYTECODE_OPTIMIZATION(324,
 						"cDup cAdd x cMul",
 						"[x+x] cMul",
 						"    with x = " << x << "\n");
@@ -2962,7 +2970,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(392,
+							FP_TRACE_BYTECODE_OPTIMIZATION(396,
 								"A[IsVarOpcode(A)] y cMul cAdd x cMul",
 								"[x] cMul A [y*x] cMul cAdd",
 								"    with x = " << x
@@ -2975,7 +2983,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					break;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(391,
+					FP_TRACE_BYTECODE_OPTIMIZATION(395,
 						"y cAdd x cMul",
 						"[x] cMul [y*x] cAdd",
 						"    with x = " << x
@@ -2991,7 +2999,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				case cAdd:
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(322,
+						FP_TRACE_BYTECODE_OPTIMIZATION(326,
 							"cDup cAdd cMul x cMul",
 							"cMul [x+x] cMul",
 							"    with x = " << x << "\n");
@@ -3003,7 +3011,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					y = ImmedPtr[-1];
 					if(y*x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(70,
+						FP_TRACE_BYTECODE_OPTIMIZATION(68,
 							"y[y*x==Value_t(1)] cMul x cMul",
 							"",
 							"    with x = " << x
@@ -3011,7 +3019,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 							    << "\n");
 						goto Ldb;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(128,
+					FP_TRACE_BYTECODE_OPTIMIZATION(126,
 						"y cMul x cMul",
 						"[y*x] cMul",
 						"    with x = " << x
@@ -3023,7 +3031,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				}
 				break;
 			case cNeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(122,
+				FP_TRACE_BYTECODE_OPTIMIZATION(120,
 					"cNeg x cMul",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -3038,7 +3046,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(393,
+							FP_TRACE_BYTECODE_OPTIMIZATION(397,
 								"A[IsVarOpcode(A)] y cMul cSub x cMul",
 								"[x] cMul A [y*x] cMul cSub",
 								"    with x = " << x
@@ -3052,7 +3060,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(102,
+				FP_TRACE_BYTECODE_OPTIMIZATION(100,
 					"y x cMul",
 					"[y*x]",
 					"    with x = " << x
@@ -3063,7 +3071,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(55,
+				FP_TRACE_BYTECODE_OPTIMIZATION(53,
 					"x[x==Value_t(1)] cMul",
 					"",
 					"    with x = " << x << "\n");
@@ -3071,7 +3079,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(124,
+				FP_TRACE_BYTECODE_OPTIMIZATION(122,
 					"x[x==Value_t(-1)] cMul",
 					"cNeg",
 					"    with x = " << x << "\n");
@@ -3079,7 +3087,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			if(x==Value_t(2))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(198,
+				FP_TRACE_BYTECODE_OPTIMIZATION(196,
 					"x[x==Value_t(2)] cMul",
 					"cDup cAdd",
 					"    with x = " << x << "\n");
@@ -3099,7 +3107,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(483,
+							FP_TRACE_BYTECODE_OPTIMIZATION(486,
 								"B[B==A] cNeg cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3113,7 +3121,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						B = ByteCodePtr[-2];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(474,
+							FP_TRACE_BYTECODE_OPTIMIZATION(477,
 								"B[B==A] cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3129,7 +3137,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(477,
+						FP_TRACE_BYTECODE_OPTIMIZATION(480,
 							"B[B==A] cNeg A[IsVarOpcode(A)] cMul",
 							"B cSqr cNeg",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3143,7 +3151,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					B = ByteCodePtr[-1];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(471,
+						FP_TRACE_BYTECODE_OPTIMIZATION(474,
 							"B[B==A] A[IsVarOpcode(A)] cMul",
 							"B cSqr",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3167,7 +3175,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 							D = ByteCodePtr[-4];
 							if(D==B)
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(490,
+								FP_TRACE_BYTECODE_OPTIMIZATION(493,
 									"D[D==B] C[C==A] cMul B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3201,7 +3209,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(433,
+					FP_TRACE_BYTECODE_OPTIMIZATION(436,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cNEqual",
 						"A cNot",
 						"    with x = " << x
@@ -3214,7 +3222,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(116,
+				FP_TRACE_BYTECODE_OPTIMIZATION(114,
 					"y x cNEqual",
 					"[fp_nequal(y,x)]",
 					"    with x = " << x
@@ -3228,7 +3236,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(366,
+					FP_TRACE_BYTECODE_OPTIMIZATION(370,
 						"cAbs x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -3236,7 +3244,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					/* opcode = cNEqual; */ // redundant, matches cNEqual @ 0
 					goto Ldl;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(368,
+					FP_TRACE_BYTECODE_OPTIMIZATION(372,
 						"cSqr x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -3247,7 +3255,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(435,
+						FP_TRACE_BYTECODE_OPTIMIZATION(438,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cNEqual",
 							"A",
 							"    with x = " << x
@@ -3257,7 +3265,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 						goto Lap;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(423,
+				FP_TRACE_BYTECODE_OPTIMIZATION(426,
 					"x[x==Value_t(0)] cNEqual",
 					"cNotNot",
 					"    with x = " << x << "\n");
@@ -3278,7 +3286,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(123,
+				FP_TRACE_BYTECODE_OPTIMIZATION(121,
 					"x cMul cNeg",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -3287,11 +3295,11 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			break;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cNeg cNeg", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cNeg cNeg", "", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(100,
+			FP_TRACE_BYTECODE_OPTIMIZATION(98,
 				"x cNeg",
 				"[-x]",
 				"    with x = " << x << "\n");
@@ -3309,13 +3317,13 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbsNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbsNotNot cNot", "cAbsNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(238,"cAbsNotNot cNot", "cAbsNot", "");
 			goto Ldp;
 		case cAdd:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(437,
+				FP_TRACE_BYTECODE_OPTIMIZATION(440,
 					"x cAdd cNot",
 					"[-x] cEqual",
 					"    with x = " << x << "\n");
@@ -3324,33 +3332,33 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			break;
 		case cEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cEqual cNot", "cNEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cEqual cNot", "cNEqual", "");
 			goto Ldr;
 		case cGreater:
-			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cGreater cNot", "cLessOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(225,"cGreater cNot", "cLessOrEq", "");
 			goto Lea;
 		case cGreaterOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(222,"cGreaterOrEq cNot", "cLess", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cGreaterOrEq cNot", "cLess", "");
 			goto Leb;
 		case cLess:
-			FP_TRACE_BYTECODE_OPTIMIZATION(219,"cLess cNot", "cGreaterOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cLess cNot", "cGreaterOrEq", "");
 			goto Lec;
 		case cLessOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cLessOrEq cNot", "cGreater", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cLessOrEq cNot", "cGreater", "");
 			goto Led;
 		case cNEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cNEqual cNot", "cEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(228,"cNEqual cNot", "cEqual", "");
 			goto Lee;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(232,"cNot cNot", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(236,"cNot cNot", "cNotNot", "");
 			goto Lba;
 		case cNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNotNot cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(237,"cNotNot cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Lef;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(107,
+			FP_TRACE_BYTECODE_OPTIMIZATION(105,
 				"x cNot",
 				"[fp_not(x)]",
 				"    with x = " << x << "\n");
@@ -3371,7 +3379,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(436,
+				FP_TRACE_BYTECODE_OPTIMIZATION(439,
 					"x cAdd cNotNot",
 					"[-x] cNEqual",
 					"    with x = " << x << "\n");
@@ -3380,7 +3388,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			}
 			break;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(235,"cNot cNotNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(239,"cNot cNotNot", "cNot", "");
 			/* ByteCodePtr[0] = cNot; */ // redundant, matches cNot @ 1
 			return;
 		}
@@ -3395,14 +3403,14 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cDup cOr", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cDup cOr", "cNotNot", "");
 			goto Lba;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(118,
+				FP_TRACE_BYTECODE_OPTIMIZATION(116,
 					"y x cOr",
 					"[fp_or(x,y)]",
 					"    with x = " << x
@@ -3426,7 +3434,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(271,
+				FP_TRACE_BYTECODE_OPTIMIZATION(275,
 					"x[x==Value_t(1)] cRDiv",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -3443,8 +3451,8 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 	case cRSub:
 		if(ByteCodePtr[0] == cDup)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(77,"cDup cRSub", "[Value_t()] cMul", "");
-			goto Lbm;
+			FP_TRACE_BYTECODE_OPTIMIZATION(75,"cDup cRSub", "[Value_t()] cMul", "");
+			goto Lbn;
 		}
 		goto Default0;
 	TailCall_cReal:
@@ -3454,15 +3462,27 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 	}
 	[[fallthrough]];
 	case cReal:
-		if(ByteCodePtr[0] == cImmed)
+		switch(ByteCodePtr[0])
 		{
+		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(191,
+			FP_TRACE_BYTECODE_OPTIMIZATION(189,
 				"x cReal",
 				"[fp_real(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lek;
+		default:
+			A = ByteCodePtr[0];
+			if(IsAlwaysRealOpcode(A))
+			{
+				FP_TRACE_BYTECODE_OPTIMIZATION(79,
+					"A[IsAlwaysRealOpcode(A)] cReal",
+					"A",
+					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
+				/* ByteCodePtr[0] = A; */ // redundant, matches A @ 1
+				return;
+			}
 		}
 		goto Default0;
 	TailCall_cSqr:
@@ -3475,18 +3495,18 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cAbs cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cAbs cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
 			goto Lel;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(203,"cNeg cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
 			goto Lel;
 		default:
 			A = ByteCodePtr[0];
 			if(IsComparisonOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(537,
+				FP_TRACE_BYTECODE_OPTIMIZATION(540,
 					"A[IsComparisonOpcode(A)] cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -3505,16 +3525,16 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cSub", "[Value_t()] cMul", "");
-			goto Lbm;
+			FP_TRACE_BYTECODE_OPTIMIZATION(74,"cDup cSub", "[Value_t()] cMul", "");
+			goto Lbn;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cNeg cSub", "cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(198,"cNeg cSub", "cAdd", "");
 			goto Lem;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(58,
+				FP_TRACE_BYTECODE_OPTIMIZATION(56,
 					"x[x==Value_t()] cSub",
 					"",
 					"    with x = " << x << "\n");
@@ -3523,7 +3543,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(106,
+				FP_TRACE_BYTECODE_OPTIMIZATION(104,
 					"y x cSub",
 					"[y-x]",
 					"    with x = " << x
@@ -3532,7 +3552,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Len;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(51,
+			FP_TRACE_BYTECODE_OPTIMIZATION(49,
 				"x cSub",
 				"[-x] cAdd",
 				"    with x = " << x << "\n");
@@ -3547,7 +3567,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(292,
+						FP_TRACE_BYTECODE_OPTIMIZATION(296,
 							"x cRSub A[IsVarOpcode(A)] cSub",
 							"A cAdd [x] cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3555,7 +3575,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 							    << "\n");
 						goto Lep;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(299,
+					FP_TRACE_BYTECODE_OPTIMIZATION(303,
 						"cRSub A[IsVarOpcode(A)] cSub",
 						"[DO_STACKPLUS1] A cSub cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -3573,7 +3593,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(488,
+				FP_TRACE_BYTECODE_OPTIMIZATION(491,
 					"B[B==A] A[IsVarOpcode(A)&&mData->mByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3594,7 +3614,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 					D = ByteCodePtr[-2];
 					if(D==B)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(489,
+						FP_TRACE_BYTECODE_OPTIMIZATION(492,
 							"D[D==B] C[C==A] B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -3716,9 +3736,9 @@ Lfq: FP_TRACE_BYTECODE_ADD(cNot);
      goto TailCall_cNot;
 Lbk: ImmedPtr[-1] = fp_less(x,y); goto Lap;
 Lbl: ImmedPtr[-1] = fp_lessOrEq(x,y); goto Lap;
-Lbm: mData->mImmed.push_back(Value_t());
+Lbm: ImmedPtr[0] = fp_imag(x); return;
+Lbn: mData->mImmed.push_back(Value_t());
      ByteCodePtr[0] = cImmed; goto Lfb;
-Lbn: ImmedPtr[0] = fp_imag(x); return;
 Lbo: ImmedPtr[0] = Value_t(1)/x; return;
 Lbq: ImmedPtr[-1] = fp_less(y,x); goto Lap;
 Lbr: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lap;
@@ -3905,23 +3925,32 @@ goto TailCall_cReal;goto TailCall_cSub;
 	case cAbs:
 		switch(ByteCodePtr[0])
 		{
+		case cInv:
+			if(ByteCodePtr[-1] == cSqr)
+			{
+				FP_TRACE_BYTECODE_OPTIMIZATION(211,"cSqr cInv cAbs", "cSqr cInv", "");
+				/* ByteCodePtr[-1] = cSqr; */ // redundant, matches cSqr @ 2
+				/* ByteCodePtr[0] = cInv; */ // redundant, matches cInv @ 1
+				return;
+			}
+			goto Default0;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cAbs", "cAbs", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAbs", "cAbs", "");
 			/* opcode = cAbs; */ // redundant, matches cAbs @ 0
 			goto Lab;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(132,
+			FP_TRACE_BYTECODE_OPTIMIZATION(130,
 				"x cAbs",
 				"[fp_abs(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lac;
-		default:
+		default: Default0:;
 			A = ByteCodePtr[0];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(399,
+				FP_TRACE_BYTECODE_OPTIMIZATION(212,
 					"A[IsNeverNegativeValueOpcode(A)] cAbs",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -3929,7 +3958,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAcos:
 	if(!ByteCodePtr)
 	{
@@ -3942,7 +3971,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(fp_abs(x)<=Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(148,
+				FP_TRACE_BYTECODE_OPTIMIZATION(146,
 					"x[fp_abs(x)<=Value_t(1)] cAcos",
 					"[fp_acos(x)]",
 					"    with x = " << x << "\n");
@@ -3950,7 +3979,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lad;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAcosh:
 	if(!ByteCodePtr)
 	{
@@ -3963,7 +3992,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(x>=Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(145,
+				FP_TRACE_BYTECODE_OPTIMIZATION(143,
 					"x[x>=Value_t(1)] cAcosh",
 					"[fp_acosh(x)]",
 					"    with x = " << x << "\n");
@@ -3971,7 +4000,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lae;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAdd:
 	if(!ByteCodePtr)
 	{
@@ -3987,7 +4016,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			case cAdd:
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(313,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
+					FP_TRACE_BYTECODE_OPTIMIZATION(317,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
 					goto Laf;
 				}
 				break;
@@ -3996,29 +4025,29 @@ goto TailCall_cReal;goto TailCall_cSub;
 				{
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(314,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
+						FP_TRACE_BYTECODE_OPTIMIZATION(318,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
 						goto Lag;
 					}
 				}
 				break;
 			}
-			goto Default1;
+			goto Default2;
 		case cMul:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(316,
+					FP_TRACE_BYTECODE_OPTIMIZATION(320,
 						"cDup x cMul cAdd",
 						"[x+Value_t(1)] cMul",
 						"    with x = " << x << "\n");
 					goto Lah;
 				}
 			}
-			goto Default1;
+			goto Default2;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAdd", "cSub", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(197,"cNeg cAdd", "cSub", "");
 			goto Lai;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -4028,7 +4057,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(127,
+					FP_TRACE_BYTECODE_OPTIMIZATION(125,
 						"y cAdd x cAdd",
 						"[y+x] cAdd",
 						"    with x = " << x
@@ -4046,7 +4075,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(301,
+						FP_TRACE_BYTECODE_OPTIMIZATION(305,
 							"y cAdd cRSub x cAdd",
 							"[ y+x] cAdd cRSub",
 							"    with x = " << x
@@ -4057,14 +4086,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(302,
+					FP_TRACE_BYTECODE_OPTIMIZATION(306,
 						"cNeg cRSub x cAdd",
 						"[-x] cAdd cRSub",
 						"    with x = " << x << "\n");
 					goto Lal;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(300,
+					FP_TRACE_BYTECODE_OPTIMIZATION(304,
 						"y cRSub x cAdd",
 						"[ y+x] cRSub",
 						"    with x = " << x
@@ -4084,7 +4113,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(295,
+							FP_TRACE_BYTECODE_OPTIMIZATION(299,
 								"y cAdd B[IsVarOpcode(B)] cSub x cAdd",
 								"[ y+x] cAdd B cSub",
 								"    with x = " << x
@@ -4096,7 +4125,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(296,
+						FP_TRACE_BYTECODE_OPTIMIZATION(300,
 							"cNeg B[IsVarOpcode(B)] cSub x cAdd",
 							"[-x] cAdd B cSub",
 							"    with x = " << x
@@ -4105,7 +4134,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						goto Lao;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(294,
+						FP_TRACE_BYTECODE_OPTIMIZATION(298,
 							"y B[IsVarOpcode(B)] cSub x cAdd",
 							"[ y+x] B cSub",
 							"    with x = " << x
@@ -4119,7 +4148,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(105,
+				FP_TRACE_BYTECODE_OPTIMIZATION(103,
 					"y x cAdd",
 					"[y+x]",
 					"    with x = " << x
@@ -4130,14 +4159,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(57,
+				FP_TRACE_BYTECODE_OPTIMIZATION(55,
 					"x[x==Value_t()] cAdd",
 					"",
 					"    with x = " << x << "\n");
 				goto Lar;
 			}
 			break;
-		default: Default1:;
+		default: Default2:;
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A))
 			{
@@ -4146,7 +4175,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(293,
+						FP_TRACE_BYTECODE_OPTIMIZATION(297,
 							"x cRSub A[IsVarOpcode(A)] cAdd",
 							"[DO_STACKPLUS1] A [x] cAdd cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4156,7 +4185,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						--mStackPtr;
 						goto Lba;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(298,
+					FP_TRACE_BYTECODE_OPTIMIZATION(302,
 						"cRSub A[IsVarOpcode(A)] cAdd",
 						"[DO_STACKPLUS1] A cAdd cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4166,7 +4195,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAnd:
 	if(!ByteCodePtr)
 	{
@@ -4177,14 +4206,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cDup cAnd", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(231,"cDup cAnd", "cNotNot", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(117,
+				FP_TRACE_BYTECODE_OPTIMIZATION(115,
 					"y x cAnd",
 					"[fp_and(x,y)]",
 					"    with x = " << x
@@ -4195,7 +4224,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAsin:
 	if(!ByteCodePtr)
 	{
@@ -4208,7 +4237,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(fp_abs(x)<=Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(149,
+				FP_TRACE_BYTECODE_OPTIMIZATION(147,
 					"x[fp_abs(x)<=Value_t(1)] cAsin",
 					"[fp_asin(x)]",
 					"    with x = " << x << "\n");
@@ -4216,7 +4245,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lbe;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAsinh:
 	if(!ByteCodePtr)
 	{
@@ -4227,14 +4256,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(146,
+			FP_TRACE_BYTECODE_OPTIMIZATION(144,
 				"x cAsinh",
 				"[fp_asinh(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lbf;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAtan:
 	if(!ByteCodePtr)
 	{
@@ -4245,14 +4274,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(150,
+			FP_TRACE_BYTECODE_OPTIMIZATION(148,
 				"x cAtan",
 				"[fp_atan(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lbg;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAtan2:
 	if(!ByteCodePtr)
 	{
@@ -4266,7 +4295,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(139,
+				FP_TRACE_BYTECODE_OPTIMIZATION(137,
 					"y x cAtan2",
 					"[fp_atan2(y,x)]",
 					"    with x = " << x
@@ -4276,7 +4305,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lbh;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cAtanh:
 	if(!ByteCodePtr)
 	{
@@ -4289,7 +4318,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			x = ImmedPtr[0];
 			if(fp_abs(x)<Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(147,
+				FP_TRACE_BYTECODE_OPTIMIZATION(145,
 					"x[fp_abs(x)<Value_t(1)] cAtanh",
 					"[fp_atanh(x)]",
 					"    with x = " << x << "\n");
@@ -4297,7 +4326,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lbi;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCbrt:
 	if(!ByteCodePtr)
 	{
@@ -4308,14 +4337,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(151,
+			FP_TRACE_BYTECODE_OPTIMIZATION(149,
 				"x cCbrt",
 				"[fp_cbrt(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lbj;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCeil:
 	if(!ByteCodePtr)
 	{
@@ -4332,7 +4361,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				A = ByteCodePtr[-2];
 				if(IsVarOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(406,
+					FP_TRACE_BYTECODE_OPTIMIZATION(409,
 						"A[IsVarOpcode(A)] B[IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cCeil",
 						"cCeil A B cAdd",
 						"    with B = " << FP_TRACE_OPCODENAME(B)
@@ -4341,23 +4370,23 @@ goto TailCall_cReal;goto TailCall_cSub;
 					goto Lbk;
 				}
 			}
-			goto Default2;
+			goto Default3;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(413,"cNeg cCeil", "cFloor cNeg", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(416,"cNeg cCeil", "cFloor cNeg", "");
 			goto Lbl;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(135,
+			FP_TRACE_BYTECODE_OPTIMIZATION(133,
 				"x cCeil",
 				"[fp_ceil(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lbm;
-		default: Default2:;
+		default: Default3:;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(402,
+				FP_TRACE_BYTECODE_OPTIMIZATION(405,
 					"A[IsAlwaysIntegerOpcode(A)] cCeil",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4365,7 +4394,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCos:
 	if(!ByteCodePtr)
 	{
@@ -4376,21 +4405,21 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(238,"cAbs cCos", "cCos", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(242,"cAbs cCos", "cCos", "");
 			/* opcode = cCos; */ // redundant, matches cCos @ 0
 			goto Lbn;
 		case cAtan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(529,"cAtan cCos", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(532,"cAtan cCos", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lbo;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(241,"cNeg cCos", "cCos", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(245,"cNeg cCos", "cCos", "");
 			/* opcode = cCos; */ // redundant, matches cCos @ 0
 			goto Lbn;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(152,
+			FP_TRACE_BYTECODE_OPTIMIZATION(150,
 				"x cCos",
 				"[fp_cos(x)]",
 				"    with x = " << x << "\n");
@@ -4406,7 +4435,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(513,
+						FP_TRACE_BYTECODE_OPTIMIZATION(516,
 							"B[B==A] cSec A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCos",
 							"B cSec cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4421,7 +4450,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(507,
+						FP_TRACE_BYTECODE_OPTIMIZATION(510,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCos",
 							"B cSinCos",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4434,7 +4463,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCosh:
 	if(!ByteCodePtr)
 	{
@@ -4445,21 +4474,21 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(239,"cAbs cCosh", "cCosh", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(243,"cAbs cCosh", "cCosh", "");
 			/* opcode = cCosh; */ // redundant, matches cCosh @ 0
 			goto Lca;
 		case cAsinh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(463,"cAsinh cCosh", "[DO_STACKPLUS1] cSqr [Value_t(1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(466,"cAsinh cCosh", "[DO_STACKPLUS1] cSqr [Value_t(1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lcb;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(242,"cNeg cCosh", "cCosh", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(246,"cNeg cCosh", "cCosh", "");
 			/* opcode = cCosh; */ // redundant, matches cCosh @ 0
 			goto Lca;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(153,
+			FP_TRACE_BYTECODE_OPTIMIZATION(151,
 				"x cCosh",
 				"[fp_cosh(x)]",
 				"    with x = " << x << "\n");
@@ -4474,7 +4503,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(520,
+						FP_TRACE_BYTECODE_OPTIMIZATION(523,
 							"B[B==A] cSinh A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCosh",
 							"B cSinhCosh",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4486,7 +4515,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCot:
 	if(!ByteCodePtr)
 	{
@@ -4502,7 +4531,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				B = ByteCodePtr[-2];
 				if(B==A)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(511,
+					FP_TRACE_BYTECODE_OPTIMIZATION(514,
 						"B[B==A] cTan A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCot",
 						"B cTan cDup cInv",
 						"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4514,7 +4543,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cCsc:
 	if(!ByteCodePtr)
 	{
@@ -4528,7 +4557,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(534,
+				FP_TRACE_BYTECODE_OPTIMIZATION(537,
 					"A[IsNeverNegativeValueOpcode(A)] cAtan cCsc",
 					"A cSqr cInv [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4537,8 +4566,8 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
 				goto Lce;
 			}
-			goto Default3;
-		default: Default3:;
+			goto Default4;
+		default: Default4:;
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A)&&mData->mByteCode.size()>2)
 			{
@@ -4547,7 +4576,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(509,
+						FP_TRACE_BYTECODE_OPTIMIZATION(512,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCsc",
 							"B cSin cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4560,7 +4589,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cDeg:
 	if(!ByteCodePtr)
 	{
@@ -4571,14 +4600,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(133,
+			FP_TRACE_BYTECODE_OPTIMIZATION(131,
 				"x cDeg",
 				"[RadiansToDegrees(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lcf;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cDiv:
 	if(!ByteCodePtr)
 	{
@@ -4589,43 +4618,43 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(253,"cCos cDiv", "cSec cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(257,"cCos cDiv", "cSec cMul", "");
 			goto Lcg;
 		case cCot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(257,"cCot cDiv", "cTan cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(261,"cCot cDiv", "cTan cMul", "");
 			goto Lch;
 		case cCsc:
-			FP_TRACE_BYTECODE_OPTIMIZATION(255,"cCsc cDiv", "cSin cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(259,"cCsc cDiv", "cSin cMul", "");
 			goto Lci;
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(78,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
 			goto Lcj;
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(419,"cExp cDiv", "cNeg cExp cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(422,"cExp cDiv", "cNeg cExp cMul", "");
 			goto Lck;
 		case cExp2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(420,"cExp2 cDiv", "cNeg cExp2 cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(423,"cExp2 cDiv", "cNeg cExp2 cMul", "");
 			goto Lcl;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(216,"cInv cDiv", "cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cInv cDiv", "cMul", "");
 			goto Lcm;
 		case cPow:
-			FP_TRACE_BYTECODE_OPTIMIZATION(418,"cPow cDiv", "cNeg cPow cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(421,"cPow cDiv", "cNeg cPow cMul", "");
 			goto Lcn;
 		case cSec:
-			FP_TRACE_BYTECODE_OPTIMIZATION(256,"cSec cDiv", "cCos cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(260,"cSec cDiv", "cCos cMul", "");
 			goto Lco;
 		case cSin:
-			FP_TRACE_BYTECODE_OPTIMIZATION(252,"cSin cDiv", "cCsc cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(256,"cSin cDiv", "cCsc cMul", "");
 			goto Lcp;
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(515,"cSinCos cDiv", "cTan", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(518,"cSinCos cDiv", "cTan", "");
 			goto Lcq;
 		case cSinhCosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(522,"cSinhCosh cDiv", "cTanh", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(525,"cSinhCosh cDiv", "cTanh", "");
 			goto Lcr;
 		case cTan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(254,"cTan cDiv", "cCot cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(258,"cTan cDiv", "cCot cMul", "");
 			goto Lda;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -4634,7 +4663,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(125,
+					FP_TRACE_BYTECODE_OPTIMIZATION(123,
 						"cNeg x[x!=Value_t()] cDiv",
 						"[-x] cDiv",
 						"    with x = " << x << "\n");
@@ -4642,7 +4671,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					goto Ldb;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(103,
+					FP_TRACE_BYTECODE_OPTIMIZATION(101,
 						"y x[x!=Value_t()] cDiv",
 						"[y/x]",
 						"    with x = " << x
@@ -4654,7 +4683,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(56,
+				FP_TRACE_BYTECODE_OPTIMIZATION(54,
 					"x[x==Value_t(1)] cDiv",
 					"",
 					"    with x = " << x << "\n");
@@ -4669,7 +4698,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						y = ImmedPtr[-1];
 						if((y/x)==fp_const_rad_to_deg<Value_t>())
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(324,
+							FP_TRACE_BYTECODE_OPTIMIZATION(328,
 								"y[(y/x)==fp_const_rad_to_deg<Value_t>()] cMul x[x!=Value_t(0)] cDiv",
 								"cDeg",
 								"    with x = " << x
@@ -4679,7 +4708,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						}
 						if((y/x)==fp_const_deg_to_rad<Value_t>())
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(325,
+							FP_TRACE_BYTECODE_OPTIMIZATION(329,
 								"y[(y/x)==fp_const_deg_to_rad<Value_t>()] cMul x[x!=Value_t(0)] cDiv",
 								"cRad",
 								"    with x = " << x
@@ -4687,7 +4716,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 								    << "\n");
 							goto Lde;
 						}
-						FP_TRACE_BYTECODE_OPTIMIZATION(326,
+						FP_TRACE_BYTECODE_OPTIMIZATION(330,
 							"y cMul x[x!=Value_t(0)] cDiv",
 							"[y/x] cMul",
 							"    with x = " << x
@@ -4697,7 +4726,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						goto Ldf;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(328,
+				FP_TRACE_BYTECODE_OPTIMIZATION(332,
 					"x[x!=Value_t(0)] cDiv",
 					"[Value_t(1)/x] cMul",
 					"    with x = " << x << "\n");
@@ -4715,7 +4744,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(IsVarOpcode(B))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(274,
+						FP_TRACE_BYTECODE_OPTIMIZATION(278,
 							"B[IsVarOpcode(B)] cDiv A[IsVarOpcode(A)] cDiv",
 							"[DO_STACKPLUS1] B A cMul cDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4733,7 +4762,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					{
 					case cImmed:
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(269,
+						FP_TRACE_BYTECODE_OPTIMIZATION(273,
 							"x cRDiv A[IsVarOpcode(A)] cDiv",
 							"A cMul [x] cRDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4744,7 +4773,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						B = ByteCodePtr[-2];
 						if(IsVarOpcode(B))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(268,
+							FP_TRACE_BYTECODE_OPTIMIZATION(272,
 								"B[IsVarOpcode(B)] cRDiv A[IsVarOpcode(A)] cDiv",
 								"A cMul B cRDiv",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -4757,7 +4786,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cEqual:
 	if(!ByteCodePtr)
 	{
@@ -4773,7 +4802,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(365,
+					FP_TRACE_BYTECODE_OPTIMIZATION(369,
 						"cAbs x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -4781,7 +4810,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					/* opcode = cEqual; */ // redundant, matches cEqual @ 0
 					goto Ldk;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(367,
+					FP_TRACE_BYTECODE_OPTIMIZATION(371,
 						"cSqr x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -4792,7 +4821,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(434,
+						FP_TRACE_BYTECODE_OPTIMIZATION(437,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cEqual",
 							"A cNot",
 							"    with x = " << x
@@ -4808,7 +4837,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(432,
+					FP_TRACE_BYTECODE_OPTIMIZATION(435,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cEqual",
 						"A",
 						"    with x = " << x
@@ -4821,7 +4850,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(115,
+				FP_TRACE_BYTECODE_OPTIMIZATION(113,
 					"y x cEqual",
 					"[fp_equal(y,x)]",
 					"    with x = " << x
@@ -4831,7 +4860,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Ldm;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cExp:
 	if(!ByteCodePtr)
 	{
@@ -4845,7 +4874,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(415,
+				FP_TRACE_BYTECODE_OPTIMIZATION(418,
 					"x cAdd cExp",
 					"cExp [fp_exp(x)] cMul",
 					"    with x = " << x << "\n");
@@ -4856,7 +4885,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(343,
+				FP_TRACE_BYTECODE_OPTIMIZATION(347,
 					"A[IsNeverNegativeValueOpcode(A)] cLog cExp",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4866,14 +4895,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(154,
+			FP_TRACE_BYTECODE_OPTIMIZATION(152,
 				"x cExp",
 				"[fp_exp(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Ldp;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cExp2:
 	if(!ByteCodePtr)
 	{
@@ -4887,7 +4916,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(416,
+				FP_TRACE_BYTECODE_OPTIMIZATION(419,
 					"x cAdd cExp2",
 					"cExp2 [fp_exp2(x)] cMul",
 					"    with x = " << x << "\n");
@@ -4898,7 +4927,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(344,
+				FP_TRACE_BYTECODE_OPTIMIZATION(348,
 					"A[IsNeverNegativeValueOpcode(A)] cLog2 cExp2",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4908,14 +4937,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(155,
+			FP_TRACE_BYTECODE_OPTIMIZATION(153,
 				"x cExp2",
 				"[fp_exp2(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Ldr;
 		}
-		FP_TRACE_BYTECODE_OPTIMIZATION(492,"cExp2", "[DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp", "");
+		FP_TRACE_BYTECODE_OPTIMIZATION(495,"cExp2", "[DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp", "");
 		incStackPtr();
 		--mStackPtr;
 		goto Lea;
@@ -4935,7 +4964,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				A = ByteCodePtr[-2];
 				if(IsVarOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(405,
+					FP_TRACE_BYTECODE_OPTIMIZATION(408,
 						"A[IsVarOpcode(A)] B[IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cFloor",
 						"cFloor A B cAdd",
 						"    with B = " << FP_TRACE_OPCODENAME(B)
@@ -4944,23 +4973,23 @@ goto TailCall_cReal;goto TailCall_cSub;
 					goto Leb;
 				}
 			}
-			goto Default4;
+			goto Default5;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(412,"cNeg cFloor", "cCeil cNeg", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(415,"cNeg cFloor", "cCeil cNeg", "");
 			goto Lec;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(136,
+			FP_TRACE_BYTECODE_OPTIMIZATION(134,
 				"x cFloor",
 				"[fp_floor(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Led;
-		default: Default4:;
+		default: Default5:;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(401,
+				FP_TRACE_BYTECODE_OPTIMIZATION(404,
 					"A[IsAlwaysIntegerOpcode(A)] cFloor",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -4968,7 +4997,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cGreater:
 	if(!ByteCodePtr)
 	{
@@ -4982,7 +5011,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(113,
+				FP_TRACE_BYTECODE_OPTIMIZATION(111,
 					"y x cGreater",
 					"[fp_less(x,y)]",
 					"    with x = " << x
@@ -4993,14 +5022,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(-0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(444,
+				FP_TRACE_BYTECODE_OPTIMIZATION(447,
 					"x[x==Value_t(-0.5)] cGreater",
 					"cNeg cAbsNot",
 					"    with x = " << x << "\n");
 				goto Lef;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cGreaterOrEq:
 	if(!ByteCodePtr)
 	{
@@ -5015,7 +5044,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			{
 				if(ByteCodePtr[-1] == cAbs)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(440,
+					FP_TRACE_BYTECODE_OPTIMIZATION(443,
 						"cAbs x[x!=Value_t(0)] cGreaterOrEq",
 						"[Value_t(0.5)/x] cMul cNotNot",
 						"    with x = " << x << "\n");
@@ -5025,7 +5054,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(114,
+				FP_TRACE_BYTECODE_OPTIMIZATION(112,
 					"y x cGreaterOrEq",
 					"[fp_lessOrEq(x,y)]",
 					"    with x = " << x
@@ -5036,14 +5065,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(443,
+				FP_TRACE_BYTECODE_OPTIMIZATION(446,
 					"x[x==Value_t(0.5)] cGreaterOrEq",
 					"cAbsNotNot",
 					"    with x = " << x << "\n");
 				goto Lei;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cHypot:
 	if(!ByteCodePtr)
 	{
@@ -5054,17 +5083,19 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(84,"cSinCos cHypot", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(82,"cSinCos cHypot", "[DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd", "");
+			incStackPtr();
+			--mStackPtr;
 			goto Lcj;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(530,
+			FP_TRACE_BYTECODE_OPTIMIZATION(533,
 				"x cHypot",
 				"cSqr [x*x] cAdd cSqrt",
 				"    with x = " << x << "\n");
 			goto Lej;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cInt:
 	if(!ByteCodePtr)
 	{
@@ -5076,7 +5107,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 		{
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(137,
+			FP_TRACE_BYTECODE_OPTIMIZATION(135,
 				"x cInt",
 				"[fp_int(x)]",
 				"    with x = " << x << "\n");
@@ -5086,7 +5117,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(403,
+				FP_TRACE_BYTECODE_OPTIMIZATION(406,
 					"A[IsAlwaysIntegerOpcode(A)] cInt",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -5094,7 +5125,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cInv:
 	if(!ByteCodePtr)
 	{
@@ -5105,19 +5136,19 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(259,"cCos cInv", "cSec", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(263,"cCos cInv", "cSec", "");
 			goto Lel;
 		case cCot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(263,"cCot cInv", "cTan", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(267,"cCot cInv", "cTan", "");
 			goto Lcq;
 		case cCsc:
-			FP_TRACE_BYTECODE_OPTIMIZATION(261,"cCsc cInv", "cSin", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(265,"cCsc cInv", "cSin", "");
 			goto Lem;
 		case cHypot:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(531,
+				FP_TRACE_BYTECODE_OPTIMIZATION(534,
 					"x cHypot cInv",
 					"cSqr [x*x] cAdd cRSqrt",
 					"    with x = " << x << "\n");
@@ -5125,31 +5156,31 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(62,"cInv cInv", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cInv cInv", "", "");
 			goto Ldo;
 		case cPow:
-			FP_TRACE_BYTECODE_OPTIMIZATION(361,"cPow cInv", "cNeg cPow", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(365,"cPow cInv", "cNeg cPow", "");
 			goto Leo;
 		case cRSqrt:
-			FP_TRACE_BYTECODE_OPTIMIZATION(208,"cRSqrt cInv", "cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(207,"cRSqrt cInv", "cSqrt", "");
 			goto Lep;
 		case cSec:
-			FP_TRACE_BYTECODE_OPTIMIZATION(262,"cSec cInv", "cCos", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(266,"cSec cInv", "cCos", "");
 			goto Leq;
 		case cSin:
-			FP_TRACE_BYTECODE_OPTIMIZATION(258,"cSin cInv", "cCsc", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(262,"cSin cInv", "cCsc", "");
 			goto Ler;
 		case cSqrt:
-			FP_TRACE_BYTECODE_OPTIMIZATION(206,"cSqrt cInv", "cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(205,"cSqrt cInv", "cRSqrt", "");
 			goto Lfa;
 		case cTan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(260,"cTan cInv", "cCot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(264,"cTan cInv", "cCot", "");
 			goto Lfb;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x!=Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(101,
+				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
 					"[Value_t(1)/x]",
 					"    with x = " << x << "\n");
@@ -5158,7 +5189,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cLess:
 	if(!ByteCodePtr)
 	{
@@ -5174,7 +5205,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsNeverNegativeValueOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(304,
+					FP_TRACE_BYTECODE_OPTIMIZATION(308,
 						"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLess",
 						"A [x] cMul",
 						"    with x = " << x
@@ -5190,7 +5221,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			{
 				if(ByteCodePtr[-1] == cAbs)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(439,
+					FP_TRACE_BYTECODE_OPTIMIZATION(442,
 						"cAbs x[x!=Value_t(0)] cLess",
 						"[Value_t(0.5)/x] cMul cNot",
 						"    with x = " << x << "\n");
@@ -5200,7 +5231,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(111,
+				FP_TRACE_BYTECODE_OPTIMIZATION(109,
 					"y x cLess",
 					"[fp_less(y,x)]",
 					"    with x = " << x
@@ -5211,14 +5242,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(442,
+				FP_TRACE_BYTECODE_OPTIMIZATION(445,
 					"x[x==Value_t(0.5)] cLess",
 					"cAbsNot",
 					"    with x = " << x << "\n");
 				goto Lfg;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cLessOrEq:
 	if(!ByteCodePtr)
 	{
@@ -5232,7 +5263,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(112,
+				FP_TRACE_BYTECODE_OPTIMIZATION(110,
 					"y x cLessOrEq",
 					"[fp_lessOrEq(y,x)]",
 					"    with x = " << x
@@ -5243,14 +5274,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(-0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(445,
+				FP_TRACE_BYTECODE_OPTIMIZATION(448,
 					"x[x==Value_t(-0.5)] cLessOrEq",
 					"cNeg cAbsNotNot",
 					"    with x = " << x << "\n");
 				goto Lfi;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cLog:
 	if(!ByteCodePtr)
 	{
@@ -5261,7 +5292,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(346,"cExp cLog", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(350,"cExp cLog", "", "");
 			goto Ldo;
 		case cMul:
 			if(ByteCodePtr[-1] == cImmed)
@@ -5269,7 +5300,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(504,
+					FP_TRACE_BYTECODE_OPTIMIZATION(507,
 						"x[x>Value_t(0)] cMul cLog",
 						"cLog [fp_log(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -5278,13 +5309,13 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		case cSqr:
-			FP_TRACE_BYTECODE_OPTIMIZATION(306,"cSqr cLog", "cAbs cLog cDup cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(310,"cSqr cLog", "cAbs cLog cDup cAdd", "");
 			goto Lfk;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x>Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(156,
+				FP_TRACE_BYTECODE_OPTIMIZATION(154,
 					"x[x>Value_t(0)] cLog",
 					"[fp_log(x)]",
 					"    with x = " << x << "\n");
@@ -5293,7 +5324,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cLog10:
 	if(!ByteCodePtr)
 	{
@@ -5304,7 +5335,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(494,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(497,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lfm;
@@ -5314,7 +5345,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(505,
+					FP_TRACE_BYTECODE_OPTIMIZATION(508,
 						"x[x>Value_t(0)] cMul cLog10",
 						"cLog10 [fp_log10(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -5323,13 +5354,13 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		case cSqr:
-			FP_TRACE_BYTECODE_OPTIMIZATION(308,"cSqr cLog10", "cAbs cLog10 cDup cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(312,"cSqr cLog10", "cAbs cLog10 cDup cAdd", "");
 			goto Lfo;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x>Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(157,
+				FP_TRACE_BYTECODE_OPTIMIZATION(155,
 					"x[x>Value_t(0)] cLog10",
 					"[fp_log10(x)]",
 					"    with x = " << x << "\n");
@@ -5338,7 +5369,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cLog2:
 	if(!ByteCodePtr)
 	{
@@ -5349,12 +5380,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(493,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(496,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lfq;
 		case cExp2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(347,"cExp2 cLog2", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(351,"cExp2 cLog2", "", "");
 			goto Ldo;
 		case cMul:
 			if(ByteCodePtr[-1] == cImmed)
@@ -5362,7 +5393,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(503,
+					FP_TRACE_BYTECODE_OPTIMIZATION(506,
 						"x[x>Value_t(0)] cMul cLog2",
 						"cLog2 [fp_log2(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -5371,13 +5402,13 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		case cSqr:
-			FP_TRACE_BYTECODE_OPTIMIZATION(307,"cSqr cLog2", "cAbs cLog2 cDup cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(311,"cSqr cLog2", "cAbs cLog2 cDup cAdd", "");
 			goto Lga;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x>Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(158,
+				FP_TRACE_BYTECODE_OPTIMIZATION(156,
 					"x[x>Value_t(0)] cLog2",
 					"[fp_log2(x)]",
 					"    with x = " << x << "\n");
@@ -5386,7 +5417,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cMax:
 	if(!ByteCodePtr)
 	{
@@ -5397,14 +5428,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cDup cMax", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(58,"cDup cMax", "", "");
 			goto Ldo;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(141,
+				FP_TRACE_BYTECODE_OPTIMIZATION(139,
 					"y x cMax",
 					"[fp_max(x,y)]",
 					"    with x = " << x
@@ -5424,7 +5455,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(66,
+						FP_TRACE_BYTECODE_OPTIMIZATION(64,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMax",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5439,7 +5470,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(68,
+						FP_TRACE_BYTECODE_OPTIMIZATION(66,
 							"B[B==A] cMax A[IsVarOpcode(A)] cMax",
 							"B cMax",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5453,7 +5484,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cMin:
 	if(!ByteCodePtr)
 	{
@@ -5464,14 +5495,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cDup cMin", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(57,"cDup cMin", "", "");
 			goto Ldo;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(140,
+				FP_TRACE_BYTECODE_OPTIMIZATION(138,
 					"y x cMin",
 					"[fp_min(x,y)]",
 					"    with x = " << x
@@ -5491,7 +5522,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(65,
+						FP_TRACE_BYTECODE_OPTIMIZATION(63,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMin",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5506,7 +5537,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(67,
+						FP_TRACE_BYTECODE_OPTIMIZATION(65,
 							"B[B==A] cMin A[IsVarOpcode(A)] cMin",
 							"B cMin",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5520,7 +5551,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cMod:
 	if(!ByteCodePtr)
 	{
@@ -5536,7 +5567,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-1] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(104,
+					FP_TRACE_BYTECODE_OPTIMIZATION(102,
 						"y x[x!=Value_t()] cMod",
 						"[fp_mod(y,x)]",
 						"    with x = " << x
@@ -5547,7 +5578,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cMul:
 	if(!ByteCodePtr)
 	{
@@ -5566,7 +5597,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-3];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(521,
+						FP_TRACE_BYTECODE_OPTIMIZATION(524,
 							"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cCsc cMul",
 							"B cCot",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5577,18 +5608,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 				}
 			}
-			goto Default5;
+			goto Default6;
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cDup cMul", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cDup cMul", "cSqr", "");
 			goto Lgg;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(217,"cInv cMul", "cDiv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cInv cMul", "cDiv", "");
 			goto Lgh;
 		case cNeg:
 			switch(ByteCodePtr[-1])
 			{
 			case cDup:
-				FP_TRACE_BYTECODE_OPTIMIZATION(480,"cDup cNeg cMul", "cSqr cNeg", "");
+				FP_TRACE_BYTECODE_OPTIMIZATION(483,"cDup cNeg cMul", "cSqr cNeg", "");
 				goto Lgi;
 			default:
 				A = ByteCodePtr[-1];
@@ -5599,7 +5630,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(486,
+							FP_TRACE_BYTECODE_OPTIMIZATION(489,
 								"B[B==A] cMul A[IsVarOpcode(A)] cNeg cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -5611,21 +5642,21 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 				}
 			}
-			goto Default5;
+			goto Default6;
 		case cPow:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(317,
+					FP_TRACE_BYTECODE_OPTIMIZATION(321,
 						"cDup x cPow cMul",
 						"[x+Value_t(1)] cPow",
 						"    with x = " << x << "\n");
 					goto Lgk;
 				}
 			}
-			goto Default5;
+			goto Default6;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t())
@@ -5636,7 +5667,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					A = ByteCodePtr[-2];
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(93,
+						FP_TRACE_BYTECODE_OPTIMIZATION(91,
 							"A[IsVarOpcode(A)] cMul x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -5646,8 +5677,8 @@ goto TailCall_cReal;goto TailCall_cSub;
 						/* opcode = cMul; */ // redundant, matches cMul @ 0
 						goto Lgl;
 					}
-					goto Default6;
-				default: Default6:;
+					goto Default7;
+				default: Default7:;
 					A = ByteCodePtr[-1];
 					if(IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A))
 					{
@@ -5655,7 +5686,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						{
 						case cImmed:
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(92,
+							FP_TRACE_BYTECODE_OPTIMIZATION(90,
 								"y A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 								"[x] cMul",
 								"    with x = " << x
@@ -5673,7 +5704,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 								{
 								case cImmed:
 									y = ImmedPtr[-1];
-									FP_TRACE_BYTECODE_OPTIMIZATION(96,
+									FP_TRACE_BYTECODE_OPTIMIZATION(94,
 										"y B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 										"A [x] cMul",
 										"    with x = " << x
@@ -5687,7 +5718,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 									C = ByteCodePtr[-3];
 									if(IsVarOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(94,
+										FP_TRACE_BYTECODE_OPTIMIZATION(92,
 											"C[IsVarOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"A [x] cMul",
 											"    with x = " << x
@@ -5700,7 +5731,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 									}
 									if(IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(95,
+										FP_TRACE_BYTECODE_OPTIMIZATION(93,
 											"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"B A [x] cMul",
 											"    with x = " << x
@@ -5715,7 +5746,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							}
 							if(IsVarOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(90,
+								FP_TRACE_BYTECODE_OPTIMIZATION(88,
 									"B[IsVarOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"[x] cMul",
 									"    with x = " << x
@@ -5728,7 +5759,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							}
 							if(IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(91,
+								FP_TRACE_BYTECODE_OPTIMIZATION(89,
 									"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"A [x] cMul",
 									"    with x = " << x
@@ -5742,7 +5773,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(88,
+						FP_TRACE_BYTECODE_OPTIMIZATION(86,
 							"A[IsVarOpcode(A)] x[x==Value_t()] cMul",
 							"[x]",
 							"    with x = " << x
@@ -5753,7 +5784,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					if(IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(89,
+						FP_TRACE_BYTECODE_OPTIMIZATION(87,
 							"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -5773,13 +5804,13 @@ goto TailCall_cReal;goto TailCall_cSub;
 				case cDup:
 					if(x+x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(319,
+						FP_TRACE_BYTECODE_OPTIMIZATION(323,
 							"cDup[x+x==Value_t(1)] cAdd x cMul",
 							"",
 							"    with x = " << x << "\n");
 						goto Lhb;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(320,
+					FP_TRACE_BYTECODE_OPTIMIZATION(324,
 						"cDup cAdd x cMul",
 						"[x+x] cMul",
 						"    with x = " << x << "\n");
@@ -5792,7 +5823,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(392,
+							FP_TRACE_BYTECODE_OPTIMIZATION(396,
 								"A[IsVarOpcode(A)] y cMul cAdd x cMul",
 								"[x] cMul A [y*x] cMul cAdd",
 								"    with x = " << x
@@ -5805,7 +5836,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					break;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(391,
+					FP_TRACE_BYTECODE_OPTIMIZATION(395,
 						"y cAdd x cMul",
 						"[x] cMul [y*x] cAdd",
 						"    with x = " << x
@@ -5816,10 +5847,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				break;
 			case cDeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(212,
+				FP_TRACE_BYTECODE_OPTIMIZATION(216,
 					"cDeg x cMul",
-					"[RadiansToDegrees(x)] cMul",
+					"[DO_STACKPLUS1] [RadiansToDegrees(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* opcode = cMul; */ // redundant, matches cMul @ 0
 				goto Lhf;
 			case cDiv:
@@ -5832,7 +5865,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(281,
+							FP_TRACE_BYTECODE_OPTIMIZATION(285,
 								"y cMul B[IsVarOpcode(B)] cDiv x cMul",
 								"[y*x] cMul B cDiv",
 								"    with x = " << x
@@ -5844,7 +5877,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(282,
+						FP_TRACE_BYTECODE_OPTIMIZATION(286,
 							"cNeg B[IsVarOpcode(B)] cDiv x cMul",
 							"[-x] cMul B cDiv",
 							"    with x = " << x
@@ -5853,7 +5886,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						goto Lhh;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(280,
+						FP_TRACE_BYTECODE_OPTIMIZATION(284,
 							"y B[IsVarOpcode(B)] cDiv x cMul",
 							"[y*x] B cDiv",
 							"    with x = " << x
@@ -5873,14 +5906,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 					{
 						if(x+x==Value_t(1))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(321,
+							FP_TRACE_BYTECODE_OPTIMIZATION(325,
 								"cDup[x+x==Value_t(1)] cAdd cMul x cMul",
 								"cMul",
 								"    with x = " << x << "\n");
 							/* opcode = cMul; */ // redundant, matches cMul @ 0
 							goto Lhj;
 						}
-						FP_TRACE_BYTECODE_OPTIMIZATION(322,
+						FP_TRACE_BYTECODE_OPTIMIZATION(326,
 							"cDup cAdd cMul x cMul",
 							"cMul [x+x] cMul",
 							"    with x = " << x << "\n");
@@ -5892,7 +5925,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					y = ImmedPtr[-1];
 					if(y*x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(70,
+						FP_TRACE_BYTECODE_OPTIMIZATION(68,
 							"y[y*x==Value_t(1)] cMul x cMul",
 							"",
 							"    with x = " << x
@@ -5902,7 +5935,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					if((y*x)==fp_const_rad_to_deg<Value_t>())
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(310,
+						FP_TRACE_BYTECODE_OPTIMIZATION(314,
 							"y[(y*x)==fp_const_rad_to_deg<Value_t>()] cMul x cMul",
 							"cDeg",
 							"    with x = " << x
@@ -5912,7 +5945,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					if((y*x)==fp_const_deg_to_rad<Value_t>())
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(311,
+						FP_TRACE_BYTECODE_OPTIMIZATION(315,
 							"y[(y*x)==fp_const_deg_to_rad<Value_t>()] cMul x cMul",
 							"cRad",
 							"    with x = " << x
@@ -5920,7 +5953,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							    << "\n");
 						goto Lde;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(128,
+					FP_TRACE_BYTECODE_OPTIMIZATION(126,
 						"y cMul x cMul",
 						"[y*x] cMul",
 						"    with x = " << x
@@ -5932,7 +5965,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				break;
 			case cNeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(122,
+				FP_TRACE_BYTECODE_OPTIMIZATION(120,
 					"cNeg x cMul",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -5945,7 +5978,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(288,
+						FP_TRACE_BYTECODE_OPTIMIZATION(292,
 							"y cMul cRDiv x cMul",
 							"[y*x] cMul cRDiv",
 							"    with x = " << x
@@ -5956,14 +5989,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(289,
+					FP_TRACE_BYTECODE_OPTIMIZATION(293,
 						"cNeg cRDiv x cMul",
 						"[-x] cMul cRDiv",
 						"    with x = " << x << "\n");
 					goto Lhp;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(287,
+					FP_TRACE_BYTECODE_OPTIMIZATION(291,
 						"y cRDiv x cMul",
 						"[y*x] cRDiv",
 						"    with x = " << x
@@ -5974,10 +6007,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				break;
 			case cRad:
-				FP_TRACE_BYTECODE_OPTIMIZATION(213,
+				FP_TRACE_BYTECODE_OPTIMIZATION(217,
 					"cRad x cMul",
-					"[DegreesToRadians(x)] cMul",
+					"[DO_STACKPLUS1] [DegreesToRadians(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* opcode = cMul; */ // redundant, matches cMul @ 0
 				goto Lhr;
 			case cSub:
@@ -5989,7 +6024,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(393,
+							FP_TRACE_BYTECODE_OPTIMIZATION(397,
 								"A[IsVarOpcode(A)] y cMul cSub x cMul",
 								"[x] cMul A [y*x] cMul cSub",
 								"    with x = " << x
@@ -6003,7 +6038,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(102,
+				FP_TRACE_BYTECODE_OPTIMIZATION(100,
 					"y x cMul",
 					"[y*x]",
 					"    with x = " << x
@@ -6014,7 +6049,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(55,
+				FP_TRACE_BYTECODE_OPTIMIZATION(53,
 					"x[x==Value_t(1)] cMul",
 					"",
 					"    with x = " << x << "\n");
@@ -6022,7 +6057,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(124,
+				FP_TRACE_BYTECODE_OPTIMIZATION(122,
 					"x[x==Value_t(-1)] cMul",
 					"cNeg",
 					"    with x = " << x << "\n");
@@ -6030,7 +6065,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(2))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(198,
+				FP_TRACE_BYTECODE_OPTIMIZATION(196,
 					"x[x==Value_t(2)] cMul",
 					"cDup cAdd",
 					"    with x = " << x << "\n");
@@ -6038,7 +6073,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==fp_const_rad_to_deg<Value_t>())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(210,
+				FP_TRACE_BYTECODE_OPTIMIZATION(214,
 					"x[x==fp_const_rad_to_deg<Value_t>()] cMul",
 					"cDeg",
 					"    with x = " << x << "\n");
@@ -6046,14 +6081,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==fp_const_deg_to_rad<Value_t>())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(211,
+				FP_TRACE_BYTECODE_OPTIMIZATION(215,
 					"x[x==fp_const_deg_to_rad<Value_t>()] cMul",
 					"cRad",
 					"    with x = " << x << "\n");
 				goto Lif;
 			}
 			break;
-		default: Default5:;
+		default: Default6:;
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A))
 			{
@@ -6063,7 +6098,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(IsVarOpcode(B))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(277,
+						FP_TRACE_BYTECODE_OPTIMIZATION(281,
 							"B[IsVarOpcode(B)] cDiv A[IsVarOpcode(A)] cMul",
 							"[DO_STACKPLUS1] A cMul B cDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6073,7 +6108,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						--mStackPtr;
 						goto Lig;
 					}
-					goto Default7;
+					goto Default8;
 				case cMul:
 					switch(ByteCodePtr[-2])
 					{
@@ -6081,7 +6116,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(483,
+							FP_TRACE_BYTECODE_OPTIMIZATION(486,
 								"B[B==A] cNeg cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6090,12 +6125,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 							/* ByteCodePtr[-3] = B; */ // redundant, matches B @ 4
 							goto Lgj;
 						}
-						goto Default8;
-					default: Default8:;
+						goto Default9;
+					default: Default9:;
 						B = ByteCodePtr[-2];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(474,
+							FP_TRACE_BYTECODE_OPTIMIZATION(477,
 								"B[B==A] cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6106,12 +6141,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 							goto Lih;
 						}
 					}
-					goto Default7;
+					goto Default8;
 				case cNeg:
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(477,
+						FP_TRACE_BYTECODE_OPTIMIZATION(480,
 							"B[B==A] cNeg A[IsVarOpcode(A)] cMul",
 							"B cSqr cNeg",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6120,12 +6155,12 @@ goto TailCall_cReal;goto TailCall_cSub;
 						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
 						goto Lgi;
 					}
-					goto Default7;
+					goto Default8;
 				case cRDiv:
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(270,
+						FP_TRACE_BYTECODE_OPTIMIZATION(274,
 							"x cRDiv A[IsVarOpcode(A)] cMul",
 							"[DO_STACKPLUS1] A [x] cMul cRDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6135,18 +6170,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 						--mStackPtr;
 						goto Lii;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(284,
+					FP_TRACE_BYTECODE_OPTIMIZATION(288,
 						"cRDiv A[IsVarOpcode(A)] cMul",
 						"[DO_STACKPLUS1] A cMul cRDiv",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
 					incStackPtr();
 					--mStackPtr;
 					goto Lij;
-				default: Default7:;
+				default: Default8:;
 					B = ByteCodePtr[-1];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(471,
+						FP_TRACE_BYTECODE_OPTIMIZATION(474,
 							"B[B==A] A[IsVarOpcode(A)] cMul",
 							"B cSqr",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6170,7 +6205,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							D = ByteCodePtr[-4];
 							if(D==B)
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(490,
+								FP_TRACE_BYTECODE_OPTIMIZATION(493,
 									"D[D==B] C[C==A] cMul B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6188,7 +6223,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cNEqual:
 	if(!ByteCodePtr)
 	{
@@ -6204,7 +6239,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(366,
+					FP_TRACE_BYTECODE_OPTIMIZATION(370,
 						"cAbs x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -6212,7 +6247,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					/* opcode = cNEqual; */ // redundant, matches cNEqual @ 0
 					goto Lil;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(368,
+					FP_TRACE_BYTECODE_OPTIMIZATION(372,
 						"cSqr x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -6223,7 +6258,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(435,
+						FP_TRACE_BYTECODE_OPTIMIZATION(438,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cNEqual",
 							"A",
 							"    with x = " << x
@@ -6239,7 +6274,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(433,
+					FP_TRACE_BYTECODE_OPTIMIZATION(436,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cNEqual",
 						"A cNot",
 						"    with x = " << x
@@ -6252,7 +6287,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(116,
+				FP_TRACE_BYTECODE_OPTIMIZATION(114,
 					"y x cNEqual",
 					"[fp_nequal(y,x)]",
 					"    with x = " << x
@@ -6262,7 +6297,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Lim;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cNeg:
 	if(!ByteCodePtr)
 	{
@@ -6276,7 +6311,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(123,
+				FP_TRACE_BYTECODE_OPTIMIZATION(121,
 					"x cMul cNeg",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -6285,7 +6320,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cNeg cNeg", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cNeg cNeg", "", "");
 			goto Ldo;
 		case cSin:
 			if(ByteCodePtr[-1] == cMul)
@@ -6293,7 +6328,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(247,
+					FP_TRACE_BYTECODE_OPTIMIZATION(251,
 						"x cMul cSin cNeg",
 						"[-x] cMul cSin",
 						"    with x = " << x << "\n");
@@ -6308,7 +6343,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(248,
+					FP_TRACE_BYTECODE_OPTIMIZATION(252,
 						"x cMul cSinh cNeg",
 						"[-x] cMul cSinh",
 						"    with x = " << x << "\n");
@@ -6323,7 +6358,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(249,
+					FP_TRACE_BYTECODE_OPTIMIZATION(253,
 						"x cMul cTan cNeg",
 						"[-x] cMul cTan",
 						"    with x = " << x << "\n");
@@ -6338,7 +6373,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(250,
+					FP_TRACE_BYTECODE_OPTIMIZATION(254,
 						"x cMul cTanh cNeg",
 						"[-x] cMul cTanh",
 						"    with x = " << x << "\n");
@@ -6349,14 +6384,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(100,
+			FP_TRACE_BYTECODE_OPTIMIZATION(98,
 				"x cNeg",
 				"[-x]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Lja;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cNot:
 	if(!ByteCodePtr)
 	{
@@ -6367,14 +6402,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cAbs cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbs cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ljb;
 		case cAbsNot:
 			A = ByteCodePtr[-1];
 			if(IsLogicalOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(395,
+				FP_TRACE_BYTECODE_OPTIMIZATION(399,
 					"A[IsLogicalOpcode(A)] cAbsNot cNot",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -6383,59 +6418,59 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(A!=cImmed)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(396,
+				FP_TRACE_BYTECODE_OPTIMIZATION(400,
 					"A[A!=cImmed] cAbsNot cNot",
 					"A cAbsNotNot",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
 				/* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
 				goto Ljc;
 			}
-			goto Default9;
+			goto Default10;
 		case cAbsNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbsNotNot cNot", "cAbsNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(238,"cAbsNotNot cNot", "cAbsNot", "");
 			goto Ljd;
 		case cEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cEqual cNot", "cNEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cEqual cNot", "cNEqual", "");
 			goto Lje;
 		case cGreater:
-			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cGreater cNot", "cLessOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(225,"cGreater cNot", "cLessOrEq", "");
 			goto Ljf;
 		case cGreaterOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(222,"cGreaterOrEq cNot", "cLess", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cGreaterOrEq cNot", "cLess", "");
 			goto Ljg;
 		case cLess:
-			FP_TRACE_BYTECODE_OPTIMIZATION(219,"cLess cNot", "cGreaterOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cLess cNot", "cGreaterOrEq", "");
 			goto Ljh;
 		case cLessOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cLessOrEq cNot", "cGreater", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cLessOrEq cNot", "cGreater", "");
 			goto Lji;
 		case cNEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cNEqual cNot", "cEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(228,"cNEqual cNot", "cEqual", "");
 			goto Ljj;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(229,"cNeg cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNeg cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ljb;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(232,"cNot cNot", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(236,"cNot cNot", "cNotNot", "");
 			goto Lbc;
 		case cNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNotNot cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(237,"cNotNot cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ljb;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(107,
+			FP_TRACE_BYTECODE_OPTIMIZATION(105,
 				"x cNot",
 				"[fp_not(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Ljk;
-		default: Default9:;
+		default: Default10:;
 			A = ByteCodePtr[0];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(397,
+				FP_TRACE_BYTECODE_OPTIMIZATION(401,
 					"A[IsNeverNegativeValueOpcode(A)] cNot",
 					"A cAbsNot",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -6443,7 +6478,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				goto Ljl;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cNotNot:
 	if(!ByteCodePtr)
 	{
@@ -6453,11 +6488,11 @@ goto TailCall_cReal;goto TailCall_cSub;
 	case cNotNot:
 		if(ByteCodePtr[0] == cNot)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(235,"cNot cNotNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(239,"cNot cNotNot", "cNot", "");
 			/* ByteCodePtr[0] = cNot; */ // redundant, matches cNot @ 1
 			return;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cOr:
 	if(!ByteCodePtr)
 	{
@@ -6468,14 +6503,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cDup cOr", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cDup cOr", "cNotNot", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(118,
+				FP_TRACE_BYTECODE_OPTIMIZATION(116,
 					"y x cOr",
 					"[fp_or(x,y)]",
 					"    with x = " << x
@@ -6486,7 +6521,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cPow:
 	if(!ByteCodePtr)
 	{
@@ -6514,14 +6549,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cExp:
-					FP_TRACE_BYTECODE_OPTIMIZATION(43,
+					FP_TRACE_BYTECODE_OPTIMIZATION(41,
 						"cExp x[isInteger(x)] cPow",
 						"[x] cMul cExp",
 						"    with x = " << x << "\n");
 					/* ImmedPtr[0] = x; */ // redundant, matches x @ 1
 					goto Ljo;
 				case cExp2:
-					FP_TRACE_BYTECODE_OPTIMIZATION(44,
+					FP_TRACE_BYTECODE_OPTIMIZATION(42,
 						"cExp2 x[isInteger(x)] cPow",
 						"[x] cMul cExp2",
 						"    with x = " << x << "\n");
@@ -6533,7 +6568,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						y = ImmedPtr[-1];
 						if(!isInteger(y))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(42,
+							FP_TRACE_BYTECODE_OPTIMIZATION(40,
 								"y[!isInteger(y)] cPow x[isInteger(x)] cPow",
 								"[y*x] cPow",
 								"    with x = " << x
@@ -6544,7 +6579,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							goto Ljq;
 						}
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(45,
+					FP_TRACE_BYTECODE_OPTIMIZATION(43,
 						"cPow x[isInteger(x)] cPow",
 						"[x] cMul cPow",
 						"    with x = " << x << "\n");
@@ -6558,7 +6593,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(447,
+					FP_TRACE_BYTECODE_OPTIMIZATION(450,
 						"cAbs x[isEvenInteger(x)] cPow",
 						"[x] cPow",
 						"    with x = " << x << "\n");
@@ -6568,7 +6603,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				case cMul:
 					if(ByteCodePtr[-2] == cAbs)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(448,
+						FP_TRACE_BYTECODE_OPTIMIZATION(451,
 							"cAbs cMul x[isEvenInteger(x)] cPow",
 							"cMul [x] cPow",
 							"    with x = " << x << "\n");
@@ -6580,16 +6615,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(83,
+				FP_TRACE_BYTECODE_OPTIMIZATION(81,
 					"x[x==Value_t()] cPow",
-					"[Value_t()] cMul [Value_t(1)] cAdd",
+					"[DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Lkc;
 			}
 			if(x==Value_t(0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(335,
+				FP_TRACE_BYTECODE_OPTIMIZATION(339,
 					"x[x==Value_t(0.5)] cPow",
 					"cSqrt",
 					"    with x = " << x << "\n");
@@ -6597,7 +6634,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(1)/Value_t(3))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(336,
+				FP_TRACE_BYTECODE_OPTIMIZATION(340,
 					"x[x==Value_t(1)/Value_t(3)] cPow",
 					"cCbrt",
 					"    with x = " << x << "\n");
@@ -6605,7 +6642,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(1)/Value_t(-3))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(337,
+				FP_TRACE_BYTECODE_OPTIMIZATION(341,
 					"x[x==Value_t(1)/Value_t(-3)] cPow",
 					"cCbrt cInv",
 					"    with x = " << x << "\n");
@@ -6613,7 +6650,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(-0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(338,
+				FP_TRACE_BYTECODE_OPTIMIZATION(342,
 					"x[x==Value_t(-0.5)] cPow",
 					"cRSqrt",
 					"    with x = " << x << "\n");
@@ -6621,7 +6658,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(339,
+				FP_TRACE_BYTECODE_OPTIMIZATION(343,
 					"x[x==Value_t(-1)] cPow",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -6644,7 +6681,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						/* opcode = cPow; */ // redundant, matches cPow @ 0
 						goto Lki;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(333,
+					FP_TRACE_BYTECODE_OPTIMIZATION(337,
 						"y cPow x cPow",
 						"[y*x] cPow",
 						"    with x = " << x
@@ -6656,7 +6693,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				break;
 			case cSqr:
-				FP_TRACE_BYTECODE_OPTIMIZATION(46,
+				FP_TRACE_BYTECODE_OPTIMIZATION(44,
 					"cSqr x cPow",
 					"[x+x] cPow",
 					"    with x = " << x << "\n");
@@ -6666,7 +6703,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				y = ImmedPtr[-1];
 				if(y!=Value_t(0)||x>=Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(165,
+					FP_TRACE_BYTECODE_OPTIMIZATION(163,
 						"y[y!=Value_t(0)||x>=Value_t(0)] x cPow",
 						"[fp_pow(y,x)]",
 						"    with x = " << x
@@ -6677,14 +6714,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				break;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(468,
+			FP_TRACE_BYTECODE_OPTIMIZATION(471,
 				"x cPow",
 				"[DO_POWI]",
 				"    with x = " << x << "\n");
 			if(TryCompilePowi(x))
 			  return;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cRDiv:
 	if(!ByteCodePtr)
 	{
@@ -6695,16 +6732,16 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(516,"cSinCos cRDiv", "cCot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(519,"cSinCos cRDiv", "cCot", "");
 			goto Lfb;
 		case cSinhCosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(523,"cSinhCosh cRDiv", "cTanh cInv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(526,"cSinhCosh cRDiv", "cTanh cInv", "");
 			goto Lkl;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(271,
+				FP_TRACE_BYTECODE_OPTIMIZATION(275,
 					"x[x==Value_t(1)] cRDiv",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -6712,7 +6749,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cRSqrt:
 	if(!ByteCodePtr)
 	{
@@ -6720,12 +6757,16 @@ goto TailCall_cReal;goto TailCall_cSub;
 	}
 	[[fallthrough]];
 	case cRSqrt:
-		if(ByteCodePtr[0] == cInv)
+		switch(ByteCodePtr[0])
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(209,"cInv cRSqrt", "cSqrt", "");
+		case cInv:
+			FP_TRACE_BYTECODE_OPTIMIZATION(208,"cInv cRSqrt", "cSqrt", "");
 			goto Lep;
+		case cSqr:
+			FP_TRACE_BYTECODE_OPTIMIZATION(210,"cSqr cRSqrt", "cInv cAbs", "");
+			goto Lkm;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cRSub:
 	if(!ByteCodePtr)
 	{
@@ -6735,10 +6776,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 	case cRSub:
 		if(ByteCodePtr[0] == cDup)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(77,"cDup cRSub", "[Value_t()] cMul", "");
-			goto Lkm;
+			FP_TRACE_BYTECODE_OPTIMIZATION(75,"cDup cRSub", "[Value_t()] cMul", "");
+			goto Lkn;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cRad:
 	if(!ByteCodePtr)
 	{
@@ -6752,24 +6793,26 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(214,
+				FP_TRACE_BYTECODE_OPTIMIZATION(218,
 					"x cMul cRad",
-					"[DegreesToRadians(x)] cMul",
+					"[DO_STACKPLUS1] [DegreesToRadians(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches x @ 2
-				goto Lkn;
+				goto Lko;
 			}
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(134,
+			FP_TRACE_BYTECODE_OPTIMIZATION(132,
 				"x cRad",
 				"[DegreesToRadians(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lko;
+			goto Lkp;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSec:
 	if(!ByteCodePtr)
 	{
@@ -6780,7 +6823,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAtan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(528,"cAtan cSec", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(531,"cAtan cSec", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lcb;
@@ -6794,7 +6837,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(510,
+						FP_TRACE_BYTECODE_OPTIMIZATION(513,
 							"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSec",
 							"B cCos cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6809,20 +6852,20 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(508,
+						FP_TRACE_BYTECODE_OPTIMIZATION(511,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSec",
 							"B cSinCos cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", B = " << FP_TRACE_OPCODENAME(B)
 							    << "\n");
 						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
-						goto Lkp;
+						goto Lkq;
 					}
 					break;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSin:
 	if(!ByteCodePtr)
 	{
@@ -6833,16 +6876,16 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(243,"cNeg cSin", "cSin cNeg", "");
-			goto Lkq;
+			FP_TRACE_BYTECODE_OPTIMIZATION(247,"cNeg cSin", "cSin cNeg", "");
+			goto Lkr;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(159,
+			FP_TRACE_BYTECODE_OPTIMIZATION(157,
 				"x cSin",
 				"[fp_sin(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lkr;
+			goto Lla;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A)&&mData->mByteCode.size()>2)
@@ -6852,7 +6895,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(512,
+						FP_TRACE_BYTECODE_OPTIMIZATION(515,
 							"B[B==A] cCsc A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSin",
 							"B cCsc cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -6865,7 +6908,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSinh:
 	if(!ByteCodePtr)
 	{
@@ -6876,26 +6919,26 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAcosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(450,"cAcosh cSinh", "[DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(453,"cAcosh cSinh", "[DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
-			goto Lla;
+			goto Llb;
 		case cAsinh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(352,"cAsinh cSinh", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(356,"cAsinh cSinh", "", "");
 			goto Ldo;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(244,"cNeg cSinh", "cSinh cNeg", "");
-			goto Llb;
+			FP_TRACE_BYTECODE_OPTIMIZATION(248,"cNeg cSinh", "cSinh cNeg", "");
+			goto Llc;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(160,
+			FP_TRACE_BYTECODE_OPTIMIZATION(158,
 				"x cSinh",
 				"[fp_sinh(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llc;
+			goto Lld;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSqr:
 	if(!ByteCodePtr)
 	{
@@ -6906,30 +6949,33 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cAbs cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cAbs cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
-			goto Lld;
+			goto Lle;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(203,"cNeg cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
-			goto Lld;
+			goto Lle;
+		case cRSqrt:
+			FP_TRACE_BYTECODE_OPTIMIZATION(209,"cRSqrt cSqr", "cInv", "");
+			goto Llf;
 		case cSqrt:
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(341,
+				FP_TRACE_BYTECODE_OPTIMIZATION(345,
 					"A[IsNeverNegativeValueOpcode(A)] cSqrt cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
 				/* ByteCodePtr[-1] = A; */ // redundant, matches A @ 2
 				goto Ldo;
 			}
-			goto Default10;
-		default: Default10:;
+			goto Default11;
+		default: Default11:;
 			A = ByteCodePtr[0];
 			if(IsComparisonOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(537,
+				FP_TRACE_BYTECODE_OPTIMIZATION(540,
 					"A[IsComparisonOpcode(A)] cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -6937,7 +6983,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSqrt:
 	if(!ByteCodePtr)
 	{
@@ -6955,11 +7001,11 @@ goto TailCall_cReal;goto TailCall_cSub;
 				{
 					if(ByteCodePtr[-3] == cSqr)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(525,
+						FP_TRACE_BYTECODE_OPTIMIZATION(528,
 							"cSqr A[IsVarOpcode(A)] cSqr cAdd cSqrt",
 							"A cHypot",
 							"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
-						goto Lle;
+						goto Llg;
 					}
 				}
 				B = ByteCodePtr[-2];
@@ -6970,38 +7016,38 @@ goto TailCall_cReal;goto TailCall_cSub;
 					{
 						if(ByteCodePtr[-4] == cSqr)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(526,
+							FP_TRACE_BYTECODE_OPTIMIZATION(529,
 								"cSqr A[IsVarOpcode(A)] B[IsUnaryOpcode(B)] cSqr cAdd cSqrt",
 								"A B cHypot",
 								"    with B = " << FP_TRACE_OPCODENAME(B)
 								    << ", A = " << FP_TRACE_OPCODENAME(A)
 								    << "\n");
-							goto Llf;
+							goto Llh;
 						}
 					}
 				}
 			}
 			break;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(207,"cInv cSqrt", "cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(206,"cInv cSqrt", "cRSqrt", "");
 			goto Lfa;
 		case cSqr:
-			FP_TRACE_BYTECODE_OPTIMIZATION(23,"cSqr cSqrt", "cAbs", "");
-			goto Llg;
+			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cSqr cSqrt", "cAbs", "");
+			goto Lli;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x>=Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(161,
+				FP_TRACE_BYTECODE_OPTIMIZATION(159,
 					"x[x>=Value_t(0)] cSqrt",
 					"[fp_sqrt(x)]",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-				goto Llh;
+				goto Llj;
 			}
 			break;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cSub:
 	if(!ByteCodePtr)
 	{
@@ -7012,16 +7058,16 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cSub", "[Value_t()] cMul", "");
-			goto Lkm;
+			FP_TRACE_BYTECODE_OPTIMIZATION(74,"cDup cSub", "[Value_t()] cMul", "");
+			goto Lkn;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cNeg cSub", "cAdd", "");
-			goto Lli;
+			FP_TRACE_BYTECODE_OPTIMIZATION(198,"cNeg cSub", "cAdd", "");
+			goto Llk;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(58,
+				FP_TRACE_BYTECODE_OPTIMIZATION(56,
 					"x[x==Value_t()] cSub",
 					"",
 					"    with x = " << x << "\n");
@@ -7030,21 +7076,21 @@ goto TailCall_cReal;goto TailCall_cSub;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(106,
+				FP_TRACE_BYTECODE_OPTIMIZATION(104,
 					"y x cSub",
 					"[y-x]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
-				goto Llj;
+				goto Lll;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(51,
+			FP_TRACE_BYTECODE_OPTIMIZATION(49,
 				"x cSub",
 				"[-x] cAdd",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llk;
+			goto Llm;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A))
@@ -7054,25 +7100,25 @@ goto TailCall_cReal;goto TailCall_cSub;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(292,
+						FP_TRACE_BYTECODE_OPTIMIZATION(296,
 							"x cRSub A[IsVarOpcode(A)] cSub",
 							"A cAdd [x] cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << "\n");
-						goto Lll;
+						goto Lln;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(299,
+					FP_TRACE_BYTECODE_OPTIMIZATION(303,
 						"cRSub A[IsVarOpcode(A)] cSub",
 						"[DO_STACKPLUS1] A cSub cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
 					incStackPtr();
 					--mStackPtr;
-					goto Llm;
+					goto Llo;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cTan:
 	if(!ByteCodePtr)
 	{
@@ -7083,19 +7129,19 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cAtan2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(358,"cAtan2 cTan", "cDiv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(362,"cAtan2 cTan", "cDiv", "");
 			goto Lgh;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(245,"cNeg cTan", "cTan cNeg", "");
-			goto Lln;
+			FP_TRACE_BYTECODE_OPTIMIZATION(249,"cNeg cTan", "cTan cNeg", "");
+			goto Llp;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(163,
+			FP_TRACE_BYTECODE_OPTIMIZATION(161,
 				"x cTan",
 				"[fp_tan(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llo;
+			goto Llq;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A)&&mData->mByteCode.size()>2)
@@ -7105,7 +7151,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(514,
+						FP_TRACE_BYTECODE_OPTIMIZATION(517,
 							"B[B==A] cCot A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cTan",
 							"B cCot cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7118,7 +7164,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 			}
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cTanh:
 	if(!ByteCodePtr)
 	{
@@ -7129,18 +7175,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 		switch(ByteCodePtr[0])
 		{
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(246,"cNeg cTanh", "cTanh cNeg", "");
-			goto Llp;
+			FP_TRACE_BYTECODE_OPTIMIZATION(250,"cNeg cTanh", "cTanh cNeg", "");
+			goto Llr;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(164,
+			FP_TRACE_BYTECODE_OPTIMIZATION(162,
 				"x cTanh",
 				"[fp_tanh(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llq;
+			goto Lma;
 		}
-		goto Default0;
+		goto Default1;
 	TailCall_cTrunc:
 	if(!ByteCodePtr)
 	{
@@ -7152,17 +7198,17 @@ goto TailCall_cReal;goto TailCall_cSub;
 		{
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(138,
+			FP_TRACE_BYTECODE_OPTIMIZATION(136,
 				"x cTrunc",
 				"[fp_trunc(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llr;
+			goto Lmb;
 		default:
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(400,
+				FP_TRACE_BYTECODE_OPTIMIZATION(403,
 					"A[IsAlwaysIntegerOpcode(A)] cTrunc",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -7170,8 +7216,8 @@ goto TailCall_cReal;goto TailCall_cSub;
 				return;
 			}
 		}
-		goto Default0;
-	default: Default0:;
+		goto Default1;
+	default: Default1:;
 		A = opcode;
 		if(IsComparisonOpcode(A))
 		{
@@ -7184,7 +7230,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(370,
+						FP_TRACE_BYTECODE_OPTIMIZATION(374,
 							"y cAdd x A[IsComparisonOpcode(A)]",
 							"[x-y] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7192,82 +7238,52 @@ goto TailCall_cReal;goto TailCall_cSub;
 							    << ", y = " << y
 							    << "\n");
 						/* ByteCodePtr[-2] = cImmed; */ // redundant, matches y @ 3
-						goto Lma;
+						goto Lmc;
 					}
 					break;
 				case cAtan:
 					if(fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(386,
+						FP_TRACE_BYTECODE_OPTIMIZATION(390,
 							"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A[IsComparisonOpcode(A)]",
 							"[fp_tan(x)] A",
-							"    with A = " << FP_TRACE_OPCODENAME(A)
-							    << ", x = " << x
-							    << "\n");
-						goto Lmb;
-					}
-					break;
-				case cExp:
-					if(x>Value_t(0))
-					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(376,
-							"cExp[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
-							"[fp_log(x)] A",
-							"    with A = " << FP_TRACE_OPCODENAME(A)
-							    << ", x = " << x
-							    << "\n");
-						goto Lmc;
-					}
-					break;
-				case cExp2:
-					if(x>Value_t(0))
-					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(377,
-							"cExp2[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
-							"[fp_log2(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << "\n");
 						goto Lmd;
 					}
 					break;
+				case cExp:
+					if(x>Value_t(0))
+					{
+						FP_TRACE_BYTECODE_OPTIMIZATION(380,
+							"cExp[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
+							"[fp_log(x)] A",
+							"    with A = " << FP_TRACE_OPCODENAME(A)
+							    << ", x = " << x
+							    << "\n");
+						goto Lme;
+					}
+					break;
+				case cExp2:
+					if(x>Value_t(0))
+					{
+						FP_TRACE_BYTECODE_OPTIMIZATION(381,
+							"cExp2[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
+							"[fp_log2(x)] A",
+							"    with A = " << FP_TRACE_OPCODENAME(A)
+							    << ", x = " << x
+							    << "\n");
+						goto Lmf;
+					}
+					break;
 				case cLog:
 					B = ByteCodePtr[-2];
 					if(IsNeverNegativeValueOpcode(B))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(379,
+						FP_TRACE_BYTECODE_OPTIMIZATION(383,
 							"B[IsNeverNegativeValueOpcode(B)] cLog x A[IsComparisonOpcode(A)]",
 							"B [fp_exp(x)] A",
-							"    with A = " << FP_TRACE_OPCODENAME(A)
-							    << ", x = " << x
-							    << ", B = " << FP_TRACE_OPCODENAME(B)
-							    << "\n");
-						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
-						goto Lme;
-					}
-					break;
-				case cLog10:
-					B = ByteCodePtr[-2];
-					if(IsNeverNegativeValueOpcode(B))
-					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(381,
-							"B[IsNeverNegativeValueOpcode(B)] cLog10 x A[IsComparisonOpcode(A)]",
-							"B [fp_pow(Value_t(10),x)] A",
-							"    with A = " << FP_TRACE_OPCODENAME(A)
-							    << ", x = " << x
-							    << ", B = " << FP_TRACE_OPCODENAME(B)
-							    << "\n");
-						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
-						goto Lmf;
-					}
-					break;
-				case cLog2:
-					B = ByteCodePtr[-2];
-					if(IsNeverNegativeValueOpcode(B))
-					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(380,
-							"B[IsNeverNegativeValueOpcode(B)] cLog2 x A[IsComparisonOpcode(A)]",
-							"B [fp_exp2(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << ", B = " << FP_TRACE_OPCODENAME(B)
@@ -7276,13 +7292,43 @@ goto TailCall_cReal;goto TailCall_cSub;
 						goto Lmg;
 					}
 					break;
+				case cLog10:
+					B = ByteCodePtr[-2];
+					if(IsNeverNegativeValueOpcode(B))
+					{
+						FP_TRACE_BYTECODE_OPTIMIZATION(385,
+							"B[IsNeverNegativeValueOpcode(B)] cLog10 x A[IsComparisonOpcode(A)]",
+							"B [fp_pow(Value_t(10),x)] A",
+							"    with A = " << FP_TRACE_OPCODENAME(A)
+							    << ", x = " << x
+							    << ", B = " << FP_TRACE_OPCODENAME(B)
+							    << "\n");
+						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
+						goto Lmh;
+					}
+					break;
+				case cLog2:
+					B = ByteCodePtr[-2];
+					if(IsNeverNegativeValueOpcode(B))
+					{
+						FP_TRACE_BYTECODE_OPTIMIZATION(384,
+							"B[IsNeverNegativeValueOpcode(B)] cLog2 x A[IsComparisonOpcode(A)]",
+							"B [fp_exp2(x)] A",
+							"    with A = " << FP_TRACE_OPCODENAME(A)
+							    << ", x = " << x
+							    << ", B = " << FP_TRACE_OPCODENAME(B)
+							    << "\n");
+						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
+						goto Lmi;
+					}
+					break;
 				case cMul:
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						y = ImmedPtr[-1];
 						if(y>Value_t(0))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(372,
+							FP_TRACE_BYTECODE_OPTIMIZATION(376,
 								"y[y>Value_t(0)] cMul x A[IsComparisonOpcode(A)]",
 								"[x/y] A",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7290,11 +7336,11 @@ goto TailCall_cReal;goto TailCall_cSub;
 								    << ", y = " << y
 								    << "\n");
 							/* ByteCodePtr[-2] = cImmed; */ // redundant, matches y @ 3
-							goto Lmh;
+							goto Lmj;
 						}
 						if(y<Value_t(0))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(373,
+							FP_TRACE_BYTECODE_OPTIMIZATION(377,
 								"y[y<Value_t(0)] cMul x A[IsComparisonOpcode(A)]",
 								"[x/y] {OppositeComparisonOpcode(A)}",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7302,18 +7348,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 								    << ", y = " << y
 								    << "\n");
 							/* ByteCodePtr[-2] = cImmed; */ // redundant, matches y @ 3
-							goto Lmi;
+							goto Lmk;
 						}
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(371,
+					FP_TRACE_BYTECODE_OPTIMIZATION(375,
 						"cNeg x A[IsComparisonOpcode(A)]",
 						"[-x] {OppositeComparisonOpcode(A)}",
 						"    with A = " << FP_TRACE_OPCODENAME(A)
 						    << ", x = " << x
 						    << "\n");
-					goto Lmj;
+					goto Lml;
 				case cPow:
 					if(x>Value_t(0))
 					{
@@ -7322,7 +7368,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							y = ImmedPtr[-1];
 							if(y>Value_t(0))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(374,
+								FP_TRACE_BYTECODE_OPTIMIZATION(378,
 									"y[y>Value_t(0)] cPow[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
 									"[fp_pow(x,Value_t(1)/y)] A",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7330,41 +7376,41 @@ goto TailCall_cReal;goto TailCall_cSub;
 									    << ", y = " << y
 									    << "\n");
 								/* ByteCodePtr[-2] = cImmed; */ // redundant, matches y @ 3
-								goto Lmk;
+								goto Lmm;
 							}
 						}
 					}
 					break;
 				case cSinh:
-					FP_TRACE_BYTECODE_OPTIMIZATION(387,
+					FP_TRACE_BYTECODE_OPTIMIZATION(391,
 						"cSinh x A[IsComparisonOpcode(A)]",
 						"[fp_asinh(x)] A",
 						"    with A = " << FP_TRACE_OPCODENAME(A)
 						    << ", x = " << x
 						    << "\n");
-					goto Lml;
+					goto Lmn;
 				case cSqr:
 					if(x>Value_t(0))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(375,
+						FP_TRACE_BYTECODE_OPTIMIZATION(379,
 							"cSqr[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
 							"cAbs [fp_sqrt(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << "\n");
-						goto Lmm;
+						goto Lmo;
 					}
 					break;
 				case cTanh:
 					if(fp_abs(x)<Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(388,
+						FP_TRACE_BYTECODE_OPTIMIZATION(392,
 							"cTanh[fp_abs(x)<Value_t(1)] x A[IsComparisonOpcode(A)]",
 							"[fp_atanh(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << "\n");
-						goto Lmn;
+						goto Lmp;
 					}
 					break;
 				}
@@ -7375,14 +7421,14 @@ goto TailCall_cReal;goto TailCall_cSub;
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(488,
+				FP_TRACE_BYTECODE_OPTIMIZATION(491,
 					"B[B==A] A[IsVarOpcode(A)&&mData->mByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
 					    << ", B = " << FP_TRACE_OPCODENAME(B)
 					    << "\n");
 				/* ByteCodePtr[0] = B; */ // redundant, matches B @ 1
-				goto Lmo;
+				goto Lmq;
 			}
 		}
 		if(IsUnaryOpcode(A))
@@ -7396,7 +7442,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 					D = ByteCodePtr[-2];
 					if(D==B)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(489,
+						FP_TRACE_BYTECODE_OPTIMIZATION(492,
 							"D[D==B] C[C==A] B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -7406,7 +7452,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							    << "\n");
 						/* ByteCodePtr[-2] = D; */ // redundant, matches D @ 3
 						/* ByteCodePtr[-1] = C; */ // redundant, matches C @ 2
-						goto Lmp;
+						goto Lmr;
 					}
 				}
 			}
@@ -7425,7 +7471,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(518,
+							FP_TRACE_BYTECODE_OPTIMIZATION(521,
 								"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cSin C[IsCommutativeOrParamSwappableBinaryOpcode(C)]",
 								"B cSinCos {GetParamSwappedBinaryOpcode(C)}",
 								"    with C = " << FP_TRACE_OPCODENAME(C)
@@ -7433,7 +7479,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 								    << ", B = " << FP_TRACE_OPCODENAME(B)
 								    << "\n");
 							/* ByteCodePtr[-3] = B; */ // redundant, matches B @ 4
-							goto Lmq;
+							goto Lna;
 						}
 					}
 				}
@@ -7447,7 +7493,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(519,
+							FP_TRACE_BYTECODE_OPTIMIZATION(522,
 								"B[B==A] cCosh A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cSinh C[IsCommutativeOrParamSwappableBinaryOpcode(C)]",
 								"B cSinhCosh {GetParamSwappedBinaryOpcode(C)}",
 								"    with C = " << FP_TRACE_OPCODENAME(C)
@@ -7455,7 +7501,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 								    << ", B = " << FP_TRACE_OPCODENAME(B)
 								    << "\n");
 							/* ByteCodePtr[-3] = B; */ // redundant, matches B @ 4
-							goto Lmr;
+							goto Lnb;
 						}
 					}
 				}
@@ -7467,7 +7513,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 Laa: mData->mByteCode.push_back(opcode); return;
 Lab: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lna: FP_TRACE_BYTECODE_ADD(cAbs);
+Lnc: FP_TRACE_BYTECODE_ADD(cAbs);
      goto TailCall_cAbs;
 Lac: ImmedPtr[0] = fp_abs(x); return;
 Lad: ImmedPtr[0] = fp_acos(x); return;
@@ -7476,57 +7522,57 @@ Laf: mData->mImmed.push_back(Value_t(4));
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-Lnb: opcode = cMul;
-Lnc: FP_ReDefinePointers();
-Lnd: FP_TRACE_BYTECODE_ADD(cMul);
+Lnd: opcode = cMul;
+Lne: FP_ReDefinePointers();
+Lnf: FP_TRACE_BYTECODE_ADD(cMul);
      goto TailCall_cMul;
 Lag: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      mData->mImmed.push_back(Value_t(4));
-Lne: mData->mByteCode.push_back(cImmed); goto Lnb;
+Lng: mData->mByteCode.push_back(cImmed); goto Lnd;
 Lah: ImmedPtr[0] = x+Value_t(1);
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-Lfd: opcode = cMul; goto Lnd;
+Lfd: opcode = cMul; goto Lnf;
 Lai: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSub;
-Lnf: FP_TRACE_BYTECODE_ADD(cSub);
+Lnh: FP_TRACE_BYTECODE_ADD(cSub);
      goto TailCall_cSub;
 Laj: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lng: FP_ReDefinePointers();
-Lnh: FP_TRACE_BYTECODE_ADD(cAdd);
+Lni: FP_ReDefinePointers();
+Lnj: FP_TRACE_BYTECODE_ADD(cAdd);
      goto TailCall_cAdd;
 Lak: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lni: AddFunctionOpcode(cAdd);
-Lnj: opcode = cRSub;
+Lnk: AddFunctionOpcode(cAdd);
+Lnl: opcode = cRSub;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRSub);
      goto TailCall_cRSub;
 Lal: ImmedPtr[0] = -x;
      ByteCodePtr[-2] = cImmed;
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lni;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnk;
 Lam: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnj;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnl;
 Lan: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lnk: AddFunctionOpcode(cAdd);
-Lnl: AddFunctionOpcode(B);
-Lnm: opcode = cSub;
-     FP_ReDefinePointers(); goto Lnf;
+Lnm: AddFunctionOpcode(cAdd);
+Lnn: AddFunctionOpcode(B);
+Lno: opcode = cSub;
+     FP_ReDefinePointers(); goto Lnh;
 Lao: ImmedPtr[0] = -x;
      ByteCodePtr[-3] = cImmed;
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnk;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnm;
 Lap: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnl;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnn;
 Laq: ImmedPtr[-1] = y+x;
 Lar: mData->mImmed.pop_back();
 Ldo: mData->mByteCode.pop_back(); return;
@@ -7534,13 +7580,13 @@ Lba: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Lni;
+     mData->mByteCode.push_back(cImmed); goto Lnk;
 Lbb: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Lni;
+     AddFunctionOpcode(A); goto Lnk;
 Lbc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cNotNot;
-Lnn: FP_TRACE_BYTECODE_ADD(cNotNot);
+Lnp: FP_TRACE_BYTECODE_ADD(cNotNot);
      goto TailCall_cNotNot;
 Lbd: ImmedPtr[-1] = fp_and(x,y); goto Lar;
 Lbe: ImmedPtr[0] = fp_asin(x); return;
@@ -7551,33 +7597,33 @@ Lbi: ImmedPtr[0] = fp_atanh(x); return;
 Lbj: ImmedPtr[0] = fp_cbrt(x); return;
 Lbk: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cCeil);
-Lno: AddFunctionOpcode(A);
+Lnq: AddFunctionOpcode(A);
      AddFunctionOpcode(B);
-Lnp: opcode = cAdd; goto Lng;
+Lnr: opcode = cAdd; goto Lni;
 Lbl: mData->mByteCode.pop_back();
      AddFunctionOpcode(cFloor);
-Lnq: opcode = cNeg;
+Loa: opcode = cNeg;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cNeg);
      goto TailCall_cNeg;
 Lbm: ImmedPtr[0] = fp_ceil(x); return;
 Lbn: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lnr: FP_TRACE_BYTECODE_ADD(cCos);
+Lob: FP_TRACE_BYTECODE_ADD(cCos);
      goto TailCall_cCos;
 Lbo: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
      mData->mImmed.push_back(Value_t(1));
-Loa: mData->mByteCode.push_back(cImmed);
+Loc: mData->mByteCode.push_back(cImmed);
      AddFunctionOpcode(cAdd);
-Lob: opcode = cRSqrt;
+Lod: opcode = cRSqrt;
      FP_ReDefinePointers();
-Loc: FP_TRACE_BYTECODE_ADD(cRSqrt);
+Loe: FP_TRACE_BYTECODE_ADD(cRSqrt);
      goto TailCall_cRSqrt;
 Lbp: ImmedPtr[0] = fp_cos(x); return;
 Lbq: ByteCodePtr[0] = cDup;
-     opcode = cInv;
-Lod: FP_TRACE_BYTECODE_ADD(cInv);
+Lof: opcode = cInv;
+Log: FP_TRACE_BYTECODE_ADD(cInv);
      goto TailCall_cInv;
 Lbr: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinCos); return;
@@ -7587,132 +7633,132 @@ Lca: mData->mByteCode.pop_back();
      goto TailCall_cCosh;
 Lcb: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-Loe: mData->mImmed.push_back(Value_t(1));
-Lof: mData->mByteCode.push_back(cImmed);
+Loh: mData->mImmed.push_back(Value_t(1));
+Loi: mData->mByteCode.push_back(cImmed);
      AddFunctionOpcode(cAdd);
-Log: opcode = cSqrt;
+Loj: opcode = cSqrt;
      FP_ReDefinePointers();
-Loh: FP_TRACE_BYTECODE_ADD(cSqrt);
+Lok: FP_TRACE_BYTECODE_ADD(cSqrt);
      goto TailCall_cSqrt;
 Lcc: ImmedPtr[0] = fp_cosh(x); return;
 Lcd: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinhCosh); return;
 Lce: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-     AddFunctionOpcode(cInv); goto Loe;
+     AddFunctionOpcode(cInv); goto Loh;
 Lcf: ImmedPtr[0] = RadiansToDegrees(x); return;
 Lcg: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSec); goto Lnb;
+     AddFunctionOpcode(cSec); goto Lnd;
 Lch: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTan); goto Lnb;
+     AddFunctionOpcode(cTan); goto Lnd;
 Lci: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSin); goto Lnb;
+     AddFunctionOpcode(cSin); goto Lnd;
 Lcj: mData->mImmed.push_back(Value_t());
      ByteCodePtr[0] = cImmed;
-Loi: AddFunctionOpcode(cMul);
+Lol: AddFunctionOpcode(cMul);
      mData->mImmed.push_back(Value_t(1));
-Loj: mData->mByteCode.push_back(cImmed); goto Lnp;
+Lom: mData->mByteCode.push_back(cImmed); goto Lnr;
 Lck: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cExp); goto Lnb;
+     AddFunctionOpcode(cExp); goto Lnd;
 Lcl: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cExp2); goto Lnb;
+     AddFunctionOpcode(cExp2); goto Lnd;
 Lcm: mData->mByteCode.pop_back();
      ByteCodePtr -= 1; goto Lfd;
 Lcn: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cPow); goto Lnb;
+     AddFunctionOpcode(cPow); goto Lnd;
 Lco: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCos); goto Lnb;
+     AddFunctionOpcode(cCos); goto Lnd;
 Lcp: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCsc); goto Lnb;
+     AddFunctionOpcode(cCsc); goto Lnd;
 Lcq: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cTan;
-Lok: FP_TRACE_BYTECODE_ADD(cTan);
+Lon: FP_TRACE_BYTECODE_ADD(cTan);
      goto TailCall_cTan;
 Lcr: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cTanh;
-Lol: FP_TRACE_BYTECODE_ADD(cTanh);
+Loo: FP_TRACE_BYTECODE_ADD(cTanh);
      goto TailCall_cTanh;
 Lda: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCot); goto Lnb;
+     AddFunctionOpcode(cCot); goto Lnd;
 Ldb: ImmedPtr[0] = -x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lom: FP_TRACE_BYTECODE_ADD(cDiv);
+Lop: FP_TRACE_BYTECODE_ADD(cDiv);
      goto TailCall_cDiv;
 Ldc: ImmedPtr[-1] = y/x; goto Lar;
 Ldd: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lon: opcode = cDeg;
+Loq: opcode = cDeg;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cDeg);
      goto TailCall_cDeg;
 Lde: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Loo: opcode = cRad;
+Lor: opcode = cRad;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRad);
      goto TailCall_cRad;
 Ldf: ImmedPtr[-1] = y/x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnb;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnd;
 Ldg: ImmedPtr[0] = Value_t(1)/x; goto Lfd;
 Ldh: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
-Lop: FP_ReDefinePointers(); goto Lom;
+Lpa: FP_ReDefinePointers(); goto Lop;
 Ldi: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
      mData->mImmed.push_back(x);
      mData->mByteCode.push_back(cImmed);
-Loq: opcode = cRDiv;
+Lpb: opcode = cRDiv;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRDiv);
      goto TailCall_cRDiv;
 Ldj: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
-     AddFunctionOpcode(B); goto Loq;
+     AddFunctionOpcode(B); goto Lpb;
 Ldk: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lor: FP_TRACE_BYTECODE_ADD(cEqual);
+Lpc: FP_TRACE_BYTECODE_ADD(cEqual);
      goto TailCall_cEqual;
 Ldl: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
-Lpa: opcode = cNot;
+Lpd: opcode = cNot;
      FP_ReDefinePointers();
-Lpb: FP_TRACE_BYTECODE_ADD(cNot);
+Lpe: FP_TRACE_BYTECODE_ADD(cNot);
      goto TailCall_cNot;
 Ldm: ImmedPtr[-1] = fp_equal(y,x); goto Lar;
 Ldn: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cExp);
-     mData->mImmed.push_back(fp_exp(x)); goto Lne;
+     mData->mImmed.push_back(fp_exp(x)); goto Lng;
 Ldp: ImmedPtr[0] = fp_exp(x); return;
 Ldq: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cExp2);
-     mData->mImmed.push_back(fp_exp2(x)); goto Lne;
+     mData->mImmed.push_back(fp_exp2(x)); goto Lng;
 Ldr: ImmedPtr[0] = fp_exp2(x); return;
 Lea: mData->mImmed.push_back(fp_log(Value_t(2)));
      mData->mByteCode.push_back(cImmed);
-Lpc: AddFunctionOpcode(cMul);
+Lpf: AddFunctionOpcode(cMul);
      opcode = cExp;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cExp);
      goto TailCall_cExp;
 Leb: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cFloor); goto Lno;
+     AddFunctionOpcode(cFloor); goto Lnq;
 Lec: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCeil); goto Lnq;
+     AddFunctionOpcode(cCeil); goto Loa;
 Led: ImmedPtr[0] = fp_floor(x); return;
 Lee: ImmedPtr[-1] = fp_less(x,y); goto Lar;
 Lef: mData->mImmed.pop_back();
@@ -7724,15 +7770,15 @@ Leg: ImmedPtr[0] = Value_t(0.5)/x;
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cMul);
      opcode = cNotNot;
-     FP_ReDefinePointers(); goto Lnn;
+     FP_ReDefinePointers(); goto Lnp;
 Leh: ImmedPtr[-1] = fp_lessOrEq(x,y); goto Lar;
 Lei: mData->mImmed.pop_back();
 Ljc: mData->mByteCode.pop_back();
-Lpd: AddFunctionOpcode(cAbsNotNot); return;
+Lpg: AddFunctionOpcode(cAbsNotNot); return;
 Lej: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(x*x); goto Lof;
+     mData->mImmed.push_back(x*x); goto Loi;
 Lek: ImmedPtr[0] = fp_int(x); return;
 Lel: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
@@ -7742,24 +7788,24 @@ Lel: mData->mByteCode.pop_back();
 Lem: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSin;
-Lpe: FP_TRACE_BYTECODE_ADD(cSin);
+Lph: FP_TRACE_BYTECODE_ADD(cSin);
      goto TailCall_cSin;
 Len: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(x*x); goto Loa;
+     mData->mImmed.push_back(x*x); goto Loc;
 Leo: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
      opcode = cPow;
-Lpf: FP_ReDefinePointers();
-Lpg: FP_TRACE_BYTECODE_ADD(cPow);
+Lpi: FP_ReDefinePointers();
+Lpj: FP_TRACE_BYTECODE_ADD(cPow);
      goto TailCall_cPow;
 Lep: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cSqrt; goto Loh;
+     opcode = cSqrt; goto Lok;
 Leq: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cCos; goto Lnr;
+     opcode = cCos; goto Lob;
 Ler: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cCsc;
@@ -7767,98 +7813,98 @@ Ler: mData->mByteCode.pop_back();
      goto TailCall_cCsc;
 Lfa: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cRSqrt; goto Loc;
+     opcode = cRSqrt; goto Loe;
 Lfb: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lph: opcode = cCot;
+Lpk: opcode = cCot;
      FP_TRACE_BYTECODE_ADD(cCot);
      goto TailCall_cCot;
 Lfc: ImmedPtr[0] = Value_t(1)/x; return;
 Lfe: ImmedPtr[0] = Value_t(0.5)/x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     AddFunctionOpcode(cMul); goto Lpa;
+     AddFunctionOpcode(cMul); goto Lpd;
 Lff: ImmedPtr[-1] = fp_less(y,x); goto Lar;
 Lfg: mData->mImmed.pop_back();
 Ljd: mData->mByteCode.pop_back(); goto Ljl;
 Lfh: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lar;
 Lfi: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
-     AddFunctionOpcode(cNeg); goto Lpd;
+     AddFunctionOpcode(cNeg); goto Lpg;
 Lfj: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog);
-     mData->mImmed.push_back(fp_log(x)); goto Loj;
+     mData->mImmed.push_back(fp_log(x)); goto Lom;
 Lfk: mData->mByteCode.pop_back();
      AddFunctionOpcode(cAbs);
      AddFunctionOpcode(cLog);
-Lpi: mData->mByteCode.push_back(cDup); goto Lnp;
+Lpl: mData->mByteCode.push_back(cDup); goto Lnr;
 Lfl: ImmedPtr[0] = fp_log(x); return;
 Lfm: mData->mImmed.push_back(fp_log10(fp_const_e<Value_t>()));
-Lpj: ByteCodePtr[0] = cImmed; goto Lnb;
+Lpm: ByteCodePtr[0] = cImmed; goto Lnd;
 Lfn: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog10);
-     mData->mImmed.push_back(fp_log10(x)); goto Loj;
+     mData->mImmed.push_back(fp_log10(x)); goto Lom;
 Lfo: mData->mByteCode.pop_back();
      AddFunctionOpcode(cAbs);
-     AddFunctionOpcode(cLog10); goto Lpi;
+     AddFunctionOpcode(cLog10); goto Lpl;
 Lfp: ImmedPtr[0] = fp_log10(x); return;
-Lfq: mData->mImmed.push_back(fp_log2(fp_const_e<Value_t>())); goto Lpj;
+Lfq: mData->mImmed.push_back(fp_log2(fp_const_e<Value_t>())); goto Lpm;
 Lfr: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog2);
-     mData->mImmed.push_back(fp_log2(x)); goto Loj;
+     mData->mImmed.push_back(fp_log2(x)); goto Lom;
 Lga: mData->mByteCode.pop_back();
      AddFunctionOpcode(cAbs);
-     AddFunctionOpcode(cLog2); goto Lpi;
+     AddFunctionOpcode(cLog2); goto Lpl;
 Lgb: ImmedPtr[0] = fp_log2(x); return;
 Lgc: ImmedPtr[-1] = fp_max(x,y); goto Lar;
 Lgd: ImmedPtr[-1] = fp_min(x,y); goto Lar;
 Lge: ImmedPtr[-1] = fp_mod(y,x); goto Lar;
 Lgf: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     ByteCodePtr -= 3; goto Lph;
+     ByteCodePtr -= 3; goto Lpk;
 Lgg: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSqr;
-Lpk: FP_TRACE_BYTECODE_ADD(cSqr);
+Lpn: FP_TRACE_BYTECODE_ADD(cSqr);
      goto TailCall_cSqr;
 Lgh: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cDiv; goto Lom;
+     opcode = cDiv; goto Lop;
 Lgi: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSqr); goto Lnq;
+     AddFunctionOpcode(cSqr); goto Loa;
 Lgj: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSqr);
-     AddFunctionOpcode(cMul); goto Lnq;
+     AddFunctionOpcode(cMul); goto Loa;
 Lgk: ImmedPtr[0] = x+Value_t(1);
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-     opcode = cPow; goto Lpg;
+     opcode = cPow; goto Lpj;
 Lgl: ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     ByteCodePtr -= 2; goto Lnd;
+     ByteCodePtr -= 2; goto Lnf;
 Lgm: ImmedPtr[-1] = x;
-Lpl: mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnc;
+Lpo: mData->mImmed.pop_back();
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lne;
 Lgn: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
-Lpm: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lpn: AddFunctionOpcode(A);
+Lpp: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
+Lpq: AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-Lpo: mData->mByteCode.push_back(cImmed); goto Lnc;
-Lgo: mData->mImmed.pop_back(); goto Lpm;
+Lpr: mData->mByteCode.push_back(cImmed); goto Lne;
+Lgo: mData->mImmed.pop_back(); goto Lpp;
 Lgp: mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(B); goto Lpn;
+     AddFunctionOpcode(B); goto Lpq;
 Lgq: mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpn;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpq;
 Lgr: ByteCodePtr[-1] = cImmed; goto Ldo;
 Lha: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lnd;
+     ByteCodePtr -= 1; goto Lnf;
 Lhb: mData->mImmed.pop_back();
-Lpp: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} return;
+Lqa: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} return;
 Lhc: ImmedPtr[0] = x+x; goto Lgl;
 Lhd: ImmedPtr[-1] = x;
      ByteCodePtr[-4] = cImmed;
@@ -7868,44 +7914,44 @@ Lhd: ImmedPtr[-1] = x;
      AddFunctionOpcode(A);
      mData->mImmed.push_back(y*x);
      mData->mByteCode.push_back(cImmed);
-     AddFunctionOpcode(cMul); goto Lnp;
+     AddFunctionOpcode(cMul); goto Lnr;
 Lhe: ImmedPtr[-1] = x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
-     mData->mImmed.push_back(y*x); goto Loj;
+     mData->mImmed.push_back(y*x); goto Lom;
 Lhf: ImmedPtr[0] = RadiansToDegrees(x); goto Lha;
 Lhg: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lpq: AddFunctionOpcode(cMul);
-Lpr: AddFunctionOpcode(B);
-     opcode = cDiv; goto Lop;
+Lqb: AddFunctionOpcode(cMul);
+Lqc: AddFunctionOpcode(B);
+     opcode = cDiv; goto Lpa;
 Lhh: ImmedPtr[0] = -x;
      ByteCodePtr[-3] = cImmed;
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpq;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqb;
 Lhi: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpr;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqc;
 Lhj: mData->mImmed.pop_back();
-     for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnc;
+     for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lne;
 Lhk: mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
-     mData->mImmed.push_back(x+x); goto Lpo;
-Lhl: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();} goto Lpp;
-Lhm: ImmedPtr[-1] = y*x; goto Lpl;
+     mData->mImmed.push_back(x+x); goto Lpr;
+Lhl: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();} goto Lqa;
+Lhm: ImmedPtr[-1] = y*x; goto Lpo;
 Lhn: ImmedPtr[0] = -x; goto Lha;
 Lho: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lqa: AddFunctionOpcode(cMul); goto Loq;
+Lqd: AddFunctionOpcode(cMul); goto Lpb;
 Lhp: ImmedPtr[0] = -x;
      ByteCodePtr[-2] = cImmed;
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqa;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqd;
 Lhq: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Loq;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpb;
 Lhr: ImmedPtr[0] = DegreesToRadians(x); goto Lha;
 Lia: ImmedPtr[-1] = x;
      ByteCodePtr[-4] = cImmed;
@@ -7915,34 +7961,34 @@ Lia: ImmedPtr[-1] = x;
      AddFunctionOpcode(A);
      mData->mImmed.push_back(y*x);
      mData->mByteCode.push_back(cImmed);
-     AddFunctionOpcode(cMul); goto Lnm;
+     AddFunctionOpcode(cMul); goto Lno;
 Lib: ImmedPtr[-1] = y*x; goto Lar;
 Lic: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lnq;
+     mData->mByteCode.pop_back(); goto Loa;
 Lid: ByteCodePtr[0] = cDup;
      ImmedPtr -= 1;
      mData->mImmed.pop_back();
-Lqb: opcode = cAdd; goto Lnh;
+Lqe: opcode = cAdd; goto Lnj;
 Lie: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lon;
+     mData->mByteCode.pop_back(); goto Loq;
 Lif: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Loo;
+     mData->mByteCode.pop_back(); goto Lor;
 Lig: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Lpq;
+     AddFunctionOpcode(A); goto Lqb;
 Lih: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lqc: AddFunctionOpcode(cSqr); goto Lnc;
+Lqf: AddFunctionOpcode(cSqr); goto Lne;
 Lii: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Lqa;
+     mData->mByteCode.push_back(cImmed); goto Lqd;
 Lij: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Lqa;
-Lik: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqc;
+     AddFunctionOpcode(A); goto Lqd;
+Lik: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lqf;
 Lil: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lqd: FP_TRACE_BYTECODE_ADD(cNEqual);
+Lqg: FP_TRACE_BYTECODE_ADD(cNEqual);
      goto TailCall_cNEqual;
 Lim: ImmedPtr[-1] = fp_nequal(y,x); goto Lar;
 Lin: ImmedPtr[0] = -x; goto Lcm;
@@ -7950,7 +7996,7 @@ Lio: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cSin;
-     FP_ReDefinePointers(); goto Lpe;
+     FP_ReDefinePointers(); goto Lph;
 Lip: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
@@ -7962,18 +8008,18 @@ Liq: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cTan;
-     FP_ReDefinePointers(); goto Lok;
+     FP_ReDefinePointers(); goto Lon;
 Lir: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cTanh;
-     FP_ReDefinePointers(); goto Lol;
+     FP_ReDefinePointers(); goto Loo;
 Lja: ImmedPtr[0] = -x; return;
 Ljb: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lpb;
+     ByteCodePtr -= 1; goto Lpe;
 Lje: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cNEqual; goto Lqd;
+     opcode = cNEqual; goto Lqg;
 Ljf: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cLessOrEq;
@@ -7996,16 +8042,16 @@ Lji: mData->mByteCode.pop_back();
      goto TailCall_cGreater;
 Ljj: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cEqual; goto Lor;
+     opcode = cEqual; goto Lpc;
 Ljk: ImmedPtr[0] = fp_not(x); return;
 Ljm: ImmedPtr[-1] = fp_or(x,y); goto Lar;
 Ljn: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cAbs);
      mData->mImmed.push_back(x+x);
-Lqe: mData->mByteCode.push_back(cImmed); goto Lpf;
+Lqh: mData->mByteCode.push_back(cImmed); goto Lpi;
 Ljo: ByteCodePtr[-1] = cImmed;
-     mData->mByteCode.pop_back(); goto Lpc;
+     mData->mByteCode.pop_back(); goto Lpf;
 Ljp: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cMul);
@@ -8015,20 +8061,20 @@ Ljp: ByteCodePtr[-1] = cImmed;
      goto TailCall_cExp2;
 Ljq: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpf;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lpi;
 Ljr: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     AddFunctionOpcode(cMul); goto Lpf;
+     AddFunctionOpcode(cMul); goto Lpi;
 Lka: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lpg;
+     ByteCodePtr -= 1; goto Lpj;
 Lkb: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
-     mData->mImmed.push_back(x); goto Lqe;
-Lkc: ImmedPtr[0] = Value_t(); goto Loi;
+     mData->mImmed.push_back(x); goto Lqh;
+Lkc: ImmedPtr[0] = Value_t(); goto Lol;
 Lkd: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Log;
+     mData->mByteCode.pop_back(); goto Loj;
 Lke: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      opcode = cCbrt;
@@ -8038,104 +8084,110 @@ Lke: mData->mImmed.pop_back();
 Lkf: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cCbrt);
-Lqf: opcode = cInv;
-     FP_ReDefinePointers(); goto Lod;
+Lqi: opcode = cInv;
+     FP_ReDefinePointers(); goto Log;
 Lkg: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lob;
+     mData->mByteCode.pop_back(); goto Lod;
 Lkh: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lqf;
+     mData->mByteCode.pop_back(); goto Lqi;
 Lki: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cAbs);
-     mData->mImmed.push_back(y*x); goto Lqe;
+     mData->mImmed.push_back(y*x); goto Lqh;
 Lkj: ImmedPtr[0] = x+x; goto Lka;
 Lkk: ImmedPtr[-1] = fp_pow(y,x); goto Lar;
 Lkl: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTanh); goto Lqf;
-Lkm: mData->mImmed.push_back(Value_t()); goto Lpj;
-Lkn: ImmedPtr[0] = DegreesToRadians(x); goto Lcm;
-Lko: ImmedPtr[0] = DegreesToRadians(x); return;
-Lkp: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSinCos); goto Lqf;
-Lkq: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSin); goto Lnq;
-Lkr: ImmedPtr[0] = fp_sin(x); return;
-Lla: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(Value_t(-1)); goto Lof;
+     AddFunctionOpcode(cTanh); goto Lqi;
+Lkm: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cInv);
+     opcode = cAbs;
+     FP_ReDefinePointers(); goto Lnc;
+Lkn: mData->mImmed.push_back(Value_t()); goto Lpm;
+Lko: ImmedPtr[0] = DegreesToRadians(x); goto Lcm;
+Lkp: ImmedPtr[0] = DegreesToRadians(x); return;
+Lkq: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSinCos); goto Lqi;
+Lkr: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cSin); goto Loa;
+Lla: ImmedPtr[0] = fp_sin(x); return;
 Llb: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSinh); goto Lnq;
-Llc: ImmedPtr[0] = fp_sinh(x); return;
-Lld: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lpk;
-Lle: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSqr);
+     mData->mImmed.push_back(Value_t(-1)); goto Loi;
+Llc: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cSinh); goto Loa;
+Lld: ImmedPtr[0] = fp_sinh(x); return;
+Lle: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lpn;
+Llf: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lof;
+Llg: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-Lqg: opcode = cHypot;
+Lqj: opcode = cHypot;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cHypot);
      goto TailCall_cHypot;
-Llf: for(unsigned tmp=5; tmp-->0; ) {mData->mByteCode.pop_back();}
+Llh: for(unsigned tmp=5; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-     AddFunctionOpcode(B); goto Lqg;
-Llg: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1;
-     opcode = cAbs; goto Lna;
-Llh: ImmedPtr[0] = fp_sqrt(x); return;
+     AddFunctionOpcode(B); goto Lqj;
 Lli: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lqb;
-Llj: ImmedPtr[-1] = y-x; goto Lar;
-Llk: ImmedPtr[0] = -x; goto Lqb;
-Lll: mData->mImmed.pop_back();
+     ByteCodePtr -= 1;
+     opcode = cAbs; goto Lnc;
+Llj: ImmedPtr[0] = fp_sqrt(x); return;
+Llk: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lqe;
+Lll: ImmedPtr[-1] = y-x; goto Lar;
+Llm: ImmedPtr[0] = -x; goto Lqe;
+Lln: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cAdd);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Lnj;
-Llm: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
+     mData->mByteCode.push_back(cImmed); goto Lnl;
+Llo: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-     AddFunctionOpcode(cSub); goto Lnj;
-Lln: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTan); goto Lnq;
-Llo: ImmedPtr[0] = fp_tan(x); return;
+     AddFunctionOpcode(cSub); goto Lnl;
 Llp: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTanh); goto Lnq;
-Llq: ImmedPtr[0] = fp_tanh(x); return;
-Llr: ImmedPtr[0] = fp_trunc(x); return;
-Lma: ImmedPtr[-1] = x-y;
-Lqh: mData->mImmed.pop_back();
+     AddFunctionOpcode(cTan); goto Loa;
+Llq: ImmedPtr[0] = fp_tan(x); return;
+Llr: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cTanh); goto Loa;
+Lma: ImmedPtr[0] = fp_tanh(x); return;
+Lmb: ImmedPtr[0] = fp_trunc(x); return;
+Lmc: ImmedPtr[-1] = x-y;
+Lqk: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lqi: AddFunctionOpcode(A); return;
-Lmb: ImmedPtr[0] = fp_tan(x);
-Lqj: ByteCodePtr[-1] = cImmed;
-     mData->mByteCode.pop_back(); goto Lqi;
-Lmc: ImmedPtr[0] = fp_log(x); goto Lqj;
-Lmd: ImmedPtr[0] = fp_log2(x); goto Lqj;
-Lme: ImmedPtr[0] = fp_exp(x); goto Lqj;
-Lmf: ImmedPtr[0] = fp_pow(Value_t(10),x); goto Lqj;
-Lmg: ImmedPtr[0] = fp_exp2(x); goto Lqj;
-Lmh: ImmedPtr[-1] = x/y; goto Lqh;
-Lmi: ImmedPtr[-1] = x/y;
+Lql: AddFunctionOpcode(A); return;
+Lmd: ImmedPtr[0] = fp_tan(x);
+Lqm: ByteCodePtr[-1] = cImmed;
+     mData->mByteCode.pop_back(); goto Lql;
+Lme: ImmedPtr[0] = fp_log(x); goto Lqm;
+Lmf: ImmedPtr[0] = fp_log2(x); goto Lqm;
+Lmg: ImmedPtr[0] = fp_exp(x); goto Lqm;
+Lmh: ImmedPtr[0] = fp_pow(Value_t(10),x); goto Lqm;
+Lmi: ImmedPtr[0] = fp_exp2(x); goto Lqm;
+Lmj: ImmedPtr[-1] = x/y; goto Lqk;
+Lmk: ImmedPtr[-1] = x/y;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lqk: AddFunctionOpcode(OppositeComparisonOpcode(A)); return;
-Lmj: ImmedPtr[0] = -x;
+Lqn: AddFunctionOpcode(OppositeComparisonOpcode(A)); return;
+Lml: ImmedPtr[0] = -x;
      ByteCodePtr[-1] = cImmed;
-     mData->mByteCode.pop_back(); goto Lqk;
-Lmk: ImmedPtr[-1] = fp_pow(x,Value_t(1)/y); goto Lqh;
-Lml: ImmedPtr[0] = fp_asinh(x); goto Lqj;
-Lmm: mData->mImmed.pop_back();
+     mData->mByteCode.pop_back(); goto Lqn;
+Lmm: ImmedPtr[-1] = fp_pow(x,Value_t(1)/y); goto Lqk;
+Lmn: ImmedPtr[0] = fp_asinh(x); goto Lqm;
+Lmo: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cAbs);
      mData->mImmed.push_back(fp_sqrt(x));
-     mData->mByteCode.push_back(cImmed); goto Lqi;
-Lmn: ImmedPtr[0] = fp_atanh(x); goto Lqj;
-Lmo: mData->mByteCode.push_back(cDup); return;
-Lmp: ByteCodePtr[0] = cDup; return;
-Lmq: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
+     mData->mByteCode.push_back(cImmed); goto Lql;
+Lmp: ImmedPtr[0] = fp_atanh(x); goto Lqm;
+Lmq: mData->mByteCode.push_back(cDup); return;
+Lmr: ByteCodePtr[0] = cDup; return;
+Lna: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinCos);
-Lql: AddFunctionOpcode(GetParamSwappedBinaryOpcode(C)); return;
-Lmr: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSinhCosh); goto Lql;
+Lqo: AddFunctionOpcode(GetParamSwappedBinaryOpcode(C)); return;
+Lnb: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSinhCosh); goto Lqo;
 return;
 // This list of dummy gotos is here to inhibit
 // compiler warnings on unused labels
@@ -8170,12 +8222,12 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cAbs", "cAbs", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAbs", "cAbs", "");
 			/* opcode = cAbs; */ // redundant, matches cAbs @ 0
 			goto Lab;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(132,
+			FP_TRACE_BYTECODE_OPTIMIZATION(130,
 				"x cAbs",
 				"[fp_abs(x)]",
 				"    with x = " << x << "\n");
@@ -8193,7 +8245,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(172,
+			FP_TRACE_BYTECODE_OPTIMIZATION(170,
 				"x cAcos",
 				"[fp_acos(x)]",
 				"    with x = " << x << "\n");
@@ -8211,7 +8263,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(169,
+			FP_TRACE_BYTECODE_OPTIMIZATION(167,
 				"x cAcosh",
 				"[fp_acosh(x)]",
 				"    with x = " << x << "\n");
@@ -8234,7 +8286,7 @@ goto TailCall_cTrunc;
 			case cAdd:
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(313,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
+					FP_TRACE_BYTECODE_OPTIMIZATION(317,"cDup cAdd cDup cAdd", "[Value_t(4)] cMul", "");
 					goto Laf;
 				}
 				break;
@@ -8243,7 +8295,7 @@ goto TailCall_cTrunc;
 				{
 					if(ByteCodePtr[-3] == cDup)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(314,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
+						FP_TRACE_BYTECODE_OPTIMIZATION(318,"cDup cAdd cMul cDup cAdd", "cMul [Value_t(4)] cMul", "");
 						goto Lag;
 					}
 				}
@@ -8256,7 +8308,7 @@ goto TailCall_cTrunc;
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(316,
+					FP_TRACE_BYTECODE_OPTIMIZATION(320,
 						"cDup x cMul cAdd",
 						"[x+Value_t(1)] cMul",
 						"    with x = " << x << "\n");
@@ -8265,7 +8317,7 @@ goto TailCall_cTrunc;
 			}
 			goto Default1;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(199,"cNeg cAdd", "cSub", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(197,"cNeg cAdd", "cSub", "");
 			goto Lai;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -8275,7 +8327,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(127,
+					FP_TRACE_BYTECODE_OPTIMIZATION(125,
 						"y cAdd x cAdd",
 						"[y+x] cAdd",
 						"    with x = " << x
@@ -8293,7 +8345,7 @@ goto TailCall_cTrunc;
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(301,
+						FP_TRACE_BYTECODE_OPTIMIZATION(305,
 							"y cAdd cRSub x cAdd",
 							"[ y+x] cAdd cRSub",
 							"    with x = " << x
@@ -8304,14 +8356,14 @@ goto TailCall_cTrunc;
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(302,
+					FP_TRACE_BYTECODE_OPTIMIZATION(306,
 						"cNeg cRSub x cAdd",
 						"[-x] cAdd cRSub",
 						"    with x = " << x << "\n");
 					goto Lal;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(300,
+					FP_TRACE_BYTECODE_OPTIMIZATION(304,
 						"y cRSub x cAdd",
 						"[ y+x] cRSub",
 						"    with x = " << x
@@ -8331,7 +8383,7 @@ goto TailCall_cTrunc;
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(295,
+							FP_TRACE_BYTECODE_OPTIMIZATION(299,
 								"y cAdd B[IsVarOpcode(B)] cSub x cAdd",
 								"[ y+x] cAdd B cSub",
 								"    with x = " << x
@@ -8343,7 +8395,7 @@ goto TailCall_cTrunc;
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(296,
+						FP_TRACE_BYTECODE_OPTIMIZATION(300,
 							"cNeg B[IsVarOpcode(B)] cSub x cAdd",
 							"[-x] cAdd B cSub",
 							"    with x = " << x
@@ -8352,7 +8404,7 @@ goto TailCall_cTrunc;
 						goto Lao;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(294,
+						FP_TRACE_BYTECODE_OPTIMIZATION(298,
 							"y B[IsVarOpcode(B)] cSub x cAdd",
 							"[ y+x] B cSub",
 							"    with x = " << x
@@ -8366,7 +8418,7 @@ goto TailCall_cTrunc;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(105,
+				FP_TRACE_BYTECODE_OPTIMIZATION(103,
 					"y x cAdd",
 					"[y+x]",
 					"    with x = " << x
@@ -8377,7 +8429,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(57,
+				FP_TRACE_BYTECODE_OPTIMIZATION(55,
 					"x[x==Value_t()] cAdd",
 					"",
 					"    with x = " << x << "\n");
@@ -8393,7 +8445,7 @@ goto TailCall_cTrunc;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(293,
+						FP_TRACE_BYTECODE_OPTIMIZATION(297,
 							"x cRSub A[IsVarOpcode(A)] cAdd",
 							"[DO_STACKPLUS1] A [x] cAdd cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8403,7 +8455,7 @@ goto TailCall_cTrunc;
 						--mStackPtr;
 						goto Lba;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(298,
+					FP_TRACE_BYTECODE_OPTIMIZATION(302,
 						"cRSub A[IsVarOpcode(A)] cAdd",
 						"[DO_STACKPLUS1] A cAdd cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -8424,14 +8476,14 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cDup cAnd", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(231,"cDup cAnd", "cNotNot", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(117,
+				FP_TRACE_BYTECODE_OPTIMIZATION(115,
 					"y x cAnd",
 					"[fp_and(x,y)]",
 					"    with x = " << x
@@ -8453,7 +8505,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(190,
+			FP_TRACE_BYTECODE_OPTIMIZATION(188,
 				"x cArg",
 				"[fp_arg(x)]",
 				"    with x = " << x << "\n");
@@ -8471,7 +8523,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(173,
+			FP_TRACE_BYTECODE_OPTIMIZATION(171,
 				"x cAsin",
 				"[fp_asin(x)]",
 				"    with x = " << x << "\n");
@@ -8489,7 +8541,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(170,
+			FP_TRACE_BYTECODE_OPTIMIZATION(168,
 				"x cAsinh",
 				"[fp_asinh(x)]",
 				"    with x = " << x << "\n");
@@ -8509,7 +8561,7 @@ goto TailCall_cTrunc;
 			x = ImmedPtr[0];
 			if(Value_t(x.real(),fp_abs(x.imag()))!=Value_t(0,1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(174,
+				FP_TRACE_BYTECODE_OPTIMIZATION(172,
 					"x[Value_t(x.real(),fp_abs(x.imag()))!=Value_t(0,1)] cAtan",
 					"[fp_atan(x)]",
 					"    with x = " << x << "\n");
@@ -8531,7 +8583,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(139,
+				FP_TRACE_BYTECODE_OPTIMIZATION(137,
 					"y x cAtan2",
 					"[fp_atan2(y,x)]",
 					"    with x = " << x
@@ -8554,7 +8606,7 @@ goto TailCall_cTrunc;
 			x = ImmedPtr[0];
 			if(Value_t(fp_abs(x.real()),x.imag())!=Value_t(1,0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(171,
+				FP_TRACE_BYTECODE_OPTIMIZATION(169,
 					"x[Value_t(fp_abs(x.real()),x.imag())!=Value_t(1,0)] cAtanh",
 					"[fp_atanh(x)]",
 					"    with x = " << x << "\n");
@@ -8573,7 +8625,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(175,
+			FP_TRACE_BYTECODE_OPTIMIZATION(173,
 				"x cCbrt",
 				"[fp_cbrt(x)]",
 				"    with x = " << x << "\n");
@@ -8597,7 +8649,7 @@ goto TailCall_cTrunc;
 				A = ByteCodePtr[-2];
 				if(IsVarOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(406,
+					FP_TRACE_BYTECODE_OPTIMIZATION(409,
 						"A[IsVarOpcode(A)] B[IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cCeil",
 						"cCeil A B cAdd",
 						"    with B = " << FP_TRACE_OPCODENAME(B)
@@ -8608,11 +8660,11 @@ goto TailCall_cTrunc;
 			}
 			goto Default2;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(413,"cNeg cCeil", "cFloor cNeg", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(416,"cNeg cCeil", "cFloor cNeg", "");
 			goto Lbm;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(135,
+			FP_TRACE_BYTECODE_OPTIMIZATION(133,
 				"x cCeil",
 				"[fp_ceil(x)]",
 				"    with x = " << x << "\n");
@@ -8622,7 +8674,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(402,
+				FP_TRACE_BYTECODE_OPTIMIZATION(405,
 					"A[IsAlwaysIntegerOpcode(A)] cCeil",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -8641,11 +8693,11 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cConj:
-			FP_TRACE_BYTECODE_OPTIMIZATION(63,"cConj cConj", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cConj cConj", "", "");
 			goto Lbo;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(193,
+			FP_TRACE_BYTECODE_OPTIMIZATION(191,
 				"x cConj",
 				"[fp_conj(x)]",
 				"    with x = " << x << "\n");
@@ -8663,20 +8715,20 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAcos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(349,"cAcos cCos", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(353,"cAcos cCos", "", "");
 			goto Lbo;
 		case cAtan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(529,"cAtan cCos", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(532,"cAtan cCos", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lbq;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(241,"cNeg cCos", "cCos", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(245,"cNeg cCos", "cCos", "");
 			/* opcode = cCos; */ // redundant, matches cCos @ 0
 			goto Lbr;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(176,
+			FP_TRACE_BYTECODE_OPTIMIZATION(174,
 				"x cCos",
 				"[fp_cos(x)]",
 				"    with x = " << x << "\n");
@@ -8692,7 +8744,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(513,
+						FP_TRACE_BYTECODE_OPTIMIZATION(516,
 							"B[B==A] cSec A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCos",
 							"B cSec cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8707,7 +8759,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(507,
+						FP_TRACE_BYTECODE_OPTIMIZATION(510,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCos",
 							"B cSinCos",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8731,17 +8783,17 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAsinh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(463,"cAsinh cCosh", "[DO_STACKPLUS1] cSqr [Value_t(1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(466,"cAsinh cCosh", "[DO_STACKPLUS1] cSqr [Value_t(1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lcd;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(242,"cNeg cCosh", "cCosh", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(246,"cNeg cCosh", "cCosh", "");
 			/* opcode = cCosh; */ // redundant, matches cCosh @ 0
 			goto Lce;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(177,
+			FP_TRACE_BYTECODE_OPTIMIZATION(175,
 				"x cCosh",
 				"[fp_cosh(x)]",
 				"    with x = " << x << "\n");
@@ -8756,7 +8808,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(520,
+						FP_TRACE_BYTECODE_OPTIMIZATION(523,
 							"B[B==A] cSinh A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCosh",
 							"B cSinhCosh",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8784,7 +8836,7 @@ goto TailCall_cTrunc;
 				B = ByteCodePtr[-2];
 				if(B==A)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(511,
+					FP_TRACE_BYTECODE_OPTIMIZATION(514,
 						"B[B==A] cTan A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCot",
 						"B cTan cDup cInv",
 						"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8810,7 +8862,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(534,
+				FP_TRACE_BYTECODE_OPTIMIZATION(537,
 					"A[IsNeverNegativeValueOpcode(A)] cAtan cCsc",
 					"A cSqr cInv [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -8829,7 +8881,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(509,
+						FP_TRACE_BYTECODE_OPTIMIZATION(512,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cCsc",
 							"B cSin cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -8853,7 +8905,7 @@ goto TailCall_cTrunc;
 		if(ByteCodePtr[0] == cImmed)
 		{
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(133,
+			FP_TRACE_BYTECODE_OPTIMIZATION(131,
 				"x cDeg",
 				"[RadiansToDegrees(x)]",
 				"    with x = " << x << "\n");
@@ -8871,43 +8923,43 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(253,"cCos cDiv", "cSec cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(257,"cCos cDiv", "cSec cMul", "");
 			goto Lcj;
 		case cCot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(257,"cCot cDiv", "cTan cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(261,"cCot cDiv", "cTan cMul", "");
 			goto Lck;
 		case cCsc:
-			FP_TRACE_BYTECODE_OPTIMIZATION(255,"cCsc cDiv", "cSin cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(259,"cCsc cDiv", "cSin cMul", "");
 			goto Lcl;
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(78,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cDiv", "[Value_t()] cMul [Value_t(1)] cAdd", "");
 			goto Lcm;
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(419,"cExp cDiv", "cNeg cExp cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(422,"cExp cDiv", "cNeg cExp cMul", "");
 			goto Lcn;
 		case cExp2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(420,"cExp2 cDiv", "cNeg cExp2 cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(423,"cExp2 cDiv", "cNeg cExp2 cMul", "");
 			goto Lco;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(216,"cInv cDiv", "cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cInv cDiv", "cMul", "");
 			goto Lcp;
 		case cPow:
-			FP_TRACE_BYTECODE_OPTIMIZATION(418,"cPow cDiv", "cNeg cPow cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(421,"cPow cDiv", "cNeg cPow cMul", "");
 			goto Lcq;
 		case cSec:
-			FP_TRACE_BYTECODE_OPTIMIZATION(256,"cSec cDiv", "cCos cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(260,"cSec cDiv", "cCos cMul", "");
 			goto Lcr;
 		case cSin:
-			FP_TRACE_BYTECODE_OPTIMIZATION(252,"cSin cDiv", "cCsc cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(256,"cSin cDiv", "cCsc cMul", "");
 			goto Lda;
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(515,"cSinCos cDiv", "cTan", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(518,"cSinCos cDiv", "cTan", "");
 			goto Ldb;
 		case cSinhCosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(522,"cSinhCosh cDiv", "cTanh", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(525,"cSinhCosh cDiv", "cTanh", "");
 			goto Ldc;
 		case cTan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(254,"cTan cDiv", "cCot cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(258,"cTan cDiv", "cCot cMul", "");
 			goto Ldd;
 		case cImmed:
 			x = ImmedPtr[0];
@@ -8916,7 +8968,7 @@ goto TailCall_cTrunc;
 				switch(ByteCodePtr[-1])
 				{
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(125,
+					FP_TRACE_BYTECODE_OPTIMIZATION(123,
 						"cNeg x[x!=Value_t()] cDiv",
 						"[-x] cDiv",
 						"    with x = " << x << "\n");
@@ -8924,7 +8976,7 @@ goto TailCall_cTrunc;
 					goto Lde;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(103,
+					FP_TRACE_BYTECODE_OPTIMIZATION(101,
 						"y x[x!=Value_t()] cDiv",
 						"[y/x]",
 						"    with x = " << x
@@ -8936,7 +8988,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(56,
+				FP_TRACE_BYTECODE_OPTIMIZATION(54,
 					"x[x==Value_t(1)] cDiv",
 					"",
 					"    with x = " << x << "\n");
@@ -8951,7 +9003,7 @@ goto TailCall_cTrunc;
 						y = ImmedPtr[-1];
 						if((y/x)==fp_const_rad_to_deg<Value_t>())
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(324,
+							FP_TRACE_BYTECODE_OPTIMIZATION(328,
 								"y[(y/x)==fp_const_rad_to_deg<Value_t>()] cMul x[x!=Value_t(0)] cDiv",
 								"cDeg",
 								"    with x = " << x
@@ -8961,7 +9013,7 @@ goto TailCall_cTrunc;
 						}
 						if((y/x)==fp_const_deg_to_rad<Value_t>())
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(325,
+							FP_TRACE_BYTECODE_OPTIMIZATION(329,
 								"y[(y/x)==fp_const_deg_to_rad<Value_t>()] cMul x[x!=Value_t(0)] cDiv",
 								"cRad",
 								"    with x = " << x
@@ -8969,7 +9021,7 @@ goto TailCall_cTrunc;
 								    << "\n");
 							goto Ldh;
 						}
-						FP_TRACE_BYTECODE_OPTIMIZATION(326,
+						FP_TRACE_BYTECODE_OPTIMIZATION(330,
 							"y cMul x[x!=Value_t(0)] cDiv",
 							"[y/x] cMul",
 							"    with x = " << x
@@ -8979,7 +9031,7 @@ goto TailCall_cTrunc;
 						goto Ldi;
 					}
 				}
-				FP_TRACE_BYTECODE_OPTIMIZATION(328,
+				FP_TRACE_BYTECODE_OPTIMIZATION(332,
 					"x[x!=Value_t(0)] cDiv",
 					"[Value_t(1)/x] cMul",
 					"    with x = " << x << "\n");
@@ -8997,7 +9049,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(IsVarOpcode(B))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(274,
+						FP_TRACE_BYTECODE_OPTIMIZATION(278,
 							"B[IsVarOpcode(B)] cDiv A[IsVarOpcode(A)] cDiv",
 							"[DO_STACKPLUS1] B A cMul cDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9015,7 +9067,7 @@ goto TailCall_cTrunc;
 					{
 					case cImmed:
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(269,
+						FP_TRACE_BYTECODE_OPTIMIZATION(273,
 							"x cRDiv A[IsVarOpcode(A)] cDiv",
 							"A cMul [x] cRDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9026,7 +9078,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-2];
 						if(IsVarOpcode(B))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(268,
+							FP_TRACE_BYTECODE_OPTIMIZATION(272,
 								"B[IsVarOpcode(B)] cRDiv A[IsVarOpcode(A)] cDiv",
 								"A cMul B cRDiv",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9055,7 +9107,7 @@ goto TailCall_cTrunc;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(365,
+					FP_TRACE_BYTECODE_OPTIMIZATION(369,
 						"cAbs x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -9063,7 +9115,7 @@ goto TailCall_cTrunc;
 					/* opcode = cEqual; */ // redundant, matches cEqual @ 0
 					goto Ldn;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(367,
+					FP_TRACE_BYTECODE_OPTIMIZATION(371,
 						"cSqr x[x==Value_t(0)] cEqual",
 						"[x] cEqual",
 						"    with x = " << x << "\n");
@@ -9074,7 +9126,7 @@ goto TailCall_cTrunc;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(434,
+						FP_TRACE_BYTECODE_OPTIMIZATION(437,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cEqual",
 							"A cNot",
 							"    with x = " << x
@@ -9090,7 +9142,7 @@ goto TailCall_cTrunc;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(432,
+					FP_TRACE_BYTECODE_OPTIMIZATION(435,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cEqual",
 						"A",
 						"    with x = " << x
@@ -9103,7 +9155,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(115,
+				FP_TRACE_BYTECODE_OPTIMIZATION(113,
 					"y x cEqual",
 					"[fp_equal(y,x)]",
 					"    with x = " << x
@@ -9127,7 +9179,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(415,
+				FP_TRACE_BYTECODE_OPTIMIZATION(418,
 					"x cAdd cExp",
 					"cExp [fp_exp(x)] cMul",
 					"    with x = " << x << "\n");
@@ -9138,7 +9190,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(343,
+				FP_TRACE_BYTECODE_OPTIMIZATION(347,
 					"A[IsNeverNegativeValueOpcode(A)] cLog cExp",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -9148,7 +9200,7 @@ goto TailCall_cTrunc;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(178,
+			FP_TRACE_BYTECODE_OPTIMIZATION(176,
 				"x cExp",
 				"[fp_exp(x)]",
 				"    with x = " << x << "\n");
@@ -9169,7 +9221,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(416,
+				FP_TRACE_BYTECODE_OPTIMIZATION(419,
 					"x cAdd cExp2",
 					"cExp2 [fp_exp2(x)] cMul",
 					"    with x = " << x << "\n");
@@ -9180,7 +9232,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(344,
+				FP_TRACE_BYTECODE_OPTIMIZATION(348,
 					"A[IsNeverNegativeValueOpcode(A)] cLog2 cExp2",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -9190,14 +9242,14 @@ goto TailCall_cTrunc;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(179,
+			FP_TRACE_BYTECODE_OPTIMIZATION(177,
 				"x cExp2",
 				"[fp_exp2(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 			goto Leb;
 		}
-		FP_TRACE_BYTECODE_OPTIMIZATION(492,"cExp2", "[DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp", "");
+		FP_TRACE_BYTECODE_OPTIMIZATION(495,"cExp2", "[DO_STACKPLUS1] [fp_log(Value_t(2))] cMul cExp", "");
 		incStackPtr();
 		--mStackPtr;
 		goto Lec;
@@ -9217,7 +9269,7 @@ goto TailCall_cTrunc;
 				A = ByteCodePtr[-2];
 				if(IsVarOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(405,
+					FP_TRACE_BYTECODE_OPTIMIZATION(408,
 						"A[IsVarOpcode(A)] B[IsUnaryOpcode(B)&&IsAlwaysIntegerOpcode(B)] cAdd cFloor",
 						"cFloor A B cAdd",
 						"    with B = " << FP_TRACE_OPCODENAME(B)
@@ -9228,11 +9280,11 @@ goto TailCall_cTrunc;
 			}
 			goto Default4;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(412,"cNeg cFloor", "cCeil cNeg", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(415,"cNeg cFloor", "cCeil cNeg", "");
 			goto Lee;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(136,
+			FP_TRACE_BYTECODE_OPTIMIZATION(134,
 				"x cFloor",
 				"[fp_floor(x)]",
 				"    with x = " << x << "\n");
@@ -9242,7 +9294,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(401,
+				FP_TRACE_BYTECODE_OPTIMIZATION(404,
 					"A[IsAlwaysIntegerOpcode(A)] cFloor",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -9264,7 +9316,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(113,
+				FP_TRACE_BYTECODE_OPTIMIZATION(111,
 					"y x cGreater",
 					"[fp_less(x,y)]",
 					"    with x = " << x
@@ -9288,7 +9340,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(114,
+				FP_TRACE_BYTECODE_OPTIMIZATION(112,
 					"y x cGreaterOrEq",
 					"[fp_lessOrEq(x,y)]",
 					"    with x = " << x
@@ -9309,11 +9361,13 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(84,"cSinCos cHypot", "[Value_t()] cMul [Value_t(1)] cAdd", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(82,"cSinCos cHypot", "[DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd", "");
+			incStackPtr();
+			--mStackPtr;
 			goto Lcm;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(530,
+			FP_TRACE_BYTECODE_OPTIMIZATION(533,
 				"x cHypot",
 				"cSqr [x*x] cAdd cSqrt",
 				"    with x = " << x << "\n");
@@ -9329,20 +9383,28 @@ goto TailCall_cTrunc;
 	case cImag:
 		switch(ByteCodePtr[0])
 		{
-		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(81,"cAbs cImag", "[Value_t()] cMul", "");
-			goto Lej;
-		case cReal:
-			FP_TRACE_BYTECODE_OPTIMIZATION(80,"cReal cImag", "[Value_t()] cMul", "");
-			goto Lej;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(192,
+			FP_TRACE_BYTECODE_OPTIMIZATION(190,
 				"x cImag",
 				"[fp_imag(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lek;
+			goto Lej;
+		default:
+			A = ByteCodePtr[0];
+			if(IsAlwaysRealOpcode(A))
+			{
+				FP_TRACE_BYTECODE_OPTIMIZATION(78,
+					"A[IsAlwaysRealOpcode(A)] cImag",
+					"[DO_STACKPLUS2] [Value_t()] cMul",
+					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
+				incStackPtr();
+				incStackPtr();
+				--mStackPtr;
+				--mStackPtr;
+				goto Lek;
+			}
 		}
 		goto Default0;
 	TailCall_cInt:
@@ -9356,7 +9418,7 @@ goto TailCall_cTrunc;
 		{
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(137,
+			FP_TRACE_BYTECODE_OPTIMIZATION(135,
 				"x cInt",
 				"[fp_int(x)]",
 				"    with x = " << x << "\n");
@@ -9366,7 +9428,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(403,
+				FP_TRACE_BYTECODE_OPTIMIZATION(406,
 					"A[IsAlwaysIntegerOpcode(A)] cInt",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -9385,19 +9447,19 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(259,"cCos cInv", "cSec", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(263,"cCos cInv", "cSec", "");
 			goto Lem;
 		case cCot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(263,"cCot cInv", "cTan", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(267,"cCot cInv", "cTan", "");
 			goto Ldb;
 		case cCsc:
-			FP_TRACE_BYTECODE_OPTIMIZATION(261,"cCsc cInv", "cSin", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(265,"cCsc cInv", "cSin", "");
 			goto Len;
 		case cHypot:
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(531,
+				FP_TRACE_BYTECODE_OPTIMIZATION(534,
 					"x cHypot cInv",
 					"cSqr [x*x] cAdd cRSqrt",
 					"    with x = " << x << "\n");
@@ -9405,31 +9467,31 @@ goto TailCall_cTrunc;
 			}
 			break;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(62,"cInv cInv", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cInv cInv", "", "");
 			goto Lbo;
 		case cPow:
-			FP_TRACE_BYTECODE_OPTIMIZATION(361,"cPow cInv", "cNeg cPow", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(365,"cPow cInv", "cNeg cPow", "");
 			goto Lep;
 		case cRSqrt:
-			FP_TRACE_BYTECODE_OPTIMIZATION(208,"cRSqrt cInv", "cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(207,"cRSqrt cInv", "cSqrt", "");
 			goto Leq;
 		case cSec:
-			FP_TRACE_BYTECODE_OPTIMIZATION(262,"cSec cInv", "cCos", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(266,"cSec cInv", "cCos", "");
 			goto Ler;
 		case cSin:
-			FP_TRACE_BYTECODE_OPTIMIZATION(258,"cSin cInv", "cCsc", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(262,"cSin cInv", "cCsc", "");
 			goto Lfa;
 		case cSqrt:
-			FP_TRACE_BYTECODE_OPTIMIZATION(206,"cSqrt cInv", "cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(205,"cSqrt cInv", "cRSqrt", "");
 			goto Lfb;
 		case cTan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(260,"cTan cInv", "cCot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(264,"cTan cInv", "cCot", "");
 			goto Lfc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x!=Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(101,
+				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
 					"[Value_t(1)/x]",
 					"    with x = " << x << "\n");
@@ -9454,7 +9516,7 @@ goto TailCall_cTrunc;
 				A = ByteCodePtr[-1];
 				if(IsNeverNegativeValueOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(304,
+					FP_TRACE_BYTECODE_OPTIMIZATION(308,
 						"A[IsNeverNegativeValueOpcode(A)] x[x==Value_t(0)] cLess",
 						"A [x] cMul",
 						"    with x = " << x
@@ -9469,7 +9531,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(111,
+				FP_TRACE_BYTECODE_OPTIMIZATION(109,
 					"y x cLess",
 					"[fp_less(y,x)]",
 					"    with x = " << x
@@ -9493,7 +9555,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(112,
+				FP_TRACE_BYTECODE_OPTIMIZATION(110,
 					"y x cLessOrEq",
 					"[fp_lessOrEq(y,x)]",
 					"    with x = " << x
@@ -9514,7 +9576,7 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(346,"cExp cLog", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(350,"cExp cLog", "", "");
 			goto Lbo;
 		case cMul:
 			if(ByteCodePtr[-1] == cImmed)
@@ -9522,7 +9584,7 @@ goto TailCall_cTrunc;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(504,
+					FP_TRACE_BYTECODE_OPTIMIZATION(507,
 						"x[x>Value_t(0)] cMul cLog",
 						"cLog [fp_log(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -9534,7 +9596,7 @@ goto TailCall_cTrunc;
 			x = ImmedPtr[0];
 			if(x!=Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(180,
+				FP_TRACE_BYTECODE_OPTIMIZATION(178,
 					"x[x!=Value_t(0)] cLog",
 					"[fp_log(x)]",
 					"    with x = " << x << "\n");
@@ -9554,7 +9616,7 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(494,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(497,"cExp cLog10", "[DO_STACKPLUS1] [fp_log10(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lfj;
@@ -9564,7 +9626,7 @@ goto TailCall_cTrunc;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(505,
+					FP_TRACE_BYTECODE_OPTIMIZATION(508,
 						"x[x>Value_t(0)] cMul cLog10",
 						"cLog10 [fp_log10(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -9576,7 +9638,7 @@ goto TailCall_cTrunc;
 			x = ImmedPtr[0];
 			if(x!=Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(181,
+				FP_TRACE_BYTECODE_OPTIMIZATION(179,
 					"x[x!=Value_t(0)] cLog10",
 					"[fp_log10(x)]",
 					"    with x = " << x << "\n");
@@ -9596,12 +9658,12 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cExp:
-			FP_TRACE_BYTECODE_OPTIMIZATION(493,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(496,"cExp cLog2", "[DO_STACKPLUS1] [fp_log2(fp_const_e<Value_t>())] cMul", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lfm;
 		case cExp2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(347,"cExp2 cLog2", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(351,"cExp2 cLog2", "", "");
 			goto Lbo;
 		case cMul:
 			if(ByteCodePtr[-1] == cImmed)
@@ -9609,7 +9671,7 @@ goto TailCall_cTrunc;
 				x = ImmedPtr[0];
 				if(x>Value_t(0))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(503,
+					FP_TRACE_BYTECODE_OPTIMIZATION(506,
 						"x[x>Value_t(0)] cMul cLog2",
 						"cLog2 [fp_log2(x)] cAdd",
 						"    with x = " << x << "\n");
@@ -9621,7 +9683,7 @@ goto TailCall_cTrunc;
 			x = ImmedPtr[0];
 			if(x!=Value_t(0))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(182,
+				FP_TRACE_BYTECODE_OPTIMIZATION(180,
 					"x[x!=Value_t(0)] cLog2",
 					"[fp_log2(x)]",
 					"    with x = " << x << "\n");
@@ -9641,14 +9703,14 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(60,"cDup cMax", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(58,"cDup cMax", "", "");
 			goto Lbo;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(141,
+				FP_TRACE_BYTECODE_OPTIMIZATION(139,
 					"y x cMax",
 					"[fp_max(x,y)]",
 					"    with x = " << x
@@ -9668,7 +9730,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(66,
+						FP_TRACE_BYTECODE_OPTIMIZATION(64,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMax",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9683,7 +9745,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(68,
+						FP_TRACE_BYTECODE_OPTIMIZATION(66,
 							"B[B==A] cMax A[IsVarOpcode(A)] cMax",
 							"B cMax",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9708,14 +9770,14 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cDup cMin", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(57,"cDup cMin", "", "");
 			goto Lbo;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(140,
+				FP_TRACE_BYTECODE_OPTIMIZATION(138,
 					"y x cMin",
 					"[fp_min(x,y)]",
 					"    with x = " << x
@@ -9735,7 +9797,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(65,
+						FP_TRACE_BYTECODE_OPTIMIZATION(63,
 							"B[B==A] cDup A[IsVarOpcode(A)] cMin",
 							"B cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9750,7 +9812,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(67,
+						FP_TRACE_BYTECODE_OPTIMIZATION(65,
 							"B[B==A] cMin A[IsVarOpcode(A)] cMin",
 							"B cMin",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9780,7 +9842,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-1] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(104,
+					FP_TRACE_BYTECODE_OPTIMIZATION(102,
 						"y x[x!=Value_t()] cMod",
 						"[fp_mod(y,x)]",
 						"    with x = " << x
@@ -9810,7 +9872,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-3];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(521,
+						FP_TRACE_BYTECODE_OPTIMIZATION(524,
 							"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cCsc cMul",
 							"B cCot",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9823,16 +9885,16 @@ goto TailCall_cTrunc;
 			}
 			goto Default5;
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cDup cMul", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cDup cMul", "cSqr", "");
 			goto Lgb;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(217,"cInv cMul", "cDiv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cInv cMul", "cDiv", "");
 			goto Lgc;
 		case cNeg:
 			switch(ByteCodePtr[-1])
 			{
 			case cDup:
-				FP_TRACE_BYTECODE_OPTIMIZATION(480,"cDup cNeg cMul", "cSqr cNeg", "");
+				FP_TRACE_BYTECODE_OPTIMIZATION(483,"cDup cNeg cMul", "cSqr cNeg", "");
 				goto Lgd;
 			default:
 				A = ByteCodePtr[-1];
@@ -9843,7 +9905,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(486,
+							FP_TRACE_BYTECODE_OPTIMIZATION(489,
 								"B[B==A] cMul A[IsVarOpcode(A)] cNeg cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -9862,7 +9924,7 @@ goto TailCall_cTrunc;
 				x = ImmedPtr[0];
 				if(ByteCodePtr[-2] == cDup)
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(317,
+					FP_TRACE_BYTECODE_OPTIMIZATION(321,
 						"cDup x cPow cMul",
 						"[x+Value_t(1)] cPow",
 						"    with x = " << x << "\n");
@@ -9880,7 +9942,7 @@ goto TailCall_cTrunc;
 					A = ByteCodePtr[-2];
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(93,
+						FP_TRACE_BYTECODE_OPTIMIZATION(91,
 							"A[IsVarOpcode(A)] cMul x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -9899,7 +9961,7 @@ goto TailCall_cTrunc;
 						{
 						case cImmed:
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(92,
+							FP_TRACE_BYTECODE_OPTIMIZATION(90,
 								"y A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 								"[x] cMul",
 								"    with x = " << x
@@ -9917,7 +9979,7 @@ goto TailCall_cTrunc;
 								{
 								case cImmed:
 									y = ImmedPtr[-1];
-									FP_TRACE_BYTECODE_OPTIMIZATION(96,
+									FP_TRACE_BYTECODE_OPTIMIZATION(94,
 										"y B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 										"A [x] cMul",
 										"    with x = " << x
@@ -9931,7 +9993,7 @@ goto TailCall_cTrunc;
 									C = ByteCodePtr[-3];
 									if(IsVarOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(94,
+										FP_TRACE_BYTECODE_OPTIMIZATION(92,
 											"C[IsVarOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"A [x] cMul",
 											"    with x = " << x
@@ -9944,7 +10006,7 @@ goto TailCall_cTrunc;
 									}
 									if(IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C))
 									{
-										FP_TRACE_BYTECODE_OPTIMIZATION(95,
+										FP_TRACE_BYTECODE_OPTIMIZATION(93,
 											"C[IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B[IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 											"B A [x] cMul",
 											"    with x = " << x
@@ -9959,7 +10021,7 @@ goto TailCall_cTrunc;
 							}
 							if(IsVarOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(90,
+								FP_TRACE_BYTECODE_OPTIMIZATION(88,
 									"B[IsVarOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"[x] cMul",
 									"    with x = " << x
@@ -9972,7 +10034,7 @@ goto TailCall_cTrunc;
 							}
 							if(IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B))
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(91,
+								FP_TRACE_BYTECODE_OPTIMIZATION(89,
 									"B[IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 									"A [x] cMul",
 									"    with x = " << x
@@ -9986,7 +10048,7 @@ goto TailCall_cTrunc;
 					}
 					if(IsVarOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(88,
+						FP_TRACE_BYTECODE_OPTIMIZATION(86,
 							"A[IsVarOpcode(A)] x[x==Value_t()] cMul",
 							"[x]",
 							"    with x = " << x
@@ -9997,7 +10059,7 @@ goto TailCall_cTrunc;
 					}
 					if(IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(89,
+						FP_TRACE_BYTECODE_OPTIMIZATION(87,
 							"A[IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x[x==Value_t()] cMul",
 							"[x] cMul",
 							"    with x = " << x
@@ -10017,13 +10079,13 @@ goto TailCall_cTrunc;
 				case cDup:
 					if(x+x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(319,
+						FP_TRACE_BYTECODE_OPTIMIZATION(323,
 							"cDup[x+x==Value_t(1)] cAdd x cMul",
 							"",
 							"    with x = " << x << "\n");
 						goto Lgo;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(320,
+					FP_TRACE_BYTECODE_OPTIMIZATION(324,
 						"cDup cAdd x cMul",
 						"[x+x] cMul",
 						"    with x = " << x << "\n");
@@ -10036,7 +10098,7 @@ goto TailCall_cTrunc;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(392,
+							FP_TRACE_BYTECODE_OPTIMIZATION(396,
 								"A[IsVarOpcode(A)] y cMul cAdd x cMul",
 								"[x] cMul A [y*x] cMul cAdd",
 								"    with x = " << x
@@ -10049,7 +10111,7 @@ goto TailCall_cTrunc;
 					break;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(391,
+					FP_TRACE_BYTECODE_OPTIMIZATION(395,
 						"y cAdd x cMul",
 						"[x] cMul [y*x] cAdd",
 						"    with x = " << x
@@ -10060,10 +10122,12 @@ goto TailCall_cTrunc;
 				}
 				break;
 			case cDeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(212,
+				FP_TRACE_BYTECODE_OPTIMIZATION(216,
 					"cDeg x cMul",
-					"[RadiansToDegrees(x)] cMul",
+					"[DO_STACKPLUS1] [RadiansToDegrees(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* opcode = cMul; */ // redundant, matches cMul @ 0
 				goto Lha;
 			case cDiv:
@@ -10076,7 +10140,7 @@ goto TailCall_cTrunc;
 						if(ByteCodePtr[-4] == cImmed)
 						{
 							y = ImmedPtr[-1];
-							FP_TRACE_BYTECODE_OPTIMIZATION(281,
+							FP_TRACE_BYTECODE_OPTIMIZATION(285,
 								"y cMul B[IsVarOpcode(B)] cDiv x cMul",
 								"[y*x] cMul B cDiv",
 								"    with x = " << x
@@ -10088,7 +10152,7 @@ goto TailCall_cTrunc;
 						}
 						break;
 					case cNeg:
-						FP_TRACE_BYTECODE_OPTIMIZATION(282,
+						FP_TRACE_BYTECODE_OPTIMIZATION(286,
 							"cNeg B[IsVarOpcode(B)] cDiv x cMul",
 							"[-x] cMul B cDiv",
 							"    with x = " << x
@@ -10097,7 +10161,7 @@ goto TailCall_cTrunc;
 						goto Lhc;
 					case cImmed:
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(280,
+						FP_TRACE_BYTECODE_OPTIMIZATION(284,
 							"y B[IsVarOpcode(B)] cDiv x cMul",
 							"[y*x] B cDiv",
 							"    with x = " << x
@@ -10117,14 +10181,14 @@ goto TailCall_cTrunc;
 					{
 						if(x+x==Value_t(1))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(321,
+							FP_TRACE_BYTECODE_OPTIMIZATION(325,
 								"cDup[x+x==Value_t(1)] cAdd cMul x cMul",
 								"cMul",
 								"    with x = " << x << "\n");
 							/* opcode = cMul; */ // redundant, matches cMul @ 0
 							goto Lhe;
 						}
-						FP_TRACE_BYTECODE_OPTIMIZATION(322,
+						FP_TRACE_BYTECODE_OPTIMIZATION(326,
 							"cDup cAdd cMul x cMul",
 							"cMul [x+x] cMul",
 							"    with x = " << x << "\n");
@@ -10136,7 +10200,7 @@ goto TailCall_cTrunc;
 					y = ImmedPtr[-1];
 					if(y*x==Value_t(1))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(70,
+						FP_TRACE_BYTECODE_OPTIMIZATION(68,
 							"y[y*x==Value_t(1)] cMul x cMul",
 							"",
 							"    with x = " << x
@@ -10146,7 +10210,7 @@ goto TailCall_cTrunc;
 					}
 					if((y*x)==fp_const_rad_to_deg<Value_t>())
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(310,
+						FP_TRACE_BYTECODE_OPTIMIZATION(314,
 							"y[(y*x)==fp_const_rad_to_deg<Value_t>()] cMul x cMul",
 							"cDeg",
 							"    with x = " << x
@@ -10156,7 +10220,7 @@ goto TailCall_cTrunc;
 					}
 					if((y*x)==fp_const_deg_to_rad<Value_t>())
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(311,
+						FP_TRACE_BYTECODE_OPTIMIZATION(315,
 							"y[(y*x)==fp_const_deg_to_rad<Value_t>()] cMul x cMul",
 							"cRad",
 							"    with x = " << x
@@ -10164,7 +10228,7 @@ goto TailCall_cTrunc;
 							    << "\n");
 						goto Ldh;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(128,
+					FP_TRACE_BYTECODE_OPTIMIZATION(126,
 						"y cMul x cMul",
 						"[y*x] cMul",
 						"    with x = " << x
@@ -10176,7 +10240,7 @@ goto TailCall_cTrunc;
 				}
 				break;
 			case cNeg:
-				FP_TRACE_BYTECODE_OPTIMIZATION(122,
+				FP_TRACE_BYTECODE_OPTIMIZATION(120,
 					"cNeg x cMul",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -10189,7 +10253,7 @@ goto TailCall_cTrunc;
 					if(ByteCodePtr[-3] == cImmed)
 					{
 						y = ImmedPtr[-1];
-						FP_TRACE_BYTECODE_OPTIMIZATION(288,
+						FP_TRACE_BYTECODE_OPTIMIZATION(292,
 							"y cMul cRDiv x cMul",
 							"[y*x] cMul cRDiv",
 							"    with x = " << x
@@ -10200,14 +10264,14 @@ goto TailCall_cTrunc;
 					}
 					break;
 				case cNeg:
-					FP_TRACE_BYTECODE_OPTIMIZATION(289,
+					FP_TRACE_BYTECODE_OPTIMIZATION(293,
 						"cNeg cRDiv x cMul",
 						"[-x] cMul cRDiv",
 						"    with x = " << x << "\n");
 					goto Lhk;
 				case cImmed:
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(287,
+					FP_TRACE_BYTECODE_OPTIMIZATION(291,
 						"y cRDiv x cMul",
 						"[y*x] cRDiv",
 						"    with x = " << x
@@ -10218,10 +10282,12 @@ goto TailCall_cTrunc;
 				}
 				break;
 			case cRad:
-				FP_TRACE_BYTECODE_OPTIMIZATION(213,
+				FP_TRACE_BYTECODE_OPTIMIZATION(217,
 					"cRad x cMul",
-					"[DegreesToRadians(x)] cMul",
+					"[DO_STACKPLUS1] [DegreesToRadians(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* opcode = cMul; */ // redundant, matches cMul @ 0
 				goto Lhm;
 			case cSub:
@@ -10233,7 +10299,7 @@ goto TailCall_cTrunc;
 						A = ByteCodePtr[-4];
 						if(IsVarOpcode(A))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(393,
+							FP_TRACE_BYTECODE_OPTIMIZATION(397,
 								"A[IsVarOpcode(A)] y cMul cSub x cMul",
 								"[x] cMul A [y*x] cMul cSub",
 								"    with x = " << x
@@ -10247,7 +10313,7 @@ goto TailCall_cTrunc;
 				break;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(102,
+				FP_TRACE_BYTECODE_OPTIMIZATION(100,
 					"y x cMul",
 					"[y*x]",
 					"    with x = " << x
@@ -10258,7 +10324,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(55,
+				FP_TRACE_BYTECODE_OPTIMIZATION(53,
 					"x[x==Value_t(1)] cMul",
 					"",
 					"    with x = " << x << "\n");
@@ -10266,7 +10332,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(124,
+				FP_TRACE_BYTECODE_OPTIMIZATION(122,
 					"x[x==Value_t(-1)] cMul",
 					"cNeg",
 					"    with x = " << x << "\n");
@@ -10274,7 +10340,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(2))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(198,
+				FP_TRACE_BYTECODE_OPTIMIZATION(196,
 					"x[x==Value_t(2)] cMul",
 					"cDup cAdd",
 					"    with x = " << x << "\n");
@@ -10282,7 +10348,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==fp_const_rad_to_deg<Value_t>())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(210,
+				FP_TRACE_BYTECODE_OPTIMIZATION(214,
 					"x[x==fp_const_rad_to_deg<Value_t>()] cMul",
 					"cDeg",
 					"    with x = " << x << "\n");
@@ -10290,7 +10356,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==fp_const_deg_to_rad<Value_t>())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(211,
+				FP_TRACE_BYTECODE_OPTIMIZATION(215,
 					"x[x==fp_const_deg_to_rad<Value_t>()] cMul",
 					"cRad",
 					"    with x = " << x << "\n");
@@ -10307,7 +10373,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(IsVarOpcode(B))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(277,
+						FP_TRACE_BYTECODE_OPTIMIZATION(281,
 							"B[IsVarOpcode(B)] cDiv A[IsVarOpcode(A)] cMul",
 							"[DO_STACKPLUS1] A cMul B cDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10325,7 +10391,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(483,
+							FP_TRACE_BYTECODE_OPTIMIZATION(486,
 								"B[B==A] cNeg cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul cNeg",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10339,7 +10405,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-2];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(474,
+							FP_TRACE_BYTECODE_OPTIMIZATION(477,
 								"B[B==A] cMul A[IsVarOpcode(A)] cMul",
 								"B cSqr cMul",
 								"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10355,7 +10421,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(477,
+						FP_TRACE_BYTECODE_OPTIMIZATION(480,
 							"B[B==A] cNeg A[IsVarOpcode(A)] cMul",
 							"B cSqr cNeg",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10369,7 +10435,7 @@ goto TailCall_cTrunc;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(270,
+						FP_TRACE_BYTECODE_OPTIMIZATION(274,
 							"x cRDiv A[IsVarOpcode(A)] cMul",
 							"[DO_STACKPLUS1] A [x] cMul cRDiv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10379,7 +10445,7 @@ goto TailCall_cTrunc;
 						--mStackPtr;
 						goto Lid;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(284,
+					FP_TRACE_BYTECODE_OPTIMIZATION(288,
 						"cRDiv A[IsVarOpcode(A)] cMul",
 						"[DO_STACKPLUS1] A cMul cRDiv",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -10390,7 +10456,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-1];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(471,
+						FP_TRACE_BYTECODE_OPTIMIZATION(474,
 							"B[B==A] A[IsVarOpcode(A)] cMul",
 							"B cSqr",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10414,7 +10480,7 @@ goto TailCall_cTrunc;
 							D = ByteCodePtr[-4];
 							if(D==B)
 							{
-								FP_TRACE_BYTECODE_OPTIMIZATION(490,
+								FP_TRACE_BYTECODE_OPTIMIZATION(493,
 									"D[D==B] C[C==A] cMul B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)] cMul",
 									"D C cSqr cMul",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -10448,7 +10514,7 @@ goto TailCall_cTrunc;
 				switch(ByteCodePtr[-1])
 				{
 				case cAbs:
-					FP_TRACE_BYTECODE_OPTIMIZATION(366,
+					FP_TRACE_BYTECODE_OPTIMIZATION(370,
 						"cAbs x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -10456,7 +10522,7 @@ goto TailCall_cTrunc;
 					/* opcode = cNEqual; */ // redundant, matches cNEqual @ 0
 					goto Lig;
 				case cSqr:
-					FP_TRACE_BYTECODE_OPTIMIZATION(368,
+					FP_TRACE_BYTECODE_OPTIMIZATION(372,
 						"cSqr x[x==Value_t(0)] cNEqual",
 						"[x] cNEqual",
 						"    with x = " << x << "\n");
@@ -10467,7 +10533,7 @@ goto TailCall_cTrunc;
 					A = ByteCodePtr[-1];
 					if(IsLogicalOpcode(A))
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(435,
+						FP_TRACE_BYTECODE_OPTIMIZATION(438,
 							"A[IsLogicalOpcode(A)] x[x==Value_t(0)] cNEqual",
 							"A",
 							"    with x = " << x
@@ -10483,7 +10549,7 @@ goto TailCall_cTrunc;
 				A = ByteCodePtr[-1];
 				if(IsLogicalOpcode(A))
 				{
-					FP_TRACE_BYTECODE_OPTIMIZATION(433,
+					FP_TRACE_BYTECODE_OPTIMIZATION(436,
 						"A[IsLogicalOpcode(A)] x[x==Value_t(1)] cNEqual",
 						"A cNot",
 						"    with x = " << x
@@ -10496,7 +10562,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(116,
+				FP_TRACE_BYTECODE_OPTIMIZATION(114,
 					"y x cNEqual",
 					"[fp_nequal(y,x)]",
 					"    with x = " << x
@@ -10520,7 +10586,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(123,
+				FP_TRACE_BYTECODE_OPTIMIZATION(121,
 					"x cMul cNeg",
 					"[-x] cMul",
 					"    with x = " << x << "\n");
@@ -10529,7 +10595,7 @@ goto TailCall_cTrunc;
 			}
 			break;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(61,"cNeg cNeg", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(59,"cNeg cNeg", "", "");
 			goto Lbo;
 		case cSin:
 			if(ByteCodePtr[-1] == cMul)
@@ -10537,7 +10603,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(247,
+					FP_TRACE_BYTECODE_OPTIMIZATION(251,
 						"x cMul cSin cNeg",
 						"[-x] cMul cSin",
 						"    with x = " << x << "\n");
@@ -10552,7 +10618,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(248,
+					FP_TRACE_BYTECODE_OPTIMIZATION(252,
 						"x cMul cSinh cNeg",
 						"[-x] cMul cSinh",
 						"    with x = " << x << "\n");
@@ -10567,7 +10633,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(249,
+					FP_TRACE_BYTECODE_OPTIMIZATION(253,
 						"x cMul cTan cNeg",
 						"[-x] cMul cTan",
 						"    with x = " << x << "\n");
@@ -10582,7 +10648,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					x = ImmedPtr[0];
-					FP_TRACE_BYTECODE_OPTIMIZATION(250,
+					FP_TRACE_BYTECODE_OPTIMIZATION(254,
 						"x cMul cTanh cNeg",
 						"[-x] cMul cTanh",
 						"    with x = " << x << "\n");
@@ -10593,7 +10659,7 @@ goto TailCall_cTrunc;
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(100,
+			FP_TRACE_BYTECODE_OPTIMIZATION(98,
 				"x cNeg",
 				"[-x]",
 				"    with x = " << x << "\n");
@@ -10611,36 +10677,36 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAbsNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(234,"cAbsNotNot cNot", "cAbsNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(238,"cAbsNotNot cNot", "cAbsNot", "");
 			goto Lio;
 		case cEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cEqual cNot", "cNEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(227,"cEqual cNot", "cNEqual", "");
 			goto Lip;
 		case cGreater:
-			FP_TRACE_BYTECODE_OPTIMIZATION(221,"cGreater cNot", "cLessOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(225,"cGreater cNot", "cLessOrEq", "");
 			goto Liq;
 		case cGreaterOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(222,"cGreaterOrEq cNot", "cLess", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cGreaterOrEq cNot", "cLess", "");
 			goto Lir;
 		case cLess:
-			FP_TRACE_BYTECODE_OPTIMIZATION(219,"cLess cNot", "cGreaterOrEq", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(223,"cLess cNot", "cGreaterOrEq", "");
 			goto Lja;
 		case cLessOrEq:
-			FP_TRACE_BYTECODE_OPTIMIZATION(220,"cLessOrEq cNot", "cGreater", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cLessOrEq cNot", "cGreater", "");
 			goto Ljb;
 		case cNEqual:
-			FP_TRACE_BYTECODE_OPTIMIZATION(224,"cNEqual cNot", "cEqual", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(228,"cNEqual cNot", "cEqual", "");
 			goto Ljc;
 		case cNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(232,"cNot cNot", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(236,"cNot cNot", "cNotNot", "");
 			goto Lbc;
 		case cNotNot:
-			FP_TRACE_BYTECODE_OPTIMIZATION(233,"cNotNot cNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(237,"cNotNot cNot", "cNot", "");
 			/* opcode = cNot; */ // redundant, matches cNot @ 0
 			goto Ljd;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(107,
+			FP_TRACE_BYTECODE_OPTIMIZATION(105,
 				"x cNot",
 				"[fp_not(x)]",
 				"    with x = " << x << "\n");
@@ -10657,7 +10723,7 @@ goto TailCall_cTrunc;
 	case cNotNot:
 		if(ByteCodePtr[0] == cNot)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(235,"cNot cNotNot", "cNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(239,"cNot cNotNot", "cNot", "");
 			/* ByteCodePtr[0] = cNot; */ // redundant, matches cNot @ 1
 			return;
 		}
@@ -10672,14 +10738,14 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(226,"cDup cOr", "cNotNot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(230,"cDup cOr", "cNotNot", "");
 			goto Lbc;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(118,
+				FP_TRACE_BYTECODE_OPTIMIZATION(116,
 					"y x cOr",
 					"[fp_or(x,y)]",
 					"    with x = " << x
@@ -10704,7 +10770,7 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(194,
+				FP_TRACE_BYTECODE_OPTIMIZATION(192,
 					"x y cPolar",
 					"[fp_polar(x,y)]",
 					"    with y = " << y
@@ -10730,14 +10796,14 @@ goto TailCall_cTrunc;
 				switch(ByteCodePtr[-1])
 				{
 				case cExp:
-					FP_TRACE_BYTECODE_OPTIMIZATION(43,
+					FP_TRACE_BYTECODE_OPTIMIZATION(41,
 						"cExp x[isInteger(x)] cPow",
 						"[x] cMul cExp",
 						"    with x = " << x << "\n");
 					/* ImmedPtr[0] = x; */ // redundant, matches x @ 1
 					goto Ljh;
 				case cExp2:
-					FP_TRACE_BYTECODE_OPTIMIZATION(44,
+					FP_TRACE_BYTECODE_OPTIMIZATION(42,
 						"cExp2 x[isInteger(x)] cPow",
 						"[x] cMul cExp2",
 						"    with x = " << x << "\n");
@@ -10749,7 +10815,7 @@ goto TailCall_cTrunc;
 						y = ImmedPtr[-1];
 						if(!isInteger(y))
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(42,
+							FP_TRACE_BYTECODE_OPTIMIZATION(40,
 								"y[!isInteger(y)] cPow x[isInteger(x)] cPow",
 								"[y*x] cPow",
 								"    with x = " << x
@@ -10760,7 +10826,7 @@ goto TailCall_cTrunc;
 							goto Ljj;
 						}
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(45,
+					FP_TRACE_BYTECODE_OPTIMIZATION(43,
 						"cPow x[isInteger(x)] cPow",
 						"[x] cMul cPow",
 						"    with x = " << x << "\n");
@@ -10771,16 +10837,18 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(83,
+				FP_TRACE_BYTECODE_OPTIMIZATION(81,
 					"x[x==Value_t()] cPow",
-					"[Value_t()] cMul [Value_t(1)] cAdd",
+					"[DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Ljl;
 			}
 			if(x==Value_t(0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(335,
+				FP_TRACE_BYTECODE_OPTIMIZATION(339,
 					"x[x==Value_t(0.5)] cPow",
 					"cSqrt",
 					"    with x = " << x << "\n");
@@ -10788,7 +10856,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(1)/Value_t(3))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(336,
+				FP_TRACE_BYTECODE_OPTIMIZATION(340,
 					"x[x==Value_t(1)/Value_t(3)] cPow",
 					"cCbrt",
 					"    with x = " << x << "\n");
@@ -10796,7 +10864,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(1)/Value_t(-3))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(337,
+				FP_TRACE_BYTECODE_OPTIMIZATION(341,
 					"x[x==Value_t(1)/Value_t(-3)] cPow",
 					"cCbrt cInv",
 					"    with x = " << x << "\n");
@@ -10804,7 +10872,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(-0.5))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(338,
+				FP_TRACE_BYTECODE_OPTIMIZATION(342,
 					"x[x==Value_t(-0.5)] cPow",
 					"cRSqrt",
 					"    with x = " << x << "\n");
@@ -10812,7 +10880,7 @@ goto TailCall_cTrunc;
 			}
 			if(x==Value_t(-1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(339,
+				FP_TRACE_BYTECODE_OPTIMIZATION(343,
 					"x[x==Value_t(-1)] cPow",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -10824,7 +10892,7 @@ goto TailCall_cTrunc;
 				if(ByteCodePtr[-2] == cImmed)
 				{
 					y = ImmedPtr[-1];
-					FP_TRACE_BYTECODE_OPTIMIZATION(333,
+					FP_TRACE_BYTECODE_OPTIMIZATION(337,
 						"y cPow x cPow",
 						"[y*x] cPow",
 						"    with x = " << x
@@ -10836,7 +10904,7 @@ goto TailCall_cTrunc;
 				}
 				break;
 			case cSqr:
-				FP_TRACE_BYTECODE_OPTIMIZATION(46,
+				FP_TRACE_BYTECODE_OPTIMIZATION(44,
 					"cSqr x cPow",
 					"[x+x] cPow",
 					"    with x = " << x << "\n");
@@ -10844,7 +10912,7 @@ goto TailCall_cTrunc;
 				goto Ljr;
 			case cImmed:
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(189,
+				FP_TRACE_BYTECODE_OPTIMIZATION(187,
 					"y x cPow",
 					"[fp_pow(y,x)]",
 					"    with x = " << x
@@ -10853,7 +10921,7 @@ goto TailCall_cTrunc;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Lka;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(468,
+			FP_TRACE_BYTECODE_OPTIMIZATION(471,
 				"x cPow",
 				"[DO_POWI]",
 				"    with x = " << x << "\n");
@@ -10871,16 +10939,16 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cSinCos:
-			FP_TRACE_BYTECODE_OPTIMIZATION(516,"cSinCos cRDiv", "cCot", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(519,"cSinCos cRDiv", "cCot", "");
 			goto Lfc;
 		case cSinhCosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(523,"cSinhCosh cRDiv", "cTanh cInv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(526,"cSinhCosh cRDiv", "cTanh cInv", "");
 			goto Lkb;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t(1))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(271,
+				FP_TRACE_BYTECODE_OPTIMIZATION(275,
 					"x[x==Value_t(1)] cRDiv",
 					"cInv",
 					"    with x = " << x << "\n");
@@ -10896,10 +10964,14 @@ goto TailCall_cTrunc;
 	}
 	[[fallthrough]];
 	case cRSqrt:
-		if(ByteCodePtr[0] == cInv)
+		switch(ByteCodePtr[0])
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(209,"cInv cRSqrt", "cSqrt", "");
+		case cInv:
+			FP_TRACE_BYTECODE_OPTIMIZATION(208,"cInv cRSqrt", "cSqrt", "");
 			goto Leq;
+		case cSqr:
+			FP_TRACE_BYTECODE_OPTIMIZATION(210,"cSqr cRSqrt", "cInv cAbs", "");
+			goto Lkc;
 		}
 		goto Default0;
 	TailCall_cRSub:
@@ -10911,8 +10983,8 @@ goto TailCall_cTrunc;
 	case cRSub:
 		if(ByteCodePtr[0] == cDup)
 		{
-			FP_TRACE_BYTECODE_OPTIMIZATION(77,"cDup cRSub", "[Value_t()] cMul", "");
-			goto Lej;
+			FP_TRACE_BYTECODE_OPTIMIZATION(75,"cDup cRSub", "[Value_t()] cMul", "");
+			goto Lek;
 		}
 		goto Default0;
 	TailCall_cRad:
@@ -10928,22 +11000,24 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				x = ImmedPtr[0];
-				FP_TRACE_BYTECODE_OPTIMIZATION(214,
+				FP_TRACE_BYTECODE_OPTIMIZATION(218,
 					"x cMul cRad",
-					"[DegreesToRadians(x)] cMul",
+					"[DO_STACKPLUS1] [DegreesToRadians(x)] cMul",
 					"    with x = " << x << "\n");
+				incStackPtr();
+				--mStackPtr;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches x @ 2
-				goto Lkc;
+				goto Lkd;
 			}
 			break;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(134,
+			FP_TRACE_BYTECODE_OPTIMIZATION(132,
 				"x cRad",
 				"[DegreesToRadians(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lkd;
+			goto Lke;
 		}
 		goto Default0;
 	TailCall_cReal:
@@ -10953,15 +11027,27 @@ goto TailCall_cTrunc;
 	}
 	[[fallthrough]];
 	case cReal:
-		if(ByteCodePtr[0] == cImmed)
+		switch(ByteCodePtr[0])
 		{
+		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(191,
+			FP_TRACE_BYTECODE_OPTIMIZATION(189,
 				"x cReal",
 				"[fp_real(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lke;
+			goto Lkf;
+		default:
+			A = ByteCodePtr[0];
+			if(IsAlwaysRealOpcode(A))
+			{
+				FP_TRACE_BYTECODE_OPTIMIZATION(79,
+					"A[IsAlwaysRealOpcode(A)] cReal",
+					"A",
+					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
+				/* ByteCodePtr[0] = A; */ // redundant, matches A @ 1
+				return;
+			}
 		}
 		goto Default0;
 	TailCall_cSec:
@@ -10974,7 +11060,7 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAtan:
-			FP_TRACE_BYTECODE_OPTIMIZATION(528,"cAtan cSec", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(531,"cAtan cSec", "cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
 			goto Lcd;
@@ -10988,7 +11074,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(510,
+						FP_TRACE_BYTECODE_OPTIMIZATION(513,
 							"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSec",
 							"B cCos cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -11003,14 +11089,14 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(508,
+						FP_TRACE_BYTECODE_OPTIMIZATION(511,
 							"B[B==A] cSin A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSec",
 							"B cSinCos cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", B = " << FP_TRACE_OPCODENAME(B)
 							    << "\n");
 						/* ByteCodePtr[-2] = B; */ // redundant, matches B @ 3
-						goto Lkf;
+						goto Lkg;
 					}
 					break;
 				}
@@ -11027,19 +11113,19 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAsin:
-			FP_TRACE_BYTECODE_OPTIMIZATION(348,"cAsin cSin", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(352,"cAsin cSin", "", "");
 			goto Lbo;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(243,"cNeg cSin", "cSin cNeg", "");
-			goto Lkg;
+			FP_TRACE_BYTECODE_OPTIMIZATION(247,"cNeg cSin", "cSin cNeg", "");
+			goto Lkh;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(183,
+			FP_TRACE_BYTECODE_OPTIMIZATION(181,
 				"x cSin",
 				"[fp_sin(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lkh;
+			goto Lki;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A)&&mData->mByteCode.size()>2)
@@ -11049,7 +11135,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(512,
+						FP_TRACE_BYTECODE_OPTIMIZATION(515,
 							"B[B==A] cCsc A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cSin",
 							"B cCsc cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -11073,24 +11159,24 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAcosh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(450,"cAcosh cSinh", "[DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(453,"cAcosh cSinh", "[DO_STACKPLUS1] cSqr [Value_t(-1)] cAdd cSqrt", "");
 			incStackPtr();
 			--mStackPtr;
-			goto Lki;
+			goto Lkj;
 		case cAsinh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(352,"cAsinh cSinh", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(356,"cAsinh cSinh", "", "");
 			goto Lbo;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(244,"cNeg cSinh", "cSinh cNeg", "");
-			goto Lkj;
+			FP_TRACE_BYTECODE_OPTIMIZATION(248,"cNeg cSinh", "cSinh cNeg", "");
+			goto Lkk;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(184,
+			FP_TRACE_BYTECODE_OPTIMIZATION(182,
 				"x cSinh",
 				"[fp_sinh(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lkk;
+			goto Lkl;
 		}
 		goto Default0;
 	TailCall_cSqr:
@@ -11103,18 +11189,21 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAbs:
-			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cAbs cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(202,"cAbs cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
-			goto Lkl;
+			goto Lkm;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(203,"cNeg cSqr", "cSqr", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(201,"cNeg cSqr", "cSqr", "");
 			/* opcode = cSqr; */ // redundant, matches cSqr @ 0
-			goto Lkl;
+			goto Lkm;
+		case cRSqrt:
+			FP_TRACE_BYTECODE_OPTIMIZATION(209,"cRSqrt cSqr", "cInv", "");
+			goto Lkn;
 		case cSqrt:
 			A = ByteCodePtr[-1];
 			if(IsNeverNegativeValueOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(341,
+				FP_TRACE_BYTECODE_OPTIMIZATION(345,
 					"A[IsNeverNegativeValueOpcode(A)] cSqrt cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -11126,7 +11215,7 @@ goto TailCall_cTrunc;
 			A = ByteCodePtr[0];
 			if(IsComparisonOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(537,
+				FP_TRACE_BYTECODE_OPTIMIZATION(540,
 					"A[IsComparisonOpcode(A)] cSqr",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -11152,11 +11241,11 @@ goto TailCall_cTrunc;
 				{
 					if(ByteCodePtr[-3] == cSqr)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(525,
+						FP_TRACE_BYTECODE_OPTIMIZATION(528,
 							"cSqr A[IsVarOpcode(A)] cSqr cAdd cSqrt",
 							"A cHypot",
 							"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
-						goto Lkm;
+						goto Lko;
 					}
 				}
 				B = ByteCodePtr[-2];
@@ -11167,32 +11256,32 @@ goto TailCall_cTrunc;
 					{
 						if(ByteCodePtr[-4] == cSqr)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(526,
+							FP_TRACE_BYTECODE_OPTIMIZATION(529,
 								"cSqr A[IsVarOpcode(A)] B[IsUnaryOpcode(B)] cSqr cAdd cSqrt",
 								"A B cHypot",
 								"    with B = " << FP_TRACE_OPCODENAME(B)
 								    << ", A = " << FP_TRACE_OPCODENAME(A)
 								    << "\n");
-							goto Lkn;
+							goto Lkp;
 						}
 					}
 				}
 			}
 			break;
 		case cInv:
-			FP_TRACE_BYTECODE_OPTIMIZATION(207,"cInv cSqrt", "cRSqrt", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(206,"cInv cSqrt", "cRSqrt", "");
 			goto Lfb;
 		case cSqr:
-			FP_TRACE_BYTECODE_OPTIMIZATION(23,"cSqr cSqrt", "cAbs", "");
-			goto Lko;
+			FP_TRACE_BYTECODE_OPTIMIZATION(204,"cSqr cSqrt", "cAbs", "");
+			goto Lkq;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(185,
+			FP_TRACE_BYTECODE_OPTIMIZATION(183,
 				"x cSqrt",
 				"[fp_sqrt(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lkp;
+			goto Lkr;
 		}
 		goto Default0;
 	TailCall_cSub:
@@ -11205,16 +11294,16 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cDup:
-			FP_TRACE_BYTECODE_OPTIMIZATION(76,"cDup cSub", "[Value_t()] cMul", "");
-			goto Lej;
+			FP_TRACE_BYTECODE_OPTIMIZATION(74,"cDup cSub", "[Value_t()] cMul", "");
+			goto Lek;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(200,"cNeg cSub", "cAdd", "");
-			goto Lkq;
+			FP_TRACE_BYTECODE_OPTIMIZATION(198,"cNeg cSub", "cAdd", "");
+			goto Lla;
 		case cImmed:
 			x = ImmedPtr[0];
 			if(x==Value_t())
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(58,
+				FP_TRACE_BYTECODE_OPTIMIZATION(56,
 					"x[x==Value_t()] cSub",
 					"",
 					"    with x = " << x << "\n");
@@ -11223,21 +11312,21 @@ goto TailCall_cTrunc;
 			if(ByteCodePtr[-1] == cImmed)
 			{
 				y = ImmedPtr[-1];
-				FP_TRACE_BYTECODE_OPTIMIZATION(106,
+				FP_TRACE_BYTECODE_OPTIMIZATION(104,
 					"y x cSub",
 					"[y-x]",
 					"    with x = " << x
 					    << ", y = " << y
 					    << "\n");
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
-				goto Lkr;
+				goto Llb;
 			}
-			FP_TRACE_BYTECODE_OPTIMIZATION(51,
+			FP_TRACE_BYTECODE_OPTIMIZATION(49,
 				"x cSub",
 				"[-x] cAdd",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lla;
+			goto Llc;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A))
@@ -11247,21 +11336,21 @@ goto TailCall_cTrunc;
 					if(ByteCodePtr[-2] == cImmed)
 					{
 						x = ImmedPtr[0];
-						FP_TRACE_BYTECODE_OPTIMIZATION(292,
+						FP_TRACE_BYTECODE_OPTIMIZATION(296,
 							"x cRSub A[IsVarOpcode(A)] cSub",
 							"A cAdd [x] cRSub",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
 							    << "\n");
-						goto Llb;
+						goto Lld;
 					}
-					FP_TRACE_BYTECODE_OPTIMIZATION(299,
+					FP_TRACE_BYTECODE_OPTIMIZATION(303,
 						"cRSub A[IsVarOpcode(A)] cSub",
 						"[DO_STACKPLUS1] A cSub cRSub",
 						"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
 					incStackPtr();
 					--mStackPtr;
-					goto Llc;
+					goto Lle;
 				}
 			}
 		}
@@ -11276,19 +11365,19 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAtan2:
-			FP_TRACE_BYTECODE_OPTIMIZATION(358,"cAtan2 cTan", "cDiv", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(362,"cAtan2 cTan", "cDiv", "");
 			goto Lgc;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(245,"cNeg cTan", "cTan cNeg", "");
-			goto Lld;
+			FP_TRACE_BYTECODE_OPTIMIZATION(249,"cNeg cTan", "cTan cNeg", "");
+			goto Llf;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(187,
+			FP_TRACE_BYTECODE_OPTIMIZATION(185,
 				"x cTan",
 				"[fp_tan(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Lle;
+			goto Llg;
 		default:
 			A = ByteCodePtr[0];
 			if(IsVarOpcode(A)&&mData->mByteCode.size()>2)
@@ -11298,7 +11387,7 @@ goto TailCall_cTrunc;
 					B = ByteCodePtr[-2];
 					if(B==A)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(514,
+						FP_TRACE_BYTECODE_OPTIMIZATION(517,
 							"B[B==A] cCot A[IsVarOpcode(A)&&mData->mByteCode.size()>2] cTan",
 							"B cCot cDup cInv",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -11322,19 +11411,19 @@ goto TailCall_cTrunc;
 		switch(ByteCodePtr[0])
 		{
 		case cAtanh:
-			FP_TRACE_BYTECODE_OPTIMIZATION(355,"cAtanh cTanh", "", "");
+			FP_TRACE_BYTECODE_OPTIMIZATION(359,"cAtanh cTanh", "", "");
 			goto Lbo;
 		case cNeg:
-			FP_TRACE_BYTECODE_OPTIMIZATION(246,"cNeg cTanh", "cTanh cNeg", "");
-			goto Llf;
+			FP_TRACE_BYTECODE_OPTIMIZATION(250,"cNeg cTanh", "cTanh cNeg", "");
+			goto Llh;
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(188,
+			FP_TRACE_BYTECODE_OPTIMIZATION(186,
 				"x cTanh",
 				"[fp_tanh(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llg;
+			goto Lli;
 		}
 		goto Default0;
 	TailCall_cTrunc:
@@ -11348,17 +11437,17 @@ goto TailCall_cTrunc;
 		{
 		case cImmed:
 			x = ImmedPtr[0];
-			FP_TRACE_BYTECODE_OPTIMIZATION(138,
+			FP_TRACE_BYTECODE_OPTIMIZATION(136,
 				"x cTrunc",
 				"[fp_trunc(x)]",
 				"    with x = " << x << "\n");
 			/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
-			goto Llh;
+			goto Llj;
 		default:
 			A = ByteCodePtr[0];
 			if(IsAlwaysIntegerOpcode(A))
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(400,
+				FP_TRACE_BYTECODE_OPTIMIZATION(403,
 					"A[IsAlwaysIntegerOpcode(A)] cTrunc",
 					"A",
 					"    with A = " << FP_TRACE_OPCODENAME(A) << "\n");
@@ -11374,14 +11463,14 @@ goto TailCall_cTrunc;
 			B = ByteCodePtr[0];
 			if(B==A)
 			{
-				FP_TRACE_BYTECODE_OPTIMIZATION(488,
+				FP_TRACE_BYTECODE_OPTIMIZATION(491,
 					"B[B==A] A[IsVarOpcode(A)&&mData->mByteCode.size()>0]",
 					"B cDup",
 					"    with A = " << FP_TRACE_OPCODENAME(A)
 					    << ", B = " << FP_TRACE_OPCODENAME(B)
 					    << "\n");
 				/* ByteCodePtr[0] = B; */ // redundant, matches B @ 1
-				goto Lli;
+				goto Llk;
 			}
 		}
 		if(IsUnaryOpcode(A))
@@ -11395,7 +11484,7 @@ goto TailCall_cTrunc;
 					D = ByteCodePtr[-2];
 					if(D==B)
 					{
-						FP_TRACE_BYTECODE_OPTIMIZATION(489,
+						FP_TRACE_BYTECODE_OPTIMIZATION(492,
 							"D[D==B] C[C==A] B[IsVarOpcode(B)&&mData->mByteCode.size()>1] A[IsUnaryOpcode(A)]",
 							"D C cDup",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
@@ -11405,7 +11494,7 @@ goto TailCall_cTrunc;
 							    << "\n");
 						/* ByteCodePtr[-2] = D; */ // redundant, matches D @ 3
 						/* ByteCodePtr[-1] = C; */ // redundant, matches C @ 2
-						goto Llj;
+						goto Lll;
 					}
 				}
 			}
@@ -11424,7 +11513,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(518,
+							FP_TRACE_BYTECODE_OPTIMIZATION(521,
 								"B[B==A] cCos A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cSin C[IsCommutativeOrParamSwappableBinaryOpcode(C)]",
 								"B cSinCos {GetParamSwappedBinaryOpcode(C)}",
 								"    with C = " << FP_TRACE_OPCODENAME(C)
@@ -11432,7 +11521,7 @@ goto TailCall_cTrunc;
 								    << ", B = " << FP_TRACE_OPCODENAME(B)
 								    << "\n");
 							/* ByteCodePtr[-3] = B; */ // redundant, matches B @ 4
-							goto Llk;
+							goto Llm;
 						}
 					}
 				}
@@ -11446,7 +11535,7 @@ goto TailCall_cTrunc;
 						B = ByteCodePtr[-3];
 						if(B==A)
 						{
-							FP_TRACE_BYTECODE_OPTIMIZATION(519,
+							FP_TRACE_BYTECODE_OPTIMIZATION(522,
 								"B[B==A] cCosh A[IsVarOpcode(A)&&mData->mByteCode.size()>3] cSinh C[IsCommutativeOrParamSwappableBinaryOpcode(C)]",
 								"B cSinhCosh {GetParamSwappedBinaryOpcode(C)}",
 								"    with C = " << FP_TRACE_OPCODENAME(C)
@@ -11454,7 +11543,7 @@ goto TailCall_cTrunc;
 								    << ", B = " << FP_TRACE_OPCODENAME(B)
 								    << "\n");
 							/* ByteCodePtr[-3] = B; */ // redundant, matches B @ 4
-							goto Lll;
+							goto Lln;
 						}
 					}
 				}
@@ -11466,7 +11555,7 @@ goto TailCall_cTrunc;
 Laa: mData->mByteCode.push_back(opcode); return;
 Lab: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Llm: FP_TRACE_BYTECODE_ADD(cAbs);
+Llo: FP_TRACE_BYTECODE_ADD(cAbs);
      goto TailCall_cAbs;
 Lac: ImmedPtr[0] = fp_abs(x); return;
 Lad: ImmedPtr[0] = fp_acos(x); return;
@@ -11475,57 +11564,57 @@ Laf: mData->mImmed.push_back(Value_t(4));
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-Lln: opcode = cMul;
-Llo: FP_ReDefinePointers();
-Llp: FP_TRACE_BYTECODE_ADD(cMul);
+Llp: opcode = cMul;
+Llq: FP_ReDefinePointers();
+Llr: FP_TRACE_BYTECODE_ADD(cMul);
      goto TailCall_cMul;
 Lag: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      mData->mImmed.push_back(Value_t(4));
-Llq: mData->mByteCode.push_back(cImmed); goto Lln;
+Lma: mData->mByteCode.push_back(cImmed); goto Llp;
 Lah: ImmedPtr[0] = x+Value_t(1);
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-Lfe: opcode = cMul; goto Llp;
+Lfe: opcode = cMul; goto Llr;
 Lai: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSub;
-Llr: FP_TRACE_BYTECODE_ADD(cSub);
+Lmb: FP_TRACE_BYTECODE_ADD(cSub);
      goto TailCall_cSub;
 Laj: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lma: FP_ReDefinePointers();
-Lmb: FP_TRACE_BYTECODE_ADD(cAdd);
+Lmc: FP_ReDefinePointers();
+Lmd: FP_TRACE_BYTECODE_ADD(cAdd);
      goto TailCall_cAdd;
 Lak: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lmc: AddFunctionOpcode(cAdd);
-Lmd: opcode = cRSub;
+Lme: AddFunctionOpcode(cAdd);
+Lmf: opcode = cRSub;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRSub);
      goto TailCall_cRSub;
 Lal: ImmedPtr[0] = -x;
      ByteCodePtr[-2] = cImmed;
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmc;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lme;
 Lam: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmd;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmf;
 Lan: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lme: AddFunctionOpcode(cAdd);
-Lmf: AddFunctionOpcode(B);
-Lmg: opcode = cSub;
-     FP_ReDefinePointers(); goto Llr;
+Lmg: AddFunctionOpcode(cAdd);
+Lmh: AddFunctionOpcode(B);
+Lmi: opcode = cSub;
+     FP_ReDefinePointers(); goto Lmb;
 Lao: ImmedPtr[0] = -x;
      ByteCodePtr[-3] = cImmed;
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lme;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmg;
 Lap: ImmedPtr[-1] = y+x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmf;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lmh;
 Laq: ImmedPtr[-1] = y+x;
 Lar: mData->mImmed.pop_back();
 Lbo: mData->mByteCode.pop_back(); return;
@@ -11533,9 +11622,9 @@ Lba: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Lmc;
+     mData->mByteCode.push_back(cImmed); goto Lme;
 Lbb: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Lmc;
+     AddFunctionOpcode(A); goto Lme;
 Lbc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cNotNot;
@@ -11551,12 +11640,12 @@ Lbj: ImmedPtr[0] = fp_atanh(x); return;
 Lbk: ImmedPtr[0] = fp_cbrt(x); return;
 Lbl: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cCeil);
-Lmh: AddFunctionOpcode(A);
+Lmj: AddFunctionOpcode(A);
      AddFunctionOpcode(B);
-Lmi: opcode = cAdd; goto Lma;
+Lmk: opcode = cAdd; goto Lmc;
 Lbm: mData->mByteCode.pop_back();
      AddFunctionOpcode(cFloor);
-Lmj: opcode = cNeg;
+Lml: opcode = cNeg;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cNeg);
      goto TailCall_cNeg;
@@ -11565,31 +11654,31 @@ Lbp: ImmedPtr[0] = fp_conj(x); return;
 Lbq: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
      mData->mImmed.push_back(Value_t(1));
-Lmk: mData->mByteCode.push_back(cImmed);
+Lmm: mData->mByteCode.push_back(cImmed);
      AddFunctionOpcode(cAdd);
-Lml: opcode = cRSqrt;
+Lmn: opcode = cRSqrt;
      FP_ReDefinePointers();
-Lmm: FP_TRACE_BYTECODE_ADD(cRSqrt);
+Lmo: FP_TRACE_BYTECODE_ADD(cRSqrt);
      goto TailCall_cRSqrt;
 Lbr: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lmn: FP_TRACE_BYTECODE_ADD(cCos);
+Lmp: FP_TRACE_BYTECODE_ADD(cCos);
      goto TailCall_cCos;
 Lca: ImmedPtr[0] = fp_cos(x); return;
 Lcb: ByteCodePtr[0] = cDup;
-     opcode = cInv;
-Lmo: FP_TRACE_BYTECODE_ADD(cInv);
+Lmq: opcode = cInv;
+Lmr: FP_TRACE_BYTECODE_ADD(cInv);
      goto TailCall_cInv;
 Lcc: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinCos); return;
 Lcd: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-Lmp: mData->mImmed.push_back(Value_t(1));
-Lmq: mData->mByteCode.push_back(cImmed);
+Lna: mData->mImmed.push_back(Value_t(1));
+Lnb: mData->mByteCode.push_back(cImmed);
      AddFunctionOpcode(cAdd);
-Lmr: opcode = cSqrt;
+Lnc: opcode = cSqrt;
      FP_ReDefinePointers();
-Lna: FP_TRACE_BYTECODE_ADD(cSqrt);
+Lnd: FP_TRACE_BYTECODE_ADD(cSqrt);
      goto TailCall_cSqrt;
 Lce: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
@@ -11600,130 +11689,130 @@ Lcg: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinhCosh); return;
 Lch: mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-     AddFunctionOpcode(cInv); goto Lmp;
+     AddFunctionOpcode(cInv); goto Lna;
 Lci: ImmedPtr[0] = RadiansToDegrees(x); return;
 Lcj: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSec); goto Lln;
+     AddFunctionOpcode(cSec); goto Llp;
 Lck: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTan); goto Lln;
+     AddFunctionOpcode(cTan); goto Llp;
 Lcl: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSin); goto Lln;
+     AddFunctionOpcode(cSin); goto Llp;
 Lcm: mData->mImmed.push_back(Value_t());
      ByteCodePtr[0] = cImmed;
-Lnb: AddFunctionOpcode(cMul);
+Lne: AddFunctionOpcode(cMul);
      mData->mImmed.push_back(Value_t(1));
-Lnc: mData->mByteCode.push_back(cImmed); goto Lmi;
+Lnf: mData->mByteCode.push_back(cImmed); goto Lmk;
 Lcn: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cExp); goto Lln;
+     AddFunctionOpcode(cExp); goto Llp;
 Lco: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cExp2); goto Lln;
+     AddFunctionOpcode(cExp2); goto Llp;
 Lcp: mData->mByteCode.pop_back();
      ByteCodePtr -= 1; goto Lfe;
 Lcq: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
-     AddFunctionOpcode(cPow); goto Lln;
+     AddFunctionOpcode(cPow); goto Llp;
 Lcr: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCos); goto Lln;
+     AddFunctionOpcode(cCos); goto Llp;
 Lda: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCsc); goto Lln;
+     AddFunctionOpcode(cCsc); goto Llp;
 Ldb: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cTan;
-Lnd: FP_TRACE_BYTECODE_ADD(cTan);
+Lng: FP_TRACE_BYTECODE_ADD(cTan);
      goto TailCall_cTan;
 Ldc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cTanh;
-Lne: FP_TRACE_BYTECODE_ADD(cTanh);
+Lnh: FP_TRACE_BYTECODE_ADD(cTanh);
      goto TailCall_cTanh;
 Ldd: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCot); goto Lln;
+     AddFunctionOpcode(cCot); goto Llp;
 Lde: ImmedPtr[0] = -x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lnf: FP_TRACE_BYTECODE_ADD(cDiv);
+Lni: FP_TRACE_BYTECODE_ADD(cDiv);
      goto TailCall_cDiv;
 Ldf: ImmedPtr[-1] = y/x; goto Lar;
 Ldg: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lng: opcode = cDeg;
+Lnj: opcode = cDeg;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cDeg);
      goto TailCall_cDeg;
 Ldh: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lnh: opcode = cRad;
+Lnk: opcode = cRad;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRad);
      goto TailCall_cRad;
 Ldi: ImmedPtr[-1] = y/x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lln;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Llp;
 Ldj: ImmedPtr[0] = Value_t(1)/x; goto Lfe;
 Ldk: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
-Lni: FP_ReDefinePointers(); goto Lnf;
+Lnl: FP_ReDefinePointers(); goto Lni;
 Ldl: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
      mData->mImmed.push_back(x);
      mData->mByteCode.push_back(cImmed);
-Lnj: opcode = cRDiv;
+Lnm: opcode = cRDiv;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cRDiv);
      goto TailCall_cRDiv;
 Ldm: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
-     AddFunctionOpcode(B); goto Lnj;
+     AddFunctionOpcode(B); goto Lnm;
 Ldn: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lnk: FP_TRACE_BYTECODE_ADD(cEqual);
+Lnn: FP_TRACE_BYTECODE_ADD(cEqual);
      goto TailCall_cEqual;
 Ldo: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      opcode = cNot;
      FP_ReDefinePointers();
-Lnl: FP_TRACE_BYTECODE_ADD(cNot);
+Lno: FP_TRACE_BYTECODE_ADD(cNot);
      goto TailCall_cNot;
 Ldp: ImmedPtr[-1] = fp_equal(y,x); goto Lar;
 Ldq: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cExp);
-     mData->mImmed.push_back(fp_exp(x)); goto Llq;
+     mData->mImmed.push_back(fp_exp(x)); goto Lma;
 Ldr: ImmedPtr[0] = fp_exp(x); return;
 Lea: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cExp2);
-     mData->mImmed.push_back(fp_exp2(x)); goto Llq;
+     mData->mImmed.push_back(fp_exp2(x)); goto Lma;
 Leb: ImmedPtr[0] = fp_exp2(x); return;
 Lec: mData->mImmed.push_back(fp_log(Value_t(2)));
      mData->mByteCode.push_back(cImmed);
-Lnm: AddFunctionOpcode(cMul);
+Lnp: AddFunctionOpcode(cMul);
      opcode = cExp;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cExp);
      goto TailCall_cExp;
 Led: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cFloor); goto Lmh;
+     AddFunctionOpcode(cFloor); goto Lmj;
 Lee: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cCeil); goto Lmj;
+     AddFunctionOpcode(cCeil); goto Lml;
 Lef: ImmedPtr[0] = fp_floor(x); return;
 Leg: ImmedPtr[-1] = fp_less(x,y); goto Lar;
 Leh: ImmedPtr[-1] = fp_lessOrEq(x,y); goto Lar;
 Lei: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(x*x); goto Lmq;
-Lej: mData->mImmed.push_back(Value_t());
-Lnn: ByteCodePtr[0] = cImmed; goto Lln;
-Lek: ImmedPtr[0] = fp_imag(x); return;
+     mData->mImmed.push_back(x*x); goto Lnb;
+Lej: ImmedPtr[0] = fp_imag(x); return;
+Lek: mData->mImmed.push_back(Value_t());
+Lnq: ByteCodePtr[0] = cImmed; goto Llp;
 Lel: ImmedPtr[0] = fp_int(x); return;
 Lem: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
@@ -11733,24 +11822,24 @@ Lem: mData->mByteCode.pop_back();
 Len: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSin;
-Lno: FP_TRACE_BYTECODE_ADD(cSin);
+Lnr: FP_TRACE_BYTECODE_ADD(cSin);
      goto TailCall_cSin;
 Leo: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(x*x); goto Lmk;
+     mData->mImmed.push_back(x*x); goto Lmm;
 Lep: mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
      opcode = cPow;
-Lnp: FP_ReDefinePointers();
-Lnq: FP_TRACE_BYTECODE_ADD(cPow);
+Loa: FP_ReDefinePointers();
+Lob: FP_TRACE_BYTECODE_ADD(cPow);
      goto TailCall_cPow;
 Leq: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cSqrt; goto Lna;
+     opcode = cSqrt; goto Lnd;
 Ler: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cCos; goto Lmn;
+     opcode = cCos; goto Lmp;
 Lfa: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cCsc;
@@ -11758,10 +11847,10 @@ Lfa: mData->mByteCode.pop_back();
      goto TailCall_cCsc;
 Lfb: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cRSqrt; goto Lmm;
+     opcode = cRSqrt; goto Lmo;
 Lfc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lnr: opcode = cCot;
+Loc: opcode = cCot;
      FP_TRACE_BYTECODE_ADD(cCot);
      goto TailCall_cCot;
 Lfd: ImmedPtr[0] = Value_t(1)/x; return;
@@ -11770,66 +11859,66 @@ Lfg: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lar;
 Lfh: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog);
-     mData->mImmed.push_back(fp_log(x)); goto Lnc;
+     mData->mImmed.push_back(fp_log(x)); goto Lnf;
 Lfi: ImmedPtr[0] = fp_log(x); return;
-Lfj: mData->mImmed.push_back(fp_log10(fp_const_e<Value_t>())); goto Lnn;
+Lfj: mData->mImmed.push_back(fp_log10(fp_const_e<Value_t>())); goto Lnq;
 Lfk: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog10);
-     mData->mImmed.push_back(fp_log10(x)); goto Lnc;
+     mData->mImmed.push_back(fp_log10(x)); goto Lnf;
 Lfl: ImmedPtr[0] = fp_log10(x); return;
-Lfm: mData->mImmed.push_back(fp_log2(fp_const_e<Value_t>())); goto Lnn;
+Lfm: mData->mImmed.push_back(fp_log2(fp_const_e<Value_t>())); goto Lnq;
 Lfn: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cLog2);
-     mData->mImmed.push_back(fp_log2(x)); goto Lnc;
+     mData->mImmed.push_back(fp_log2(x)); goto Lnf;
 Lfo: ImmedPtr[0] = fp_log2(x); return;
 Lfp: ImmedPtr[-1] = fp_max(x,y); goto Lar;
 Lfq: ImmedPtr[-1] = fp_min(x,y); goto Lar;
 Lfr: ImmedPtr[-1] = fp_mod(y,x); goto Lar;
 Lga: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     ByteCodePtr -= 3; goto Lnr;
+     ByteCodePtr -= 3; goto Loc;
 Lgb: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cSqr;
-Loa: FP_TRACE_BYTECODE_ADD(cSqr);
+Lod: FP_TRACE_BYTECODE_ADD(cSqr);
      goto TailCall_cSqr;
 Lgc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cDiv; goto Lnf;
+     opcode = cDiv; goto Lni;
 Lgd: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSqr); goto Lmj;
+     AddFunctionOpcode(cSqr); goto Lml;
 Lge: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSqr);
-     AddFunctionOpcode(cMul); goto Lmj;
+     AddFunctionOpcode(cMul); goto Lml;
 Lgf: ImmedPtr[0] = x+Value_t(1);
      ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      ByteCodePtr -= 2;
-     opcode = cPow; goto Lnq;
+     opcode = cPow; goto Lob;
 Lgg: ByteCodePtr[-2] = cImmed;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     ByteCodePtr -= 2; goto Llp;
+     ByteCodePtr -= 2; goto Llr;
 Lgh: ImmedPtr[-1] = x;
-Lob: mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Llo;
+Loe: mData->mImmed.pop_back();
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Llq;
 Lgi: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();}
-Loc: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lod: AddFunctionOpcode(A);
+Lof: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
+Log: AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-Loe: mData->mByteCode.push_back(cImmed); goto Llo;
-Lgj: mData->mImmed.pop_back(); goto Loc;
+Loh: mData->mByteCode.push_back(cImmed); goto Llq;
+Lgj: mData->mImmed.pop_back(); goto Lof;
 Lgk: mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(B); goto Lod;
+     AddFunctionOpcode(B); goto Log;
 Lgl: mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lod;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Log;
 Lgm: ByteCodePtr[-1] = cImmed; goto Lbo;
 Lgn: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Llp;
+     ByteCodePtr -= 1; goto Llr;
 Lgo: mData->mImmed.pop_back();
-Lof: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} return;
+Loi: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} return;
 Lgp: ImmedPtr[0] = x+x; goto Lgg;
 Lgq: ImmedPtr[-1] = x;
      ByteCodePtr[-4] = cImmed;
@@ -11839,44 +11928,44 @@ Lgq: ImmedPtr[-1] = x;
      AddFunctionOpcode(A);
      mData->mImmed.push_back(y*x);
      mData->mByteCode.push_back(cImmed);
-     AddFunctionOpcode(cMul); goto Lmi;
+     AddFunctionOpcode(cMul); goto Lmk;
 Lgr: ImmedPtr[-1] = x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
-     mData->mImmed.push_back(y*x); goto Lnc;
+     mData->mImmed.push_back(y*x); goto Lnf;
 Lha: ImmedPtr[0] = RadiansToDegrees(x); goto Lgn;
 Lhb: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
-Log: AddFunctionOpcode(cMul);
-Loh: AddFunctionOpcode(B);
-     opcode = cDiv; goto Lni;
+Loj: AddFunctionOpcode(cMul);
+Lok: AddFunctionOpcode(B);
+     opcode = cDiv; goto Lnl;
 Lhc: ImmedPtr[0] = -x;
      ByteCodePtr[-3] = cImmed;
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Log;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Loj;
 Lhd: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Loh;
+     for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lok;
 Lhe: mData->mImmed.pop_back();
-     for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();} goto Llo;
+     for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();} goto Llq;
 Lhf: mData->mImmed.pop_back();
      for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
-     mData->mImmed.push_back(x+x); goto Loe;
-Lhg: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();} goto Lof;
-Lhh: ImmedPtr[-1] = y*x; goto Lob;
+     mData->mImmed.push_back(x+x); goto Loh;
+Lhg: for(unsigned tmp=2; tmp-->0; ) {mData->mImmed.pop_back();} goto Loi;
+Lhh: ImmedPtr[-1] = y*x; goto Loe;
 Lhi: ImmedPtr[0] = -x; goto Lgn;
 Lhj: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-Loi: AddFunctionOpcode(cMul); goto Lnj;
+Lol: AddFunctionOpcode(cMul); goto Lnm;
 Lhk: ImmedPtr[0] = -x;
      ByteCodePtr[-2] = cImmed;
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Loi;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lol;
 Lhl: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnj;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnm;
 Lhm: ImmedPtr[0] = DegreesToRadians(x); goto Lgn;
 Lhn: ImmedPtr[-1] = x;
      ByteCodePtr[-4] = cImmed;
@@ -11886,34 +11975,34 @@ Lhn: ImmedPtr[-1] = x;
      AddFunctionOpcode(A);
      mData->mImmed.push_back(y*x);
      mData->mByteCode.push_back(cImmed);
-     AddFunctionOpcode(cMul); goto Lmg;
+     AddFunctionOpcode(cMul); goto Lmi;
 Lho: ImmedPtr[-1] = y*x; goto Lar;
 Lhp: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lmj;
+     mData->mByteCode.pop_back(); goto Lml;
 Lhq: ByteCodePtr[0] = cDup;
      ImmedPtr -= 1;
      mData->mImmed.pop_back();
-Loj: opcode = cAdd; goto Lmb;
+Lom: opcode = cAdd; goto Lmd;
 Lhr: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lng;
+     mData->mByteCode.pop_back(); goto Lnj;
 Lia: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lnh;
+     mData->mByteCode.pop_back(); goto Lnk;
 Lib: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Log;
+     AddFunctionOpcode(A); goto Loj;
 Lic: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-Lok: AddFunctionOpcode(cSqr); goto Llo;
+Lon: AddFunctionOpcode(cSqr); goto Llq;
 Lid: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Loi;
+     mData->mByteCode.push_back(cImmed); goto Lol;
 Lie: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(A); goto Loi;
-Lif: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lok;
+     AddFunctionOpcode(A); goto Lol;
+Lif: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lon;
 Lig: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-Lol: FP_TRACE_BYTECODE_ADD(cNEqual);
+Loo: FP_TRACE_BYTECODE_ADD(cNEqual);
      goto TailCall_cNEqual;
 Lih: ImmedPtr[-1] = fp_nequal(y,x); goto Lar;
 Lii: ImmedPtr[0] = -x; goto Lcp;
@@ -11921,7 +12010,7 @@ Lij: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cSin;
-     FP_ReDefinePointers(); goto Lno;
+     FP_ReDefinePointers(); goto Lnr;
 Lik: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
@@ -11933,18 +12022,18 @@ Lil: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cTan;
-     FP_ReDefinePointers(); goto Lnd;
+     FP_ReDefinePointers(); goto Lng;
 Lim: ImmedPtr[0] = -x;
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cMul);
      opcode = cTanh;
-     FP_ReDefinePointers(); goto Lne;
+     FP_ReDefinePointers(); goto Lnh;
 Lin: ImmedPtr[0] = -x; return;
 Lio: mData->mByteCode.pop_back();
      AddFunctionOpcode(cAbsNot); return;
 Lip: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cNEqual; goto Lol;
+     opcode = cNEqual; goto Loo;
 Liq: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
      opcode = cLessOrEq;
@@ -11967,14 +12056,14 @@ Ljb: mData->mByteCode.pop_back();
      goto TailCall_cGreater;
 Ljc: mData->mByteCode.pop_back();
      ByteCodePtr -= 1;
-     opcode = cEqual; goto Lnk;
+     opcode = cEqual; goto Lnn;
 Ljd: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lnl;
+     ByteCodePtr -= 1; goto Lno;
 Lje: ImmedPtr[0] = fp_not(x); return;
 Ljf: ImmedPtr[-1] = fp_or(x,y); goto Lar;
 Ljg: ImmedPtr[-1] = fp_polar(x,y); goto Lar;
 Ljh: ByteCodePtr[-1] = cImmed;
-     mData->mByteCode.pop_back(); goto Lnm;
+     mData->mByteCode.pop_back(); goto Lnp;
 Lji: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cMul);
@@ -11984,13 +12073,13 @@ Lji: ByteCodePtr[-1] = cImmed;
      goto TailCall_cExp2;
 Ljj: ImmedPtr[-1] = y*x;
      mData->mImmed.pop_back();
-     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnp;
+     for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Loa;
 Ljk: ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     AddFunctionOpcode(cMul); goto Lnp;
-Ljl: ImmedPtr[0] = Value_t(); goto Lnb;
+     AddFunctionOpcode(cMul); goto Loa;
+Ljl: ImmedPtr[0] = Value_t(); goto Lne;
 Ljm: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lmr;
+     mData->mByteCode.pop_back(); goto Lnc;
 Ljn: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      opcode = cCbrt;
@@ -12000,75 +12089,81 @@ Ljn: mData->mImmed.pop_back();
 Ljo: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cCbrt);
-Lom: opcode = cInv;
-     FP_ReDefinePointers(); goto Lmo;
+Lop: opcode = cInv;
+     FP_ReDefinePointers(); goto Lmr;
 Ljp: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lml;
+     mData->mByteCode.pop_back(); goto Lmn;
 Ljq: mData->mImmed.pop_back();
-     mData->mByteCode.pop_back(); goto Lom;
+     mData->mByteCode.pop_back(); goto Lop;
 Ljr: ImmedPtr[0] = x+x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Lnq;
+     ByteCodePtr -= 1; goto Lob;
 Lka: ImmedPtr[-1] = fp_pow(y,x); goto Lar;
 Lkb: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTanh); goto Lom;
-Lkc: ImmedPtr[0] = DegreesToRadians(x); goto Lcp;
-Lkd: ImmedPtr[0] = DegreesToRadians(x); return;
-Lke: ImmedPtr[0] = fp_real(x); return;
-Lkf: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSinCos); goto Lom;
-Lkg: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSin); goto Lmj;
-Lkh: ImmedPtr[0] = fp_sin(x); return;
-Lki: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSqr);
-     mData->mImmed.push_back(Value_t(-1)); goto Lmq;
+     AddFunctionOpcode(cTanh); goto Lop;
+Lkc: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cInv);
+     opcode = cAbs;
+     FP_ReDefinePointers(); goto Llo;
+Lkd: ImmedPtr[0] = DegreesToRadians(x); goto Lcp;
+Lke: ImmedPtr[0] = DegreesToRadians(x); return;
+Lkf: ImmedPtr[0] = fp_real(x); return;
+Lkg: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSinCos); goto Lop;
+Lkh: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cSin); goto Lml;
+Lki: ImmedPtr[0] = fp_sin(x); return;
 Lkj: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cSinh); goto Lmj;
-Lkk: ImmedPtr[0] = fp_sinh(x); return;
-Lkl: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Loa;
-Lkm: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSqr);
+     mData->mImmed.push_back(Value_t(-1)); goto Lnb;
+Lkk: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cSinh); goto Lml;
+Lkl: ImmedPtr[0] = fp_sinh(x); return;
+Lkm: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lod;
+Lkn: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lmq;
+Lko: for(unsigned tmp=4; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-Lon: opcode = cHypot;
+Loq: opcode = cHypot;
      FP_ReDefinePointers();
      FP_TRACE_BYTECODE_ADD(cHypot);
      goto TailCall_cHypot;
-Lkn: for(unsigned tmp=5; tmp-->0; ) {mData->mByteCode.pop_back();}
+Lkp: for(unsigned tmp=5; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-     AddFunctionOpcode(B); goto Lon;
-Lko: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1;
-     opcode = cAbs; goto Llm;
-Lkp: ImmedPtr[0] = fp_sqrt(x); return;
+     AddFunctionOpcode(B); goto Loq;
 Lkq: mData->mByteCode.pop_back();
-     ByteCodePtr -= 1; goto Loj;
-Lkr: ImmedPtr[-1] = y-x; goto Lar;
-Lla: ImmedPtr[0] = -x; goto Loj;
-Llb: mData->mImmed.pop_back();
+     ByteCodePtr -= 1;
+     opcode = cAbs; goto Llo;
+Lkr: ImmedPtr[0] = fp_sqrt(x); return;
+Lla: mData->mByteCode.pop_back();
+     ByteCodePtr -= 1; goto Lom;
+Llb: ImmedPtr[-1] = y-x; goto Lar;
+Llc: ImmedPtr[0] = -x; goto Lom;
+Lld: mData->mImmed.pop_back();
      for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cAdd);
      mData->mImmed.push_back(x);
-     mData->mByteCode.push_back(cImmed); goto Lmd;
-Llc: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
+     mData->mByteCode.push_back(cImmed); goto Lmf;
+Lle: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
-     AddFunctionOpcode(cSub); goto Lmd;
-Lld: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTan); goto Lmj;
-Lle: ImmedPtr[0] = fp_tan(x); return;
+     AddFunctionOpcode(cSub); goto Lmf;
 Llf: mData->mByteCode.pop_back();
-     AddFunctionOpcode(cTanh); goto Lmj;
-Llg: ImmedPtr[0] = fp_tanh(x); return;
-Llh: ImmedPtr[0] = fp_trunc(x); return;
-Lli: mData->mByteCode.push_back(cDup); return;
-Llj: ByteCodePtr[0] = cDup; return;
-Llk: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cTan); goto Lml;
+Llg: ImmedPtr[0] = fp_tan(x); return;
+Llh: mData->mByteCode.pop_back();
+     AddFunctionOpcode(cTanh); goto Lml;
+Lli: ImmedPtr[0] = fp_tanh(x); return;
+Llj: ImmedPtr[0] = fp_trunc(x); return;
+Llk: mData->mByteCode.push_back(cDup); return;
+Lll: ByteCodePtr[0] = cDup; return;
+Llm: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(cSinCos);
-Loo: AddFunctionOpcode(GetParamSwappedBinaryOpcode(C)); return;
-Lll: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
-     AddFunctionOpcode(cSinhCosh); goto Loo;
+Lor: AddFunctionOpcode(GetParamSwappedBinaryOpcode(C)); return;
+Lln: for(unsigned tmp=3; tmp-->0; ) {mData->mByteCode.pop_back();}
+     AddFunctionOpcode(cSinhCosh); goto Lor;
 return;
 // This list of dummy gotos is here to inhibit
 // compiler warnings on unused labels

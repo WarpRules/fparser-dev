@@ -575,6 +575,15 @@ namespace
                     << Indent(indent) << "--mStackPtr;\n";
                 continue;
             }
+            if(opcode == "DO_STACKPLUS2")
+            {
+                outstream
+                    << Indent(indent) << "incStackPtr();\n"
+                    << Indent(indent) << "incStackPtr();\n"
+                    << Indent(indent) << "--mStackPtr;\n"
+                    << Indent(indent) << "--mStackPtr;\n";
+                continue;
+            }
 
             if(operations[a].type == Operation::ImmedFunc)
             {

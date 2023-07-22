@@ -124,6 +124,32 @@ bool FUNCTIONPARSERTYPES::IsAlwaysIntegerOpcode(unsigned op)
     return false;
 }
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+bool FUNCTIONPARSERTYPES::IsAlwaysRealOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cImag:
+      case cReal:
+      case cAbs:
+      case cArg:
+          return true;
+      // Logical operations:
+      case cAnd: case cAbsAnd:
+      case cOr:  case cAbsOr:
+      case cNot: case cAbsNot:
+      case cNotNot: case cAbsNotNot:
+      case cEqual: case cNEqual:
+      case cLess: case cLessOrEq:
+      case cGreater: case cGreaterOrEq:
+          return true;
+      // Note that integer rounding opcodes are NOT always real.
+      default: break;
+    }
+    return false;
+}
+#endif
+
 bool FUNCTIONPARSERTYPES::IsUnaryOpcode(unsigned op)
 {
     switch(op)
@@ -1112,34 +1138,48 @@ namespace
             FunctionParserBase<Value_t>::MISSING_PARENTH;
     }
 
-    template<unsigned offset>
+    template<typename Value_t, unsigned offset, bool complex = IsComplexType<Value_t>::value>
     struct IntLiteralMask
     {
-        enum { mask =
-        //    (    1UL << ('-'-offset)) |
-            (0x3FFUL << ('0'-offset)) }; /* 0x3FF = 10 bits worth "1" */
-        // Note: If you change fparser to support negative numbers parsing
-        //       (as opposed to parsing them as cNeg followed by literal),
-        //       enable the '-' line above, and change the offset value
-        //       in BeginsLiteral() to '-' instead of '.'.
+        /* Because for complex numbers, -1 and -(1) mean (-1,0) and (-1,-0)
+         * respectively (this affects behavior of sqrt for instance),
+         * we do '-' parsing as part of the literal when dealing with
+         * complex numbers.
+         * Otherwise, the default behavior of literal + cNeg will do fine.
+         * See also CompileUnaryMinus(), which has handling for this.
+         */
+        enum { begin = '-',
+               mask =
+            (    1UL << ('-'-offset)) |
+            (0x3FFUL << ('0'-offset))
+             }; /* 0x3FF = 10 bits worth "1" */
+    };
+    template<typename Value_t, unsigned offset>
+    struct IntLiteralMask<Value_t, offset, false>
+    {
+        enum { begin = '.',
+               mask =
+            (0x3FFUL << ('0'-offset))
+             }; /* 0x3FF = 10 bits worth "1" */
     };
 
     template<typename Value_t, unsigned offset>
     struct LiteralMask
     {
-        enum { mask =
+        enum { begin = IntLiteralMask<Value_t, offset>::begin,
+               mask =
             (    1UL << ('.'-offset)) |
-            IntLiteralMask<offset>::mask };
+            IntLiteralMask<Value_t, offset>::mask };
     };
 #ifdef FP_SUPPORT_LONG_INT_TYPE
     template<unsigned offset>
-    struct LiteralMask<long, offset>: public IntLiteralMask<offset>
+    struct LiteralMask<long, offset>: public IntLiteralMask<long, offset>
     {
     };
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<unsigned offset>
-    struct LiteralMask<GmpInt, offset>: public IntLiteralMask<offset>
+    struct LiteralMask<GmpInt, offset>: public IntLiteralMask<GmpInt, offset>
     {
     };
 #endif
@@ -1158,7 +1198,7 @@ namespace
     template<typename Value_t>
     inline bool BeginsLiteral(unsigned byte)
     {
-        enum { n = sizeof(unsigned long)>=8 ? 0 : '.' };
+        enum { n = sizeof(unsigned long)>=8 ? 0 : (unsigned)LiteralMask<Value_t,0>::begin };
         byte -= n;
         if(byte > (unsigned char)('9'-n)) return false;
         unsigned long shifted = 1UL << byte;
@@ -2150,7 +2190,20 @@ FunctionParserBase<Value_t>::CompileUnaryMinus(const char* function)
     switch(op)
     {
         case '-':
+        {
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+            /* See comment in IntLiteralMask for explanation */
+            if(IsComplexType<Value_t>::value
+            && BeginsLiteral<Value_t>( (unsigned char) function[1]) )
+            {
+                // Let literal parsing handle the '-'
+                break;
+            }
+#endif
+            [[fallthrough]];
+        }
         case '!':
+        {
             ++function;
             SkipSpace(function);
 
@@ -2160,6 +2213,7 @@ FunctionParserBase<Value_t>::CompileUnaryMinus(const char* function)
             AddFunctionOpcode(op=='-' ? cNeg : cNot);
 
             return function;
+        }
         default: break;
     }
     return CompilePow(function);
@@ -2619,6 +2673,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
     std::vector<Value_t>& Stack = mData->mStack;
 #endif
 
+    //PrintByteCode(std::cout, true);
+
     for(IP=0; IP<byteCodeSize; ++IP)
     {
         switch(byteCode[IP])
@@ -2976,6 +3032,8 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           default:
               Stack[++SP] = Vars[byteCode[IP]-VarBegin];
         }
+        //assert(unsigned(SP+1) <= mData->mStackSize);
+        //std::cout << "Stack top: " << Stack[SP] << '\n';
     }
 
     mData->mEvalErrorType=0;

@@ -1582,12 +1582,13 @@ struct TestType
 };
 
 
-template<typename Value_t>
+template<typename OutStream, typename Value_t>
 bool checkVarString(const char* idString,
                     FunctionParserBase<Value_t> & fp,
                     const TestType<Value_t>& testData,
                     int errorIndex,
                     int variablesAmount, const std::string& variablesString,
+                    OutStream&    out,
                     std::ostream& briefErrorMessages)
 {
     const bool stringsMatch =
@@ -1598,22 +1599,22 @@ bool checkVarString(const char* idString,
     {
         if(verbosityLevel >= 2)
         {
-            std::cout << "\n" << idString
-                      << " ParseAndDeduceVariables() failed with function:\n\""
-                      << testData.funcString << "\"\n";
+            out << "\n" << idString
+                << " ParseAndDeduceVariables() failed with function:\n\""
+                << testData.funcString << "\"\n";
             if(errorIndex >= 0)
-                std::cout << "Error index: " << errorIndex
-                          << ": " << fp.ErrorMsg() << std::endl;
+                out << "Error index: " << errorIndex
+                    << ": " << fp.ErrorMsg() << std::endl;
             else if(!stringsMatch)
-                std::cout << "Deduced var string was \"" << variablesString
-                          << "\" instead of \""
-                          << testData.paramString
-                          << "\"." << std::endl;
+                out << "Deduced var string was \"" << variablesString
+                    << "\" instead of \""
+                    << testData.paramString
+                    << "\"." << std::endl;
             else
-                std::cout << "Deduced variables amount was "
-                          << variablesAmount << " instead of "
-                          << testData.paramAmount << "."
-                          << std::endl;
+                out << "Deduced variables amount was "
+                    << variablesAmount << " instead of "
+                    << testData.paramAmount << "."
+                    << std::endl;
         }
         else
         {
@@ -1625,34 +1626,33 @@ bool checkVarString(const char* idString,
     return true;
 }
 
-template<typename Value_t>
+template<typename OutStream, typename Value_t>
 bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
                            const TestType<Value_t>& testData,
+                           OutStream&    out,
                            std::ostream& briefErrorMessages)
 {
     static thread_local std::string variablesString;
     static thread_local std::vector<std::string> variables;
 
     if(verbosityLevel >= 3)
-        std::cout << "(Variable deduction)" << std::flush;
+        out << "(Variable deduction)" << std::flush;
 
     int variablesAmount = -1;
     int retval = fp.ParseAndDeduceVariables
         (testData.funcString,
          &variablesAmount, testData.useDegrees);
-    if(retval >= 0 || variablesAmount !=
-       int(testData.paramAmount))
+    if(retval >= 0 || variablesAmount != int(testData.paramAmount))
     {
         if(verbosityLevel >= 2)
         {
-            std::cout <<
-                "\nFirst ParseAndDeduceVariables() failed with function:\n\""
-                      << testData.funcString << "\"\n";
+            out <<"\nFirst ParseAndDeduceVariables() failed with function:\n\""
+                << testData.funcString << "\"\n";
             if(retval >= 0)
-                std::cout << "Error index: " << retval
+                out << "Error index: " << retval
                           << ": " << fp.ErrorMsg() << std::endl;
             else
-                std::cout << "Deduced variables amount was "
+                out << "Deduced variables amount was "
                           << variablesAmount << " instead of "
                           << testData.paramAmount << "."
                           << std::endl;
@@ -1672,7 +1672,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
          &variablesAmount,
          testData.useDegrees);
     if(!checkVarString("Second", fp, testData, retval, variablesAmount,
-                       variablesString, briefErrorMessages))
+                       variablesString, out, briefErrorMessages))
         return false;
 
     retval = fp.ParseAndDeduceVariables(testData.funcString,
@@ -1686,7 +1686,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
         variablesString += variables[i];
     }
     return checkVarString("Third", fp, testData, retval, variablesAmount,
-                          variablesString, briefErrorMessages);
+                          variablesString, out, briefErrorMessages);
 }
 
 
@@ -2316,7 +2316,7 @@ bool runRegressionTests(unsigned n_threads,
                 if(thisTestOk)
                 {
                     thisTestOk =
-                        testVariableDeduction(fp, testData, briefErrorMessages);
+                        testVariableDeduction(fp, testData, out, briefErrorMessages);
 
                     if(thisTestOk && verbosityLevel >= 3)
                         out << "Ok." << std::endl;

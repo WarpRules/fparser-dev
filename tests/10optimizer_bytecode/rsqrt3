@@ -1,5 +1,5 @@
 # cInv cRSqrt -> cSqrt
-T=d
+T=d cd
 V=x
 R=0.01,10,0.05
 F=1/sqrt(1/x)

@@ -1,0 +1,6 @@
+# cSqr cRSqrt -> cAbs cInv
+T=d cd
+V=x
+R=0.01,10,0.05
+F=sqrt(1/(x^2))
+C=1/fp_abs(x)

@@ -845,8 +845,8 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::ostream& operator<<(std::ostream& os, const std::complex<T>& value)
     {
-        if(value.imag() == T()) return os << value.real();
-        if(value.real() == T()) return os << value.imag() << 'i';
+        if(!std::signbit(value.imag()) && value.imag() == T()) return os << value.real();
+        if(!std::signbit(value.real()) && value.real() == T()) return os << value.imag() << 'i';
         if(value.imag() < T())
             return os << '(' << value.real() << "-" << -value.imag() << "i)";
         else
@@ -1041,6 +1041,9 @@ namespace FUNCTIONPARSERTYPES
     unsigned OppositeComparisonOpcode(unsigned op);
     bool IsNeverNegativeValueOpcode(unsigned op);
     bool IsAlwaysIntegerOpcode(unsigned op);
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    bool IsAlwaysRealOpcode(unsigned op);
+#endif
     bool IsUnaryOpcode(unsigned op);
     bool IsBinaryOpcode(unsigned op);
     bool IsVarOpcode(unsigned op);

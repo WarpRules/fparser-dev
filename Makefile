@@ -180,14 +180,14 @@ functioninfo: util/functioninfo.o $(FP_MODULES)
 fpoptimizer/grammar_data.cc: \
 		util/tree_grammar_parser \
 		fpoptimizer/treerules.dat
-	util/tree_grammar_parser < fpoptimizer/treerules.dat > $@
+	ASAN_OPTIONS=detect_leaks=0 util/tree_grammar_parser < fpoptimizer/treerules.dat > $@
 
 extrasrc/fp_opcode_add.inc: \
 		util/bytecoderules_parser \
 		util/bytecoderules.dat \
 		util/bytecoderules_header.txt
 	cat util/bytecoderules_header.txt > $@
-	util/bytecoderules_parser \
+	ASAN_OPTIONS=detect_leaks=0 util/bytecoderules_parser \
 		< util/bytecoderules.dat \
 		>> $@
 

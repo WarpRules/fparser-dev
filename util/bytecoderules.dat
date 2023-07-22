@@ -20,8 +20,6 @@
 #  ^ y cExp never occurs (already optimized to literal)
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [isEvenInteger(y)&&!isEvenInteger(x*y)] cPow  x cPow -> cAbs [y*x] cPow  #TEST 10/absyxpow_neg, 10/absyxpow_pos
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr x [!isEvenInteger(x+x)] cPow -> cAbs [x+x] cPow
-IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs         # TEST 10/sqrsqrt
-#IF(FP_FLOAT_VERSION) cSqr cRSqrt -> cAbs cInv
 
  # (x^y)^1.5  is unacceptable,
  #            for y might be 2, resulting in x^3
@@ -77,11 +75,11 @@ cDup cSub        -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cRSub       -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cDiv        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 10/divxx
 
-IF(FP_COMPLEX_VERSION) cReal cImag -> [Value_t()] cMul
-IF(FP_COMPLEX_VERSION) cAbs  cImag -> [Value_t()] cMul
+IF(FP_COMPLEX_VERSION) A [IsAlwaysRealOpcode(A)] cImag -> [DO_STACKPLUS2] [Value_t()] cMul
+IF(FP_COMPLEX_VERSION) A [IsAlwaysRealOpcode(A)] cReal -> A
 
-IF(FP_FLOAT_VERSION) x [x==Value_t()] cPow -> [Value_t()] cMul [Value_t(1)] cAdd
-IF(FP_FLOAT_VERSION) cSinCos cHypot        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 99/59
+IF(FP_FLOAT_VERSION) x [x==Value_t()] cPow -> [DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd
+IF(FP_FLOAT_VERSION) cSinCos cHypot        -> [DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd # TEST 99/59
 
 # Multiplications by zero: Undo as many operands as possible by peeling.
 # Some of these optimimizations can be disabled due to law of diminishing returns.
@@ -203,15 +201,21 @@ cDup cMul -> cSqr                                          # TEST 10/sqr_xx
 cNeg cSqr -> cSqr                                          # TEST 10/negsqr
 cAbs cSqr -> cSqr                                          # TEST 10/abssqr
 
+IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs                         # TEST 10/sqrsqrt
 IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt0
 IF(FP_FLOAT_VERSION) cInv cSqrt -> cRSqrt                        # TEST 10/rsqrt1
 IF(FP_FLOAT_VERSION) cRSqrt cInv -> cSqrt                        # TEST 10/rsqrt2
 IF(FP_FLOAT_VERSION) cInv cRSqrt -> cSqrt                        # TEST 10/rsqrt3
+IF(FP_FLOAT_VERSION) cRSqrt cSqr  -> cInv                        # TEST 10/rsqrt4
+IF(FP_FLOAT_VERSION) cSqr cRSqrt  -> cInv cAbs                   # TEST 10/rsqrt5
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cInv cAbs -> cSqr cInv # TEST 10/rsqrt6
+IF(!FP_COMPLEX_VERSION) A [IsNeverNegativeValueOpcode(A)] cAbs -> A # TEST 10/absneverneg
+
 IF(FP_FLOAT_VERSION) x [x==fp_const_rad_to_deg<Value_t>()] cMul -> cDeg #TEST 10/deg
 IF(FP_FLOAT_VERSION) x [x==fp_const_deg_to_rad<Value_t>()] cMul -> cRad #TEST 10/rad
-IF(FP_FLOAT_VERSION) cDeg x cMul -> [RadiansToDegrees(x)] cMul # TEST 10/degxmul
-IF(FP_FLOAT_VERSION) cRad x cMul -> [DegreesToRadians(x)] cMul # TEST 10/radxmul VERIFY
-IF(FP_FLOAT_VERSION) x cMul cRad -> [DegreesToRadians(x)] cMul # TEST 10/xmulrad
+IF(FP_FLOAT_VERSION) cDeg x cMul -> [DO_STACKPLUS1] [RadiansToDegrees(x)] cMul # TEST 10/degxmul
+IF(FP_FLOAT_VERSION) cRad x cMul -> [DO_STACKPLUS1] [DegreesToRadians(x)] cMul # TEST 10/radxmul VERIFY
+IF(FP_FLOAT_VERSION) x cMul cRad -> [DO_STACKPLUS1] [DegreesToRadians(x)] cMul # TEST 10/xmulrad
 
 IF(FP_FLOAT_VERSION) cInv cDiv -> cMul  # TEST 10/invdiv
 IF(FP_FLOAT_VERSION) cInv cMul -> cDiv  # TEST 10/invmul (float-only, because: y*(1/x) vs y/x)
@@ -396,7 +400,6 @@ IF(!FP_COMPLEX_VERSION) A [IsLogicalOpcode(A)]            cAbsNot cNot -> A     
 IF(!FP_COMPLEX_VERSION) A [A!=cImmed]                     cAbsNot cNot -> A cAbsNotNot   # TEST 10/absnot4
 IF(!FP_COMPLEX_VERSION) A [IsNeverNegativeValueOpcode(A)] cNot -> A cAbsNot              # TEST 10/absnot2
 
-IF(!FP_COMPLEX_VERSION) A [IsNeverNegativeValueOpcode(A)] cAbs   -> A                    # TEST 10/absneverneg
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cTrunc-> A  # TEST 10/inttrunc
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cFloor-> A  # TEST 10/intfloor
 IF(FP_FLOAT_VERSION) A [IsAlwaysIntegerOpcode(A)]    cCeil -> A  # TEST 10/intceil
