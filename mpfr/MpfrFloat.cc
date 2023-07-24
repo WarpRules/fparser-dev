@@ -4,6 +4,8 @@
 # define THREAD_SAFETY
 #endif
 
+#define REUSE_ITEMS
+
 #include "MpfrFloat.hh"
 #include <stdio.h>
 #include <mpfr.h>
@@ -15,23 +17,14 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
-
+#include <cstdio>
 
 //===========================================================================
 // Auxiliary structs
 //===========================================================================
 struct MpfrFloat::MpfrFloatData
 {
-#ifdef THREAD_SAFETY
-    std::atomic<unsigned> mRefCount{1};
-    std::atomic<MpfrFloatData*> nextFreeNode{nullptr};
-#else
-    unsigned mRefCount{1};
-    MpfrFloatData* nextFreeNode{nullptr};
-#endif
-
     mpfr_t mFloat;
-
     MpfrFloatData() {}
 };
 
@@ -42,20 +35,18 @@ class MpfrFloat::MpfrFloatDataContainer
 #else
     unsigned long mDefaultPrecision{256ul};
 #endif
-
-#ifdef THREAD_SAFETY
-    std::list<MpfrFloatData> mData;
-    std::atomic<MpfrFloatData*> mFirstFreeNode{nullptr};
-#else
-    std::deque<MpfrFloatData> mData;
-    MpfrFloatData* mFirstFreeNode{nullptr};
+#ifdef REUSE_ITEMS
+  #ifdef THREAD_SAFETY
+    std::list<MpfrFloatData> released_items;
+  #else
+    std::deque<MpfrFloatData> released_items;
+  #endif
 #endif
-
-    MpfrFloatData *mConst_0 = nullptr;
-    MpfrFloatData *mConst_pi = nullptr;
-    MpfrFloatData *mConst_e = nullptr;
-    MpfrFloatData *mConst_log2 = nullptr;
-    MpfrFloatData *mConst_epsilon = nullptr;
+    std::shared_ptr<MpfrFloatData> mConst_0;
+    std::shared_ptr<MpfrFloatData> mConst_pi;
+    std::shared_ptr<MpfrFloatData> mConst_e;
+    std::shared_ptr<MpfrFloatData> mConst_log2;
+    std::shared_ptr<MpfrFloatData> mConst_epsilon;
 
 #ifdef THREAD_SAFETY
     bool mpfr_is_thread_safe;
@@ -72,61 +63,54 @@ class MpfrFloat::MpfrFloatDataContainer
 
     ~MpfrFloatDataContainer()
     {
-        for(auto& data: mData)
+#ifdef REUSE_ITEMS
+        for(auto& data: released_items)
             mpfr_clear(data.mFloat);
+#endif
     }
 
-    MpfrFloatData* allocateMpfrFloatData(bool initToZero)
+    std::shared_ptr<MpfrFloatData> allocateMpfrFloatData(bool initToZero)
     {
-        if(mFirstFreeNode)
+        auto deleter = [this](MpfrFloatData* data)
         {
-#ifndef THREAD_SAFETY
-            MpfrFloatData* firstFree = mFirstFreeNode;
-#else
-            MpfrFloatData* firstFree = mFirstFreeNode.exchange(nullptr);
-            if(firstFree)
+            releaseMpfrFloatData(data);
+        };
+        auto newnode = std::shared_ptr<MpfrFloatData>(new MpfrFloatData, deleter);
+
+#ifdef REUSE_ITEMS
+        if(!released_items.empty())
+        {
+#ifdef THREAD_SAFETY
+            // Acquire the lock during std::list fetch+pop
+            std::lock_guard<std::mutex> lk(lock);
+            if(!released_items.empty())
 #endif
             {
-                MpfrFloatData* node = firstFree;
+                auto& elem = released_items.back();
+                *newnode = std::move(elem);
+                released_items.pop_back();
 
-                // TODO: What if someone already set mFirstFreeNode to non-null?
-                if(mFirstFreeNode.exchange(node->nextFreeNode) != nullptr)
-                {
-                    // TODO: Deal with error situation
-                }
-
-                // Note: node->nextFreeNode does not need to be changed.
-                if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
-                ++(node->mRefCount);
-                return node;
+                if(initToZero) mpfr_set_si(newnode->mFloat, 0, GMP_RNDN);
+                return newnode;
             }
         }
-
-#ifdef THREAD_SAFETY
-        // Acquire the lock during std::list insertion
-        std::lock_guard<std::mutex> lk(lock);
 #endif
-        auto node = &*mData.emplace(mData.end());
-        mpfr_init2(node->mFloat, mDefaultPrecision);
-        if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
-        return node;
+
+        mpfr_init2(newnode->mFloat, mDefaultPrecision);
+        if(initToZero) mpfr_set_si(newnode->mFloat, 0, GMP_RNDN);
+        return newnode;
     }
 
-    void releaseMpfrFloatData(MpfrFloatData* data)
+    inline void releaseMpfrFloatData(MpfrFloatData* data)
     {
-        // Note: may be called from locked context, in setDefaultPrecision--safely_deallocate
 #ifdef THREAD_SAFETY
-        if(data->mRefCount.fetch_sub(1) == 1)
-        {
-            data->nextFreeNode = nullptr;
-            data->nextFreeNode = mFirstFreeNode.exchange(data);
-        }
+        // Acquire the lock during std::list push
+        std::lock_guard<std::mutex> lk(lock);
+#endif
+#ifdef REUSE_ITEMS
+        released_items.emplace_back(std::move(*data));
 #else
-        if(--(data->mRefCount) == 0)
-        {
-            data->nextFreeNode = mFirstFreeNode;
-            mFirstFreeNode = data;
-        }
+        mpfr_clear(data->mFloat);
 #endif
     }
 
@@ -143,11 +127,11 @@ class MpfrFloat::MpfrFloatDataContainer
 #ifdef THREAD_SAFETY
                 if(!mpfr_is_thread_safe)
                 {
-                    for(auto& data: mData)
-                    {
-                        /* TODO: Figure out a way to do this in a thread-safe manner */
-                        mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
-                    }
+                    //for(auto& data: current_items)
+                    //{
+                    //    // FIXME: This call might not be atomic.
+                    //    mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+                    //}
 
                     /* Release the constants so that they will be recalculated
                      * under locking contexts.
@@ -160,10 +144,10 @@ class MpfrFloat::MpfrFloatDataContainer
                 else
 #endif
                 {
-                    // If mpfr is thread-safe, then these operations are safe to do
-                    // while another thread is perhaps using the element at the same time.
-                    for(auto& data: mData)
-                        mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+                    // If mpfr is thread-safe, then these operations are safe,
+                    // even if another thread is using the same element.
+                    //for(auto& data: current_items)
+                    //    mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
 
                     if(mConst_pi)
                     {
@@ -191,33 +175,33 @@ class MpfrFloat::MpfrFloatDataContainer
         return mDefaultPrecision;
     }
 
-    MpfrFloatData* const_0()
+    std::shared_ptr<MpfrFloatData> const_0()
     {
         return make_const(mConst_0, [](MpfrFloatData& ){});
     }
 
-    MpfrFloat const_pi()
+    std::shared_ptr<MpfrFloatData> const_pi()
     {
         return make_const(mConst_pi, [](MpfrFloatData& data){
             mpfr_const_pi(data.mFloat, GMP_RNDN);
         });
     }
 
-    MpfrFloat const_e()
+    std::shared_ptr<MpfrFloatData> const_e()
     {
         return make_const(mConst_e, [this](MpfrFloatData& data){
             recalculate_e(data);
         });
     }
 
-    MpfrFloat const_log2()
+    std::shared_ptr<MpfrFloatData> const_log2()
     {
         return make_const(mConst_log2, [](MpfrFloatData& data){
             mpfr_const_log2(data.mFloat, GMP_RNDN);
         });
     }
 
-    MpfrFloat const_epsilon()
+    std::shared_ptr<MpfrFloatData> const_epsilon()
     {
         return make_const(mConst_epsilon, [this](MpfrFloatData& data){
             recalculateEpsilon(data);
@@ -225,23 +209,13 @@ class MpfrFloat::MpfrFloatDataContainer
     }
 private:
     template<typename F>
-    inline MpfrFloatData* make_const(MpfrFloatData*& pointer, F&& initializer)
+    std::shared_ptr<MpfrFloatData> make_const(std::shared_ptr<MpfrFloatData>& pointer, F&& initializer)
     {
         if(!pointer)
         {
-            MpfrFloatData* value = allocateMpfrFloatData(true);
-#ifdef THREAD_SAFETY
-            std::lock_guard<std::mutex> lk(lock);
-            if(pointer)
-            {
-                releaseMpfrFloatData(value);
-            }
-            else
-#endif
-            {
-                initializer(*value);
-                pointer = value;
-            }
+            auto value = allocateMpfrFloatData(true);
+            initializer(*value);
+            pointer = std::move(value);
         }
         return pointer;
     }
@@ -256,13 +230,11 @@ private:
         mpfr_set_si(temp, 1, GMP_RNDN);
         mpfr_exp(temp, data.mFloat, GMP_RNDN);
         std::memcpy(&data.mFloat, &temp, sizeof(temp));
+        // Note: Technically, memcpy is not atomic either.
     }
 
     void recalculateEpsilon(MpfrFloatData& data)
     {
-        // Do the operation through a temporary for thread-safety.
-        // In a non-threadsafe context, this is called infrequently
-        // enough that the few extra cpuops don't really matter.
         mpfr_t temp;
         std::memcpy(&temp, &data.mFloat, sizeof(temp));
         mpfr_set_si(temp, 1, GMP_RNDN);
@@ -271,11 +243,9 @@ private:
     }
 
 #ifdef THREAD_SAFETY
-    void safely_deallocate(MpfrFloatData *&ptr)
+    void safely_deallocate(std::shared_ptr<MpfrFloatData> &ptr)
     {
-        MpfrFloatData* copy = ptr;
         ptr = nullptr;
-        releaseMpfrFloatData(copy);
     }
 #endif
 };
@@ -307,68 +277,50 @@ unsigned long MpfrFloat::getCurrentDefaultMantissaBits()
     return mpfrFloatDataContainer().getDefaultPrecision();
 }
 
-inline void MpfrFloat::copyIfShared()
+void MpfrFloat::copyIfShared()
 {
-    if(mData->mRefCount > 1)
+    if(mData.use_count() > 1)
     {
-        MpfrFloatData* oldData = mData;
-        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        mpfr_set(mData->mFloat, oldData->mFloat, GMP_RNDN);
-        // Release the ref _after_ a copy has been made successfully
-        --(oldData->mRefCount);
+        auto newData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        mpfr_set(newData->mFloat, mData->mFloat, GMP_RNDN);
+        std::swap(mData, newData);
+        // old data goes out of scope, may get deallocated.
     }
 }
 
-inline void MpfrFloat::resetIfShared(bool has_value)
+void MpfrFloat::resetIfShared(bool has_value)
 {
     if(!has_value) // called from constructor?
     {
+        assert(mData.use_count() == 0);
         mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
     }
     else // not from constructor
     {
-        if(mData->mRefCount > 1)
+        if(mData.use_count() > 1)
         {
-            // TODO: Is this thread-safe?
-            --(mData->mRefCount);
             mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         }
     }
 }
 
-inline void MpfrFloat::set_0(bool has_value)
+void MpfrFloat::set_0(bool/*has_value*/)
 {
-    MpfrFloatData* newData = mpfrFloatDataContainer().const_0();
-    ++(newData->mRefCount);
-
-    if(!has_value) // called from constructor?
-    {
-        mData = newData;
-    }
-    else // not from constructor
-    {
-        // Change to new data
-        MpfrFloatData* oldData = mData;
-        mData = newData;
-        // Release old data
-        mpfrFloatDataContainer().releaseMpfrFloatData(oldData);
-    }
+    mData = mpfrFloatDataContainer().const_0();
 }
 
 
 //===========================================================================
 // Constructors, destructor, assignment
 //===========================================================================
-MpfrFloat::MpfrFloat(DummyType)
+MpfrFloat::MpfrFloat(DummyType) // private constructor, kNoInitialization
 {
     resetIfShared(false);
 }
 
-MpfrFloat::MpfrFloat(MpfrFloatData* data):
-    mData(data)
+MpfrFloat::MpfrFloat(std::shared_ptr<MpfrFloatData>&& data) // private constructor
+    : mData(std::move(data))
 {
-    assert(data != nullptr);
-    ++(mData->mRefCount);
 }
 
 MpfrFloat::MpfrFloat()
@@ -436,29 +388,22 @@ MpfrFloat::MpfrFloat(const char* value, char** endptr):
 
 MpfrFloat::~MpfrFloat()
 {
-    mpfrFloatDataContainer().releaseMpfrFloatData(mData);
 }
 
-MpfrFloat::MpfrFloat(const MpfrFloat& rhs):
-    mData(rhs.mData)
+MpfrFloat::MpfrFloat(const MpfrFloat& rhs)
+    : mData(rhs.mData)
 {
-    ++(mData->mRefCount);
 }
 
-MpfrFloat::MpfrFloat(MpfrFloat&& rhs): mData(nullptr)
+MpfrFloat::MpfrFloat(MpfrFloat&& rhs)
+    : mData(std::move(rhs.mData))
 {
-    set_0(false);
-    std::swap(mData, rhs.mData);
+    rhs.set_0(false);
 }
 
 MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
 {
-    if(mData != rhs.mData)
-    {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
-        mData = rhs.mData;
-        ++(mData->mRefCount);
-    }
+    mData = rhs.mData;
     return *this;
 }
 
@@ -466,8 +411,7 @@ MpfrFloat& MpfrFloat::operator=(MpfrFloat&& rhs)
 {
     if(this != &rhs)
     {
-        set_0(true);
-        std::swap(mData, rhs.mData);
+        mData = std::move(rhs.mData);
     }
     return *this;
 }
@@ -1118,8 +1062,7 @@ MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 
 MpfrFloat MpfrFloat::const_pi()
 {
-    // Calls MpfrFloat constructor with MpfrFloatData*.
-    // The constructor will increment the refcount.
+    // Calls private MpfrFloat constructor with MpfrFloatData pointer.
     return mpfrFloatDataContainer().const_pi();
 }
 

@@ -697,7 +697,7 @@ namespace
     // Return value will be false if the name already existed
     template<typename Value_t>
     bool addNewNameData(NamePtrsMap<Value_t>& namePtrs,
-                        std::pair<NamePtr, NameData<Value_t> >& newName,
+                        std::pair<NamePtr, NameData<Value_t> >&& newName,
                         bool isVar)
     {
         typename NamePtrsMap<Value_t>::iterator nameIter =
@@ -713,7 +713,7 @@ namespace
                 return false;
 
             // update the data
-            nameIter->second = newName.second;
+            nameIter->second = std::move(newName.second);
             return true;
         }
 
@@ -727,7 +727,7 @@ namespace
             newName.first.name = namebuf;
         }
 
-        namePtrs.insert(nameIter, newName);
+        namePtrs.insert(nameIter, std::move(newName));
         return true;
     }
 }
@@ -967,9 +967,9 @@ bool FunctionParserBase<Value_t>::AddConstant(const std::string& name,
     CopyOnWrite();
     std::pair<NamePtr, NameData<Value_t> > newName
         (NamePtr(name.data(), unsigned(name.size())),
-         NameData<Value_t>(NameData<Value_t>::CONSTANT, value));
+         NameData<Value_t>(NameData<Value_t>::CONSTANT, std::move(value)));
 
-    return addNewNameData(mData->mNamePtrs, newName, false);
+    return addNewNameData(mData->mNamePtrs, std::move(newName), false);
 }
 
 template<typename Value_t>
@@ -982,7 +982,7 @@ bool FunctionParserBase<Value_t>::AddUnit(const std::string& name,
     std::pair<NamePtr, NameData<Value_t> > newName
         (NamePtr(name.data(), unsigned(name.size())),
          NameData<Value_t>(NameData<Value_t>::UNIT, value));
-    return addNewNameData(mData->mNamePtrs, newName, false);
+    return addNewNameData(mData->mNamePtrs, std::move(newName), false);
 }
 
 template<typename Value_t>
@@ -997,7 +997,7 @@ bool FunctionParserBase<Value_t>::AddFunction
          NameData<Value_t>(NameData<Value_t>::FUNC_PTR,
                            unsigned(mData->mFuncPtrs.size())));
 
-    const bool success = addNewNameData(mData->mNamePtrs, newName, false);
+    const bool success = addNewNameData(mData->mNamePtrs, std::move(newName), false);
     if(success)
     {
         mData->mFuncPtrs.push_back(typename Data::FuncWrapperPtrData());
@@ -1059,7 +1059,7 @@ bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
          NameData<Value_t>(NameData<Value_t>::PARSER_PTR,
                            unsigned(mData->mFuncParsers.size())));
 
-    const bool success = addNewNameData(mData->mNamePtrs, newName, false);
+    const bool success = addNewNameData(mData->mNamePtrs, std::move(newName), false);
     if(success)
     {
         mData->mFuncParsers.push_back(typename Data::FuncParserPtrData());
@@ -1360,7 +1360,7 @@ bool FunctionParserBase<Value_t>::ParseVariables
             (NamePtr(beginPtr, nameLength),
              NameData<Value_t>(NameData<Value_t>::VARIABLE, varNumber++));
 
-        if(!addNewNameData(mData->mNamePtrs, newName, true))
+        if(!addNewNameData(mData->mNamePtrs, std::move(newName), true))
         {
             return false;
         }

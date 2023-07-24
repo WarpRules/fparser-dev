@@ -193,8 +193,9 @@ namespace FUNCTIONPARSERTYPES
         unsigned index;
         Value_t value;
 
-        NameData(DataType t, unsigned v) : type(t), index(v), value() { }
-        NameData(DataType t, Value_t v) : type(t), index(), value(v) { }
+        NameData(DataType t, unsigned v)       : type(t), index(v), value() { }
+        NameData(DataType t, const Value_t& v) : type(t), index(), value(v) { }
+        NameData(DataType t, Value_t&& v)      : type(t), index(), value(std::move(v)) { }
         NameData() { }
     };
 

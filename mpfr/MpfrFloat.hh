@@ -2,6 +2,7 @@
 #define ONCE_FP_MPFR_FLOAT_
 
 #include <iostream>
+#include <memory>
 
 class MpfrFloat
 {
@@ -178,11 +179,11 @@ class MpfrFloat
     struct MpfrFloatData;
     class MpfrFloatDataContainer;
 
-    MpfrFloatData* mData;
+    std::shared_ptr<MpfrFloatData> mData;
 
     enum DummyType { kNoInitialization };
     MpfrFloat(DummyType);
-    MpfrFloat(MpfrFloatData*);
+    MpfrFloat(std::shared_ptr<MpfrFloatData>&& );
 
     void copyIfShared();
     static MpfrFloatDataContainer& mpfrFloatDataContainer();

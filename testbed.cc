@@ -2182,8 +2182,13 @@ bool runRegressionTests(unsigned n_threads,
     // Test repeated constant addition
     // -------------------------------
    {using namespace FUNCTIONPARSERTYPES; // For a possible custom < operator
-    for(Value_t value = 0; value < Value_t(20); value += 1)
+    for(Value_t value = 1; value <= Value_t(20); value += 1)
     {
+        Value_t value2 = value;
+        if(value != value2)
+        {
+            out << "Ooops! Value_t does not retain value when copied!" << std::endl;
+        }
         if(!fp.AddConstant("TestConstant", value))
         {
             if(thread_index == 0)
@@ -2192,12 +2197,15 @@ bool runRegressionTests(unsigned n_threads,
         }
 
         fp.Parse("TestConstant", "");
-        if(fp.Eval(nullptr) != value)
+        Value_t result = fp.Eval(nullptr);
+        if(result != value)
         {
             if(thread_index == 0)
             {
-                if(value == Value_t(0)) out << "Usage of 'TestConstant' failed" << std::endl;
-                else out << "Changing the value of 'TestConstant' failed" << std::endl;
+                if(value == Value_t(0))
+                    out << "Usage of 'TestConstant' failed: got " << result << ", wanted " << value << std::endl;
+                else
+                    out << "Changing the value of 'TestConstant' failed: got " << result << ", wanted " << value << std::endl;
             }
             return false;
         }
