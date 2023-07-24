@@ -2,6 +2,7 @@
 #define ONCE_FP_GMP_INT_HH_
 
 #include <iostream>
+#include <memory>
 
 class GmpInt
 {
@@ -116,7 +117,7 @@ class GmpInt
     struct GmpIntData;
     class GmpIntDataContainer;
 
-    GmpIntData* mData;
+    std::shared_ptr<GmpIntData> mData;
 
     enum DummyType { kNoInitialization };
     GmpInt(DummyType);
@@ -126,6 +127,8 @@ class GmpInt
 
     friend GmpInt operator+(long lhs, const GmpInt& rhs);
     friend GmpInt operator-(long lhs, const GmpInt& rhs);
+    void set_0(bool has_value);
+    void resetIfShared(bool has_value);
 };
 
 GmpInt operator+(long lhs, const GmpInt& rhs);

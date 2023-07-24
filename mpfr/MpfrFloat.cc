@@ -17,7 +17,6 @@
 #include <vector>
 #include <cstring>
 #include <cassert>
-#include <cstdio>
 
 //===========================================================================
 // Auxiliary structs
@@ -393,7 +392,10 @@ MpfrFloat::MpfrFloat(MpfrFloat&& rhs)
 
 MpfrFloat& MpfrFloat::operator=(const MpfrFloat& rhs)
 {
-    mData = rhs.mData;
+    if(this != &rhs)
+    {
+        mData = rhs.mData;
+    }
     return *this;
 }
 

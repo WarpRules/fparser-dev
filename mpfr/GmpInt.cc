@@ -1,9 +1,22 @@
+#if defined(FP_USE_THREAD_SAFE_EVAL) || defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+# include <atomic>
+# include <mutex>
+# define THREAD_SAFETY
+#endif
+
+//#define REUSE_ITEMS
+
 #include "GmpInt.hh"
 #include <gmp.h>
-#include <deque>
+#ifdef THREAD_SAFETY
+# include <list>
+#else
+# include <deque>
+#endif
 #include <vector>
 #include <cstring>
 #include <cctype>
+#include <cassert>
 
 //===========================================================================
 // Shared data
@@ -14,7 +27,7 @@ namespace
 
     std::vector<char>& intString()
     {
-        static std::vector<char> str;
+        static thread_local std::vector<char> str;
         return str;
     }
 }
@@ -24,58 +37,88 @@ namespace
 //===========================================================================
 struct GmpInt::GmpIntData
 {
-    unsigned mRefCount;
-    GmpIntData* nextFreeNode;
     mpz_t mInteger;
-
-    GmpIntData(): mRefCount(1), nextFreeNode(0) {}
+    GmpIntData() {}
 };
 
 class GmpInt::GmpIntDataContainer
 {
-    std::deque<GmpInt::GmpIntData> mData;
-    GmpInt::GmpIntData* mFirstFreeNode;
-    GmpInt::GmpIntData* mConst_0;
+#ifdef REUSE_ITEMS
+  #ifdef THREAD_SAFETY
+    std::list<GmpIntData> released_items;
+  #else
+    std::deque<GmpIntData> released_items;
+  #endif
+#endif
+    std::shared_ptr<GmpIntData> mConst_0;
+
+#ifdef THREAD_SAFETY
+    std::mutex lock;
+#endif
 
  public:
-    GmpIntDataContainer(): mFirstFreeNode(0), mConst_0(0) {}
+    GmpIntDataContainer()
+    {
+    }
 
     ~GmpIntDataContainer()
     {
-        for(size_t i = 0; i < mData.size(); ++i)
-            mpz_clear(mData[i].mInteger);
+#ifdef REUSE_ITEMS
+        for(auto& data: released_items)
+            mpz_clear(data.mInteger);
+#endif
     }
 
-    GmpInt::GmpIntData* allocateGmpIntData(unsigned long numberOfBits,
-                                           bool initToZero)
+    std::shared_ptr<GmpInt::GmpIntData> allocateGmpIntData
+        (unsigned long numberOfBits, bool initToZero)
     {
-        if(mFirstFreeNode)
+        auto deleter = [this](GmpIntData* data)
         {
-            GmpInt::GmpIntData* node = mFirstFreeNode;
-            mFirstFreeNode = node->nextFreeNode;
-            if(initToZero) mpz_set_si(node->mInteger, 0);
-            ++(node->mRefCount);
-            return node;
-        }
+            releaseGmpIntData(data);
+        };
+        auto newnode = std::shared_ptr<GmpIntData>(new GmpIntData, deleter);
 
-        mData.push_back(GmpInt::GmpIntData());
+#ifdef REUSE_ITEMS
+        if(!released_items.empty())
+        {
+#ifdef THREAD_SAFETY
+            // Acquire the lock during std::list fetch+pop
+            std::lock_guard<std::mutex> lk(lock);
+            if(!released_items.empty())
+#endif
+            {
+                auto& elem = released_items.back();
+                *newnode = std::move(elem);
+                released_items.pop_back();
+
+                if(initToZero) mpz_set_si(newnode->mInteger, 0);
+                return newnode;
+            }
+        }
+#endif
+
         if(numberOfBits > 0)
-            mpz_init2(mData.back().mInteger, numberOfBits);
+            mpz_init2(newnode->mInteger, numberOfBits);
         else
-            mpz_init(mData.back().mInteger);
-        return &mData.back();
+            mpz_init(newnode->mInteger);
+        if(initToZero) mpz_set_si(newnode->mInteger, 0);
+        return newnode;
     }
 
     void releaseGmpIntData(GmpIntData* data)
     {
-        if(--(data->mRefCount) == 0)
-        {
-            data->nextFreeNode = mFirstFreeNode;
-            mFirstFreeNode = data;
-        }
+#ifdef REUSE_ITEMS
+  #ifdef THREAD_SAFETY
+        // Acquire the lock during std::list push
+        std::lock_guard<std::mutex> lk(lock);
+  #endif
+        released_items.emplace_back(std::move(*data));
+#else
+        mpz_clear(data->mInteger);
+#endif
     }
 
-    GmpInt::GmpIntData* const_0()
+    std::shared_ptr<GmpInt::GmpIntData> const_0()
     {
         if(!mConst_0)
             mConst_0 = allocateGmpIntData(gIntDefaultNumberOfBits, true);
@@ -103,42 +146,60 @@ unsigned long GmpInt::getDefaultNumberOfBits()
     return gIntDefaultNumberOfBits;
 }
 
-inline void GmpInt::copyIfShared()
+void GmpInt::copyIfShared()
 {
-    if(mData->mRefCount > 1)
+    if(mData.use_count() > 1)
     {
-        --(mData->mRefCount);
-        GmpIntData* oldData = mData;
-        mData = gmpIntDataContainer().allocateGmpIntData(0, false);
-        mpz_set(mData->mInteger, oldData->mInteger);
+        auto newData = gmpIntDataContainer().allocateGmpIntData(gIntDefaultNumberOfBits, false);
+        mpz_set(newData->mInteger, mData->mInteger);
+        std::swap(mData, newData);
+        // old data goes out of scope, may get deallocated.
     }
 }
 
+void GmpInt::resetIfShared(bool has_value)
+{
+    if(!has_value) // called from constructor?
+    {
+        assert(mData.use_count() == 0);
+        mData = gmpIntDataContainer().allocateGmpIntData(gIntDefaultNumberOfBits, false);
+    }
+    else // not from constructor
+    {
+        if(mData.use_count() > 1)
+        {
+            mData = gmpIntDataContainer().allocateGmpIntData(gIntDefaultNumberOfBits, false);
+        }
+    }
+}
+
+void GmpInt::set_0(bool/*has_value*/)
+{
+    mData = gmpIntDataContainer().const_0();
+}
 
 //===========================================================================
 // Constructors, destructor, assignment
 //===========================================================================
-GmpInt::GmpInt(DummyType):
-    mData(gmpIntDataContainer().allocateGmpIntData(0, false))
-{}
+GmpInt::GmpInt(DummyType) // private constructor, kNoInitialization
+{
+    resetIfShared(false);
+}
 
 GmpInt::GmpInt()
 {
-    mData = gmpIntDataContainer().const_0();
-    ++(mData->mRefCount);
+    set_0(false);
 }
 
 GmpInt::GmpInt(long value)
 {
     if(value == 0)
     {
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = gmpIntDataContainer().allocateGmpIntData
-            (gIntDefaultNumberOfBits, false);
+        resetIfShared(false);
         mpz_set_si(mData->mInteger, value);
     }
 }
@@ -147,13 +208,11 @@ GmpInt::GmpInt(unsigned long value)
 {
     if(value == 0)
     {
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = gmpIntDataContainer().allocateGmpIntData
-            (gIntDefaultNumberOfBits, false);
+        resetIfShared(false);
         mpz_set_ui(mData->mInteger, value);
     }
 }
@@ -162,13 +221,11 @@ GmpInt::GmpInt(int value)
 {
     if(value == 0)
     {
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = gmpIntDataContainer().allocateGmpIntData
-            (gIntDefaultNumberOfBits, false);
+        resetIfShared(false);
         mpz_set_si(mData->mInteger, value);
     }
 }
@@ -178,13 +235,11 @@ GmpInt::GmpInt(double value)
     const double absValue = value >= 0.0 ? value : -value;
     if(absValue < 1.0)
     {
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = gmpIntDataContainer().allocateGmpIntData
-            (gIntDefaultNumberOfBits, false);
+        resetIfShared(false);
         mpz_set_d(mData->mInteger, value);
     }
 }
@@ -194,38 +249,31 @@ GmpInt::GmpInt(long double value)
     const long double absValue = value >= 0.0L ? value : -value;
     if(absValue < 1.0L)
     {
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = gmpIntDataContainer().allocateGmpIntData
-            (gIntDefaultNumberOfBits, false);
+        resetIfShared(false);
         mpz_set_d(mData->mInteger, double(value));
     }
 }
 
-GmpInt::GmpInt(const GmpInt& rhs):
-    mData(rhs.mData)
+GmpInt::GmpInt(const GmpInt& rhs)
+    : mData(rhs.mData)
 {
-    ++(mData->mRefCount);
 }
 
-GmpInt::GmpInt(GmpInt&& rhs): mData(nullptr)
+GmpInt::GmpInt(GmpInt&& rhs)
+    : mData(std::move(rhs.mData))
 {
-    mData = gmpIntDataContainer().const_0();
-    ++(mData->mRefCount);
-
-    std::swap(mData, rhs.mData);
+    rhs.set_0(false);
 }
 
 GmpInt& GmpInt::operator=(const GmpInt& rhs)
 {
-    if(mData != rhs.mData)
+    if(this != &rhs)
     {
-        gmpIntDataContainer().releaseGmpIntData(mData);
         mData = rhs.mData;
-        ++(mData->mRefCount);
     }
     return *this;
 }
@@ -234,8 +282,7 @@ GmpInt& GmpInt::operator=(GmpInt&& rhs)
 {
     if(this != &rhs)
     {
-        std::swap(mData, rhs.mData);
-        rhs = 0l;
+        mData = std::move(rhs.mData);
     }
     return *this;
 }
@@ -244,18 +291,11 @@ GmpInt& GmpInt::operator=(signed long value)
 {
     if(value == 0)
     {
-        gmpIntDataContainer().releaseGmpIntData(mData);
-        mData = gmpIntDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(true);
     }
     else
     {
-        if(mData->mRefCount > 1)
-        {
-            --(mData->mRefCount);
-            mData = gmpIntDataContainer().allocateGmpIntData
-                (gIntDefaultNumberOfBits, false);
-        }
+        resetIfShared(true);
         mpz_set_si(mData->mInteger, value);
     }
     return *this;
@@ -263,7 +303,6 @@ GmpInt& GmpInt::operator=(signed long value)
 
 GmpInt::~GmpInt()
 {
-    gmpIntDataContainer().releaseGmpIntData(mData);
 }
 
 
@@ -646,12 +685,14 @@ bool GmpInt::operator!=(long value) const
 
 void GmpInt::parseValue(const char* value)
 {
+    resetIfShared(true);
     mpz_set_str(mData->mInteger, value, 10);
 }
 
 void GmpInt::parseValue(const char* value, char** endptr)
 {
-    static std::vector<char> str;
+    static thread_local std::vector<char> str;
+    resetIfShared(true);
 
     unsigned startIndex = 0;
     while(value[startIndex] && std::isspace(value[startIndex])) ++startIndex;
