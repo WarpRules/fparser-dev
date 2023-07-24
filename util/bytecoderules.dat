@@ -75,7 +75,7 @@ cDup cSub        -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cRSub       -> [Value_t()] cMul                   # TEST 10/subxx
 cDup cDiv        -> [Value_t()] cMul [Value_t(1)] cAdd # TEST 10/divxx
 
-IF(FP_COMPLEX_VERSION) A [IsAlwaysRealOpcode(A)] cImag -> [DO_STACKPLUS2] [Value_t()] cMul
+IF(FP_COMPLEX_VERSION) A [IsAlwaysRealOpcode(A)] cImag -> A [DO_STACKPLUS1] [Value_t()] cMul
 IF(FP_COMPLEX_VERSION) A [IsAlwaysRealOpcode(A)] cReal -> A
 
 IF(FP_FLOAT_VERSION) x [x==Value_t()] cPow -> [DO_STACKPLUS1] [Value_t()] cMul [Value_t(1)] cAdd
