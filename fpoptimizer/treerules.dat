@@ -876,14 +876,14 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_E  x])      :          (cSinh [x])
 # exp(-x) = cosh(x)-sinh(x)
 # -exp(-x) = sinh(x)-cosh(x)
-@F cAdd        (cCosh [x])      (cMul {(cSinh [x]) -1}) :        (cPow [CONSTANT_EI x])
-@F cAdd (cMul {(cCosh [x]) -1})        (cSinh [x])      : (cMul {(cPow [CONSTANT_EI x]) -1})
+@F cAdd        (cCosh [x])      (cMul {(cSinh [x]) -1}) :        (cPow [/CONSTANT_E x])
+@F cAdd (cMul {(cCosh [x]) -1})        (cSinh [x])      : (cMul {(cPow [/CONSTANT_E x]) -1})
 #  sinh(x) = cosh(x)-exp(-x)
 # -sinh(x) = exp(-x)-cosh(x)
 #  cosh(x) = exp(-x)+sinh(x)
-@F cAdd        (cCosh [x])      (cMul {(cPow [CONSTANT_EI x]) -1}) :          (cSinh [x])
-@F cAdd (cMul {(cCosh [x]) -1})        (cPow [CONSTANT_EI x])      : (cMul -1 (cSinh [x]))
-@F cAdd        (cSinh [x])             (cPow [CONSTANT_EI x])      :          (cCosh [x])
+@F cAdd        (cCosh [x])      (cMul {(cPow [/CONSTANT_E x]) -1}) :          (cSinh [x])
+@F cAdd (cMul {(cCosh [x]) -1})        (cPow [/CONSTANT_E x])      : (cMul -1 (cSinh [x]))
+@F cAdd        (cSinh [x])             (cPow [/CONSTANT_E x])      :          (cCosh [x])
 
 
 # sinh(x)   = ((((E^2) ^ x) + -1) * ((E^-1) ^ x) * 0.5)
@@ -926,8 +926,8 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 # Disabled: On x86_64, "asinh(x)" is slower than "log(sqrt(x^2+1)+x)"
 @F cAdd (cPow [(cAdd {1 (cPow [         x 2])})  0.5]) x   :  (cPow [CONSTANT_E (cAsinh [x])])
 @F cAdd (cPow [(cAdd {1 (cPow [(cAdd <1>) 2])})  0.5]) <1> -> (cPow [CONSTANT_E (cAsinh [(cAdd <1>)])])
-@F cAdd (cPow [(cAdd {1 (cPow [         x 2])}) -0.5]) x   :  (cPow [CONSTANT_EI (cAsinh [x])])
-@F cAdd (cPow [(cAdd {1 (cPow [(cAdd <1>) 2])}) -0.5]) <1> -> (cPow [CONSTANT_EI (cAsinh [(cAdd <1>)])])
+@F cAdd (cPow [(cAdd {1 (cPow [         x 2])}) -0.5]) x   :  (cPow [/CONSTANT_E (cAsinh [x])])
+@F cAdd (cPow [(cAdd {1 (cPow [(cAdd <1>) 2])}) -0.5]) <1> -> (cPow [/CONSTANT_E (cAsinh [(cAdd <1>)])])
 
 
 #        acosh: log(x + sqrt(x*x - 1))
