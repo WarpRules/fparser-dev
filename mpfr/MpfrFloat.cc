@@ -328,13 +328,21 @@ inline void MpfrFloat::resetIfShared(bool has_value)
 
 inline void MpfrFloat::set_0(bool has_value)
 {
-    if(has_value) // called from elsewhere but constructor?
+    MpfrFloatData* newData = mpfrFloatDataContainer().const_0();
+    ++(newData->mRefCount);
+
+    if(!has_value) // called from constructor?
     {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+        mData = newData;
     }
-    mData = mpfrFloatDataContainer().const_0();
-    // TODO: Is this thread-safe?
-    ++(mData->mRefCount);
+    else // not from constructor
+    {
+        // Change to new data
+        MpfrFloatData* oldData = mData;
+        mData = newData;
+        // Release old data
+        mpfrFloatDataContainer().releaseMpfrFloatData(oldData);
+    }
 }
 
 
