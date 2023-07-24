@@ -189,6 +189,8 @@ class MpfrFloat
 
     friend MpfrFloat operator+(double lhs, const MpfrFloat& rhs);
     friend MpfrFloat operator-(double lhs, const MpfrFloat& rhs);
+    void set_0(bool has_value);
+    void resetIfShared(bool has_value);
 };
 
 MpfrFloat operator+(double lhs, const MpfrFloat& rhs);

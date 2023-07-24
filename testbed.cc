@@ -2344,7 +2344,7 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
 {
     // These types are not thread-safe:
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(std::is_same<Value_t, MpfrFloat>::value) n_threads = 1;
+    //if(std::is_same<Value_t, MpfrFloat>::value) n_threads = 1;
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
     if(std::is_same<Value_t, GmpInt>::value) n_threads = 1;

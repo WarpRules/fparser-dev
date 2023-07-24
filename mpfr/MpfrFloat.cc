@@ -1,95 +1,188 @@
+#if defined(FP_USE_THREAD_SAFE_EVAL) || defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
+# include <atomic>
+# include <mutex>
+# define THREAD_SAFETY
+#endif
+
 #include "MpfrFloat.hh"
 #include <stdio.h>
 #include <mpfr.h>
-#include <deque>
+#ifdef THREAD_SAFETY
+# include <list>
+#else
+# include <deque>
+#endif
 #include <vector>
 #include <cstring>
 #include <cassert>
-#include <atomic>
+
 
 //===========================================================================
 // Auxiliary structs
 //===========================================================================
 struct MpfrFloat::MpfrFloatData
 {
-    std::atomic<unsigned> mRefCount;
+#ifdef THREAD_SAFETY
+    std::atomic<unsigned> mRefCount{1};
+    std::atomic<MpfrFloatData*> nextFreeNode{nullptr};
+#else
+    unsigned mRefCount{1};
+    MpfrFloatData* nextFreeNode{nullptr};
+#endif
 
-    MpfrFloatData* nextFreeNode;
     mpfr_t mFloat;
 
-    MpfrFloatData(): mRefCount(1), nextFreeNode(0) {}
+    MpfrFloatData() {}
 };
 
 class MpfrFloat::MpfrFloatDataContainer
 {
-    unsigned long mDefaultPrecision;
+#ifdef THREAD_SAFETY
+    std::atomic<unsigned long> mDefaultPrecision{256ul};
+#else
+    unsigned long mDefaultPrecision{256ul};
+#endif
+
+#ifdef THREAD_SAFETY
+    std::list<MpfrFloatData> mData;
+    std::atomic<MpfrFloatData*> mFirstFreeNode{nullptr};
+#else
     std::deque<MpfrFloatData> mData;
-    MpfrFloatData* mFirstFreeNode;
+    MpfrFloatData* mFirstFreeNode{nullptr};
+#endif
 
-    MpfrFloatData
-    *mConst_0, *mConst_pi, *mConst_e, *mConst_log2, *mConst_epsilon;
+    MpfrFloatData *mConst_0 = nullptr;
+    MpfrFloatData *mConst_pi = nullptr;
+    MpfrFloatData *mConst_e = nullptr;
+    MpfrFloatData *mConst_log2 = nullptr;
+    MpfrFloatData *mConst_epsilon = nullptr;
 
-    void recalculateEpsilon()
-    {
-        mpfr_set_si(mConst_epsilon->mFloat, 1, GMP_RNDN);
-        mpfr_div_2ui(mConst_epsilon->mFloat, mConst_epsilon->mFloat,
-                     mDefaultPrecision*7/8 - 1, GMP_RNDN);
-    }
+#ifdef THREAD_SAFETY
+    bool mpfr_is_thread_safe;
+    std::mutex lock;
+#endif
 
  public:
-    MpfrFloatDataContainer():
-        mDefaultPrecision(256), mFirstFreeNode(0), mConst_0(0),
-        mConst_pi(0), mConst_e(0), mConst_log2(0), mConst_epsilon(0)
-    {}
+    MpfrFloatDataContainer()
+#ifdef THREAD_SAFETY
+        : mpfr_is_thread_safe( mpfr_buildopt_tls_p() )
+#endif
+    {
+    }
 
     ~MpfrFloatDataContainer()
     {
-        for(size_t i = 0; i < mData.size(); ++i)
-            mpfr_clear(mData[i].mFloat);
+        for(auto& data: mData)
+            mpfr_clear(data.mFloat);
     }
 
     MpfrFloatData* allocateMpfrFloatData(bool initToZero)
     {
         if(mFirstFreeNode)
         {
-            MpfrFloatData* node = mFirstFreeNode;
-            mFirstFreeNode = node->nextFreeNode;
-            if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
-            ++(node->mRefCount);
-            return node;
+#ifndef THREAD_SAFETY
+            MpfrFloatData* firstFree = mFirstFreeNode;
+#else
+            MpfrFloatData* firstFree = mFirstFreeNode.exchange(nullptr);
+            if(firstFree)
+#endif
+            {
+                MpfrFloatData* node = firstFree;
+
+                // TODO: What if someone already set mFirstFreeNode to non-null?
+                if(mFirstFreeNode.exchange(node->nextFreeNode) != nullptr)
+                {
+                    // TODO: Deal with error situation
+                }
+
+                // Note: node->nextFreeNode does not need to be changed.
+                if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
+                ++(node->mRefCount);
+                return node;
+            }
         }
 
-        mData.emplace_back(); // push_back(MpfrFloatData());
-        mpfr_init2(mData.back().mFloat, mDefaultPrecision);
-        if(initToZero) mpfr_set_si(mData.back().mFloat, 0, GMP_RNDN);
-        return &mData.back();
+#ifdef THREAD_SAFETY
+        // Acquire the lock during std::list insertion
+        std::lock_guard<std::mutex> lk(lock);
+#endif
+        auto node = &*mData.emplace(mData.end());
+        mpfr_init2(node->mFloat, mDefaultPrecision);
+        if(initToZero) mpfr_set_si(node->mFloat, 0, GMP_RNDN);
+        return node;
     }
 
     void releaseMpfrFloatData(MpfrFloatData* data)
     {
+        // Note: may be called from locked context, in setDefaultPrecision--safely_deallocate
+#ifdef THREAD_SAFETY
+        if(data->mRefCount.fetch_sub(1) == 1)
+        {
+            data->nextFreeNode = nullptr;
+            data->nextFreeNode = mFirstFreeNode.exchange(data);
+        }
+#else
         if(--(data->mRefCount) == 0)
         {
             data->nextFreeNode = mFirstFreeNode;
             mFirstFreeNode = data;
         }
+#endif
     }
 
     void setDefaultPrecision(unsigned long bits)
     {
         if(bits != mDefaultPrecision)
         {
-            mDefaultPrecision = bits;
-            for(size_t i = 0; i < mData.size(); ++i)
-                mpfr_prec_round(mData[i].mFloat, bits, GMP_RNDN);
-
-            if(mConst_pi) mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
-            if(mConst_e)
+#ifdef THREAD_SAFETY
+            std::lock_guard<std::mutex> lk(lock);
+            if(bits != mDefaultPrecision)
+#endif
             {
-                mpfr_set_si(mConst_e->mFloat, 1, GMP_RNDN);
-                mpfr_exp(mConst_e->mFloat, mConst_e->mFloat, GMP_RNDN);
+                mDefaultPrecision = bits;
+#ifdef THREAD_SAFETY
+                if(!mpfr_is_thread_safe)
+                {
+                    for(auto& data: mData)
+                    {
+                        /* TODO: Figure out a way to do this in a thread-safe manner */
+                        mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+                    }
+
+                    /* Release the constants so that they will be recalculated
+                     * under locking contexts.
+                     */
+                    if(mConst_pi)      { safely_deallocate(mConst_pi); }
+                    if(mConst_e)       { safely_deallocate(mConst_e); }
+                    if(mConst_log2)    { safely_deallocate(mConst_log2); }
+                    if(mConst_epsilon) { safely_deallocate(mConst_epsilon); }
+                }
+                else
+#endif
+                {
+                    // If mpfr is thread-safe, then these operations are safe to do
+                    // while another thread is perhaps using the element at the same time.
+                    for(auto& data: mData)
+                        mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+
+                    if(mConst_pi)
+                    {
+                        mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
+                    }
+                    if(mConst_e)
+                    {
+                        recalculate_e(*mConst_e);
+                    }
+                    if(mConst_log2)
+                    {
+                        mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
+                    }
+                    if(mConst_epsilon)
+                    {
+                        recalculateEpsilon(*mConst_epsilon);
+                    }
+                }
             }
-            if(mConst_log2) mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
-            if(mConst_epsilon) recalculateEpsilon();
         }
     }
 
@@ -100,50 +193,81 @@ class MpfrFloat::MpfrFloatDataContainer
 
     MpfrFloatData* const_0()
     {
-        if(!mConst_0) mConst_0 = allocateMpfrFloatData(true);
-        return mConst_0;
+        return make_const(mConst_0, [](MpfrFloatData& ){});
     }
 
     MpfrFloat const_pi()
     {
-        if(!mConst_pi)
-        {
-            mConst_pi = allocateMpfrFloatData(false);
-            mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
-        }
-        return MpfrFloat(mConst_pi);
+        return make_const(mConst_pi, [](MpfrFloatData& data){
+            mpfr_const_pi(data.mFloat, GMP_RNDN);
+        });
     }
 
     MpfrFloat const_e()
     {
-        if(!mConst_e)
-        {
-            mConst_e = allocateMpfrFloatData(false);
-            mpfr_set_si(mConst_e->mFloat, 1, GMP_RNDN);
-            mpfr_exp(mConst_e->mFloat, mConst_e->mFloat, GMP_RNDN);
-        }
-        return MpfrFloat(mConst_e);
+        return make_const(mConst_e, [this](MpfrFloatData& data){
+            recalculate_e(data);
+        });
     }
 
     MpfrFloat const_log2()
     {
-        if(!mConst_log2)
-        {
-            mConst_log2 = allocateMpfrFloatData(false);
-            mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
-        }
-        return MpfrFloat(mConst_log2);
+        return make_const(mConst_log2, [](MpfrFloatData& data){
+            mpfr_const_log2(data.mFloat, GMP_RNDN);
+        });
     }
 
     MpfrFloat const_epsilon()
     {
-        if(!mConst_epsilon)
-        {
-            mConst_epsilon = allocateMpfrFloatData(false);
-            recalculateEpsilon();
-        }
-        return MpfrFloat(mConst_epsilon);
+        return make_const(mConst_epsilon, [this](MpfrFloatData& data){
+            recalculateEpsilon(data);
+        });
     }
+private:
+    template<typename F>
+    inline MpfrFloatData* make_const(MpfrFloatData*& pointer, F&& initializer)
+    {
+        if(!pointer)
+        {
+            MpfrFloatData* value = allocateMpfrFloatData(true);
+#ifdef THREAD_SAFETY
+            std::lock_guard<std::mutex> lk(lock);
+            if(pointer)
+            {
+                releaseMpfrFloatData(value);
+            }
+            else
+#endif
+            {
+                initializer(*value);
+                pointer = value;
+            }
+        }
+        return pointer;
+    }
+
+    void recalculate_e(MpfrFloatData& data)
+    {
+        // TODO: Make this sequence atomic (needed in setDefaultPrecision)
+        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
+        mpfr_exp(data.mFloat, data.mFloat, GMP_RNDN);
+    }
+
+    void recalculateEpsilon(MpfrFloatData& data)
+    {
+        // TODO: Make this sequence atomic (needed in setDefaultPrecision)
+        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
+        mpfr_div_2ui(data.mFloat, data.mFloat, mDefaultPrecision*7/8 - 1, GMP_RNDN);
+    }
+
+#ifdef THREAD_SAFETY
+    void safely_deallocate(MpfrFloatData *&ptr)
+    {
+        MpfrFloatData* copy = ptr;
+        ptr = nullptr;
+        releaseMpfrFloatData(copy);
+    }
+#endif
 };
 
 
@@ -177,44 +301,72 @@ inline void MpfrFloat::copyIfShared()
 {
     if(mData->mRefCount > 1)
     {
-        --(mData->mRefCount);
         MpfrFloatData* oldData = mData;
         mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
         mpfr_set(mData->mFloat, oldData->mFloat, GMP_RNDN);
+        // Release the ref _after_ a copy has been made successfully
+        --(oldData->mRefCount);
     }
+}
+
+inline void MpfrFloat::resetIfShared(bool has_value)
+{
+    if(!has_value) // called from constructor?
+    {
+        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+    }
+    else // not from constructor
+    {
+        if(mData->mRefCount > 1)
+        {
+            // TODO: Is this thread-safe?
+            --(mData->mRefCount);
+            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        }
+    }
+}
+
+inline void MpfrFloat::set_0(bool has_value)
+{
+    if(has_value) // called from elsewhere but constructor?
+    {
+        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
+    }
+    mData = mpfrFloatDataContainer().const_0();
+    // TODO: Is this thread-safe?
+    ++(mData->mRefCount);
 }
 
 
 //===========================================================================
 // Constructors, destructor, assignment
 //===========================================================================
-MpfrFloat::MpfrFloat(DummyType):
-    mData(mpfrFloatDataContainer().allocateMpfrFloatData(false))
-{}
+MpfrFloat::MpfrFloat(DummyType)
+{
+    resetIfShared(false);
+}
 
 MpfrFloat::MpfrFloat(MpfrFloatData* data):
     mData(data)
 {
-    assert(data != 0);
+    assert(data != nullptr);
     ++(mData->mRefCount);
 }
 
-MpfrFloat::MpfrFloat():
-    mData(mpfrFloatDataContainer().const_0())
+MpfrFloat::MpfrFloat()
 {
-    ++(mData->mRefCount);
+    set_0(false);
 }
 
 MpfrFloat::MpfrFloat(double value)
 {
     if(value == 0.0)
     {
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        resetIfShared(false);
         mpfr_set_d(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -223,12 +375,11 @@ MpfrFloat::MpfrFloat(long double value)
 {
     if(value == 0.0L)
     {
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        resetIfShared(false);
         mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -237,12 +388,11 @@ MpfrFloat::MpfrFloat(long value)
 {
     if(value == 0)
     {
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        resetIfShared(false);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -251,12 +401,11 @@ MpfrFloat::MpfrFloat(int value)
 {
     if(value == 0)
     {
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(false);
     }
     else
     {
-        mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
+        resetIfShared(false);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
 }
@@ -280,8 +429,7 @@ MpfrFloat::MpfrFloat(const MpfrFloat& rhs):
 
 MpfrFloat::MpfrFloat(MpfrFloat&& rhs): mData(nullptr)
 {
-    mData = mpfrFloatDataContainer().const_0();
-    ++(mData->mRefCount);
+    set_0(false);
     std::swap(mData, rhs.mData);
 }
 
@@ -300,8 +448,8 @@ MpfrFloat& MpfrFloat::operator=(MpfrFloat&& rhs)
 {
     if(this != &rhs)
     {
+        set_0(true);
         std::swap(mData, rhs.mData);
-        rhs = 0.0;
     }
     return *this;
 }
@@ -310,17 +458,11 @@ MpfrFloat& MpfrFloat::operator=(double value)
 {
     if(value == 0.0)
     {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(true);
     }
     else
     {
-        if(mData->mRefCount > 1)
-        {
-            --(mData->mRefCount);
-            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        }
+        resetIfShared(true);
         mpfr_set_d(mData->mFloat, value, GMP_RNDN);
     }
     return *this;
@@ -330,17 +472,11 @@ MpfrFloat& MpfrFloat::operator=(long double value)
 {
     if(value == 0.0L)
     {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(true);
     }
     else
     {
-        if(mData->mRefCount > 1)
-        {
-            --(mData->mRefCount);
-            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        }
+        resetIfShared(true);
         mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
     }
     return *this;
@@ -350,17 +486,11 @@ MpfrFloat& MpfrFloat::operator=(long value)
 {
     if(value == 0)
     {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(true);
     }
     else
     {
-        if(mData->mRefCount > 1)
-        {
-            --(mData->mRefCount);
-            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        }
+        resetIfShared(true);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
     return *this;
@@ -370,17 +500,11 @@ MpfrFloat& MpfrFloat::operator=(int value)
 {
     if(value == 0)
     {
-        mpfrFloatDataContainer().releaseMpfrFloatData(mData);
-        mData = mpfrFloatDataContainer().const_0();
-        ++(mData->mRefCount);
+        set_0(true);
     }
     else
     {
-        if(mData->mRefCount > 1)
-        {
-            --(mData->mRefCount);
-            mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        }
+        resetIfShared(true);
         mpfr_set_si(mData->mFloat, value, GMP_RNDN);
     }
     return *this;
@@ -402,13 +526,13 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
 
 void MpfrFloat::parseValue(const char* value)
 {
-    copyIfShared();
+    resetIfShared(true);
     mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
 }
 
 void MpfrFloat::parseValue(const char* value, char** endptr)
 {
-    copyIfShared();
+    resetIfShared(true);
     mpfr_strtofr(mData->mFloat, value, endptr, 0, GMP_RNDN);
 }
 
@@ -976,6 +1100,8 @@ MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 
 MpfrFloat MpfrFloat::const_pi()
 {
+    // Calls MpfrFloat constructor with MpfrFloatData*.
+    // The constructor will increment the refcount.
     return mpfrFloatDataContainer().const_pi();
 }
 
