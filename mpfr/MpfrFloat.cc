@@ -4,7 +4,7 @@
 # define THREAD_SAFETY
 #endif
 
-#define REUSE_ITEMS
+//#define REUSE_ITEMS
 
 #include "MpfrFloat.hh"
 #include <stdio.h>
@@ -103,11 +103,11 @@ class MpfrFloat::MpfrFloatDataContainer
 
     inline void releaseMpfrFloatData(MpfrFloatData* data)
     {
-#ifdef THREAD_SAFETY
+#ifdef REUSE_ITEMS
+  #ifdef THREAD_SAFETY
         // Acquire the lock during std::list push
         std::lock_guard<std::mutex> lk(lock);
-#endif
-#ifdef REUSE_ITEMS
+  #endif
         released_items.emplace_back(std::move(*data));
 #else
         mpfr_clear(data->mFloat);
@@ -222,24 +222,14 @@ private:
 
     void recalculate_e(MpfrFloatData& data)
     {
-        // Do the operation through a temporary for thread-safety.
-        // In a non-threadsafe context, this is called infrequently
-        // enough that the few extra cpuops don't really matter.
-        mpfr_t temp;
-        std::memcpy(&temp, &data.mFloat, sizeof(temp));
-        mpfr_set_si(temp, 1, GMP_RNDN);
-        mpfr_exp(temp, data.mFloat, GMP_RNDN);
-        std::memcpy(&data.mFloat, &temp, sizeof(temp));
-        // Note: Technically, memcpy is not atomic either.
+        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
+        mpfr_exp(data.mFloat, data.mFloat, GMP_RNDN);
     }
 
     void recalculateEpsilon(MpfrFloatData& data)
     {
-        mpfr_t temp;
-        std::memcpy(&temp, &data.mFloat, sizeof(temp));
-        mpfr_set_si(temp, 1, GMP_RNDN);
-        mpfr_div_2ui(temp, temp, mDefaultPrecision*7/8 - 1, GMP_RNDN);
-        std::memcpy(&data.mFloat, &temp, sizeof(temp));
+        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
+        mpfr_div_2ui(data.mFloat, data.mFloat, mDefaultPrecision*7/8 - 1, GMP_RNDN);
     }
 
 #ifdef THREAD_SAFETY
