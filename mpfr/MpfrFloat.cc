@@ -248,16 +248,26 @@ private:
 
     void recalculate_e(MpfrFloatData& data)
     {
-        // TODO: Make this sequence atomic (needed in setDefaultPrecision)
-        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
-        mpfr_exp(data.mFloat, data.mFloat, GMP_RNDN);
+        // Do the operation through a temporary for thread-safety.
+        // In a non-threadsafe context, this is called infrequently
+        // enough that the few extra cpuops don't really matter.
+        mpfr_t temp;
+        std::memcpy(&temp, &data.mFloat, sizeof(temp));
+        mpfr_set_si(temp, 1, GMP_RNDN);
+        mpfr_exp(temp, data.mFloat, GMP_RNDN);
+        std::memcpy(&data.mFloat, &temp, sizeof(temp));
     }
 
     void recalculateEpsilon(MpfrFloatData& data)
     {
-        // TODO: Make this sequence atomic (needed in setDefaultPrecision)
-        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
-        mpfr_div_2ui(data.mFloat, data.mFloat, mDefaultPrecision*7/8 - 1, GMP_RNDN);
+        // Do the operation through a temporary for thread-safety.
+        // In a non-threadsafe context, this is called infrequently
+        // enough that the few extra cpuops don't really matter.
+        mpfr_t temp;
+        std::memcpy(&temp, &data.mFloat, sizeof(temp));
+        mpfr_set_si(temp, 1, GMP_RNDN);
+        mpfr_div_2ui(temp, temp, mDefaultPrecision*7/8 - 1, GMP_RNDN);
+        std::memcpy(&data.mFloat, &temp, sizeof(temp));
     }
 
 #ifdef THREAD_SAFETY
