@@ -339,6 +339,8 @@ namespace FPoptimizer_Optimize
                 {
                     case Modulo_None: break;
                     case Modulo_Radians:
+                        if(fp_imag(imm) != Value_t(0))
+                            break;
                         imm = fp_mod(imm, fp_const_twopi<Value_t>());
                         if(imm < Value_t(0))
                             imm += fp_const_twopi<Value_t>();
