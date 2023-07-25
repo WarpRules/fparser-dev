@@ -201,7 +201,7 @@ cDup cMul -> cSqr                                          # TEST 10/sqr_xx
 cNeg cSqr -> cSqr                                          # TEST 10/negsqr
 cAbs cSqr -> cSqr                                          # TEST 10/abssqr
 
-IF(FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs                         # TEST 10/sqrsqrt
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs  # TEST 10/sqrsqrt, 10/sqrsqrt_c
 IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt0
 IF(FP_FLOAT_VERSION) cInv cSqrt -> cRSqrt                        # TEST 10/rsqrt1
 IF(FP_FLOAT_VERSION) cRSqrt cInv -> cSqrt                        # TEST 10/rsqrt2

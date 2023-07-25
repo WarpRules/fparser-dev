@@ -239,7 +239,8 @@ namespace
         // NOTE: If 3 is even and 3*2 is not, x must be changed to abs(x).
         if(tree.GetParam(0).GetOpcode() == cPow
         && tree.GetParam(1).IsImmed()
-        && tree.GetParam(0).GetParam(1).IsImmed())
+        && tree.GetParam(0).GetParam(1).IsImmed()
+        && !IsComplexType<Value_t>::value)
         {
             Value_t a = tree.GetParam(0).GetParam(1).GetImmed();
             Value_t b = tree.GetParam(1).GetImmed();
