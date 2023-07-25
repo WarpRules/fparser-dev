@@ -745,8 +745,9 @@ namespace FUNCTIONPARSERTYPES
         //std::complex<T> si, co;
         //fp_sinhCosh(si, co, x);
         //return si/co;
-        // // (exp(2*x)-1) / (exp(2*x)+1)
+        // // Also: (exp(2*x)-1) / (exp(2*x)+1)
         // // Also: sinh(x)/tanh(x)
+        // // Also: 2/(1+exp(-2x))-1
         // const std::complex<T> exp2x=fp_exp(x+x);
         // return (exp2x-T(1)) / (exp2x+T(1));
     }

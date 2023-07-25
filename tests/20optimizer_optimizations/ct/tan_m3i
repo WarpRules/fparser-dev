@@ -1,0 +1,6 @@
+T=cf cd cld
+V=x,y
+R=-3,3,2
+F=a:=x+1i*y;tan(a*-3i)
+C=fp_tan(Value_t(x.real(), y.real())*fp_conj(i+i+i))
+#X=fp_tan(fp_mul(Value_t(x.real(), y.real()),[0,-3]))

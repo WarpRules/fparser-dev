@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=asin(-a)-acos(a)
+C=fp_asin(-a)-fp_acos(a)
+#X=fp_sub(fp_asin(fp_mul(a,[-1,0])),fp_acos(a))

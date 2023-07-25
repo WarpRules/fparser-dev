@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=exp(a)-acos(a)
+C=fp_exp(a)-fp_acos(a)
+#X=fp_sub(fp_exp(a),fp_acos(a))

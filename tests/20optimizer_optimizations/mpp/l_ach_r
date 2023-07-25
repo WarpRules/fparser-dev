@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=4.5625,9.375,0.0625
+F=log(a)-acosh(a)
+C=fp_log(a)-fp_acosh(a)
+#X=fp_sub(fp_log(a),fp_acosh(a))

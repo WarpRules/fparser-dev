@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=tanh(a)+tan(a)
+C=fp_tanh(a)+fp_tan(a)
+#X=fp_add(fp_tanh(a),fp_tan(a))

@@ -1,0 +1,6 @@
+T=cf cd cld
+V=x,y
+R=-2,2,0.5
+F=a:=x+1i*y;cos(-a)-sin(-a)
+C=fp_cos(-Value_t(x.real(), y.real()))-fp_sin(-Value_t(x.real(), y.real()))
+#X=fp_sub(fp_cos(fp_mul(Value_t(x.real(), y.real()),[-1,0])),fp_sin(fp_mul(Value_t(x.real(), y.real()),[-1,0])))

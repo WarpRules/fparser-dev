@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=-atanh(a)-acos(-a)
+C=-fp_atanh(a)-fp_acos(-a)
+#X=fp_sub(fp_mul(fp_atanh(a),[-1,0]),fp_acos(fp_mul(a,[-1,0])))

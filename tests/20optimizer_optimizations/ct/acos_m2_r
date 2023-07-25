@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-0.5,0.5,0.25
+F=acos(a*-2)
+C=fp_acos(a*-2)
+#X=fp_acos(fp_mul(a,[-2,0]))

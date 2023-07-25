@@ -828,12 +828,14 @@ void CompileTest(const std::string& testname, FILE* fp)
                     }
                     if(outputted_line_stmt)
                         declbuf << ";\n";
-                /*
-                    // Add this if you need a variable "i"
-                    declbuf << "#ifdef FP_SUPPORT_COMPLEX_NUMBERS\n"
-                            << "    [[maybe_unused]] Value_t i = IsComplexType<Value_t>::value ? fp_sqrt((Value_t)(-1)) : 0;\n"
-                            << "#endif\n";
-                */
+
+                    //if(DataTypes.find("complex") != DataTypes.end())
+                    {
+                        // Add this if you need a variable "i"
+                        declbuf << "#ifdef FP_SUPPORT_COMPLEX_NUMBERS\n"
+                                << "    [[maybe_unused]] Value_t i = IsComplexType<Value_t>::value ? fp_sqrt((Value_t)(-1)) : 0;\n"
+                                << "#endif\n";
+                    }
                 }
                 break;
             case 'R': // parameter value ranges

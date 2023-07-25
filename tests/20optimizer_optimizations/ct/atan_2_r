@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=atan(a*2)
+C=fp_atan(a*2)
+#X=fp_atan(fp_mul(a,[2,0]))

@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-4.625,-1.25,0.0625
+F=tanh(a)+acosh(-a)
+C=fp_tanh(a)+fp_acosh(-a)
+#X=fp_add(fp_tanh(a),fp_acosh(fp_mul(a,[-1,0])))

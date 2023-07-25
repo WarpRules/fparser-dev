@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=-asinh(-a)-sinh(a)
+C=-fp_asinh(-a)-fp_sinh(a)
+#X=fp_sub(fp_mul(fp_asinh(fp_mul(a,[-1,0])),[-1,0]),fp_sinh(a))

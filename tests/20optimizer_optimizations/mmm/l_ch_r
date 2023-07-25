@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-4,0,0.75
+F=log(-a)-cosh(-a)
+C=fp_log(-a)-fp_cosh(-a)
+#X=fp_sub(fp_log(fp_mul(a,[-1,0])),fp_cosh(fp_mul(a,[-1,0])))

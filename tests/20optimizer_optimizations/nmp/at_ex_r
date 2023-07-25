@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=-atan(-a)-exp(a)
+C=-fp_atan(-a)-fp_exp(a)
+#X=fp_sub(fp_mul(fp_atan(fp_mul(a,[-1,0])),[-1,0]),fp_exp(a))

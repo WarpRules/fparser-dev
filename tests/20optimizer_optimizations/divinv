@@ -1,0 +1,6 @@
+T=d f cd cf mf
+V=x,y
+R=-2,4,0.75
+F=1/(x/y)
+C=1/(x/y)
+# Note: The range avoids division by zero.

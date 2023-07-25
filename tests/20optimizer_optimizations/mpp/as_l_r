@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=0.5,1,0.25
+F=asin(a)-log(a)
+C=fp_asin(a)-fp_log(a)
+#X=fp_sub(fp_asin(a),fp_log(a))

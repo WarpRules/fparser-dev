@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-1.97,-1.37,0.31
+F=acosh(a*-1)
+C=fp_acosh(a*-1)
+#X=fp_acosh(fp_mul(a,[-1,0]))

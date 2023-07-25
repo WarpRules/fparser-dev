@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=5,7,0.0625
+F=sin(a)-acosh(a)
+C=fp_sin(a)-fp_acosh(a)
+#X=fp_sub(fp_sin(a),fp_acosh(a))

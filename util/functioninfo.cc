@@ -769,13 +769,15 @@ namespace
             const Value_t v1 = parser1.Eval(values);
             const Value_t v2 = parser2.Eval(values);
 
-            if(notEqual(v1, v2))
+            if(notEqual(v1, v2) || (parser1.EvalError() && gOnlySuppliedValues))
             {
                 if(parser1.EvalError() && parser1Type[0] == 'n')
                 {
                     // If the source expression returns an error,
                     // ignore this "failure"
-                    continue;
+                    // Unless this is an user-supplied expression
+                    if(gIgnoreErrors || !gOnlySuppliedValues)
+                        continue;
                 }
                 if(parser1.EvalError() != parser2.EvalError() && gIgnoreErrors)
                 {

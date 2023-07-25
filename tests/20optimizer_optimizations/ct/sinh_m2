@@ -1,0 +1,6 @@
+T=cf cd cld
+V=x,y
+R=-2,2,0.5
+F=a:=x+1i*y;sinh(a*-2)
+C=fp_sinh(Value_t(x.real(), y.real())*-2)
+#X=fp_sinh(fp_mul(Value_t(x.real(), y.real()),[-2,0]))

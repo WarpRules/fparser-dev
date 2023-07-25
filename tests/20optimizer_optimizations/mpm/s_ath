@@ -1,0 +1,6 @@
+T=cf cd cld
+V=x,y
+R=-0.75,0.75,0.25
+F=a:=x+1i*y;sin(a)-atanh(-a)
+C=fp_sin(Value_t(x.real(), y.real()))-fp_atanh(-Value_t(x.real(), y.real()))
+#X=fp_sub(fp_sin(Value_t(x.real(), y.real())),fp_atanh(fp_mul(Value_t(x.real(), y.real()),[-1,0])))

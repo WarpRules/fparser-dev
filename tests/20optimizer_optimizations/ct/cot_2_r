@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-3,3,2
+F=cot(a*2)
+C=1/fp_tan(a*2)
+#X=1/fp_tan(fp_mul(a,[2,0]))

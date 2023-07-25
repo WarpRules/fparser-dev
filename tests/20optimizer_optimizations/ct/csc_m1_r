@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-3,3,2
+F=csc(a*-1)
+C=1/fp_sin(a*-1)
+#X=1/fp_sin(fp_mul(a,[-1,0]))

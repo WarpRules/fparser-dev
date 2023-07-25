@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=atan(a)+asin(a)
+C=fp_atan(a)+fp_asin(a)
+#X=fp_add(fp_atan(a),fp_asin(a))

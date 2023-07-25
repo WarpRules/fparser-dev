@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-3.625,-2.25,0.0625
+F=-acosh(-a)-cosh(a)
+C=-fp_acosh(-a)-fp_cosh(a)
+#X=fp_sub(fp_mul(fp_acosh(fp_mul(a,[-1,0])),[-1,0]),fp_cosh(a))

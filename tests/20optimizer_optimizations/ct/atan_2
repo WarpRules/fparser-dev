@@ -1,0 +1,6 @@
+T=cf cd cld
+V=x,y
+R=-3,3,2
+F=a:=x+1i*y;atan(a*2)
+C=fp_atan(Value_t(x.real(), y.real())*2)
+#X=fp_atan(fp_mul(Value_t(x.real(), y.real()),[2,0]))

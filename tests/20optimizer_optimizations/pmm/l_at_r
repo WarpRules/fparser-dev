@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-4,0,0.75
+F=log(-a)+atan(-a)
+C=fp_log(-a)+fp_atan(-a)
+#X=fp_add(fp_log(fp_mul(a,[-1,0])),fp_atan(fp_mul(a,[-1,0])))
