@@ -67,8 +67,8 @@ namespace
     const bool color_support = false;
 #endif
 
-    bool ignore_errors = false;
-
+    bool gIgnoreErrors = false;
+    bool gOnlySuppliedValues = false;
     bool gPrintByteCodeExpressions = true;
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
@@ -462,6 +462,11 @@ namespace
                     userGivenVarValues.clear();
                 }
             }
+            if(userGivenVarValues.empty() && gOnlySuppliedValues)
+            {
+                std::cout << "Warning: -only option used without -varValues. Ignoring -only." << std::endl;
+                gOnlySuppliedValues = false;
+            }
 
             std::vector<Value_t> varValues(varsAmount, Value_t());
             std::vector<double> doubleValues(varsAmount, 0);
@@ -504,7 +509,7 @@ namespace
                 {
                     ParserData<Value_t>::gVarValues.push_back(varValues);
                     if(ParserData<Value_t>::gVarValues.size() >=
-                       kMaxVarValueSetsAmount)
+                       kMaxVarValueSetsAmount || gOnlySuppliedValues)
                         return true;
                 }
 
@@ -772,7 +777,7 @@ namespace
                     // ignore this "failure"
                     continue;
                 }
-                if(parser1.EvalError() != parser2.EvalError() && ignore_errors)
+                if(parser1.EvalError() != parser2.EvalError() && gIgnoreErrors)
                 {
                     continue;
                 }
@@ -1166,6 +1171,7 @@ namespace
             " [<options] <function1> [<function2> ...]\n\n"
             "Options:\n"
             "  -f                  : Use FunctionParser_f.\n"
+            "  -d                  : Use FunctionParser_d (default).\n"
             "  -ld                 : Use FunctionParser_ld.\n"
             "  -mpfr               : Use FunctionParser_mpfr.\n"
             "  -mpfr_bits <bits>   : MpfrFloat mantissa bits (default 80).\n"
@@ -1179,7 +1185,9 @@ namespace
             "  -ntd                : No timing if functions differ.\n"
             "  -deg                : Use degrees for trigonometry.\n"
             "  -noexpr             : Don't print byte code expressions.\n"
-            "  -varValues <values> : Space-separated variable values to use.\n";
+            "  -noerr              : Ignore differences in whether function produces an error.\n"
+            "  -varValues <values> : Space-separated variable values to use.\n"
+            "    -only             : Test using only the supplied variable values.\n";
         return 1;
     }
 }
@@ -1279,6 +1287,7 @@ int main(int argc, char* argv[])
     for(int i = 1; i < argc; ++i)
     {
         if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
+        else if(std::strcmp(argv[i], "-d") == 0) parserType = FP_D;
         else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
         else if(std::strcmp(argv[i], "-mpfr") == 0) parserType = FP_MPFR;
         else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
@@ -1304,6 +1313,10 @@ int main(int argc, char* argv[])
         }
         else if(std::strcmp(argv[i], "-noexpr") == 0)
             gPrintByteCodeExpressions = false;
+        else if(std::strcmp(argv[i], "-noerr") == 0)
+            gIgnoreErrors = true;
+        else if(std::strcmp(argv[i], "-only") == 0)
+            gOnlySuppliedValues = true;
         else if(std::strcmp(argv[i], "-varValues") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
