@@ -725,7 +725,8 @@ namespace FPoptimizer_CodeTree
                         tree.SetParamMove(0, pow);
                         goto NowWeAreMulGroup;
                     }
-                    if(GetEvennessInfo(pow.GetParam(1)) == IsAlways) // log(x ^ even) = even*log(abs(x))
+                    if(!IsComplexType<Value_t>::value
+                    && GetEvennessInfo(pow.GetParam(1)) == IsAlways) // log(x ^ even) = even*log(abs(x))
                     {
                         pow.CopyOnWrite();
                         CodeTree<Value_t> abs(cAbs, typename CodeTree<Value_t>::OpcodeTag{});
