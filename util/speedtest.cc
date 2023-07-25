@@ -371,28 +371,32 @@ int main(int argc, char* argv[])
     {
       case FP_D:
 #ifndef FP_DISABLE_DOUBLE_TYPE
-          std::cout << "*** Running tests for FunctionParser ***\n";
+          if(!gPrintHTML)
+              std::cout << "*** Running tests for FunctionParser ***\n";
           return run<FunctionParser>(1000000, 10000000, 5000, 20000000);
 #else
           break;
 #endif
       case FP_F:
 #ifdef FP_SUPPORT_FLOAT_TYPE
-          std::cout << "*** Running tests for FunctionParser_f ***\n";
+          if(!gPrintHTML)
+              std::cout << "*** Running tests for FunctionParser_f ***\n";
           return run<FunctionParser_f>(1000000, 10000000, 5000, 20000000);
 #else
           break;
 #endif
       case FP_LD:
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-          std::cout << "*** Running tests for FunctionParser_ld ***\n";
+          if(!gPrintHTML)
+              std::cout << "*** Running tests for FunctionParser_ld ***\n";
           return run<FunctionParser_ld>(1000000, 10000000, 5000, 20000000);
 #else
           break;
 #endif
       case FP_MPFR:
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-          std::cout << "*** Running tests for FunctionParser_mpfr ***\n";
+          if(!gPrintHTML)
+              std::cout << "*** Running tests for FunctionParser_mpfr ***\n";
           return run<FunctionParser_mpfr>(50000, 100000, 500, 100000);
 #else
           break;
