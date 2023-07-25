@@ -1,0 +1,7 @@
+# When parsing sin(x + 4i), fpoptimizer mistakenly thinks 4i is a multiple of pi/2
+# Fixed in commit 874d0128cb1340b0786b28c445811324af0cc7ba
+T=cf cd cld
+V=x,y
+R=-2,2,0.1
+F=a:=x+1i*y;sin(a+4i) + 3i*cos(a+3i)
+C=fp_sin(Value_t(x.real(),y.real())+(i+i+i+i)) + (i+i+i)*cos(Value_t(x.real(),y.real())+(i+i+i))
