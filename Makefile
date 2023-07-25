@@ -144,7 +144,7 @@ RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt
 
 testbed: testbed.o $(FP_MODULES)
-	$(LD) -o $@ $^ $(LDFLAGS)
+	$(LD) -o $@ $^ $(LDFLAGS) -lpthread
 
 fpoptimizer.o: fpoptimizer.cc
 

@@ -7,12 +7,13 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.0.0.0";
+static const char* const kVersionNumber = "1.1.0";
 
 //#define TEST_JIT
 //#define MEASURE_PARSING_SPEED_ONLY
 
 #include "fparser.hh"
+#include "fparser_mpfr.hh"
 #include <ctime>
 #include <string>
 #include <iostream>
@@ -22,10 +23,8 @@ static const char* const kVersionNumber = "1.0.0.0";
 
 #include <sys/time.h>
 
-//#define FUNC0 x+y+(sin(x)*cos(x)*log(x)*(-x-y+log(y)-sin(x)))
-//#define FUNC0 pow(x,14)+pow(y,8)+pow(x,2)+2*x*y+pow(y,2)
-#define FUNC0 pow(x,14) + pow(y,8)
-#define FUNC0P x^14 + y^8
+#define FUNC0 sin(x)*sin(x) + cos(x)*cos(x) + tan(y)*tan(y)
+#define FUNC0P FUNC0
 
 #define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10) - (4*pow(y,3)+2*y*y-10*y+2))*10
 #define FUNC1P ((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
@@ -60,56 +59,90 @@ namespace
         double (*const function_d)(const double*);
         float (*const function_f)(const float*);
         long double (*const function_ld)(const long double*);
+        MpfrFloat (*const function_mpfr)(const MpfrFloat*);
     };
 
-    CreateFunction(func0_d, double, FUNC0)
-    CreateFunction(func1_d, double, FUNC1)
-    CreateFunction(func2_d, double, FUNC2)
-    CreateFunction(func3_d, double, FUNC3)
-    CreateFunction(func4_d, double, FUNC4)
+#define CreateTestFunctions(suffix, type) \
+    CreateFunction(func0_##suffix, type, FUNC0) \
+    CreateFunction(func1_##suffix, type, FUNC1) \
+    CreateFunction(func2_##suffix, type, FUNC2) \
+    CreateFunction(func3_##suffix, type, FUNC3) \
+    CreateFunction(func4_##suffix, type, FUNC4)
+
+    CreateTestFunctions(d, double)
 
 #define exp expf
 #define pow powf
+#define log logf
 #define sin sinf
 #define cos cosf
+#define tan tanf
+#define atan2 atan2f
 #define sqrt sqrtf
-    CreateFunction(func0_f, float, FUNC0)
-    CreateFunction(func1_f, float, FUNC1)
-    CreateFunction(func2_f, float, FUNC2)
-    CreateFunction(func3_f, float, FUNC3)
-    CreateFunction(func4_f, float, FUNC4)
+    CreateTestFunctions(f, float)
 #undef exp
 #undef pow
+#undef log
 #undef sin
 #undef cos
+#undef tan
+#undef atan2
 #undef sqrt
 
 #define exp expl
 #define pow powl
+#define log logl
 #define sin sinl
 #define cos cosl
+#define tan tanl
+#define atan2 atan2l
 #define sqrt sqrtl
-    CreateFunction(func0_ld, long double, FUNC0)
-    CreateFunction(func1_ld, long double, FUNC1)
-    CreateFunction(func2_ld, long double, FUNC2)
-    CreateFunction(func3_ld, long double, FUNC3)
-    CreateFunction(func4_ld, long double, FUNC4)
+    CreateTestFunctions(ld, long double)
 #undef exp
 #undef pow
+#undef log
 #undef sin
 #undef cos
+#undef tan
+#undef atan2
+#undef sqrt
+
+#define exp(x) MpfrFloat::exp(x)
+#define pow(x, y) MpfrFloat::pow(x, y)
+#define log(x) MpfrFloat::log(x)
+#define sin(x) MpfrFloat::sin(x)
+#define cos(x) MpfrFloat::cos(x)
+#define tan(x) MpfrFloat::tan(x)
+#define atan2(x, y) MpfrFloat::atan2(x, y)
+#define sqrt(x) MpfrFloat::sqrt(x)
+    CreateTestFunctions(mpfr, MpfrFloat)
+#undef exp
+#undef pow
+#undef log
+#undef sin
+#undef cos
+#undef tan
+#undef atan2
 #undef sqrt
 
     const FuncData funcData[] =
     {
-        { Stringify(FUNC0P), "x,y", func0_d, func0_f, func0_ld },
-        { Stringify(FUNC1P), "x,y", func1_d, func1_f, func1_ld },
-        { Stringify(FUNC2P), "x,y", func2_d, func2_f, func2_ld },
-        { Stringify(FUNC3P), "x,y", func3_d, func3_f, func3_ld },
-        { Stringify(FUNC4P), "x,y", func4_d, func4_f, func4_ld }
+        { Stringify(FUNC0P), "x,y", func0_d, func0_f, func0_ld, func0_mpfr },
+        { Stringify(FUNC1P), "x,y", func1_d, func1_f, func1_ld, func1_mpfr },
+        { Stringify(FUNC2P), "x,y", func2_d, func2_f, func2_ld, func2_mpfr },
+        { Stringify(FUNC3P), "x,y", func3_d, func3_f, func3_ld, func3_mpfr },
+        { Stringify(FUNC4P), "x,y", func4_d, func4_f, func4_ld, func4_mpfr }
     };
 
     const unsigned FunctionsAmount = sizeof(funcData)/sizeof(funcData[0]);
+
+    struct BenchmarkLoopAmounts
+    {
+        const unsigned ParseLoops;
+        const unsigned EvalLoops;
+        const unsigned OptimizationLoops;
+        const unsigned FuncLoops;
+    };
 
     inline double callFunc(const FuncData& data, const double* values)
     {
@@ -124,6 +157,11 @@ namespace
     inline long double callFunc(const FuncData& data, const long double* values)
     {
         return data.function_ld(values);
+    }
+
+    inline MpfrFloat callFunc(const FuncData& data, const MpfrFloat* values)
+    {
+        return data.function_mpfr(values);
     }
 
     std::string beautify(int value)
@@ -197,7 +235,10 @@ private:
 };
 
 template<typename Parser_t>
-int run()
+int run(const unsigned ParseLoops,
+        const unsigned EvalLoops,
+        const unsigned OptimizationLoops,
+        const unsigned FuncLoops)
 {
     Parser_t fp, fp2;
     typename Parser_t::value_type values[3] = { .25, .5, .75 };
@@ -219,11 +260,6 @@ int run()
             std::cout << "Col " << res << ": " << fp.ErrorMsg() << std::endl;
             return 1;
         }
-
-        const unsigned ParseLoops = 2000000;
-        const unsigned EvalLoops = 20000000;
-        const unsigned OptimizationLoops = 20000;
-        const unsigned FuncLoops = 50000000;
 
         Test tester;
 
@@ -303,14 +339,15 @@ int run()
 
 int main(int argc, char* argv[])
 {
-    enum ParserType { FP_D, FP_F, FP_LD };
+    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR };
     ParserType parserType = FP_D;
 
     for(int i = 1; i < argc; ++i)
     {
-        if(std::strcmp(argv[1], "-html") == 0) gPrintHTML = true;
-        else if(std::strcmp(argv[1], "-f") == 0) parserType = FP_F;
-        else if(std::strcmp(argv[1], "-ld") == 0) parserType = FP_LD;
+        if(std::strcmp(argv[i], "-html") == 0) gPrintHTML = true;
+        else if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
+        else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
+        else if(std::strcmp(argv[i], "-mpfr") == 0) parserType = FP_MPFR;
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0
@@ -322,6 +359,7 @@ int main(int argc, char* argv[])
                 "\n"
                 "    -f                Test float datatype\n"
                 "    -ld               Test long double datatype\n"
+                "    -mpfr             Test MPFR datatype\n"
                 "    -html             Print output in html format\n"
                 "    -h, --help        This help\n"
                 "\n";
@@ -333,19 +371,29 @@ int main(int argc, char* argv[])
     {
       case FP_D:
 #ifndef FP_DISABLE_DOUBLE_TYPE
-          return run<FunctionParser>();
+          std::cout << "*** Running tests for FunctionParser ***\n";
+          return run<FunctionParser>(1000000, 10000000, 5000, 20000000);
 #else
           break;
 #endif
       case FP_F:
 #ifdef FP_SUPPORT_FLOAT_TYPE
-          return run<FunctionParser_f>();
+          std::cout << "*** Running tests for FunctionParser_f ***\n";
+          return run<FunctionParser_f>(1000000, 10000000, 5000, 20000000);
 #else
           break;
 #endif
       case FP_LD:
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-          return run<FunctionParser_ld>();
+          std::cout << "*** Running tests for FunctionParser_ld ***\n";
+          return run<FunctionParser_ld>(1000000, 10000000, 5000, 20000000);
+#else
+          break;
+#endif
+      case FP_MPFR:
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+          std::cout << "*** Running tests for FunctionParser_mpfr ***\n";
+          return run<FunctionParser_mpfr>(50000, 100000, 500, 100000);
 #else
           break;
 #endif
