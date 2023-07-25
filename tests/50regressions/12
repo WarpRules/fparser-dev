@@ -1,4 +1,6 @@
 # When parsing sin(x + 4i), fpoptimizer mistakenly thinks 4i is a multiple of pi/2
+# Introduced in commit 123c689c81bbf1a6e3d68b2a8b76fb977bca97fa
+#  dependent on commit 25301e29cde73a623dc9c4ad3f2e56db7597f058
 # Fixed in commit 874d0128cb1340b0786b28c445811324af0cc7ba
 T=cf cd cld
 V=x,y
