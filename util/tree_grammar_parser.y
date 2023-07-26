@@ -26,14 +26,6 @@
 #include <algorithm>
 #include <assert.h>
 
-#ifdef __GNUC__
-# define likely(x)       __builtin_expect(!!(x), 1)
-# define unlikely(x)     __builtin_expect(!!(x), 0)
-#else
-# define likely(x)   (x)
-# define unlikely(x) (x)
-#endif
-
 static const unsigned PARAM_INDEX_BITS = 10;
 
 /*********/

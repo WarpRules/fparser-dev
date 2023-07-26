@@ -1728,6 +1728,36 @@ namespace
     Value_t fp_truth(const Value_t& a)
     { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
 
+    template<typename Value_t>
+    struct TestConst
+    {
+        template<typename T>
+        inline Value_t operator()(T&& value, const char* /*string*/)
+        {
+            return static_cast<Value_t>(value);
+        }
+    };
+#ifdef FP_TEST_WANT_MPFR_FLOAT_TYPE
+    std::map<std::string, MpfrFloat> mpfr_cache;
+
+    template<>
+    struct TestConst<MpfrFloat>
+    {
+        template<typename T>
+        inline const MpfrFloat& operator()(T&&, const std::string& string)
+        {
+            auto i = mpfr_cache.lower_bound(string);
+            if(i != mpfr_cache.end() && i->first == string)
+            {
+                return i->second;
+            }
+            char* endptr = nullptr;
+            return mpfr_cache.emplace_hint(i, string, MpfrFloat(string.c_str(), &endptr))->second;
+        }
+    };
+#endif
+    #define N(val) TestConst<Value_t>{}(val, #val)
+
 // Maybe these should be used in the test files instead...
 #define fp_less tb_fp_less
 #define fp_lessOrEq tb_fp_lessOrEq

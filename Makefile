@@ -194,7 +194,12 @@ tests/make_tests: \
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 testbed_tests.inc: tests/make_tests
-	tests/make_tests tests/*/* tests/*/*/* -o $@
+	tests/make_tests \
+		-o "$@" \
+		--ignore "*~" \
+		--ignore "*.php" \
+		--ignore "*/.*" \
+		tests/*/* tests/*/*/*
 
 FPOPTIMIZER_CC_FILES=\
 	    lib/autoptr.hh \

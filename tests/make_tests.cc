@@ -10,6 +10,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <algorithm>
+#include <unordered_map>
 
 namespace
 {
@@ -39,119 +40,6 @@ namespace
         if(def == "FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE") return "std::complex<long double>";
         return "double";
     }
-    std::string NumConst(const std::string& type, const std::string& value, bool direct_cast = false)
-    {
-        if(direct_cast)
-        {
-            if(type == "long")        return value + "l";
-
-            std::string fltvalue = value;
-
-            char* endptr = 0;
-            strtol(value.c_str(), &endptr, 10);
-            if(endptr && !*endptr)
-                fltvalue += ".0";
-
-            if(type == "float"
-            || type == "std::complex<float>") return fltvalue + "f";
-            if(type == "long double"
-            || type == "std::complex<long double>") return fltvalue + "l";
-            if(type == "double")      return fltvalue;
-            return value;
-        }
-        else
-        {
-            size_t n_trailing_zeros = 0;
-            while(n_trailing_zeros < value.size()
-               && value[value.size()-1-n_trailing_zeros] == '0')
-                ++n_trailing_zeros;
-            if(n_trailing_zeros < value.size()
-               && value[value.size()-1-n_trailing_zeros] == '.')
-            {
-                return NumConst(type, value.substr(0,  value.size()-1-n_trailing_zeros));
-            }
-
-            if(type == "std::complex<double>"
-            || type == "std::complex<float>"
-            || type == "std::complex<long double>")
-            {
-                /* N() and P() require two parameters: a real part and an imaginary part.
-                 * Make those two parts.
-                 */
-                const char* first_part        = value.c_str();
-                const char* second_part_begin = first_part;
-
-                if(*first_part == '+' || *first_part == '-')
-                    ++second_part_begin;
-                while(*second_part_begin != '\0'
-                   && !( (*second_part_begin == '-'
-                       || *second_part_begin == '+')
-                      && second_part_begin[-1] != 'e'
-                      && second_part_begin[-1] != 'E')) ++second_part_begin;
-                std::string first_part_str(first_part, second_part_begin - first_part);
-                std::string second_part_str(second_part_begin);
-                if(second_part_str.empty())
-                {
-                    second_part_str = "0";
-                    if(value[value.size()-1] == 'i'
-                    || value[value.size()-1] == 'I')
-                        first_part_str.erase(first_part_str.size()-1);
-                }
-                else
-                {
-                    if(value[value.size()-1] == 'i'
-                    || value[value.size()-1] == 'I')
-                    {
-                        second_part_str.erase(second_part_str.size()-1);
-                    }
-                }
-                if(first_part_str.find('.') == std::string::npos
-                && first_part_str.find('e') == std::string::npos
-                  ) first_part_str += ".0";
-                if(second_part_str.find('.') == std::string::npos
-                && second_part_str.find('e') == std::string::npos
-                  ) second_part_str += ".0";
-                return "N(" + first_part_str + "," + second_part_str + ")";
-            }
-            char* endptr = 0;
-            long longval = strtol(value.c_str(), &endptr, 10);
-            if(endptr && !*endptr)
-            {
-                if(longval == (long)(float)(longval)) return value;
-                //if(longval >= -32768 && longval < 32767) return value;
-                return "P(" + value + ")";
-            }
-            return "N(" + value + ")";
-        }
-    }
-    std::string NumConstDefines(const std::string& type)
-    {
-        if(type == "std::complex<double>")
-            return "#define N(x,y) (Value_t(x,y))\n";
-        if(type == "std::complex<float>")
-            return "#define N(x,y) (Value_t(APP(x,f),APP(y,f)))\n";
-        if(type == "std::complex<long double>")
-            return "#define N(x,y) (Value_t(APP(x,l),APP(y,l)))\n";
-        if(type == "MpfrFloat")
-            return "#define N(x) (Value_t(#x,0))\n"
-                   "#define P(x) N(x)\n";
-        if(type == "long" || type == "GmpInt")
-            return "#define P(x) (APP(x,l))\n";
-        std::string result = "(x)";
-        if(type == "float")       result = "(APP(x,f))";
-        if(type == "long double") result = "(APP(x,l))";
-        return "#define N(x) " + result + "\n"
-               "#define P(x) N(x##.0)\n";
-    }
-    std::string NumConstUndefines(const std::string& type)
-    {
-        if(type == "std::complex<double>"
-        || type == "std::complex<float>"
-        || type == "std::complex<long double>") return "#undef N\n";
-        if(type == "long" || type == "GmpInt") return "#undef P\n";
-        return "#undef N\n"
-               "#undef P\n";
-    }
     std::string GetTypeFor(const std::string& typecode)
     {
         if(typecode == "d")
@@ -177,14 +65,6 @@ namespace
     std::string test_declaration(const std::string& name)
     {
         return "template<typename Value_t> static Value_t "+name+"(const Value_t* vars)";
-    }
-    /*std::string test_specialization(const std::string& name, const std::string& type)
-    {
-        return "template<> Value_t "+name+"<Value_t> (const Value_t* vars) /""* " + type + " *""/";
-    }*/
-    std::string test_specialized_declaration(const std::string& name, const std::string& type)
-    {
-        return "Value_t "+name+"(const Value_t* vars) /""* " + type + " *""/";
     }
 }
 
@@ -416,14 +296,29 @@ void ListTests(std::ostream& outStream)
     }
 }
 
+namespace
+{
+    /* Reads an UTF8-encoded sequence which forms a valid identifier name from
+       the given input string and returns its length.
+    */
+    unsigned readIdentifierCommon(const char* input)
+    {
+#define FP_NO_TEST_FOR_FUNCTIONS
+#include "extrasrc/fp_identifier_parser.inc"
+        return 0;
+    }
+}
+
 void CompileFunction(const char*& funcstr, const std::string& eval_name,
                      std::ostream& declbuf,
                      std::ostream& codebuf,
-                     const std::string& limited_to_datatype)
+                     unsigned& user_param_count,
+                     const std::string& limited_to_datatype,
+                     const std::unordered_map<std::string, std::string>& var_trans)
 {
-    static unsigned BufCounter = 0;
-
-    unsigned depth = 0;
+    unsigned depth    = 0;
+    unsigned brackets = 0;
+    bool     i_defined = false;
 
     while(*funcstr && (*funcstr != '}' || depth>0) && (*funcstr != ',' || depth>0))
     {
@@ -437,8 +332,7 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
         {
             codebuf << "<Value_t>(";
             funcstr += 2;
-            unsigned NParams = 0;
-            std::string BufName;
+            unsigned first_index = ~0u;
 
             codebuf << "(";
             for(;;)
@@ -447,32 +341,27 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
                 if(!*funcstr) break;
                 if(*funcstr == '}') { ++funcstr; break; }
 
-                ++NParams;
-                if(NParams == 1)
-                {
-                    std::ostringstream BufNameBuf;
-                    BufNameBuf << "b" << BufCounter++;
-                    BufName = BufNameBuf.str();
-                }
+                if(first_index == ~0u)
+                    first_index = user_param_count;
 
-                codebuf << BufName << "[" << (NParams-1) << "]=(";
+                codebuf << "uparam[" << user_param_count++ << "]=(";
 
-                CompileFunction(funcstr, eval_name,
-                    declbuf, codebuf, limited_to_datatype);
+                // Recursion
+                CompileFunction(
+                    funcstr, eval_name,
+                    declbuf, codebuf,
+                    user_param_count,
+                    limited_to_datatype,
+                    var_trans);
 
                 codebuf << "), ";
                 if(*funcstr == ',') ++funcstr;
             }
 
-            if(NParams)
-            {
-                declbuf << "    Value_t " << BufName << "[" << NParams << "];\n";
-                codebuf << BufName;
-            }
+            if(first_index != ~0u)
+                codebuf << "uparam+" << first_index;
             else
-            {
-                codebuf << "0";
-            }
+                codebuf << "nullptr";
             codebuf << "))";
             while(std::isspace(*funcstr)) ++funcstr;
             if(*funcstr == ')') ++funcstr;
@@ -483,6 +372,8 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
             if(*funcstr == ')') --depth;
             if(*funcstr == '{') ++depth;
             if(*funcstr == '}') --depth;
+            if(*funcstr == '[') ++brackets;
+            if(*funcstr == ']') --brackets;
 
             char* endptr = 0;
             if((*funcstr >= '0' && *funcstr <= '9')
@@ -491,94 +382,40 @@ void CompileFunction(const char*& funcstr, const std::string& eval_name,
               )
                 std::strtod(funcstr, &endptr);
 
-            if(endptr && endptr != funcstr)
+            if(endptr && endptr != funcstr && !brackets)
             {
-                if(limited_to_datatype == "MpfrFloat")
-                {
-                    std::string num(funcstr, endptr-funcstr);
-                    char* endptr2 = 0;
-                    strtol(funcstr, &endptr2, 0);
-                    //fprintf(stderr, "<%s>:<%s>\n", funcstr, endptr2);
-                    if(endptr2==endptr-2 && std::strncmp(endptr2, ".0", 2) == 0)
-                    {
-                        num.erase(num.size()-2, 2); // made-int
-                        codebuf << "Value_t(" << num << ")";
-                    }
-                    else if(endptr2 && endptr2 == endptr) // an int or long
-                    {
-                        codebuf << "Value_t(" << num << ")";
-                    }
-                    else
-                    {
-                        std::string mpfrconst_name = "mflit" + num;
-                        str_replace_inplace(mpfrconst_name, std::string("."), std::string("_"));
-                        str_replace_inplace(mpfrconst_name, std::string("+"), std::string("p"));
-                        str_replace_inplace(mpfrconst_name, std::string("-"), std::string("m"));
-
-                        if(mpfrconst_set.insert(mpfrconst_name).second)
-                        {
-                            std::string& defs = define_sections["FP_TEST_WANT_MPFR_FLOAT_TYPE"].definitions;
-                            if(defs.empty())
-                                defs += "static const Value_t ";
-                            else
-                            {
-                                defs.erase(defs.size()-2, 2); /* Remove ";\n" */
-                                defs += ",\n                     ";
-                            }
-                            defs += mpfrconst_name + "(\"" + num + "\", 0);\n";
-                        }
-                        codebuf << mpfrconst_name;
-                    }
-                    //if(*endptr == 'f' || *endptr == 'l') ++endptr;
-                }
-                else
-                {
-                    std::string num(funcstr, endptr-funcstr);
-                    if(limited_to_datatype.empty())
-                        codebuf << "Value_t(" << num << "l)";
-                    else
-                        codebuf << NumConst(limited_to_datatype, num, true);
-                    /*
-                    if(*endptr == 'f' || *endptr == 'l')
-                        num += *endptr++;
-                    else
-                        num += 'l';
-                    codebuf << "Value_t(" << num << ")";
-                    */
-                }
+                // Generate numeric literal
+                codebuf << "N(" << std::string(funcstr, endptr-funcstr) << ")";
                 funcstr = endptr;
             }
-            else if((*funcstr >= 'A' && *funcstr <= 'Z')
-                 || (*funcstr >= 'a' && *funcstr <= 'z')
-                 || *funcstr == '_')
-            {
-                do {
-                    codebuf << *funcstr++;
-                } while((*funcstr >= 'A' && *funcstr <= 'Z')
-                     || (*funcstr >= 'a' && *funcstr <= 'z')
-                     || (*funcstr >= '0' && *funcstr <= '9')
-                     || *funcstr == '_');
-            }
             else
-                codebuf << *funcstr++;
+            {
+                // Generate identifier
+                unsigned length = readIdentifierCommon(funcstr);
+                if(length)
+                {
+                    std::string identifier(funcstr, funcstr+length);
+                    auto i = var_trans.find(identifier);
+                    if(i != var_trans.end())
+                    {
+                        identifier = i->second;
+                    }
+                    if(identifier == "i" && !i_defined)
+                    {
+                        if(!i_defined)
+                        {
+                            declbuf << "    Value_t i = IsComplexType<Value_t>::value ? fp_sqrt((Value_t)(-1)) : 0;\n";
+                            i_defined = true;
+                        }
+                    }
+                    codebuf << identifier;
+                    funcstr += length;
+                }
+                else
+                    codebuf << *funcstr++;
+            }
         }
     }
-}
-
-std::string ReplaceVars(const char* function,
-                        const std::map<std::string, std::string>& var_trans)
-{
-    std::string result = function;
-
-    for(std::map<std::string, std::string>::const_iterator
-        i = var_trans.begin();
-        i != var_trans.end();
-        ++i)
-    {
-        str_replace_inplace(result, i->first, i->second);
-    }
-
-    return result;
 }
 
 //std::string StringBuffer;
@@ -680,8 +517,9 @@ void CompileTest(const std::string& testname, FILE* fp)
     str_replace_inplace(test.TestName, std::string("tests/"), std::string(""));
 
     std::ostringstream declbuf;
+    unsigned           user_param_count = 0;
 
-    std::map<std::string, std::string> var_trans;
+    std::unordered_map<std::string, std::string> var_trans;
 
     std::string limited_to_datatype;
 
@@ -790,52 +628,8 @@ void CompileTest(const std::string& testname, FILE* fp)
                     if(begin != valuepos)
                         vars.push_back(begin);
 
-                    bool outputted_line_stmt = false;
-
                     for(size_t a=0; a<vars.size(); ++a)
-                    {
-                        std::string oldvarname = vars[a];
-                        std::string newvarname = vars[a];
-                        bool needs_replacement = false;
-                        for(size_t b=0; b<oldvarname.size(); ++b)
-                        {
-                            char c = oldvarname[b];
-                            if((c >= '0' && c <= '9')
-                            || c == '_'
-                            || (c >= 'A' && c <= 'Z')
-                            || (c >= 'a' && c <= 'z')) continue;
-                            needs_replacement = true; break;
-                        }
-                        if(needs_replacement)
-                        {
-                            static unsigned var_counter = 0;
-                            std::ostringstream varnamebuf;
-                            varnamebuf << "rvar" << var_counter++;
-                            newvarname = varnamebuf.str();
-                            var_trans[oldvarname] = newvarname;
-                        }
-
-                        if(!outputted_line_stmt)
-                        {
-                            outputted_line_stmt = true;
-                            //declbuf << "#line " << linenumber << " \"" << testname << "\"\n";
-                            declbuf << "    const Value_t";
-                        }
-                        else
-                            declbuf << ",";
-                        declbuf << " &" << newvarname
-                                << " = vars[" << a << "]";
-                    }
-                    if(outputted_line_stmt)
-                        declbuf << ";\n";
-
-                    //if(DataTypes.find("complex") != DataTypes.end())
-                    {
-                        // Add this if you need a variable "i"
-                        declbuf << "#ifdef FP_SUPPORT_COMPLEX_NUMBERS\n"
-                                << "    [[maybe_unused]] Value_t i = IsComplexType<Value_t>::value ? fp_sqrt((Value_t)(-1)) : 0;\n"
-                                << "#endif\n";
-                    }
+                        var_trans[vars[a]] = "vars[" + std::to_string(a) + "]";
                 }
                 break;
             case 'R': // parameter value ranges
@@ -849,100 +643,37 @@ void CompileTest(const std::string& testname, FILE* fp)
             case 'C': // the C++ template function
                 if(valuepos)
                 {
-                    std::string Replaced;
-                    if(!var_trans.empty())
-                    {
-                        Replaced = ReplaceVars(valuepos, var_trans);
-                        valuepos = Replaced.c_str();
-                    }
-
                     std::pair<std::string,std::string>
                         funcname = MakeFuncName(test.TestName);
                     test.TestFuncName = funcname.first+"::"+funcname.second;
 
-                    bool includes_mpfr = DataTypes.find("MpfrFloat") != DataTypes.end();
-                    bool unitype = DataTypes.size() == 1;
+                    std::ostringstream declbuf1, codebuf1;
+                    declbuf1 << declbuf.str();
+                    //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
 
-                    //bool has_generic = false;
+                    const char* valuepos_1 = valuepos;
+                    CompileFunction(
+                        valuepos_1, funcname.second,
+                        declbuf1, codebuf1,
+                        user_param_count,
+                        limited_to_datatype,
+                        var_trans);
 
-                    if(!unitype || !includes_mpfr)
+                    if(user_param_count)
                     {
-                        std::ostringstream declbuf1, codebuf1;
-                        declbuf1 << declbuf.str();
-                        //declbuf1 << "#line " << linenumber << " \"" << testname << "\"\n";
-
-                        const char* valuepos_1 = valuepos;
-                        CompileFunction(valuepos_1, funcname.second, declbuf1, codebuf1,
-                                        limited_to_datatype);
-
-                        std::string code = codebuf1.str();
-                        std::string bodystr =
-                            "{\n" +
-                            declbuf1.str() +
-                            "    return " + code + ";\n"
-                            "}\n";
-
-                        if(limited_to_datatype.empty() || limited_to_datatype == "double")
-                        {
-                            define_sections[""]
-                                .namespace_functions[funcname.first]
-                                  += test_declaration(funcname.second) + "\n" + bodystr;
-                            //has_generic = true;
-                        }
-                        else
-                        {
-                            define_sections[GetDefinesFor(limited_to_datatype)]
-                                .namespace_functions[funcname.first] +=
-                                    test_specialized_declaration(funcname.second, limited_to_datatype)
-                                    + "\n" + bodystr;
-                        }
-                    }
-                    else
-                    {
-                        // When it's mpfr-only
-                        //class_declarations[funcname.first].first +=
-                        //    test_declaration(funcname.second) + ";\n";
+                        declbuf1 << "    Value_t uparam[" << user_param_count << "];\n";
+                        user_param_count = 0;
                     }
 
-                    if(includes_mpfr)
-                    {
-                        std::ostringstream declbuf2, codebuf2;
-                        declbuf2 << declbuf.str();
-                        //declbuf2 << "#line " << linenumber << " \"" << testname << "\"\n";
+                    std::string code = codebuf1.str();
+                    std::string bodystr =
+                        "{\n" +
+                        declbuf1.str() +
+                        "    return " + code + ";\n"
+                        "}\n";
 
-                        CompileFunction(valuepos, funcname.second,
-                                        declbuf2, codebuf2, "MpfrFloat");
-
-                        if(codebuf2.str().find("mflit") != codebuf2.str().npos
-                        || unitype)
-                        {
-                            std::string code = codebuf2.str();
-                            str_replace_inplace(code, std::string("MpfrFloat"), std::string("Value_t"));
-
-                            std::string bodystr2 =
-                                "{\n" +
-                                declbuf2.str() +
-                                "    return " + code + ";\n"
-                                "}\n";
-
-                            std::ostringstream out2;
-
-                            if(!test.IfDef.empty())
-                                out2 << "#if " << test.IfDef << "\n";
-
-                            /*if(has_generic)
-                                out2 << test_specialization(funcname.second, "MpfrFloat") << "\n";
-                            else*/
-                            out2 << test_specialized_declaration(funcname.second, "MpfrFloat") << "\n";
-                            out2 << bodystr2;
-
-                            if(!test.IfDef.empty())
-                                out2 << "#endif /* " << test.IfDef << " */\n";
-
-                            define_sections["FP_TEST_WANT_MPFR_FLOAT_TYPE"]
-                                .namespace_functions[funcname.first] += out2.str();
-                        }
-                    }
+                    define_sections[""].namespace_functions[funcname.first]
+                        += test_declaration(funcname.second) + "\n" + bodystr;
                 }
                 break;
         }
@@ -958,7 +689,7 @@ void CompileTest(const std::string& testname, FILE* fp)
 }
 
 /* Asciibetical comparator, with in-string integer values sorted naturally */
-bool natcomp(const std::string& a, const std::string& b)
+static bool natcomp(const std::string& a, const std::string& b)
 {
     size_t ap=0, bp=0;
     while(ap < a.size() && bp < b.size())
@@ -984,6 +715,22 @@ bool natcomp(const std::string& a, const std::string& b)
     return (bp < b.size() && ap >= a.size());
 }
 
+static bool WildMatch(const char *pattern, const char *what)
+{
+    for(; *what || *pattern; ++what, ++pattern)
+        if(*pattern == '*')
+        {
+            while(*++pattern == '*') {}
+            for(; *what; ++what)
+                if(WildMatch(pattern, what))
+                    return true;
+            return !*pattern;
+        }
+        else if(*pattern != '?' && *pattern != *what)
+            return false;
+    return true;
+}
+
 int main(int argc, char* argv[])
 {
     const char* outputFileName = 0;
@@ -991,7 +738,7 @@ int main(int argc, char* argv[])
 
     std::ostringstream out;
 
-    std::vector<std::string> files;
+    std::vector<std::string> files, ignore_patterns;
 
     for(int a=1; a<argc; ++a)
     {
@@ -999,42 +746,58 @@ int main(int argc, char* argv[])
         {
             if(++a == argc)
             {
-                std::cerr << "Expecting output file name after -o\n";
+                std::cerr << "make_tests: Expected output file name after -o\n";
                 return 1;
             }
             outputFileName = argv[a];
             outputFileStream.open(argv[a]);
             if(!outputFileStream)
             {
-                std::cerr << "Could not write to " << argv[a] << "\n";
+                std::cerr << "make_tests: Could not write to " << argv[a] << "\n";
                 return 1;
             }
+            continue;
+        }
+        else if(std::strcmp(argv[a], "--ignore") == 0)
+        {
+            if(++a == argc)
+            {
+                std::cerr << "make_tests: Expected ignore-pattern after --ignore\n";
+                return 1;
+            }
+            ignore_patterns.push_back(argv[a]);
             continue;
         }
 
         std::string fn ( argv[a] );
         if(fn.empty()) continue;
 
-        if(fn[fn.size()-1] == '~') continue; // ignore backup files
-        if(fn[0] == '.') continue;           // ignore special files
-
-        files.push_back(fn);
+        files.push_back(std::move(fn));
     }
+
+    files.erase(
+        std::remove_if(files.begin(), files.end(), [&ignore_patterns](const std::string& s)
+            {
+                for(const auto& pattern: ignore_patterns)
+                    if(WildMatch(pattern.c_str(), s.c_str()))
+                        return true;
+                return false;
+            }),
+        files.end());
+    std::sort(files.begin(), files.end(), natcomp);
 
     std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
     //const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
 
-    std::sort(files.begin(), files.end(), natcomp);
-
-    for(size_t a=0; a<files.size(); ++a)
+    for(const auto& filename: files)
     {
-        FILE* fp = std::fopen(files[a].c_str(), "rt");
+        FILE* fp = std::fopen(filename.c_str(), "rt");
         if(!fp)
         {
-            std::perror(files[a].c_str());
+            std::perror(filename.c_str());
             continue;
         }
-        CompileTest(files[a], fp);
+        CompileTest(filename, fp);
         fclose(fp);
     }
 
@@ -1070,8 +833,6 @@ int main(int argc, char* argv[])
         if(!i->first.empty())
             out << "\n#ifdef " << i->first << "\n";
 
-        out << NumConstDefines(type) << "\n";
-
         if(i->first != "") out << "#define Value_t " + type + "\n";
 
         out << i->second.definitions;
@@ -1094,7 +855,6 @@ int main(int argc, char* argv[])
 
         out << i->second.test_list;
         out << "#undef Value_t\n";
-        out << NumConstUndefines(type);
 
         if(!i->first.empty())
             out << "#endif /*" << i->first << " */\n";

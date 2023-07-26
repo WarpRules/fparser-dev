@@ -29,14 +29,6 @@ using namespace FUNCTIONPARSERTYPES;
 #endif
 #endif
 
-#ifdef __GNUC__
-# define likely(x)       __builtin_expect(!!(x), 1)
-# define unlikely(x)     __builtin_expect(!!(x), 0)
-#else
-# define likely(x)   (x)
-# define unlikely(x) (x)
-#endif
-
 //=========================================================================
 // Opcode analysis functions
 //=========================================================================
@@ -1264,7 +1256,8 @@ U+000B  \v
                     { ++function; continue; } // \r, \n, \t, \v and space
                 break;
             }
-            if(likely(byte < 0xC2-n)) break;
+            if(byte < 0xC2-n) [[likely]]
+                break;
 
             if(byte == 0xC2-n && function[1] == char(0xA0))
                 { function += 2; continue; } // U+00A0
@@ -1998,10 +1991,10 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     switch(nameData->type)
     {
       case NameData<Value_t>::VARIABLE: // is variable
-          if(unlikely(!mData->mByteCode.empty() &&
-                      mData->mByteCode.back() == nameData->index))
+          if(!mData->mByteCode.empty() &&
+                      mData->mByteCode.back() == nameData->index) [[unlikely]]
               mData->mByteCode.push_back(cDup);
-          else
+          else [[likely]]
               mData->mByteCode.push_back(nameData->index);
           incStackPtr();
           return endPtr;

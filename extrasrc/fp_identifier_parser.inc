@@ -20,7 +20,7 @@ to be modified by hand.
         */
         const unsigned char* const uptr = (const unsigned char*) input;
         typedef signed char schar;
-        while(likely(nameLength < maximumNameLength))
+        while(nameLength < maximumNameLength) [[likely]]
         {
             unsigned char byte = uptr[nameLength+0];
             /* Handle the common case of A-Za-z first */
@@ -133,7 +133,7 @@ to be modified by hand.
             }
             break;
         }
-
+#ifndef FP_NO_TEST_FOR_FUNCTIONS
         /* This function generated with make_function_name_parser.cc */
         switch(nameLength)
         {
@@ -322,4 +322,5 @@ to be modified by hand.
 
             default: break;
         }
+#endif
         return nameLength;
