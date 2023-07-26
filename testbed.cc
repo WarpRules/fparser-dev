@@ -517,7 +517,7 @@ int TestErrorSituations()
         }
     }
 
-    fp.AddConstant("CONST", 1);
+    fp.AddConstant("CONST", CONST);
     fp.AddFunction("PTR", userDefFuncSqr<DefaultValue_t>, 1);
     fp.AddFunction("PARSER", tmpfp);
 
@@ -1559,6 +1559,11 @@ int testMultithreadedEvaluation()
 //=========================================================================
 // Test variable deduction
 //=========================================================================
+namespace OptimizerTests
+{
+    DefaultValue_t evaluateFunction(const DefaultValue_t* params);
+}
+enum class TestIndex_t;
 template<typename Value_t>
 struct TestType
 {
@@ -1566,15 +1571,11 @@ struct TestType
     const char* paramMin;
     const char* paramMax;
     const char* paramStep;
+    TestIndex_t testIndex;
     bool useDegrees;
-
-    Value_t (*funcPtr)(const Value_t*);
-#ifdef FP_TEST_WANT_DOUBLE_TYPE
-    double (*doubleFuncPtr)(const double*);
-#endif
-#ifdef FP_TEST_WANT_LONG_INT_TYPE
-    long (*longFuncPtr)(const long*);
-#endif
+    bool hasDouble;
+    bool hasLong;
+    bool ignoreImagSign;
 
     const char* paramString;
     const char* testName;
@@ -1728,36 +1729,6 @@ namespace
     Value_t fp_truth(const Value_t& a)
     { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
 
-    template<typename Value_t>
-    struct TestConst
-    {
-        template<typename T>
-        inline Value_t operator()(T&& value, const char* /*string*/)
-        {
-            return static_cast<Value_t>(value);
-        }
-    };
-#ifdef FP_TEST_WANT_MPFR_FLOAT_TYPE
-    std::map<std::string, MpfrFloat> mpfr_cache;
-
-    template<>
-    struct TestConst<MpfrFloat>
-    {
-        template<typename T>
-        inline const MpfrFloat& operator()(T&&, const std::string& string)
-        {
-            auto i = mpfr_cache.lower_bound(string);
-            if(i != mpfr_cache.end() && i->first == string)
-            {
-                return i->second;
-            }
-            char* endptr = nullptr;
-            return mpfr_cache.emplace_hint(i, string, MpfrFloat(string.c_str(), &endptr))->second;
-        }
-    };
-#endif
-    #define N(val) TestConst<Value_t>{}(val, #val)
-
 // Maybe these should be used in the test files instead...
 #define fp_less tb_fp_less
 #define fp_lessOrEq tb_fp_lessOrEq
@@ -1787,14 +1758,14 @@ namespace
                            const TestType<MpfrFloat>& testData,
                            std::ostream& error)
     {
-        if(!testData.doubleFuncPtr) return;
+        if(!testData.hasDouble) return;
 
         double doubleVars[10];
         for(unsigned i = 0; i < 10; ++i) doubleVars[i] = vars[i].toDouble();
 
         const double Eps = testbedEpsilon<double>();
 
-        const double v1 = testData.doubleFuncPtr(doubleVars);
+        const double v1 = evaluate_test<double>(testData.testIndex, doubleVars);
         const double v2 = parserValue.toDouble();
 
         /*
@@ -1844,12 +1815,12 @@ namespace
                             const TestType<GmpInt>& testData,
                             std::ostream& error)
     {
-        if(!testData.longFuncPtr) return;
+        if(!testData.hasLong) return;
 
         long longVars[10];
         for(unsigned i = 0; i < 10; ++i) longVars[i] = vars[i].toInt();
 
-        const long longValue = testData.longFuncPtr(longVars);
+        const long longValue = evaluate_test<long>(testData.testIndex, longVars);
         if(longValue != parserValue)
         {
             if(verbosityLevel >= 2)
@@ -1925,10 +1896,10 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 out << (ind>0 ? ", " : "") << vars[ind];
             out << ")\n" << std::flush;
         }
-        const Value_t v1 = testData.funcPtr(vars);
+        const Value_t v1 = evaluate_test<Value_t>(testData.testIndex, vars);
         if(true) /*test Eval() */
         {
-            const Value_t v2 = fp.Eval(fp_vars);
+            Value_t v2 = fp.Eval(fp_vars);
 
             std::ostringstream error;
 
@@ -1952,6 +1923,17 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             }
             else
             {
+            #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+                if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value && testData.ignoreImagSign)
+                {
+                    // Ignore differences in the sign of the imaginary component
+                    if(FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_imag(v1), Value_t{})
+                    != FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_imag(v2), Value_t{}))
+                    {
+                        v2 = FUNCTIONPARSERTYPES::fp_conj(v2);
+                    }
+                }
+            #endif
                 using namespace FUNCTIONPARSERTYPES;
                 /*
                 const Value_t scale =
@@ -2311,12 +2293,15 @@ bool runRegressionTests(unsigned n_threads,
             bool use_complex_stepping = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
                                      && FUNCTIONPARSERTYPES::fp_imag(paramStep) == Value_t();
             if(use_complex_stepping)
+            {
+                // Parameter space is squared
                 n_testvalues *= n_testvalues;
+            }
             out << /*std::right <<*/ std::setw(2)
                 << testData.testName << ": \""
                 << testData.funcString << "\" ("
-                << FUNCTIONPARSERTYPES::fp_pow(n_testvalues,
-                                               Value_t( (int) testData.paramAmount))
+                << std::pow(FUNCTIONPARSERTYPES::makeLongInteger(n_testvalues),
+                            (long)testData.paramAmount)
                 << " param. combinations): " << std::flush;
         }
         else if(verbosityLevel == 2)
@@ -2532,7 +2517,12 @@ namespace OptimizerTests
 
         const TestType<DefaultValue_t> testData =
         {
-            1, "-4.0","4.0","0.49", false, &evaluateFunction, DBL_ONLY(0)LNG_ONLY(0)
+            1, "-4.0","4.0","0.49",
+            TestIndex_t::defaultTypeTest,
+            false,/*degrees*/
+            true, /*double*/
+            false,/*long*/
+            false,/*ignore imaginary sign*/
             "x", "'trig. combo optimizer test'", funcString.c_str()
         };
 

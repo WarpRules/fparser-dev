@@ -1,5 +1,5 @@
 T=d f ld
 V=x
-R=-40000, 40000, 5
+R=-40, 40, 0.25
 F=tanh(x)
 C=std::tanh(x)

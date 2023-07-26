@@ -1,3 +1,4 @@
+IMAG=abs
 T=cf cd cld
 V=a
 R=-2,2,0.5

@@ -1,5 +1,5 @@
 T=d f ld
 V=x
-R=-400, 400, 0.1
+R=-40, 40, 0.25
 F=sinh(x)
 C=std::sinh(x)

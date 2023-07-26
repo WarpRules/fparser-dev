@@ -2,4 +2,4 @@ T=mf
 V=x
 R=-400, 400, 0.5
 F=abs(x)
-C=fp_abs(x)
+C=MpfrFloat::abs(x)

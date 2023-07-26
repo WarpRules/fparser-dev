@@ -1,6 +1,6 @@
 DEG=true
 T=d f cd cf ld cld
 V=x
-R=-40000, 40000, 50
+R=-400, 400, 5
 F=cos(x)
 C=std::cos(d2r(x))
