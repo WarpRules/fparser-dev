@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-1,1,0.5
+F=abs(pow((a+1.4375),(b+1.4375)))
+C=fp_abs(fp_pow(a+1.4375,b+1.4375))

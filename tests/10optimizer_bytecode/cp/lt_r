@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-0.75,0.75,0.25
-F=a:=x+1.36+1i*y;log10(real(a))
-C=fp_log10(fp_real(Value_t(x.real(), y.real())+1.36))

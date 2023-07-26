@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.2,0.2,0.05
+F=csc(asin((a+-0.375)))
+C=1/fp_sin(fp_asin(a+-0.375))

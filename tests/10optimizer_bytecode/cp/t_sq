@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.44+1i*y;tan(sqrt(a))
-C=fp_tan(fp_sqrt(Value_t(x.real(), y.real())+1.44))

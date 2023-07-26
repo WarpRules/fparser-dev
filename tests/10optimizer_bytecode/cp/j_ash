@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+1.36+1i*y;conj(asinh(a))
-C=fp_conj(fp_asinh(Value_t(x.real(), y.real())+1.36))

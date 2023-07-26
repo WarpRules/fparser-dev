@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.25,0.25,0.05
+F=log(tan((a+0.5625)))
+C=fp_log(fp_tan(a+0.5625))

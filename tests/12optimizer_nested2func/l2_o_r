@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.25,0.25,0.05
+F=log2(cot((a+1.0625)))
+C=fp_log2(1/fp_tan(a+1.0625))

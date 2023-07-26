@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-1.3,0,0.125
-F=atanh(1/atan2(x,y))
-C=fp_atanh(1/fp_atan2(x,y))

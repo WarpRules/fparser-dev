@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.68+1i*y;log10(asinh(a))
-C=fp_log10(fp_asinh(Value_t(x.real(), y.real())+1.68))

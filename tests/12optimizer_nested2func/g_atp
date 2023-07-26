@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,2
+F=arg(atan(abs((a+1.8125))))
+C=fp_arg(fp_atan(fp_abs(a+1.8125)))

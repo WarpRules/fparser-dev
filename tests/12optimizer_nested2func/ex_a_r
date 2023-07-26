@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=exp(csc((a+1.8125)))
+C=fp_exp(1/fp_sin(a+1.8125))

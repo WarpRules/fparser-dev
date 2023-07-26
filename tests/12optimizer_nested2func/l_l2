@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=log(log2((a+0)))
+C=fp_log(fp_log2(a+0))

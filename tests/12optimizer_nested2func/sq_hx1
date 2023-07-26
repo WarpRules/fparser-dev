@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=sqrt(hypot((a+2.25),1))
+C=fp_sqrt(fp_hypot(a+2.25,1))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cosh(cot((a+0.4375)))
+C=fp_cosh(1/fp_tan(a+0.4375))

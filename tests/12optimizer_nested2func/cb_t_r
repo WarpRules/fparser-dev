@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.25,0.25,0.05
+F=cbrt(tan((a+-2.125)))
+C=fp_cbrt(fp_tan(a+-2.125))

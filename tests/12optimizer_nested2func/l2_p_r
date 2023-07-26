@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-1,1,0.5
+F=log2(pow((a+1.25),(b+1.25)))
+C=fp_log2(fp_pow(a+1.25,b+1.25))

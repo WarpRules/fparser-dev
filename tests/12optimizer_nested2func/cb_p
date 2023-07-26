@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-1,1,0.5
+F=cbrt(pow((a+2.125),(b+2.125)))
+C=fp_cbrt(fp_pow(a+2.125,b+2.125))

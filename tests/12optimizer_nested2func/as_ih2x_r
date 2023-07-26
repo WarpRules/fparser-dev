@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=asin(1/hypot(2,(a+0)))
+C=fp_asin(1/fp_hypot(2,a+0))

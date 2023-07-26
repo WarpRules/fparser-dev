@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+0.56+1i*y;log10(cosh(a))
-C=fp_log10(fp_cosh(Value_t(x.real(), y.real())+0.56))

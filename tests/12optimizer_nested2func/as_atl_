@@ -1,0 +1,5 @@
+T=f d ld mf cf cd cld
+V=a,b
+R=-2,2,0.5
+F=asin(atan((a+0)!=(b+0)))
+C=fp_asin(fp_atan(fp_nequal(a+0,b+0)))

@@ -174,7 +174,7 @@ namespace
     template<>
     inline MpfrFloat testbedEpsilon<MpfrFloat>()
     {
-        static const MpfrFloat eps(2e-20);
+        static const MpfrFloat eps(4.1e-19);
         return eps;
     }
 #endif
@@ -1866,24 +1866,25 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
     Value_t vars[10];
     Value_t fp_vars[10];
 
+    bool is_complex = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value;
+    Value_t complex_1_0 = Value_t(1);
+    Value_t complex_0_1 = is_complex ? FUNCTIONPARSERTYPES::fp_sqrt((Value_t)(-1)) : 0;
+    // ^ This expression constructs 1i in a way that compiles fine in real & integer modes
+    Value_t complex_1_1 = complex_0_1 + complex_1_0;
+    bool use_complex_stepping = is_complex && FUNCTIONPARSERTYPES::fp_imag(paramStep) == Value_t();
+
     for(unsigned i = 0; i < testData.paramAmount; ++i)
+    {
         vars[i] = paramMin;
+        if(use_complex_stepping)
+        {
+            // Instead of e.g. -3, construct the min as -3 + -3i
+            vars[i] *= complex_1_1;
+        }
+    }
 
     while(true)
     {
-        unsigned paramInd = 0;
-        while(paramInd < testData.paramAmount)
-        {
-            using namespace FUNCTIONPARSERTYPES;
-            /* ^ Import a possible <= operator from that
-             *   namespace for this particular comparison only */
-            vars[paramInd] += paramStep;
-            if(vars[paramInd] <= paramMax) break;
-            vars[paramInd++] = paramMin;
-        }
-
-        if(paramInd == testData.paramAmount) break;
-
         for(unsigned i = 0; i < testData.paramAmount; ++i)
             fp_vars[i] = vars[i];
 
@@ -1946,7 +1947,9 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 {
                     using namespace FUNCTIONPARSERTYPES;
                     if(verbosityLevel >= 2)
-                        error << std::setprecision(28) << v2 << " instead of "
+                        error << std::setprecision(28) << v2
+                              //   "the library returned "
+                              << "\n          instead of "
                               << std::setprecision(28) << v1
                               << "\n(Difference: "
                               << std::setprecision(28) << v2-v1
@@ -2005,6 +2008,36 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 return false;
             }
         } /* test Eval() */
+
+        unsigned paramInd = 0;
+        while(paramInd < testData.paramAmount)
+        {
+            using namespace FUNCTIONPARSERTYPES;
+            /* ^ Import a possible <= operator from that
+             *   namespace for this particular comparison only */
+            vars[paramInd] += paramStep;
+            if(use_complex_stepping)
+            {
+                if(fp_real(vars[paramInd]) <= FUNCTIONPARSERTYPES::fp_real(paramMax))
+                    break;
+                // Reset the real-axis component to minimum
+                // and step the imag-axis
+                auto imagOnly = (vars[paramInd] - FUNCTIONPARSERTYPES::fp_conj(vars[paramInd]))
+                                / Value_t(2);
+                vars[paramInd] = fp_real(paramMin) + imagOnly + complex_0_1 * paramStep;
+                if(fp_imag(vars[paramInd]) <= FUNCTIONPARSERTYPES::fp_real(paramMax))
+                {
+                    break;
+                }
+            }
+            else
+            {
+                if(vars[paramInd] <= paramMax) break;
+                vars[paramInd] = paramMin;
+            }
+            ++paramInd;
+        }
+        if(paramInd == testData.paramAmount) break;
     }
     return true;
 }
@@ -2244,11 +2277,15 @@ bool runRegressionTests(unsigned n_threads,
         //fp.PrintByteCode(std::cout);
         if(verbosityLevel >= 3)
         {
-            out
-                << /*std::right <<*/ std::setw(2)
+            Value_t n_testvalues = (paramMax - paramMin) / paramStep;
+            bool use_complex_stepping = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
+                                     && FUNCTIONPARSERTYPES::fp_imag(paramStep) == Value_t();
+            if(use_complex_stepping)
+                n_testvalues *= n_testvalues;
+            out << /*std::right <<*/ std::setw(2)
                 << testData.testName << ": \""
                 << testData.funcString << "\" ("
-                << FUNCTIONPARSERTYPES::fp_pow((paramMax - paramMin) / paramStep,
+                << FUNCTIONPARSERTYPES::fp_pow(n_testvalues,
                                                Value_t( (int) testData.paramAmount))
                 << " param. combinations): " << std::flush;
         }

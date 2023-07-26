@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-1.25,1.25,0.25
-F=sec(sec(x))
-C=1/fp_cos(1/fp_cos(x))

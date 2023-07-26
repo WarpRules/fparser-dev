@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-3,3,2
-F=exp2(1/hypot(x,y))
-C=fp_exp2(1/fp_hypot(x,y))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-0.75,0.75,0.25
-F=a:=x+1.72+1i*y;cbrt(real(a))
-C=fp_cbrt(fp_real(Value_t(x.real(), y.real())+1.72))

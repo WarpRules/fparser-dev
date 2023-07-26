@@ -1,6 +1,6 @@
 DEG=true
-T=d
+T=d f ld
 V=x,y
 R=-4, 4, 0.05
 F=atan2(x,y)
-C=r2d(atan2(x,y))
+C=r2d(std::atan2(x,y))

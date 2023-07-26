@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=-0.75,0.75,0.25
-F=b:=z+2+1i*w;a:=x+2+1i*y;sec(atan2(a,b))
-C=1/fp_cos(fp_atan2(Value_t(x.real(), y.real())+2, Value_t(z.real(), w.real())+2))

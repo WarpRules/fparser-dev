@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x
 R=0,1,1
 F=x*0+ logten
-C=log(x*0+10)
+C=std::log(x*0+10)

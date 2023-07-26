@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x
 R=-400, 400, 0.1
 F=atan(x)
-C=atan(x)
+C=std::atan(x)

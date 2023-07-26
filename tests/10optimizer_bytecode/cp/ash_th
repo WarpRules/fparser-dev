@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+1.92+1i*y;asinh(tanh(a))
-C=fp_asinh(fp_tanh(Value_t(x.real(), y.real())+1.92))

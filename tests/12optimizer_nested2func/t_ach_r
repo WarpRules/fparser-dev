@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=tan(acosh((a+2.8125)))
+C=fp_tan(fp_acosh(a+2.8125))

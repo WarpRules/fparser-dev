@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=cos(atanh((a+0)))
+C=fp_cos(fp_atanh(a+0))

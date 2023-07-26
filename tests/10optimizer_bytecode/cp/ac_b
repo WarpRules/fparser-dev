@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=0.25,0.75,0.125
-F=a:=x+1i*y;c:=-0.56;acos(abs(a+c))
-C=fp_acos(fp_abs(Value_t(x.real(), y.real())+-0.56))

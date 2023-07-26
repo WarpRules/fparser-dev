@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=cosh(-a)+exp(-a)
-C=fp_cosh(-a)+fp_exp(-a)
-#X=fp_add(fp_cosh(fp_mul(a,[-1,0])),fp_exp(fp_mul(a,[-1,0])))

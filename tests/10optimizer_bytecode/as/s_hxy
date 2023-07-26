@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-2,2,0.5
-F=sin(hypot(x,y))
-C=fp_sin(fp_hypot(x,y))

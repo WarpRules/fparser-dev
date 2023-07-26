@@ -78,6 +78,24 @@ namespace
 #endif
 
     template<typename Value_t>
+    Value_t Special_pow(Value_t a, Value_t b)
+    {
+        return fp_pow(a, b);
+    }
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    std::complex<T> Special_pow(std::complex<T> a, std::complex<T> b)
+    {
+        if(fp_imag(a) == T() && fp_imag(b) == T() && fp_real(b) > T())
+        {
+            return std::complex<T>(fp_pow(a.real(), b.real()), T());
+        }
+        return fp_pow(a, b);
+    }
+#endif
+
+    template<typename Value_t>
     bool ConstantFolding_PowOperations(CodeTree<Value_t>& tree)
     {
         assert(tree.GetOpcode() == cPow);
@@ -85,8 +103,13 @@ namespace
         if(tree.GetParam(0).IsImmed()
         && tree.GetParam(1).IsImmed())
         {
-            Value_t const_value = fp_pow(tree.GetParam(0).GetImmed(),
-                                        tree.GetParam(1).GetImmed());
+            // If Value_t is a complex type,
+            // and we have e.g pow(-0.625, 2),
+            // if we used fp_pow, we would get something + something_else*1e-18*i.
+            // So, if the exponent is 2, we do special calculation.
+            Value_t a = tree.GetParam(0).GetImmed();
+            Value_t b = tree.GetParam(1).GetImmed();
+            Value_t const_value = Special_pow(a, b);
             tree.ReplaceWithImmed(const_value);
             return false;
         }

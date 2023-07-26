@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0.5,1,0.25
-F=log(asin(x))
-C=fp_log(fp_asin(x))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cbrt(hypot((a+-0.3125),1))
+C=fp_cbrt(fp_hypot(a+-0.3125,1))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+0+1i*y;tan(exp(a))
-C=fp_tan(fp_exp(Value_t(x.real(), y.real())+0))

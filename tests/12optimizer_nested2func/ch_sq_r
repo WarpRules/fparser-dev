@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=cosh(sqrt((a+1.125)))
+C=fp_cosh(fp_sqrt(a+1.125))

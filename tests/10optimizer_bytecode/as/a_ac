@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-0.75,0.75,0.25
-F=csc(acos(x))
-C=1/fp_sin(fp_acos(x))

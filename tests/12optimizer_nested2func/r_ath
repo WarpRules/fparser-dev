@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=real(atanh((a+-2.3125)))
+C=fp_real(fp_atanh(a+-2.3125))

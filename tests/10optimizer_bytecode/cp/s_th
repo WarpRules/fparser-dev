@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+-1.68+1i*y;sin(tanh(a))
-C=fp_sin(fp_tanh(Value_t(x.real(), y.real())+-1.68))

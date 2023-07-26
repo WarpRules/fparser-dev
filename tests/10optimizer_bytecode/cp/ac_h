@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=0,1,0.5
-F=b:=z+-0.6+1i*w;a:=x+-0.6+1i*y;acos(hypot(a,b))
-C=fp_acos(fp_hypot(Value_t(x.real(), y.real())+-0.6, Value_t(z.real(), w.real())+-0.6))

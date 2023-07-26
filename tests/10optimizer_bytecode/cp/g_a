@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.08+1i*y;arg(csc(a))
-C=fp_arg(1/fp_sin(Value_t(x.real(), y.real())+1.08))

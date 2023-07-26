@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=0,0.75,0.25
+F=asin(log2((a+0.875)))
+C=fp_asin(fp_log2(a+0.875))

@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x
 R=-50000, 50000, 1000
 F=cbrt(x)
-C=x<0 ? -exp(log(-x) / 3) : (x>0 ? exp(log(x) / 3) : 0)
+C=x<0 ? -std::exp(std::log(-x) / 3) : (x>0 ? std::exp(std::log(x) / 3) : 0)

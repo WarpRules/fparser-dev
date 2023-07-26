@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+1i*y;-log(a)-exp(a)
-C=-fp_log(Value_t(x.real(), y.real()))-fp_exp(Value_t(x.real(), y.real()))
-#X=fp_sub(fp_mul(fp_log(Value_t(x.real(), y.real())),[-1,0]),fp_exp(Value_t(x.real(), y.real())))

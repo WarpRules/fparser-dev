@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=exp(1/hypot((a+3.0625),2))
+C=fp_exp(1/fp_hypot(a+3.0625,2))

@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=exp(a)-tanh(a)
+C=fp_exp(a)-fp_tanh(a)
+#X=fp_sub(fp_exp(a),fp_tanh(a))

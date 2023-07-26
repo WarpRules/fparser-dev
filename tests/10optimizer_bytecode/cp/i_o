@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+-0.68+1i*y;imag(cot(a))
-C=fp_imag(1/fp_tan(Value_t(x.real(), y.real())+-0.68))

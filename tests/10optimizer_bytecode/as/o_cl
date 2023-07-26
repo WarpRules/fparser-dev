@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-2,2,0.5
-F=cot(cos(x<y))
-C=1/fp_tan(fp_cos(fp_less(x,y)))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=-2,2,0.5
-F=b:=z+0+1i*w;a:=x+0+1i*y;sec((a)=(b))
-C=1/fp_cos(fp_equal(Value_t(x.real(), y.real())+0, Value_t(z.real(), w.real())+0))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=-2,2,0.5
-F=b:=z+0.64+1i*w;a:=x+0.64+1i*y;sqrt(polar(a,b))
-C=fp_sqrt(fp_polar(Value_t(x.real(), y.real())+0.64, Value_t(z.real(), w.real())+0.64))

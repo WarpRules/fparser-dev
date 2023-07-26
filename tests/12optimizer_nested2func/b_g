@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=abs(arg((a+2.6875)))
+C=fp_abs(fp_arg(a+2.6875))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=abs(1/atan2((a+2.5),(b+2.5)))
+C=fp_abs(1/fp_atan2(a+2.5,b+2.5))

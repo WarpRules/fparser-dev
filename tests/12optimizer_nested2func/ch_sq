@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cosh(sqrt((a+2.4375)))
+C=fp_cosh(fp_sqrt(a+2.4375))

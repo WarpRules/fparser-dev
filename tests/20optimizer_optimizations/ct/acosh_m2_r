@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-1.92,-0.62,0.45
-F=acosh(a*-2)
-C=fp_acosh(a*-2)
-#X=fp_acosh(fp_mul(a,[-2,0]))

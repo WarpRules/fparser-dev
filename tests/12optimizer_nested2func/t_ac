@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=tan(acos((a+0)))
+C=fp_tan(fp_acos(a+0))

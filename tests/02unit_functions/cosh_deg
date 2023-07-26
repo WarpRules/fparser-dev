@@ -1,6 +1,6 @@
 DEG=true
-T=d
+T=d f ld cf cd cld
 V=x
-R=-140, 140, 0.1
+R=-140, 140, 0.25
 F=cosh(x)
-C=cosh(d2r(x))
+C=std::cosh(d2r(x))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=tan(acosh((a+3.125)))
+C=fp_tan(fp_acosh(a+3.125))

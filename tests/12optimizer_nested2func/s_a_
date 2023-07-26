@@ -1,0 +1,5 @@
+T=f d ld mf cf cd cld
+V=a
+R=-2,2,0.5
+F=sin(csc((a+2.3125)))
+C=fp_sin(1/fp_sin(a+2.3125))

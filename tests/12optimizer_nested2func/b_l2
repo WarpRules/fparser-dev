@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=abs(log2((a+0)))
+C=fp_abs(fp_log2(a+0))

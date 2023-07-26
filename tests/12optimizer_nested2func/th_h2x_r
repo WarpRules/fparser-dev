@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=tanh(hypot(2,(a+0)))
+C=fp_tanh(fp_hypot(2,a+0))

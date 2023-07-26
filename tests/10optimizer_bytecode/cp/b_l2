@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.76+1i*y;abs(log2(a))
-C=fp_abs(fp_log2(Value_t(x.real(), y.real())+1.76))

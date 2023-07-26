@@ -528,13 +528,14 @@ IF(FP_FLOAT_VERSION) cSinhCosh cRDiv  -> cTanh cInv
 IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)]                      cSqr cAdd cSqrt -> A   cHypot  # TEST 10/xsqrysqrhypot
 IF(FP_FLOAT_VERSION) cSqr A [IsVarOpcode(A)] B [IsUnaryOpcode(B)] cSqr cAdd cSqrt -> A B cHypot  # TEST 10/xsqryfsqrhypot
 
-IF(FP_FLOAT_VERSION) cAtan cSec    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt   # TEST 10/as_*
-IF(FP_FLOAT_VERSION) cAtan cCos    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt  # TEST 10/as_*
-IF(FP_FLOAT_VERSION) x cHypot      -> cSqr [x*x]                        cAdd cSqrt   # TEST 10/as_*
-IF(FP_FLOAT_VERSION) x cHypot cInv -> cSqr [x*x]                        cAdd cRSqrt  # TEST 10/as_*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAtan cSec    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt   # TEST 12/*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAtan cCos    -> cSqr [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt  # TEST 12/*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cHypot      -> cSqr [x*x]                        cAdd cSqrt   # TEST 12/*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cHypot cInv -> cSqr [x*x]                        cAdd cRSqrt  # TEST 12/*
 
-#IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cSin -> A cSqr cInv [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt # TEST 10/as_*
-IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cCsc -> A cSqr cInv  [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt  # TEST 10/as_*
+#IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cSin -> A cSqr cInv [DO_STACKPLUS1] [Value_t(1)] cAdd cRSqrt # TEST 12/*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cAtan cCsc -> A cSqr cInv  [DO_STACKPLUS1] [Value_t(1)] cAdd cSqrt  # TEST 12/*
 # ^ cInv freaks out if A produces zero, but then, so does cCsc.
+# TODO: figure out why this breaks "csc(atan(abs(x)))" on complex numbers.
 
 A [IsComparisonOpcode(A)] cSqr -> A

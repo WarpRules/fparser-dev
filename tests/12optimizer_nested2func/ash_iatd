@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=0.5,1,0.25
+F=asinh(1/atan((a+-1.375)/(b+-1.375)))
+C=fp_asinh(1/fp_atan((a+-1.375)/(b+-1.375)))

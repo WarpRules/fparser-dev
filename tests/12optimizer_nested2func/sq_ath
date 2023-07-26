@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=sqrt(atanh((a+1.5)))
+C=fp_sqrt(fp_atanh(a+1.5))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=atan(atanh((a+0.875)))
+C=fp_atan(fp_atanh(a+0.875))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=csc(asin((a+0)))
+C=1/fp_sin(fp_asin(a+0))

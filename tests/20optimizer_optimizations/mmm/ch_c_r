@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=cosh(-a)-cos(-a)
-C=fp_cosh(-a)-fp_cos(-a)
-#X=fp_sub(fp_cosh(fp_mul(a,[-1,0])),fp_cos(fp_mul(a,[-1,0])))

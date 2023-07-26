@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0,1,0.5
-F=cbrt(asin(x))
-C=fp_cbrt(fp_asin(x))

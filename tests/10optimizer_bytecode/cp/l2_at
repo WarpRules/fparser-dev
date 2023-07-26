@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+1.2+1i*y;log2(atan(a))
-C=fp_log2(fp_atan(Value_t(x.real(), y.real())+1.2))

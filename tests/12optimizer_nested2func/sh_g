@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=sinh(arg((a+1.3125)))
+C=fp_sinh(fp_arg(a+1.3125))

@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=acos(a*1i)
+C=fp_acos(a*i)
+#X=fp_acos(fp_mul(a,[0,1]))

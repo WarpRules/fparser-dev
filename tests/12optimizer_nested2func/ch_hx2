@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cosh(hypot((a+1.5625),2))
+C=fp_cosh(fp_hypot(a+1.5625,2))

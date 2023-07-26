@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-0.5,0.5,0.25
+F=atanh(atan((a+2.75)/(b+2.75)))
+C=fp_atanh(fp_atan((a+2.75)/(b+2.75)))

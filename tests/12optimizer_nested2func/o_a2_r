@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=cot(atan2((a+1.25),(b+1.25)))
+C=1/fp_tan(fp_atan2(a+1.25,b+1.25))

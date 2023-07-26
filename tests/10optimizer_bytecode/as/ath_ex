@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-1.9,-0.7,0.125
-F=atanh(exp(x))
-C=fp_atanh(fp_exp(x))

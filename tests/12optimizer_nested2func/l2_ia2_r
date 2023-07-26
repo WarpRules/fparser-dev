@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=log2(1/atan2((a+2.375),(b+2.375)))
+C=fp_log2(1/fp_atan2(a+2.375,b+2.375))

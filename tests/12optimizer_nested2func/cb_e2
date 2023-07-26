@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cbrt(exp2((a+-0.5625)))
+C=fp_cbrt(fp_exp2(a+-0.5625))

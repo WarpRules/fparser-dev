@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=asin(tan((a+0)))
+C=fp_asin(fp_tan(a+0))

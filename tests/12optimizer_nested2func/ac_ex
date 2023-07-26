@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=acos(exp((a+-3.125)))
+C=fp_acos(fp_exp(a+-3.125))

@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-0.75,0.75,0.25
-F=log10(acos(x))
-C=fp_log10(fp_acos(x))

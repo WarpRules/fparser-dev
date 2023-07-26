@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=cos(log2((a+1.625)))
+C=fp_cos(fp_log2(a+1.625))

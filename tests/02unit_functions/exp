@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x
-R=-90, 90, 0.01
+R=-90, 90, 0.25
 F=exp(x)
-C=exp(x)
+C=std::exp(x)

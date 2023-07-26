@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-1.2,-0.1,0.125
-F=asin(1/atan2(x,y))
-C=fp_asin(1/fp_atan2(x,y))

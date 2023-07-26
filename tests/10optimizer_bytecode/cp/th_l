@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.32+1i*y;tanh(log(a))
-C=fp_tanh(fp_log(Value_t(x.real(), y.real())+1.32))

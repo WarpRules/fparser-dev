@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=acos(atan(-abs((a+0))))
+C=fp_acos(fp_atan(-fp_abs(a+0)))

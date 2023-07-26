@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-0.75,0.75,0.25
-F=asin(a)-atanh(-a)
-C=fp_asin(a)-fp_atanh(-a)
-#X=fp_sub(fp_asin(a),fp_atanh(fp_mul(a,[-1,0])))

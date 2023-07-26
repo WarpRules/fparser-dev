@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=sec(sqrt((a+1.9375)))
+C=1/fp_cos(fp_sqrt(a+1.9375))

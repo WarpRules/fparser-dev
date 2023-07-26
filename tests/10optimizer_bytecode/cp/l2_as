@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+0+1i*y;log2(asin(a))
-C=fp_log2(fp_asin(Value_t(x.real(), y.real())+0))

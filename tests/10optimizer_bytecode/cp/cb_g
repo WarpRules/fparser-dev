@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=0.5,2,0.5
-F=a:=x+0+1i*y;cbrt(arg(a))
-C=fp_cbrt(fp_arg(Value_t(x.real(), y.real())+0))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-0.25,0.25,0.05
+F=atanh(atan2((a+2.125),(b+2.125)))
+C=fp_atanh(fp_atan2(a+2.125,b+2.125))

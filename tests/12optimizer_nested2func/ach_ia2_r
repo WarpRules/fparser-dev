@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=0,1,0.5
+F=acosh(1/atan2((a+2),(b+2)))
+C=fp_acosh(1/fp_atan2(a+2,b+2))

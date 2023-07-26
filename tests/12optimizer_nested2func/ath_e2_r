@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=atanh(exp2((a+-1.375)))
+C=fp_atanh(fp_exp2(a+-1.375))

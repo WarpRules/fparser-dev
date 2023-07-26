@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+1i*y;cos(a*3i)
-C=fp_cos(Value_t(x.real(), y.real())*(i+i+i))
-#X=fp_cos(fp_mul(Value_t(x.real(), y.real()),[0,3]))

@@ -1,5 +1,5 @@
-T=d cd
+T=d f ld
 V=x
-R=1e-6, 4000, 0.1
+R=1e-6, 4000, 10
 F=log(x)
-C=log(x)
+C=std::log(x)

@@ -2,7 +2,7 @@
 # Introduced in commit 5a7845d5f5ba3f9d126ec4f0644d18e1ae13f4e8
 # Fixed in commit 7ff461f37a9ac51ae0b907f5250fc65d241b5e8d
 T=cf cd cld
-V=x,y
+V=a
 R=-2,2,0.1
-F=a:=x+1i*y;log(a*a)
-C=fp_log(Value_t(x.real(),y.real())*Value_t(x.real(),y.real()))
+F=log(a*a)
+C=fp_log(a*a)

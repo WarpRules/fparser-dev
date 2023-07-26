@@ -1,5 +1,5 @@
-T=d
+T=d f ld cf cd cld
 V=x
-R=-140, 140, 0.1
+R=-40, 40, 0.25
 F=cosh(x)
-C=cosh(x)
+C=std::cosh(x)

@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=5.375,9.5625,0.0625
-F=cosh(a)+acosh(a)
-C=fp_cosh(a)+fp_acosh(a)
-#X=fp_add(fp_cosh(a),fp_acosh(a))

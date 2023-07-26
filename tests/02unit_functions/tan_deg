@@ -1,6 +1,6 @@
 DEG=true
-T=d
+T=d f ld
 V=x
 R=-89, 89, 0.25
 F=tan(x)
-C=tan(d2r(x))
+C=std::tan(d2r(x))

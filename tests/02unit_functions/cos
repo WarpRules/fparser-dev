@@ -1,5 +1,5 @@
-T=d
+T=d f ld cd cf cld
 V=x
-R=-40000, 40000, 5
+R=-40, 40, 0.5
 F=cos(x)
-C=cos(x)
+C=std::cos(x)

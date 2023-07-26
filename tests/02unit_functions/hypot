@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x,y
 R=-4, 4, 0.05
 F=hypot(x,y)
-C=sqrt(x*x + y*y)
+C=std::sqrt(x*x + y*y)

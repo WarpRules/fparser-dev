@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=sinh(cbrt((a+0)))
+C=fp_sinh(fp_cbrt(a+0))

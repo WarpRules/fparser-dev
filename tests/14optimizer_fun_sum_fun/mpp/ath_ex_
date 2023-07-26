@@ -1,0 +1,6 @@
+T=f d ld mf cf cd cld
+V=a
+R=-0.75,0.75,0.25
+F=atanh(a)-exp(a)
+C=fp_atanh(a)-fp_exp(a)
+#X=fp_sub(fp_atanh(a),fp_exp(a))

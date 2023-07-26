@@ -1,6 +1,6 @@
 DEG=true
-T=d
+T=d f ld
 V=x
-R=-40000, 40000, 5
+R=-40000, 40000, 50
 F=sin(x)
-C=sin(d2r(x))
+C=std::sin(d2r(x))

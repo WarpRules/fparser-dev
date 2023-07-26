@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+0.12+1i*y;sinh(csc(a))
-C=fp_sinh(1/fp_sin(Value_t(x.real(), y.real())+0.12))

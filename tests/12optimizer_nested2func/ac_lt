@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=acos(log10((a+1.3125)))
+C=fp_acos(fp_log10(a+1.3125))

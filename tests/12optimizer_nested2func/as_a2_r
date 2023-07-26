@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-0.5,0.5,0.25
+F=asin(atan2((a+2.8125),(b+2.8125)))
+C=fp_asin(fp_atan2(a+2.8125,b+2.8125))

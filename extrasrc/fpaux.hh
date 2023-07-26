@@ -767,7 +767,8 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_pow(const std::complex<T>& x, const std::complex<T>& y)
     {
-        // return std::pow(x,y);
+        //if(FP_ProbablyHasFastLibcComplex<T>::value)
+        //    return std::pow(x,y);
 
         // With complex numbers, pow(x,y) can be solved with
         // the general formula: exp(y*log(x)). It handles
@@ -963,6 +964,15 @@ namespace FUNCTIONPARSERTYPES
             ? (x <= y)
             : (x <= y + Epsilon<Value_t>::value); }
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline bool fp_less(const std::complex<T>& x, const std::complex<T>& y)
+    { return (x.real() < y.real() - Epsilon<T>::value); }
+
+    template<typename T>
+    inline bool fp_lessOrEq(const std::complex<T>& x, const std::complex<T>& y)
+    { return (x.real() <= y.real() + Epsilon<T>::value); }
+#endif
 
     template<typename Value_t>
     inline bool fp_greater(const Value_t& x, const Value_t& y)

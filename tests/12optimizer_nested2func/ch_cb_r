@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=cosh(cbrt((a+2.875)))
+C=fp_cosh(fp_cbrt(a+2.875))

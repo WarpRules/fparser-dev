@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=asin(a)-acosh(a)
+C=fp_asin(a)-fp_acosh(a)
+#X=fp_sub(fp_asin(a),fp_acosh(a))

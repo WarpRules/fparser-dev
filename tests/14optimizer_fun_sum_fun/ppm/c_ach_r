@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-4.75,-1.25,0.0625
+F=cos(a)+acosh(-a)
+C=fp_cos(a)+fp_acosh(-a)
+#X=fp_add(fp_cos(a),fp_acosh(fp_mul(a,[-1,0])))

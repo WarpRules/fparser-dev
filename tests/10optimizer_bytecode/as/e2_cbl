@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-2,2,0.5
-F=exp2(cbrt(x<y))
-C=fp_exp2(fp_cbrt(fp_less(x,y)))

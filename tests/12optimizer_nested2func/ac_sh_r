@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=acos(sinh((a+0)))
+C=fp_acos(fp_sinh(a+0))

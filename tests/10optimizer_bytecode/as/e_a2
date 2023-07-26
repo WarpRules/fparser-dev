@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-3,3,2
-F=sec(atan2(x,y))
-C=1/fp_cos(fp_atan2(x,y))

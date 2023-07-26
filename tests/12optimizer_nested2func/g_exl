@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-2,2,0.5
+F=arg(exp((a+0)!=(b+0)))
+C=fp_arg(fp_exp(fp_nequal(a+0,b+0)))

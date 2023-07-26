@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0,2,0.5
-F=atan(sqrt(x))
-C=fp_atan(fp_sqrt(x))

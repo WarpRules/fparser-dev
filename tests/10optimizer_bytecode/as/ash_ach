@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=1,2.9,0.125
-F=asinh(acosh(x))
-C=fp_asinh(fp_acosh(x))

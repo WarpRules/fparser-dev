@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=1,2.5,0.125
-F=sqrt(log(x))
-C=fp_sqrt(fp_log(x))

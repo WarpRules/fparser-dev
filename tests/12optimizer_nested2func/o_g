@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=cot(arg((a+0)))
+C=1/fp_tan(fp_arg(a+0))

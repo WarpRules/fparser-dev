@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-0.75,0.75,0.25
+F=cot(pow((a+1.75),(b+1.75)))
+C=1/fp_tan(fp_pow(a+1.75,b+1.75))

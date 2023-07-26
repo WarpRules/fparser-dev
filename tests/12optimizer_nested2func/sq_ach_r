@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.5,0.5,0.25
+F=sqrt(acosh((a+2.9375)))
+C=fp_sqrt(fp_acosh(a+2.9375))

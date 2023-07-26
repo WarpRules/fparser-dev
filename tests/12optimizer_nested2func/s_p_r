@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-1,1,0.5
+F=sin(pow((a+2.1875),(b+2.1875)))
+C=fp_sin(fp_pow(a+2.1875,b+2.1875))

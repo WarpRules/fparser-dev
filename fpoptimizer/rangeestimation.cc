@@ -945,6 +945,11 @@ namespace FPoptimizer_CodeTree
             case cCeil:
             case cTrunc:
             case cInt:
+                if(IsComplexType<Value_t>::value)
+                {
+                    // It's integer only if the tree is real
+                    break;
+                }
                 return IsAlways;
             case cAbs:
                 // Result is integer if parameter is integer

@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x
 R=0, 100000, 1000
 F=sqrt(x)
-C=sqrt(x)
+C=std::sqrt(x)

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-2,2,0.5
+F=log10(polar((a+-1.3125),(b+-1.3125)))
+C=fp_log10(fp_polar(a+-1.3125,b+-1.3125))

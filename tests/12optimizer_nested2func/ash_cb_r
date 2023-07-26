@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=asinh(cbrt((a+2.9375)))
+C=fp_asinh(fp_cbrt(a+2.9375))

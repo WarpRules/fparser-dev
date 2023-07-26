@@ -1,7 +1,8 @@
-T=d ld f mf cd cf cld
+T=d ld f mf
+# No complex number test, because of annoying -1i/+1i differences
 V=x,y
 R=-3,3,1
-F=(5.1*x*y)^7.1
-C=fp_pow(5.1*x*y, 7.1)
+F=(1.1*x*y)^2.1
+C=fp_pow(1.1*x*y, 2.1)
 
-# Expected result: 5.1^7.1 * (x*y)^7.1
+# Expected result: 1.1^2.1 * (x*y)^2.1

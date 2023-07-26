@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+0.36+1i*y;cosh(asinh(a))
-C=fp_cosh(fp_asinh(Value_t(x.real(), y.real())+0.36))

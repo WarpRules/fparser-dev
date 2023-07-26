@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=log10(tanh((a+1.5625)))
+C=fp_log10(fp_tanh(a+1.5625))

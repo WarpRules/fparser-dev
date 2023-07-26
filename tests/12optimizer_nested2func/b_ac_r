@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=abs(acos((a+0)))
+C=fp_abs(fp_acos(a+0))

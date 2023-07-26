@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+1i*y;-acosh(a)-tan(-a)
-C=-fp_acosh(Value_t(x.real(), y.real()))-fp_tan(-Value_t(x.real(), y.real()))
-#X=fp_sub(fp_mul(fp_acosh(Value_t(x.real(), y.real())),[-1,0]),fp_tan(fp_mul(Value_t(x.real(), y.real()),[-1,0])))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=abs(acosh((a+1.75)))
+C=fp_abs(fp_acosh(a+1.75))

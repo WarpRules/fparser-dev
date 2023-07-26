@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=csc(1/atan((a+0.75)/(b+0.75)))
+C=1/fp_sin(1/fp_atan((a+0.75)/(b+0.75)))

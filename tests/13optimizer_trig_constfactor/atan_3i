@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=atan(a*3i)
+C=fp_atan(a*(i+i+i))
+#X=fp_atan(fp_mul(a,[0,3]))

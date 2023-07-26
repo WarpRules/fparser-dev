@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=tanh(cbrt((a+1.5625)))
+C=fp_tanh(fp_cbrt(a+1.5625))

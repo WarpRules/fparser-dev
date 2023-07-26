@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=abs(1/hypot(1,(a+0.5625)))
+C=fp_abs(1/fp_hypot(1,a+0.5625))

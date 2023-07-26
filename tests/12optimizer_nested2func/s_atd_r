@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=sin(atan((a+-2.25)/(b+-2.25)))
+C=fp_sin(fp_atan((a+-2.25)/(b+-2.25)))

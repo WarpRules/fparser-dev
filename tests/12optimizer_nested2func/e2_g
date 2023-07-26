@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,2
+F=exp2(arg((a+2.375)))
+C=fp_exp2(fp_arg(a+2.375))

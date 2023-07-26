@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=atanh(hypot((a+0),1))
+C=fp_atanh(fp_hypot(a+0,1))

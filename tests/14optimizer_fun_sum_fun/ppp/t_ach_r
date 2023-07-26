@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=5.8125,10.125,0.0625
+F=tan(a)+acosh(a)
+C=fp_tan(a)+fp_acosh(a)
+#X=fp_add(fp_tan(a),fp_acosh(a))

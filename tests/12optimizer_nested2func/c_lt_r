@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=cos(log10((a+2.875)))
+C=fp_cos(fp_log10(a+2.875))

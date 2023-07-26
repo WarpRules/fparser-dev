@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,2
-F=a:=x+0.8+1i*y;acos(atan(a))
-C=fp_acos(fp_atan(Value_t(x.real(), y.real())+0.8))

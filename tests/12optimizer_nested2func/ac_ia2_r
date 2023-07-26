@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-1,1,0.5
+F=acos(1/atan2((a+-1.3125),(b+-1.3125)))
+C=fp_acos(1/fp_atan2(a+-1.3125,b+-1.3125))

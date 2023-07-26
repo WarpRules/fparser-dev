@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=-2,2,0.5
-F=b:=z+-0.04+1i*w;a:=x+-0.04+1i*y;acosh(polar(a,b))
-C=fp_acosh(fp_polar(Value_t(x.real(), y.real())+-0.04, Value_t(z.real(), w.real())+-0.04))

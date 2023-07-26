@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=cbrt(atanh((a+0.5)))
+C=fp_cbrt(fp_atanh(a+0.5))

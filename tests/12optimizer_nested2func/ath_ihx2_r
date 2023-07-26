@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=atanh(1/hypot((a+0),2))
+C=fp_atanh(1/fp_hypot(a+0,2))

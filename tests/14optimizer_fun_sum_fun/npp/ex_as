@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=-exp(a)-asin(a)
+C=-fp_exp(a)-fp_asin(a)
+#X=fp_sub(fp_mul(fp_exp(a),[-1,0]),fp_asin(a))

@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=tan(-a)+cosh(-a)
+C=fp_tan(-a)+fp_cosh(-a)
+#X=fp_add(fp_tan(fp_mul(a,[-1,0])),fp_cosh(fp_mul(a,[-1,0])))

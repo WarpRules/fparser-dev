@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=0.5,2,0.5
+F=acosh(arg((a+-2.4375)))
+C=fp_acosh(fp_arg(a+-2.4375))

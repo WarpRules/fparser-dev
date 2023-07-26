@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=log(a)-acos(-a)
+C=fp_log(a)-fp_acos(-a)
+#X=fp_sub(fp_log(a),fp_acos(fp_mul(a,[-1,0])))

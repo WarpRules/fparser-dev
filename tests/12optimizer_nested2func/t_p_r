@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-1,1,0.5
+F=tan(pow((a+1.375),(b+1.375)))
+C=fp_tan(fp_pow(a+1.375,b+1.375))

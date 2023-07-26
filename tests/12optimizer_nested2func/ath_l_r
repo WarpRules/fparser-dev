@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=atanh(log((a+1.5625)))
+C=fp_atanh(fp_log(a+1.5625))

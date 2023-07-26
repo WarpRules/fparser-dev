@@ -8,6 +8,13 @@ namespace FPoptimizer_CodeTree
     void range<Value_t>::set_abs()
     {
         using namespace FUNCTIONPARSERTYPES;
+        if(IsComplexType<Value_t>::value)
+        {
+            // On complex types, we know absolutely nothing
+            min.known = false;
+            max.known = false;
+            return;
+        }
         bool has_negative = !min.known || min.val < Value_t();
         bool has_positive = !max.known || max.val > Value_t();
         bool crosses_axis = has_negative && has_positive;

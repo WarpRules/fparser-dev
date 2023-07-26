@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=cot(sqrt((a+1.75)))
+C=1/fp_tan(fp_sqrt(a+1.75))

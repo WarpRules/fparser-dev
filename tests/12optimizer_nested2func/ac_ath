@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=acos(atanh((a+-1.625)))
+C=fp_acos(fp_atanh(a+-1.625))

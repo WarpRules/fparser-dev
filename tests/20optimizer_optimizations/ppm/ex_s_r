@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=exp(a)+sin(-a)
-C=fp_exp(a)+fp_sin(-a)
-#X=fp_add(fp_exp(a),fp_sin(fp_mul(a,[-1,0])))

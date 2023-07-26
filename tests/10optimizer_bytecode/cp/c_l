@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.76+1i*y;cos(log(a))
-C=fp_cos(fp_log(Value_t(x.real(), y.real())+1.76))

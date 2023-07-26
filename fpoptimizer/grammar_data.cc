@@ -891,27 +891,27 @@ namespace FPoptimizer_Grammar
         /* 40:	(cIf [x 0 1])
          *	->	(cNot [x])
          */		 {ProduceNewTree, 0, 1,/*678        */678       , {3,/*0,44,52    */54571008  , cIf         ,PositionalParams,0}},
-        /* 41:	(cIf [(cLess [x y])@D12 y@D8 x@D4])
-         *	->	(cMax [x y])
-         */		 {ProduceNewTree, 0, 1,/*600        */600       , {3,/*666,11,1   */1060506   , cIf         ,PositionalParams,0}},
-        /* 42:	(cIf [(cGreater [x y])@D12 y@D8 x@D4])
-         *	->	(cMin [x y])
-         */		 {ProduceNewTree, 0, 1,/*604        */604       , {3,/*672,11,1   */1060512   , cIf         ,PositionalParams,0}},
-        /* 43:	(cIf [(cLess [x y])@D12 x@D4 y@D8])
-         *	->	(cMin [x y])
-         */		 {ProduceNewTree, 0, 1,/*604        */604       , {3,/*666,1,11   */11536026  , cIf         ,PositionalParams,0}},
-        /* 44:	(cIf [(cGreater [x y])@D12 x@D4 y@D8])
-         *	->	(cMax [x y])
-         */		 {ProduceNewTree, 0, 1,/*600        */600       , {3,/*672,1,11   */11536032  , cIf         ,PositionalParams,0}},
-        /* 45:	(cIf [(cLessOrEq [x y]) z a])
+        /* 41:	(cIf [(cLessOrEq [x y]) z a])
          *	:	(cLess [y x]) a z
          */		 {ReplaceParams , 0, 3,/*669,38,34  */35691165  , {3,/*670,34,38  */39881374  , cIf         ,PositionalParams,0}},
-        /* 46:	(cIf [(cGreaterOrEq [x y]) z a])
+        /* 42:	(cIf [(cGreaterOrEq [x y]) z a])
          *	:	(cGreater [y x]) a z
          */		 {ReplaceParams , 0, 3,/*675,38,34  */35691171  , {3,/*676,34,38  */39881380  , cIf         ,PositionalParams,0}},
-        /* 47:	@R (cIf [x@P y z])
+        /* 43:	@R (cIf [x@P y z])
          *	->	(cAbsIf [x y z])
          */		 {ProduceNewTree, 16, 1,/*713        */713       , {3,/*2,9,34     */35660802  , cIf         ,PositionalParams,0}},
+        /* 44:	@R (cIf [(cLess [x y])@D12 y@D8 x@D4])
+         *	->	(cMax [x y])
+         */		 {ProduceNewTree, 16, 1,/*600        */600       , {3,/*666,11,1   */1060506   , cIf         ,PositionalParams,0}},
+        /* 45:	@R (cIf [(cGreater [x y])@D12 y@D8 x@D4])
+         *	->	(cMin [x y])
+         */		 {ProduceNewTree, 16, 1,/*604        */604       , {3,/*672,11,1   */1060512   , cIf         ,PositionalParams,0}},
+        /* 46:	@R (cIf [(cLess [x y])@D12 x@D4 y@D8])
+         *	->	(cMin [x y])
+         */		 {ProduceNewTree, 16, 1,/*604        */604       , {3,/*666,1,11   */11536026  , cIf         ,PositionalParams,0}},
+        /* 47:	@R (cIf [(cGreater [x y])@D12 x@D4 y@D8])
+         *	->	(cMax [x y])
+         */		 {ProduceNewTree, 16, 1,/*600        */600       , {3,/*672,1,11   */11536032  , cIf         ,PositionalParams,0}},
         /* 48:	@R (cIf [(cLess [x 0])@D4 (cCeil [x])@D4 (cFloor [x])@D4])
          *	->	(cTrunc [x])
          */		 {ProduceNewTree, 16, 1,/*655        */655       , {3,/*667,531,560*/587746971 , cIf         ,PositionalParams,0}},
@@ -1716,7 +1716,7 @@ namespace FPoptimizer_Grammar
         grammar_optimize_abslogical_type grammar_optimize_abslogical =
         {
             9,
-            { 47,242,278,288,292,297,304,310,311
+            { 43,242,278,288,292,297,304,310,311
     }   };  }
     struct grammar_optimize_ignore_if_sideeffects_type
     {
@@ -1729,7 +1729,7 @@ namespace FPoptimizer_Grammar
         {
             59,
             { 0,33,34,35,36,37,38,39,40,41,
-              42,43,44,45,46,48,49,56,57,58,
+              42,44,45,46,47,48,49,56,57,58,
               59,113,114,165,166,210,211,213,214,215,
               216,217,218,219,228,229,230,250,254,262,
               266,274,286,287,289,290,293,294,295,296,
@@ -1745,7 +1745,7 @@ namespace FPoptimizer_Grammar
         grammar_optimize_nonshortcut_logical_evaluation_type grammar_optimize_nonshortcut_logical_evaluation =
         {
             56,
-            { 0,38,40,41,42,43,44,45,46,48,
+            { 0,38,40,41,42,44,45,46,47,48,
               49,56,57,58,59,113,114,165,166,210,
               211,213,214,215,216,217,218,219,228,229,
               230,250,254,262,266,274,286,287,289,290,
@@ -1780,7 +1780,7 @@ namespace FPoptimizer_Grammar
             { 0,1,2,3,4,5,6,7,8,9,
               10,12,13,14,15,16,17,18,19,20,
               21,22,23,27,28,32,38,40,41,42,
-              43,44,45,46,48,49,52,53,56,57,
+              44,45,46,47,48,49,52,53,56,57,
               58,59,60,62,63,65,66,67,68,69,
               70,71,75,76,77,78,79,80,81,84,
               85,86,87,88,89,90,91,92,93,94,
@@ -1805,8 +1805,8 @@ namespace FPoptimizer_Grammar
         grammar_optimize_round2_type grammar_optimize_round2 =
         {
             106,
-            { 0,24,25,26,29,38,40,41,42,43,
-              44,45,46,48,49,54,55,56,57,58,
+            { 0,24,25,26,29,38,40,41,42,44,
+              45,46,47,48,49,54,55,56,57,58,
               59,60,62,63,65,66,67,68,69,70,
               71,80,81,97,98,99,108,113,114,121,
               122,123,125,126,127,128,145,146,147,148,
@@ -1863,7 +1863,7 @@ namespace FPoptimizer_Grammar
         grammar_optimize_shortcut_logical_evaluation_type grammar_optimize_shortcut_logical_evaluation =
         {
             53,
-            { 0,38,40,41,42,43,44,45,46,48,
+            { 0,38,40,41,42,44,45,46,47,48,
               49,56,57,58,59,113,114,165,166,210,
               211,213,214,215,216,217,218,219,228,229,
               230,250,254,262,266,274,286,287,289,290,

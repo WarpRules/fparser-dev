@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=tan(a)-exp(a)
+C=fp_tan(a)-fp_exp(a)
+#X=fp_sub(fp_tan(a),fp_exp(a))

@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-2,2,0.5
-F=cos(atan(-abs(x)))
-C=fp_cos(fp_atan(-fp_abs(x)))

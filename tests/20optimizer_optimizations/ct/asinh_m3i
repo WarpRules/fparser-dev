@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+1i*y;asinh(a*-3i)
-C=fp_asinh(Value_t(x.real(), y.real())*fp_conj(i+i+i))
-#X=fp_asinh(fp_mul(Value_t(x.real(), y.real()),[0,-3]))

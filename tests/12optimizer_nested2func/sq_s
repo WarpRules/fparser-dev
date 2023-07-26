@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=sqrt(sin((a+1.375)))
+C=fp_sqrt(fp_sin(a+1.375))

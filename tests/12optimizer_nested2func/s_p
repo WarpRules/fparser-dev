@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-0.75,0.75,0.25
+F=sin(pow((a+1.75),(b+1.75)))
+C=fp_sin(fp_pow(a+1.75,b+1.75))

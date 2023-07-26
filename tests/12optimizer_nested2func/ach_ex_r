@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,2
+F=acosh(exp((a+2.625)))
+C=fp_acosh(fp_exp(a+2.625))

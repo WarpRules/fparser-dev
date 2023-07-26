@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=abs(cbrt((a+3)))
+C=fp_abs(fp_cbrt(a+3))

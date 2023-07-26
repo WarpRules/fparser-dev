@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.5,0.5,0.25
+F=asin(cot((a+1.4375)))
+C=fp_asin(1/fp_tan(a+1.4375))

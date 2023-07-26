@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0.7,1.7,0.125
-F=atanh(log2(x))
-C=fp_atanh(fp_log2(x))

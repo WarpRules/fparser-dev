@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0.25,0.75,0.125
-F=cot(acos(x))
-C=1/fp_tan(fp_acos(x))

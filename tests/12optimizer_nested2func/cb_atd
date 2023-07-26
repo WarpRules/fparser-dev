@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=0.5,1,0.25
+F=cbrt(atan((a+-0.0625)/(b+-0.0625)))
+C=fp_cbrt(fp_atan((a+-0.0625)/(b+-0.0625)))

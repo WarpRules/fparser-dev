@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.2,0.2,0.05
+F=sqrt(asin((a+0.4375)))
+C=fp_sqrt(fp_asin(a+0.4375))

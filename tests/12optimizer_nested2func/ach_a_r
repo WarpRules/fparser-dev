@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=acosh(csc((a+1.375)))
+C=fp_acosh(1/fp_sin(a+1.375))

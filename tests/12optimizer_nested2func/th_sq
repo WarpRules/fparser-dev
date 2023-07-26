@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=tanh(sqrt((a+1.4375)))
+C=fp_tanh(fp_sqrt(a+1.4375))

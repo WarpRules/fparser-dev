@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=cos(1/hypot((a+1.8125),(b+1.8125)))
+C=fp_cos(1/fp_hypot(a+1.8125,b+1.8125))

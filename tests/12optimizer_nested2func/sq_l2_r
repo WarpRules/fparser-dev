@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=sqrt(log2((a+3.0625)))
+C=fp_sqrt(fp_log2(a+3.0625))

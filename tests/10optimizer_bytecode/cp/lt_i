@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=0.5,2,0.5
-F=a:=x+0+1i*y;log10(imag(a))
-C=fp_log10(fp_imag(Value_t(x.real(), y.real())+0))

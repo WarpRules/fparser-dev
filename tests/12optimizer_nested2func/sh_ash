@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=sinh(asinh((a+0.3125)))
+C=fp_sinh(fp_asinh(a+0.3125))

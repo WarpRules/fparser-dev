@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=sinh(acosh((a+2.0625)))
+C=fp_sinh(fp_acosh(a+2.0625))

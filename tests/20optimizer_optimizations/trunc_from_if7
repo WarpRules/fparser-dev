@@ -1,0 +1,5 @@
+T=d ld f mf cd cf cld
+V=x
+R=-3,3,0.25
+F=if(x<=0, floor(x),ceil(x))
+C=fp_ceil(x)*fp_not(fp_lessOrEq(x,0)) + fp_floor(x)*fp_lessOrEq(x,0)

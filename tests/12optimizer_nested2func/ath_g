@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-0.25,0.25,0.05
+F=atanh(arg((a+1.625)))
+C=fp_atanh(fp_arg(a+1.625))

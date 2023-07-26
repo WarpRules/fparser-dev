@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=log(a)+cosh(-a)
+C=fp_log(a)+fp_cosh(-a)
+#X=fp_add(fp_log(a),fp_cosh(fp_mul(a,[-1,0])))

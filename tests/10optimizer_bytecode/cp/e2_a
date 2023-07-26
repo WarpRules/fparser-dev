@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+-1.76+1i*y;exp2(csc(a))
-C=fp_exp2(1/fp_sin(Value_t(x.real(), y.real())+-1.76))

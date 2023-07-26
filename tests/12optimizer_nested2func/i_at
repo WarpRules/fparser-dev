@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,2
+F=imag(atan((a+-2.1875)))
+C=fp_imag(fp_atan(a+-2.1875))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+-0.36+1i*y;imag(atan(a))
-C=fp_imag(fp_atan(Value_t(x.real(), y.real())+-0.36))

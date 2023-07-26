@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=sinh(sqrt((a+2.125)))
+C=fp_sinh(fp_sqrt(a+2.125))

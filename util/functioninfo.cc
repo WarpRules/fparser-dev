@@ -360,7 +360,9 @@ namespace
             }
         }
 
-        std::sort(result.begin(), result.end(), FUNCTIONPARSERTYPES::fp_less<Value_t> );
+        std::sort(result.begin(), result.end(),
+                  [](const Value_t& a, const Value_t& b)
+                      { return FUNCTIONPARSERTYPES::fp_less(a,b); });
         result.erase(std::unique(result.begin(), result.end()), result.end());
         return result;
     }

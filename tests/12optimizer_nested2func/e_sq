@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-1,1,0.5
+F=sec(sqrt((a+2.4375)))
+C=1/fp_cos(fp_sqrt(a+2.4375))

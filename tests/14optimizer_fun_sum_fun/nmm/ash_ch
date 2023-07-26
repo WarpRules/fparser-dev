@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=-asinh(-a)-cosh(-a)
+C=-fp_asinh(-a)-fp_cosh(-a)
+#X=fp_sub(fp_mul(fp_asinh(fp_mul(a,[-1,0])),[-1,0]),fp_cosh(fp_mul(a,[-1,0])))

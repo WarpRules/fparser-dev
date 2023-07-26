@@ -1,5 +1,6 @@
-T=cd cf
+T=cd cf cld
 V=x
-R=-4000-0.5i, 4000+0.5i, 0.3+3.75e-05i
+R=-30.1,30,0.5
+# ^ Avoid zero, it's still invalid with complex numbers
 F=log(x)
 C=std::log(x)

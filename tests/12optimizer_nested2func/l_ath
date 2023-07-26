@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=log(atanh((a+0.4375)))
+C=fp_log(fp_atanh(a+0.4375))

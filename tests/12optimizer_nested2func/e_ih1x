@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=sec(1/hypot(1,(a+-0.875)))
+C=1/fp_cos(1/fp_hypot(1,a+-0.875))

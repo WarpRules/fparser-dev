@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=0.25,3.25,0.5
-F=cot(log10(x))
-C=1/fp_tan(fp_log10(x))

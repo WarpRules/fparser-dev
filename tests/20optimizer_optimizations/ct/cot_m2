@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+1i*y;cot(a*-2)
-C=1/fp_tan(Value_t(x.real(), y.real())*-2)
-#X=1/fp_tan(fp_mul(Value_t(x.real(), y.real()),[-2,0]))

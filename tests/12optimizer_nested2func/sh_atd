@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=0.5,1,0.25
+F=sinh(atan((a+1.0625)/(b+1.0625)))
+C=fp_sinh(fp_atan((a+1.0625)/(b+1.0625)))

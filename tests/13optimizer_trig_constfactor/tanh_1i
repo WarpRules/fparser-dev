@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=tanh(a*1i)
+C=fp_tanh(a*i)
+#X=fp_tanh(fp_mul(a,[0,1]))

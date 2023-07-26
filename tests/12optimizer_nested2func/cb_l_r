@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.75,0.75,0.25
+F=cbrt(log((a+3.0625)))
+C=fp_cbrt(fp_log(a+3.0625))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=asin(tan((a+0)))
+C=fp_asin(fp_tan(a+0))

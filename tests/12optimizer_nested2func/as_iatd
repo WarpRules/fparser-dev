@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=0.5,1,0.25
+F=asin(1/atan((a+1.5)/(b+1.5)))
+C=fp_asin(1/fp_atan((a+1.5)/(b+1.5)))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=imag(log((a+2.875)))
+C=fp_imag(fp_log(a+2.875))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.25,0.25,0.05
+F=csc(sqrt((a+0.75)))
+C=1/fp_sin(fp_sqrt(a+0.75))

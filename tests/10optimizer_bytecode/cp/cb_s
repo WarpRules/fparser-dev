@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-1,1,0.5
-F=a:=x+1.36+1i*y;cbrt(sin(a))
-C=fp_cbrt(fp_sin(Value_t(x.real(), y.real())+1.36))

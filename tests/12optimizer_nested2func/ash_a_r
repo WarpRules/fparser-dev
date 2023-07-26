@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=asinh(csc((a+0.6875)))
+C=fp_asinh(1/fp_sin(a+0.6875))

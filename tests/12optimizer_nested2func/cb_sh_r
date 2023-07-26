@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,2
+F=cbrt(sinh((a+2.1875)))
+C=fp_cbrt(fp_sinh(a+2.1875))

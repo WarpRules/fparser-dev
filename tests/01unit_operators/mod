@@ -1,5 +1,5 @@
-T=d
+T=d f ld
 V=x,z
-R=-11, 11, 0.3
+R=-11.1, 11, 0.25
 F=x%z
-C=fmod(x,z)
+C=std::fmod(x,z)

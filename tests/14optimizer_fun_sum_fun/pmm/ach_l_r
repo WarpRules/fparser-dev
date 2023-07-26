@@ -1,0 +1,6 @@
+T=f d ld mf
+V=a
+R=-4.4375,-1.0625,0.0625
+F=acosh(-a)+log(-a)
+C=fp_acosh(-a)+fp_log(-a)
+#X=fp_add(fp_acosh(fp_mul(a,[-1,0])),fp_log(fp_mul(a,[-1,0])))

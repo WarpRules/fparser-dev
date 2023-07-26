@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=cot(log((a+2.625)))
+C=1/fp_tan(fp_log(a+2.625))

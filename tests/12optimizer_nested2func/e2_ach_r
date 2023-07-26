@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.25,0.25,0.05
+F=exp2(acosh((a+1.75)))
+C=fp_exp2(fp_acosh(a+1.75))

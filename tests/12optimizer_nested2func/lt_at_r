@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=log10(atan((a+1.875)))
+C=fp_log10(fp_atan(a+1.875))

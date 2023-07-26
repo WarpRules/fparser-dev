@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=real(hypot(1,(a+1.1875)))
+C=fp_real(fp_hypot(1,a+1.1875))

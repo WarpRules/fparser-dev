@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-2,2,0.5
-F=cosh(atan(x))
-C=fp_cosh(fp_atan(x))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a,b
+R=-2,2,0.5
+F=cos(asin((a+0)!=(b+0)))
+C=fp_cos(fp_asin(fp_nequal(a+0,b+0)))

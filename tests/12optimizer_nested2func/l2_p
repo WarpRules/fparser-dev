@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-1,1,0.5
+F=log2(pow((a+2.25),(b+2.25)))
+C=fp_log2(fp_pow(a+2.25,b+2.25))

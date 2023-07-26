@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=tan(a)-acosh(-a)
+C=fp_tan(a)-fp_acosh(-a)
+#X=fp_sub(fp_tan(a),fp_acosh(fp_mul(a,[-1,0])))

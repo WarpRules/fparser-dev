@@ -1,0 +1,6 @@
+T=f d ld mf cf cd cld
+V=a
+R=-2,2,0.5
+F=sin(a)-sinh(a)
+C=fp_sin(a)-fp_sinh(a)
+#X=fp_sub(fp_sin(a),fp_sinh(a))

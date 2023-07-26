@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+-1.84+1i*y;sec(atanh(a))
-C=1/fp_cos(fp_atanh(Value_t(x.real(), y.real())+-1.84))

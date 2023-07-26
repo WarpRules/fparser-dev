@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=0,2,0.5
-F=b:=z+0.76+1i*w;a:=x+0.76+1i*y;acosh(atan2(a,b))
-C=fp_acosh(fp_atan2(Value_t(x.real(), y.real())+0.76, Value_t(z.real(), w.real())+0.76))

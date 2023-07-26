@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x,y
-R=-2,2,0.5
-F=sinh(asinh(x<y))
-C=fp_sinh(fp_asinh(fp_less(x,y)))

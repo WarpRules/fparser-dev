@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.2,0.2,0.05
+F=cosh(acosh((a+2.9375)))
+C=fp_cosh(fp_acosh(a+2.9375))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=asinh(1/hypot((a+-2.875),1))
+C=fp_asinh(1/fp_hypot(a+-2.875,1))

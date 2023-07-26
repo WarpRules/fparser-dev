@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,2
+F=exp(arg((a+3)))
+C=fp_exp(fp_arg(a+3))

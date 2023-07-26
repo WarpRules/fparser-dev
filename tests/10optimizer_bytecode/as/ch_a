@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-3,3,2
-F=cosh(csc(x))
-C=fp_cosh(1/fp_sin(x))

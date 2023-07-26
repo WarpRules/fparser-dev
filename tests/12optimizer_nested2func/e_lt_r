@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=sec(log10((a+3.0625)))
+C=1/fp_cos(fp_log10(a+3.0625))

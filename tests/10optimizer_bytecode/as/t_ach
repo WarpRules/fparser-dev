@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=1,10.6,0.125
-F=tan(acosh(x))
-C=fp_tan(fp_acosh(x))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-3,3,2
-F=a:=x+-1.16+1i*y;exp2(atanh(a))
-C=fp_exp2(fp_atanh(Value_t(x.real(), y.real())+-1.16))

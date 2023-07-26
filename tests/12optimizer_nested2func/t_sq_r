@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=tan(sqrt((a+2.25)))
+C=fp_tan(fp_sqrt(a+2.25))

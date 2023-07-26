@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=csc(atanh((a+-2.125)))
+C=1/fp_sin(fp_atanh(a+-2.125))

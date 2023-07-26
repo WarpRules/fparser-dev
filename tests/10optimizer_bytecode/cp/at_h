@@ -1,5 +1,0 @@
-T=cf cd cld
-V=w,x,y,z
-R=-0.75,0.75,0.25
-F=b:=z+-1.84+1i*w;a:=x+-1.84+1i*y;atan(hypot(a,b))
-C=fp_atan(fp_hypot(Value_t(x.real(), y.real())+-1.84, Value_t(z.real(), w.real())+-1.84))

@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-1,1,0.5
+F=sinh(log2((a+3.125)))
+C=fp_sinh(fp_log2(a+3.125))

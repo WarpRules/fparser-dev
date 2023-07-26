@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=cos(-a)-tanh(-a)
+C=fp_cos(-a)-fp_tanh(-a)
+#X=fp_sub(fp_cos(fp_mul(a,[-1,0])),fp_tanh(fp_mul(a,[-1,0])))

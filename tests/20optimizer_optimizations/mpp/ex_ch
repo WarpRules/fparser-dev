@@ -1,6 +1,0 @@
-T=cf cd cld
-V=x,y
-R=-2,2,0.5
-F=a:=x+1i*y;exp(a)-cosh(a)
-C=fp_exp(Value_t(x.real(), y.real()))-fp_cosh(Value_t(x.real(), y.real()))
-#X=fp_sub(fp_exp(Value_t(x.real(), y.real())),fp_cosh(Value_t(x.real(), y.real())))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a,b
+R=-1,1,0.5
+F=acosh(pow((a+3.0625),(b+3.0625)))
+C=fp_acosh(fp_pow(a+3.0625,b+3.0625))

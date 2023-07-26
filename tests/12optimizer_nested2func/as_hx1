@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=asin(hypot((a+-2.25),1))
+C=fp_asin(fp_hypot(a+-2.25,1))

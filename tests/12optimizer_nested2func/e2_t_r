@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-2,2,0.5
+F=exp2(tan((a+0)))
+C=fp_exp2(fp_tan(a+0))

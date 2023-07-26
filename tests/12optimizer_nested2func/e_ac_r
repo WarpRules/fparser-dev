@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.5,0.5,0.25
+F=sec(acos((a+-0.1875)))
+C=1/fp_cos(fp_acos(a+-0.1875))

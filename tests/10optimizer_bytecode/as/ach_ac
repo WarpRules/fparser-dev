@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=-1,0.2,0.125
-F=acosh(acos(x))
-C=fp_acosh(fp_acos(x))

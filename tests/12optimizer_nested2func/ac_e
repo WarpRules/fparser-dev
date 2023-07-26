@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=acos(sec((a+-1.125)))
+C=fp_acos(1/fp_cos(a+-1.125))

@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,0.5
+F=log10(hypot((a+-1.125),2))
+C=fp_log10(fp_hypot(a+-1.125,2))

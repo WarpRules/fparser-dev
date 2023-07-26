@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=acos(-a)+cos(-a)
+C=fp_acos(-a)+fp_cos(-a)
+#X=fp_add(fp_acos(fp_mul(a,[-1,0])),fp_cos(fp_mul(a,[-1,0])))

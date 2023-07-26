@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-2,2,2
+F=cot(atan(abs((a+2.5))))
+C=1/fp_tan(fp_atan(fp_abs(a+2.5)))

@@ -1,5 +1,0 @@
-T=d ld f mf cf cd cld
-V=x
-R=1,3.9,0.125
-F=acosh(cbrt(x))
-C=fp_acosh(fp_cbrt(x))

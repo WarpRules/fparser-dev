@@ -1,0 +1,6 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=atanh(a*2)
+C=fp_atanh(a*2)
+#X=fp_atanh(fp_mul(a,[2,0]))
