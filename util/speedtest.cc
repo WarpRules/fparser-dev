@@ -32,10 +32,10 @@ static const char* const kVersionNumber = "1.1.0";
 #define FUNC0P FUNC0
 
 #define FUNC1 ((N(3)*pow(x,N(4))-N(7)*pow(x,N(3))+N(2)*x*x-N(4)*x+N(10)) - (N(4)*pow(y,N(3))+N(2)*y*y-N(10)*y+N(2)))*N(10)
-#define FUNC1P ((N(3)*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
+#define FUNC1P ((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
 
 #define FUNC2 ((N(3)*(x+(N(5)*(y+N(2))-N(7)*x)*N(3)-y)+N(4)*N(5)+N(3))-N(7)+(N(8)*x+N(5)*y+(N(7)-x))*N(4))-N(10)*N(3)+N(4)
-#define FUNC2P FUNC2
+#define FUNC2P ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
 
 #define FUNC3 pow((tan(x)*cos(x)), N(2)) - P(1.2)*log(atan2(sqrt((-pow(y,N(2)))+N(1)), y) * pow(P(4.91), y)) + pow(cos(-x), N(2))
 #define FUNC3P (tan(x)*cos(x))^2 - 1.2*log(atan2(sqrt((-y^2)+1), y) * 4.91^y) + cos(-x)^2
