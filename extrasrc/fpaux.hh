@@ -318,10 +318,10 @@ namespace FUNCTIONPARSERTYPES
     };
 
     template<> inline double Epsilon<double>::defaultValue() { return 1E-12; }
-    #ifdef FP_SUPPORT_FLOAT_TYPE
+    #if defined(FP_SUPPORT_FLOAT_TYPE) || defined(FP_SUPPORT_COMPLEX_FLOAT_TYPE)
     template<> inline float Epsilon<float>::defaultValue() { return 1E-5F; }
     #endif
-    #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE) || defined(FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE)
     template<> inline long double Epsilon<long double>::defaultValue() { return 1E-14L; }
     #endif
 
