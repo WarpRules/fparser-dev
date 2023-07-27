@@ -36,8 +36,7 @@ endif
 OPTIMIZATION=-O3 -ffast-math -march=native
 #       -ffunction-sections -fdata-sections
 
-# For GCC (not clang):
-OPTIMIZATION += -fexpensive-optimizations -fvpt -fomit-frame-pointer -ffunction-cse
+#OPTIMIZATION += -fmerge-all-constants
 
 #OPTIMIZATION+=-g
 #OPTIMIZATION=-g -O0 -fno-inline
@@ -77,7 +76,7 @@ FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 #LD +=  -fprofile -fprofile-values -fprofile-generate -ftest-coverage 
 
 CPPFLAGS=$(FEATURE_FLAGS)
-CXXFLAGS=-Wall -W -Wno-long-long -pedantic -ansi $(OPTIMIZATION)
+CXXFLAGS=-Wall -Wextra -Wno-psabi -pedantic $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
 
 #CXXFLAGS += -Weffc++
@@ -152,6 +151,7 @@ tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc tests/testbed_autoge
 TESTBED_GENSRC += tests/testbed_evaluate$(N).cc
 TESTBED_GENSRC += tests/testbed_testlist$(N).cc
 TESTBED_GENSRC += tests/testbed_const$(N).hh
+TESTBED_GENSRC += tests/testbed_cpptest.hh
 
 endef
 $(eval $(foreach N,1 2 3 4 5 6 7 8 9,\
@@ -218,12 +218,14 @@ extrasrc/fp_opcode_add.inc: \
 tests/make_tests: tests/make_tests.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-$(TESTBED_GENSRC) &: tests/make_tests $(wildcard tests/*/*)
+$(TESTBED_GENSRC) &:: tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
 	tests/make_tests \
 		-o "$@" \
 		--ignore "*~" \
 		--ignore "*.php" \
 		--ignore "*/.*" \
+		--ignore "*.cc" \
+		--ignore "*.hh" \
 		tests/*/* tests/*/*/*
 
 FPOPTIMIZER_CC_FILES=\

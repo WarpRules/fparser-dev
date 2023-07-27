@@ -103,3 +103,54 @@ namespace
     { return testbedEpsilon<long double>(); }
 #endif
 }
+
+#undef FP_TEST_WANT_FLOAT_TYPE
+#ifdef FP_SUPPORT_FLOAT_TYPE
+ #define FP_TEST_WANT_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_DOUBLE_TYPE
+#ifndef FP_DISABLE_DOUBLE_TYPE
+ #define FP_TEST_WANT_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_LONG_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_MPFR_FLOAT_TYPE
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+ #define FP_TEST_WANT_MPFR_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_GMP_INT_TYPE
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+ #define FP_TEST_WANT_GMP_INT_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_INT_TYPE
+#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
+ #define FP_TEST_WANT_LONG_INT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+ #define FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#endif
+
+[[noreturn]] inline void unreachable_helper()
+{
+  #if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
+    std::unreachable();
+  #else
+   #ifdef __GNUC__ /* GCC, Clang, ICC */
+    __builtin_unreachable();
+   #elif defined(_MSC_VER) /* MSVC */
+    __assume(false);
+   #endif
+  #endif
+}
+

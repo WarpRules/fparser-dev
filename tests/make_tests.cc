@@ -13,45 +13,6 @@
 #include <algorithm>
 #include <unordered_map>
 
-static const char ifdef_preamble[] = R"(
-#undef FP_TEST_WANT_FLOAT_TYPE
-#ifdef FP_SUPPORT_FLOAT_TYPE
- #define FP_TEST_WANT_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_DOUBLE_TYPE
-#ifndef FP_DISABLE_DOUBLE_TYPE
- #define FP_TEST_WANT_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_LONG_DOUBLE_TYPE
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
- #define FP_TEST_WANT_LONG_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_MPFR_FLOAT_TYPE
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
- #define FP_TEST_WANT_MPFR_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_GMP_INT_TYPE
-#ifdef FP_SUPPORT_GMP_INT_TYPE
- #define FP_TEST_WANT_GMP_INT_TYPE
-#endif
-#undef FP_TEST_WANT_LONG_INT_TYPE
-#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
- #define FP_TEST_WANT_LONG_INT_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_FLOAT_TYPE
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
- #define FP_TEST_WANT_COMPLEX_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
- #define FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
- #define FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
-#endif
-)";
-
 namespace
 {
 #define DEFINE_TYPES(o) \
@@ -162,7 +123,7 @@ namespace
         }
     }
 
-    void ListTests(std::ostream& out)
+    [[nodiscard]] std::string ListTests(std::ostream& out)
     {
         std::map<std::string, std::size_t> test_index;
         std::ostringstream test_list;
@@ -272,10 +233,6 @@ namespace
             tests_per_defs[defines] += listbuffer.str();
             tests_per_defs_count[defines] += list_test_count;
         }
-        out << R"(
-#define FP_LIST_ALL_TESTS(o) \
-)" << test_list.str() << R"(/* end of list */
-)";
         std::ostringstream defs;
         std::map<unsigned, std::string> per_mask;
         for(const auto& section: tests_per_defs)
@@ -314,6 +271,8 @@ namespace
                 << m.second;
 
         out << defs.str();
+
+        return test_list.str();
     }
 
     namespace
@@ -695,7 +654,7 @@ int main(int argc, char* argv[])
 #include "extrasrc/fpaux.hh"
 #include "tests/testbed_defs.hh"
 
-)" << ifdef_preamble;
+)";
 
     std::vector<std::string> files, ignore_patterns;
 
@@ -747,19 +706,6 @@ int main(int argc, char* argv[])
 
     std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
     //const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
-
-    std::ofstream("tests/testbed_alltests.cc") << R"(
-#include "testbed_autogen.hh"
-const TestType AllTests[] =
-{
-#define q(c) (c=='T'||c=='Y')
-#define o(opt,testname, min,max,step, funcstring, paramstr, nparams) \
-    { #testname,#funcstring,paramstr, #min,#max,#step, nparams, q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
-FP_LIST_ALL_TESTS(o)
-#undef o
-#undef q
-};
-)";
 
     unsigned user_param_count{};
 
@@ -835,9 +781,26 @@ FP_LIST_ALL_TESTS(o)
     return Value_t{};
 )";
 
-    ListTests(out);
+    std::string test_list = ListTests(out);
 
-    gen_funcs(out, 0, [](unsigned, const std::string&, const FunctionInfo& info)
+    std::ofstream("tests/testbed_alltests.cc") << R"(
+#include "testbed_autogen.hh"
+#define FP_LIST_ALL_TESTS(o) \
+)" << test_list << R"(/* end of list */
+
+const TestType AllTests[] =
+{
+#define q(c) (c=='T'||c=='Y')
+#define o(opt,testname, min,max,step, funcstring, paramstr, nparams) \
+    { #testname,#funcstring,paramstr, #min,#max,#step, nparams, q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
+FP_LIST_ALL_TESTS(o)
+#undef o
+#undef q
+};
+)";
+
+    {std::ofstream out2("tests/testbed_cpptest.hh");
+    gen_funcs(out2, 0, [](unsigned, const std::string&, const FunctionInfo& info)
     {
         return info.code;
     }, [](std::ostream& out, const std::string& caseno, const std::string& code)
@@ -848,15 +811,15 @@ FP_LIST_ALL_TESTS(o)
             << "(_,__)_ " << code << " __\n";
     });
 
-    out << R"(
+    out2 << R"(
 #define FP_LIST_ALL_CONST()";
     for(unsigned m=1; m<=highest_mask; m*=2)
     {
-        if(m>1) out << ',';
-        out << 'o' << m;
+        if(m>1) out2 << ',';
+        out2 << 'o' << m;
     }
-    out << ") \\\n";
-    {std::unordered_map<std::string, std::pair<unsigned,std::string>> all_const;
+    out2 << ") \\\n";
+    std::unordered_map<std::string, std::pair<unsigned,std::string>> all_const;
     for(const auto& f: all_functions)
         for(auto& c: f.second.used_constants)
             all_const.emplace(c.first, std::make_pair(0,c.second)).first->second.first |= f.second.type_limit_mask;
@@ -864,10 +827,9 @@ FP_LIST_ALL_TESTS(o)
     {
         for(unsigned m=1; m<=highest_mask; m*=2)
             if(c.second.first & m)
-                out << " o" << m << "(" << std::setw(8) << c.first << ',' << std::setw(7) << c.second.second << ")";
-        out << " \\\n";
-    }}
-
+                out2 << " o" << m << "(" << std::setw(8) << c.first << ',' << std::setw(7) << c.second.second << ")";
+        out2 << " \\\n";
+    }
     for(unsigned m=1; m<=highest_mask; m*=2)
     {
         bool complex = false;
@@ -877,30 +839,17 @@ FP_LIST_ALL_TESTS(o)
         DEFINE_TYPES(o)
         #undef o
         if(complex)
-            out << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
+            out2 << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
     }
-out << R"(/* end of list */
+    out2 << "/* end of list */\n";}
 
-[[noreturn]] inline void unreachable_helper()
-{
-  #if defined(__cpp_lib_unreachable) && __cpp_lib_unreachable >= 202202L
-    std::unreachable();
-  #else
-   #ifdef __GNUC__ /* GCC, Clang, ICC */
-    __builtin_unreachable();
-   #elif defined(_MSC_VER) /* MSVC */
-    __assume(false);
-   #endif
-  #endif
-}
-
+    out << R"(
 template<typename Value_t>
 struct fp_type_mask : public std::integral_constant<unsigned, 0)";
 for(unsigned m=1; m<=highest_mask; m<<=1)
     out << "\n    | (" << m << "*int(" << GetTestCodeForMask(m, "Value_t") << "))";
 out << R"(> {};
 
-#define _(name,lit)
 template<typename Value_t, unsigned n = fp_type_mask<Value_t>::value>
 struct const_container {};
 )";
@@ -962,6 +911,7 @@ inline Value_t evaluate_test(unsigned which, const Value_t* vars)
 
         out2 << "#include \"testbed_autogen.hh\"\n";
         out2 << "#include \"testbed_comp.hh\"\n";
+        out2 << "#include \"testbed_cpptest.hh\"\n";
 
         for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
             out2 << "#include \"testbed_const" << n << ".hh\"\n";
@@ -1018,6 +968,7 @@ default: break;
 
         out2 << "#include \"testbed_autogen.hh\"\n";
         out2 << "#include \"testbed_comp.hh\"\n";
+        out2 << "#include \"testbed_cpptest.hh\"\n";
         out2 << "#include \"testbed_const" << n << ".hh\"\n";
         out2 << lesser_opt_begin << R"(
 #if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
