@@ -56,6 +56,9 @@ namespace FUNCTIONPARSERTYPES
 //==========================================================================
 // Constants
 //==========================================================================
+    // The precision of these constants must be enough
+    // for any used datatype other than MpfrFloat.
+
     template<typename Value_t>
     inline Value_t fp_const_pi() // CONSTANT_PI
     {
@@ -120,16 +123,14 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline MpfrFloat fp_const_log2<MpfrFloat>() { return MpfrFloat::const_log2(); }
 
-    /*
     template<>
-    inline MpfrFloat fp_const_log10<MpfrFloat>() { return fp_log(MpfrFloat(10)); }
+    inline MpfrFloat fp_const_log10<MpfrFloat>() { return MpfrFloat::log(MpfrFloat(10)); }
 
     template<>
     inline MpfrFloat fp_const_log2inv<MpfrFloat>() { return MpfrFloat(1) / MpfrFloat::const_log2(); }
 
     template<>
-    inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return fp_log10(MpfrFloat::const_e()); }
-    */
+    inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return MpfrFloat::log10(MpfrFloat::const_e()); }
 #endif
 
 
