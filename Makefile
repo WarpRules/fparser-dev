@@ -135,6 +135,28 @@ FP_MODULES = 	fparser.o \
 		fpoptimizer/hash.o \
 		$(ADDITIONAL_MODULES)
 
+TESTBED_MODULES = \
+	testbed.o \
+	tests/testbed_alltests.o \
+	tests/testbed_evaluate0.o
+TESTBED_GENSRC = \
+	tests/testbed_autogen.hh \
+	tests/testbed_alltests.cc \
+	tests/testbed_evaluate0.cc
+
+define testbed_n
+TESTBED_MODULES += tests/testbed_evaluate$(N).o
+TESTBED_MODULES += tests/testbed_testlist$(N).o
+tests/testbed_evaluate$(N).o: tests/testbed_evaluate$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+TESTBED_GENSRC += tests/testbed_evaluate$(N).cc
+TESTBED_GENSRC += tests/testbed_testlist$(N).cc
+TESTBED_GENSRC += tests/testbed_const$(N).hh
+
+endef
+$(eval $(foreach N,1 2 3 4 5 6 7 8 9,\
+$(call testbed_n)))
+
 RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	fparser.hh fparser_mpfr.hh fparser_gmpint.hh \
 	fpoptimizer.cc fpconfig.hh extrasrc/fptypes.hh extrasrc/fpaux.hh \
@@ -143,15 +165,16 @@ RELEASE_PACK_FILES = examples/example.cc examples/example2.cc fparser.cc \
 	extrasrc/fp_identifier_parser.inc \
 	docs/fparser.html docs/style.css docs/lgpl.txt docs/gpl.txt
 
-testbed: testbed.o $(FP_MODULES)
+testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS) -lpthread
 
 fpoptimizer.o: fpoptimizer.cc
 
-#testbed.o: testbed.cc
+testbed.o: testbed.cc tests/testbed_autogen.hh
 #	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(STD_OPTION)
 
-testbed_release: testbed.o fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
+
+testbed_release: $(TESTBED_MODULES) fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
 speedtest: util/speedtest.o $(FP_MODULES)
@@ -192,11 +215,10 @@ extrasrc/fp_opcode_add.inc: \
 		< util/bytecoderules.dat \
 		>> $@
 
-tests/make_tests: \
-		tests/make_tests.o
+tests/make_tests: tests/make_tests.o
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-testbed_tests.inc: tests/make_tests
+$(TESTBED_GENSRC) &: tests/make_tests $(wildcard tests/*/*)
 	tests/make_tests \
 		-o "$@" \
 		--ignore "*~" \
@@ -358,7 +380,7 @@ devel_pack:
 		fpconfig.hh extrasrc/fptypes.hh extrasrc/fpaux.hh \
 		extrasrc/fp_opcode_add.inc \
 		extrasrc/fp_identifier_parser.inc \
-		testbed_tests.inc \
+		tests/testbed_autogen.hh \
 		util/speedtest.cc testbed.cc \
 		tests/*.cc tests/*.txt tests/*/* \
 		util/*.cc util/*.hh util/*.dat util/*.txt util/*.y \
@@ -388,7 +410,8 @@ clean:
 		util/*.o \
 		*.o \
 		.dep \
-		util/tree_grammar_parser.output
+		util/tree_grammar_parser.output \
+		$(TESTBED_GENSRC)
 
 release_clean:
 	rm -f testbed_release speedtest_release \
@@ -396,9 +419,6 @@ release_clean:
 
 distclean: clean
 	rm -f	*~
-
-TESTBED_TEST_FILES = $(wildcard tests/*/*)
-testbed_tests.inc: $(TESTBED_TEST_FILES)
 
 .dep:
 	echo -n '' > .dep

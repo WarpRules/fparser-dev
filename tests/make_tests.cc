@@ -13,18 +13,57 @@
 #include <algorithm>
 #include <unordered_map>
 
+static const char ifdef_preamble[] = R"(
+#undef FP_TEST_WANT_FLOAT_TYPE
+#ifdef FP_SUPPORT_FLOAT_TYPE
+ #define FP_TEST_WANT_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_DOUBLE_TYPE
+#ifndef FP_DISABLE_DOUBLE_TYPE
+ #define FP_TEST_WANT_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_LONG_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_MPFR_FLOAT_TYPE
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+ #define FP_TEST_WANT_MPFR_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_GMP_INT_TYPE
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+ #define FP_TEST_WANT_GMP_INT_TYPE
+#endif
+#undef FP_TEST_WANT_LONG_INT_TYPE
+#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
+ #define FP_TEST_WANT_LONG_INT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+ #define FP_TEST_WANT_COMPLEX_FLOAT_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
+#endif
+#undef FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+ #define FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
+#endif
+)";
+
 namespace
 {
 #define DEFINE_TYPES(o) \
     o(d,   1, double,                     FP_TEST_WANT_DOUBLE_TYPE) \
-    o(f,   1, float,                      FP_TEST_WANT_FLOAT_TYPE) \
-    o(ld,  1, long double,                FP_TEST_WANT_LONG_DOUBLE_TYPE) \
-    o(li,  2, long,                       FP_TEST_WANT_LONG_INT_TYPE) \
-    o(gi,  2, GmpInt,                     FP_TEST_WANT_GMP_INT_TYPE) \
-    o(mf,  4, MpfrFloat,                  FP_TEST_WANT_MPFR_FLOAT_TYPE) \
-    o(cf,  8, std::complex<float>,        FP_TEST_WANT_COMPLEX_FLOAT_TYPE) \
-    o(cd,  8, std::complex<double>,       FP_TEST_WANT_COMPLEX_DOUBLE_TYPE) \
-    o(cld, 8, std::complex<long double>,  FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE) \
+    o(f,   2, float,                      FP_TEST_WANT_FLOAT_TYPE) \
+    o(ld,  4, long double,                FP_TEST_WANT_LONG_DOUBLE_TYPE) \
+    o(li,  8, long,                       FP_TEST_WANT_LONG_INT_TYPE) \
+    o(gi, 16, GmpInt,                     FP_TEST_WANT_GMP_INT_TYPE) \
+    o(mf, 32, MpfrFloat,                  FP_TEST_WANT_MPFR_FLOAT_TYPE) \
+    o(cld,64, std::complex<long double>,  FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE) \
+    o(cf,128, std::complex<float>,        FP_TEST_WANT_COMPLEX_FLOAT_TYPE) \
+    o(cd,256, std::complex<double>,       FP_TEST_WANT_COMPLEX_DOUBLE_TYPE) \
 
     constexpr unsigned highest_mask = (1+(0
         #define o(code,mask,typename,def) |mask
@@ -35,6 +74,13 @@ namespace
     [[nodiscard]] std::string GetDefinesForCpptype(const std::string& type)
     {
         #define o(code,mask,typename,def) if(type == #typename) return #def;
+        DEFINE_TYPES(o)
+        #undef o
+        return std::string();
+    }
+    [[nodiscard]] std::string GetCpptypeForDefines(const std::string& defs)
+    {
+        #define o(code,mask,typename,def) if(defs == #def) return #typename;
         DEFINE_TYPES(o)
         #undef o
         return std::string();
@@ -59,13 +105,21 @@ namespace
         result << "(false\n";
         #define o(code,msk,typename,def) \
             if(mask & msk) \
-                result << "#ifdef " << #def << "\n" \
-                          " || std::is_same<" << type << ", " << #typename << ">::value\n" \
+                result << "#ifdef " #def "\n" \
+                          " || std::is_same<" << type << ", " #typename ">::value\n" \
                           "#endif\n";
         DEFINE_TYPES(o)
         #undef o
         result << ')';
         return result.str();
+    }
+    [[nodiscard]] unsigned GetMaskForDefines(const std::string& defs)
+    {
+        #define o(code,mask,typename,def) \
+            if(defs == #def) return mask;
+        DEFINE_TYPES(o)
+        #undef o
+        return 0;
     }
 
     struct TestData
@@ -108,12 +162,13 @@ namespace
         }
     }
 
-    [[nodiscard]] std::string ListTests(std::ostream& out)
+    void ListTests(std::ostream& out)
     {
         std::map<std::string, std::size_t> test_index;
         std::ostringstream test_list;
         std::size_t        test_counter = 0;
 
+        std::map<std::string, unsigned>    tests_per_defs_count;
         std::map<std::string, std::string> tests_per_defs;
 
         for(auto& test: tests)
@@ -126,14 +181,11 @@ namespace
 
             std::string defines = GetDefinesForCpptype(type);
 
-            listbuffer << "\n";
-
             unsigned list_width_counter = 0;
+            unsigned list_test_count = 0;
+
             listbuffer <<
-                "template<>\n"
-                "struct RegressionTests<" << type << ">\n"
-                "{\n"
-                "    static constexpr const unsigned short Tests[]";
+                "const unsigned short RegressionTests<" << type << ">::Tests[]";
             if(n_tests == 0)
             {
                 listbuffer <<
@@ -211,29 +263,57 @@ namespace
                     else
                         listbuffer << std::setw(4) << i->second << ',';
                     ++list_width_counter;
+                    ++list_test_count;
                 }
                 listbuffer << "};\n";
             }
-            listbuffer << "};\n";
-            listbuffer << "constexpr const unsigned short RegressionTests<" << type << ">::Tests[];\n";
+            //listbuffer << "template const unsigned short RegressionTests<" << type << ">::Tests[];\n";
 
             tests_per_defs[defines] += listbuffer.str();
+            tests_per_defs_count[defines] += list_test_count;
         }
         out << R"(
 #define FP_LIST_ALL_TESTS(o) \
 )" << test_list.str() << R"(/* end of list */
 )";
         std::ostringstream defs;
+        std::map<unsigned, std::string> per_mask;
         for(const auto& section: tests_per_defs)
         {
             const std::string& define    = section.first;
+
             if(!define.empty())
                 defs << "\n#ifdef " << define << "\n";
-            defs << section.second;
+
+            unsigned n = tests_per_defs_count.find(define)->second;
+            defs <<
+                "template<>\n"
+                "struct RegressionTests<" << GetCpptypeForDefines(define) << ">\n"
+                "{\n"
+                "    static const unsigned short Tests[" << n << "];\n"
+                "};\n";
+
             if(!define.empty())
                 defs << "#endif /*" << define << " */\n";
+
+            unsigned maskpow2 = GetMaskForDefines(define);
+            unsigned mask=1;
+            while(maskpow2 && !(maskpow2&1)) { ++mask; maskpow2>>=1; }
+            std::ostringstream out2;
+            out2 << "#include \"testbed_autogen.hh\"\n";
+            if(!define.empty())
+                out2 << "\n#ifdef " << define << "\n";
+            out2 << section.second;
+            if(!define.empty())
+                out2 << "#endif /*" << define << " */\n";
+            per_mask[mask] += out2.str();
         }
-        return defs.str();
+
+        for(auto& m: per_mask)
+            std::ofstream("tests/testbed_testlist" + std::to_string(m.first) + ".cc")
+                << m.second;
+
+        out << defs.str();
     }
 
     namespace
@@ -607,8 +687,15 @@ int main(int argc, char* argv[])
 {
     const char* outputFileName = 0;
     std::ofstream outputFileStream;
+    std::ofstream outputFile_allTests("tests/testbed_alltests.cc");
 
     std::ostringstream out;
+    out << R"(
+#include <type_traits>
+#include "extrasrc/fpaux.hh"
+#include "tests/testbed_defs.hh"
+
+)" << ifdef_preamble;
 
     std::vector<std::string> files, ignore_patterns;
 
@@ -661,7 +748,20 @@ int main(int argc, char* argv[])
     std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
     //const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
 
-    unsigned           user_param_count{};
+    std::ofstream("tests/testbed_alltests.cc") << R"(
+#include "testbed_autogen.hh"
+const TestType AllTests[] =
+{
+#define q(c) (c=='T'||c=='Y')
+#define o(opt,testname, min,max,step, funcstring, paramstr, nparams) \
+    { #testname,#funcstring,paramstr, #min,#max,#step, nparams, q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
+FP_LIST_ALL_TESTS(o)
+#undef o
+#undef q
+};
+)";
+
+    unsigned user_param_count{};
 
     for(const auto& filename: files)
     {
@@ -681,6 +781,7 @@ int main(int argc, char* argv[])
             test_index.emplace(test.TestName, test_index.size());
 
     auto gen_funcs = [&](
+        std::ostream& out,
         unsigned m,
         std::string (*gen)(unsigned, const std::string&, const FunctionInfo&),
         void        (*makecase)(std::ostream&,
@@ -716,23 +817,27 @@ int main(int argc, char* argv[])
     };
 
     all_functions.emplace("defaultTypeTest",
-        FunctionInfo{GetLimitMaskForCode("d"), "OptimizerTests::evaluateFunction(vars)", {}});
+        FunctionInfo{
+            ~0u,
+            "OptimizerTests::evaluateFunction(vars)",
+            {}}
+    );
 
     static const char lesser_opt_begin[] = ""
-        "#pragma GCC push_options\n"
+    //    "#pragma GCC push_options\n"
         "#pragma GCC optimize   (\"O0\")\n"
     ;
     static const char lesser_opt_end[] = ""
-        "#pragma GCC pop_options\n"
+    //    "#pragma GCC pop_options\n"
     ;
     static const char unreachable[] = R"(
     unreachable_helper();
     return Value_t{};
 )";
 
-    std::string test_tables = ListTests(out);
+    ListTests(out);
 
-    gen_funcs(0, [](unsigned, const std::string&, const FunctionInfo& info)
+    gen_funcs(out, 0, [](unsigned, const std::string&, const FunctionInfo& info)
     {
         return info.code;
     }, [](std::ostream& out, const std::string& caseno, const std::string& code)
@@ -775,18 +880,6 @@ int main(int argc, char* argv[])
             out << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
     }
 out << R"(/* end of list */
-}/*break out from anonymous namespace*/
-
-const TestType AllTests[] =
-{
-#define q(c) (c=='T'||c=='Y')
-#define o(opt,testname, min,max,step, funcstring, paramstr, nparams) \
-    { #testname,#funcstring,paramstr, #min,#max,#step, nparams, q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
-FP_LIST_ALL_TESTS(o)
-#undef o
-#undef q
-};
-namespace {
 
 [[noreturn]] inline void unreachable_helper()
 {
@@ -810,33 +903,73 @@ out << R"(> {};
 #define _(name,lit)
 template<typename Value_t, unsigned n = fp_type_mask<Value_t>::value>
 struct const_container {};
-#define _(name,lit)
 )";
-for(unsigned m=1; m<=highest_mask; m<<=1)
+for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
 {
+    std::ofstream out2("tests/testbed_const" + std::to_string(n) + ".hh");
+
+    out2 << "#define _(name,lit)\n";
     if(m == GetLimitMaskForCode("mf"))
-        out << "#define o(name,lit) const MpfrFloat name{#lit, nullptr};\n";
+        out2 << "#define o(name,lit) const MpfrFloat name{#lit, nullptr};\n";
     else
-        out << "#define o(name,lit) const Value_t name = static_cast<Value_t>(lit##l);\n";
-    out << "#if(0";
-#define o(code,mask,typename,def) if(m == mask) out << "||defined(" << #def << ")";
+        out2 << "#define o(name,lit) const Value_t name = static_cast<Value_t>(lit##l);\n";
+    out2 << "#if(0";
+#define o(code,mask,typename,def) if(m == mask) out2 << "||defined(" #def ")";
     DEFINE_TYPES(o)
 #undef o
-    out << R"()
+    out2 << R"()
 template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIST_ALL_CONST(";
     for(unsigned n=1; n<=highest_mask; n<<=1)
     {
-        if(n>1) out << ',';
-        out << ((n==m) ? 'o' : '_');
+        if(n>1) out2 << ',';
+        out2 << ((n==m) ? 'o' : '_');
     }
-    out << ") };\n"
+    out2 << ") };\n"
           "#endif\n"
-          "#undef o\n\n";
+          "#undef o\n"
+          "#undef _\n\n";
 }
-    out << "#undef _\n" << lesser_opt_begin << R"(
+
+    out << R"(
+#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+
+template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
+Value_t evaluate_test(unsigned which, const Value_t* vars);
+
+#else // No "if constexpr"
+
+template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
+struct evaluator { };
+)";
+    for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
+        out << R"(
+template<typename Value_t> struct evaluator<Value_t,)" << m << R"(>
+    { static Value_t calc(unsigned which, const Value_t* vars); };
+)";
+    out << R"(
+
+template<typename Value_t>
+inline Value_t evaluate_test(unsigned which, const Value_t* vars)
+{
+    return evaluator<Value_t>::calc(which, vars);
+}
+#endif
+)";
+
+    if(true)
+    {
+        std::ofstream out2("tests/testbed_evaluate0.cc");
+
+        out2 << "#include \"testbed_autogen.hh\"\n";
+        out2 << "#include \"testbed_comp.hh\"\n";
+
+        for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
+            out2 << "#include \"testbed_const" << n << ".hh\"\n";
+
+        out2 << lesser_opt_begin << R"(
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
-static Value_t evaluate_test(unsigned which, const Value_t* vars)
+Value_t evaluate_test(unsigned which, const Value_t* vars)
 {
     static const_container<Value_t> c;
     [[maybe_unused]] Value_t uparam[)" << user_param_count << R"(];
@@ -845,50 +978,64 @@ static Value_t evaluate_test(unsigned which, const Value_t* vars)
     {
         #define M(n,m) T##n(case n:if constexpr(type_mask&m)return,;else break;)
 )";
-    gen_funcs(0, [](unsigned, const std::string&, const FunctionInfo& info)
-    {
-        return
-            "if constexpr(type_mask&" + std::to_string(info.type_limit_mask)+")" +
-            "return " + info.code + "; else break;";
-    }, [](std::ostream& out, const std::string& caseno, const std::string& code)
-    {
-        static unsigned counter = 0;
-        if(counter == 10) { out << '\n'; counter = 0; }
-        auto p  = code.find('&');
-        auto p2 = code.find(')');
-        std::ostringstream temp;
-        temp << "M(" << caseno  << ',' << code.substr(p+1,p2-p);
-        out << std::left << std::setw(10) << temp.str();
-        ++counter;
-    });
-    out << R"(
+        gen_funcs(out2, 0, [](unsigned, const std::string&, const FunctionInfo& info)
+        {
+            return
+                "if constexpr(type_mask&" + std::to_string(info.type_limit_mask)+")" +
+                "return " + info.code + "; else break;";
+        }, [](std::ostream& out, const std::string& caseno, const std::string& code)
+        {
+            static unsigned counter = 0;
+            if(counter == 10) { out << '\n'; counter = 0; }
+            auto p  = code.find('&');
+            auto p2 = code.find(')');
+            std::ostringstream temp;
+            temp << "M(" << caseno  << ',' << code.substr(p+1,p2-p);
+            out << std::left << std::setw(10) << temp.str();
+            ++counter;
+        });
+        out2 << R"(
         #undef M
 default: break;
     })" << unreachable << R"(
 }
-#else // "if constexpr" is not available
-template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
-struct evaluator { };
-
-#define M(n) T##n(case n:return,;)
 )";
-    for(unsigned m=1; m<=highest_mask; m<<=1)
-    {
-        out << "#if(0";
-#define o(code,mask,typename,def) if(m == mask) out << "||defined(" << #def << ")";
+/*
+#define o(code,mask,typename,def) \
+        out2 << "template " << typename << "evaluate_test<" << typename << "," << mask \
+             << ")::calc(unsigned,const Value_t*);\n";
         DEFINE_TYPES(o)
 #undef o
-        out << ")";
-        out << R"(
-template<typename Value_t> struct evaluator<Value_t,)" << m << R"(>
-{ static Value_t calc(unsigned which, const Value_t* vars)
+*/
+        out2 << R"(
+#endif
+)" << lesser_opt_end;
+    }//if true
+
+    for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
+    {
+        std::ofstream out2("tests/testbed_evaluate" + std::to_string(n) + ".cc");
+
+        out2 << "#include \"testbed_autogen.hh\"\n";
+        out2 << "#include \"testbed_comp.hh\"\n";
+        out2 << "#include \"testbed_const" << n << ".hh\"\n";
+        out2 << lesser_opt_begin << R"(
+#if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
+#define M(n) T##n(case n:return,;)
+#if(0)";
+#define o(code,mask,typename,def) if(m == mask) out2 << "||defined(" #def ")";
+        DEFINE_TYPES(o)
+#undef o
+        out2 << R"()
+template<typename Value_t>
+Value_t evaluator<Value_t,)" << m << R"(>::calc(unsigned which, const Value_t* vars)
 {
     static const_container<Value_t> c;
     [[maybe_unused]] Value_t uparam[)" << user_param_count << R"(];
     using namespace FUNCTIONPARSERTYPES;
     switch(which) {
 )";
-        gen_funcs(m, [](unsigned m, const std::string&, const FunctionInfo& info)
+        gen_funcs(out2, m, [](unsigned m, const std::string&, const FunctionInfo& info)
         {
             return (info.type_limit_mask & m) ? info.code : std::string{};
         }, [](std::ostream& out, const std::string& caseno, const std::string& /*code*/)
@@ -900,22 +1047,22 @@ template<typename Value_t> struct evaluator<Value_t,)" << m << R"(>
             out << std::left << std::setw(7) << temp.str();
             ++counter;
         });
-        out << R"(
+        out2 << R"(
 default: break;
-})" << unreachable << "} };\n";
-        out << "#endif\n";
-    }
-    out << R"(
+})" << unreachable << R"(}
 #undef M
-template<typename Value_t>
-static Value_t evaluate_test(unsigned which, const Value_t* vars)
-{
-    return evaluator<Value_t>::calc(which, vars);
-}
+)";
+#define o(code,mask,typename,def) \
+        if(m == mask) \
+            out2 << "template " #typename " evaluator<" #typename << "," << mask \
+                 << ">::calc(unsigned,const " #typename " *);\n";
+        DEFINE_TYPES(o)
+#undef o
+        out2 << R"(
 #endif
-)" << lesser_opt_end; // End of "if constexpr" implementation
-
-    out << test_tables;
+#endif
+)" << lesser_opt_end;
+    }
 
     //MakeStringBuffer(out);
     //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";

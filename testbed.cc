@@ -36,63 +36,6 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include <mutex>
 #include <random>
 
-#define CONST 1.5
-
-#define StringifyHlp(x) #x
-#define Stringify(x) StringifyHlp(x)
-
-#ifndef FP_DISABLE_DOUBLE_TYPE
-typedef FunctionParser DefaultParser;
-#elif defined(FP_SUPPORT_LONG_DOUBLE_TYPE)
-typedef FunctionParser_ld DefaultParser;
-#elif defined(FP_SUPPORT_FLOAT_TYPE)
-typedef FunctionParser_f DefaultParser;
-#elif defined(FP_SUPPORT_MPFR_FLOAT_TYPE)
-typedef FunctionParser_mpfr DefaultParser;
-#else
-#error "FunctionParserBase<double> was disabled and no viable floating point alternative has been defined"
-#endif
-
-#undef FP_TEST_WANT_FLOAT_TYPE
-#ifdef FP_SUPPORT_FLOAT_TYPE
- #define FP_TEST_WANT_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_DOUBLE_TYPE
-#ifndef FP_DISABLE_DOUBLE_TYPE
- #define FP_TEST_WANT_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_LONG_DOUBLE_TYPE
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
- #define FP_TEST_WANT_LONG_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_MPFR_FLOAT_TYPE
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
- #define FP_TEST_WANT_MPFR_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_GMP_INT_TYPE
-#ifdef FP_SUPPORT_GMP_INT_TYPE
- #define FP_TEST_WANT_GMP_INT_TYPE
-#endif
-#undef FP_TEST_WANT_LONG_INT_TYPE
-#if defined(FP_SUPPORT_LONG_INT_TYPE) || defined(FP_SUPPORT_GMP_INT_TYPE)
- #define FP_TEST_WANT_LONG_INT_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_FLOAT_TYPE
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
- #define FP_TEST_WANT_COMPLEX_FLOAT_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
- #define FP_TEST_WANT_COMPLEX_DOUBLE_TYPE
-#endif
-#undef FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
- #define FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE
-#endif
-
-typedef DefaultParser::value_type DefaultValue_t;
-
-
 namespace
 {
     /* Verbosity level:
@@ -102,7 +45,6 @@ namespace
        3 = Very verbose progress output, full error reporting.
     */
     int verbosityLevel = 1;
-
 
     const char* getEvalErrorName(int errorCode)
     {
@@ -117,27 +59,6 @@ namespace
     }
 
     std::vector<const char*> selectedRegressionTests;
-
-    // Auxiliary functions
-    // -------------------
-    template<typename Value_t>
-    inline Value_t r2d(Value_t x)
-    { return x * (Value_t(180) / FUNCTIONPARSERTYPES::fp_const_pi<Value_t>()); }
-
-    template<typename Value_t>
-    inline Value_t d2r(Value_t x)
-    { return x * (FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() / Value_t(180)); }
-
-    //inline double log10(double x) { return std::log(x) / std::log(10); }
-
-    template<typename Value_t>
-    Value_t userDefFuncSqr(const Value_t* p) { return p[0]*p[0]; }
-
-    template<typename Value_t>
-    Value_t userDefFuncSub(const Value_t* p) { return p[0]-p[1]; }
-
-    template<typename Value_t>
-    Value_t userDefFuncValue(const Value_t*) { return 10; }
 
 
     template<typename Value_t>
@@ -162,38 +83,6 @@ namespace
     };
 
 
-    template<typename Value_t>
-    inline Value_t testbedEpsilon() { return Value_t(1e-9); }
-
-    template<>
-    inline float testbedEpsilon<float>() { return 1e-3f; }
-
-    template<>
-    inline long double testbedEpsilon<long double>() { return 1e-10l; }
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    template<>
-    inline MpfrFloat testbedEpsilon<MpfrFloat>()
-    {
-        static const MpfrFloat eps =
-            FUNCTIONPARSERTYPES::fp_const_preciseDouble<MpfrFloat>(4.1e-19);
-        return eps;
-    }
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-    template<>
-    inline std::complex<float> testbedEpsilon<std::complex<float> >()
-    { return testbedEpsilon<float>(); }
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-    template<>
-    inline std::complex<long double> testbedEpsilon<std::complex<long double> >()
-    { return testbedEpsilon<long double>(); }
-#endif
-
-
 #ifndef _MSC_VER
     /*void setAnsiColor(unsigned color)
     {
@@ -216,6 +105,24 @@ namespace
     void setAnsiBold() {}
     void resetAnsiColor() {}
 #endif
+}
+
+
+//=========================================================================
+// Definition of tests
+//=========================================================================
+
+#include "tests/testbed_autogen.hh"
+
+using DefaultParser = FunctionParserBase<DefaultValue_t>;
+
+static TestType customtest{}; // For runCurrentTrigCombinationTest
+inline const TestType& getTest(unsigned index)
+{
+    if(index != customtest_index) [[likely]]
+        return AllTests[index];
+    else [[unlikely]]
+        return customtest;
 }
 
 
@@ -1441,7 +1348,6 @@ int testUserDefinedFunctions()
     return true;
 }
 
-
 //=========================================================================
 // Multithreaded test
 //=========================================================================
@@ -1563,42 +1469,6 @@ int testMultithreadedEvaluation()
 //=========================================================================
 // Test variable deduction
 //=========================================================================
-namespace OptimizerTests
-{
-    template<typename T>
-    inline T evaluateFunction(const T*) { return T{}; }
-
-    DefaultValue_t evaluateFunction(const DefaultValue_t* params);
-}
-struct TestType
-{
-    const char* testName;
-    const char* funcString;
-    const char* paramString;
-    const char* paramMin;
-    const char* paramMax;
-    const char* paramStep;
-    unsigned paramAmount;
-    bool useDegrees;
-    bool hasDouble;      // If there is an equivalent
-    //                      test for the "double" datatype?
-    bool hasLong;        // If there is an equivalent
-    //                      test for the "long" datatype?
-    bool ignoreImagSign; // Is this function prone to randomizing
-    //                      the imaginary component sign?
-};
-extern const TestType AllTests[];
-
-static TestType customtest{}; // For runCurrentTrigCombinationTest
-constexpr unsigned customtest_index = ~0u;
-inline const TestType& getTest(unsigned index)
-{
-    if(index != customtest_index) [[likely]]
-        return AllTests[index];
-    else [[unlikely]]
-        return customtest;
-}
-
 template<typename OutStream, typename Value_t>
 bool checkVarString(const char* idString,
                     FunctionParserBase<Value_t> & fp,
@@ -1712,50 +1582,6 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
 //=========================================================================
 // Main test function
 //=========================================================================
-namespace
-{
-    template<typename Value_t>
-    struct RegressionTests
-    {
-        static constexpr const unsigned short Tests[] = { (unsigned short)(~0u) };
-    };
-
-    /* These functions in fparser produce bool values. However,
-     * the testing functions require that they produce Value_t's. */
-    #define BoolProxy(Fname) \
-    template<typename Value_t> \
-    Value_t tb_##Fname(const Value_t& a, const Value_t& b) \
-        { return Value_t(FUNCTIONPARSERTYPES::Fname(a,b)); }
-
-    BoolProxy(fp_less)
-    BoolProxy(fp_lessOrEq)
-    BoolProxy(fp_greater)
-    BoolProxy(fp_greaterOrEq)
-    BoolProxy(fp_equal)
-    BoolProxy(fp_nequal)
-
-    template<typename Value_t>
-    Value_t fp_truth(const Value_t& a)
-    { return Value_t(FUNCTIONPARSERTYPES::fp_truth(a)); }
-
-// Maybe these should be used in the test files instead...
-#define fp_less tb_fp_less
-#define fp_lessOrEq tb_fp_lessOrEq
-#define fp_greater tb_fp_greater
-#define fp_greaterOrEq tb_fp_greaterOrEq
-#define fp_equal tb_fp_equal
-#define fp_nequal tb_fp_nequal
-
-#include "testbed_tests.inc"
-
-#undef fp_less
-#undef fp_lessOrEq
-#undef fp_greater
-#undef fp_greaterOrEq
-#undef fp_equal
-#undef fp_nequal
-}
-
 namespace
 {
     template<typename Value_t>

@@ -33,7 +33,7 @@
 #include <complex>
 #endif
 
-#ifdef ONCE_FPARSER_H_
+//#ifdef ONCE_FPARSER_H_
 namespace FUNCTIONPARSERTYPES
 {
     template<typename>
@@ -1324,5 +1324,5 @@ namespace FUNCTIONPARSERTYPES
     }
 } // namespace FUNCTIONPARSERTYPES
 
-#endif // ONCE_FPARSER_H_
+//#endif // ONCE_FPARSER_H_
 #endif // ONCE_FPARSER_AUX_H_
