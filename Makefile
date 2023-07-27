@@ -79,7 +79,6 @@ FEATURE_FLAGS += -DFUNCTIONPARSER_SUPPORT_DEBUGGING
 CPPFLAGS=$(FEATURE_FLAGS)
 CXXFLAGS=-Wall -W -Wno-long-long -pedantic -ansi $(OPTIMIZATION)
 #CXXFLAGS += -Wunreachable-code
-#CXXFLAGS += -std=c++0x
 
 #CXXFLAGS += -Weffc++
 
@@ -96,6 +95,7 @@ ADDITIONAL_MODULES = mpfr/GmpInt.o
 endif
 endif
 
+STD_OPTION := "$(shell /bin/sh -c './test_std_version.sh "$(CXX)"')"
 CXXFLAGS += -std=c++11
 
 #LD += -Xlinker --gc-sections
@@ -109,7 +109,7 @@ CXXFLAGS += -std=c++11
 #LD=icc  -L/opt/intel/Compiler/11.1/059/bin/intel64/lib -lirc -lstdc++ -openmp -lguide -lpthread
 #CXXFLAGS=-Wall $(OPTIMIZATION) $(FEATURE_FLAGS)
 
-CPPFLAGS += -I"`pwd`"
+CPPFLAGS += -I"$(shell pwd)"
 
 all: testbed speedtest functioninfo
 
@@ -147,6 +147,9 @@ testbed: testbed.o $(FP_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS) -lpthread
 
 fpoptimizer.o: fpoptimizer.cc
+
+#testbed.o: testbed.cc
+#	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(STD_OPTION)
 
 testbed_release: testbed.o fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)

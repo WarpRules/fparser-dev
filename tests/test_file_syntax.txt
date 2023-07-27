@@ -1,18 +1,6 @@
 Each file documents a distinct function to test, and the conditions for testing.
 
 -------------------------
-D=defined(CONSTANT1) && !defined(CONSTANT2)
--------------------------
-
-Optional.
-This line can be used to specify compile-time conditions which
-determine whether this rule should be tested at all.
-If your line is "D=xxx", the rule will be handled
-as if enclosed in "#if xxx" ... "#endif".
-
-This line, if used, must be indicated before the C line.
-
--------------------------
 T=d f ld mf li gi
 -------------------------
 

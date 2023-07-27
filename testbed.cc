@@ -34,6 +34,7 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include <future>
 #include <atomic>
 #include <mutex>
+#include <random>
 
 #define CONST 1.5
 
@@ -1103,7 +1104,9 @@ int TestIdentifiers()
         }
     }
 
-    std::random_shuffle(identifierNames.begin(), identifierNames.end());
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(identifierNames.begin(), identifierNames.end(), g);
 
     for(unsigned nameInd = 0; nameInd <= identifierNames.size(); ++nameInd)
     {
@@ -1562,37 +1565,51 @@ int testMultithreadedEvaluation()
 //=========================================================================
 namespace OptimizerTests
 {
+    template<typename T>
+    inline T evaluateFunction(const T*) { return T{}; }
+
     DefaultValue_t evaluateFunction(const DefaultValue_t* params);
 }
-enum class TestIndex_t;
-template<typename Value_t>
 struct TestType
 {
-    unsigned paramAmount;
+    const char* testName;
+    const char* funcString;
+    const char* paramString;
     const char* paramMin;
     const char* paramMax;
     const char* paramStep;
-    TestIndex_t testIndex;
+    unsigned paramAmount;
     bool useDegrees;
-    bool hasDouble;
-    bool hasLong;
-    bool ignoreImagSign;
-
-    const char* paramString;
-    const char* testName;
-    const char* funcString;
+    bool hasDouble;      // If there is an equivalent
+    //                      test for the "double" datatype?
+    bool hasLong;        // If there is an equivalent
+    //                      test for the "long" datatype?
+    bool ignoreImagSign; // Is this function prone to randomizing
+    //                      the imaginary component sign?
 };
+extern const TestType AllTests[];
 
+static TestType customtest{}; // For runCurrentTrigCombinationTest
+constexpr unsigned customtest_index = ~0u;
+inline const TestType& getTest(unsigned index)
+{
+    if(index != customtest_index) [[likely]]
+        return AllTests[index];
+    else [[unlikely]]
+        return customtest;
+}
 
 template<typename OutStream, typename Value_t>
 bool checkVarString(const char* idString,
                     FunctionParserBase<Value_t> & fp,
-                    const TestType<Value_t>& testData,
+                    unsigned testIndex,
                     int errorIndex,
                     int variablesAmount, const std::string& variablesString,
                     OutStream&    out,
                     std::ostream& briefErrorMessages)
 {
+    const TestType &testData = getTest(testIndex);
+
     const bool stringsMatch =
         (variablesString == testData.paramString);
     if(errorIndex >= 0 ||
@@ -1630,20 +1647,20 @@ bool checkVarString(const char* idString,
 
 template<typename OutStream, typename Value_t>
 bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
-                           const TestType<Value_t>& testData,
+                           unsigned testIndex,
                            OutStream&    out,
                            std::ostream& briefErrorMessages)
 {
     static thread_local std::string variablesString;
     static thread_local std::vector<std::string> variables;
+    const TestType &testData = getTest(testIndex);
 
     if(verbosityLevel >= 3)
         out << "(Variable deduction)" << std::flush;
 
     int variablesAmount = -1;
     int retval = fp.ParseAndDeduceVariables
-        (testData.funcString,
-         &variablesAmount, testData.useDegrees);
+        (testData.funcString, &variablesAmount, testData.useDegrees);
     if(retval >= 0 || variablesAmount != int(testData.paramAmount))
     {
         if(verbosityLevel >= 2)
@@ -1673,7 +1690,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
          variablesString,
          &variablesAmount,
          testData.useDegrees);
-    if(!checkVarString("Second", fp, testData, retval, variablesAmount,
+    if(!checkVarString("Second", fp, testIndex, retval, variablesAmount,
                        variablesString, out, briefErrorMessages))
         return false;
 
@@ -1687,7 +1704,7 @@ bool testVariableDeduction(FunctionParserBase<Value_t>& fp,
         if(i > 0) variablesString += ',';
         variablesString += variables[i];
     }
-    return checkVarString("Third", fp, testData, retval, variablesAmount,
+    return checkVarString("Third", fp, testIndex, retval, variablesAmount,
                           variablesString, out, briefErrorMessages);
 }
 
@@ -1700,17 +1717,8 @@ namespace
     template<typename Value_t>
     struct RegressionTests
     {
-        static constexpr const TestType<Value_t> Tests[] = { };
+        static constexpr const unsigned short Tests[] = { (unsigned short)(~0u) };
     };
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat makeMF(const char* str)
-    {
-        MpfrFloat f;
-        f.parseValue(str);
-        return f;
-    }
-#endif
 
     /* These functions in fparser produce bool values. However,
      * the testing functions require that they produce Value_t's. */
@@ -1751,14 +1759,15 @@ namespace
 namespace
 {
     template<typename Value_t>
-    void testAgainstDouble(Value_t*, Value_t, const TestType<Value_t>&,
-                           std::ostream&) {}
+    void testAgainstDouble(Value_t*, Value_t, unsigned, std::ostream&) {}
 
 #if defined(FP_TEST_WANT_MPFR_FLOAT_TYPE) && defined(FP_TEST_WANT_DOUBLE_TYPE)
     void testAgainstDouble(MpfrFloat* vars, MpfrFloat parserValue,
-                           const TestType<MpfrFloat>& testData,
+                           unsigned testIndex,
                            std::ostream& error)
     {
+        const TestType &testData = getTest(testIndex);
+
         if(!testData.hasDouble) return;
 
         double doubleVars[10];
@@ -1766,7 +1775,7 @@ namespace
 
         const double Eps = testbedEpsilon<double>();
 
-        const double v1 = evaluate_test<double>(testData.testIndex, doubleVars);
+        const double v1 = evaluate_test<double>(testIndex, doubleVars);
         const double v2 = parserValue.toDouble();
 
         /*
@@ -1808,20 +1817,20 @@ namespace
 #endif
 
     template<typename Value_t>
-    void testAgainstLongInt(Value_t*, Value_t, const TestType<Value_t>&,
-                            std::ostream&) {}
+    void testAgainstLongInt(Value_t*, Value_t, unsigned, std::ostream&) {}
 
 #if defined(FP_TEST_WANT_GMP_INT_TYPE) && defined(FP_TEST_WANT_LONG_INT_TYPE)
-    void testAgainstLongInt(GmpInt* vars, GmpInt parserValue,
-                            const TestType<GmpInt>& testData,
+    void testAgainstLongInt(GmpInt* vars, GmpInt parserValue, unsigned testIndex,
                             std::ostream& error)
     {
+        const TestType &testData = getTest(testIndex);
+
         if(!testData.hasLong) return;
 
         long longVars[10];
         for(unsigned i = 0; i < 10; ++i) longVars[i] = vars[i].toInt();
 
-        const long longValue = evaluate_test<long>(testData.testIndex, longVars);
+        const long longValue = evaluate_test<long>(testIndex, longVars);
         if(longValue != parserValue)
         {
             if(verbosityLevel >= 2)
@@ -1858,13 +1867,15 @@ const char* valueType()
 
 template<typename OutStream, typename Value_t>
 bool runRegressionTest(FunctionParserBase<Value_t>& fp,
-                       const TestType<Value_t>& testData,
+                       unsigned testIndex,
                        const Value_t& paramMin, const Value_t& paramMax, const Value_t& paramStep,
                        const std::string& testType,
                        const Value_t Eps,
                        OutStream&    out,
                        std::ostream& briefErrorMessages)
 {
+    const TestType &testData = getTest(testIndex);
+
     Value_t vars[10];
     Value_t fp_vars[10];
 
@@ -1897,7 +1908,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 out << (ind>0 ? ", " : "") << vars[ind];
             out << ")\n" << std::flush;
         }
-        const Value_t v1 = evaluate_test<Value_t>(testData.testIndex, vars);
+        const Value_t v1 = evaluate_test<Value_t>(testIndex, vars);
         if(true) /*test Eval() */
         {
             Value_t v2 = fp.Eval(fp_vars);
@@ -1920,7 +1931,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                         error << v2 << " vs " << v1;
                 }
                 else
-                    testAgainstLongInt(vars, v2, testData, error);
+                    testAgainstLongInt(vars, v2, testIndex, error);
             }
             else
             {
@@ -1981,7 +1992,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                               << ")";
                 }
                 else
-                    testAgainstDouble(vars, v2, testData, error);
+                    testAgainstDouble(vars, v2, testIndex, error);
             }
 
             if(!error.str().empty())
@@ -2153,7 +2164,7 @@ bool runRegressionTests(unsigned n_threads,
                         std::mutex& print_lock,
                         std::ostream& briefErrorMessages,
                         std::string& prev_test_prefix,
-                        std::atomic<unsigned>& test_index)
+                        std::atomic<unsigned>& test_counter)
 {
     // Setup the function parser for testing
     // -------------------------------------
@@ -2260,14 +2271,15 @@ bool runRegressionTests(unsigned n_threads,
 
     bool allRegressionTestsOk = true;
 
-    const unsigned maxtests = sizeof(RegressionTests<Value_t>::Tests)
-                            / sizeof(TestType<Value_t>);
-    for(;;) //unsigned i = 0; i < maxtests; ++i)
+    constexpr unsigned maxtests = sizeof(RegressionTests<Value_t>::Tests)
+                                / sizeof(*RegressionTests<Value_t>::Tests);
+    for(;;) // unsigned i = 0; i < maxtests; ++i)
     {
-        unsigned i = test_index++;
+        unsigned i = test_counter++;
         if(i >= maxtests) break;
 
-        const TestType<Value_t>& testData = RegressionTests<Value_t>::Tests[i];
+        unsigned testIndex = RegressionTests<Value_t>::Tests[i];
+        const TestType& testData = getTest(testIndex);
         if(!IsSelectedTest(testData.testName)) continue;
 
         const Value_t paramMin = (fp.Parse(testData.paramMin, ""),fp.Eval(nullptr));
@@ -2327,7 +2339,7 @@ bool runRegressionTests(unsigned n_threads,
         }
 
         bool thisTestOk =
-            runRegressionTest(fp, testData,
+            runRegressionTest(fp, testIndex,
                               paramMin, paramMax, paramStep,
                               ", not optimized",
                               testbedEpsilon<Value_t>(),
@@ -2344,7 +2356,7 @@ bool runRegressionTests(unsigned n_threads,
                 out << "    Optimized: " << std::flush;
 
             thisTestOk =
-                runRegressionTest(fp, testData,
+                runRegressionTest(fp, testIndex,
                                   paramMin, paramMax, paramStep,
                                   ", after optimization",
                                   testbedEpsilon<Value_t>(), out, briefErrorMessages);
@@ -2369,7 +2381,7 @@ bool runRegressionTests(unsigned n_threads,
                 {
                     thisTestOk =
                         runRegressionTest
-                        (fp, testData,
+                        (fp, testIndex,
                          paramMin, paramMax, paramStep,
                          ", after several optimization runs",
                          testbedEpsilon<Value_t>(), out, briefErrorMessages);
@@ -2378,7 +2390,7 @@ bool runRegressionTests(unsigned n_threads,
                 if(thisTestOk)
                 {
                     thisTestOk =
-                        testVariableDeduction(fp, testData, out, briefErrorMessages);
+                        testVariableDeduction(fp, testIndex, out, briefErrorMessages);
 
                     if(thisTestOk && verbosityLevel >= 3)
                         out << "Ok." << std::endl;
@@ -2425,13 +2437,13 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
     std::ostringstream briefErrorMessages;
     std::string prev_test_prefix;
     std::mutex print_lock;
-    std::atomic<unsigned> test_index{};
+    std::atomic<unsigned> test_counter{};
 
     test_runners.reserve(n_threads);
     for(unsigned n=0; n<n_threads; ++n)
         test_runners.emplace_back(std::async(std::launch::async,
-            [=,&print_lock,&briefErrorMessages,&prev_test_prefix,&test_index]{
-            return runRegressionTests<Value_t>(n_threads, n, print_lock, briefErrorMessages, prev_test_prefix, test_index);
+            [=,&print_lock,&briefErrorMessages,&prev_test_prefix,&test_counter]{
+            return runRegressionTests<Value_t>(n_threads, n, print_lock, briefErrorMessages, prev_test_prefix, test_counter);
         }));
 
     bool allRegressionTestsOk = true;
@@ -2517,16 +2529,20 @@ namespace OptimizerTests
         os << data2.funcName << "(x^" << exponent_E << ")^" << exponent_F;
         const std::string funcString = os.str();
 
-        const TestType<DefaultValue_t> testData =
+        customtest = TestType
         {
-            1, "-4.0","4.0","0.49",
-            TestIndex_t::defaultTypeTest,
+            "'trig. combo optimizer test'",
+            funcString.c_str(),
+            "x",
+            "-4.0","4.0","0.49",
+            1,
             false,/*degrees*/
             true, /*double*/
             false,/*long*/
-            false,/*ignore imaginary sign*/
-            "x", "'trig. combo optimizer test'", funcString.c_str()
+            false /*ignore imaginary sign*/
         };
+        const auto& testData = customtest;
+        unsigned testIndex = customtest_index;
 
         DefaultParser parser;
 
@@ -2543,7 +2559,7 @@ namespace OptimizerTests
 
         std::ostringstream briefErrorMessages;
 
-        if(!runRegressionTest(parser, testData,
+        if(!runRegressionTest(parser, testIndex,
                               paramMin, paramMax, paramStep,
                               ", default type",
                               testbedEpsilon<DefaultValue_t>(), std::cout, briefErrorMessages))
@@ -3051,31 +3067,31 @@ int main(int argc, char* argv[])
 
             std::vector<std::string> tests;
 #ifndef FP_DISABLE_DOUBLE_TYPE
-            for(auto& t: RegressionTests<double>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<double>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_FLOAT_TYPE
-            for(auto& t: RegressionTests<float>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<float>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-            for(auto& t: RegressionTests<long double>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<long double>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
-            for(auto& t: RegressionTests<long>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<long>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-            for(auto& t: RegressionTests<MpfrFloat>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<MpfrFloat>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
-            for(auto& t: RegressionTests<GmpInt>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<GmpInt>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-            for(auto& t: RegressionTests<std::complex<float>>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<std::complex<float>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-            for(auto& t: RegressionTests<std::complex<double>>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<std::complex<double>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-            for(auto& t: RegressionTests<std::complex<long double>>::Tests) tests.push_back(t.testName);
+            for(unsigned t: RegressionTests<std::complex<long double>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
             std::sort(tests.begin(), tests.end(), natcomp);
             tests.erase(std::unique(tests.begin(), tests.end()), tests.end());
