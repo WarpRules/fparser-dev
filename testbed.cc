@@ -174,7 +174,8 @@ namespace
     template<>
     inline MpfrFloat testbedEpsilon<MpfrFloat>()
     {
-        static const MpfrFloat eps(4.1e-19);
+        static const MpfrFloat eps =
+            FUNCTIONPARSERTYPES::fp_const_preciseDouble<MpfrFloat>(4.1e-19);
         return eps;
     }
 #endif
@@ -2167,7 +2168,8 @@ bool runRegressionTests(unsigned n_threads,
                                 FUNCTIONPARSERTYPES::fp_const_log2<Value_t>());
     ret = ret && fp.AddConstant("logten",
                                 FUNCTIONPARSERTYPES::fp_const_log10<Value_t>());
-    ret = ret && fp.AddConstant("CONST", Value_t(CONST));
+    ret = ret && fp.AddConstant("CONST",
+                                FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(CONST));
     if(!ret)
     {
         if(thread_index == 0)

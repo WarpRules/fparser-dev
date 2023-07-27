@@ -89,8 +89,8 @@ namespace
             if(!p.min.known || !p.max.known) return false;
             switch(when)
             {
-                case Eq0: return p.min.val==Value_t(0.0) && p.max.val==p.min.val;
-                case Eq1: return p.min.val==Value_t(1.0) && p.max.val==p.max.val;
+                case Eq0: return p.min.val==Value_t(0) && p.max.val==p.min.val;
+                case Eq1: return p.min.val==Value_t(1) && p.max.val==p.max.val;
                 case Gt0Le1: return p.min.val>Value_t(0) && p.max.val<=Value_t(1);
                 case Ge0Lt1: return p.min.val>=Value_t(0) && p.max.val<Value_t(1);
                 default:;

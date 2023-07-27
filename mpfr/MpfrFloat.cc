@@ -696,19 +696,9 @@ bool MpfrFloat::operator<(const MpfrFloat& rhs) const
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) < 0;
 }
 
-bool MpfrFloat::operator<(double value) const
-{
-    return mpfr_cmp_d(mData->mFloat, value) < 0;
-}
-
 bool MpfrFloat::operator<=(const MpfrFloat& rhs) const
 {
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) <= 0;
-}
-
-bool MpfrFloat::operator<=(double value) const
-{
-    return mpfr_cmp_d(mData->mFloat, value) <= 0;
 }
 
 bool MpfrFloat::operator>(const MpfrFloat& rhs) const
@@ -716,19 +706,9 @@ bool MpfrFloat::operator>(const MpfrFloat& rhs) const
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) > 0;
 }
 
-bool MpfrFloat::operator>(double value) const
-{
-    return mpfr_cmp_d(mData->mFloat, value) > 0;
-}
-
 bool MpfrFloat::operator>=(const MpfrFloat& rhs) const
 {
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) >= 0;
-}
-
-bool MpfrFloat::operator>=(double value) const
-{
-    return mpfr_cmp_d(mData->mFloat, value) >= 0;
 }
 
 bool MpfrFloat::operator==(const MpfrFloat& rhs) const
@@ -736,50 +716,71 @@ bool MpfrFloat::operator==(const MpfrFloat& rhs) const
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) == 0;
 }
 
-bool MpfrFloat::operator==(double value) const
-{
-    return mpfr_cmp_d(mData->mFloat, value) == 0;
-}
 
 bool MpfrFloat::operator!=(const MpfrFloat& rhs) const
 {
     return mpfr_cmp(mData->mFloat, rhs.mData->mFloat) != 0;
 }
 
-bool MpfrFloat::operator!=(double value) const
+bool MpfrFloat::operator<(long value) const
 {
-    return mpfr_cmp_d(mData->mFloat, value) != 0;
+    return mpfr_cmp_si(mData->mFloat, value) < 0;
+}
+
+bool MpfrFloat::operator<=(long value) const
+{
+    return mpfr_cmp_si(mData->mFloat, value) <= 0;
+}
+
+bool MpfrFloat::operator>(long value) const
+{
+    return mpfr_cmp_si(mData->mFloat, value) > 0;
+}
+
+bool MpfrFloat::operator>=(long value) const
+{
+    return mpfr_cmp_si(mData->mFloat, value) >= 0;
+}
+
+bool MpfrFloat::operator==(long value) const
+{
+    return mpfr_cmp_si(mData->mFloat, value) == 0;
+}
+
+bool MpfrFloat::operator!=(long value) const
+{
+    return mpfr_cmp_si(mData->mFloat, value) != 0;
 }
 
 
 //===========================================================================
 // Operator functions
 //===========================================================================
-MpfrFloat operator+(double lhs, const MpfrFloat& rhs)
+MpfrFloat operator+(long lhs, const MpfrFloat& rhs)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_add_d(retval.mData->mFloat, rhs.mData->mFloat, lhs, GMP_RNDN);
+    mpfr_add_si(retval.mData->mFloat, rhs.mData->mFloat, lhs, GMP_RNDN);
     return retval;
 }
 
-MpfrFloat operator-(double lhs, const MpfrFloat& rhs)
+MpfrFloat operator-(long lhs, const MpfrFloat& rhs)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_d_sub(retval.mData->mFloat, lhs, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_si_sub(retval.mData->mFloat, lhs, rhs.mData->mFloat, GMP_RNDN);
     return retval;
 }
 
-MpfrFloat operator*(double lhs, const MpfrFloat& rhs)
+MpfrFloat operator*(long lhs, const MpfrFloat& rhs)
 {
     return rhs * lhs;
 }
 
-MpfrFloat operator/(double lhs, const MpfrFloat& rhs)
+MpfrFloat operator/(long lhs, const MpfrFloat& rhs)
 {
     return MpfrFloat(lhs) / rhs;
 }
 
-MpfrFloat operator%(double lhs, const MpfrFloat& rhs)
+MpfrFloat operator%(long lhs, const MpfrFloat& rhs)
 {
     return MpfrFloat(lhs) % rhs;
 }

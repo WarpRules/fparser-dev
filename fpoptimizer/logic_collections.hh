@@ -269,12 +269,12 @@ namespace
             case cSqrt:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
-                return CodeTreeImmed( Value_t(0.5) );
+                return CodeTreeImmed( fp_const_preciseDouble<Value_t>(0.5) );
             */
             case cRSqrt:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
-                return CodeTreeImmed( Value_t(-0.5) );
+                return CodeTreeImmed( fp_const_preciseDouble<Value_t>(-0.5) );
             case cInv:
                 value.Become( value.GetParam(0) );
                 has_highlevel_opcodes = true;
@@ -299,7 +299,7 @@ namespace
 
             CodeTree<Value_t> exponent ( CollectMulGroup_Item(value, has_highlevel_opcodes) );
 
-            if(!factor.IsImmed() || factor.GetImmed() != Value_t(1.0))
+            if(!factor.IsImmed() || factor.GetImmed() != Value_t(1))
             {
                 CodeTree<Value_t> new_exp;
                 new_exp.SetOpcode(cMul);
@@ -464,7 +464,7 @@ namespace
                         tree.AddParamMove(cbrt);
                         continue;
                     }
-                    if(list.first.GetImmed() == Value_t(0.5) )
+                    if(list.first.GetImmed() == fp_const_preciseDouble<Value_t>(0.5) )
                     {
                         CodeTree<Value_t> sqrt;
                         sqrt.SetOpcode(cSqrt);
@@ -473,7 +473,7 @@ namespace
                         tree.AddParamMove(sqrt);
                         continue;
                     }
-                    if(list.first.GetImmed() == Value_t(-0.5) )
+                    if(list.first.GetImmed() == fp_const_preciseDouble<Value_t>(-0.5) )
                     {
                         CodeTree<Value_t> rsqrt;
                         rsqrt.SetOpcode(cRSqrt);

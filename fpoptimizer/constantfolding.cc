@@ -401,7 +401,7 @@ namespace FPoptimizer_CodeTree
             case cAdd:
             {
                 AdoptChildrenWithSameOpcode(tree);
-                Value_t immed_sum = 0.0;
+                Value_t immed_sum = 0;
                 size_t n_immeds = 0; bool needs_resynth=false;
                 for(size_t a=0; a<tree.GetParamCount(); ++a)
                 {
@@ -430,7 +430,7 @@ namespace FPoptimizer_CodeTree
                         #endif
                             tree.DelParam(a);
                         }
-                    if(!(immed_sum == Value_t(0.0)))
+                    if(!(immed_sum == Value_t(0)))
                         tree.AddParam( CodeTreeImmed<Value_t> (immed_sum) );
                 }
                 switch(tree.GetParamCount())
@@ -547,7 +547,7 @@ namespace FPoptimizer_CodeTree
                  * If we know the operand is always negative, use actual negation.
                  */
                 range<Value_t> p0 = CalculateResultBoundaries( tree.GetParam(0) );
-                if(p0.min.known && p0.min.val >= Value_t(0.0))
+                if(p0.min.known && p0.min.val >= Value_t(0))
                 {
                 #ifdef DEBUG_SUBSTITUTIONS
                     std::cout << "Abs: always positive: minimum value is " << p0.min.val << '\n';
@@ -579,7 +579,7 @@ namespace FPoptimizer_CodeTree
                     for(size_t a=0; a<p.GetParamCount(); ++a)
                     {
                         p0 = CalculateResultBoundaries( p.GetParam(a) );
-                        if(p0.min.known && p0.min.val >= Value_t(0.0))
+                        if(p0.min.known && p0.min.val >= Value_t(0))
                             { pos_set.push_back(p.GetParam(a)); }
                         if(p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>())
                             { neg_set.push_back(p.GetParam(a)); }
@@ -601,7 +601,7 @@ namespace FPoptimizer_CodeTree
                         for(size_t a=0; a<p.GetParamCount(); ++a)
                         {
                             p0 = CalculateResultBoundaries( p.GetParam(a) );
-                            if((p0.min.known && p0.min.val >= Value_t(0.0))
+                            if((p0.min.known && p0.min.val >= Value_t(0))
                             || (p0.max.known && p0.max.val <= fp_const_negativezero<Value_t>()))
                                 {/*pclone.DelParam(a);*/}
                             else
@@ -840,7 +840,7 @@ namespace FPoptimizer_CodeTree
                 {
                     if(p1.max.known && (p1.max.val) < Value_t(0))    // y == 0 && x < 0
                         { tree.ReplaceWithImmed( fp_const_pi<Value_t>() ); goto do_return; }
-                    if(p1.min.known && p1.min.val >= Value_t(0.0))  // y == 0 && x >= 0.0
+                    if(p1.min.known && p1.min.val >= Value_t(0))  // y == 0 && x >= 0.0
                         { tree.ReplaceWithImmed( Value_t(0) ); goto do_return; }
                 }
                 if(tree.GetParam(1).IsImmed()
@@ -889,13 +889,13 @@ namespace FPoptimizer_CodeTree
             case cDiv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(1).IsImmed()
-                && tree.GetParam(1).GetImmed() != Value_t(0.0))
+                && tree.GetParam(1).GetImmed() != Value_t(0))
                     { tree.ReplaceWithImmed( tree.GetParam(0).GetImmed() / tree.GetParam(1).GetImmed() );
                       goto do_return; }
                 break;
             case cInv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
-                && tree.GetParam(0).GetImmed() != Value_t(0.0))
+                && tree.GetParam(0).GetImmed() != Value_t(0))
                     { tree.ReplaceWithImmed( Value_t(1) / tree.GetParam(0).GetImmed() );
                       goto do_return; }
                 // Note: Could use (mulgroup)^immed optimization from cPow

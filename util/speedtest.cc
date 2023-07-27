@@ -14,6 +14,8 @@ static const char* const kVersionNumber = "1.1.0";
 
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
+#include "extrasrc/fpaux.hh"
+
 #include <ctime>
 #include <string>
 #include <iostream>
@@ -23,20 +25,23 @@ static const char* const kVersionNumber = "1.1.0";
 
 #include <sys/time.h>
 
+#define N(v) static_cast<Value_t>(v)
+#define P(v) FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(v)
+
 #define FUNC0 sin(x)*sin(x) + cos(x)*cos(x) + tan(y)*tan(y)
 #define FUNC0P FUNC0
 
-#define FUNC1 ((3*pow(x,4)-7*pow(x,3)+2*x*x-4*x+10) - (4*pow(y,3)+2*y*y-10*y+2))*10
-#define FUNC1P ((3*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
+#define FUNC1 ((N(3)*pow(x,N(4))-N(7)*pow(x,N(3))+N(2)*x*x-N(4)*x+N(10)) - (N(4)*pow(y,N(3))+N(2)*y*y-N(10)*y+N(2)))*N(10)
+#define FUNC1P ((N(3)*x^4-7*x^3+2*x^2-4*x+10) - (4*y^3+2*y^2-10*y+2))*10
 
-#define FUNC2 ((3*(x+(5*(y+2)-7*x)*3-y)+4*5+3)-7+(8*x+5*y+(7-x))*4)-10*3+4
+#define FUNC2 ((N(3)*(x+(N(5)*(y+N(2))-N(7)*x)*N(3)-y)+N(4)*N(5)+N(3))-N(7)+(N(8)*x+N(5)*y+(N(7)-x))*N(4))-N(10)*N(3)+N(4)
 #define FUNC2P FUNC2
 
-#define FUNC3 pow((tan(x)*cos(x)), 2) - 1.2*log(atan2(sqrt((-pow(y,2))+1), y) * pow(4.91, y)) + pow(cos(-x), 2)
+#define FUNC3 pow((tan(x)*cos(x)), N(2)) - P(1.2)*log(atan2(sqrt((-pow(y,N(2)))+N(1)), y) * pow(P(4.91), y)) + pow(cos(-x), N(2))
 #define FUNC3P (tan(x)*cos(x))^2 - 1.2*log(atan2(sqrt((-y^2)+1), y) * 4.91^y) + cos(-x)^2
 
-#define FUNC4 exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3) - cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)
-#define FUNC4P FUNC4
+#define FUNC4 exp((-x*x-y*y)/N(100))*sin(sqrt(x*x+y*y))/(N(10)*N(2)) + sin(pow(x,N(4))-N(4)*pow(x,N(3))+N(3)*x*x-N(2)*x+N(2)*N(5)-N(3)) - cos(-N(2)*pow(y,N(4))+N(5)*pow(y,N(3))-N(14)*x*x+N(8)*x-N(120)/N(2)+N(4))
+#define FUNC4P exp((-x*x-y*y)/100)*sin(sqrt(x*x+y*y))/(10*2) + sin(pow(x,4)-4*pow(x,3)+3*x*x-2*x+2*5-3) - cos(-2*pow(y,4)+5*pow(y,3)-14*x*x+8*x-120/2+4)
 
 #define StringifyHlp(x) #x
 #define Stringify(x) StringifyHlp(x)
@@ -69,7 +74,9 @@ namespace
     CreateFunction(func3_##suffix, type, FUNC3) \
     CreateFunction(func4_##suffix, type, FUNC4)
 
-    CreateTestFunctions(d, double)
+#define Value_t double
+    CreateTestFunctions(d, Value_t)
+#undef Value_t
 
 #define exp expf
 #define pow powf
@@ -79,7 +86,11 @@ namespace
 #define tan tanf
 #define atan2 atan2f
 #define sqrt sqrtf
-    CreateTestFunctions(f, float)
+
+#define Value_t float
+    CreateTestFunctions(f, Value_t)
+#undef Value_t
+
 #undef exp
 #undef pow
 #undef log
@@ -97,7 +108,11 @@ namespace
 #define tan tanl
 #define atan2 atan2l
 #define sqrt sqrtl
-    CreateTestFunctions(ld, long double)
+
+#define Value_t long double
+    CreateTestFunctions(ld, Value_t)
+#undef Value_t
+
 #undef exp
 #undef pow
 #undef log
@@ -115,7 +130,11 @@ namespace
 #define tan(x) MpfrFloat::tan(x)
 #define atan2(x, y) MpfrFloat::atan2(x, y)
 #define sqrt(x) MpfrFloat::sqrt(x)
-    CreateTestFunctions(mpfr, MpfrFloat)
+
+#define Value_t MpfrFloat
+    CreateTestFunctions(mpfr, Value_t)
+#undef Value_t
+
 #undef exp
 #undef pow
 #undef log
@@ -124,6 +143,9 @@ namespace
 #undef tan
 #undef atan2
 #undef sqrt
+
+#undef N
+#undef P
 
     const FuncData funcData[] =
     {
@@ -241,7 +263,11 @@ int run(const unsigned ParseLoops,
         const unsigned FuncLoops)
 {
     Parser_t fp, fp2;
-    typename Parser_t::value_type values[3] = { .25, .5, .75 };
+    using Value_t = typename Parser_t::value_type;
+    Value_t values[3] =
+        { FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(.25),
+          FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(.5),
+          FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(.75) };
 
     for(unsigned i = 0; i < FunctionsAmount; ++i)
     {

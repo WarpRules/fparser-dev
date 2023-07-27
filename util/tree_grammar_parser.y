@@ -810,7 +810,7 @@ public:
         else if_const(fp_const_pi<Value_t>())
         else if_const(fp_const_pihalf<Value_t>())
         else if_const(fp_const_pihalf<Value_t>() / Value_t(2))
-        else if_const(fp_sqrt(Value_t(2.0)))
+        else if_const(fp_sqrt(Value_t(2)))
         else if_const(fp_const_twopi<Value_t>())
         else if_const(fp_const_log2<Value_t>())
         else if_const(fp_const_log2inv<Value_t>())
@@ -824,9 +824,21 @@ public:
         {
         NotAnyKnownConstant:
             result.precision(50);
-            result << "Value_t(" << value.real() << ")";
+            if(value.real() == (long)value.real())
+            {
+                result << "Value_t(" << value.real() << ")";
+            }
+            else
+            {
+                result << "fp_const_preciseDouble<Value_t>(" << value.real() << ")";
+            }
             if(value.imag() != 0.0)
-                result << " + fp_make_imag(Value_t(" << value.imag() << "))";
+            {
+                if(value.imag() == (long)value.imag())
+                    result << " + fp_make_imag(Value_t(" << value.imag() << "))";
+                else
+                    result << " + fp_make_imag(fp_const_preciseDouble<Value_t>(" << value.imag() << "))";
+            }
         }
         return result.str();
     }
@@ -1688,7 +1700,6 @@ static int yylex(YYSTYPE* lval)
             if(IdBuf == "CONSTANT_PI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PIHALF") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pihalf<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PIQUARTER") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pihalf<double>() / 2; return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_SQRT2") { lval->num.real = fp_sqrt(2.0); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_TWOPI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twopi<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L2I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log2inv<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_L10I") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_log10inv<double>(); return NUMERIC_CONSTANT; }

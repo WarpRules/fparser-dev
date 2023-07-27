@@ -336,10 +336,10 @@ IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul  # TEST 10/m
 #  ^ y cExp never occurs (already optimized to literal)
 IF(FP_FLOAT_VERSION) y cPow  x cPow -> [y*x] cPow                      # TEST 10/ypowxpow (maybe?)
 
-IF(FP_FLOAT_VERSION) x [x==Value_t(0.5)]      cPow -> cSqrt            # TEST 10/powhalf
+IF(FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(0.5)]      cPow -> cSqrt            # TEST 10/powhalf
 IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(3)]  cPow -> cCbrt       # TEST 10/powthird
 IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv  # TEST 10/powminusthird
-IF(FP_FLOAT_VERSION) x [x==Value_t(-0.5)]     cPow -> cRSqrt           # TEST 10/powminushalf
+IF(FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(-0.5)]     cPow -> cRSqrt           # TEST 10/powminushalf
 IF(FP_FLOAT_VERSION) x [x==Value_t(-1)]     cPow -> cInv               # TEST 10/powminusone
 
 IF(FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] cSqrt cSqr  -> A # TEST 10/sqrtsqr1, 10/sqrtsqr2
@@ -384,10 +384,10 @@ IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)]  
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)]  cLog2 x A [IsComparisonOpcode(A)] -> B [fp_exp2(x)] A            # TEST 10/cmp_log2_*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)  B [IsNeverNegativeValueOpcode(B)] cLog10 x A [IsComparisonOpcode(A)] -> B [fp_pow(Value_t(10),x)] A # TEST 10/cmp_log10_*
 # ^ Doable only if lhs > 0.
-#IF(FP_FLOAT_VERSION)                 cAsin [fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_sin(x)] A  # TEST 10/cmp_asin*
+#IF(FP_FLOAT_VERSION)                 cAsin [fp_abs(x)<fp_const_pi<Value_t>()*fp_const_preciseDouble<Value_t>(0.5)] x A [IsComparisonOpcode(A)] -> [fp_sin(x)] A  # TEST 10/cmp_asin*
 #IF(FP_FLOAT_VERSION)                 cAcos [x>=Value_t(0)&&fp_abs(x)<fp_const_pi<Value_t>()] x A [IsComparisonOpcode(A)] -> [fp_cos(x)] {OppositeComparisonOpcode(A)}  # TEST 10/cmp_acos*
 # ^ Doable only if abs(x) <= 1
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                 cAtan [fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A [IsComparisonOpcode(A)] -> [fp_tan(x)] A # TEST 10/cmp_atan*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                 cAtan [fp_abs(x)<fp_const_pi<Value_t>()*fp_const_preciseDouble<Value_t>(0.5)] x A [IsComparisonOpcode(A)] -> [fp_tan(x)] A # TEST 10/cmp_atan*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                 cSinh x A [IsComparisonOpcode(A)] -> [fp_asinh(x)] A                          # TEST 10/cmp_sinh*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                 cTanh [fp_abs(x)<Value_t(1)] x A [IsComparisonOpcode(A)] -> [fp_atanh(x)] A   # TEST 10/cmp_tanh*
 
@@ -439,13 +439,13 @@ IF(!FP_COMPLEX_VERSION && !FP_FLOAT_VERSION) A [IsNeverNegativeValueOpcode(A)] x
 IF(!FP_FLOAT_VERSION) x cAdd cNotNot -> [-x] cNEqual # TEST 10/xaddnotnot
 IF(!FP_FLOAT_VERSION) x cAdd cNot    -> [-x] cEqual  # TEST 10/xaddnot
 
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [Value_t(0.5)/x] cMul cNot    # TEST 10/absnzlt
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [Value_t(0.5)/x] cMul cNotNot # TEST 10/absnzge
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cLess         -> [fp_const_preciseDouble<Value_t>(0.5)/x] cMul cNot    # TEST 10/absnzlt
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs x [x!=Value_t(0)] cGreaterOrEq  -> [fp_const_preciseDouble<Value_t>(0.5)/x] cMul cNotNot # TEST 10/absnzge
 
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==Value_t(0.5)] cLess         -> cAbsNot       # TEST 10/lthalf
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==Value_t(0.5)] cGreaterOrEq  -> cAbsNotNot    # TEST 10/gehalf
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==Value_t(-0.5)] cGreater   -> cNeg cAbsNot    # TEST 10/gtminushalf
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==Value_t(-0.5)] cLessOrEq  -> cNeg cAbsNotNot # TEST 10/leminushalf
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(0.5)] cLess         -> cAbsNot       # TEST 10/lthalf
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(0.5)] cGreaterOrEq  -> cAbsNotNot    # TEST 10/gehalf
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(-0.5)] cGreater   -> cNeg cAbsNot    # TEST 10/gtminushalf
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(-0.5)] cLessOrEq  -> cNeg cAbsNotNot # TEST 10/leminushalf
 
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs      x [isEvenInteger(x)] cPow ->      [x] cPow # TEST 10/absevenconstpow
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cAbs cMul x [isEvenInteger(x)] cPow -> cMul [x] cPow # TEST 10/absmulevenconstpow

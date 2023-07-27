@@ -275,7 +275,7 @@ namespace
             std::map<int_exponent_t,cost_t>::iterator i = cache.lower_bound(int_exponent);
             if(i != cache.end() && i->first == int_exponent)
                 return i->second;
-            std::pair<int_exponent_t, cost_t> result(int_exponent, 0.0);
+            std::pair<int_exponent_t, cost_t> result(int_exponent, 0);
             cost_t& cost = result.second;
 
             while(int_exponent > 1)
@@ -438,7 +438,7 @@ namespace FPoptimizer_CodeTree
                     }
                     if(found_log2_on_exponent)
                     {
-                        Value_t immeds = 1.0;
+                        Value_t immeds = 1;
                         for(size_t a = GetParamCount(); a-- > 0; )
                         {
                             const CodeTree<Value_t>& powgroup = GetParam(a);
@@ -844,7 +844,7 @@ namespace FPoptimizer_CodeTree
                  || !isLongInteger(p1.GetImmed())
                  || !IsOptimizableUsingPowi<Value_t>( makeLongInteger(p1.GetImmed()) )))
                 {
-                    if(p0.IsImmed() && p0.GetImmed() > Value_t(0.0))
+                    if(p0.IsImmed() && p0.GetImmed() > Value_t(0))
                     {
                         // Convert into cExp or Exp2.
                         //    x^y = exp(log(x) * y) =

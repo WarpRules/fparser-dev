@@ -4,10 +4,11 @@
 
 namespace FPoptimizer_CodeTree
 {
+    using namespace FUNCTIONPARSERTYPES;
+
     template<typename Value_t>
     void range<Value_t>::set_abs()
     {
-        using namespace FUNCTIONPARSERTYPES;
         if(IsComplexType<Value_t>::value)
         {
             // On complex types, we know absolutely nothing
@@ -50,20 +51,20 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool IsLogicalTrueValue(const range<Value_t>& p, bool abs)
     {
-        if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value)
+        if(IsComplexType<Value_t>::value)
         {
-            if(p.min.known && FUNCTIONPARSERTYPES::fp_imag(p.min.val) != Value_t()) return false;
-            if(p.max.known && FUNCTIONPARSERTYPES::fp_imag(p.min.val) != Value_t()) return false;
+            if(p.min.known && fp_imag(p.min.val) != Value_t()) return false;
+            if(p.max.known && fp_imag(p.min.val) != Value_t()) return false;
         }
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
+        if(IsIntType<Value_t>::value)
         {
-            if(p.min.known && FUNCTIONPARSERTYPES::fp_greaterOrEq(p.min.val, Value_t(1))) return true;
-            if(!abs && p.max.known && FUNCTIONPARSERTYPES::fp_lessOrEq(p.max.val, Value_t(-1))) return true;
+            if(p.min.known && fp_greaterOrEq(p.min.val, Value_t(1))) return true;
+            if(!abs && p.max.known && fp_lessOrEq(p.max.val, Value_t(-1))) return true;
         }
         else
         {
-            if(p.min.known && FUNCTIONPARSERTYPES::fp_greaterOrEq(p.min.val, Value_t(0.5))) return true;
-            if(!abs && p.max.known && FUNCTIONPARSERTYPES::fp_lessOrEq(p.max.val, Value_t(-0.5))) return true;
+            if(p.min.known && fp_greaterOrEq(p.min.val, fp_const_preciseDouble<Value_t>(0.5))) return true;
+            if(!abs && p.max.known && fp_lessOrEq(p.max.val, fp_const_preciseDouble<Value_t>(-0.5))) return true;
         }
         return false;
     }
@@ -71,28 +72,28 @@ namespace FPoptimizer_CodeTree
     template<typename Value_t>
     bool IsLogicalFalseValue(const range<Value_t>& p, bool abs)
     {
-        if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value)
+        if(IsComplexType<Value_t>::value)
         {
-            if(p.min.known && FUNCTIONPARSERTYPES::fp_imag(p.min.val) != Value_t()) return false;
-            if(p.max.known && FUNCTIONPARSERTYPES::fp_imag(p.min.val) != Value_t()) return false;
+            if(p.min.known && fp_imag(p.min.val) != Value_t()) return false;
+            if(p.max.known && fp_imag(p.min.val) != Value_t()) return false;
         }
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
+        if(IsIntType<Value_t>::value)
         {
             if(abs)
-                return p.max.known && FUNCTIONPARSERTYPES::fp_less(p.max.val, Value_t(1));
+                return p.max.known && fp_less(p.max.val, Value_t(1));
             else
                 return p.min.known && p.max.known
-                    && FUNCTIONPARSERTYPES::fp_greater(p.min.val, Value_t(-1))
-                    && FUNCTIONPARSERTYPES::fp_less(p.max.val, Value_t(1));
+                    && fp_greater(p.min.val, Value_t(-1))
+                    && fp_less(p.max.val, Value_t(1));
         }
         else
         {
             if(abs)
-                return p.max.known && FUNCTIONPARSERTYPES::fp_less(p.max.val, Value_t(0.5));
+                return p.max.known && fp_less(p.max.val, fp_const_preciseDouble<Value_t>(0.5));
             else
                 return p.min.known && p.max.known
-                    && FUNCTIONPARSERTYPES::fp_greater(p.min.val, Value_t(-0.5))
-                    && FUNCTIONPARSERTYPES::fp_less(p.max.val, Value_t(0.5));
+                    && fp_greater(p.min.val, fp_const_preciseDouble<Value_t>(-0.5))
+                    && fp_less(p.max.val, fp_const_preciseDouble<Value_t>(0.5));
         }
     }
 }

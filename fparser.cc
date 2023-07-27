@@ -3213,8 +3213,8 @@ namespace
             {
                 if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                if(isInteger(result * Value_t(0.5))) break;
-                result *= Value_t(0.5);
+                if(isInteger(result * fp_const_preciseDouble<Value_t>(0.5))) break;
+                result *= fp_const_preciseDouble<Value_t>(0.5);
                 ++IP;
                 continue;
             }
@@ -3222,8 +3222,8 @@ namespace
             {
                 if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                if(isInteger(result * Value_t(-0.5))) break;
-                result *= Value_t(-0.5);
+                if(isInteger(result * fp_const_preciseDouble<Value_t>(-0.5))) break;
+                result *= fp_const_preciseDouble<Value_t>(-0.5);
                 ++IP;
                 continue;
             }
@@ -3382,7 +3382,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                 std::string        operation_prefix;
                 std::ostringstream operation_value;
                 int prio = 0;
-                if(exponent == Value_t(1.0))
+                if(exponent == Value_t(1))
                 {
                     if(opcode != cDup) goto not_powi_or_muli;
                     Value_t factor =

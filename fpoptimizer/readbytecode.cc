@@ -59,7 +59,7 @@ namespace
             {
                 if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                result *= Value_t(0.5);
+                result *= fp_const_preciseDouble<Value_t>(0.5);
                 ++IP;
                 continue;
             }
@@ -67,7 +67,7 @@ namespace
             {
                 if(result > Value_t(0) && isEvenInteger(result))
                     break;
-                result *= Value_t(-0.5);
+                result *= fp_const_preciseDouble<Value_t>(-0.5);
                 ++IP;
                 continue;
             }
@@ -472,7 +472,7 @@ namespace FPoptimizer_CodeTree
                 Value_t exponent = ParsePowiSequence<Value_t>(
                     ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                     sim.GetStackTop()-1);
-                if(exponent != Value_t(1.0))
+                if(exponent != Value_t(1))
                 {
                     //std::cout << "Found exponent at " << was_ip << ": " << exponent << "\n";
                     sim.AddConst(exponent);
@@ -486,7 +486,7 @@ namespace FPoptimizer_CodeTree
                     Value_t factor = ParseMuliSequence<Value_t>(
                         ByteCode, IP, if_stack.empty() ? ByteCode.size() : if_stack.back().endif_location,
                         sim.GetStackTop()-1);
-                    if(factor != Value_t(1.0))
+                    if(factor != Value_t(1))
                     {
                         //std::cout << "Found factor at " << was_ip << ": " << factor << "\n";
                         sim.AddConst(factor);
@@ -581,11 +581,11 @@ namespace FPoptimizer_CodeTree
                         break;
                     // Unary functions requiring special attention
                     case cSqrt: // already handled by powi_opt
-                        sim.AddConst( Value_t(0.5) );
+                        sim.AddConst( fp_const_preciseDouble<Value_t>(0.5) );
                         sim.Eat(2, cPow);
                         break;
                     case cRSqrt: // already handled by powi_opt
-                        sim.AddConst( Value_t(-0.5) );
+                        sim.AddConst( fp_const_preciseDouble<Value_t>(-0.5) );
                         sim.Eat(2, cPow);
                         break;
                     case cCbrt:
@@ -608,7 +608,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     case cExp2: // from fpoptimizer
                         if(keep_powi) goto default_function_handling;
-                        sim.AddConst(2.0);
+                        sim.AddConst(2);
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
                         break;
@@ -641,7 +641,7 @@ namespace FPoptimizer_CodeTree
                         */
                         goto default_function_handling;
                         /*
-                        sim.AddConst( Value_t(0.5) );
+                        sim.AddConst( fp_const_preciseDouble<Value_t>(0.5) );
                         sim.Eat(2, cAdd);
                         sim.Eat(1, cFloor);
                         */
@@ -676,7 +676,7 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(2);
                         sim.Eat(2, cPow); // y^2 x^2
                         sim.Eat(2, cAdd); // y^2 + x^2
-                        sim.AddConst( Value_t(0.5) );
+                        sim.AddConst( fp_const_preciseDouble<Value_t>(0.5) );
                         sim.Eat(2, cPow); // (y^2 + x^2)^0.5
                         break;
                     case cSinCos:

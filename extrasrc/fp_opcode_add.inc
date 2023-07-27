@@ -5020,10 +5020,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Lee;
 			}
-			if(x==Value_t(-0.5))
+			if(x==fp_const_preciseDouble<Value_t>(-0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(447,
-					"x[x==Value_t(-0.5)] cGreater",
+					"x[x==fp_const_preciseDouble<Value_t>(-0.5)] cGreater",
 					"cNeg cAbsNot",
 					"    with x = " << x << "\n");
 				goto Lef;
@@ -5046,7 +5046,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				{
 					FP_TRACE_BYTECODE_OPTIMIZATION(443,
 						"cAbs x[x!=Value_t(0)] cGreaterOrEq",
-						"[Value_t(0.5)/x] cMul cNotNot",
+						"[fp_const_preciseDouble<Value_t>(0.5)/x] cMul cNotNot",
 						"    with x = " << x << "\n");
 					goto Leg;
 				}
@@ -5063,10 +5063,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Leh;
 			}
-			if(x==Value_t(0.5))
+			if(x==fp_const_preciseDouble<Value_t>(0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(446,
-					"x[x==Value_t(0.5)] cGreaterOrEq",
+					"x[x==fp_const_preciseDouble<Value_t>(0.5)] cGreaterOrEq",
 					"cAbsNotNot",
 					"    with x = " << x << "\n");
 				goto Lei;
@@ -5223,7 +5223,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				{
 					FP_TRACE_BYTECODE_OPTIMIZATION(442,
 						"cAbs x[x!=Value_t(0)] cLess",
-						"[Value_t(0.5)/x] cMul cNot",
+						"[fp_const_preciseDouble<Value_t>(0.5)/x] cMul cNot",
 						"    with x = " << x << "\n");
 					goto Lfe;
 				}
@@ -5240,10 +5240,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Lff;
 			}
-			if(x==Value_t(0.5))
+			if(x==fp_const_preciseDouble<Value_t>(0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(445,
-					"x[x==Value_t(0.5)] cLess",
+					"x[x==fp_const_preciseDouble<Value_t>(0.5)] cLess",
 					"cAbsNot",
 					"    with x = " << x << "\n");
 				goto Lfg;
@@ -5272,10 +5272,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[-1] = cImmed; */ // redundant, matches y @ 2
 				goto Lfh;
 			}
-			if(x==Value_t(-0.5))
+			if(x==fp_const_preciseDouble<Value_t>(-0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(448,
-					"x[x==Value_t(-0.5)] cLessOrEq",
+					"x[x==fp_const_preciseDouble<Value_t>(-0.5)] cLessOrEq",
 					"cNeg cAbsNotNot",
 					"    with x = " << x << "\n");
 				goto Lfi;
@@ -6624,10 +6624,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Lkc;
 			}
-			if(x==Value_t(0.5))
+			if(x==fp_const_preciseDouble<Value_t>(0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(339,
-					"x[x==Value_t(0.5)] cPow",
+					"x[x==fp_const_preciseDouble<Value_t>(0.5)] cPow",
 					"cSqrt",
 					"    with x = " << x << "\n");
 				goto Lkd;
@@ -6648,10 +6648,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 					"    with x = " << x << "\n");
 				goto Lkf;
 			}
-			if(x==Value_t(-0.5))
+			if(x==fp_const_preciseDouble<Value_t>(-0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(342,
-					"x[x==Value_t(-0.5)] cPow",
+					"x[x==fp_const_preciseDouble<Value_t>(-0.5)] cPow",
 					"cRSqrt",
 					"    with x = " << x << "\n");
 				goto Lkg;
@@ -7242,10 +7242,10 @@ goto TailCall_cReal;goto TailCall_cSub;
 					}
 					break;
 				case cAtan:
-					if(fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5))
+					if(fp_abs(x)<fp_const_pi<Value_t>()*fp_const_preciseDouble<Value_t>(0.5))
 					{
 						FP_TRACE_BYTECODE_OPTIMIZATION(390,
-							"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*Value_t(0.5)] x A[IsComparisonOpcode(A)]",
+							"cAtan[fp_abs(x)<fp_const_pi<Value_t>()*fp_const_preciseDouble<Value_t>(0.5)] x A[IsComparisonOpcode(A)]",
 							"[fp_tan(x)] A",
 							"    with A = " << FP_TRACE_OPCODENAME(A)
 							    << ", x = " << x
@@ -7765,7 +7765,7 @@ Lef: mData->mImmed.pop_back();
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cNeg);
 Ljl: AddFunctionOpcode(cAbsNot); return;
-Leg: ImmedPtr[0] = Value_t(0.5)/x;
+Leg: ImmedPtr[0] = fp_const_preciseDouble<Value_t>(0.5)/x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cMul);
@@ -7820,7 +7820,7 @@ Lpk: opcode = cCot;
      FP_TRACE_BYTECODE_ADD(cCot);
      goto TailCall_cCot;
 Lfc: ImmedPtr[0] = Value_t(1)/x; return;
-Lfe: ImmedPtr[0] = Value_t(0.5)/x;
+Lfe: ImmedPtr[0] = fp_const_preciseDouble<Value_t>(0.5)/x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
      AddFunctionOpcode(cMul); goto Lpd;
@@ -10803,10 +10803,10 @@ goto TailCall_cTrunc;
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Ljh;
 			}
-			if(x==Value_t(0.5))
+			if(x==fp_const_preciseDouble<Value_t>(0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(339,
-					"x[x==Value_t(0.5)] cPow",
+					"x[x==fp_const_preciseDouble<Value_t>(0.5)] cPow",
 					"cSqrt",
 					"    with x = " << x << "\n");
 				goto Lji;
@@ -10827,10 +10827,10 @@ goto TailCall_cTrunc;
 					"    with x = " << x << "\n");
 				goto Ljk;
 			}
-			if(x==Value_t(-0.5))
+			if(x==fp_const_preciseDouble<Value_t>(-0.5))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(342,
-					"x[x==Value_t(-0.5)] cPow",
+					"x[x==fp_const_preciseDouble<Value_t>(-0.5)] cPow",
 					"cRSqrt",
 					"    with x = " << x << "\n");
 				goto Ljl;

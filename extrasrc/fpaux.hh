@@ -65,6 +65,17 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(3.1415926535897932384626433832795028841971693993751L);
     }
 
+    /* Use this function instead of Value_t(v),
+     * when constructing values where v is a *precise* double
+     * (i.e. integer multiplied by a power of two).
+     * For integers, Value_t(v) works fine.
+     */
+    template<typename Value_t>
+    inline Value_t fp_const_preciseDouble(double v)
+    {
+        return Value_t(v);
+    }
+
     template<typename Value_t>
     inline Value_t fp_const_e() // CONSTANT_E
     {
@@ -131,6 +142,9 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return MpfrFloat::log10(MpfrFloat::const_e()); }
+
+    template<>
+    inline MpfrFloat fp_const_preciseDouble<MpfrFloat>(double v) { return MpfrFloat::makeFromDouble(v); }
 #endif
 
 
@@ -211,7 +225,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_atanh(const Value_t& x)
     {
-        return fp_log( (Value_t(1)+x) / (Value_t(1)-x)) * Value_t(0.5);
+        return fp_log( (Value_t(1)+x) / (Value_t(1)-x)) * fp_const_preciseDouble<Value_t>(0.5);
         // Note: x = +1 causes division by zero
         //       x = -1 causes log(0)
         // Thus, x must not be +-1
@@ -274,7 +288,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_int(const Value_t& x)
     {
         return x < Value_t() ?
-            fp_ceil(x - Value_t(0.5)) : fp_floor(x + Value_t(0.5));
+            fp_ceil(x - fp_const_preciseDouble<Value_t>(0.5)) : fp_floor(x + fp_const_preciseDouble<Value_t>(0.5));
     }
 
     template<typename Value_t>
@@ -292,8 +306,8 @@ namespace FUNCTIONPARSERTYPES
                             const Value_t& param)
     {
         const Value_t ex(fp_exp(param)), emx(fp_exp(-param));
-        sinhvalue = Value_t(0.5)*(ex-emx);
-        coshvalue = Value_t(0.5)*(ex+emx);
+        sinhvalue = fp_const_preciseDouble<Value_t>(0.5)*(ex-emx);
+        coshvalue = fp_const_preciseDouble<Value_t>(0.5)*(ex+emx);
     }
 
     template<typename Value_t>
@@ -930,7 +944,7 @@ namespace FUNCTIONPARSERTYPES
                                           const std::complex<Value_t>& x)
     {
         if(y == Value_t()) return fp_arg(x);
-        if(x == Value_t()) return fp_const_pi<Value_t>() * Value_t(-0.5);
+        if(x == Value_t()) return fp_const_pi<Value_t>() * fp_const_preciseDouble<Value_t>(-0.5);
         // 2*atan(y / (sqrt(x^2+y^2) + x)    )
         // 2*atan(    (sqrt(x^2+y^2) - x) / y)
         std::complex<Value_t> res( fp_atan(y / (fp_hypot(x,y) + x)) );
@@ -988,7 +1002,7 @@ namespace FUNCTIONPARSERTYPES
     {
         return IsIntType<Value_t>::value
                 ? d != Value_t()
-                : fp_abs(d) >= Value_t(0.5);
+                : fp_abs(d) >= fp_const_preciseDouble<Value_t>(0.5);
     }
 
     template<typename Value_t>
@@ -996,7 +1010,7 @@ namespace FUNCTIONPARSERTYPES
     {
         return IsIntType<Value_t>::value
                 ? abs_d > Value_t()
-                : abs_d >= Value_t(0.5);
+                : abs_d >= fp_const_preciseDouble<Value_t>(0.5);
     }
 
     template<typename Value_t>
@@ -1103,14 +1117,14 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline bool isOddInteger(const Value_t& value)
     {
-        const Value_t halfValue = (value + Value_t(1)) * Value_t(0.5);
+        const Value_t halfValue = (value + Value_t(1)) * fp_const_preciseDouble<Value_t>(0.5);
         return fp_equal(halfValue, fp_floor(halfValue));
     }
 
     template<typename Value_t>
     inline bool isEvenInteger(const Value_t& value)
     {
-        const Value_t halfValue = value * Value_t(0.5);
+        const Value_t halfValue = value * fp_const_preciseDouble<Value_t>(0.5);
         return fp_equal(halfValue, fp_floor(halfValue));
     }
 
@@ -1147,7 +1161,7 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline bool isEvenInteger(const MpfrFloat& value)
     {
-        return isInteger(value) && value%2 == 0;
+        return isInteger(value) && value%2 == MpfrFloat{};
     }
 
     template<>
@@ -1186,7 +1200,7 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline bool isOddInteger(const MpfrFloat& value)
     {
-        return value.isInteger() && value%2 != 0;
+        return value.isInteger() && value%2 != MpfrFloat{};
     }
 #endif
 

@@ -120,8 +120,8 @@ namespace
         ParserWithConsts()
         {
             typedef FunctionParserBase<Value_t> b;
-            b::AddConstant("pi", Value_t(3.14159265358979323846));
-            b::AddConstant("e", Value_t(2.71828182845904523536));
+            b::AddConstant("pi", FUNCTIONPARSERTYPES::fp_const_pi<Value_t>());
+            b::AddConstant("e", FUNCTIONPARSERTYPES::fp_const_e<Value_t>());
             b::AddUnit("k", Value_t(1000));
             b::AddUnit("M", Value_t(1000000));
             b::AddUnit("dozen", Value_t(12));
@@ -294,7 +294,8 @@ namespace
     template<typename Value_t>
     inline bool valueIsOk(Value_t value)
     {
-        return !(value < -1e14 || value > 1e14);
+        Value_t limit(10000000); limit *= limit; // Makes 1e14
+        return !(value < -limit || value > limit);
     }
 
     template<>
@@ -493,7 +494,10 @@ namespace
             while(true)
             {
                 for(unsigned i = 0; i < varsAmount; ++i)
-                    varValues[i] = Value_t(doubleValues[i]);
+                {
+                    /* FIXME: These values are not precise */
+                    varValues[i] = FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(doubleValues[i]);
+                }
 
                 bool wasOk = false;
                 for(std::size_t i = 0; i < functions.size(); ++i)

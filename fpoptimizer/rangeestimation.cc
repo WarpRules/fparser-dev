@@ -196,7 +196,8 @@ namespace FPoptimizer_CodeTree
                 Value_t max = fp_mod(m.max.val, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
                 if(max < min) max += fp_const_twopi<Value_t>();
                 bool covers_plus1  = (min <= fp_const_pihalf<Value_t>() && max >= fp_const_pihalf<Value_t>());
-                bool covers_minus1 = (min <= Value_t(1.5)*fp_const_pi<Value_t>() && max >= Value_t(1.5)*fp_const_pi<Value_t>());
+                bool covers_minus1 = (min <= fp_const_preciseDouble<Value_t>(1.5)*fp_const_pi<Value_t>()
+                                   && max >= fp_const_preciseDouble<Value_t>(1.5)*fp_const_pi<Value_t>());
                 if(covers_plus1 && covers_minus1)
                     return range<Value_t>(Value_t(-1), Value_t(1));
                 if(covers_minus1)
@@ -222,7 +223,8 @@ namespace FPoptimizer_CodeTree
                 Value_t max = fp_mod(m.max.val, fp_const_twopi<Value_t>()); if(max<Value_t(0)) max+=fp_const_twopi<Value_t>();
                 if(max < min) max += fp_const_twopi<Value_t>();
                 bool covers_plus1  = (min <= fp_const_pihalf<Value_t>() && max >= fp_const_pihalf<Value_t>());
-                bool covers_minus1 = (min <= Value_t(1.5)*fp_const_pi<Value_t>() && max >= Value_t(1.5)*fp_const_pi<Value_t>());
+                bool covers_minus1 = (min <= fp_const_preciseDouble<Value_t>(1.5)*fp_const_pi<Value_t>()
+                                   && max >= fp_const_preciseDouble<Value_t>(1.5)*fp_const_pi<Value_t>());
                 if(covers_plus1 && covers_minus1)
                     return range<Value_t>(Value_t(-1), Value_t(1));
                 if(covers_minus1)
@@ -631,8 +633,8 @@ namespace FPoptimizer_CodeTree
                     {
                         /* The result is always positive.
                          * Figure out whether we know the minimum value. */
-                        if((p1.max.known && p1.max.val < 0)
-                        || (p1.min.known && p1.min.val < 0))
+                        if((p1.max.known && p1.max.val < Value_t(0))
+                        || (p1.min.known && p1.min.val < Value_t(0)))
                         {
                             // Fix regression 50/10:
                             //  1/abs(x) must not be estimated to be >=inf
@@ -773,7 +775,7 @@ namespace FPoptimizer_CodeTree
                 CodeTree<Value_t> tmp;
                 tmp.SetOpcode(cPow);
                 tmp.AddParam(tree.GetParam(0));
-                tmp.AddParam(CodeTreeImmed( Value_t(-0.5) ));
+                tmp.AddParam(CodeTreeImmed( fp_const_preciseDouble<Value_t>(-0.5) ));
                 return CalculateResultBoundaries(tmp);
             }
             case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))

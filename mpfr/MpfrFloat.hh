@@ -38,8 +38,12 @@ class MpfrFloat
        rather than relying on the constructor taking a double type value.
     */
     MpfrFloat();
+
+private:
     MpfrFloat(double value);
     MpfrFloat(long double value);
+
+public:
     MpfrFloat(long value);
     MpfrFloat(int value);
     MpfrFloat(const char* value, char** endptr);
@@ -117,17 +121,39 @@ class MpfrFloat
     MpfrFloat operator-() const;
 
     bool operator<(const MpfrFloat&) const;
-    bool operator<(double) const;
     bool operator<=(const MpfrFloat&) const;
-    bool operator<=(double) const;
     bool operator>(const MpfrFloat&) const;
-    bool operator>(double) const;
     bool operator>=(const MpfrFloat&) const;
-    bool operator>=(double) const;
     bool operator==(const MpfrFloat&) const;
-    bool operator==(double) const;
     bool operator!=(const MpfrFloat&) const;
-    bool operator!=(double) const;
+
+    bool operator<(long) const;
+    bool operator<=(long) const;
+    bool operator>(long) const;
+    bool operator>=(long) const;
+    bool operator==(long) const;
+    bool operator!=(long) const;
+
+    inline bool operator<(int v) const { return operator<((long)v); }
+    inline bool operator<=(int v) const { return operator<=((long)v); }
+    inline bool operator>(int v) const { return operator>((long)v); }
+    inline bool operator>=(int v) const { return operator>=((long)v); }
+    inline bool operator==(int v) const { return operator==((long)v); }
+    inline bool operator!=(int v) const { return operator!=((long)v); }
+
+    bool operator<(double) = delete;
+    bool operator<=(double) = delete;
+    bool operator>(double) = delete;
+    bool operator>=(double) = delete;
+    bool operator==(double) = delete;
+    bool operator!=(double) = delete;
+
+    bool operator<(long double) = delete;
+    bool operator<=(long double) = delete;
+    bool operator>(long double) = delete;
+    bool operator>=(long double) = delete;
+    bool operator==(long double) = delete;
+    bool operator!=(long double) = delete;
 
     static MpfrFloat log(const MpfrFloat&);
     static MpfrFloat log2(const MpfrFloat&);
@@ -174,6 +200,8 @@ class MpfrFloat
     static MpfrFloat const_log2();
     static MpfrFloat someEpsilon();
 
+    // This function replaces the private (double) constructor
+    static inline MpfrFloat makeFromDouble(double v) { return MpfrFloat(v); }
 
  private:
     struct MpfrFloatData;
@@ -188,24 +216,58 @@ class MpfrFloat
     void copyIfShared();
     static MpfrFloatDataContainer& mpfrFloatDataContainer();
 
-    friend MpfrFloat operator+(double lhs, const MpfrFloat& rhs);
-    friend MpfrFloat operator-(double lhs, const MpfrFloat& rhs);
+    friend MpfrFloat operator+(long lhs, const MpfrFloat& rhs);
+    friend MpfrFloat operator-(long lhs, const MpfrFloat& rhs);
+
     void set_0(bool has_value);
     void resetIfShared(bool has_value);
 };
 
-MpfrFloat operator+(double lhs, const MpfrFloat& rhs);
-MpfrFloat operator-(double lhs, const MpfrFloat& rhs);
-MpfrFloat operator*(double lhs, const MpfrFloat& rhs);
-MpfrFloat operator/(double lhs, const MpfrFloat& rhs);
-MpfrFloat operator%(double lhs, const MpfrFloat& rhs);
+MpfrFloat operator+(long lhs, const MpfrFloat& rhs);
+MpfrFloat operator-(long lhs, const MpfrFloat& rhs);
+MpfrFloat operator*(long lhs, const MpfrFloat& rhs);
+MpfrFloat operator/(long lhs, const MpfrFloat& rhs);
+MpfrFloat operator%(long lhs, const MpfrFloat& rhs);
 
-inline bool operator<(double lhs, const MpfrFloat& rhs) { return rhs > lhs; }
-inline bool operator<=(double lhs, const MpfrFloat& rhs) { return rhs >= lhs; }
-inline bool operator>(double lhs, const MpfrFloat& rhs) { return rhs < lhs; }
-inline bool operator>=(double lhs, const MpfrFloat& rhs) { return rhs <= lhs; }
-inline bool operator==(double lhs, const MpfrFloat& rhs) { return rhs == lhs; }
-inline bool operator!=(double lhs, const MpfrFloat& rhs) { return rhs != lhs; }
+MpfrFloat operator+(double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator-(double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator*(double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator/(double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator%(double lhs, const MpfrFloat& rhs) = delete;
+
+MpfrFloat operator+(long double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator-(long double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator*(long double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator/(long double lhs, const MpfrFloat& rhs) = delete;
+MpfrFloat operator%(long double lhs, const MpfrFloat& rhs) = delete;
+
+bool operator<(long double lhs, const MpfrFloat& rhs) = delete;
+bool operator<=(long double lhs, const MpfrFloat& rhs) = delete;
+bool operator>(long double lhs, const MpfrFloat& rhs) = delete;
+bool operator>=(long double lhs, const MpfrFloat& rhs) = delete;
+bool operator==(long double lhs, const MpfrFloat& rhs) = delete;
+bool operator!=(long double lhs, const MpfrFloat& rhs) = delete;
+
+bool operator<(double lhs, const MpfrFloat& rhs) = delete;
+bool operator<=(double lhs, const MpfrFloat& rhs) = delete;
+bool operator>(double lhs, const MpfrFloat& rhs) = delete;
+bool operator>=(double lhs, const MpfrFloat& rhs) = delete;
+bool operator==(double lhs, const MpfrFloat& rhs) = delete;
+bool operator!=(double lhs, const MpfrFloat& rhs) = delete;
+
+inline bool operator<(long lhs, const MpfrFloat& rhs) { return rhs > lhs; }
+inline bool operator<=(long lhs, const MpfrFloat& rhs) { return rhs >= lhs; }
+inline bool operator>(long lhs, const MpfrFloat& rhs) { return rhs < lhs; }
+inline bool operator>=(long lhs, const MpfrFloat& rhs) { return rhs <= lhs; }
+inline bool operator==(long lhs, const MpfrFloat& rhs) { return rhs == lhs; }
+inline bool operator!=(long lhs, const MpfrFloat& rhs) { return rhs != lhs; }
+
+inline bool operator<(int lhs, const MpfrFloat& rhs) { return rhs > lhs; }
+inline bool operator<=(int lhs, const MpfrFloat& rhs) { return rhs >= lhs; }
+inline bool operator>(int lhs, const MpfrFloat& rhs) { return rhs < lhs; }
+inline bool operator>=(int lhs, const MpfrFloat& rhs) { return rhs <= lhs; }
+inline bool operator==(int lhs, const MpfrFloat& rhs) { return rhs == lhs; }
+inline bool operator!=(int lhs, const MpfrFloat& rhs) { return rhs != lhs; }
 
 // This function takes into account the value of os.precision()
 std::ostream& operator<<(std::ostream& os, const MpfrFloat& value);

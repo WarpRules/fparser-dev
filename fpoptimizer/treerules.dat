@@ -682,7 +682,7 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 @F cMul (cSin[x]) (cCos[x]) %                 : (cMul (cSin [(cMul x 2)]) *(% 0.5))
 
 # sin(x)+cos(x) = sqrt(2)*sin(x + pi/4)  = sqrt(2)*cos(x - pi/4)
-@F cAdd (cSin[x])            (cCos[x])              : (cMul (cSin [(cAdd x CONSTANT_PIQUARTER)]) CONSTANT_SQRT2) # 20/add_sin_cos
+@F cAdd (cSin[x])            (cCos[x])              : (cMul (cSin [(cAdd x CONSTANT_PIQUARTER)]) SQRT(2)) # 20/add_sin_cos
 
 # sin(x) + cos(x)*a = sin(x + atan(a)) * sqrt(a^2+1)
 #                   = sin(x + atan(a)) / cos(atan(a))
@@ -705,7 +705,7 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 ## sin(x)*a + cos(x)*a = a*sqrt(2)*sin(x + pi/4)
 # This is done by binomial opt, no need for separate rule
-#@F cAdd (cMul (cSin[x]) <1>) (cMul (cCos[x]) <1>)  : (cMul (cSin [(cAdd x CONSTANT_PIQUARTER)]) CONSTANT_SQRT2 <1>)
+#@F cAdd (cMul (cSin[x]) <1>) (cMul (cCos[x]) <1>)  : (cMul (cSin [(cAdd x CONSTANT_PIQUARTER)]) SQRT(2) <1>)
 
 
 # sin(asin(x)) = x

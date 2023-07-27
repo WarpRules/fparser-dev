@@ -209,7 +209,7 @@ namespace
         && tree.GetParam(0).GetOpcode() == cMul)
         {
             Value_t exponent_immed = tree.GetParam(1).GetImmed();
-            Value_t factor_immed   = 1.0;
+            Value_t factor_immed   = 1;
             bool changes = false;
             CodeTree<Value_t>& mulgroup = tree.GetParam(0);
             for(size_t a=mulgroup.GetParamCount(); a-->0; )
