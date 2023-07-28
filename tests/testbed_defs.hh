@@ -52,11 +52,8 @@ namespace testbedFuncs
 {
     // Auxiliary functions
     // -------------------
-    template<typename Value_t>
-    inline Value_t r2d(Value_t x) { return x * FUNCTIONPARSERTYPES::fp_const_rad_to_deg<Value_t>(); }
-
-    template<typename Value_t>
-    inline Value_t d2r(Value_t x) { return x * FUNCTIONPARSERTYPES::fp_const_deg_to_rad<Value_t>(); }
+    #define d2r FUNCTIONPARSERTYPES::DegreesToRadians
+    #define r2d FUNCTIONPARSERTYPES::RadiansToDegrees
 
     template<typename Value_t>
     inline Value_t userDefFuncSqr(const Value_t* p) { return p[0]*p[0]; }

@@ -194,6 +194,12 @@ testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 
 fpoptimizer.o: fpoptimizer.cc
 
+extrasrc/fpaux.hh: util/build_fpaux $(wildcard extrasrc/functions/*.hh)
+	util/build_fpaux -o "$@" extrasrc/functions/*.hh
+
+util/build_fpaux: util/build_fpaux.o
+	$(LD) -o "$@" "$^" $(LDFLAGS)
+
 testbed.o: testbed.cc tests/testbed_autogen.hh tests/stringutil.hh tests/testbed_defs.hh
 	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED) -c -o $@ $<
 
