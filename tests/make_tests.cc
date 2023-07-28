@@ -936,11 +936,15 @@ default: break;
     {
         std::ofstream out2("tests/testbed_evaluate" + std::to_string(n) + ".cc");
 
+        // std::complex<float> is _very_ slow to compile with any sort of optimizations.
+        // std::complex<double> is that a little, too.
+        // float, double, long double, int, GmpInt are fast.
+        // Mpfr and complex long double are fine.
         #define o(code,mask,typename,def,lit) \
-            if(m == mask && (std::string(#code) == "mf")) out2 << lesser_optimization; \
+            if(m == mask && (std::string(#code) == "mf" \
+                          || std::string(#code) == "cld")) out2 << lesser_optimization; \
             if(m == mask && (std::string(#code) == "cf" \
-                          || std::string(#code) == "cd" \
-                          || std::string(#code) == "cld")) out2 << no_optimization;
+                          || std::string(#code) == "cd")) out2 << no_optimization;
             DEFINE_TYPES(o)
         #undef o
 

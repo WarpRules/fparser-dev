@@ -113,6 +113,8 @@ CXXFLAGS += $(CXX_VERSION)
 
 CXXFLAGS_TESTBED := $(CXX_VERSION)
 
+#CXX := /usr/bin/time $(CXX)
+
 
 #LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections
@@ -166,10 +168,10 @@ TESTBED_MODULES += tests/testbed_testlist$(N).o
 tests/testbed_evaluate$(N).o: tests/testbed_evaluate$(N).cc \
                               tests/testbed_autogen.hh extrasrc/fpaux.hh tests/testbed_defs.hh \
                               tests/testbed_const$(N).hh
-	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED) -c -o $$@ $$<
 tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc \
                               tests/testbed_autogen.hh extrasrc/fpaux.hh tests/testbed_defs.hh
-	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED) -c -o $$@ $$<
 TESTBED_GENSRC += tests/testbed_evaluate$(N).cc
 TESTBED_GENSRC += tests/testbed_testlist$(N).cc
 TESTBED_GENSRC += tests/testbed_const$(N).hh
@@ -193,7 +195,7 @@ testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 fpoptimizer.o: fpoptimizer.cc
 
 testbed.o: testbed.cc tests/testbed_autogen.hh tests/stringutil.hh tests/testbed_defs.hh
-	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED) -c -o $@ $<
 
 testbed_release: $(TESTBED_MODULES) fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)
