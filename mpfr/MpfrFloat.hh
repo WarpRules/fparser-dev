@@ -168,6 +168,7 @@ public:
     static MpfrFloat csc(const MpfrFloat&);
     static MpfrFloat cot(const MpfrFloat&);
     static void sincos(const MpfrFloat&, MpfrFloat& sin, MpfrFloat& cos);
+    static void sinhcosh(const MpfrFloat&, MpfrFloat& sinh, MpfrFloat& cosh);
     static MpfrFloat acos(const MpfrFloat&);
     static MpfrFloat asin(const MpfrFloat&);
     static MpfrFloat atan(const MpfrFloat&);

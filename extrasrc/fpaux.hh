@@ -1493,16 +1493,10 @@ namespace FUNCTIONPARSERTYPES
     inline void fp_sinhCosh(long&, long&, const long&) {}
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    // Mpfr version might be best synthesized through the generic version as well.
-    /*
-    inline void fp_sinhCosh(MpfrFloat& sinhvalue, MpfrFloat& coshvalue,
-                            const MpfrFloat& param)
+    inline void fp_sinhCosh(MpfrFloat& sinh, MpfrFloat& cosh, const MpfrFloat& a)
     {
-        const MpfrFloat paramCopy = param;
-        sinhvalue = fp_sinh(paramCopy);
-        coshvalue = fp_cosh(paramCopy);
+        MpfrFloat::sinhcosh(a, sinh, cosh);
     }
-    */
 #endif
 
 #ifdef FP_SUPPORT_GMP_INT_TYPE
@@ -1696,7 +1690,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
 #endif
-#line 1700 "extrasrc/fpaux.hh"
+#line 1694 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES

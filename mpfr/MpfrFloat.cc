@@ -944,6 +944,16 @@ void MpfrFloat::sincos(const MpfrFloat& value,
         (sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, GMP_RNDN);
 }
 
+void MpfrFloat::sinhcosh(const MpfrFloat& value,
+                         MpfrFloat& sinh,
+                         MpfrFloat& cosh)
+{
+    sinh.copyIfShared();
+    cosh.copyIfShared();
+    mpfr_sinh_cosh
+        (sinh.mData->mFloat, cosh.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+}
+
 MpfrFloat MpfrFloat::acos(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
