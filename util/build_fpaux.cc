@@ -8,6 +8,7 @@
 #include <functional>
 #include <cstdio>
 #include <cstring>
+#include <list>
 int main(int argc, char** argv)
 {
     std::string outputfn = "extrasrc/fpaux.hh";
@@ -74,7 +75,9 @@ int main(int argc, char** argv)
     }
     // Create a topological order for the modules
     std::vector<std::string> order;
-    std::function<void(const std::string&)> dfs = [&](const std::string& from)
+    std::function<void(const std::string&, std::list<std::string>&)> dfs =
+        [&](const std::string& from,
+            std::list<std::string>& cg)
     {
         auto i = modules.find(from);
         if(i == modules.end())
@@ -85,21 +88,28 @@ int main(int argc, char** argv)
         auto& module = i->second;
         std::set<std::string>& deps = std::get<1>(module);
         unsigned& color             = std::get<2>(module);
+        if(color == 2) return; // ok
+        cg.push_back(from);
         if(color == 1)
         {
             std::cerr << "Error: Cyclical dependency to " << from << '\n';
-            for(auto& o: order) std::cerr << "- prior: " << o << '\n';
-            return; // ERROR: loop detected
+            for(auto& m: cg) std::cerr << " -> " << m;
+            std::cerr << '\n';
+            std::abort(); // ERROR: loop detected
+
         }
-        if(color == 2) return; // ok
         color = 1;
-        for(auto& dep: deps) dfs(dep);
+        for(auto& dep: deps) dfs(dep, cg);
+        cg.pop_back();
         order.push_back(from);
         color = 2;
     };
     for(auto& m: modules)
         if(std::get<2>(m.second) == 0)
-            dfs(m.first);
+        {
+            std::list<std::string> cg;
+            dfs(m.first, cg);
+        }
 
     {std::ifstream ifs(outputfn);
     std::ofstream ofs(outputfn + ".new");

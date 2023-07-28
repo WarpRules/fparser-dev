@@ -23,7 +23,7 @@ Adding new functions: Suppose we want to add function fp_gamma():
 - In that file, put all your specialized implementations of fp_gamma().
 - If in doubt, look at an existing file for help. For example, func_asin.hh.
 - Lastly, mark the dependencies: Say, if your implementation depends on fp_exp(), put //$DEP: func_exp in the beginning of the file. Mark all dependencies!
-- Rebuild: make extrasrc/fpaux.hh.
+- Rebuild: Run "make extrasrc/fpaux.hh".
 - If you get a circular dependency error from util/build_fpaux, you may need to resort to forward declarations. See func_pow.hh for example (includes a forward declaration for fp_pow_base).
 
 Naming:
