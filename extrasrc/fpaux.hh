@@ -264,11 +264,19 @@ namespace FUNCTIONPARSERTYPES
     }
 #endif // FP_SUPPORT_LOG2
 
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+    template<typename Value_t>
+    inline Value_t fp_log10(const Value_t& x)
+    {
+        return std::log10(x);
+    }
+#else
     template<typename Value_t>
     inline Value_t fp_log10(const Value_t& x)
     {
         return fp_log(x) * fp_const_log10inv<Value_t>();
     }
+#endif
 
     template<typename Value_t>
     inline Value_t fp_trunc(const Value_t& x)
