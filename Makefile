@@ -244,6 +244,7 @@ $(TESTBED_GENSRC) &:: tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/
 		--ignore "*/.*" \
 		--ignore "*.cc" \
 		--ignore "*.hh" \
+		--strip_prefix "tests/" \
 		tests/*/* tests/*/*/*
 
 FPOPTIMIZER_CC_FILES=\

@@ -15,47 +15,49 @@
 
 namespace
 {
+#define LITERAL_MAKER_DEFAULT "const Value_t name = static_cast<Value_t>(lit##l);"
+#define LITERAL_MAKER_MPFR    "const MpfrFloat name{#lit, nullptr};"
 #define DEFINE_TYPES(o) \
-    o(d,   1, double,                     FP_TEST_WANT_DOUBLE_TYPE) \
-    o(f,   2, float,                      FP_TEST_WANT_FLOAT_TYPE) \
-    o(ld,  4, long double,                FP_TEST_WANT_LONG_DOUBLE_TYPE) \
-    o(li,  8, long,                       FP_TEST_WANT_LONG_INT_TYPE) \
-    o(gi, 16, GmpInt,                     FP_TEST_WANT_GMP_INT_TYPE) \
-    o(mf, 32, MpfrFloat,                  FP_TEST_WANT_MPFR_FLOAT_TYPE) \
-    o(cld,64, std::complex<long double>,  FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE) \
-    o(cf,128, std::complex<float>,        FP_TEST_WANT_COMPLEX_FLOAT_TYPE) \
-    o(cd,256, std::complex<double>,       FP_TEST_WANT_COMPLEX_DOUBLE_TYPE) \
+    o(d,   1, double,                     FP_TEST_WANT_DOUBLE_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(f,   2, float,                      FP_TEST_WANT_FLOAT_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(ld,  4, long double,                FP_TEST_WANT_LONG_DOUBLE_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(li,  8, long,                       FP_TEST_WANT_LONG_INT_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(gi, 16, GmpInt,                     FP_TEST_WANT_GMP_INT_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(mf, 32, MpfrFloat,                  FP_TEST_WANT_MPFR_FLOAT_TYPE, LITERAL_MAKER_MPFR) \
+    o(cld,64, std::complex<long double>,  FP_TEST_WANT_COMPLEX_LONG_DOUBLE_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(cf,128, std::complex<float>,        FP_TEST_WANT_COMPLEX_FLOAT_TYPE, LITERAL_MAKER_DEFAULT) \
+    o(cd,256, std::complex<double>,       FP_TEST_WANT_COMPLEX_DOUBLE_TYPE, LITERAL_MAKER_DEFAULT) \
 
     constexpr unsigned highest_mask = (1+(0
-        #define o(code,mask,typename,def) |mask
+        #define o(code,mask,typename,def,lit) |mask
         DEFINE_TYPES(o)
         #undef o
     )) >> 1;  // e.g. (1+(0|1|2|4))>>1 = (1+7)>>1 = 8>>1 = 4
 
     [[nodiscard]] std::string GetDefinesForCpptype(const std::string& type)
     {
-        #define o(code,mask,typename,def) if(type == #typename) return #def;
+        #define o(code,mask,typename,def,lit) if(type == #typename) return #def;
         DEFINE_TYPES(o)
         #undef o
         return std::string();
     }
     [[nodiscard]] std::string GetCpptypeForDefines(const std::string& defs)
     {
-        #define o(code,mask,typename,def) if(defs == #def) return #typename;
+        #define o(code,mask,typename,def,lit) if(defs == #def) return #typename;
         DEFINE_TYPES(o)
         #undef o
         return std::string();
     }
     [[nodiscard]] std::string GetTypeForCode(const std::string& typecode)
     {
-        #define o(code,mask,typename,def) if(typecode == #code) return #typename;
+        #define o(code,mask,typename,def,lit) if(typecode == #code) return #typename;
         DEFINE_TYPES(o)
         #undef o
         return typecode;
     }
     [[nodiscard]] unsigned GetLimitMaskForCode(const std::string& typecode)
     {
-        #define o(code,mask,typename,def) if(typecode == #code) return mask;
+        #define o(code,mask,typename,def,lit) if(typecode == #code) return mask;
         DEFINE_TYPES(o)
         #undef o
         return 0;
@@ -64,7 +66,7 @@ namespace
     {
         std::ostringstream result;
         result << "(false\n";
-        #define o(code,msk,typename,def) \
+        #define o(code,msk,typename,def,lit) \
             if(mask & msk) \
                 result << "#ifdef " #def "\n" \
                           " || std::is_same<" << type << ", " #typename ">::value\n" \
@@ -76,7 +78,7 @@ namespace
     }
     [[nodiscard]] unsigned GetMaskForDefines(const std::string& defs)
     {
-        #define o(code,mask,typename,def) \
+        #define o(code,mask,typename,def,lit) \
             if(defs == #def) return mask;
         DEFINE_TYPES(o)
         #undef o
@@ -104,9 +106,6 @@ namespace
 
     std::map<std::string/*c++ datatype*/, std::vector<TestData>> tests;
     std::unordered_map<std::string/*TestName*/, FunctionInfo> all_functions;
-
-    static const char cbuf[] =
-    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
 
     template<typename CharT>
     static void
@@ -397,7 +396,11 @@ namespace
         }
     }
 
-    /*std::string MakeFuncName(const std::string& testname)
+    /*
+    static const char cbuf[] =
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
+
+    std::string MakeFuncName(const std::string& testname)
     {
     #if 0
         static unsigned counter = 0;
@@ -426,64 +429,78 @@ namespace
     #endif
     }*/
 
-    void CompileTest(const std::string& testname, FILE* fp,
-                     unsigned&           user_param_count)
+    void CompileTest(std::istream& inf,
+                     const std::string& testname,
+                     unsigned&          user_param_count)
     {
-        std::string linebuf;
-
         TestData test;
-        std::set<std::string> DataTypes;
-
         test.TestName = testname;
-        str_replace_inplace(test.TestName, std::string("tests/"), std::string(""));
 
+        std::set<std::string> DataTypes;
         std::unordered_map<std::string, std::string> var_trans;
 
         unsigned datatype_limit_mask = ~0u;
 
-        unsigned linenumber = 0;
-        char Buf[4096]={0};
-        while(fgets(Buf,sizeof(Buf)-1,fp))
+        auto getline = [&]()
         {
-            ++linenumber;
-            const char* line = Buf;
-            while(*line == ' ' || *line == '\t') ++line;
-            std::strtok(Buf, "\r");
-            std::strtok(Buf, "\n");
-
-            const char* backslash = std::strchr(line, '\\');
-            if(backslash && backslash[1] == '\0')
+            std::string in_line;
+            std::getline(inf, in_line);
+            bool good = inf.good();
+            if(good)
             {
-                linebuf = "";
+                // Trip spaces from both ends
+                std::size_t remove_spaces_begin = 0, retain_end = in_line.size();
+                while(remove_spaces_begin < in_line.size() &&
+                    (in_line[remove_spaces_begin]==' '
+                  || in_line[remove_spaces_begin]=='\t'
+                  || in_line[remove_spaces_begin]=='\r'
+                  || in_line[remove_spaces_begin]=='\n'))
+                {
+                    ++remove_spaces_begin;
+                }
+                while(retain_end > remove_spaces_begin &&
+                    (in_line[retain_end-1]==' '
+                  || in_line[retain_end-1]=='\t'
+                  || in_line[retain_end-1]=='\r'
+                  || in_line[retain_end-1]=='\n'))
+                {
+                    --retain_end;
+                }
+                in_line.erase(retain_end);
+                in_line.erase(0, remove_spaces_begin);
+            }
+            return std::make_pair(good, in_line);
+        };
+
+        unsigned linenumber = 0;
+        for(;;)
+        {
+            auto got = getline();
+            if(!got.first) break;
+            std::string in_line = std::move(got.second);
+            ++linenumber;
+
+            if(in_line.empty()) continue;
+            if(in_line.back() == '\\') // Backslash continuation?
+            {
+                in_line.pop_back();
+                // Continue on another line
                 for(;;)
                 {
-                    // Append the line, sans backslash
-                    linebuf.append(line, backslash-line);
-                    linebuf += ' ';
-
-                    if(!fgets(Buf,sizeof(Buf)-1,fp)) break;
+                    got = getline();
+                    if(!got.first) break;
+                    std::string in_line2 = std::move(got.second);
                     ++linenumber;
-                    const char* line = Buf;
-                    while(*line == ' ' || *line == '\t') ++line;
-                    std::strtok(Buf, "\r");
-                    std::strtok(Buf, "\n");
-                    backslash = std::strchr(line, '\\');
-
-                    if(backslash && backslash[1] == '\0')
-                        continue;
-
-                    // add the final, backslash-less line
-                    linebuf += line;
-                    break;
+                    if(in_line2.empty() || in_line2.back() != '\\')
+                    {
+                        in_line += std::move(in_line2);
+                        break;
+                    }
+                    in_line2.pop_back();
+                    in_line += std::move(in_line2);
                 }
-                line = linebuf.c_str();
             }
-            else
-            {
-                // no backslash on the line
-                linebuf = Buf;
-            }
-
+            const char* line = in_line.c_str();
             const char* valuepos = std::strchr(line, '=');
             if(valuepos)
             {
@@ -572,8 +589,6 @@ namespace
                 case 'C': // the C++ template function
                     if(valuepos)
                     {
-                        test.TestName = test.TestName; //MakeFuncName(test.TestName);
-
                         std::ostringstream codebuf;
                         std::unordered_map<std::string,std::string> used_constants;
 
@@ -586,7 +601,7 @@ namespace
                             var_trans);
 
                         std::string code = codebuf.str();
-                        all_functions.emplace(test.TestName,
+                        all_functions.emplace(testname,
                             FunctionInfo{datatype_limit_mask, std::move(code), std::move(used_constants)}
                                               );
                     }
@@ -656,7 +671,7 @@ int main(int argc, char* argv[])
 
 )";
 
-    std::vector<std::string> files, ignore_patterns;
+    std::vector<std::string> files, ignore_patterns, strip_prefix;
 
     for(int a=1; a<argc; ++a)
     {
@@ -686,6 +701,18 @@ int main(int argc, char* argv[])
             ignore_patterns.push_back(argv[a]);
             continue;
         }
+        else if(std::strcmp(argv[a], "--strip_prefix") == 0
+             || std::strcmp(argv[a], "--strip-prefix") == 0
+               )
+        {
+            if(++a == argc)
+            {
+                std::cerr << "make_tests: Expected strip-prefix-pattern after --strip-prefix\n";
+                return 1;
+            }
+            strip_prefix.push_back(argv[a]);
+            continue;
+        }
 
         std::string fn ( argv[a] );
         if(fn.empty()) continue;
@@ -711,14 +738,13 @@ int main(int argc, char* argv[])
 
     for(const auto& filename: files)
     {
-        FILE* fp = std::fopen(filename.c_str(), "rt");
-        if(!fp)
-        {
-            std::perror(filename.c_str());
-            continue;
-        }
-        CompileTest(filename, fp, user_param_count);
-        fclose(fp);
+        std::ifstream inf(filename);
+        std::string testname = filename;
+        for(auto& p: strip_prefix)
+            if(testname.compare(0, p.size(), p) == 0)
+                testname.erase(0, p.size());
+
+        CompileTest(inf, testname, user_param_count);
     }
 
     std::unordered_map<std::string, unsigned> test_index;
@@ -833,7 +859,7 @@ FP_LIST_ALL_TESTS(o)
     for(unsigned m=1; m<=highest_mask; m*=2)
     {
         bool complex = false;
-        #define o(code,mask,typename,def) \
+        #define o(code,mask,typename,def,lit) \
             if(mask == m && std::string(#code)[0] == 'c') \
                 complex = true;
         DEFINE_TYPES(o)
@@ -858,15 +884,14 @@ for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
     std::ofstream out2("tests/testbed_const" + std::to_string(n) + ".hh");
 
     out2 << "#define _(name,lit)\n";
-    if(m == GetLimitMaskForCode("mf"))
-        out2 << "#define o(name,lit) const MpfrFloat name{#lit, nullptr};\n";
-    else
-        out2 << "#define o(name,lit) const Value_t name = static_cast<Value_t>(lit##l);\n";
-    out2 << "#if(0";
-#define o(code,mask,typename,def) if(m == mask) out2 << "||defined(" #def ")";
+    std::string literal_maker = "static_assert(!\"I don't know how to make literals\");";
+    std::string if_rule = "#if(0";
+#define o(code,mask,typename,def,lit) if(m == mask) { if_rule += "||defined(" #def ")"; literal_maker = lit; }
     DEFINE_TYPES(o)
 #undef o
-    out2 << R"()
+    if_rule += ")";
+    out2 << "#define o(name,lit) " << literal_maker << "\n" << if_rule;
+    out2 << R"(
 template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIST_ALL_CONST(";
     for(unsigned n=1; n<=highest_mask; n<<=1)
     {
@@ -951,7 +976,7 @@ default: break;
     })" << unreachable << R"(
 }
 )";
-#define o(code,mask,typename,def) \
+#define o(code,mask,typename,def,lit) \
         out2 << \
             "#ifdef " #def "\n" \
             "  template " << #typename << " evaluate_test<" #typename ">(unsigned,const " #typename " *);\n" \
@@ -976,7 +1001,7 @@ default: break;
 #if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
 #define M(n) T##n(case n:return,;)
 #if(0)";
-#define o(code,mask,typename,def) if(m == mask) out2 << "||defined(" #def ")";
+#define o(code,mask,typename,def,lit) if(m == mask) out2 << "||defined(" #def ")";
         DEFINE_TYPES(o)
 #undef o
         out2 << R"()
@@ -1005,7 +1030,7 @@ default: break;
 })" << unreachable << R"(}
 #undef M
 )";
-#define o(code,mask,typename,def) \
+#define o(code,mask,typename,def,lit) \
         if(m == mask) \
             out2 << "template " #typename " evaluator<" #typename << "," << mask \
                  << ">::calc(unsigned,const " #typename " *);\n";

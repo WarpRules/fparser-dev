@@ -13,21 +13,12 @@ static const char* const kVersionNumber = "2.3.0.12";
 
 #include "fpconfig.hh"
 #include "fparser.hh"
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-#include "fparser_mpfr.hh"
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-#include "fparser_gmpint.hh"
-#endif
-
 #include "extrasrc/fpaux.hh"
 
-#include <cmath>
 #include <iostream>
 #include <iomanip>
-#include <cstdio>
 #include <sstream>
+#include <cstdio>
 #include <algorithm>
 #include <cstring>
 #include <cassert>
@@ -1671,7 +1662,7 @@ namespace
 }
 
 template<typename Value_t>
-const char* valueType()
+const char* getNameForValue_t()
 {
     if(std::is_same<Value_t, long>::value) return "long int";
     if(std::is_same<Value_t, float>::value) return "float";
@@ -1827,7 +1818,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                     out << "\n****************************\nTest "
                         << testData.testName
                         << ", function:\n\"" << testData.funcString
-                        << "\"\n(" << valueType<Value_t>() << testType << ")";
+                        << "\"\n(" << getNameForValue_t<Value_t>() << testType << ")";
 
                 if(verbosityLevel >= 2)
                 {
@@ -2118,7 +2109,7 @@ bool runRegressionTests(unsigned n_threads,
         if(retval >= 0)
         {
             out <<
-                "With FunctionParserBase<" << valueType<Value_t>() << ">"
+                "With FunctionParserBase<" << getNameForValue_t<Value_t>() << ">"
                 "\nin \"" << testData.funcString <<
                 "\" (\"" << testData.paramString <<
                 "\"), col " << retval <<
@@ -2250,7 +2241,7 @@ bool runRegressionTests(unsigned n_threads = std::thread::hardware_concurrency()
     if(verbosityLevel >= 1)
     {
         setAnsiBold();
-        std::cout << "==================== Parser type \"" << valueType<Value_t>()
+        std::cout << "==================== Parser type \"" << getNameForValue_t<Value_t>()
                   << "\" ====================" << std::endl;
         resetAnsiColor();
     }
@@ -2876,10 +2867,10 @@ int main(int argc, char* argv[])
 
     for(int i = 1; i < argc; ++i)
     {
-        if(std::strcmp(argv[i], "-q") == 0) verbosityLevel = 0;
-        else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel = 2;
-        else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel = 3;
-        else if(std::strcmp(argv[i], "-vvv") == 0) verbosityLevel = 4;
+        if(std::strcmp(argv[i], "-q") == 0) verbosityLevel -= 1; // becomes 0
+        else if(std::strcmp(argv[i], "-v") == 0) verbosityLevel += 1; // becomes 2
+        else if(std::strcmp(argv[i], "-vv") == 0) verbosityLevel += 2; // becomes 3
+        else if(std::strcmp(argv[i], "-vvv") == 0) verbosityLevel += 3; // becomes 4
         else if(std::strcmp(argv[i], "-noalgo") == 0) runAlgoTests = false;
         else if(std::strcmp(argv[i], "-skipSlowAlgo") == 0) skipSlowAlgo = true;
         else if(std::strcmp(argv[i], "-algo") == 0)
