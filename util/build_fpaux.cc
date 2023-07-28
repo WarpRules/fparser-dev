@@ -32,6 +32,8 @@ int main(int argc, char** argv)
             continue;
         }
     }
+
+    // Parse the input files.
     std::map<std::string/*name*/,
         std::tuple<std::string/*contents*/,
                    std::set<std::string>,/*dependencies*/
@@ -47,7 +49,6 @@ int main(int argc, char** argv)
         if(p != module_name.npos) module_name.erase(0, p+1);
         p = module_name.find('.');
         if(p != module_name.npos) module_name.erase(p);
-        //std::cerr << "Module: " << module_name << '\n';
 
         auto& mod = modules[module_name];
         std::string& contents = std::get<0>(mod);
@@ -73,11 +74,11 @@ int main(int argc, char** argv)
             }
         }
     }
+
     // Create a topological order for the modules
     std::vector<std::string> order;
-    std::function<void(const std::string&, std::list<std::string>&)> dfs =
-        [&](const std::string& from,
-            std::list<std::string>& cg)
+    {std::list<std::string> cg;
+    std::function<void(const std::string&)> dfs = [&](const std::string& from)
     {
         auto i = modules.find(from);
         if(i == modules.end())
@@ -96,23 +97,20 @@ int main(int argc, char** argv)
             for(auto& m: cg) std::cerr << " -> " << m;
             std::cerr << '\n';
             std::abort(); // ERROR: loop detected
-
         }
         color = 1;
-        for(auto& dep: deps) dfs(dep, cg);
+        for(auto& dep: deps) { dfs(dep); }
         cg.pop_back();
         order.push_back(from);
         color = 2;
     };
     for(auto& m: modules)
         if(std::get<2>(m.second) == 0)
-        {
-            std::list<std::string> cg;
-            dfs(m.first, cg);
-        }
+            dfs(m.first);}
 
+    std::string tempfn = outputfn + ".new";
     {std::ifstream ifs(outputfn);
-    std::ofstream ofs(outputfn + ".new");
+    std::ofstream ofs(tempfn);
     bool inside = false;
     std::size_t lineno = 1;
     for(std::string line; std::getline(ifs, line); )
@@ -143,5 +141,5 @@ int main(int argc, char** argv)
             inside = false;
         }
     }}
-    return std::rename((outputfn + ".new").c_str(), outputfn.c_str());
+    return std::rename(tempfn.c_str(), outputfn.c_str());
 }
