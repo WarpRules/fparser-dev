@@ -2893,30 +2893,39 @@ int main(int argc, char* argv[])
 
             std::vector<std::string> tests;
 #ifndef FP_DISABLE_DOUBLE_TYPE
+            if(runAllTypes || run_d)
             for(unsigned t: RegressionTests<double>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_FLOAT_TYPE
+            if(runAllTypes || run_f)
             for(unsigned t: RegressionTests<float>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+            if(runAllTypes || run_ld)
             for(unsigned t: RegressionTests<long double>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_LONG_INT_TYPE
+            if(runAllTypes || run_li)
             for(unsigned t: RegressionTests<long>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+            if(runAllTypes || run_mf)
             for(unsigned t: RegressionTests<MpfrFloat>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_GMP_INT_TYPE
+            if(runAllTypes || run_gi)
             for(unsigned t: RegressionTests<GmpInt>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+            if(runAllTypes || run_cf)
             for(unsigned t: RegressionTests<std::complex<float>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+            if(runAllTypes || run_cd)
             for(unsigned t: RegressionTests<std::complex<double>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
 #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+            if(runAllTypes || run_cld)
             for(unsigned t: RegressionTests<std::complex<long double>>::Tests) tests.push_back(AllTests[t].testName);
 #endif
             std::sort(tests.begin(), tests.end(), natcomp);
