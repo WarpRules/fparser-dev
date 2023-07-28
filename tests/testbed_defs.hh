@@ -48,18 +48,23 @@ struct RegressionTests
 constexpr unsigned customtest_index = ~0u;
 
 
-namespace
+namespace testbedFuncs
 {
-
     // Auxiliary functions
     // -------------------
     template<typename Value_t>
     inline Value_t r2d(Value_t x)
-    { return x * (Value_t(180) / FUNCTIONPARSERTYPES::fp_const_pi<Value_t>()); }
+    {
+        static const Value_t fac = Value_t(180) / FUNCTIONPARSERTYPES::fp_const_pi<Value_t>();
+        return x * fac;
+    }
 
     template<typename Value_t>
     inline Value_t d2r(Value_t x)
-    { return x * (FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() / Value_t(180)); }
+    {
+        static const Value_t fac = FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() / Value_t(180);
+        return x * fac;
+    }
 
     //inline double log10(double x) { return std::log(x) / std::log(10); }
 
@@ -102,6 +107,10 @@ namespace
     inline std::complex<long double> testbedEpsilon<std::complex<long double> >()
     { return testbedEpsilon<long double>(); }
 #endif
+}
+namespace
+{
+    using namespace testbedFuncs;
 }
 
 #undef FP_TEST_WANT_FLOAT_TYPE

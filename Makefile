@@ -163,9 +163,12 @@ TESTBED_GENSRC = \
 define testbed_n
 TESTBED_MODULES += tests/testbed_evaluate$(N).o
 TESTBED_MODULES += tests/testbed_testlist$(N).o
-tests/testbed_evaluate$(N).o: tests/testbed_evaluate$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+tests/testbed_evaluate$(N).o: tests/testbed_evaluate$(N).cc \
+                              tests/testbed_autogen.hh extrasrc/fpaux.hh tests/testbed_defs.hh \
+                              tests/testbed_const$(N).hh
 	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
-tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc \
+                              tests/testbed_autogen.hh extrasrc/fpaux.hh tests/testbed_defs.hh
 	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 TESTBED_GENSRC += tests/testbed_evaluate$(N).cc
 TESTBED_GENSRC += tests/testbed_testlist$(N).cc
@@ -189,7 +192,7 @@ testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 
 fpoptimizer.o: fpoptimizer.cc
 
-testbed.o: testbed.cc tests/testbed_autogen.hh tests/stringutil.hh
+testbed.o: testbed.cc tests/testbed_autogen.hh tests/stringutil.hh tests/testbed_defs.hh
 	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 
 testbed_release: $(TESTBED_MODULES) fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)

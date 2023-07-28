@@ -114,7 +114,15 @@ namespace
         std::ostringstream defs_list;
         std::ostringstream test_list;
         std::size_t        test_counter = 0;
-        test_list << "#define " << macroname << "(o) \\\n";
+        test_list << R"(
+#define )" << macroname << R"((o) \
+/*         ┌- use degrees instead of radians?   */ \
+/*         |┌- has a double version?            */ \
+/*         ||┌- has a long version?             */ \
+/*         |||┌- ignore sign in imaginary part? */ \
+/*         ||||┌- parameter count               */ \
+/*         ↓↓↓↓↓                                */ \
+)";
         std::unordered_map<std::string, unsigned>    tests_per_defs_count;
         std::unordered_map<std::string, std::string> tests_per_defs;
 
@@ -309,12 +317,13 @@ namespace
                          std::ostream& codebuf,
                          unsigned& user_param_count,
                          std::unordered_map<std::string,std::string>& used_constants,
-                         const std::unordered_map<std::string, std::string>& var_trans)
+                         const std::unordered_map<std::string, std::string>& var_trans,
+                         bool recursed = false)
     {
         unsigned depth    = 0;
         unsigned brackets = 0;
 
-        while(*funcstr && (*funcstr != '}' || depth>0) && (*funcstr != ',' || depth>0))
+        while(*funcstr && (*funcstr != '}' || depth>0) && (*funcstr != ',' || depth>0 || !recursed))
         {
             if(funcstr[0] == '(' && funcstr[1] == '{')
             {
@@ -340,7 +349,8 @@ namespace
                         codebuf,
                         user_param_count,
                         used_constants,
-                        var_trans);
+                        var_trans,
+                        true);
 
                     codebuf << "), ";
                     if(*funcstr == ',') ++funcstr;
@@ -391,6 +401,25 @@ namespace
                     codebuf << "c." << codename;
                     funcstr = endptr;
                 }
+                else if(*funcstr == '$')
+                {
+                    ++funcstr;
+                    unsigned length = readIdentifierCommon(funcstr);
+                    codebuf << std::string(funcstr, funcstr+length);
+                    funcstr += length;
+                }
+                else if(*funcstr == '"')
+                {
+                    // Read string literal
+                    const char* begin = funcstr++;
+                    while(*funcstr && *funcstr != '"')
+                    {
+                        if(*funcstr == '\\') funcstr += 2;
+                        else ++funcstr;
+                    }
+                    if(*funcstr == '"') ++funcstr;
+                    codebuf << std::string(begin, funcstr);
+                }
                 else
                 {
                     // Generate identifier
@@ -404,6 +433,7 @@ namespace
                             identifier = i->second;
                         }
                         if(identifier == "i") identifier = "c.i";
+                        //if(identifier == "pi") identifier = "c.pi";
                         codebuf << identifier;
                         funcstr += length;
                     }
@@ -694,17 +724,21 @@ int main(int argc, char* argv[])
             {}}
     );
 
-    static const char lesser_opt_begin[] = ""
-    //    "#pragma GCC push_options\n"
-        "#pragma GCC optimize   (\"O0,no-ipa-pta,no-ivopts\")\n"
+    static const char lesser_optimization[] = ""
+        "#pragma GCC optimize   (\"O0,O2,no-inline,no-ipa-pta,no-ivopts\")\n"
     ;
-    static const char lesser_opt_end[] = ""
-    //    "#pragma GCC pop_options\n"
+    static const char no_optimization[] = ""
+        "#pragma GCC optimize   (\"O0,no-ipa-pta,no-ivopts\")\n"
     ;
     static const char unreachable[] = R"(
     unreachable_helper();
     return Value_t{};
 )";
+
+    static const char condition_for_constexpr[] =
+    //    "defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L"
+        "0"
+    ;
 
     std::ofstream outStream("tests/testbed_autogen.hh");
     outStream << R"(
@@ -721,7 +755,7 @@ outStream << R"(> {};
 template<typename Value_t, unsigned n = fp_type_mask<Value_t>::value>
 struct const_container {};
 
-#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+#if )" << condition_for_constexpr << R"(
 
 template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
 Value_t evaluate_test(unsigned which, const Value_t* vars);
@@ -779,6 +813,7 @@ const TestType AllTests[] =
         });
 
         out2 << R"(
+    #define Zl Value_t{}
     #define FP_LIST_ALL_CONST()";
         for(unsigned m=1; m<=highest_mask; m*=2)
         {
@@ -800,13 +835,14 @@ const TestType AllTests[] =
         for(unsigned m=1; m<=highest_mask; m*=2)
         {
             bool complex = false;
+            //bool not_int = false;
             #define o(code,mask,typename,def,lit) \
-                if(mask == m && std::string(#code)[0] == 'c') \
-                    complex = true;
+                if(mask == m && #code[0] == 'c') complex = true; \
+                /*if(mask == m && #code[1] != 'i') not_int = true;*/
             DEFINE_TYPES(o)
             #undef o
-            if(complex)
-                out2 << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
+            if(complex) out2 << " o" << m << "(i, Value_t(0,1)+Z) \\\n";
+            //if(not_int) out2 << " o" << m << "(pi, FUNCTIONPARSERTYPES::fp_const_pi<Value_t>()+Z) \\\n";
         }
         out2 << "/* end of list */\n";
     } // testbed_cpptest.hh
@@ -824,13 +860,15 @@ const TestType AllTests[] =
         if_rule += ")";
         out2 << "#define o(name,lit) " << literal_maker << "\n" << if_rule;
         out2 << R"(
-template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIST_ALL_CONST(";
+template<typename Value_t> struct const_container<Value_t,)" << m << R"(>
+{
+    FP_LIST_ALL_CONST()";
         for(unsigned n=1; n<=highest_mask; n<<=1)
         {
             if(n>1) out2 << ',';
             out2 << ((n==m) ? 'o' : '_');
         }
-        out2 << ") };\n"
+        out2 << ")\n};\n"
               "#endif\n"
               "#undef o\n"
               "#undef _\n\n";
@@ -840,7 +878,7 @@ template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIS
     {
         std::ofstream out2("tests/testbed_evaluate0.cc");
 
-        out2 << lesser_opt_begin << R"(
+        out2 << no_optimization << R"(
 #include "testbed_autogen.hh"
 #include "testbed_comp.hh"
 #include "testbed_cpptest.hh"
@@ -849,7 +887,7 @@ template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIS
             out2 << R"(#include "testbed_const)" << n << R"(.hh"
 )";
         out2 << R"(
-#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+#if )" << condition_for_constexpr << R"(
 template<typename Value_t, unsigned type_mask>
 Value_t evaluate_test(unsigned which, const Value_t* vars)
 {
@@ -891,20 +929,28 @@ default: break;
 #undef o
         out2 << R"(
 #endif
-)" << lesser_opt_end;
+)";
     } //testbed_evaluate0.cc
 
     for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
     {
         std::ofstream out2("tests/testbed_evaluate" + std::to_string(n) + ".cc");
 
-        out2 << lesser_opt_begin << R"(
+        #define o(code,mask,typename,def,lit) \
+            if(m == mask && (std::string(#code) == "mf")) out2 << lesser_optimization; \
+            if(m == mask && (std::string(#code) == "cf" \
+                          || std::string(#code) == "cd" \
+                          || std::string(#code) == "cld")) out2 << no_optimization;
+            DEFINE_TYPES(o)
+        #undef o
+
+        out2 << R"(
 #include "testbed_autogen.hh"
 #include "testbed_comp.hh"
 #include "testbed_cpptest.hh"
 #include "testbed_const)" << n << R"(.hh"
 
-#if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
+#if !()" << condition_for_constexpr << R"() // No "if constexpr"
 #define M(n) T##n(case n:return,;)
 #if(0)";
 #define o(code,mask,typename,def,lit) if(m == mask) out2 << "||defined(" #def ")";
@@ -945,7 +991,7 @@ default: break;
         out2 << R"(
 #endif
 #endif
-)" << lesser_opt_end;
+)";
     } // testbed_evaluate*.cc
 
     return 0;
