@@ -556,39 +556,11 @@ namespace
 
 int main(int argc, char* argv[])
 {
-    const char* outputFileName = 0;
-    std::ofstream outputFileStream;
-    std::ofstream outputFile_allTests("tests/testbed_alltests.cc");
-
-    std::ostringstream out;
-    out << R"(
-#include <type_traits>
-#include "extrasrc/fpaux.hh"
-#include "tests/testbed_defs.hh"
-
-)";
-
     std::vector<std::string> files, ignore_patterns, strip_prefix;
 
     for(int a=1; a<argc; ++a)
     {
-        if(std::strcmp(argv[a], "-o") == 0)
-        {
-            if(++a == argc)
-            {
-                std::cerr << "make_tests: Expected output file name after -o\n";
-                return 1;
-            }
-            outputFileName = argv[a];
-            outputFileStream.open(argv[a]);
-            if(!outputFileStream)
-            {
-                std::cerr << "make_tests: Could not write to " << argv[a] << "\n";
-                return 1;
-            }
-            continue;
-        }
-        else if(std::strcmp(argv[a], "--ignore") == 0)
+        if(std::strcmp(argv[a], "--ignore") == 0)
         {
             if(++a == argc)
             {
@@ -627,9 +599,6 @@ int main(int argc, char* argv[])
             }),
         files.end());
     std::sort(files.begin(), files.end(), natcomp);
-
-    std::ostream& outStream = outputFileName ? outputFileStream : std::cout;
-    //const char* outStreamName = outputFileName ? outputFileName : "<stdout>";
 
     unsigned user_param_count{};
 
@@ -705,9 +674,51 @@ int main(int argc, char* argv[])
     return Value_t{};
 )";
 
-    std::string test_list = ListTests(out);
+    std::ofstream outStream("tests/testbed_autogen.hh");
+    outStream << R"(
+#include <type_traits>
+#include "extrasrc/fpaux.hh"
+#include "tests/testbed_defs.hh"
 
-    std::ofstream("tests/testbed_alltests.cc") << R"(
+template<typename Value_t>
+struct fp_type_mask : public std::integral_constant<unsigned, 0)";
+for(unsigned m=1; m<=highest_mask; m<<=1)
+    outStream << "\n    | (" << m << "*int(" << GetTestCodeForMask(m, "Value_t") << "))";
+outStream << R"(> {};
+
+template<typename Value_t, unsigned n = fp_type_mask<Value_t>::value>
+struct const_container {};
+
+#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
+
+template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
+Value_t evaluate_test(unsigned which, const Value_t* vars);
+
+#else // No "if constexpr"
+
+template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
+struct evaluator { };
+)";
+    for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
+        outStream << R"(
+template<typename Value_t> struct evaluator<Value_t,)" << m << R"(>
+    { static Value_t calc(unsigned which, const Value_t* vars); };
+)";
+    outStream << R"(
+
+template<typename Value_t>
+inline Value_t evaluate_test(unsigned which, const Value_t* vars)
+{
+    return evaluator<Value_t>::calc(which, vars);
+}
+#endif
+)";
+
+    std::string test_list = ListTests(outStream);
+
+    if(true) // scope for testbed_alltests.cc
+    {
+        std::ofstream("tests/testbed_alltests.cc") << R"(
 #include "testbed_autogen.hh"
 #define FP_LIST_ALL_TESTS(o) \
 )" << test_list << R"(/* end of list */
@@ -722,111 +733,79 @@ FP_LIST_ALL_TESTS(o)
 #undef q
 };
 )";
+    } // testbed_alltests.cc
 
-    {std::ofstream out2("tests/testbed_cpptest.hh");
-    gen_funcs(out2, 0, [](unsigned, const std::string&, const FunctionInfo& info)
+    if(true) // scope for testbed_cpptest.hh
     {
-        return info.code;
-    }, [](std::ostream& out, const std::string& caseno, const std::string& code)
-    {
-        std::ostringstream temp;
-        temp << 'T' << caseno;
-        out << "#define " << std::setw(5) << temp.str()
-            << "(_,__)_ " << code << " __\n";
-    });
+        std::ofstream out2("tests/testbed_cpptest.hh");
+        gen_funcs(out2, 0, [](unsigned, const std::string&, const FunctionInfo& info)
+        {
+            return info.code;
+        }, [](std::ostream& out, const std::string& caseno, const std::string& code)
+        {
+            std::ostringstream temp;
+            temp << 'T' << caseno;
+            out << "#define " << std::setw(5) << temp.str()
+                << "(_,__)_ " << code << " __\n";
+        });
 
-    out2 << R"(
-#define FP_LIST_ALL_CONST()";
-    for(unsigned m=1; m<=highest_mask; m*=2)
-    {
-        if(m>1) out2 << ',';
-        out2 << 'o' << m;
-    }
-    out2 << ") \\\n";
-    std::unordered_map<std::string, std::pair<unsigned,std::string>> all_const;
-    for(const auto& f: all_functions)
-        for(auto& c: f.second.used_constants)
-            all_const.emplace(c.first, std::make_pair(0,c.second)).first->second.first |= f.second.type_limit_mask;
-    for(auto& c: all_const)
-    {
+        out2 << R"(
+    #define FP_LIST_ALL_CONST()";
         for(unsigned m=1; m<=highest_mask; m*=2)
-            if(c.second.first & m)
-                out2 << " o" << m << "(" << std::setw(8) << c.first << ',' << std::setw(7) << c.second.second << ")";
-        out2 << " \\\n";
-    }
-    for(unsigned m=1; m<=highest_mask; m*=2)
-    {
-        bool complex = false;
-        #define o(code,mask,typename,def,lit) \
-            if(mask == m && std::string(#code)[0] == 'c') \
-                complex = true;
-        DEFINE_TYPES(o)
-        #undef o
-        if(complex)
-            out2 << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
-    }
-    out2 << "/* end of list */\n";}
+        {
+            if(m>1) out2 << ',';
+            out2 << 'o' << m;
+        }
+        out2 << ") \\\n";
+        std::unordered_map<std::string, std::pair<unsigned,std::string>> all_const;
+        for(const auto& f: all_functions)
+            for(auto& c: f.second.used_constants)
+                all_const.emplace(c.first, std::make_pair(0,c.second)).first->second.first |= f.second.type_limit_mask;
+        for(auto& c: all_const)
+        {
+            for(unsigned m=1; m<=highest_mask; m*=2)
+                if(c.second.first & m)
+                    out2 << " o" << m << "(" << std::setw(8) << c.first << ',' << std::setw(7) << c.second.second << ")";
+            out2 << " \\\n";
+        }
+        for(unsigned m=1; m<=highest_mask; m*=2)
+        {
+            bool complex = false;
+            #define o(code,mask,typename,def,lit) \
+                if(mask == m && std::string(#code)[0] == 'c') \
+                    complex = true;
+            DEFINE_TYPES(o)
+            #undef o
+            if(complex)
+                out2 << " o" << m << "(i, Value_t(0,1)+(Value_t)0) \\\n";
+        }
+        out2 << "/* end of list */\n";
+    } // testbed_cpptest.hh
 
-    out << R"(
-template<typename Value_t>
-struct fp_type_mask : public std::integral_constant<unsigned, 0)";
-for(unsigned m=1; m<=highest_mask; m<<=1)
-    out << "\n    | (" << m << "*int(" << GetTestCodeForMask(m, "Value_t") << "))";
-out << R"(> {};
-
-template<typename Value_t, unsigned n = fp_type_mask<Value_t>::value>
-struct const_container {};
-)";
-for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
-{
-    std::ofstream out2("tests/testbed_const" + std::to_string(n) + ".hh");
-
-    out2 << "#define _(name,lit)\n";
-    std::string literal_maker = "static_assert(!\"I don't know how to make literals\");";
-    std::string if_rule = "#if(0";
-#define o(code,mask,typename,def,lit) if(m == mask) { if_rule += "||defined(" #def ")"; literal_maker = lit; }
-    DEFINE_TYPES(o)
-#undef o
-    if_rule += ")";
-    out2 << "#define o(name,lit) " << literal_maker << "\n" << if_rule;
-    out2 << R"(
-template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIST_ALL_CONST(";
-    for(unsigned n=1; n<=highest_mask; n<<=1)
-    {
-        if(n>1) out2 << ',';
-        out2 << ((n==m) ? 'o' : '_');
-    }
-    out2 << ") };\n"
-          "#endif\n"
-          "#undef o\n"
-          "#undef _\n\n";
-}
-
-    out << R"(
-#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
-
-template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
-Value_t evaluate_test(unsigned which, const Value_t* vars);
-
-#else // No "if constexpr"
-
-template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
-struct evaluator { };
-)";
     for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
-        out << R"(
-template<typename Value_t> struct evaluator<Value_t,)" << m << R"(>
-    { static Value_t calc(unsigned which, const Value_t* vars); };
-)";
-    out << R"(
+    {
+        std::ofstream out2("tests/testbed_const" + std::to_string(n) + ".hh");
 
-template<typename Value_t>
-inline Value_t evaluate_test(unsigned which, const Value_t* vars)
-{
-    return evaluator<Value_t>::calc(which, vars);
-}
-#endif
-)";
+        out2 << "#define _(name,lit)\n";
+        std::string literal_maker = "static_assert(!\"I don't know how to make literals\");";
+        std::string if_rule = "#if(0";
+    #define o(code,mask,typename,def,lit) if(m == mask) { if_rule += "||defined(" #def ")"; literal_maker = lit; }
+        DEFINE_TYPES(o)
+    #undef o
+        if_rule += ")";
+        out2 << "#define o(name,lit) " << literal_maker << "\n" << if_rule;
+        out2 << R"(
+template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIST_ALL_CONST(";
+        for(unsigned n=1; n<=highest_mask; n<<=1)
+        {
+            if(n>1) out2 << ',';
+            out2 << ((n==m) ? 'o' : '_');
+        }
+        out2 << ") };\n"
+              "#endif\n"
+              "#undef o\n"
+              "#undef _\n\n";
+    } // testbed_const*.hh
 
     if(true)
     {
@@ -884,7 +863,7 @@ default: break;
         out2 << R"(
 #endif
 )" << lesser_opt_end;
-    }//if true
+    } //testbed_evaluate0.cc
 
     for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
     {
@@ -938,12 +917,7 @@ default: break;
 #endif
 #endif
 )" << lesser_opt_end;
-    }
-
-    //MakeStringBuffer(out);
-    //outStream << "extern const char ts[" << StringBuffer.size() << "];\n";
-
-    outStream << out.str();
+    } // testbed_evaluate*.cc
 
     return 0;
 }

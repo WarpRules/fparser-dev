@@ -240,7 +240,6 @@ tests/make_tests.o: tests/make_tests.cc tests/stringutil.hh
 
 $(TESTBED_GENSRC) &:: tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
 	tests/make_tests \
-		-o "$@" \
 		--ignore "*~" \
 		--ignore "*.php" \
 		--ignore "*/.*" \
