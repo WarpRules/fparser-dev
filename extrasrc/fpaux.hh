@@ -65,6 +65,7 @@ namespace FUNCTIONPARSERTYPES
 // is generated with util/build_fpaux. It uses files
 // in functions/*.hh and places them here in an order
 // that satisfies dependencies.
+// See extrasrc/fpaux-help.txt (development pack) for help.
 //
 //$PLACEMENT_BEGIN
 #line 1 "extrasrc/functions/const_precise.hh"
