@@ -53,20 +53,10 @@ namespace testbedFuncs
     // Auxiliary functions
     // -------------------
     template<typename Value_t>
-    inline Value_t r2d(Value_t x)
-    {
-        static const Value_t fac = Value_t(180) / FUNCTIONPARSERTYPES::fp_const_pi<Value_t>();
-        return x * fac;
-    }
+    inline Value_t r2d(Value_t x) { return x * FUNCTIONPARSERTYPES::fp_const_rad_to_deg<Value_t>(); }
 
     template<typename Value_t>
-    inline Value_t d2r(Value_t x)
-    {
-        static const Value_t fac = FUNCTIONPARSERTYPES::fp_const_pi<Value_t>() / Value_t(180);
-        return x * fac;
-    }
-
-    //inline double log10(double x) { return std::log(x) / std::log(10); }
+    inline Value_t d2r(Value_t x) { return x * FUNCTIONPARSERTYPES::fp_const_deg_to_rad<Value_t>(); }
 
     template<typename Value_t>
     inline Value_t userDefFuncSqr(const Value_t* p) { return p[0]*p[0]; }

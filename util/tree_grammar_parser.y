@@ -804,9 +804,6 @@ public:
             if((dvalue)==(n)) result << #n; \
             else if((dvalue)==(-n)) result << "-" #n;
         if_const(fp_const_e<Value_t>())
-        else if_const(fp_const_einv<Value_t>())
-        else if_const(fp_const_twoe<Value_t>())
-        else if_const(fp_const_twoeinv<Value_t>())
         else if_const(fp_const_pi<Value_t>())
         else if_const(fp_const_pihalf<Value_t>())
         else if_const(fp_const_pihalf<Value_t>() / Value_t(2))
@@ -1692,9 +1689,6 @@ static int yylex(YYSTYPE* lval)
             /* Detect named constants */
             if(IdBuf == "i")          { lval->num.imag = 1.0; return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_E") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_e<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_EI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_einv<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2E") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twoe<double>(); return NUMERIC_CONSTANT; }
-            if(IdBuf == "CONSTANT_2EI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_twoeinv<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_RD") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_rad_to_deg<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_DR") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_deg_to_rad<double>(); return NUMERIC_CONSTANT; }
             if(IdBuf == "CONSTANT_PI") { lval->num.real = FUNCTIONPARSERTYPES::fp_const_pi<double>(); return NUMERIC_CONSTANT; }

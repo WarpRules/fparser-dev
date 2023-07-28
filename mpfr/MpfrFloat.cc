@@ -45,6 +45,9 @@ class MpfrFloat::MpfrFloatDataContainer
     std::shared_ptr<MpfrFloatData> mConst_pi;
     std::shared_ptr<MpfrFloatData> mConst_e;
     std::shared_ptr<MpfrFloatData> mConst_log2;
+    std::shared_ptr<MpfrFloatData> mConst_log10;
+    std::shared_ptr<MpfrFloatData> mConst_log2inv;
+    std::shared_ptr<MpfrFloatData> mConst_log10inv;
     std::shared_ptr<MpfrFloatData> mConst_epsilon;
 
 #ifdef THREAD_SAFETY
@@ -138,6 +141,9 @@ class MpfrFloat::MpfrFloatDataContainer
                     if(mConst_pi)      { safely_deallocate(mConst_pi); }
                     if(mConst_e)       { safely_deallocate(mConst_e); }
                     if(mConst_log2)    { safely_deallocate(mConst_log2); }
+                    if(mConst_log10)   { safely_deallocate(mConst_log10); }
+                    if(mConst_log2inv) { safely_deallocate(mConst_log2inv); }
+                    if(mConst_log10inv){ safely_deallocate(mConst_log10inv); }
                     if(mConst_epsilon) { safely_deallocate(mConst_epsilon); }
                 }
                 else
@@ -159,6 +165,18 @@ class MpfrFloat::MpfrFloatDataContainer
                     if(mConst_log2)
                     {
                         mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
+                    }
+                    if(mConst_log10)
+                    {
+                        recalculate_log10(*mConst_log10);
+                    }
+                    if(mConst_log2inv)
+                    {
+                        recalculate_log2inv(*mConst_log2inv);
+                    }
+                    if(mConst_log10inv)
+                    {
+                        recalculate_log10inv(*mConst_log10inv);
                     }
                     if(mConst_epsilon)
                     {
@@ -200,6 +218,27 @@ class MpfrFloat::MpfrFloatDataContainer
         });
     }
 
+    std::shared_ptr<MpfrFloatData> const_log10()
+    {
+        return make_const(mConst_log10, [this](MpfrFloatData& data){
+            recalculate_log10(data);
+        });
+    }
+
+    std::shared_ptr<MpfrFloatData> const_log2inv()
+    {
+        return make_const(mConst_log2inv, [this](MpfrFloatData& data){
+            recalculate_log2inv(data);
+        });
+    }
+
+    std::shared_ptr<MpfrFloatData> const_log10inv()
+    {
+        return make_const(mConst_log10inv, [this](MpfrFloatData& data){
+            recalculate_log10inv(data);
+        });
+    }
+
     std::shared_ptr<MpfrFloatData> const_epsilon()
     {
         return make_const(mConst_epsilon, [this](MpfrFloatData& data){
@@ -223,6 +262,23 @@ private:
     {
         mpfr_set_si(data.mFloat, 1, GMP_RNDN);
         mpfr_exp(data.mFloat, data.mFloat, GMP_RNDN);
+    }
+
+    void recalculate_log10(MpfrFloatData& data)
+    {
+        mpfr_set_si(data.mFloat, 10, GMP_RNDN);
+        mpfr_log(data.mFloat, data.mFloat, GMP_RNDN);
+    }
+
+    void recalculate_log2inv(MpfrFloatData& data)
+    {
+        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
+        mpfr_div(data.mFloat, data.mFloat, const_log2()->mFloat, GMP_RNDN);
+    }
+
+    void recalculate_log10inv(MpfrFloatData& data)
+    {
+        mpfr_log10(data.mFloat, const_e()->mFloat, GMP_RNDN);
     }
 
     void recalculateEpsilon(MpfrFloatData& data)
@@ -1067,6 +1123,21 @@ MpfrFloat MpfrFloat::const_e()
 MpfrFloat MpfrFloat::const_log2()
 {
     return mpfrFloatDataContainer().const_log2();
+}
+
+MpfrFloat MpfrFloat::const_log10()
+{
+    return mpfrFloatDataContainer().const_log10();
+}
+
+MpfrFloat MpfrFloat::const_log2inv()
+{
+    return mpfrFloatDataContainer().const_log2inv();
+}
+
+MpfrFloat MpfrFloat::const_log10inv()
+{
+    return mpfrFloatDataContainer().const_log10inv();
 }
 
 MpfrFloat MpfrFloat::someEpsilon()

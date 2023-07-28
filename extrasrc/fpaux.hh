@@ -82,11 +82,6 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(2.7182818284590452353602874713526624977572L);
     }
     template<typename Value_t>
-    inline Value_t fp_const_einv() // CONSTANT_EI
-    {
-        return Value_t(0.367879441171442321595523770161460867445811131L);
-    }
-    template<typename Value_t>
     inline Value_t fp_const_log2() // CONSTANT_L2, CONSTANT_L2EI
     {
         return Value_t(0.69314718055994530941723212145817656807550013436025525412L);
@@ -108,14 +103,14 @@ namespace FUNCTIONPARSERTYPES
     }
 
     template<typename Value_t>
-    inline const Value_t& fp_const_deg_to_rad() // CONSTANT_DR
+    const Value_t& fp_const_deg_to_rad() // CONSTANT_DR
     {
         static const Value_t factor = fp_const_pi<Value_t>() / Value_t(180); // to rad from deg
         return factor;
     }
 
     template<typename Value_t>
-    inline const Value_t& fp_const_rad_to_deg() // CONSTANT_RD
+    const Value_t& fp_const_rad_to_deg() // CONSTANT_RD
     {
         static const Value_t factor = Value_t(180) / fp_const_pi<Value_t>(); // to deg from rad
         return factor;
@@ -129,19 +124,16 @@ namespace FUNCTIONPARSERTYPES
     inline MpfrFloat fp_const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
 
     template<>
-    inline MpfrFloat fp_const_einv<MpfrFloat>() { return MpfrFloat(1) / MpfrFloat::const_e(); }
-
-    template<>
     inline MpfrFloat fp_const_log2<MpfrFloat>() { return MpfrFloat::const_log2(); }
 
     template<>
-    inline MpfrFloat fp_const_log10<MpfrFloat>() { return MpfrFloat::log(MpfrFloat(10)); }
+    inline MpfrFloat fp_const_log10<MpfrFloat>() { return MpfrFloat::const_log10(); }
 
     template<>
-    inline MpfrFloat fp_const_log2inv<MpfrFloat>() { return MpfrFloat(1) / MpfrFloat::const_log2(); }
+    inline MpfrFloat fp_const_log2inv<MpfrFloat>() { return MpfrFloat::const_log2inv(); }
 
     template<>
-    inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return MpfrFloat::log10(MpfrFloat::const_e()); }
+    inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return MpfrFloat::const_log10inv(); }
 
     template<>
     inline MpfrFloat fp_const_preciseDouble<MpfrFloat>(double v) { return MpfrFloat::makeFromDouble(v); }

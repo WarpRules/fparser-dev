@@ -20,30 +20,15 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_const_pihalf() // CONSTANT_PIHALF
     {
-        return fp_const_pi<Value_t>() * fp_const_preciseDouble<Value_t>(0.5);
+        static const Value_t val = fp_const_pi<Value_t>() * fp_const_preciseDouble<Value_t>(0.5);
+        return val;
     }
     template<typename Value_t>
     inline Value_t fp_const_twopi() // CONSTANT_TWOPI
     {
-        Value_t result( fp_const_pi<Value_t>() );
-        result += result;
-        return result;
+        static const Value_t val = fp_const_pi<Value_t>() * Value_t(2);
+        return val;
     }
-    template<typename Value_t>
-    inline Value_t fp_const_twoe() // CONSTANT_2E
-    {
-        Value_t result( fp_const_e<Value_t>() );
-        result += result;
-        return result;
-    }
-    template<typename Value_t>
-    inline Value_t fp_const_twoeinv() // CONSTANT_2EI
-    {
-        Value_t result( fp_const_einv<Value_t>() );
-        result += result;
-        return result;
-    }
-
     template<typename Value_t>
     inline Value_t fp_const_negativezero()
     {

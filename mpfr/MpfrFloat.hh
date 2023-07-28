@@ -198,6 +198,9 @@ public:
     static MpfrFloat const_pi();
     static MpfrFloat const_e();
     static MpfrFloat const_log2();
+    static MpfrFloat const_log10();
+    static MpfrFloat const_log2inv();
+    static MpfrFloat const_log10inv();
     static MpfrFloat someEpsilon();
 
     // This function replaces the private (double) constructor
