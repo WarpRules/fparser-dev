@@ -1,8 +1,7 @@
 #!/bin/sh
-time="$(time "$@" 2>&1 1>&7)" 7>&1
+time="$(time /bin/sh -c "$* 1>&8 2>&7" 2>&1)" 8>&1 7>&2
 m=$?
 if [ ! $m = 0 ]; then
-  echo "$time"
   exit $m
 fi
 next=0
