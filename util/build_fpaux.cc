@@ -57,6 +57,7 @@ int main(int argc, char** argv)
         unsigned& firstline   = std::get<4>(mod);
         firstline = 1;
 
+        unsigned indent = 1;
         for(std::string line; std::getline(ifs, line); )
         {
             if(line.substr(0, 8) == "//$DEP: ")
@@ -68,6 +69,31 @@ int main(int argc, char** argv)
                 ++firstline;
             else
             {
+                std::size_t spaces = 0;
+                while(spaces < line.size() && line[spaces] == ' ')
+                    ++spaces;
+
+                unsigned makeindent = spaces;
+                if(spaces < line.size() && line[spaces] == '#')
+                {
+                    if(line.substr(spaces, 3) == "#if")
+                    {
+                        ++indent;
+                        makeindent = indent;
+                    }
+                    else if(line.substr(spaces, 3) == "#el")
+                    {
+                        makeindent = indent;
+                    }
+                    else if(line.substr(spaces, 3) == "#en")
+                    {
+                        makeindent = indent;
+                        --indent;
+                    }
+                }
+                if(makeindent != spaces)
+                    line = std::string(makeindent, ' ') + line.substr(spaces);
+
                 contents += line;
                 contents += '\n';
                 ++linecount;

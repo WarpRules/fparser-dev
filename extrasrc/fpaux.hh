@@ -80,10 +80,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(v);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_preciseDouble<MpfrFloat>(double v) { return MpfrFloat::makeFromDouble(v); }
-#endif
+  #endif
 #line 1 "extrasrc/functions/util_complexcompare.hh"
     /* Less-than or greater-than operators are not technically defined
      * for Complex types. However, in fparser and its tool set, these
@@ -145,10 +145,10 @@ namespace FUNCTIONPARSERTYPES
     template<>
     struct IsIntType<long>: public std::true_type { };
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     struct IsIntType<GmpInt>: public std::true_type { };
-#endif
+  #endif
 #line 5 "extrasrc/functions/comp_abstruth.hh"
     template<typename Value_t>
     inline bool fp_absTruth(const Value_t& abs_d)
@@ -164,10 +164,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(3.1415926535897932384626433832795028841971693993751L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_arg.hh"
     // arg() for real numbers
     template<typename Value_t>
@@ -176,28 +176,28 @@ namespace FUNCTIONPARSERTYPES
         return x < Value_t() ? -fp_const_pi<Value_t>() : Value_t();
     }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_arg(const std::complex<T>& x)
     {
         return std::arg(x);
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_cos.hh"
     template<typename Value_t>
     inline Value_t fp_cos(const Value_t& x) { return std::cos(x); }
 
     inline long fp_cos(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_cos(const MpfrFloat& x) { return MpfrFloat::cos(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_cos(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_cos(const std::complex<T>& x)
     {
@@ -210,22 +210,22 @@ namespace FUNCTIONPARSERTYPES
         //     fp_cos(x.real())*fp_cosh(x.imag()),
         //     -fp_sin(x.real())*fp_sinh(x.imag()));
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_sin.hh"
     template<typename Value_t>
     inline Value_t fp_sin(const Value_t& x) { return std::sin(x); }
 
     inline long fp_sin(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_sin(const MpfrFloat& x) { return MpfrFloat::sin(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_sin(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_sin(const std::complex<T>& x)
     {
@@ -238,7 +238,7 @@ namespace FUNCTIONPARSERTYPES
         //     fp_sin(x.real())*fp_cosh(x.imag()),
         //     fp_cos(x.real())*fp_sinh(x.imag()));
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/help_sincos.hh"
     template<typename Value_t>
     inline void fp_sinCos(Value_t& sinvalue, Value_t& cosvalue,
@@ -250,7 +250,7 @@ namespace FUNCTIONPARSERTYPES
         sinvalue = fp_sin(param);
     }
 
-#ifdef _GNU_SOURCE
+  #ifdef _GNU_SOURCE
     /* sincos is a GNU extension. Utilize it, if possible.
      * Otherwise, we are at the whim of the compiler recognizing
      * the opportunity, which may or may not happen.
@@ -268,22 +268,22 @@ namespace FUNCTIONPARSERTYPES
     {
         sincosl(a, &sin, &cos);
     }
-#endif
+  #endif
 
     inline void fp_sinCos(long&, long&, const long&) {}
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline void fp_sinCos(MpfrFloat& sin, MpfrFloat& cos, const MpfrFloat& a)
     {
         MpfrFloat::sincos(a, sin, cos);
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline void fp_sinCos(GmpInt&, GmpInt&, const GmpInt&) {}
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     // Forward declaration of fp_sinhCosh() to break dependency loop
     template<typename Value_t>
     inline void fp_sinhCosh(Value_t& sinhvalue, Value_t& coshvalue,
@@ -304,16 +304,16 @@ namespace FUNCTIONPARSERTYPES
         sinvalue = std::complex<T>(srx*cix,  crx*six);
         cosvalue = std::complex<T>(crx*cix, -srx*six);
     }
-#endif
+  #endif
 #line 2 "extrasrc/functions/help_polar_scalar.hh"
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T> // Internal use in fpaux.hh
     inline std::complex<T> fp_polar_scalar(const T& x, const T& y)
     {
         T si, co; fp_sinCos(si, co, y);
         return std::complex<T> (x*co, x*si);
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/util_fastcomplex.hh"
     template<typename T>
     struct FP_ProbablyHasFastLibcComplex: public std::false_type {};
@@ -324,11 +324,11 @@ namespace FUNCTIONPARSERTYPES
      * So we use std:: functions when we suspect they may be fast,
      * and otherwise we use our own optimized implementations.
      */
-#if defined(__GNUC__) && defined(FP_SUPPORT_COMPLEX_NUMBERS)
+  #if defined(__GNUC__) && defined(FP_SUPPORT_COMPLEX_NUMBERS)
     template<> struct FP_ProbablyHasFastLibcComplex<float>: public std::true_type {};
     template<> struct FP_ProbablyHasFastLibcComplex<double>: public std::true_type {};
     template<> struct FP_ProbablyHasFastLibcComplex<long double>: public std::true_type {};
-#endif
+  #endif
 #line 5 "extrasrc/functions/func_sqrt.hh"
     // Forward declaration of fp_abs() to break dependency loop
     template<typename Value_t>
@@ -339,15 +339,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_sqrt(const long&) { return 1; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_sqrt(const MpfrFloat& x) { return MpfrFloat::sqrt(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_sqrt(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_sqrt(const std::complex<T>& x)
     {
@@ -355,59 +355,59 @@ namespace FUNCTIONPARSERTYPES
             return std::sqrt(x);
         return fp_polar_scalar<T> (fp_sqrt(fp_abs(x).real()), T(0.5)*fp_arg(x).real());
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_hypot.hh"
 /* hypot() is in c++11 for real, but NOT complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
     {
         return std::hypot(x,y);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_hypot
         (const std::complex<T>& x, const std::complex<T>& y)
     {
         return fp_sqrt(x*x + y*y);
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_hypot(const Value_t& x, const Value_t& y)
     {
         return fp_sqrt(x*x + y*y);
     }
-#endif
+  #endif
 
     inline long fp_hypot(const long&, const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_hypot(const MpfrFloat& x, const MpfrFloat& y)
     {
         return MpfrFloat::hypot(x, y);
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_hypot(const GmpInt&, const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 2 "extrasrc/functions/func_abs.hh"
     template<typename Value_t>
     inline Value_t fp_abs(const Value_t& x) { return std::fabs(x); }
 
     inline long fp_abs(const long& x) { return x < 0 ? -x : x; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_abs(const MpfrFloat& x) { return MpfrFloat::abs(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_abs(const GmpInt& x) { return GmpInt::abs(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_abs(const std::complex<T>& x)
     {
@@ -416,7 +416,7 @@ namespace FUNCTIONPARSERTYPES
         //if(extent == T()) return x;
         //return extent * fp_hypot(x.real() / extent, x.imag() / extent);
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/util_epsilon.hh"
     template<typename Value_t>
     struct Epsilon
@@ -426,32 +426,32 @@ namespace FUNCTIONPARSERTYPES
     };
 
     template<> inline double Epsilon<double>::defaultValue() { return 1E-12; }
-    #if defined(FP_SUPPORT_FLOAT_TYPE) || defined(FP_SUPPORT_COMPLEX_FLOAT_TYPE)
+  #if defined(FP_SUPPORT_FLOAT_TYPE) || defined(FP_SUPPORT_COMPLEX_FLOAT_TYPE)
     template<> inline float Epsilon<float>::defaultValue() { return 1E-5F; }
-    #endif
-    #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE) || defined(FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE)
+  #endif
+  #if defined(FP_SUPPORT_LONG_DOUBLE_TYPE) || defined(FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE)
     template<> inline long double Epsilon<long double>::defaultValue() { return 1E-14L; }
-    #endif
+  #endif
 
-    #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+  #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
     template<> inline std::complex<double>
     Epsilon<std::complex<double> >::defaultValue() { return 1E-12; }
-    #endif
+  #endif
 
-    #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+  #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
     template<> inline std::complex<float>
     Epsilon<std::complex<float> >::defaultValue() { return 1E-5F; }
-    #endif
+  #endif
 
-    #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+  #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
     template<> inline std::complex<long double>
     Epsilon<std::complex<long double> >::defaultValue() { return 1E-14L; }
-    #endif
+  #endif
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<> inline MpfrFloat
     Epsilon<MpfrFloat>::defaultValue() { return MpfrFloat::someEpsilon(); }
-#endif
+  #endif
 
     template<typename Value_t> Value_t Epsilon<Value_t>::value =
         Epsilon<Value_t>::defaultValue();
@@ -474,13 +474,13 @@ namespace FUNCTIONPARSERTYPES
             : (x < y - Epsilon<Value_t>::value);
     }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline bool fp_less(const std::complex<T>& x, const std::complex<T>& y)
     {
         return (x.real() < y.real() - Epsilon<T>::value);
     }
-#endif
+  #endif
 #line 2 "extrasrc/functions/comp_greater.hh"
     template<typename Value_t>
     inline bool fp_greater(const Value_t& x, const Value_t& y)
@@ -496,13 +496,13 @@ namespace FUNCTIONPARSERTYPES
             : (x <= y + Epsilon<Value_t>::value);
     }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline bool fp_lessOrEq(const std::complex<T>& x, const std::complex<T>& y)
     {
         return (x.real() <= y.real() + Epsilon<T>::value);
     }
-#endif
+  #endif
 #line 2 "extrasrc/functions/comp_greateroreq.hh"
     template<typename Value_t>
     inline bool fp_greaterOrEq(const Value_t& x, const Value_t& y)
@@ -539,10 +539,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(2.7182818284590452353602874713526624977572L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_e<MpfrFloat>() { return MpfrFloat::const_e(); }
-#endif
+  #endif
 #line 1 "extrasrc/functions/const_log10.hh"
     template<typename Value_t>
     inline Value_t fp_const_log10() // CONSTANT_L10, CONSTANT_L10EI
@@ -550,10 +550,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(2.302585092994045684017991454684364207601101488628772976L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_log10<MpfrFloat>() { return MpfrFloat::const_log10(); }
-#endif
+  #endif
 #line 1 "extrasrc/functions/const_log10inv.hh"
     template<typename Value_t>
     inline Value_t fp_const_log10inv() // CONSTANT_L10I, CONSTANT_L10E
@@ -561,10 +561,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(0.434294481903251827651128918916605082294397L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_log10inv<MpfrFloat>() { return MpfrFloat::const_log10inv(); }
-#endif
+  #endif
 #line 1 "extrasrc/functions/const_log2.hh"
     template<typename Value_t>
     inline Value_t fp_const_log2() // CONSTANT_L2
@@ -572,10 +572,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(0.69314718055994530941723212145817656807550013436025525412L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_log2<MpfrFloat>() { return MpfrFloat::const_log2(); }
-#endif
+  #endif
 #line 1 "extrasrc/functions/const_log2inv.hh"
     template<typename Value_t>
     inline Value_t fp_const_log2inv() // CONSTANT_L2I, CONSTANT_L2E
@@ -583,10 +583,10 @@ namespace FUNCTIONPARSERTYPES
         return Value_t(1.442695040888963407359924681001892137426645954L);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline MpfrFloat fp_const_log2inv<MpfrFloat>() { return MpfrFloat::const_log2inv(); }
-#endif
+  #endif
 #line 2 "extrasrc/functions/const_r2d.hh"
     template<typename Value_t>
     const Value_t& fp_const_rad_to_deg() // CONSTANT_RD
@@ -624,15 +624,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_log(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_log(const MpfrFloat& x) { return MpfrFloat::log(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_log(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_log(const std::complex<T>& x)
     {
@@ -647,22 +647,22 @@ namespace FUNCTIONPARSERTYPES
             fp_log(std::norm(x)) * T(0.5),
             fp_arg(x).real() );
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_acos.hh"
     template<typename Value_t>
     inline Value_t fp_acos(const Value_t& x) { return std::acos(x); }
 
     inline long fp_acos(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_acos(const MpfrFloat& x) { return MpfrFloat::acos(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_acos(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_acos(const std::complex<T>& x)
     {
@@ -673,40 +673,40 @@ namespace FUNCTIONPARSERTYPES
         // Note: Real version of acos() cannot handle |x| > 1,
         //       because it would cause sqrt(negative value).
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_acosh.hh"
 /* acosh() is in c++11 for real, but NOT complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_acosh(const Value_t& x)
     {
         return std::acosh(x);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_acosh(const std::complex<T>& x)
     {
         return fp_log(x + fp_sqrt(x*x - std::complex<T>(1)));
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_acosh(const Value_t& x)
     {
         return fp_log(x + fp_sqrt(x*x - Value_t(1)));
     }
-#endif
+  #endif
 
     inline long fp_acosh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_acosh(const MpfrFloat& x) { return MpfrFloat::acosh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_acosh(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_and.hh"
     template<typename Value_t>
     inline const Value_t fp_and(const Value_t& a, const Value_t& b)
@@ -719,15 +719,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_asin(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_asin(const MpfrFloat& x) { return MpfrFloat::asin(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_asin(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_asin(const std::complex<T>& x)
     {
@@ -738,55 +738,55 @@ namespace FUNCTIONPARSERTYPES
         // Note: Real version of asin() cannot handle |x| > 1,
         //       because it would cause sqrt(negative value).
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_asinh.hh"
 /* asinh() is in c++11 for real, but NOT complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_asinh(const Value_t& x)
     {
         return std::asinh(x);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_asinh(const std::complex<T>& x)
     {
         return fp_log(x + fp_sqrt(x*x + std::complex<T>(1)));
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_asinh(const Value_t& x)
     {
         return fp_log(x + fp_sqrt(x*x + Value_t(1)));
     }
-#endif
+  #endif
 
     inline long fp_asinh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_asinh(const MpfrFloat& x) { return MpfrFloat::asinh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_asinh(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_atan.hh"
     template<typename Value_t>
     inline Value_t fp_atan(const Value_t& x) { return std::atan(x); }
 
     inline long fp_atan(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_atan(const MpfrFloat& x) { return MpfrFloat::atan(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_atan(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_atan(const std::complex<T>& x)
     {
@@ -800,7 +800,7 @@ namespace FUNCTIONPARSERTYPES
         //       x = +1i causes log(0)
         // Thus, x must not be +-1i
     }
-#endif
+  #endif
 #line 7 "extrasrc/functions/func_atan2.hh"
     template<typename Value_t>
     inline Value_t fp_atan2(const Value_t& x, const Value_t& y)
@@ -810,18 +810,18 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_atan2(const long&, const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_atan2(const MpfrFloat& x, const MpfrFloat& y)
     {
         return MpfrFloat::atan2(x, y);
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_atan2(const GmpInt&, const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_atan2(const std::complex<T>& y,
                                           const std::complex<T>& x)
@@ -833,25 +833,25 @@ namespace FUNCTIONPARSERTYPES
         std::complex<T> res( fp_atan(y / (fp_hypot(x,y) + x)) );
         return res+res;
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_atanh.hh"
 /* atanh() is in c++11 for real, but NOT complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_atanh(const Value_t& x)
     {
         return std::atanh(x);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_atanh(const std::complex<T>& x)
     {
         return fp_log( (std::complex<T>(1)+x) / (std::complex<T>(1)-x))
            * std::complex<T>(0.5);
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_atanh(const Value_t& x)
     {
@@ -860,32 +860,32 @@ namespace FUNCTIONPARSERTYPES
         //       x = -1 causes log(0)
         // Thus, x must not be +-1
     }
-#endif
+  #endif
 
     inline long fp_atanh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_atanh(const MpfrFloat& x) { return MpfrFloat::atanh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_atanh(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_exp.hh"
     template<typename Value_t>
     inline Value_t fp_exp(const Value_t& x) { return std::exp(x); }
 
     inline long fp_exp(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_exp(const MpfrFloat& x) { return MpfrFloat::exp(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_exp(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_exp(const std::complex<T>& x)
     {
@@ -893,17 +893,17 @@ namespace FUNCTIONPARSERTYPES
             return std::exp(x);
         return fp_polar_scalar<T>(fp_exp(x.real()), x.imag());
     }
-#endif
+  #endif
 #line 5 "extrasrc/functions/func_cbrt.hh"
 /* cbrt() is in c++11 for real, but NOT complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x)
     {
         return std::cbrt(x);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_cbrt(const std::complex<T>& x)
     {
@@ -918,8 +918,8 @@ namespace FUNCTIONPARSERTYPES
         const std::complex<T> t(fp_log(x));
         return fp_polar_scalar(fp_exp(t.real() / T(3)), t.imag() / T(3));
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_cbrt(const Value_t& x)
     {
@@ -927,64 +927,64 @@ namespace FUNCTIONPARSERTYPES
                 x < Value_t() ? -fp_exp(fp_log(-x) / Value_t(3)) :
                 Value_t());
     }
-#endif
+  #endif
 
     inline long fp_cbrt(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_cbrt(const MpfrFloat& x) { return MpfrFloat::cbrt(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_cbrt(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_ceil.hh"
     template<typename Value_t>
     inline Value_t fp_ceil(const Value_t& x) { return std::ceil(x); }
 
     inline long fp_ceil(const long& x) { return x; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_ceil(const MpfrFloat& x) { return MpfrFloat::ceil(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_ceil(const GmpInt& x) { return x; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_ceil(const std::complex<T>& x)
     {
         return std::complex<T> (fp_ceil(x.real()), fp_ceil(x.imag()));
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_conj.hh"
     template<typename Value_t>
     inline const Value_t& fp_conj(const Value_t& x) { return x; }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_conj(const std::complex<T>& x)
     {
         return std::conj(x);
     }
-#endif
+  #endif
 #line 2 "extrasrc/functions/func_cosh.hh"
     template<typename Value_t>
     inline Value_t fp_cosh(const Value_t& x) { return std::cosh(x); }
 
     inline long fp_cosh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_cosh(const MpfrFloat& x) { return MpfrFloat::cosh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_cosh(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_cosh(const std::complex<T>& x)
     {
@@ -995,28 +995,28 @@ namespace FUNCTIONPARSERTYPES
         //     fp_cosh(x.real())*fp_cos(x.imag()),
         //     fp_sinh(x.real())*fp_sin(x.imag()));
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_floor.hh"
     template<typename Value_t>
     inline Value_t fp_floor(const Value_t& x) { return std::floor(x); }
 
     inline long fp_floor(const long& x) { return x; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_floor(const MpfrFloat& x) { return MpfrFloat::floor(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_floor(const GmpInt& x) { return x; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_floor(const std::complex<T>& x)
     {
         return std::complex<T> (fp_floor(x.real()), fp_floor(x.imag()));
     }
-#endif
+  #endif
 #line 5 "extrasrc/functions/func_int.hh"
     template<typename Value_t>
     inline Value_t fp_int(const Value_t& x)
@@ -1026,21 +1026,21 @@ namespace FUNCTIONPARSERTYPES
         : fp_floor(x + fp_const_preciseDouble<Value_t>(0.5));
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_int(const MpfrFloat& x) { return MpfrFloat::round(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_int(const GmpInt& x) { return x; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_int(const std::complex<T>& x)
     {
         return std::complex<T> (fp_int(x.real()), fp_int(x.imag()));
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/help_makelong.hh"
     template<typename Value_t>
     inline long makeLongInteger(const Value_t& value)
@@ -1054,29 +1054,29 @@ namespace FUNCTIONPARSERTYPES
         return value;
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline long makeLongInteger(const MpfrFloat& value)
     {
         return (long) value.toInt();
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     inline long makeLongInteger(const GmpInt& value)
     {
         return (long) value.toInt();
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline long makeLongInteger(const std::complex<T>& value)
     {
         return (long) fp_int( std::abs(value) );
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/test_isint.hh"
     template<typename Value_t>
     inline bool isInteger(const Value_t& value)
@@ -1087,23 +1087,23 @@ namespace FUNCTIONPARSERTYPES
     template<>
     inline bool isInteger(const long&) { return true; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline bool isInteger(const MpfrFloat& value) { return value.isInteger(); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     inline bool isInteger(const GmpInt&) { return true; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline bool isInteger(const std::complex<T>& value)
     {
         return !value.imag() && isInteger(value.real());
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/test_islong.hh"
     // Is value an integer that fits in "long" datatype?
     template<typename Value_t>
@@ -1170,15 +1170,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_pow(const long&, const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_pow(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_pow(const GmpInt&, const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_pow(const std::complex<T>& x, const std::complex<T>& y)
     {
@@ -1223,7 +1223,7 @@ namespace FUNCTIONPARSERTYPES
             ? fp_exp(y * t)
             : fp_polar_scalar<T> (fp_exp(y.real()*t.real()), y.real()*t.imag());
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_exp2.hh"
     template<typename Value_t>
     inline Value_t fp_exp2(const Value_t& x)
@@ -1233,15 +1233,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_exp2(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_exp2(const MpfrFloat& x) { return MpfrFloat::exp2(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_exp2(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_exp2(const std::complex<T>& x)
     {
@@ -1249,77 +1249,77 @@ namespace FUNCTIONPARSERTYPES
         // polar(2^Xr, Xi*log(2))
         return fp_polar_scalar<T> (fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_imag.hh"
     template<typename Value_t>
     inline Value_t fp_imag(const Value_t& ) { return Value_t{}; }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_imag(const std::complex<T>& x)
     {
         return x.imag();
     }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_log10.hh"
 /* log10() is in c++11 for BOTH real and complex */
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_log10(const Value_t& x)
     {
         return std::log10(x);
     }
-#else
+  #else
     template<typename Value_t>
     inline Value_t fp_log10(const Value_t& x)
     {
         return fp_log(x) * fp_const_log10inv<Value_t>();
     }
-#endif
+  #endif
 
     inline long fp_log10(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_log10(const MpfrFloat& x) { return MpfrFloat::log10(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_log10(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 4 "extrasrc/functions/func_log2.hh"
 /* log2() is in c++11 for real, but NOT complex */
 
-#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)
     {
         return std::log2(x);
     }
 
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_log2(const std::complex<T>& x)
     {
         return fp_log(x) * fp_const_log2inv<T>();
     }
-  #endif
-#else
+   #endif
+  #else
     template<typename Value_t>
     inline Value_t fp_log2(const Value_t& x)
     {
         return fp_log(x) * fp_const_log2inv<Value_t>();
     }
-#endif
+  #endif
 
     inline long fp_log2(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_log2(const MpfrFloat& x) { return MpfrFloat::log2(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_log2(const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 1 "extrasrc/functions/func_max.hh"
     template<typename Value_t>
     inline const Value_t& fp_max(const Value_t& d1, const Value_t& d2)
@@ -1339,21 +1339,21 @@ namespace FUNCTIONPARSERTYPES
         return x < Value_t() ? fp_ceil(x) : fp_floor(x);
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_trunc(const MpfrFloat& x) { return MpfrFloat::trunc(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_trunc(const GmpInt& x) { return x; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_trunc(const std::complex<T>& x)
     {
         return std::complex<T> (fp_trunc(x.real()), fp_trunc(x.imag()));
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_mod.hh"
     template<typename Value_t>
     inline Value_t fp_mod(const Value_t& x, const Value_t& y)
@@ -1363,15 +1363,15 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_mod(const long& x, const long& y) { return x % y; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_mod(const MpfrFloat& x, const MpfrFloat& y) { return x % y; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_mod(const GmpInt& x, const GmpInt& y) { return x % y; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_mod(const std::complex<T>& x, const std::complex<T>& y)
     {
@@ -1382,7 +1382,7 @@ namespace FUNCTIONPARSERTYPES
         std::complex<T> n = fp_trunc(x / y);
         return x - n * y;
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_not.hh"
     template<typename Value_t>
     inline const Value_t fp_not(const Value_t& b)
@@ -1418,28 +1418,28 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline const Value_t& fp_real(const Value_t& x) { return x; }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_real(const std::complex<T>& x)
     {
         return x.real();
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_sinh.hh"
     template<typename Value_t>
     inline Value_t fp_sinh(const Value_t& x) { return std::sinh(x); }
 
     inline long fp_sinh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_sinh(const MpfrFloat& x) { return MpfrFloat::sinh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_sinh(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_sinh(const std::complex<T>& x)
     {
@@ -1450,22 +1450,22 @@ namespace FUNCTIONPARSERTYPES
         //     fp_sinh(x.real())*fp_cos(x.imag()),
         //     fp_cosh(x.real())*fp_sin(x.imag()));
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/func_tan.hh"
     template<typename Value_t>
     inline Value_t fp_tan(const Value_t& x) { return std::tan(x); }
 
     inline long fp_tan(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_tan(const MpfrFloat& x) { return MpfrFloat::tan(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_tan(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_tan(const std::complex<T>& x)
     {
@@ -1479,7 +1479,7 @@ namespace FUNCTIONPARSERTYPES
         // // Also: sin(x)/cos(y)
         // // return fp_sin(x)/fp_cos(x);
     }
-#endif
+  #endif
 #line 5 "extrasrc/functions/help_sinhcosh.hh"
     template<typename Value_t>
     inline void fp_sinhCosh(Value_t& sinhvalue, Value_t& coshvalue,
@@ -1492,18 +1492,18 @@ namespace FUNCTIONPARSERTYPES
 
     inline void fp_sinhCosh(long&, long&, const long&) {}
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline void fp_sinhCosh(MpfrFloat& sinh, MpfrFloat& cosh, const MpfrFloat& a)
     {
         MpfrFloat::sinhcosh(a, sinh, cosh);
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline void fp_sinhCosh(GmpInt&, GmpInt&, const GmpInt&) {}
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline void fp_sinhCosh(
         std::complex<T>& sinhvalue,
@@ -1515,22 +1515,22 @@ namespace FUNCTIONPARSERTYPES
         sinhvalue = std::complex<T>(srx*cix, crx*six);
         coshvalue = std::complex<T>(crx*cix, srx*six);
     }
-#endif
+  #endif
 #line 2 "extrasrc/functions/func_tanh.hh"
     template<typename Value_t>
     inline Value_t fp_tanh(const Value_t& x) { return std::tanh(x); }
 
     inline long fp_tanh(const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_tanh(const MpfrFloat& x) { return MpfrFloat::tanh(x); }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_tanh(const GmpInt&) { return 0; }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_tanh(const std::complex<T>& x)
     {
@@ -1544,7 +1544,7 @@ namespace FUNCTIONPARSERTYPES
         // const std::complex<T> exp2x=fp_exp(x+x);
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/help_d2r.hh"
     template<typename Value_t>
     inline Value_t DegreesToRadians(const Value_t& degrees)
@@ -1558,13 +1558,13 @@ namespace FUNCTIONPARSERTYPES
         return Value_t();
     }
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline const std::complex<T> fp_make_imag(const std::complex<T>& v)
     {
         return std::complex<T> ( T(), v.real() );
     }
-#endif
+  #endif
 #line 3 "extrasrc/functions/help_pow_base.hh"
     template<typename Value_t>
     inline Value_t fp_pow_base(const Value_t& x, const Value_t& y)
@@ -1574,16 +1574,16 @@ namespace FUNCTIONPARSERTYPES
 
     inline long fp_pow_base(const long&, const long&) { return 0; }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     inline MpfrFloat fp_pow_base(const MpfrFloat& x, const MpfrFloat& y)
     {
         return fp_pow(x,y);
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
-#endif
+  #endif
 #line 3 "extrasrc/functions/help_r2d.hh"
     template<typename Value_t>
     inline Value_t RadiansToDegrees(const Value_t& radians)
@@ -1604,29 +1604,29 @@ namespace FUNCTIONPARSERTYPES
         return value%2 == 0;
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline bool isEvenInteger(const MpfrFloat& value)
     {
         return isInteger(value) && value%2 == MpfrFloat{};
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     inline bool isEvenInteger(const GmpInt& value)
     {
         return value%2 == 0;
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline bool isEvenInteger(const std::complex<T>& value)
     {
         return !value.imag() && isEvenInteger(value.real());
     }
-#endif
+  #endif
 #line 6 "extrasrc/functions/test_isodd.hh"
     template<typename Value_t>
     inline bool isOddInteger(const Value_t& value)
@@ -1641,31 +1641,31 @@ namespace FUNCTIONPARSERTYPES
         return value%2 != 0;
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     inline bool isOddInteger(const MpfrFloat& value)
     {
         return value.isInteger() && value%2 != MpfrFloat{};
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_GMP_INT_TYPE
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
     template<>
     inline bool isOddInteger(const GmpInt& value)
     {
         return value%2 != 0;
     }
-#endif
+  #endif
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline bool isOddInteger(const std::complex<T>& value)
     {
         return !value.imag() && isOddInteger(value.real());
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/util_complexprint.hh"
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     /* libstdc++ already defines a streaming operator for complex values,
      * but we redefine our own that it is compatible with the input
      * accepted by fparser. I.e. instead of (5,3) we now get (5+3i),
@@ -1681,15 +1681,15 @@ namespace FUNCTIONPARSERTYPES
         else
             return os << '(' << value.real() << "+" << value.imag() << "i)";
     }
-#endif
+  #endif
 #line 1 "extrasrc/functions/util_iscomplextype.hh"
     template<typename>
     struct IsComplexType: public std::false_type { };
 
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
-#endif
+  #endif
 #line 1694 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
