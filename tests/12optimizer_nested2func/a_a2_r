@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=csc(atan2((a+-2.25),(b+-2.25)))
-C=1/fp_sin(fp_atan2(a+-2.25,b+-2.25))
+R=-3,3,2
+F=csc(atan2(a,b))
+C=1/fp_sin(fp_atan2(a,b))

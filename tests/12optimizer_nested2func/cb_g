@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=0.5,2,0.5
-F=cbrt(arg((a+0)))
-C=fp_cbrt(fp_arg(a+0))
+F=cbrt(arg(a))
+C=fp_cbrt(fp_arg(a))

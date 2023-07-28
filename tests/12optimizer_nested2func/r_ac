@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=real(acos((a+0)))
-C=fp_real(fp_acos(a+0))
+F=real(acos(a))
+C=fp_real(fp_acos(a))

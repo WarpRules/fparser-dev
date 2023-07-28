@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=0.25,0.75,0.125
-F=csc(atanh((a+0)))
-C=1/fp_sin(fp_atanh(a+0))
+F=csc(atanh(a))
+C=1/fp_sin(fp_atanh(a))

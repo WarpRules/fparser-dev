@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=sqrt(log10((a+2.0625)))
-C=fp_sqrt(fp_log10(a+2.0625))
+R=-3,3,2
+F=sqrt(log10(a))
+C=fp_sqrt(fp_log10(a))

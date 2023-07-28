@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=cos(tan((a+3.0625)))
-C=fp_cos(fp_tan(a+3.0625))
+R=-3,3,2
+F=cos(tan(a))
+C=fp_cos(fp_tan(a))

@@ -38,6 +38,12 @@ OPTIMIZATION=-O3 -ffast-math -march=native
 
 #OPTIMIZATION += -fmerge-all-constants
 
+#OPTIMIZATION += -fipa-pta -fivopts
+#CXXFLAGS += -fanalyzer
+#CXXFLAGS += -mfpmath=sse+387
+
+#OPTIMIZATION += -mlong-double-128
+
 #OPTIMIZATION+=-g
 #OPTIMIZATION=-g -O0 -fno-inline
 #OPTIMIZATION=-g -O0 -fno-inline -fno-inline-functions -fno-default-inline
@@ -48,6 +54,7 @@ OPTIMIZATION=-O3 -ffast-math -march=native
 #LDFLAGS += -fsanitize=thread
 #OPTIMIZATION=-g -O0 -fsanitize=address
 #LDFLAGS += -fsanitize=address
+
 
 CXX=g++
 #CXX=clang++
@@ -96,6 +103,7 @@ endif
 
 STD_OPTION := "$(shell /bin/sh -c './test_std_version.sh "$(CXX)"')"
 CXXFLAGS += -std=c++11
+
 
 #LD += -Xlinker --gc-sections
 #LD += -Xlinker --print-gc-sections

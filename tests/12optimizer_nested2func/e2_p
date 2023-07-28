@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a,b
-R=-0.5,0.5,0.25
-F=exp2(pow((a+1.125),(b+1.125)))
-C=fp_exp2(fp_pow(a+1.125,b+1.125))

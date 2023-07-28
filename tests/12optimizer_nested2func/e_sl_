@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a,b
 R=-2,2,0.5
-F=sec(sin((a+0)!=(b+0)))
-C=1/fp_cos(fp_sin(fp_nequal(a+0,b+0)))
+F=sec(sin(a!=b))
+C=1/fp_cos(fp_sin(fp_nequal(a,b)))

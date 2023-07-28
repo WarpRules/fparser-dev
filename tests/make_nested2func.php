@@ -1,5 +1,8 @@
 <?php
 
+# Run like this:
+# for s in `seq 0 30`;do php make_nested2func.php $s&done
+
 require 'util/func_simulator.php';
 
 /*$w = -2; $x = -1; $y = -2; $z = 0;
@@ -170,7 +173,7 @@ function test($code, $const, $use_b)
   $let  = '(?:'.$let.'|[(]'.$let.'*[)])';
   $eval = preg_replace('@1/([_a-zA-Z0-9]+[(]'.$let.'*[)])@', 'fp_div([1,0],$1)', $eval);
   $eval = preg_replace('@-([_a-zA-Z0-9]+[(]'.$let.'*[)])@', 'fp_mul([-1,0],$1)', $eval);
-  print "eval: $eval\n";
+  #print "eval: $eval\n";
 
   global $failed;
   $failed = false;
@@ -230,6 +233,13 @@ function test($code, $const, $use_b)
   # Cleanup for fp
   $res = str_replace('1a', '(a+'.$c.')', $res);
   $res = str_replace('1b', '(b+'.$d.')', $res);
+  $res = str_replace('(a+0)', '(a)', $res);
+  $res = str_replace('(b+0)', '(b)', $res);
+  $res = str_replace('(a+0,', '(a,', $res);
+  $res = str_replace(',b+0)', ',b)', $res);
+  $res = str_replace('((a)', '(a', $res);
+  $res = str_replace('(b))', 'b)', $res);
+  $res = preg_replace('@^([CF])=[(](.*)[)]$@m', '\1=\2', $res);
   return $res;
 }
 function valsubst($code, $name)
@@ -245,10 +255,10 @@ function valsubst($code, $name)
     [-1,1,0.5], // all, less or equal than 1
     [-2,2,2],   // all, skips -1 and 1
     [-3,3,2],   // all, skips 0
-    [-0.75, 0.75, 0.25], // less than 1, doesn't skip 0
-    [-0.5,  0.5,  0.25], // less or equal than 0.5, doesn't skip 0
-    [-0.25, 0.25, 0.05], // less or equal than 0.25, doesn't skip 0
-    [-0.2,  0.2,  0.05], // less than 0.25,          doesn't skip 0
+    [-0.75, 0.75, 0.25],    // less than 1, doesn't skip 0
+    [-0.5,  0.5,  0.25],    // less or equal than 0.5, doesn't skip 0
+    [-0.25, 0.25, 0.0625],  // less or equal than 0.25, doesn't skip 0
+    [-0.1875,0.1875,0.0625],// less than 0.25,          doesn't skip 0
     [0,2,0.5], // 0, 0.5, 1, 1.5, 2              skips neg
     [0,1,0.5], // 0, 0.5, 1                      skips neg and 2
     [0,4,0.75], // 0, .75, 1.5, 2.75, 3.25, 4    skips neg and 1
@@ -269,76 +279,97 @@ function valsubst($code, $name)
   }
   $use_b = preg_match('/V=a,b/', $code);
 
-  print "Trying $name: $code\n";
-  for($step=0; $step< count($val)+200; ++$step)
+  $round_opts = Array();
+  for($round2=0; $round2<($use_b ? (2*5*4) : 1); ++$round2)
+  for($round1=0; $round1<(2*5*4); ++$round1)
   {
-    $try = $step>>2;
+    $C = (($round1>>1)*(($round1&1)?1:-1))/5;
+    $D = (($round2>>1)*(($round2&1)?1:-1))/5;
+    $round_opts[] = [$C,$D];
+  }
+  usort($round_opts, function($a,$b)
+  {
+    $a = hypot($a[0], $a[1]);
+    $b = hypot($b[0], $b[1]);
+    return $a!=$b ? ($a < $b ? -1 : 1) : 0;
+  });
+
+  print "Trying $name: $code\n";
+  foreach($round_opts as $round)
+  for($step=0; $step< count($val); ++$step)
+  {
+    $try = $step;
     if(isset($val[$try]))
     {
+      $round1 = $round[0];
+      $round2 = $round[1];
       $const = Array('A' => $val[$try][0], 'B' => $val[$try][1], 'S' => $val[$try][2],
-                     'C' => 0,
-                     'D' => 0);
-      if($step&3)
-      {
-        $const['C'] = rand(-50,50)/16;
-        $const['D'] = rand(-50,50)/16;
-      }
+                     'C' => $round[0],
+                     'D' => $round[1]);
+      if($const['C'] != 0 && (abs($const['C']) == abs($const['A']) || abs($const['C']) == abs($const['B']))) continue;
+      if($const['D'] != 0 && (abs($const['D']) == abs($const['A']) || abs($const['D']) == abs($const['B']))) continue;
     }
     $test = test($code, $const, $use_b);
-    if($test !== false) break;
-
+    if($test !== false) return $test;
+    /*
     $const['A'] = (1/16) * rand(-100,100);
     $const['B'] = $const['A'] + (1/16) * rand(10,100);
     $const['S'] = 1/16;
     $const['C'] = rand(1,50)/100;
     $const['D'] = rand(1,50)/100;
+    */
   }
-  return $test;
+  return '';
 }
 
+$n=0;
 foreach($outer as $f)
-foreach($inner as $m)
 {
-  //
-  $do_complex = true;
-  $cplx_name = "12optimizer_nested2func/{$f[0]}_{$m[1]}";
-
-  $code =
-"V={$m[0]}\n". # Variables
-"R=A,B,S\n".
-"F={$f[1]}({$m[2]})\n".
-"C={$f[2]}({$m[3]})\n";
-  $cplx_code = valsubst($code, $cplx_name);
-
-  //
-  $do_complex = false;
-  $real_name = "12optimizer_nested2func/{$f[0]}_{$m[1]}_r";
-  $code =
-"V={$m[0]}\n". # Variables
-"R=A,B,S\n".
-"F={$f[1]}({$m[2]})\n".
-"C={$f[2]}({$m[3]})\n";
-  $real_code = valsubst($code, $real_name);
-
-  //
-  if($real_code == $cplx_code)
+  if($n == (int)$argv[1])
+  foreach($inner as $m)
   {
-    if($real_code == '') continue;
-    $code = "T=f d ld mf cf cd cld\n$real_code";
-    $comb_name = "{$cplx_name}_";
-    file_put_contents($comb_name, $code);
-  }
-  else
-  {
-    if($cplx_code != '')
+    //
+    $do_complex = true;
+    $cplx_name = "12optimizer_nested2func/{$f[0]}_{$m[1]}";
+
+    $code =
+  "V={$m[0]}\n". # Variables
+  "R=A,B,S\n".
+  "F={$f[1]}({$m[2]})\n".
+  "C={$f[2]}({$m[3]})\n";
+    $cplx_code = valsubst($code, $cplx_name);
+
+    //
+    $do_complex = false;
+    $real_name = "12optimizer_nested2func/{$f[0]}_{$m[1]}_r";
+    $code =
+  "V={$m[0]}\n". # Variables
+  "R=A,B,S\n".
+  "F={$f[1]}({$m[2]})\n".
+  "C={$f[2]}({$m[3]})\n";
+    $real_code = valsubst($code, $real_name);
+
+    //
+    if($real_code == $cplx_code)
     {
-      $code = "T=cf cd cld\n$cplx_code";
-      file_put_contents($cplx_name, $code);
+      if($real_code == '') continue;
+      $code = "T=f d ld mf cf cd cld\n$real_code";
+      $comb_name = "{$cplx_name}_";
+      file_put_contents($comb_name, $code);
     }
-    if($real_code != '')
+    else
     {
-      $code = "T=f d ld mf\n$real_code";
-      file_put_contents($real_name, $code);
+      if($cplx_code != '')
+      {
+        $code = "T=cf cd cld\n$cplx_code";
+        file_put_contents($cplx_name, $code);
+      }
+      if($real_code != '')
+      {
+        $code = "T=f d ld mf\n$real_code";
+        file_put_contents($real_name, $code);
+      }
     }
   }
+  ++$n;
 }

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-1,1,0.5
-F=sqrt(atan2((a+2.5625),(b+2.5625)))
-C=fp_sqrt(fp_atan2(a+2.5625,b+2.5625))
+R=0,2,0.5
+F=sqrt(atan2(a,b))
+C=fp_sqrt(fp_atan2(a,b))

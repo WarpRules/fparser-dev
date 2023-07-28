@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=log2(atan((a+1.5)))
-C=fp_log2(fp_atan(a+1.5))
+R=0.5,2,0.5
+F=log2(atan(a))
+C=fp_log2(fp_atan(a))

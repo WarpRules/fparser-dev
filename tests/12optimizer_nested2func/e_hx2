@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=sec(hypot((a+-2.25),2))
-C=1/fp_cos(fp_hypot(a+-2.25,2))
+R=-1,1,0.5
+F=sec(hypot(a,2))
+C=1/fp_cos(fp_hypot(a,2))

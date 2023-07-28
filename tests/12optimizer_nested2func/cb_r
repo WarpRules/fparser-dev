@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,2
-F=cbrt(real((a+2.3125)))
-C=fp_cbrt(fp_real(a+2.3125))
+R=0.5,2,0.5
+F=cbrt(real(a))
+C=fp_cbrt(fp_real(a))

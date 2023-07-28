@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,2
-F=atan(1/hypot((a+-0.9375),1))
-C=fp_atan(1/fp_hypot(a+-0.9375,1))
+R=-3,3,2
+F=atan(1/hypot(a,1))
+C=fp_atan(1/fp_hypot(a,1))

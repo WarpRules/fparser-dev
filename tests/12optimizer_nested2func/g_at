@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=arg(atan((a+0)))
-C=fp_arg(fp_atan(a+0))
+F=arg(atan(a))
+C=fp_arg(fp_atan(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-2,2,0.5
-F=cbrt(polar((a+-2.125),(b+-2.125)))
-C=fp_cbrt(fp_polar(a+-2.125,b+-2.125))
+R=0.5,2,0.5
+F=cbrt(polar(a,b))
+C=fp_cbrt(fp_polar(a,b))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=sec(1/atan((a+1.125)/(b+1.125)))
-C=1/fp_cos(1/fp_atan((a+1.125)/(b+1.125)))
+R=-3,3,2
+F=sec(1/atan(a/b))
+C=1/fp_cos(1/fp_atan(a/b))

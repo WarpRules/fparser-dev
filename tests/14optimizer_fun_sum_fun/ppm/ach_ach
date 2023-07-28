@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=acosh(a)+acosh(-a)
-C=fp_acosh(a)+fp_acosh(-a)
-#X=fp_add(fp_acosh(a),fp_acosh(fp_mul(a,[-1,0])))

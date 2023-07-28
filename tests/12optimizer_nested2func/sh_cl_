@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a,b
 R=-2,2,0.5
-F=sinh(cos((a+0)!=(b+0)))
-C=fp_sinh(fp_cos(fp_nequal(a+0,b+0)))
+F=sinh(cos(a!=b))
+C=fp_sinh(fp_cos(fp_nequal(a,b)))

@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=0.5,2,0.5
-F=-tanh(a)-log(a)
-C=-fp_tanh(a)-fp_log(a)
-#X=fp_sub(fp_mul(fp_tanh(a),[-1,0]),fp_log(a))

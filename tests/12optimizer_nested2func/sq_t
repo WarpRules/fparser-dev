@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=sqrt(tan((a+0)))
-C=fp_sqrt(fp_tan(a+0))
+F=sqrt(tan(a))
+C=fp_sqrt(fp_tan(a))

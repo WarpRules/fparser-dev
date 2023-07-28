@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=sinh(cot((a+-1.9375)))
-C=fp_sinh(1/fp_tan(a+-1.9375))

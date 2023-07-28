@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=csc(imag((a+0)))
-C=1/fp_sin(fp_imag(a+0))
+F=csc(imag(a))
+C=1/fp_sin(fp_imag(a))

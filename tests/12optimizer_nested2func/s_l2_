@@ -1,5 +1,0 @@
-T=f d ld mf cf cd cld
-V=a
-R=-1,1,0.5
-F=sin(log2((a+2.8125)))
-C=fp_sin(fp_log2(a+2.8125))

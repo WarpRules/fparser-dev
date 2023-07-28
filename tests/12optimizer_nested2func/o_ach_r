@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=cot(acosh((a+3.0625)))
-C=1/fp_tan(fp_acosh(a+3.0625))
+R=0.5,2,0.5
+F=cot(acosh((a+0.6)))
+C=1/fp_tan(fp_acosh(a+0.6))

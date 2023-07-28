@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=sec(atanh((a+-0.875)))
-C=1/fp_cos(fp_atanh(a+-0.875))

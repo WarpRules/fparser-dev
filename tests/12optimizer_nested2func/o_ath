@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-3,3,2
-F=cot(atanh((a+-3.0625)))
-C=1/fp_tan(fp_atanh(a+-3.0625))
+R=0.25,3.25,0.5
+F=cot(atanh(a))
+C=1/fp_tan(fp_atanh(a))

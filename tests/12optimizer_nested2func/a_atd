@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=0.5,2,0.5
-F=csc(atan((a+0.25)/(b+0.25)))
-C=1/fp_sin(fp_atan((a+0.25)/(b+0.25)))
+R=0.5,1,0.25
+F=csc(atan((a+-0.2)/(b+-0.2)))
+C=1/fp_sin(fp_atan((a+-0.2)/(b+-0.2)))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=sqrt(atan((a+-2.3125)/(b+-2.3125)))
-C=fp_sqrt(fp_atan((a+-2.3125)/(b+-2.3125)))
+R=0.5,2,0.5
+F=sqrt(atan(a/b))
+C=fp_sqrt(fp_atan(a/b))

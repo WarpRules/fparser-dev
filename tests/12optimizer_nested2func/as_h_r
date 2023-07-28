@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-0.5,0.5,0.25
-F=asin(hypot((a+0),(b+0)))
-C=fp_asin(fp_hypot(a+0,b+0))
+F=asin(hypot(a,b))
+C=fp_asin(fp_hypot(a,b))

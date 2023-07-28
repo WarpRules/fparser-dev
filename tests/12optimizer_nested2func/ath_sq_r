@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.25,0.25,0.05
-F=atanh(sqrt((a+0.5625)))
-C=fp_atanh(fp_sqrt(a+0.5625))
+R=0,0.75,0.25
+F=atanh(sqrt(a))
+C=fp_atanh(fp_sqrt(a))

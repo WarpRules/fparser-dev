@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=sqrt(csc((a+1.4375)))
-C=fp_sqrt(1/fp_sin(a+1.4375))
+R=0.5,2,0.5
+F=sqrt(csc(a))
+C=fp_sqrt(1/fp_sin(a))

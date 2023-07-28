@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-0.75,0.75,0.25
-F=atanh(imag((a+0)))
-C=fp_atanh(fp_imag(a+0))
+F=atanh(imag(a))
+C=fp_atanh(fp_imag(a))

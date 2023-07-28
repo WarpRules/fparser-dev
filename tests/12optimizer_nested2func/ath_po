@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-2,2,0.5
-F=atanh(polar((a+-0.875),(b+-0.875)))
-C=fp_atanh(fp_polar(a+-0.875,b+-0.875))
+R=-0.75,0.75,0.25
+F=atanh(polar(a,b))
+C=fp_atanh(fp_polar(a,b))

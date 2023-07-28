@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=acos(exp((a+-2.4375)))
-C=fp_acos(fp_exp(a+-2.4375))
+R=-0.1875,0.1875,0.0625
+F=acos(exp((a+-0.2)))
+C=fp_acos(fp_exp(a+-0.2))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=sec(arg((a+2.9375)))
-C=1/fp_cos(fp_arg(a+2.9375))
+R=-3,3,2
+F=sec(arg(a))
+C=1/fp_cos(fp_arg(a))

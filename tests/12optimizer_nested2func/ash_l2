@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=asinh(log2((a+1.5625)))
-C=fp_asinh(fp_log2(a+1.5625))
+R=-3,3,2
+F=asinh(log2(a))
+C=fp_asinh(fp_log2(a))

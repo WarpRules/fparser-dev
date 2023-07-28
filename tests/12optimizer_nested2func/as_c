@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=asin(cos((a+0.8125)))
-C=fp_asin(fp_cos(a+0.8125))
+R=-3,3,2
+F=asin(cos(a))
+C=fp_asin(fp_cos(a))

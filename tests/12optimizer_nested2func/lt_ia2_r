@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=log10(1/atan2((a+3),(b+3)))
-C=fp_log10(1/fp_atan2(a+3,b+3))
+R=0.5,2,0.5
+F=log10(1/atan2(a,b))
+C=fp_log10(1/fp_atan2(a,b))

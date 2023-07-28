@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.1875,0.1875,0.0625
+F=asin(acosh((a+1.2)))
+C=fp_asin(fp_acosh(a+1.2))

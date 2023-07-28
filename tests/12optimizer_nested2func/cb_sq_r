@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=cbrt(sqrt((a+2.8125)))
-C=fp_cbrt(fp_sqrt(a+2.8125))
+R=0,2,0.5
+F=cbrt(sqrt(a))
+C=fp_cbrt(fp_sqrt(a))

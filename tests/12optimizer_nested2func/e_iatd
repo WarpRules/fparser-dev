@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
 R=0.5,1,0.25
-F=sec(1/atan((a+1.4375)/(b+1.4375)))
-C=1/fp_cos(1/fp_atan((a+1.4375)/(b+1.4375)))
+F=sec(1/atan((a+-0.2)/(b+-0.2)))
+C=1/fp_cos(1/fp_atan((a+-0.2)/(b+-0.2)))

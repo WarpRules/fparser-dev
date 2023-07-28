@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=csc(abs((a+1.125)))
-C=1/fp_sin(fp_abs(a+1.125))

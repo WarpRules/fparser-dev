@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.5,0.5,0.25
-F=log10(log((a+2.125)))
-C=fp_log10(fp_log(a+2.125))
+R=0.5,2,0.5
+F=log10(log((a+0.6)))
+C=fp_log10(fp_log(a+0.6))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=cot(acos((a+0)))
-C=1/fp_tan(fp_acos(a+0))
+F=cot(acos(a))
+C=1/fp_tan(fp_acos(a))

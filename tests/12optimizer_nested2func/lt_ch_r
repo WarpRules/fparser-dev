@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=log10(cosh((a+0)))
-C=fp_log10(fp_cosh(a+0))
+F=log10(cosh(a))
+C=fp_log10(fp_cosh(a))

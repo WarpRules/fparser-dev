@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=exp2(log((a+2.4375)))
-C=fp_exp2(fp_log(a+2.4375))
+R=0.5,2,0.5
+F=exp2(log(a))
+C=fp_exp2(fp_log(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
 R=-2,2,0.5
-F=conj(cosh((a+0)!=(b+0)))
-C=fp_conj(fp_cosh(fp_nequal(a+0,b+0)))
+F=conj(cosh(a!=b))
+C=fp_conj(fp_cosh(fp_nequal(a,b)))

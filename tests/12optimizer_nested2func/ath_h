@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=0.5,2,0.5
-F=atanh(hypot((a+2.8125),(b+2.8125)))
-C=fp_atanh(fp_hypot(a+2.8125,b+2.8125))
+R=0.25,0.75,0.125
+F=atanh(hypot(a,b))
+C=fp_atanh(fp_hypot(a,b))

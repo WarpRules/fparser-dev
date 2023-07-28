@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-0.75,-0.25,0.25
-F=tanh(a)+atanh(a)
-C=fp_tanh(a)+fp_atanh(a)
-#X=fp_add(fp_tanh(a),fp_atanh(a))

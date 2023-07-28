@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=tanh(sqrt((a+2.25)))
-C=fp_tanh(fp_sqrt(a+2.25))
+R=0,2,0.5
+F=tanh(sqrt(a))
+C=fp_tanh(fp_sqrt(a))

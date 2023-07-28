@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,2
-F=sinh(acosh((a+3.125)))
-C=fp_sinh(fp_acosh(a+3.125))
+R=-3,3,2
+F=sinh(acosh(a))
+C=fp_sinh(fp_acosh(a))

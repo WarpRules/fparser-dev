@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=arg(tanh((a+2.8125)))
-C=fp_arg(fp_tanh(a+2.8125))
+R=-3,3,2
+F=arg(tanh(a))
+C=fp_arg(fp_tanh(a))

@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=sin(-a)+log(-a)
-C=fp_sin(-a)+fp_log(-a)
-#X=fp_add(fp_sin(fp_mul(a,[-1,0])),fp_log(fp_mul(a,[-1,0])))

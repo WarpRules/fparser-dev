@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.75,0.75,0.25
-F=log2(cbrt((a+1.875)))
-C=fp_log2(fp_cbrt(a+1.875))
+R=0.5,2,0.5
+F=log2(cbrt(a))
+C=fp_log2(fp_cbrt(a))

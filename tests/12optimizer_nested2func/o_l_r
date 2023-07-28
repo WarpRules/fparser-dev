@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=cot(log((a+2.6875)))
-C=1/fp_tan(fp_log(a+2.6875))
+R=0.25,3.25,0.5
+F=cot(log(a))
+C=1/fp_tan(fp_log(a))

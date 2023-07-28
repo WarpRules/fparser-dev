@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=0,0.75,0.25
-F=cbrt(atanh((a+0)))
-C=fp_cbrt(fp_atanh(a+0))
+F=cbrt(atanh(a))
+C=fp_cbrt(fp_atanh(a))

@@ -1,6 +1,6 @@
 T=f d ld mf
 V=a
-R=6.0625,7.6875,0.0625
+R=5.625,11.1875,0.0625
 F=atan(a)-acosh(a)
 C=fp_atan(a)-fp_acosh(a)
 #X=fp_sub(fp_atan(a),fp_acosh(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=imag(cot((a+0.9375)))
-C=fp_imag(1/fp_tan(a+0.9375))
+R=-3,3,2
+F=imag(cot(a))
+C=fp_imag(1/fp_tan(a))

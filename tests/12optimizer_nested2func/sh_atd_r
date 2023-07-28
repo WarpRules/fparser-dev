@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=sinh(atan((a+-2.375)/(b+-2.375)))
-C=fp_sinh(fp_atan((a+-2.375)/(b+-2.375)))
+R=-3,3,2
+F=sinh(atan(a/b))
+C=fp_sinh(fp_atan(a/b))

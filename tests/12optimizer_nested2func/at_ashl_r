@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-2,2,0.5
-F=atan(asinh((a+0)!=(b+0)))
-C=fp_atan(fp_asinh(fp_nequal(a+0,b+0)))
+F=atan(asinh(a!=b))
+C=fp_atan(fp_asinh(fp_nequal(a,b)))

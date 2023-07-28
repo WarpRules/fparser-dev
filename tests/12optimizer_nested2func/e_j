@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-2,2,0.5
-F=sec(conj((a+0)))
-C=1/fp_cos(fp_conj(a+0))
+F=sec(conj(a))
+C=1/fp_cos(fp_conj(a))

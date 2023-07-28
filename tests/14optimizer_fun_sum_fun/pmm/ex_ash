@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=exp(-a)+asinh(-a)
-C=fp_exp(-a)+fp_asinh(-a)
-#X=fp_add(fp_exp(fp_mul(a,[-1,0])),fp_asinh(fp_mul(a,[-1,0])))

@@ -45,7 +45,6 @@ $ways = Array(
   ['mmm', 'A(-1a)-B(-1a)', 'A(-a)-B(-a)', 'fp_sub(A(fp_mul(a,[-1,0])),B(fp_mul(a,[-1,0])))'],
   ['npp', '-A(1a)-B(1a)',   '-A(a)-B(a)',   'fp_sub(fp_mul(A(a),[-1,0]),B(a))'],
   ['npm', '-A(1a)-B(-1a)',  '-A(a)-B(-a)',  'fp_sub(fp_mul(A(a),[-1,0]),B(fp_mul(a,[-1,0])))'],
-  ['nmp', '-A(-1a)-B(1a)',  '-A(-a)-B(a)',  'fp_sub(fp_mul(A(fp_mul(a,[-1,0])),[-1,0]),B(a))'],
   ['nmm', '-A(-1a)-B(-1a)', '-A(-a)-B(-a)', 'fp_sub(fp_mul(A(fp_mul(a,[-1,0])),[-1,0]),B(fp_mul(a,[-1,0])))'],
 );
 
@@ -182,6 +181,18 @@ foreach($outer as $f1)
 foreach($outer as $f2)
 foreach($ways as $w)
 {
+  if($w[0] == 'ppp' || $w[0] == 'nmm' || $w[0] == 'npp' || $w[0] == 'pmm')
+  {
+    // Skip some duplicate cases:
+    //   ppp:  sin( a) + cos( a)   v.s.   cos( a) + sin( a)
+    //   pmm:  sin( a) + cos( a)   v.s.   cos( a) + sin( a)
+    //   npp: -sin( a) - cos( a)   v.s.  -cos( a) - sin( a)
+    //   nmm: -sin(-a) - cos(-a)   v.s.  -cos(-a) - sin(-a)
+    if($f1[0] > $f2[0]) continue;
+  }
+  // skip also:
+
+
   //
   $do_complex = true;
   $cplx_name = "{$w[0]}/{$f1[0]}_{$f2[0]}";

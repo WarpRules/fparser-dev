@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-2,2,0.5
-F=asinh(hypot((a+0),(b+0)))
-C=fp_asinh(fp_hypot(a+0,b+0))
+F=asinh(hypot(a,b))
+C=fp_asinh(fp_hypot(a,b))

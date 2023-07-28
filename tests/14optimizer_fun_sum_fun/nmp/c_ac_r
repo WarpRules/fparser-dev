@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-1,1,0.5
-F=-cos(-a)-acos(a)
-C=-fp_cos(-a)-fp_acos(a)
-#X=fp_sub(fp_mul(fp_cos(fp_mul(a,[-1,0])),[-1,0]),fp_acos(a))

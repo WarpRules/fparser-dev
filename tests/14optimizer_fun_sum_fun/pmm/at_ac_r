@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=-1,1,0.5
-F=atan(-a)+acos(-a)
-C=fp_atan(-a)+fp_acos(-a)
-#X=fp_add(fp_atan(fp_mul(a,[-1,0])),fp_acos(fp_mul(a,[-1,0])))

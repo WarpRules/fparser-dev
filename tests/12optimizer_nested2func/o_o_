@@ -1,0 +1,5 @@
+T=f d ld mf cf cd cld
+V=a
+R=-3,3,2
+F=cot(cot(a))
+C=1/fp_tan(1/fp_tan(a))

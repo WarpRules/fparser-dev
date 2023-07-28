@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=0.5,2,0.5
-F=acosh(arg((a+-2.4375)))
-C=fp_acosh(fp_arg(a+-2.4375))
+R=0.25,0.75,0.125
+F=acosh(arg((a+-0.6)))
+C=fp_acosh(fp_arg(a+-0.6))

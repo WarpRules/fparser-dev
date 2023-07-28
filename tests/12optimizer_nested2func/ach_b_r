@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,2
-F=acosh(abs((a+-3.125)))
-C=fp_acosh(fp_abs(a+-3.125))

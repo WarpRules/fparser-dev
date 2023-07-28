@@ -1,0 +1,5 @@
+T=f d ld mf
+V=a
+R=-0.1875,0.1875,0.0625
+F=atanh(acos((a+0.8)))
+C=fp_atanh(fp_acos(a+0.8))

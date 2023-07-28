@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.25,0.25,0.05
-F=cot(acos((a+0.3125)))
-C=1/fp_tan(fp_acos(a+0.3125))
+R=0.25,0.75,0.125
+F=cot(acos(a))
+C=1/fp_tan(fp_acos(a))

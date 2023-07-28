@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=tanh(log10((a+2.5625)))
-C=fp_tanh(fp_log10(a+2.5625))
+R=0.5,2,0.5
+F=tanh(log10(a))
+C=fp_tanh(fp_log10(a))

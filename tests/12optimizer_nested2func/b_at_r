@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=abs(atan((a+0)))
-C=fp_abs(fp_atan(a+0))
+F=abs(atan(a))
+C=fp_abs(fp_atan(a))

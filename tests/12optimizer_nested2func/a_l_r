@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,0.5
-F=csc(log((a+2.3125)))
-C=1/fp_sin(fp_log(a+2.3125))
+R=0.25,3.25,0.5
+F=csc(log(a))
+C=1/fp_sin(fp_log(a))

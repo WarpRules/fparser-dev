@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=cosh(1/hypot(1,(a+3)))
-C=fp_cosh(1/fp_hypot(1,a+3))
+R=-3,3,2
+F=cosh(1/hypot(1,a))
+C=fp_cosh(1/fp_hypot(1,a))

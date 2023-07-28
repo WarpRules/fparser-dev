@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=cos(1/atan2((a+-2.9375),(b+-2.9375)))
-C=fp_cos(1/fp_atan2(a+-2.9375,b+-2.9375))
+R=-3,3,2
+F=cos(1/atan2(a,b))
+C=fp_cos(1/fp_atan2(a,b))

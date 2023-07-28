@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-1,1,0.5
-F=asinh(hypot((a+-2.5625),(b+-2.5625)))
-C=fp_asinh(fp_hypot(a+-2.5625,b+-2.5625))
+R=0,1,0.5
+F=asinh(hypot((a+-0.2),(b+-0.2)))
+C=fp_asinh(fp_hypot(a+-0.2,b+-0.2))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=acosh(hypot((a+2.8125),(b+2.8125)))
-C=fp_acosh(fp_hypot(a+2.8125,b+2.8125))
+R=-3,3,2
+F=acosh(hypot(a,b))
+C=fp_acosh(fp_hypot(a,b))

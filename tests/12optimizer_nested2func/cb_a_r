@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.5,0.5,0.25
-F=cbrt(csc((a+2.3125)))
-C=fp_cbrt(1/fp_sin(a+2.3125))
+R=0.5,2,0.5
+F=cbrt(csc(a))
+C=fp_cbrt(1/fp_sin(a))

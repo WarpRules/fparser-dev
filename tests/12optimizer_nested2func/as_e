@@ -1,6 +1,5 @@
-IMAG=abs
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=asin(sec((a+0.0625)))
-C=fp_asin(1/fp_cos(a+0.0625))
+R=-3,3,2
+F=asin(sec(a))
+C=fp_asin(1/fp_cos(a))

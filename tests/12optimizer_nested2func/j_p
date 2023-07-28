@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
 R=-3,3,2
-F=conj(pow((a+0),(b+0)))
-C=fp_conj(fp_pow(a+0,b+0))
+F=conj(pow(a,b))
+C=fp_conj(fp_pow(a,b))

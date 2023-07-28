@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=acos(exp2((a+0)))
-C=fp_acos(fp_exp2(a+0))
+F=acos(exp2(a))
+C=fp_acos(fp_exp2(a))

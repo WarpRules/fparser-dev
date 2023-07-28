@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=atanh(asinh((a+0.125)))
-C=fp_atanh(fp_asinh(a+0.125))
+R=-3,3,2
+F=atanh(asinh(a))
+C=fp_atanh(fp_asinh(a))

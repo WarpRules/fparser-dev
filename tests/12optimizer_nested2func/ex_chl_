@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a,b
 R=-2,2,0.5
-F=exp(cosh((a+0)!=(b+0)))
-C=fp_exp(fp_cosh(fp_nequal(a+0,b+0)))
+F=exp(cosh(a!=b))
+C=fp_exp(fp_cosh(fp_nequal(a,b)))

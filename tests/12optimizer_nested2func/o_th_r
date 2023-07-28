@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=cot(tanh((a+2.3125)))
-C=1/fp_tan(fp_tanh(a+2.3125))

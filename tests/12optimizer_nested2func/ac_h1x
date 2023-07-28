@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-3,3,2
-F=acos(hypot(1,(a+2.5)))
-C=fp_acos(fp_hypot(1,a+2.5))
+R=0.5,2,0.5
+F=acos(hypot(1,a))
+C=fp_acos(fp_hypot(1,a))

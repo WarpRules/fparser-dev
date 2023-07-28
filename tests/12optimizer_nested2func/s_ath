@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=sin(atanh((a+0.875)))
-C=fp_sin(fp_atanh(a+0.875))

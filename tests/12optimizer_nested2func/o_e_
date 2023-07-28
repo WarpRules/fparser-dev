@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a
 R=-2,2,0.5
-F=cot(sec((a+0)))
-C=1/fp_tan(1/fp_cos(a+0))
+F=cot(sec(a))
+C=1/fp_tan(1/fp_cos(a))

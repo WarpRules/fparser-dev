@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=tanh(csc((a+-3)))
-C=fp_tanh(1/fp_sin(a+-3))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,2
-F=log2(asinh((a+2.3125)))
-C=fp_log2(fp_asinh(a+2.3125))
+R=0.5,2,0.5
+F=log2(asinh(a))
+C=fp_log2(fp_asinh(a))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.5,0.5,0.25
-F=cbrt(acosh((a+1.625)))
-C=fp_cbrt(fp_acosh(a+1.625))
+R=0.5,2,0.5
+F=cbrt(acosh((a+0.6)))
+C=fp_cbrt(fp_acosh(a+0.6))

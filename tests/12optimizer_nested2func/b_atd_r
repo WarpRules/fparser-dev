@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=abs(atan((a+-2.0625)/(b+-2.0625)))
-C=fp_abs(fp_atan((a+-2.0625)/(b+-2.0625)))
+R=-3,3,2
+F=abs(atan(a/b))
+C=fp_abs(fp_atan(a/b))

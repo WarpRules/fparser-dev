@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a,b
-R=-0.75,0.75,0.25
-F=exp(pow((a+1),(b+1)))
-C=fp_exp(fp_pow(a+1,b+1))

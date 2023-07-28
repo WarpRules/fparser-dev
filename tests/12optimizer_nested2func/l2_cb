@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,2
-F=log2(cbrt((a+2.375)))
-C=fp_log2(fp_cbrt(a+2.375))
+R=-3,3,2
+F=log2(cbrt(a))
+C=fp_log2(fp_cbrt(a))

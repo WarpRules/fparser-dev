@@ -1,6 +1,6 @@
 T=f d ld mf
 V=a
-R=-4.25,-1.75,0.0625
+R=-5.625,-5,0.0625
 F=cos(-a)-acosh(-a)
 C=fp_cos(-a)-fp_acosh(-a)
 #X=fp_sub(fp_cos(fp_mul(a,[-1,0])),fp_acosh(fp_mul(a,[-1,0])))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=asinh(cbrt((a+2.125)))
-C=fp_asinh(fp_cbrt(a+2.125))
+R=0.5,2,0.5
+F=asinh(cbrt(a))
+C=fp_asinh(fp_cbrt(a))

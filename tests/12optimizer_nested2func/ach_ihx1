@@ -1,6 +1,5 @@
-IMAG=abs
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=acosh(1/hypot((a+2.25),1))
-C=fp_acosh(1/fp_hypot(a+2.25,1))
+R=-3,3,2
+F=acosh(1/hypot(a,1))
+C=fp_acosh(1/fp_hypot(a,1))

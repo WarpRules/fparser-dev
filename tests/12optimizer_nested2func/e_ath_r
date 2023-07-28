@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-0.75,0.75,0.25
-F=sec(atanh((a+0)))
-C=1/fp_cos(fp_atanh(a+0))

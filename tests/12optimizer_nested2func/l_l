@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=log(log((a+2.5625)))
-C=fp_log(fp_log(a+2.5625))
+R=-3,3,2
+F=log(log(a))
+C=fp_log(fp_log(a))

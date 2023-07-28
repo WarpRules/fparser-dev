@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-2,2,0.5
-F=real(sinh((a+0)))
-C=fp_real(fp_sinh(a+0))
+F=real(sinh(a))
+C=fp_real(fp_sinh(a))

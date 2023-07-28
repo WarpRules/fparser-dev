@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a
 R=-1,1,0.5
-F=sqrt(sec((a+0)))
-C=fp_sqrt(1/fp_cos(a+0))
+F=sqrt(sec(a))
+C=fp_sqrt(1/fp_cos(a))

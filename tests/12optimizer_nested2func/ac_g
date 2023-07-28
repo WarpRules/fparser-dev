@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=0.5,1,0.25
+F=acos(arg((a+0.6)))
+C=fp_acos(fp_arg(a+0.6))

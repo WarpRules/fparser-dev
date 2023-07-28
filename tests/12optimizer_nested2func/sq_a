@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=sqrt(csc((a+0)))
-C=fp_sqrt(1/fp_sin(a+0))
+F=sqrt(csc(a))
+C=fp_sqrt(1/fp_sin(a))

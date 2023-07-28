@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-1,1,0.5
-F=acosh(pow((a+2.875),(b+2.875)))
-C=fp_acosh(fp_pow(a+2.875,b+2.875))
+R=0.5,2,0.5
+F=acosh(pow((a+0.6),(b+0.6)))
+C=fp_acosh(fp_pow(a+0.6,b+0.6))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=sin(cbrt((a+0)))
-C=fp_sin(fp_cbrt(a+0))
+F=sin(cbrt(a))
+C=fp_sin(fp_cbrt(a))

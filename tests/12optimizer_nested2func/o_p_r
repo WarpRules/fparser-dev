@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a,b
-R=-2,2,2
-F=cot(pow((a+2.625),(b+2.625)))
-C=1/fp_tan(fp_pow(a+2.625,b+2.625))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-3,3,2
-F=sinh(cbrt((a+3.125)))
-C=fp_sinh(fp_cbrt(a+3.125))
+R=0,2,0.5
+F=sinh(cbrt(a))
+C=fp_sinh(fp_cbrt(a))

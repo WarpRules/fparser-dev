@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-3,3,2
-F=acos(sqrt((a+2.1875)))
-C=fp_acos(fp_sqrt(a+2.1875))
+R=0.25,3.25,0.5
+F=acos(sqrt(a))
+C=fp_acos(fp_sqrt(a))

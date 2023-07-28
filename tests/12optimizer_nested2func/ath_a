@@ -1,6 +1,5 @@
-IMAG=abs
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=atanh(csc((a+0.1875)))
-C=fp_atanh(1/fp_sin(a+0.1875))
+R=-3,3,2
+F=atanh(csc(a))
+C=fp_atanh(1/fp_sin(a))

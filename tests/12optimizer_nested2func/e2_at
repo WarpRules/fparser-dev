@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=exp2(atan((a+-1.5625)))
-C=fp_exp2(fp_atan(a+-1.5625))
+R=-3,3,2
+F=exp2(atan(a))
+C=fp_exp2(fp_atan(a))

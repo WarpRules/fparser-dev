@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-1,1,0.5
-F=cosh(acosh((a+2.1875)))
-C=fp_cosh(fp_acosh(a+2.1875))
+R=-3,3,2
+F=cosh(acosh(a))
+C=fp_cosh(fp_acosh(a))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=exp(1/hypot(1,(a+0)))
-C=fp_exp(1/fp_hypot(1,a+0))
+F=exp(1/hypot(1,a))
+C=fp_exp(1/fp_hypot(1,a))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=atan(cosh((a+0)))
-C=fp_atan(fp_cosh(a+0))
+F=atan(cosh(a))
+C=fp_atan(fp_cosh(a))

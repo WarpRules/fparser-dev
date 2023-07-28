@@ -1,6 +1,5 @@
-IMAG=abs
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=acos(sec((a+-1.125)))
-C=fp_acos(1/fp_cos(a+-1.125))
+R=-3,3,2
+F=acos(sec(a))
+C=fp_acos(1/fp_cos(a))

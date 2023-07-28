@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=exp(1/atan2((a+1.6875),(b+1.6875)))
-C=fp_exp(1/fp_atan2(a+1.6875,b+1.6875))
+R=-3,3,2
+F=exp(1/atan2(a,b))
+C=fp_exp(1/fp_atan2(a,b))

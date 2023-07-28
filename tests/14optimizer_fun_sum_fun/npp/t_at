@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=-tan(a)-atan(a)
-C=-fp_tan(a)-fp_atan(a)
-#X=fp_sub(fp_mul(fp_tan(a),[-1,0]),fp_atan(a))

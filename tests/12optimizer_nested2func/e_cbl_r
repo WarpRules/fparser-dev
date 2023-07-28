@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-2,2,0.5
-F=sec(cbrt((a+0)!=(b+0)))
-C=1/fp_cos(fp_cbrt(fp_nequal(a+0,b+0)))
+F=sec(cbrt(a!=b))
+C=1/fp_cos(fp_cbrt(fp_nequal(a,b)))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=csc(arg((a+0)))
-C=1/fp_sin(fp_arg(a+0))
+F=csc(arg(a))
+C=1/fp_sin(fp_arg(a))

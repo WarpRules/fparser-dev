@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=exp2(log10((a+2.4375)))
-C=fp_exp2(fp_log10(a+2.4375))
+R=-3,3,2
+F=exp2(log10(a))
+C=fp_exp2(fp_log10(a))

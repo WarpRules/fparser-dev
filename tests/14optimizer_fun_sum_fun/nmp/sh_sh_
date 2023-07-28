@@ -1,6 +1,0 @@
-T=f d ld mf cf cd cld
-V=a
-R=-2,2,0.5
-F=-sinh(-a)-sinh(a)
-C=-fp_sinh(-a)-fp_sinh(a)
-#X=fp_sub(fp_mul(fp_sinh(fp_mul(a,[-1,0])),[-1,0]),fp_sinh(a))

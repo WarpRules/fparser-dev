@@ -1,0 +1,5 @@
+T=cf cd cld
+V=a
+R=-3,3,2
+F=sqrt(atan(abs((a+-0.4))))
+C=fp_sqrt(fp_atan(fp_abs(a+-0.4)))

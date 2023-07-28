@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-2,2,0.5
-F=csc(polar((a+-0.0625),(b+-0.0625)))
-C=1/fp_sin(fp_polar(a+-0.0625,b+-0.0625))
+R=-3,3,2
+F=csc(polar(a,b))
+C=1/fp_sin(fp_polar(a,b))

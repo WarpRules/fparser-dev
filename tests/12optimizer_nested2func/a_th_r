@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-2,2,0.5
-F=csc(tanh((a+-0.0625)))
-C=1/fp_sin(fp_tanh(a+-0.0625))

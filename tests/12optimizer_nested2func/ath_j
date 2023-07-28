@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-3,3,2
-F=atanh(conj((a+-2.25)))
-C=fp_atanh(fp_conj(a+-2.25))
+R=-0.75,0.75,0.25
+F=atanh(conj(a))
+C=fp_atanh(fp_conj(a))

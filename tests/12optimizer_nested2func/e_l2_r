@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.75,0.75,0.25
-F=sec(log2((a+1.0625)))
-C=1/fp_cos(fp_log2(a+1.0625))
+R=0.5,2,0.5
+F=sec(log2(a))
+C=1/fp_cos(fp_log2(a))

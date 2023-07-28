@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=csc(hypot((a+-0.3125),(b+-0.3125)))
-C=1/fp_sin(fp_hypot(a+-0.3125,b+-0.3125))
+R=-3,3,2
+F=csc(hypot(a,b))
+C=1/fp_sin(fp_hypot(a,b))

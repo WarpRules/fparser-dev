@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a,b
-R=-0.25,0.25,0.05
-F=sinh(pow((a+0.375),(b+0.375)))
-C=fp_sinh(fp_pow(a+0.375,b+0.375))

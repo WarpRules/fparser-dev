@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=acosh(hypot((a+0.1875),1))
-C=fp_acosh(fp_hypot(a+0.1875,1))
+R=0.5,2,0.5
+F=acosh(hypot(a,1))
+C=fp_acosh(fp_hypot(a,1))

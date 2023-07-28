@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=sin(log10((a+2.9375)))
-C=fp_sin(fp_log10(a+2.9375))
+R=0.5,2,0.5
+F=sin(log10(a))
+C=fp_sin(fp_log10(a))

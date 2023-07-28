@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a,b
-R=-2,2,0.5
-F=cos(pow((a+2.75),(b+2.75)))
-C=fp_cos(fp_pow(a+2.75,b+2.75))

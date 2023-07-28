@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=tanh(asinh((a+0)))
-C=fp_tanh(fp_asinh(a+0))
+F=tanh(asinh(a))
+C=fp_tanh(fp_asinh(a))

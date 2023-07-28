@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=1.1875,4.5,0.0625
-F=exp(a)+acosh(a)
-C=fp_exp(a)+fp_acosh(a)
-#X=fp_add(fp_exp(a),fp_acosh(a))

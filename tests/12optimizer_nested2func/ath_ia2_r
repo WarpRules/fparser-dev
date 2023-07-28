@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=atanh(1/atan2((a+-2.8125),(b+-2.8125)))
-C=fp_atanh(1/fp_atan2(a+-2.8125,b+-2.8125))
+R=-0.1875,0.1875,0.0625
+F=atanh(1/atan2((a+-0.2),(b+-0.2)))
+C=fp_atanh(1/fp_atan2(a+-0.2,b+-0.2))

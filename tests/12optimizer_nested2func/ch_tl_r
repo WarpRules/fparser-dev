@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-2,2,0.5
-F=cosh(tan((a+0)!=(b+0)))
-C=fp_cosh(fp_tan(fp_nequal(a+0,b+0)))
+F=cosh(tan(a!=b))
+C=fp_cosh(fp_tan(fp_nequal(a,b)))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=asinh(arg((a+2.25)))
-C=fp_asinh(fp_arg(a+2.25))
+R=-3,3,2
+F=asinh(arg(a))
+C=fp_asinh(fp_arg(a))

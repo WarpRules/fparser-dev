@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=sin(a)+atan(a)
-C=fp_sin(a)+fp_atan(a)
-#X=fp_add(fp_sin(a),fp_atan(a))

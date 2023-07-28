@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=sec(cot((a+2.0625)))
-C=1/fp_cos(1/fp_tan(a+2.0625))

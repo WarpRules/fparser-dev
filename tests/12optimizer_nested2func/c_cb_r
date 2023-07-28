@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=cos(cbrt((a+2.4375)))
-C=fp_cos(fp_cbrt(a+2.4375))
+R=0,2,0.5
+F=cos(cbrt(a))
+C=fp_cos(fp_cbrt(a))

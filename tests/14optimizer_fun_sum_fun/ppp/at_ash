@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=atan(a)+asinh(a)
-C=fp_atan(a)+fp_asinh(a)
-#X=fp_add(fp_atan(a),fp_asinh(a))

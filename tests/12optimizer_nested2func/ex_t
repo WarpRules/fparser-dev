@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=exp(tan((a+-1.875)))
-C=fp_exp(fp_tan(a+-1.875))
+R=-3,3,2
+F=exp(tan(a))
+C=fp_exp(fp_tan(a))

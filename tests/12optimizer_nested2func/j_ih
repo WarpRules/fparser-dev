@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-1,1,0.5
-F=conj(1/hypot((a+-2.8125),(b+-2.8125)))
-C=fp_conj(1/fp_hypot(a+-2.8125,b+-2.8125))
+R=0.5,2,0.5
+F=conj(1/hypot(a,b))
+C=fp_conj(1/fp_hypot(a,b))

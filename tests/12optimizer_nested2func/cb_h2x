@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=cbrt(hypot(2,(a+3)))
-C=fp_cbrt(fp_hypot(2,a+3))
+R=-1,1,0.5
+F=cbrt(hypot(2,a))
+C=fp_cbrt(fp_hypot(2,a))

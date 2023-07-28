@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
 R=-2,2,0.5
-F=asin(((a+0))=((b+0)))
-C=fp_asin(fp_equal(a+0,b+0))
+F=asin(a=b)
+C=fp_asin(fp_equal(a,b))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=exp(cbrt((a+2.3125)))
-C=fp_exp(fp_cbrt(a+2.3125))
+R=0,2,0.5
+F=exp(cbrt(a))
+C=fp_exp(fp_cbrt(a))

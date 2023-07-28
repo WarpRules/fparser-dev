@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=sqrt(real((a+2.75)))
-C=fp_sqrt(fp_real(a+2.75))
+R=0.5,2,0.5
+F=sqrt(real(a))
+C=fp_sqrt(fp_real(a))

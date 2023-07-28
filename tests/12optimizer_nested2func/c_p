@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a,b
-R=-1,1,0.5
-F=cos(pow((a+1.9375),(b+1.9375)))
-C=fp_cos(fp_pow(a+1.9375,b+1.9375))

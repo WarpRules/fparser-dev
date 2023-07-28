@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=0,1,0.5
-F=acos(sqrt((a+0)))
-C=fp_acos(fp_sqrt(a+0))
+F=acos(sqrt(a))
+C=fp_acos(fp_sqrt(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-1,1,0.5
-F=exp(hypot((a+2.4375),(b+2.4375)))
-C=fp_exp(fp_hypot(a+2.4375,b+2.4375))
+R=0.5,2,0.5
+F=exp(hypot(a,b))
+C=fp_exp(fp_hypot(a,b))

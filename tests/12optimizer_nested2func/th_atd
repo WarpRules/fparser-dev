@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=0.5,2,0.5
-F=tanh(atan((a+-0.125)/(b+-0.125)))
-C=fp_tanh(fp_atan((a+-0.125)/(b+-0.125)))
+R=0.5,1,0.25
+F=tanh(atan((a+-0.2)/(b+-0.2)))
+C=fp_tanh(fp_atan((a+-0.2)/(b+-0.2)))

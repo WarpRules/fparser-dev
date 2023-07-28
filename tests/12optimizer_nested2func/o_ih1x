@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=cot(1/hypot(1,(a+2.625)))
-C=1/fp_tan(1/fp_hypot(1,a+2.625))
+R=-3,3,2
+F=cot(1/hypot(1,a))
+C=1/fp_tan(1/fp_hypot(1,a))

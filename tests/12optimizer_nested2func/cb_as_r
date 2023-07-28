@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.25,0.25,0.05
-F=cbrt(asin((a+0.3125)))
-C=fp_cbrt(fp_asin(a+0.3125))
+R=0,1,0.5
+F=cbrt(asin(a))
+C=fp_cbrt(fp_asin(a))

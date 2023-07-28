@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=log10(1/hypot((a+1.875),(b+1.875)))
-C=fp_log10(1/fp_hypot(a+1.875,b+1.875))
+R=-3,3,2
+F=log10(1/hypot(a,b))
+C=fp_log10(1/fp_hypot(a,b))

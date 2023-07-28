@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=cosh(1/hypot((a+-3.125),(b+-3.125)))
-C=fp_cosh(1/fp_hypot(a+-3.125,b+-3.125))
+R=-3,3,2
+F=cosh(1/hypot(a,b))
+C=fp_cosh(1/fp_hypot(a,b))

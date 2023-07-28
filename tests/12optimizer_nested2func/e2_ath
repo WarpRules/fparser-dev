@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=exp2(atanh((a+0.875)))
-C=fp_exp2(fp_atanh(a+0.875))

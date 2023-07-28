@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a,b
-R=-0.5,0.5,0.25
-F=cosh(pow((a+2.4375),(b+2.4375)))
-C=fp_cosh(fp_pow(a+2.4375,b+2.4375))

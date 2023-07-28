@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=atanh(log((a+0)))
-C=fp_atanh(fp_log(a+0))
+F=atanh(log(a))
+C=fp_atanh(fp_log(a))

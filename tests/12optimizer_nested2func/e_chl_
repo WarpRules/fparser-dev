@@ -1,5 +1,5 @@
 T=f d ld mf cf cd cld
 V=a,b
 R=-2,2,0.5
-F=sec(cosh((a+0)!=(b+0)))
-C=1/fp_cos(fp_cosh(fp_nequal(a+0,b+0)))
+F=sec(cosh(a!=b))
+C=1/fp_cos(fp_cosh(fp_nequal(a,b)))

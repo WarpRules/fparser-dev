@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=cos(atanh((a+-0.25)))
-C=fp_cos(fp_atanh(a+-0.25))

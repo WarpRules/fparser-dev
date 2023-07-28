@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=sinh(csc((a+-2.4375)))
-C=fp_sinh(1/fp_sin(a+-2.4375))

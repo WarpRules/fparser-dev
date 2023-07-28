@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=cos(acos((a+0)))
-C=fp_cos(fp_acos(a+0))
+F=cos(acos(a))
+C=fp_cos(fp_acos(a))

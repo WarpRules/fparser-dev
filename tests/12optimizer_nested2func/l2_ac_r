@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-0.75,0.75,0.25
-F=log2(acos((a+0)))
-C=fp_log2(fp_acos(a+0))
+F=log2(acos(a))
+C=fp_log2(fp_acos(a))

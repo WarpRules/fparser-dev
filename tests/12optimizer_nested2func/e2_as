@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
 R=-3,3,2
-F=exp2(asin((a+0)))
-C=fp_exp2(fp_asin(a+0))
+F=exp2(asin(a))
+C=fp_exp2(fp_asin(a))

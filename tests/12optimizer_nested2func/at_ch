@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=atan(cosh((a+-2.375)))
-C=fp_atan(fp_cosh(a+-2.375))
+R=-3,3,2
+F=atan(cosh(a))
+C=fp_atan(fp_cosh(a))

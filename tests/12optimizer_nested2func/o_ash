@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=cot(asinh((a+-2.5)))
-C=1/fp_tan(fp_asinh(a+-2.5))

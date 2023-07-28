@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-2,2,0.5
-F=sec(hypot((a+0),1))
-C=1/fp_cos(fp_hypot(a+0,1))
+F=sec(hypot(a,1))
+C=1/fp_cos(fp_hypot(a,1))

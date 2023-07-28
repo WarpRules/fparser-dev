@@ -771,7 +771,7 @@ int main(int argc, char* argv[])
 
     static const char lesser_opt_begin[] = ""
     //    "#pragma GCC push_options\n"
-        "#pragma GCC optimize   (\"O0\")\n"
+        "#pragma GCC optimize   (\"O0,no-ipa-pta,no-ivopts\")\n"
     ;
     static const char lesser_opt_end[] = ""
     //    "#pragma GCC pop_options\n"
@@ -909,6 +909,7 @@ inline Value_t evaluate_test(unsigned which, const Value_t* vars)
     {
         std::ofstream out2("tests/testbed_evaluate0.cc");
 
+        out2 << lesser_opt_begin;
         out2 << "#include \"testbed_autogen.hh\"\n";
         out2 << "#include \"testbed_comp.hh\"\n";
         out2 << "#include \"testbed_cpptest.hh\"\n";
@@ -916,7 +917,7 @@ inline Value_t evaluate_test(unsigned which, const Value_t* vars)
         for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
             out2 << "#include \"testbed_const" << n << ".hh\"\n";
 
-        out2 << lesser_opt_begin << R"(
+        out2 << R"(
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
 Value_t evaluate_test(unsigned which, const Value_t* vars)
@@ -966,11 +967,12 @@ default: break;
     {
         std::ofstream out2("tests/testbed_evaluate" + std::to_string(n) + ".cc");
 
+        out2 << lesser_opt_begin;
         out2 << "#include \"testbed_autogen.hh\"\n";
         out2 << "#include \"testbed_comp.hh\"\n";
         out2 << "#include \"testbed_cpptest.hh\"\n";
         out2 << "#include \"testbed_const" << n << ".hh\"\n";
-        out2 << lesser_opt_begin << R"(
+        out2 << R"(
 #if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
 #define M(n) T##n(case n:return,;)
 #if(0)";

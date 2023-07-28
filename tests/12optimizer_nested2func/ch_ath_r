@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a
-R=-0.75,0.75,0.25
-F=cosh(atanh((a+0)))
-C=fp_cosh(fp_atanh(a+0))

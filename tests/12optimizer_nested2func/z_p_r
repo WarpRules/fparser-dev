@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,2
-F=(pow((a+2.625),(b+2.625)))
-C=(fp_pow(a+2.625,b+2.625))
+R=0.5,2,0.5
+F=pow(a,b)
+C=fp_pow(a,b)

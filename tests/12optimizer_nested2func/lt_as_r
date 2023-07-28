@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=0,0.75,0.25
-F=log10(asin((a+0.1875)))
-C=fp_log10(fp_asin(a+0.1875))
+R=0.5,1,0.25
+F=log10(asin(a))
+C=fp_log10(fp_asin(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=conj(log10((a+2.75)))
-C=fp_conj(fp_log10(a+2.75))
+R=-3,3,2
+F=conj(log10(a))
+C=fp_conj(fp_log10(a))

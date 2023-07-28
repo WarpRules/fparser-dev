@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=cot(hypot((a+-0.625),(b+-0.625)))
-C=1/fp_tan(fp_hypot(a+-0.625,b+-0.625))
+R=-3,3,2
+F=cot(hypot(a,b))
+C=1/fp_tan(fp_hypot(a,b))

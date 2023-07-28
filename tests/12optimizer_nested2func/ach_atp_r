@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-0.75,0.75,0.25
-F=acosh(atan(abs((a+-2.875))))
-C=fp_acosh(fp_atan(fp_abs(a+-2.875)))
+R=0.5,2,0.5
+F=acosh(atan(abs((a+1.2))))
+C=fp_acosh(fp_atan(fp_abs(a+1.2)))

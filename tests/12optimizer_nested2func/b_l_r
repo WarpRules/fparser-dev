@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-2,2,2
-F=abs(log((a+2.5)))
-C=fp_abs(fp_log(a+2.5))
+R=0.5,2,0.5
+F=abs(log(a))
+C=fp_abs(fp_log(a))

@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-2,2,0.5
-F=acos(polar((a+1.4375),(b+1.4375)))
-C=fp_acos(fp_polar(a+1.4375,b+1.4375))
+R=-3,3,2
+F=acos(polar(a,b))
+C=fp_acos(fp_polar(a,b))

@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
 R=-1,1,0.5
-F=tanh(acos((a+0)))
-C=fp_tanh(fp_acos(a+0))
+F=tanh(acos(a))
+C=fp_tanh(fp_acos(a))

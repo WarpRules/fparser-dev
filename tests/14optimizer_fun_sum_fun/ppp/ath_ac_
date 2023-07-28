@@ -1,6 +1,0 @@
-T=f d ld mf cf cd cld
-V=a
-R=-0.75,0.75,0.25
-F=atanh(a)+acos(a)
-C=fp_atanh(a)+fp_acos(a)
-#X=fp_add(fp_atanh(a),fp_acos(a))

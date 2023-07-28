@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a,b
-R=-2,2,0.5
-F=cosh(1/atan((a+1.3125)/(b+1.3125)))
-C=fp_cosh(1/fp_atan((a+1.3125)/(b+1.3125)))
+R=-3,3,2
+F=cosh(1/atan(a/b))
+C=fp_cosh(1/fp_atan(a/b))

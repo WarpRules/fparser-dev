@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=6,9.25,0.0625
-F=acosh(imag((a+0.47)))
-C=fp_acosh(fp_imag(a+0.47))

@@ -1,6 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=-log(-a)-sinh(a)
-C=-fp_log(-a)-fp_sinh(a)
-#X=fp_sub(fp_mul(fp_log(fp_mul(a,[-1,0])),[-1,0]),fp_sinh(a))

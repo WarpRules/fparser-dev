@@ -1,5 +1,0 @@
-T=f d ld mf
-V=a,b
-R=-0.75,0.75,0.25
-F=cosh(pow((a+1.25),(b+1.25)))
-C=fp_cosh(fp_pow(a+1.25,b+1.25))

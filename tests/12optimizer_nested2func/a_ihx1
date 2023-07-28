@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a
-R=-2,2,0.5
-F=csc(1/hypot((a+-2.3125),1))
-C=1/fp_sin(1/fp_hypot(a+-2.3125,1))
+R=-3,3,2
+F=csc(1/hypot(a,1))
+C=1/fp_sin(1/fp_hypot(a,1))

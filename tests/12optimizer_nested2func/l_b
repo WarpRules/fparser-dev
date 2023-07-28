@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-2,2,0.5
-F=log(abs((a+-0.5625)))
-C=fp_log(fp_abs(a+-0.5625))

@@ -1,5 +1,0 @@
-T=cf cd cld
-V=a
-R=-3,3,2
-F=atan(csc((a+0)))
-C=fp_atan(1/fp_sin(a+0))

@@ -1,6 +1,0 @@
-T=f d ld mf
-V=a
-R=0.25,0.75,0.125
-F=log(a)+atanh(a)
-C=fp_log(a)+fp_atanh(a)
-#X=fp_add(fp_log(a),fp_atanh(a))

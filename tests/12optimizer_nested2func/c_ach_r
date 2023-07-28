@@ -1,5 +1,5 @@
 T=f d ld mf
 V=a
-R=-1,1,0.5
-F=cos(acosh((a+2.0625)))
-C=fp_cos(fp_acosh(a+2.0625))
+R=0.5,2,0.5
+F=cos(acosh((a+0.6)))
+C=fp_cos(fp_acosh(a+0.6))

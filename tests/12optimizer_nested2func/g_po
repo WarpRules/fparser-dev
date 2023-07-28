@@ -1,5 +1,5 @@
 T=cf cd cld
 V=a,b
-R=-2,2,0.5
-F=arg(polar((a+1.1875),(b+1.1875)))
-C=fp_arg(fp_polar(a+1.1875,b+1.1875))
+R=-3,3,2
+F=arg(polar(a,b))
+C=fp_arg(fp_polar(a,b))
