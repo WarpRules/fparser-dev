@@ -435,7 +435,7 @@ clean:
 
 release_clean:
 	rm -f testbed_release speedtest_release \
-		testbed.o fparser.o fpoptimizer.o
+		$(TESTBED_MODULES) fparser.o fpoptimizer.o
 
 distclean: clean
 	rm -f	*~
