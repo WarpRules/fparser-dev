@@ -26,3 +26,11 @@ Adding new functions: Suppose we want to add function fp_gamma():
 - Rebuild: make extrasrc/fpaux.hh.
 - If you get a circular dependency error from util/build_fpaux, you may need to resort to forward declarations. See func_pow.hh for example (includes a forward declaration for fp_pow_base).
 
+Naming:
+- func_*.hh: User-facing functions, called fp_something()
+- help_*.hh: Internal functions, which are only used to implement user-facing functions
+- comp_*.hh: Comparison functions returning bool rather than Value_t
+- const_*.hh: fp_const_() functions
+- test_*.hh: Value testing functions returning bool
+- util_*.hh: Metaprogramming etc.
+
