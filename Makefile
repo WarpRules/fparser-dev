@@ -113,7 +113,7 @@ CXXFLAGS += $(CXX_VERSION)
 
 CXXFLAGS_TESTBED := $(CXX_VERSION)
 
-#CXX := /usr/bin/time $(CXX)
+CXX := ./report_time.sh $(CXX)
 
 
 #LD += -Xlinker --gc-sections

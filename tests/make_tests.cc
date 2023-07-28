@@ -14,6 +14,17 @@
 
 #include "stringutil.hh"
 
+static const char lesser_optimization[] = ""
+//    "#pragma GCC optimize   (\"O0,O2,no-ipa-pta,no-ivopts\")\n"
+;
+static const char no_optimization[] = ""
+    "#pragma GCC optimize   (\"O0,no-ipa-pta,no-ivopts\")\n"
+;
+static const char condition_for_constexpr[] =
+//    "defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L"
+    "0"
+;
+
 namespace
 {
 #define LITERAL_MAKER_DEFAULT "const Value_t name = static_cast<Value_t>(lit##l);"
@@ -632,9 +643,7 @@ int main(int argc, char* argv[])
             ignore_patterns.push_back(argv[a]);
             continue;
         }
-        else if(std::strcmp(argv[a], "--strip_prefix") == 0
-             || std::strcmp(argv[a], "--strip-prefix") == 0
-               )
+        else if(std::strncmp(argv[a], "--strip", 7) == 0)
         {
             if(++a == argc)
             {
@@ -724,21 +733,10 @@ int main(int argc, char* argv[])
             {}}
     );
 
-    static const char lesser_optimization[] = ""
-        "#pragma GCC optimize   (\"O0,O2,no-inline,no-ipa-pta,no-ivopts\")\n"
-    ;
-    static const char no_optimization[] = ""
-        "#pragma GCC optimize   (\"O0,no-ipa-pta,no-ivopts\")\n"
-    ;
     static const char unreachable[] = R"(
     unreachable_helper();
     return Value_t{};
 )";
-
-    static const char condition_for_constexpr[] =
-    //    "defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L"
-        "0"
-    ;
 
     std::ofstream outStream("tests/testbed_autogen.hh");
     outStream << R"(
@@ -941,10 +939,7 @@ default: break;
         // float, double, long double, int, GmpInt are fast.
         // Mpfr and complex long double are fine.
         #define o(code,mask,typename,def,lit) \
-            if(m == mask && (std::string(#code) == "mf" \
-                          || std::string(#code) == "cld")) out2 << lesser_optimization; \
-            if(m == mask && (std::string(#code) == "cf" \
-                          || std::string(#code) == "cd")) out2 << no_optimization;
+            if(m == mask && (std::string(#code) == "cf")) out2 << no_optimization;
             DEFINE_TYPES(o)
         #undef o
 
