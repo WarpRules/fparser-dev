@@ -35,7 +35,8 @@ int main(int argc, char** argv)
         std::tuple<std::string/*contents*/,
                    std::set<std::string>,/*dependencies*/
                    unsigned/*color*/,
-                   unsigned/*line count*/
+                   unsigned/*line count*/,
+                   unsigned/*first lineno*/
                  >> modules;
     for(const auto& fn: inputs)
     {
@@ -51,11 +52,18 @@ int main(int argc, char** argv)
         std::string& contents = std::get<0>(mod);
         auto&    dependencies = std::get<1>(mod);
         unsigned& linecount   = std::get<3>(mod);
+        unsigned& firstline   = std::get<4>(mod);
+        firstline = 1;
 
         for(std::string line; std::getline(ifs, line); )
         {
             if(line.substr(0, 8) == "//$DEP: ")
+            {
                 dependencies.insert(line.substr(8));
+                ++firstline;
+            }
+            else if(line.empty() && linecount == 0)
+                ++firstline;
             else
             {
                 contents += line;
@@ -109,9 +117,9 @@ int main(int argc, char** argv)
             inside = true;
             for(auto& o: order)
             {
-                ofs << "#line 1 \"extrasrc/functions/" << o << ".hh\"\n";
-                lineno += 1;
                 auto& mod2 = modules.find(o)->second;
+                ofs << "#line " << std::get<4>(mod2) << " \"extrasrc/functions/" << o << ".hh\"\n";
+                lineno += 1;
                 ofs << std::get<0>(mod2);
                 lineno += std::get<3>(mod2);
             }
