@@ -1,9 +1,5 @@
-#include <vector>
-#include <map>
-#include <set>
 #include <string>
 #include <sstream>
-#include <cstdio>
 #include <cctype>
 #include <iostream>
 #include <iomanip>
@@ -12,6 +8,11 @@
 #include <cstdlib>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
+#include <map>
+
+#include "stringutil.hh"
 
 namespace
 {
@@ -93,7 +94,7 @@ namespace
         bool UseDegrees = false;
         bool UseAbsImag = false;
         std::string TestName{};
-        std::set<std::string> DataTypes{};
+        std::unordered_set<std::string> DataTypes{};
 
         TestData() {}
     };
@@ -104,32 +105,17 @@ namespace
         std::unordered_map<std::string, std::string> used_constants;
     };
 
-    std::map<std::string/*c++ datatype*/, std::vector<TestData>> tests;
+    std::unordered_map<std::string/*c++ datatype*/, std::vector<TestData>> tests;
     std::unordered_map<std::string/*TestName*/, FunctionInfo> all_functions;
-
-    template<typename CharT>
-    static void
-    str_replace_inplace(std::basic_string<CharT>& where,
-                        const std::basic_string<CharT>& search,
-                        const std::basic_string<CharT>& with)
-    {
-        for(typename std::basic_string<CharT>::size_type a = where.size();
-            (a = where.rfind(search, a)) != where.npos;
-            )
-        {
-            where.replace(a, search.size(), with);
-            if(a--==0) break;
-        }
-    }
 
     [[nodiscard]] std::string ListTests(std::ostream& out)
     {
-        std::map<std::string, std::size_t> test_index;
+        std::unordered_map<std::string, std::size_t> test_index;
         std::ostringstream test_list;
         std::size_t        test_counter = 0;
 
-        std::map<std::string, unsigned>    tests_per_defs_count;
-        std::map<std::string, std::string> tests_per_defs;
+        std::unordered_map<std::string, unsigned>    tests_per_defs_count;
+        std::unordered_map<std::string, std::string> tests_per_defs;
 
         for(auto& test: tests)
         {
@@ -212,11 +198,11 @@ namespace
                     }
 
                     std::string teststr(linebuf.str());
-                    auto i = test_index.lower_bound(teststr);
-                    if(i == test_index.end() || i->first != teststr)
+                    auto i = test_index.find(teststr);
+                    if(i == test_index.end())
                     {
                         test_list << "/*" << std::setw(4) << test_counter << "*/ " << teststr << " \\\n";
-                        test_index.emplace_hint(i, teststr, test_counter);
+                        test_index.emplace(teststr, test_counter);
                         listbuffer << std::setw(4) << test_counter << ',';
                         ++test_counter;
                     }
@@ -233,7 +219,7 @@ namespace
             tests_per_defs_count[defines] += list_test_count;
         }
         std::ostringstream defs;
-        std::map<unsigned, std::string> per_mask;
+        std::unordered_map<unsigned, std::string> per_mask;
         for(const auto& section: tests_per_defs)
         {
             const std::string& define    = section.first;
@@ -396,39 +382,6 @@ namespace
         }
     }
 
-    /*
-    static const char cbuf[] =
-    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_";
-
-    std::string MakeFuncName(const std::string& testname)
-    {
-    #if 0
-        static unsigned counter = 0;
-        std::string result = "qZ";
-        for(unsigned p = counter++; p != 0; p /= 63)
-            result += cbuf[p % 63];
-        return result;
-    #else
-        std::string base = "t" + testname;
-
-        size_t p = base.rfind('/');
-        std::string classname = base.substr(0, p);
-
-        classname = base.substr(0,3) + base.substr(base.find('/'));
-
-        std::string methodname = base.substr(p+1);
-        str_replace_inplace(classname, std::string("/"), std::string("_"));
-        str_replace_inplace(methodname, std::string("/"), std::string("_"));
-        // Change the method name to prevent clashes with
-        // with reserved words or the any namespace
-        if(isdigit(methodname[0]))
-            methodname.insert(0, "t");
-        else
-            methodname[0] = (char)std::toupper(methodname[0]);
-        return classname + "_" + methodname;
-    #endif
-    }*/
-
     void CompileTest(std::istream& inf,
                      const std::string& testname,
                      unsigned&          user_param_count)
@@ -436,7 +389,6 @@ namespace
         TestData test;
         test.TestName = testname;
 
-        std::set<std::string> DataTypes;
         std::unordered_map<std::string, std::string> var_trans;
 
         unsigned datatype_limit_mask = ~0u;
@@ -535,22 +487,10 @@ namespace
 
                             datatype_limit_mask |= GetLimitMaskForCode(type);
                             std::string cpptype = GetTypeForCode(type);
-                            DataTypes.insert(cpptype);
+                            test.DataTypes.insert(std::move(cpptype));
 
                             valuepos = space;
                         }
-
-                        /* FLT: float, double, long double, complex types?
-                         * INT: integer
-                         * MPFR: Mpfr?
-                         * Options:
-                         *    FLT only
-                         *    INT only
-                         *    MPFR only
-                         *    FLT + MPFR
-                         *    FLT + INT + MPFR
-                         */
-                        test.DataTypes = DataTypes; // Don't move
                     }
                     break;
                 case 'V': // variable list
@@ -609,51 +549,8 @@ namespace
             }
         }
 
-        for(auto type: DataTypes)
+        for(auto type: test.DataTypes)
             tests[type].push_back(test);
-    }
-
-    /* Asciibetical comparator, with in-string integer values sorted naturally */
-    [[nodiscard]] bool natcomp(const std::string& a, const std::string& b)
-    {
-        size_t ap=0, bp=0;
-        while(ap < a.size() && bp < b.size())
-        {
-            if(a[ap] >= '0' && a[ap] <= '9'
-            && b[bp] >= '0' && b[bp] <= '9')
-            {
-                unsigned long aval = (a[ap++] - '0');
-                unsigned long bval = (b[bp++] - '0');
-                while(ap < a.size() && a[ap] >= '0' && a[ap] <= '9')
-                    aval = aval*10ul + (a[ap++] - '0');
-                while(bp < b.size() && b[bp] >= '0' && b[bp] <= '9')
-                    bval = bval*10ul + (b[bp++] - '0');
-                if(aval != bval)
-                    return aval < bval;
-            }
-            else
-            {
-                if(a[ap] != b[ap]) return a[ap] < b[ap];
-                ++ap; ++bp;
-            }
-        }
-        return (bp < b.size() && ap >= a.size());
-    }
-
-    [[nodiscard]] bool WildMatch(const char *pattern, const char *what)
-    {
-        for(; *what || *pattern; ++what, ++pattern)
-            if(*pattern == '*')
-            {
-                while(*++pattern == '*') {}
-                for(; *what; ++what)
-                    if(WildMatch(pattern, what))
-                        return true;
-                return !*pattern;
-            }
-            else if(*pattern != '?' && *pattern != *what)
-                return false;
-        return true;
     }
 }
 
@@ -761,7 +658,8 @@ int main(int argc, char* argv[])
                         )
     {
         constexpr unsigned customtest_index = ~0u;
-        std::map<std::string/*code*/, std::set<unsigned/*case*/>> cases;
+        // Use sorted container here for more beautiful generated code
+        std::map<std::string/*code*/, std::unordered_set<unsigned/*case*/>> cases;
         for(const auto& f: all_functions)
         {
             std::string what = gen(m, f.first, f.second);

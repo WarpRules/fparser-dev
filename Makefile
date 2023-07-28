@@ -189,7 +189,7 @@ testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 
 fpoptimizer.o: fpoptimizer.cc
 
-testbed.o: testbed.cc tests/testbed_autogen.hh
+testbed.o: testbed.cc tests/testbed_autogen.hh tests/stringutil.hh
 	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 
 testbed_release: $(TESTBED_MODULES) fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
@@ -235,6 +235,8 @@ extrasrc/fp_opcode_add.inc: \
 
 tests/make_tests: tests/make_tests.o
 	$(LD) -o $@ $^ $(LDFLAGS)
+
+tests/make_tests.o: tests/make_tests.cc tests/stringutil.hh
 
 $(TESTBED_GENSRC) &:: tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
 	tests/make_tests \

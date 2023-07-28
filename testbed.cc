@@ -14,6 +14,7 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include "fpconfig.hh"
 #include "fparser.hh"
 #include "extrasrc/fpaux.hh"
+#include "tests/stringutil.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -1883,65 +1884,12 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
     return true;
 }
 
-static bool WildMatch(const char *pattern, const char *what)
-{
-    for(; *what || *pattern; ++what, ++pattern)
-        if(*pattern == '*')
-        {
-            while(*++pattern == '*') {}
-            for(; *what; ++what)
-                if(WildMatch(pattern, what))
-                    return true;
-            return !*pattern;
-        }
-        else if(*pattern != '?' && *pattern != *what)
-            return false;
-    return true;
-}
-static bool WildMatch_Dirmask(const char *pattern, const char *what)
-{
-    const char* slashpos = std::strchr(pattern, '/');
-    if(slashpos) // Pattern contains a slash?
-        return WildMatch(pattern, what);
-    else
-    {
-        // Pattern does not contain a slash. Use */pattern
-        std::string temp = std::string("*/") + pattern;
-        return WildMatch(temp.c_str(), what);
-    }
-}
 bool IsSelectedTest(const char* testName)
 {
     for(std::size_t a=0; a<selectedRegressionTests.size(); ++a)
         if(WildMatch_Dirmask(selectedRegressionTests[a], testName))
             return true;
     return false;
-}
-/* Asciibetical comparator, with in-string integer values sorted naturally */
-bool natcomp(const std::string& a, const std::string& b)
-{
-    std::size_t ap=0, bp=0;
-    while(ap < a.size() && bp < b.size())
-    {
-        if(a[ap] >= '0' && a[ap] <= '9'
-        && b[bp] >= '0' && b[bp] <= '9')
-        {
-            unsigned long aval = (a[ap++] - '0');
-            unsigned long bval = (b[bp++] - '0');
-            while(ap < a.size() && a[ap] >= '0' && a[ap] <= '9')
-                aval = aval*10ul + (a[ap++] - '0');
-            while(bp < b.size() && b[bp] >= '0' && b[bp] <= '9')
-                bval = bval*10ul + (b[bp++] - '0');
-            if(aval != bval)
-                return aval < bval;
-        }
-        else
-        {
-            if(a[ap] != b[ap]) return a[ap] < b[ap];
-            ++ap; ++bp;
-        }
-    }
-    return (bp < b.size() && ap >= a.size());
 }
 
 struct locked_cout
