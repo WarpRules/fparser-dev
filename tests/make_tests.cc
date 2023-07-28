@@ -919,7 +919,7 @@ inline Value_t evaluate_test(unsigned which, const Value_t* vars)
 
         out2 << R"(
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
-template<typename Value_t, unsigned type_mask = fp_type_mask<Value_t>::value>
+template<typename Value_t, unsigned type_mask>
 Value_t evaluate_test(unsigned which, const Value_t* vars)
 {
     static const_container<Value_t> c;
@@ -951,13 +951,13 @@ default: break;
     })" << unreachable << R"(
 }
 )";
-/*
 #define o(code,mask,typename,def) \
-        out2 << "template " << typename << "evaluate_test<" << typename << "," << mask \
-             << ")::calc(unsigned,const Value_t*);\n";
+        out2 << \
+            "#ifdef " #def "\n" \
+            "  template " << #typename << " evaluate_test<" #typename ">(unsigned,const " #typename " *);\n" \
+            "#endif\n";
         DEFINE_TYPES(o)
 #undef o
-*/
         out2 << R"(
 #endif
 )" << lesser_opt_end;

@@ -1,5 +1,5 @@
 #!/bin/sh
-#OPTS="$OPTS -std=c++23 -std=c++2b"
+OPTS="$OPTS -std=c++23 -std=c++2b"
 OPTS="$OPTS -std=c++20 -std=c++2a"
 OPTS="$OPTS -std=c++17 -std=c++1z"
 OPTS="$OPTS -std=c++14 -std=c++1y"

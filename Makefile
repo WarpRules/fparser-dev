@@ -102,7 +102,16 @@ endif
 endif
 
 STD_OPTION := "$(shell /bin/sh -c './test_std_version.sh "$(CXX)"')"
-CXXFLAGS += -std=c++11
+
+ifeq ($(CXX_VERSION),)
+CXX_VERSION := $(STD_OPTION)
+else
+CXX_VERSION := -std=$(CXX_VERSION)
+endif
+
+CXXFLAGS += $(CXX_VERSION)
+
+CXXFLAGS_TESTBED := $(CXX_VERSION)
 
 
 #LD += -Xlinker --gc-sections
@@ -155,7 +164,9 @@ define testbed_n
 TESTBED_MODULES += tests/testbed_evaluate$(N).o
 TESTBED_MODULES += tests/testbed_testlist$(N).o
 tests/testbed_evaluate$(N).o: tests/testbed_evaluate$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 tests/testbed_testlist$(N).o: tests/testbed_testlist$(N).cc tests/testbed_autogen.hh extrasrc/fpaux.hh
+	$(CXX) -c -o "$$@" "$$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 TESTBED_GENSRC += tests/testbed_evaluate$(N).cc
 TESTBED_GENSRC += tests/testbed_testlist$(N).cc
 TESTBED_GENSRC += tests/testbed_const$(N).hh
@@ -179,8 +190,7 @@ testbed: $(TESTBED_MODULES) $(FP_MODULES) $(TESTBED_MODULES)
 fpoptimizer.o: fpoptimizer.cc
 
 testbed.o: testbed.cc tests/testbed_autogen.hh
-#	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(STD_OPTION)
-
+	$(CXX) -c -o "$@" "$<" $(CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS_TESTBED)
 
 testbed_release: $(TESTBED_MODULES) fparser.o fpoptimizer.o $(ADDITIONAL_MODULES)
 	$(LD) -o $@ $^ $(LDFLAGS)

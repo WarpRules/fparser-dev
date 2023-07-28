@@ -5,7 +5,7 @@ runTest()
     echo "Building testbed_release with"
     echo "FP_FEATURE_FLAGS=$1"
     make -s release_clean
-    FP_FEATURE_FLAGS="$1 -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS" make -s testbed_release
+    CXX_VERSION="c++11" FP_FEATURE_FLAGS="$1 -DFP_SUPPORT_CPLUSPLUS11_MATH_FUNCS" make -s testbed_release
     if [ "$?" -ne "0" ]; then exit 1; fi
     echo "Running: ./testbed_release $2"
     ./testbed_release "$2"
