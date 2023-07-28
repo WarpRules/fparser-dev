@@ -108,14 +108,36 @@ namespace
     std::unordered_map<std::string/*c++ datatype*/, std::vector<TestData>> tests;
     std::unordered_map<std::string/*TestName*/, FunctionInfo> all_functions;
 
-    [[nodiscard]] std::string ListTests(std::ostream& out)
+    [[nodiscard]] std::string ListTests(std::ostream& out, const std::string& macroname)
     {
         std::unordered_map<std::string, std::size_t> test_index;
+        std::ostringstream defs_list;
         std::ostringstream test_list;
         std::size_t        test_counter = 0;
-
+        test_list << "#define " << macroname << "(o) \\\n";
         std::unordered_map<std::string, unsigned>    tests_per_defs_count;
         std::unordered_map<std::string, std::string> tests_per_defs;
+
+        std::map<std::string, std::string> test_prefixes;
+        auto compressTestName = [&](const std::string& name)
+        {
+            std::size_t p = name.find('/');
+            if(p != name.npos)
+            {
+                std::string prefix = name.substr(0, ++p);
+                auto i = test_prefixes.lower_bound(prefix);
+                if(i == test_prefixes.end() || i->second != prefix)
+                {
+                    std::string np = "t" + prefix.substr(0,2);
+                    test_prefixes.emplace_hint(i, std::move(prefix), np);
+                    prefix = std::move(np);
+                }
+                else
+                    prefix = i->second;
+                return prefix + "\"" + name.substr(p) + "\"";
+            }
+            return "\"" + name + "\"";
+        };
 
         for(auto& test: tests)
         {
@@ -171,6 +193,7 @@ namespace
                     bool has_dbl = false;
                     bool has_long = false;
 
+                    // FIXME: Use DEFINE_TYPES here
                     if(testdata.DataTypes.find("double") != testdata.DataTypes.end())
                         has_dbl = true;
                     if(testdata.DataTypes.find("long") != testdata.DataTypes.end())
@@ -178,17 +201,23 @@ namespace
                     if(testdata.DataTypes.find("GmpInt") != testdata.DataTypes.end())
                         has_long = true;
 
+                    // Example: t20"/cmpge/mulmul_imm_neg"
+                    //          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 26 letters
+                    std::string cname = compressTestName(testdata.TestName);
+                    std::string limits = " " + ranges.str();
+                    int w1 = 16 - std::max(0, int(limits.size()-20));
+                    int w2 = 20 - std::max(0, int(cname.size()-w1));
                     linebuf
                         << "o("
                         <<        (testdata.UseDegrees ? 'T' : 'F')
-                        <<        (has_dbl ? 'T' : 'F')
+                        <<        (has_dbl  ? 'T' : 'F')
                         <<        (has_long ? 'T' : 'F')
                         <<        (testdata.UseAbsImag ? 'T' : 'F')
-                        << ","  << std::setw(46) << std::left << testdata.TestName
-                        << ","  << std::setw(20) << std::right << ranges.str()
+                        <<        testdata.ParamAmount
+                        << ","  << std::setw(w1) << std::left << cname
+                        << ","  << std::setw(w2) << std::right << limits
                         << "," << testdata.FuncString
                         << ", " << '"' << testdata.ParamString << '"'
-                        << "," << testdata.ParamAmount
                         << ")";
 
                     if(list_width_counter >= 19)
@@ -250,14 +279,17 @@ namespace
                 out2 << "#endif /*" << define << " */\n";
             per_mask[mask] += out2.str();
         }
+        out << defs.str();
 
         for(auto& m: per_mask)
             std::ofstream("tests/testbed_testlist" + std::to_string(m.first) + ".cc")
                 << m.second;
-
-        out << defs.str();
-
-        return test_list.str();
+        for(auto& p: test_prefixes)
+            defs_list << "#define " << p.second << " \"" << p.first << "\"\n";
+        test_list << "/*end of list */\n";
+        //for(auto& p: test_prefixes)
+        //    test_list << "#undef " << p.second << '\n';
+        return defs_list.str() + test_list.str();
     }
 
     namespace
@@ -714,21 +746,17 @@ inline Value_t evaluate_test(unsigned which, const Value_t* vars)
 #endif
 )";
 
-    std::string test_list = ListTests(outStream);
-
     if(true) // scope for testbed_alltests.cc
     {
+        std::string test_list = ListTests(outStream, "FP_LIST_ALL_TESTS");
         std::ofstream("tests/testbed_alltests.cc") << R"(
 #include "testbed_autogen.hh"
-#define FP_LIST_ALL_TESTS(o) \
-)" << test_list << R"(/* end of list */
-
 const TestType AllTests[] =
 {
 #define q(c) (c=='T'||c=='Y')
-#define o(opt,testname, min,max,step, funcstring, paramstr, nparams) \
-    { #testname,#funcstring,paramstr, #min,#max,#step, nparams, q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
-FP_LIST_ALL_TESTS(o)
+#define o(opt,testname, min,max,step, funcstring, paramstr) \
+    { testname,#funcstring,paramstr, #min,#max,#step, #opt[4]-'0', q(#opt[0]),q(#opt[1]),q(#opt[2]),q(#opt[3]) },
+)" << test_list << R"(FP_LIST_ALL_TESTS(o)
 #undef o
 #undef q
 };
@@ -738,6 +766,7 @@ FP_LIST_ALL_TESTS(o)
     if(true) // scope for testbed_cpptest.hh
     {
         std::ofstream out2("tests/testbed_cpptest.hh");
+        // This file does not need any #includes.
         gen_funcs(out2, 0, [](unsigned, const std::string&, const FunctionInfo& info)
         {
             return info.code;
@@ -785,7 +814,7 @@ FP_LIST_ALL_TESTS(o)
     for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
     {
         std::ofstream out2("tests/testbed_const" + std::to_string(n) + ".hh");
-
+        // This file does not need any #includes.
         out2 << "#define _(name,lit)\n";
         std::string literal_maker = "static_assert(!\"I don't know how to make literals\");";
         std::string if_rule = "#if(0";
@@ -811,14 +840,14 @@ template<typename Value_t> struct const_container<Value_t,)" << m << "> { FP_LIS
     {
         std::ofstream out2("tests/testbed_evaluate0.cc");
 
-        out2 << lesser_opt_begin;
-        out2 << "#include \"testbed_autogen.hh\"\n";
-        out2 << "#include \"testbed_comp.hh\"\n";
-        out2 << "#include \"testbed_cpptest.hh\"\n";
-
+        out2 << lesser_opt_begin << R"(
+#include "testbed_autogen.hh"
+#include "testbed_comp.hh"
+#include "testbed_cpptest.hh"
+)";
         for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
-            out2 << "#include \"testbed_const" << n << ".hh\"\n";
-
+            out2 << R"(#include "testbed_const)" << n << R"(.hh"
+)";
         out2 << R"(
 #if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L
 template<typename Value_t, unsigned type_mask>
@@ -869,12 +898,12 @@ default: break;
     {
         std::ofstream out2("tests/testbed_evaluate" + std::to_string(n) + ".cc");
 
-        out2 << lesser_opt_begin;
-        out2 << "#include \"testbed_autogen.hh\"\n";
-        out2 << "#include \"testbed_comp.hh\"\n";
-        out2 << "#include \"testbed_cpptest.hh\"\n";
-        out2 << "#include \"testbed_const" << n << ".hh\"\n";
-        out2 << R"(
+        out2 << lesser_opt_begin << R"(
+#include "testbed_autogen.hh"
+#include "testbed_comp.hh"
+#include "testbed_cpptest.hh"
+#include "testbed_const)" << n << R"(.hh"
+
 #if !(defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606L) // No "if constexpr"
 #define M(n) T##n(case n:return,;)
 #if(0)";
