@@ -52,8 +52,8 @@ OPTIMIZATION=-O3 -ffast-math -march=native
 #OPTIMIZATION=-g -pg
 #OPTIMIZATION=-g -O0 -fsanitize=thread
 #LDFLAGS += -fsanitize=thread
-OPTIMIZATION=-g -O0 -fsanitize=address
-LDFLAGS += -fsanitize=address
+#OPTIMIZATION=-g -O0 -fsanitize=address
+#LDFLAGS += -fsanitize=address
 
 
 CXX=g++
