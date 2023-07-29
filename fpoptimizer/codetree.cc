@@ -151,7 +151,7 @@ namespace FPoptimizer_CodeTree
         bool operator() (const CodeTree<Value_t>& a, const CodeTree<Value_t>& b) const
         {
             if(a.GetDepth() != b.GetDepth())
-                return a.GetDepth() < b.GetDepth();
+                return a.GetDepth() > b.GetDepth();
             return a.GetHash() < b.GetHash();
         }
     };
@@ -175,6 +175,17 @@ namespace FPoptimizer_CodeTree
             case cEqual:
             case cNEqual:
                 std::sort(Params.begin(), Params.end(), ParamComparer<Value_t>());
+                break;
+            case cFma:
+            case cFms:
+                // Only sort first two params
+                std::sort(Params.begin()+0, Params.begin()+2, ParamComparer<Value_t>());
+                break;
+            case cFmma:
+            case cFmms:
+                // Only sort first two params, and next two params
+                std::sort(Params.begin()+2, Params.begin()+4, ParamComparer<Value_t>());
+                std::sort(Params.begin()+0, Params.begin()+2, ParamComparer<Value_t>());
                 break;
             case cLess:
                 if(ParamComparer<Value_t>() (Params[1], Params[0]))
