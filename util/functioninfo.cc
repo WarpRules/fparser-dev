@@ -36,18 +36,18 @@ namespace
     template<typename Value_t>
     struct TimingConst
     {
-        static const unsigned kParseLoopsPerUnit = 100000;
-        static const unsigned kEvalLoopsPerUnit = 300000;
-        static const unsigned kOptimizeLoopsPerUnit = 1000;
+        static const unsigned kParseLoopsPerUnit = 100000*15;
+        static const unsigned kEvalLoopsPerUnit = 300000*15;
+        static const unsigned kOptimizeLoopsPerUnit = 1000*15;
     };
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<>
     struct TimingConst<MpfrFloat>
     {
-        static const unsigned kParseLoopsPerUnit = 100000;
-        static const unsigned kEvalLoopsPerUnit = 10000;
-        static const unsigned kOptimizeLoopsPerUnit = 500;
+        static const unsigned kParseLoopsPerUnit = 100000*15;
+        static const unsigned kEvalLoopsPerUnit = 10000*15;
+        static const unsigned kOptimizeLoopsPerUnit = 500*15;
     };
 #endif
 
