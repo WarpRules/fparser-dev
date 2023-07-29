@@ -52,19 +52,8 @@ namespace FPoptimizer_ByteCode
         size_t GetByteCodeSize() const { return ByteCode.size(); }
         size_t GetStackTop()     const { return StackTop; }
 
-        void PushVar(unsigned varno)
-        {
-            ByteCode.push_back(varno);
-            SetStackTop(StackTop+1);
-        }
-
-        void PushImmed(Value_t immed)
-        {
-            using namespace FUNCTIONPARSERTYPES;
-            ByteCode.push_back(cImmed);
-            Immed.push_back(immed);
-            SetStackTop(StackTop+1);
-        }
+        void PushVar(unsigned varno);
+        void PushImmed(Value_t immed);
 
         void StackTopIs(const FPoptimizer_CodeTree::CodeTree<Value_t>& tree, int offset = 0)
         {
@@ -92,33 +81,8 @@ namespace FPoptimizer_ByteCode
             SetStackTop(StackTop + produce_count);
         }
 
-        void DoPopNMov(size_t targetpos, size_t srcpos)
-        {
-            using namespace FUNCTIONPARSERTYPES;
-            ByteCode.push_back(cPopNMov);
-            ByteCode.push_back( 0x80000000u | (unsigned) targetpos);
-            ByteCode.push_back( 0x80000000u | (unsigned) srcpos);
-
-            SetStackTop(srcpos+1);
-            StackState[targetpos] = StackState[srcpos];
-            SetStackTop(targetpos+1);
-        }
-
-        void DoDup(size_t src_pos)
-        {
-            using namespace FUNCTIONPARSERTYPES;
-            if(src_pos == StackTop-1)
-            {
-                ByteCode.push_back(cDup);
-            }
-            else
-            {
-                ByteCode.push_back(cFetch);
-                ByteCode.push_back( 0x80000000u | (unsigned) src_pos);
-            }
-            SetStackTop(StackTop + 1);
-            StackState[StackTop-1] = StackState[src_pos];
-        }
+        void DoPopNMov(size_t targetpos, size_t srcpos);
+        void DoDup(size_t src_pos);
 
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
         template<int/*defer*/>
@@ -184,7 +148,7 @@ namespace FPoptimizer_ByteCode
         void SynthIfStep1(IfData& ifdata, FUNCTIONPARSERTYPES::OPCODE op)
         {
             using namespace FUNCTIONPARSERTYPES;
-            SetStackTop(StackTop-1); // the If condition was popped.
+            EatNParams(1); // the If condition was popped.
 
             ifdata.ofs = ByteCode.size();
             ByteCode.push_back(op);
@@ -194,7 +158,7 @@ namespace FPoptimizer_ByteCode
         void SynthIfStep2(IfData& ifdata)
         {
             using namespace FUNCTIONPARSERTYPES;
-            SetStackTop(StackTop-1); // ignore the pushed then-branch result.
+            EatNParams(1); // ignore the pushed then-branch result.
 
             ByteCode[ifdata.ofs+1] = 0x80000000u | unsigned( ByteCode.size()+2 );
             ByteCode[ifdata.ofs+2] = 0x80000000u | unsigned( Immed.size()      );
@@ -207,7 +171,7 @@ namespace FPoptimizer_ByteCode
         void SynthIfStep3(IfData& ifdata)
         {
             using namespace FUNCTIONPARSERTYPES;
-            SetStackTop(StackTop-1); // ignore the pushed else-branch result.
+            EatNParams(1); // ignore the pushed else-branch result.
 
             ByteCode.back() |= 0x80000000u;
             // ^Necessary for guarding against if(x,1,2)+1 being changed
@@ -216,7 +180,7 @@ namespace FPoptimizer_ByteCode
             ByteCode[ifdata.ofs+1] = 0x80000000u | unsigned( ByteCode.size()-1 );
             ByteCode[ifdata.ofs+2] = 0x80000000u | unsigned( Immed.size()      );
 
-            SetStackTop(StackTop+1); // one or the other was pushed.
+            ProducedNParams(1); // one or the other was pushed.
 
             /* Threading jumps:
              * If there are any cJumps that point
@@ -268,18 +232,13 @@ namespace FPoptimizer_ByteCode
         size_t StackTop;
         size_t StackMax;
     private:
-        void incStackPtr()
-        {
-            if(StackTop+2 > StackMax) StackState.resize(StackMax=StackTop+2);
-        }
-
         template<bool IsIntType, bool IsComplexType>
         struct Specializer { };
     public:
         void AddOperation(unsigned opcode, unsigned eat_count, unsigned produce_count = 1)
         {
-            EatNParams(eat_count);
             AddFunctionOpcode(opcode);
+            EatNParams(eat_count);
             ProducedNParams(produce_count);
         }
 

@@ -269,7 +269,7 @@ namespace
             std::cout <<std::endl;
             DumpHashes(newnode);
         #endif
-            stack.push_back(newnode);
+            stack.push_back(std::move(newnode));
         }
 
         void EatFunc(size_t nparams, OPCODE opcode, unsigned funcno)
@@ -285,26 +285,31 @@ namespace
             DumpHashes(newnode);
         #endif
             FindClone(newnode);
-            stack.push_back(newnode);
+            stack.push_back(std::move(newnode));
         }
 
         void AddConst(const Value_t& value)
         {
             CodeTree<Value_t> newnode = CodeTreeImmed(value);
             FindClone(newnode);
-            Push(newnode);
+            Push(std::move(newnode));
         }
 
         void AddVar(unsigned varno)
         {
             CodeTree<Value_t> newnode = CodeTreeVar<Value_t>(varno);
             FindClone(newnode);
-            Push(newnode);
+            Push(std::move(newnode));
+        }
+
+        void SwapTwo(unsigned ind1, unsigned ind2)
+        {
+            stack[stack.size()-ind1].swap( stack[stack.size()-ind2] );
         }
 
         void SwapLastTwoInStack()
         {
-            stack[stack.size()-1].swap( stack[stack.size()-2] );
+            SwapTwo(1, 2);
         }
 
         void Dup()
@@ -317,8 +322,7 @@ namespace
             Push(stack[which]);
         }
 
-        template<typename T>
-        void Push(T tree)
+        void Push(const CodeTree<Value_t>& tree)
         {
         #ifdef DEBUG_SUBSTITUTIONS
             std::cout << "PUSH ";
@@ -327,6 +331,17 @@ namespace
             DumpHashes(tree);
         #endif
             stack.push_back(tree);
+        }
+
+        void Push(CodeTree<Value_t>&& tree)
+        {
+        #ifdef DEBUG_SUBSTITUTIONS
+            std::cout << "PUSH ";
+            DumpTree(tree);
+            std::cout << std::endl;
+            DumpHashes(tree);
+        #endif
+            stack.push_back(std::move(tree));
         }
 
         void PopNMov(size_t target, size_t source)
@@ -452,9 +467,9 @@ namespace FPoptimizer_CodeTree
             {
                 // The "else" of an "if" ends here
                 CodeTree elsebranch = sim.PullResult();
-                sim.Push(if_stack.back().condition);
-                sim.Push(if_stack.back().thenbranch);
-                sim.Push(elsebranch);
+                sim.Push(std::move(if_stack.back().condition));
+                sim.Push(std::move(if_stack.back().thenbranch));
+                sim.Push(std::move(elsebranch));
                 sim.Eat(3, cIf);
                 if_stack.pop_back();
             }
@@ -555,7 +570,7 @@ namespace FPoptimizer_CodeTree
                         std::vector<CodeTree> paramlist = sim.Pop(params);
                         CodeTree pcall_tree;
                         pcall_tree.GenerateFrom(*p.mData, paramlist);
-                        sim.Push(pcall_tree);
+                        sim.Push(std::move(pcall_tree));
                         break;
                     }
                     // Unary operators requiring special attention
@@ -697,6 +712,32 @@ namespace FPoptimizer_CodeTree
                     //    sim.Eat(2, cMul);
                     //    break;
                     // Binary operators requiring special attention
+                    case cFmma:
+                        // x*y + a*b
+                        // Reduce into Fma:
+                        sim.Eat(2, cMul);
+                        [[fallthrough]];
+                    case cFma:
+                        // x*y + a
+                        // Swap a and x, we get:
+                        // a y x
+                        sim.SwapTwo(1, 3);
+                        sim.Eat(2, cMul);
+                        sim.Eat(2, cAdd);
+                        break;
+                    case cFmms:
+                        // x*y - a*b
+                        // Reduce into Fms:
+                        sim.Eat(2, cMul);
+                        [[fallthrough]];
+                    case cFms:
+                        // x*y - a
+                        // Swap a and x, we get.
+                        // a y x
+                        sim.SwapTwo(1, 3);
+                        sim.Eat(2, cMul);
+                        // Now that we have "a x*y", do rsub
+                        [[fallthrough]];
                     case cRSub: // from fpoptimizer
                         sim.SwapLastTwoInStack();
                         // Passthru to cSub

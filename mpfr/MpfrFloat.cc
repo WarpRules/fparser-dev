@@ -1126,6 +1126,46 @@ MpfrFloat MpfrFloat::inv(const MpfrFloat& value)
     return retval;
 }
 
+MpfrFloat MpfrFloat::fma(const MpfrFloat& value1, const MpfrFloat& value2,
+                         const MpfrFloat& value3)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_fma(retval.mData->mFloat,
+             value1.mData->mFloat, value2.mData->mFloat,
+             value3.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::fms(const MpfrFloat& value1, const MpfrFloat& value2,
+                         const MpfrFloat& value3)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_fms(retval.mData->mFloat,
+             value1.mData->mFloat, value2.mData->mFloat,
+             value3.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::fmma(const MpfrFloat& value1, const MpfrFloat& value2,
+                          const MpfrFloat& value3, const MpfrFloat& value4)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_fmma(retval.mData->mFloat,
+              value1.mData->mFloat, value2.mData->mFloat,
+              value3.mData->mFloat, value4.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::fmms(const MpfrFloat& value1, const MpfrFloat& value2,
+                          const MpfrFloat& value3, const MpfrFloat& value4)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_fmms(retval.mData->mFloat,
+              value1.mData->mFloat, value2.mData->mFloat,
+              value3.mData->mFloat, value4.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
 MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);

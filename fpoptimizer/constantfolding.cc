@@ -973,6 +973,10 @@ namespace FPoptimizer_CodeTree
             case cSinhCosh:
             case cNop:
             case cJump:
+            case cFma:
+            case cFms:
+            case cFmma:
+            case cFmms:
                 break; /* Should never occur */
 
             /* Opcodes that we can't do anything about */

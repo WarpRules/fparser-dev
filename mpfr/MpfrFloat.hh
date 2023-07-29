@@ -186,13 +186,22 @@ public:
     static MpfrFloat pow(const MpfrFloat&, const MpfrFloat&);
     static MpfrFloat pow(const MpfrFloat&, long exponent);
     static MpfrFloat abs(const MpfrFloat&);
-    static MpfrFloat dim(const MpfrFloat&, const MpfrFloat&);
+    static MpfrFloat dim(const MpfrFloat&, const MpfrFloat&); // abs(a-b)
     static MpfrFloat round(const MpfrFloat&);
     static MpfrFloat ceil(const MpfrFloat&);
     static MpfrFloat floor(const MpfrFloat&);
     static MpfrFloat trunc(const MpfrFloat&);
     static MpfrFloat rsqrt(const MpfrFloat&);
     static MpfrFloat inv(const MpfrFloat&);
+
+    // fma(x,y,z) = x*y + z
+    // fms(x,y,z) = x*y - z
+    // fmma(x,y,z,w) = x*y + z*w
+    // fmms(x,y,z,w) = x*y + z*w
+    static MpfrFloat fma(const MpfrFloat&,const MpfrFloat&,const MpfrFloat&);
+    static MpfrFloat fms(const MpfrFloat&,const MpfrFloat&,const MpfrFloat&);
+    static MpfrFloat fmma(const MpfrFloat&,const MpfrFloat&,const MpfrFloat&,const MpfrFloat&);
+    static MpfrFloat fmms(const MpfrFloat&,const MpfrFloat&,const MpfrFloat&,const MpfrFloat&);
 
     static MpfrFloat parseString(const char* str, char** endptr);
 

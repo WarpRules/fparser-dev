@@ -125,6 +125,10 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
         case cRSub: p = "cRSub"; break;
         case cNotNot: p = "cNotNot"; break;
         case cRSqrt: p = "cRSqrt"; break;
+        case cFma: p = "cFma"; break;
+        case cFms: p = "cFms"; break;
+        case cFmma: p = "cFmma"; break;
+        case cFmms: p = "cFmms"; break;
         case VarBegin: p = "VarBegin"; break;
     }
     std::ostringstream tmp;

@@ -235,8 +235,8 @@ namespace
             static const char table[] =
                 /*"0123456789"*/
                 /*"ABCDEFGHIJKLMNOPQRSTUVWXYZ"*/
-                "abcdefghijklmnopqr"
-                /*"stuvwxyz_"*/;
+                "abcdefghijklmnopqrst"
+                /*"uvwxyz_"*/;
             char result[16] = {0};
             int o=15;
             while(true)
@@ -568,20 +568,15 @@ namespace
         for(size_t a=0; a<operations.size(); ++a)
         {
             std::string opcode = trim(operations[a].result);
-            if(opcode == "DO_STACKPLUS1")
+            if(opcode.substr(0, 12) == "DO_STACKPLUS")
             {
-                outstream
-                    << Indent(indent) << "incStackPtr();\n"
-                    << Indent(indent) << "--mStackPtr;\n";
-                continue;
-            }
-            if(opcode == "DO_STACKPLUS2")
-            {
-                outstream
-                    << Indent(indent) << "incStackPtr();\n"
-                    << Indent(indent) << "incStackPtr();\n"
-                    << Indent(indent) << "--mStackPtr;\n"
-                    << Indent(indent) << "--mStackPtr;\n";
+                unsigned n = std::stoi(opcode.substr(12));
+                for(unsigned a=0; a<n; ++a)
+                    outstream
+                        << Indent(indent) << "incStackPtr();\n";
+                for(unsigned a=0; a<n; ++a)
+                    outstream
+                        << Indent(indent) << "--mStackPtr;\n";
                 continue;
             }
 
@@ -1433,8 +1428,8 @@ int main()
         //"  Value_t  rep_v;\n"
         "\n"
         "  #define FP_ReDefinePointers() \\\n"
-        "    ByteCodePtr = !mData->mByteCode.empty() ? &mData->mByteCode[0] + mData->mByteCode.size() - 1 : 0; \\\n"
-        "    ImmedPtr    = !mData->mImmed.empty()    ? &mData->mImmed[0]    + mData->mImmed.size()    - 1 : 0;\n"
+        "    ByteCodePtr = FP_BYTECODEADD_BYTECODEPTR; \\\n"
+        "    ImmedPtr    = FP_BYTECODEADD_IMMEDPTR;\n"
         "  FP_ReDefinePointers();\n";
 
     out << "  FP_TRACE_BYTECODE_ADD(opcode);\n";
@@ -1482,8 +1477,7 @@ int main()
         "\n"
         "#undef FP_ReDefinePointers\n"
     //  "}\n"
-        "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n"
-        "#undef FP_TRACE_OPCODENAME\n";
+        "#undef FP_TRACE_BYTECODE_OPTIMIZATION\n";
 
     return 0;
 }

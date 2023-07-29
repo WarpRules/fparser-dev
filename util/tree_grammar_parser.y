@@ -69,6 +69,7 @@ namespace GrammarData
         ParamMatchingType Type;
         std::vector<ParamSpec*> Params;
         unsigned RestHolderIndex;
+        unsigned RestHolderConstraints;
 
     public:
         MatchedParams()                    : Type(PositionalParams), Params(), RestHolderIndex(0) { }
@@ -541,7 +542,7 @@ public:
 
     void DumpParamList(const std::vector<GrammarData::ParamSpec*>& Params,
                        unsigned&       param_count,
-                       unsigned&       param_list)
+                       unsigned long&  param_list)
     {
         param_count = (unsigned)Params.size();
         param_list  = 0;
@@ -561,14 +562,14 @@ public:
 
             if(paramno == plist.size()) plist.push_back(p);
 
-            param_list |= paramno << (a * PARAM_INDEX_BITS);
+            param_list |= (unsigned long)paramno << (a * PARAM_INDEX_BITS);
         }
     }
 
     ParamSpec CreateParam(const GrammarData::ParamSpec& p)
     {
-        unsigned    pcount;
-        unsigned    plist;
+        unsigned      pcount;
+        unsigned long plist;
         switch(p.Opcode)
         {
             case SubFunction:
@@ -581,7 +582,8 @@ public:
                 result->data.param_count = pcount;
                 result->data.param_list  = plist;
                 result->depcode        = p.DepMask;
-                result->data.restholder_index = p.Func->Params.RestHolderIndex;
+                result->data.restholder_index       = p.Func->Params.RestHolderIndex;
+                result->data.restholder_constraints = p.Func->Params.RestHolderConstraints;
                 if(p.IsConst)
                 {
                     result->data.match_type = GroupFunction;
@@ -621,9 +623,10 @@ public:
         ritem.situation_flags           = r.SituationFlags;
         ritem.match_tree.subfunc_opcode = r.Input.Opcode;
         ritem.match_tree.match_type     = r.Input.Params.Type;
-        ritem.match_tree.restholder_index = r.Input.Params.RestHolderIndex;
-        unsigned         pcount;
-        unsigned         plist;
+        ritem.match_tree.restholder_index       = r.Input.Params.RestHolderIndex;
+        ritem.match_tree.restholder_constraints = r.Input.Params.RestHolderConstraints;
+        unsigned      pcount;
+        unsigned long plist;
         DumpParamList(r.Input.Params.Params, pcount, plist);
         ritem.match_tree.param_count = pcount;
         ritem.match_tree.param_list  = plist;
@@ -969,7 +972,7 @@ public:
             std::stable_sort(plist_s.begin(), plist_s.end(), kind_compare<s_compare>());
         }
 
-        unsigned ParamPtrToParamIndex(unsigned paramlist, unsigned index) const
+        unsigned long ParamPtrToParamIndex(unsigned long paramlist, unsigned index) const
         {
             const ParamSpec& p = ParamSpec_Extract<stdcomplex> (paramlist, index);
             if(p.second)
@@ -994,13 +997,13 @@ public:
             return (1 << 10)-1;
         }
 
-        std::string ParamListToString(unsigned paramlist, unsigned paramcount) const
+        std::string ParamListToString(unsigned long paramlist, unsigned paramcount) const
         {
             std::ostringstream result, comment;
-            unsigned value = 0;
+            unsigned long value = 0;
             for(unsigned p=0; p<paramcount; ++p)
             {
-                unsigned index = ParamPtrToParamIndex(paramlist, p);
+                unsigned long index = ParamPtrToParamIndex(paramlist, p);
                 if(p) comment << ',';
                 comment << index;
                 value += index << (p*PARAM_INDEX_BITS);
@@ -1046,6 +1049,7 @@ public:
                             :/*i.match_type == GroupFunction  ?*/ "GroupFunction   "
                             )
                    << "," << i.restholder_index
+                   << ", " << ConstraintsToString(i.restholder_constraints)
                    << "}";
             return result.str();
         }
@@ -1406,14 +1410,15 @@ static GrammarDumper dumper;
         {
           $$ = $1->AddParam($2);
         }
-      | paramlist RESTHOLDER_TOKEN /* a placeholder for all remaining params */
+      | paramlist RESTHOLDER_TOKEN param_constraints /* a placeholder for all remaining params */
         {
           if($1->RestHolderIndex != 0)
           {
               char msg[] = "Illegal attempt to specify two restholders for the same param list";
               yyerror(msg); YYERROR;
           }
-          $1->RestHolderIndex = $2;
+          $1->RestHolderIndex       = $2;
+          $1->RestHolderConstraints = $3;
           $$ = $1;
         }
       | /* empty */
@@ -1735,6 +1740,10 @@ static int yylex(YYSTYPE* lval)
 #else
             if(IdBuf == "cLog2by") { lval->opcode = FUNCTIONPARSERTYPES::cNop; return OPCODE_TOKEN; }
 #endif
+            if(IdBuf == "cFma") { lval->opcode = FUNCTIONPARSERTYPES::cFma; return OPCODE_TOKEN; }
+            if(IdBuf == "cFms") { lval->opcode = FUNCTIONPARSERTYPES::cFms; return OPCODE_TOKEN; }
+            if(IdBuf == "cFmma") { lval->opcode = FUNCTIONPARSERTYPES::cFmma; return OPCODE_TOKEN; }
+            if(IdBuf == "cFmms") { lval->opcode = FUNCTIONPARSERTYPES::cFmms; return OPCODE_TOKEN; }
 
             /* Detect other function opcodes */
             if(IdBuf[0] == 'c' && std::isupper(IdBuf[1]))
@@ -1832,13 +1841,13 @@ unsigned GrammarData::ParamSpec::BuildDepMask()
 namespace FPoptimizer_Grammar
 {
     template<typename Value_t>
-    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)
+    ParamSpec ParamSpec_Extract(unsigned long paramlist, unsigned index)
     {
         unsigned plist_index = (paramlist >> (index*PARAM_INDEX_BITS))
                                % (1 << PARAM_INDEX_BITS);
         return plist[plist_index];
     }
-    template ParamSpec ParamSpec_Extract<stdcomplex>(unsigned paramlist, unsigned index);
+    template ParamSpec ParamSpec_Extract<stdcomplex>(unsigned long paramlist, unsigned index);
 }
 
 int main()
@@ -1952,7 +1961,7 @@ int main()
         "namespace FPoptimizer_Grammar\n"
         "{\n"
         "    template<typename Value_t>\n"
-        "    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index)\n"
+        "    ParamSpec ParamSpec_Extract(unsigned long paramlist, unsigned index)\n"
         "    {\n"
         "        index = (paramlist >> (index * " << PARAM_INDEX_BITS << ")) & " << mask << " /* % (1 << " << PARAM_INDEX_BITS << ") */;\n"
         "        if(index >= " << s_begin << ")\n"
@@ -1967,7 +1976,7 @@ int main()
         "namespace FPoptimizer_Grammar\n"
         "{\n"
         "#define FP_INSTANTIATE(type) \\\n"
-        "    template ParamSpec ParamSpec_Extract<type>(unsigned paramlist, unsigned index);\n"
+        "    template ParamSpec ParamSpec_Extract<type>(unsigned long paramlist, unsigned index);\n"
         "    FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)\n"
         "#undef FP_INSTANTIATE\n"
         "}\n"

@@ -32,13 +32,15 @@ namespace FPoptimizer_ByteCode
 #define mData this
 #define mByteCode ByteCode
 #define mImmed Immed
+#define mStackPtr     StackTop
+#define mStackSize    StackMax
+#define incStackPtr() ProducedNParams(1)
 
     /* Specializer<bool,bool>: The bools are IsIntType, IsComplexType. */
     template<typename Value_t>
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
                                                    Specializer<false,false>)
     {
-        int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
 # define FP_COMPLEX_VERSION 0
 # include "extrasrc/fp_opcode_add.inc"
@@ -50,7 +52,6 @@ namespace FPoptimizer_ByteCode
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
                                                    Specializer<true,false>)
     {
-        int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
 # define FP_COMPLEX_VERSION 0
 # include "extrasrc/fp_opcode_add.inc"
@@ -63,7 +64,6 @@ namespace FPoptimizer_ByteCode
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
                                                    Specializer<false,true>)
     {
-        int mStackPtr=0;
 # define FP_FLOAT_VERSION 1
 # define FP_COMPLEX_VERSION 1
 # include "extrasrc/fp_opcode_add.inc"
@@ -75,7 +75,6 @@ namespace FPoptimizer_ByteCode
     void ByteCodeSynth<Value_t>::AddFunctionOpcode(unsigned opcode,
                                                    Specializer<true,true>)
     {
-        int mStackPtr=0;
 # define FP_FLOAT_VERSION 0
 # define FP_COMPLEX_VERSION 1
 # include "extrasrc/fp_opcode_add.inc"
@@ -84,10 +83,55 @@ namespace FPoptimizer_ByteCode
     }
 #endif
 
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::PushVar(unsigned varno)
+    {
+        FP_TRACE_BYTECODE_ADD_VAR(varno);
+        ByteCode.push_back(varno);
+        ProducedNParams(1);
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::PushImmed(Value_t immed)
+    {
+        FP_TRACE_BYTECODE_ADD_IMMED(immed);
+        ByteCode.push_back(cImmed);
+        Immed.push_back(immed);
+        ProducedNParams(1);
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::DoPopNMov(size_t targetpos, size_t srcpos)
+    {
+        FP_TRACE_BYTECODE_ADD(cPopNMov);
+        ByteCode.push_back(cPopNMov);
+        ByteCode.push_back( 0x80000000u | (unsigned) targetpos);
+        ByteCode.push_back( 0x80000000u | (unsigned) srcpos);
+
+        SetStackTop(srcpos+1);
+        StackState[targetpos] = StackState[srcpos];
+        SetStackTop(targetpos+1);
+    }
+
+    template<typename Value_t>
+    void ByteCodeSynth<Value_t>::DoDup(size_t src_pos)
+    {
+        if(src_pos == StackTop-1)
+        {
+            FP_TRACE_BYTECODE_ADD(cDup);
+            ByteCode.push_back(cDup);
+        }
+        else
+        {
+            FP_TRACE_BYTECODE_ADD(cFetch);
+            ByteCode.push_back(cFetch);
+            ByteCode.push_back( 0x80000000u | (unsigned) src_pos);
+        }
+        ProducedNParams(1);
+        StackState[StackTop-1] = StackState[src_pos];
+    }
+
 #undef findName
-#undef mImmed
-#undef mByteCode
-#undef mData
 #undef TryCompilePowi
     /*******/
 }
@@ -622,6 +666,10 @@ namespace FPoptimizer_ByteCode
 {
 #define FP_INSTANTIATE(type) \
     template struct SequenceOpcodes<type>; \
+    template void ByteCodeSynth<type>::PushVar(unsigned); \
+    template void ByteCodeSynth<type>::PushImmed(type); \
+    template void ByteCodeSynth<type>::DoPopNMov(size_t, size_t); \
+    template void ByteCodeSynth<type>::DoDup(size_t); \
     template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned); \
     template void ByteCodeSynth<type>::AddFunctionOpcode(unsigned, \
                  Specializer< bool(FUNCTIONPARSERTYPES::IsIntType<type>::value), \

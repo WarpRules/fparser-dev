@@ -138,7 +138,7 @@ namespace FPoptimizer_Grammar
     }
 
     template<typename Value_t>
-    void DumpParams(unsigned paramlist, unsigned count, std::ostream& o)
+    void DumpParams(unsigned long paramlist, unsigned count, std::ostream& o)
     {
         for(unsigned a=0; a<count; ++a)
         {
@@ -158,7 +158,7 @@ namespace FPoptimizer_Grammar
 namespace FPoptimizer_Grammar
 {
 #define FP_INSTANTIATE(type) \
-    template void DumpParams<type>(unsigned, unsigned, std::ostream& ); \
+    template void DumpParams<type>(unsigned long, unsigned, std::ostream& ); \
     template void DumpParam<type>(const ParamSpec&, std::ostream& );
     FPOPTIMIZER_EXPLICITLY_INSTANTIATE(FP_INSTANTIATE)
 #undef FP_INSTANTIATE

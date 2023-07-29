@@ -121,7 +121,7 @@ namespace FPoptimizer_Grammar
     typedef std::pair<SpecialOpcode, const void*> ParamSpec;
 
     template<typename Value_t>
-    ParamSpec ParamSpec_Extract(unsigned paramlist, unsigned index);
+    ParamSpec ParamSpec_Extract(unsigned long paramlist, unsigned index);
 
     template<typename Value_t>
     bool ParamSpec_Compare(const void* a, const void* b, SpecialOpcode type);
@@ -145,8 +145,8 @@ namespace FPoptimizer_Grammar
     struct ParamSpec_SubFunctionData
     {
         /* Expected parameters (leaves) of the tree: */
-        unsigned param_count         : 2;
-        unsigned param_list          : 30;
+        unsigned param_count       : 3;
+        unsigned long param_list   : 43; // 10 bits each
         /* The opcode that the tree must have when SubFunction */
         FUNCTIONPARSERTYPES::OPCODE subfunc_opcode : 8;
 
@@ -174,7 +174,8 @@ namespace FPoptimizer_Grammar
          * Only valid when match_type = AnyParams
          */
         unsigned restholder_index : 5;
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+30+6+2+8=48 bits=6 bytes
+        unsigned restholder_constraints : 10;
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 3+43+8+3+5+10 = 72 bits = 9 bytes
 
     struct ParamSpec_SubFunction
     {
@@ -211,12 +212,12 @@ namespace FPoptimizer_Grammar
         unsigned  situation_flags  : 5;
 
         /* The replacement parameters (if NewTree, begin[0] represents the new tree) */
-        unsigned  repl_param_count : 2+9; /* Assumed to be 1 when type == ProduceNewTree */
-        unsigned  repl_param_list  : 30;
+        unsigned      repl_param_count : 3;  /* Assumed to be 1 when type == ProduceNewTree */
+        unsigned long repl_param_list  : 46;
 
         /* The function that we must match. Always a SubFunction. */
         ParamSpec_SubFunctionData match_tree;
-    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+1+13+2+30 + 48 = 96 bits = 12 bytes
+    } PACKED_GRAMMAR_ATTRIBUTE; // size: 2+5+3+46 + 72 = 128 bits = 16 bytes
 
     /* Grammar is a set of rules for tree substitutions. */
     struct Grammar
@@ -254,7 +255,7 @@ namespace FPoptimizer_Grammar
     void DumpParam(const ParamSpec& p, std::ostream& o = std::cout);
 
     template<typename Value_t>
-    void DumpParams(unsigned paramlist, unsigned count, std::ostream& o = std::cout);
+    void DumpParams(unsigned long paramlist, unsigned count, std::ostream& o = std::cout);
 }
 
 #endif

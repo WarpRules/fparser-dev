@@ -172,6 +172,26 @@ bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
     return (op < FUNC_AMOUNT && Functions[op].params == 2);
 }
 
+bool FUNCTIONPARSERTYPES::IsTernaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cFma: case cFms:
+          return true;
+    }
+    return (op < FUNC_AMOUNT && Functions[op].params == 3);
+}
+
+bool FUNCTIONPARSERTYPES::IsQuartaryOpcode(unsigned op)
+{
+    switch(op)
+    {
+      case cFmma: case cFmms:
+          return true;
+    }
+    return (op < FUNC_AMOUNT && Functions[op].params == 4);
+}
+
 bool FUNCTIONPARSERTYPES::IsVarOpcode(unsigned op)
 {
     // See comment in declaration of FP_ParamGuardMask
@@ -1464,6 +1484,104 @@ inline void FunctionParserBase<Value_t>::incStackPtr()
     if(++mStackPtr > mData->mStackSize) ++(mData->mStackSize);
 }
 
+// Forward declaration, used only if FP_BYTECODE_TRACE is used.
+const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode, bool pad=false);
+namespace
+{
+    /* Needed by fp_opcode_add.inc if tracing is enabled */
+    template<typename Value_t>
+    std::string findName(const NamePtrsMap<Value_t>& nameMap,
+                         unsigned index,
+                         typename NameData<Value_t>::DataType type)
+    {
+        for(typename NamePtrsMap<Value_t>::const_iterator
+                iter = nameMap.begin();
+            iter != nameMap.end();
+            ++iter)
+        {
+            if(iter->second.type == type && iter->second.index == index)
+                return std::string(iter->first.name,
+                                   iter->first.name + iter->first.nameLength);
+        }
+        return "?";
+    }
+}
+
+template<typename Value_t>
+inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
+{
+#define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 0
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+template<>
+inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
+{
+    typedef long Value_t;
+#define FP_FLOAT_VERSION 0
+#define FP_COMPLEX_VERSION 0
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+template<>
+inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
+{
+    typedef GmpInt Value_t;
+#define FP_FLOAT_VERSION 0
+#define FP_COMPLEX_VERSION 0
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+template<>
+inline void FunctionParserBase<std::complex<float> >::AddFunctionOpcode(unsigned opcode)
+{
+    typedef std::complex<float> Value_t;
+#define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 1
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+template<>
+inline void FunctionParserBase<std::complex<double> >::AddFunctionOpcode(unsigned opcode)
+{
+    typedef std::complex<double> Value_t;
+#define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 1
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+template<>
+inline void FunctionParserBase<std::complex<long double> >::AddFunctionOpcode(unsigned opcode)
+{
+    typedef std::complex<long double> Value_t;
+#define FP_FLOAT_VERSION 1
+#define FP_COMPLEX_VERSION 1
+#include "extrasrc/fp_opcode_add.inc"
+#undef FP_COMPLEX_VERSION
+#undef FP_FLOAT_VERSION
+}
+#endif
+
 namespace
 {
     const unsigned char powi_factor_table[128] =
@@ -1537,31 +1655,6 @@ namespace
               (abs_int_exponent & (abs_int_exponent - 1)) == 0));
     #endif
     }
-
-    /* Needed by fp_opcode_add.inc if tracing is enabled */
-    template<typename Value_t>
-    std::string findName(const NamePtrsMap<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
-    {
-        for(typename NamePtrsMap<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
-        {
-            if(iter->second.type == type && iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
-        }
-        return "?";
-    }
-}
-
-template<typename Value_t>
-inline void FunctionParserBase<Value_t>::AddImmedOpcode(Value_t value)
-{
-    mData->mImmed.push_back(value);
-    mData->mByteCode.push_back(cImmed);
 }
 
 template<typename Value_t>
@@ -1580,12 +1673,14 @@ inline void FunctionParserBase<Value_t>::CompilePowi(long abs_int_exponent)
         if(!(abs_int_exponent & 1))
         {
             abs_int_exponent /= 2;
+            FP_TRACE_BYTECODE_ADD(cSqr);
             mData->mByteCode.push_back(cSqr);
             // ^ Don't put AddFunctionOpcode here,
             //   it would slow down a great deal.
         }
         else
         {
+            FP_TRACE_BYTECODE_ADD(cDup);
             mData->mByteCode.push_back(cDup);
             incStackPtr();
             abs_int_exponent -= 1;
@@ -1613,6 +1708,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
             if(abs_int_exponent < 0)
                 abs_int_exponent = -abs_int_exponent;
 
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back(); mData->mByteCode.pop_back();
             --mStackPtr;
             // ^Though the above is accounted for by the procedure
@@ -1627,6 +1723,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
                     opcode = cRSqrt;
                     int_exponent = -int_exponent;
                 }
+                FP_TRACE_BYTECODE_ADD(opcode);
                 mData->mByteCode.push_back(opcode);
                 --sqrt_count;
             }
@@ -1638,7 +1735,11 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
                 abs_int_exponent >>= 1;
             }
             CompilePowi(abs_int_exponent);
-            if(int_exponent < 0) mData->mByteCode.push_back(cInv);
+            if(int_exponent < 0)
+            {
+                FP_TRACE_BYTECODE_ADD(cInv);
+                mData->mByteCode.push_back(cInv);
+            }
             ++mStackPtr; // Needed because cPow adding will assume this.
             return true;
         }
@@ -1653,6 +1754,7 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     if(/*!isInteger(original_immed) ||*/
        IsNeverNegativeValueOpcode(mData->mByteCode[mData->mByteCode.size()-2]))
     {
+        FP_TRACE_BYTECODE_RETRACT();
         mData->mImmed.pop_back();
         mData->mByteCode.pop_back();
         //--mStackPtr; - accounted for by the procedure that generates cPow
@@ -1667,83 +1769,14 @@ inline bool FunctionParserBase<Value_t>::TryCompilePowi(Value_t original_immed)
     return false;
 }
 
-//#include "fpoptimizer/opcodename.hh"
-// ^ needed only if FP_TRACE_BYTECODE_OPTIMIZATION() is used
-
 template<typename Value_t>
-inline void FunctionParserBase<Value_t>::AddFunctionOpcode(unsigned opcode)
+inline void FunctionParserBase<Value_t>::AddImmedOpcode(Value_t value)
 {
-#define FP_FLOAT_VERSION 1
-#define FP_COMPLEX_VERSION 0
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
+    FP_TRACE_BYTECODE_ADD_IMMED(value);
+    mData->mImmed.push_back(value);
+    mData->mByteCode.push_back(cImmed);
 }
 
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-template<>
-inline void FunctionParserBase<long>::AddFunctionOpcode(unsigned opcode)
-{
-    typedef long Value_t;
-#define FP_FLOAT_VERSION 0
-#define FP_COMPLEX_VERSION 0
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
-}
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-template<>
-inline void FunctionParserBase<GmpInt>::AddFunctionOpcode(unsigned opcode)
-{
-    typedef GmpInt Value_t;
-#define FP_FLOAT_VERSION 0
-#define FP_COMPLEX_VERSION 0
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
-}
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-template<>
-inline void FunctionParserBase<std::complex<double> >::AddFunctionOpcode(unsigned opcode)
-{
-    typedef std::complex<double> Value_t;
-#define FP_FLOAT_VERSION 1
-#define FP_COMPLEX_VERSION 1
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
-}
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-template<>
-inline void FunctionParserBase<std::complex<float> >::AddFunctionOpcode(unsigned opcode)
-{
-    typedef std::complex<float> Value_t;
-#define FP_FLOAT_VERSION 1
-#define FP_COMPLEX_VERSION 1
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
-}
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-template<>
-inline void FunctionParserBase<std::complex<long double> >::AddFunctionOpcode(unsigned opcode)
-{
-    typedef std::complex<long double> Value_t;
-#define FP_FLOAT_VERSION 1
-#define FP_COMPLEX_VERSION 1
-#include "extrasrc/fp_opcode_add.inc"
-#undef FP_COMPLEX_VERSION
-#undef FP_FLOAT_VERSION
-}
-#endif
 
 template<typename Value_t>
 unsigned
@@ -1846,6 +1879,7 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
         opcode = cAbsIf;
     }
 
+    FP_TRACE_BYTECODE_ADD(opcode);
     mData->mByteCode.push_back(opcode);
     const unsigned curByteCodeSize = unsigned(mData->mByteCode.size());
     PushOpcodeParam<false>(0); // Jump index; to be set later
@@ -1858,6 +1892,7 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
     if(*function != ',')
         return SetErrorType(noCommaError<Value_t>(*function), function);
 
+    FP_TRACE_BYTECODE_ADD(cJump);
     mData->mByteCode.push_back(cJump);
     const unsigned curByteCodeSize2 = unsigned(mData->mByteCode.size());
     const unsigned curImmedSize2 = unsigned(mData->mImmed.size());
@@ -1972,10 +2007,12 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
             {
                 if( iter->mFetchIndex+1 == mStackPtr)
                 {
+                    FP_TRACE_BYTECODE_ADD(cDup);
                     mData->mByteCode.push_back(cDup);
                 }
                 else
                 {
+                    FP_TRACE_BYTECODE_ADD(cFetch);
                     mData->mByteCode.push_back(cFetch);
                     PushOpcodeParam<true>(iter->mFetchIndex);
                 }
@@ -1993,13 +2030,20 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
       case NameData<Value_t>::VARIABLE: // is variable
           if(!mData->mByteCode.empty() &&
                       mData->mByteCode.back() == nameData->index) [[unlikely]]
+          {
+              FP_TRACE_BYTECODE_ADD(cDup);
               mData->mByteCode.push_back(cDup);
+          }
           else [[likely]]
+          {
+              FP_TRACE_BYTECODE_ADD_VAR(nameData->index);
               mData->mByteCode.push_back(nameData->index);
+          }
           incStackPtr();
           return endPtr;
 
       case NameData<Value_t>::CONSTANT: // is constant
+          FP_TRACE_BYTECODE_ADD_IMMED(nameData->value);
           AddImmedOpcode(nameData->value);
           incStackPtr();
           return endPtr;
@@ -2011,6 +2055,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
           function = CompileFunctionParams
               (endPtr, mData->mFuncPtrs[nameData->index].mParams);
           //if(!function) return 0;
+          FP_TRACE_BYTECODE_ADD(cFCall);
           mData->mByteCode.push_back(cFCall);
           PushOpcodeParam<true>(nameData->index);
           return function;
@@ -2019,6 +2064,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
           function = CompileFunctionParams
               (endPtr, mData->mFuncParsers[nameData->index].mParams);
           //if(!function) return 0;
+          FP_TRACE_BYTECODE_ADD(cPCall);
           mData->mByteCode.push_back(cPCall);
           PushOpcodeParam<true>(nameData->index);
           return function;
@@ -2127,11 +2173,21 @@ FunctionParserBase<Value_t>::CompilePow(const char* function)
         if(mData->mByteCode.back() == cImmed)
         {
             if(mData->mImmed.back() == fp_const_e<Value_t>())
-                { op = cExp;  mData->mByteCode.pop_back();
-                    mData->mImmed.pop_back(); --mStackPtr; }
+            {
+                op = cExp;
+                FP_TRACE_BYTECODE_RETRACT();
+                mData->mByteCode.pop_back();
+                mData->mImmed.pop_back();
+                --mStackPtr;
+            }
             else if(mData->mImmed.back() == Value_t(2))
-                { op = cExp2; mData->mByteCode.pop_back();
-                    mData->mImmed.pop_back(); --mStackPtr; }
+            {
+                op = cExp2;
+                FP_TRACE_BYTECODE_RETRACT();
+                mData->mByteCode.pop_back();
+                mData->mImmed.pop_back();
+                --mStackPtr;
+            }
         }
 
         function = CompileUnaryMinus(function);
@@ -2228,6 +2284,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             { \
                 /* (...) cInv 5 cMul -> (...) 5 cRDiv */ \
                 /*           ^               ^      | */ \
+                FP_TRACE_BYTECODE_RETRACT(); \
                 mData->mByteCode.pop_back(); \
                 op = cRDiv; \
             } \
@@ -2269,6 +2326,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             // 5 (...) cDiv --> (...) cInv ||| 5 cMul
             //  ^          |              ^
             pending_immed *= mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
             --mStackPtr;
@@ -2286,8 +2344,10 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             // (:::) 5 cMul (...) cDiv -> (:::) (...) cDiv  ||| 5 cMul
             //             ^                   ^
             pending_immed *= mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         // cDiv is not tested here because the bytecode
@@ -2299,6 +2359,7 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
             // (:::) cInv (...) cMul -> (:::) (...) cRDiv
             // (:::) cInv (...) cDiv -> (:::) (...) cMul cInv
             //           ^                   ^            |
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
             lhs_inverted = true;
         }
@@ -2315,8 +2376,10 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
                 pending_immed *= mData->mImmed.back();
             else
                 pending_immed /= mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         else
@@ -2331,8 +2394,10 @@ FunctionParserBase<Value_t>::CompileMult(const char* function)
                 { c = '/'; pending_immed *= mData->mImmed.back(); }
             else
                 { c = '*'; pending_immed /= mData->mImmed.back(); }
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         if(!lhs_inverted) // if (/x/y) was changed to /(x*y), add missing cInv
@@ -2373,6 +2438,7 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
             { \
                 /* (...) cNeg 5 cAdd -> (...) 5 cRSub */ \
                 /*           ^               ^      | */ \
+                FP_TRACE_BYTECODE_RETRACT(); \
                 mData->mByteCode.pop_back(); \
                 op = cRSub; \
             } \
@@ -2394,6 +2460,7 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
             // 5 (...) cSub --> (...) cNeg ||| 5 cAdd
             //  ^          |              ^
             pending_immed += mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
             --mStackPtr;
@@ -2410,8 +2477,10 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
             // (:::) 5 cAdd (...) cSub -> (:::) (...) cSub  ||| 5 cAdd
             //             ^                   ^
             pending_immed += mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         // cSub is not tested here because the bytecode
@@ -2422,6 +2491,7 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
             // (:::) cNeg (...) cAdd -> (:::) (...) cRSub
             // (:::) cNeg (...) cSub -> (:::) (...) cAdd cNeg
             //           ^                   ^            |
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
             lhs_negated = true;
         }
@@ -2437,8 +2507,10 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
                 pending_immed += mData->mImmed.back();
             else
                 pending_immed -= mData->mImmed.back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         else
@@ -2452,8 +2524,10 @@ FunctionParserBase<Value_t>::CompileAddition(const char* function)
                 { c = '-'; pending_immed += mData->mImmed.back(); }
             else
                 { c = '+'; pending_immed -= mData->mImmed.back(); }
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mImmed.pop_back();
             mData->mByteCode.pop_back();
+            FP_TRACE_BYTECODE_RETRACT();
             mData->mByteCode.pop_back();
         }
         if(!lhs_negated) // if (-x-y) was changed to -(x+y), add missing cNeg
@@ -2841,6 +2915,11 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cSub: Stack[SP-1] -= Stack[SP]; --SP; break;
           case   cMul: Stack[SP-1] *= Stack[SP]; --SP; break;
 
+          case   cFma: Stack[SP-2] = fp_fma(Stack[SP-2], Stack[SP-1], Stack[SP]); SP -= 2; break;
+          case   cFms: Stack[SP-2] = fp_fms(Stack[SP-2], Stack[SP-1], Stack[SP]); SP -= 2; break;
+          case   cFmma: Stack[SP-3] = fp_fmma(Stack[SP-3], Stack[SP-2], Stack[SP-1], Stack[SP]); SP -= 3; break;
+          case   cFmms: Stack[SP-3] = fp_fmms(Stack[SP-3], Stack[SP-2], Stack[SP-1], Stack[SP]); SP -= 3; break;
+
           case   cDiv:
               if(Stack[SP] == Value_t(0))
               { mData->mEvalErrorType=1; return Value_t(0); }
@@ -3026,7 +3105,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
               Stack[++SP] = Vars[byteCode[IP]-VarBegin];
         }
         //assert(unsigned(SP+1) <= mData->mStackSize);
-        //std::cout << "Stack top: " << Stack[SP] << '\n';
+        //std::cout << "Stack top: " << SP << "(" << Stack[SP] << ")\n";
     }
 
     mData->mEvalErrorType=0;
@@ -3614,6 +3693,10 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         case cNotNot: n = "notnot"; params = 1; break;
                         case cDeg: n = "deg"; params = 1; break;
                         case cRad: n = "rad"; params = 1; break;
+                        case cFma:  n = "fma"; params = 3; break;
+                        case cFms:  n = "fms"; params = 3; break;
+                        case cFmma: n = "fmma"; params = 4; break;
+                        case cFmms: n = "fmms"; params = 4; break;
 
                         case cFetch:
                         {
@@ -3713,7 +3796,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
             {
                 std::ostringstream buf;
                 const char *paramsep = ",", *suff = "";
-                int prio = 0; bool commutative = false;
+                int prio = 0; bool commutative = false, sequence = false;
                 switch(opcode)
                 {
                   case cIf: buf << "if("; suff = ")";
@@ -3744,13 +3827,31 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                       break;
                   case cNot: buf << "(!("; suff = "))";
                       break;
+                  case cFma: buf << '('; suff = ")";
+                             prio = 3; paramsep = "*+"; sequence = true;
+                      break;
+                  case cFms: buf << '('; suff = ")";
+                             prio = 3; paramsep = "*-"; sequence = true;
+                      break;
+                  case cFmma: buf << '('; suff = ")";
+                              prio = 3; paramsep = "*+*"; sequence = true;
+                      break;
+                  case cFmms: buf << '('; suff = ")";
+                              prio = 3; paramsep = "*-*"; sequence = true;
+                      break;
                   default: buf << n << '('; suff = ")";
                 }
 
-                const char* sep = "";
+                const char* sep = paramsep;
                 for(unsigned a=0; a<params; ++a)
                 {
-                    buf << sep;
+                    if(a)
+                    {
+                        if(sequence)
+                            buf << *sep++;
+                        else
+                            buf << sep;
+                    }
                     if(stack.size() + a < params)
                         buf << "?";
                     else
@@ -3763,7 +3864,6 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                         else
                             buf << prev.second;
                     }
-                    sep = paramsep;
                 }
                 if(stack.size() >= params)
                     stack.resize(stack.size() - params);

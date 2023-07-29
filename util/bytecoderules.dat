@@ -93,6 +93,26 @@ C [IsVarOpcode(C)]                               B [IsBinaryOpcode(B)&&!HasInval
 C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul -> B A [x] cMul     # TEST 10/mul_zero VERIFY
 y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cMul ->   A [x] cMul     # TEST 10/mul_zero VERIFY
 
+# Same for fmma/fmms
+A [IsVarOpcode(A)]                                                                                      x [x==Value_t()] cFmma -> cMul
+A [IsVarOpcode(A)]                                                                                      x [x==Value_t()] cFmms -> cMul
+                                                 A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t()] cFmma ->    [x] cMul cFmma
+                                                 A [IsUnaryOpcode(A)&&!HasInvalidRangesOpcode(A)]       x [x==Value_t()] cFmms ->    [x] cMul cFmms
+B [IsVarOpcode(B)]                               A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmma ->    [x] cMul cFmma
+B [IsVarOpcode(B)]                               A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmms ->    [x] cMul cFmms
+B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmma -> A  [x] cMul cFmma
+B [IsUnaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmms -> A  [x] cMul cFmms
+y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmma ->    [x] cMul cFmma
+y                                                A [IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)]      x [x==Value_t()] cFmms ->    [x] cMul cFmms
+A [IsVarOpcode(A)]                                                                                 cMul x [x==Value_t()] cFmma ->    [x] cMul cFmma
+A [IsVarOpcode(A)]                                                                                 cMul x [x==Value_t()] cFmms ->    [x] cMul cFmms
+C [IsVarOpcode(C)]                               B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmma ->   A [x] cMul cFmma
+C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmma -> B A [x] cMul cFmma
+y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmma ->   A [x] cMul cFmma
+C [IsVarOpcode(C)]                               B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmms ->   A [x] cMul cFmms
+C [IsUnaryOpcode(C)&&!HasInvalidRangesOpcode(C)] B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmms -> B A [x] cMul cFmms
+y                                                B [IsBinaryOpcode(B)&&!HasInvalidRangesOpcode(B)] A[IsBinaryOpcode(A)&&!HasInvalidRangesOpcode(A)] x [x==Value_t()] cFmms ->   A [x] cMul cFmms
+
 ###### INLINE EXPANSION OF BASIC OPERATORS :
 
 x cNeg			-> [-x]             # TEST 10/neg
@@ -105,6 +125,11 @@ y x cSub		-> [y-x]            # TEST 10/sub
 x cNot			-> [fp_not(x)]      # TEST 10/not
 #y [y!=Value_t()] x cRDiv -> [x/y]
 #y x cRSub		-> [x-y]
+
+y x a cFma              -> [y*x+a]
+y x a cFms              -> [y*x-a]
+y x a b cFmma           -> [y*x+a*b]
+y x a b cFmms           -> [y*x-a*b]
 
 y x cLess		-> [fp_less(y,x)]       # TEST 10/cmplt
 y x cLessOrEq		-> [fp_lessOrEq(y,x)]   # TEST 10/cmple
@@ -122,8 +147,17 @@ x cMul cNeg			-> [-x] cMul    # TEST 10/mulneg
 x [x==Value_t(-1)] cMul		-> cNeg         # TEST 10/mulminus1
 cNeg x [x!=Value_t()] cDiv	-> [-x] cDiv    # TEST 10/negdiv
 
-y cAdd x cAdd		-> [y+x] cAdd           # TEST 11/42
-y cMul x cMul		-> [y*x] cMul           # TEST 11/43
+y cAdd x cAdd		 -> [y+x] cAdd           # TEST 11/42
+y cMul x cMul		 -> [y*x] cMul           # TEST 11/43
+
+x cFms                   -> [-x] cFma
+y cFma x cAdd            -> [y+x] cFma
+y cFma x cSub            -> [y-x] cFma
+x [x==Value_t()]  cFma   -> cMul
+x [x==Value_t(1)] cFmma  -> cFma
+x [x==Value_t(-1)] cFmma -> cFms
+x [x==Value_t(1)] cFmms  -> cFms
+x [x==Value_t(-1)] cFmms -> cFma
 
 ###### INLINE EXPANSION OF BASIC FUNCTIONS :
 
@@ -226,6 +260,21 @@ cGreater     cNot -> cLessOrEq     # TEST 10/not_gt
 cGreaterOrEq cNot -> cLess         # TEST 10/not_ge
 cEqual       cNot -> cNEqual       # TEST 10/not_eq
 cNEqual      cNot -> cEqual        # TEST 10/not_ne
+
+cMul A [IsVarOpcode(A)] cAdd -> [DO_STACKPLUS1] A cFma
+cMul A [IsVarOpcode(A)] cSub -> [DO_STACKPLUS1] A cFms
+cMul x cAdd                  -> [DO_STACKPLUS1] [x] cFma
+cMul x cSub                  -> [DO_STACKPLUS1] [x] cFms
+cMul A [IsVarOpcode(A)] B [IsVarOpcode(B)] cMul cAdd -> A [DO_STACKPLUS2] B cFmma
+cMul A [IsVarOpcode(A)] B [IsVarOpcode(B)] cMul cSub -> A [DO_STACKPLUS2] B cFmms
+cMul x A [IsVarOpcode(A)] cMul cAdd -> [x] [DO_STACKPLUS2] A cFmma
+cMul x A [IsVarOpcode(A)] cMul cSub -> [x] [DO_STACKPLUS2] A cFmms
+cMul A [IsVarOpcode(A)] x cMul cAdd -> A [DO_STACKPLUS2] [x] cFmma
+cMul A [IsVarOpcode(A)] x cMul cSub -> A [DO_STACKPLUS2] [x] cFmms
+cNeg cFma               -> cFms
+cNeg cFms               -> cFma
+cNeg cFmma              -> cFmms
+cNeg cFmms              -> cFmma
 
 cDup cOr   -> cNotNot  # TEST 99/3
 cDup cAnd  -> cNotNot  # TEST 99/3

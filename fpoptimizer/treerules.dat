@@ -81,11 +81,11 @@
 #       /* Entire function is changed into the particular param */
 #
 #     | function '->' function NEWLINE
-#       /* Entire function changes, the param_notinv_list is rewritten */
-#       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)"  */
+#       /* Entire function changes, the paramlist is rewritten */
+#       /* NOTE: "p x -> o y"  is a shortcut for "p x -> (o y)" - parentheses are optional */
 #
 #     | function ':'  paramlist NEWLINE
-#       /* The params provided are replaced with the new param_maybeinv_list */
+#       /* The params provided are replaced with the new paramlist */
 #     ;
 #
 #     function:
@@ -1049,6 +1049,36 @@ cMul (cAdd %@M <1>) &  : (cAdd *(% &) (cMul & (cAdd <1>)))     # TEST 20/addcons
 
 @F cMul (cExp[x]) (cExp[y])   : (cExp[(cAdd x y)])  # TEST 20/expexp_a, 20/expexp_b, 20/expexp_c
 @F cMul (cExp2[x]) (cExp2[y]) : (cExp2[(cAdd x y)]) # TEST 20/expexp_a, 20/expexp_b, 20/expexp_c
+
+cAdd  (cMul x@M y@M <1>@M) (cMul z@M a@M <2>@M)   : (cFmma (cMul x <1>) y (cMul z <2>) a)
+cSub [(cMul x@M y@M <1>@M) (cMul z@M a@M <2>@M)] -> (cFmms (cMul x <1>) y (cMul z <2>) a)
+cAdd  (cMul x@M y@M <1>@M) z                      : (cFma (cMul x <1>) y z)
+cSub [(cMul x@M y@M <1>@M) z]                    -> (cFms (cMul x <1>) y z)
+cFma [x y (cMul z@M a@M <1>@M)]                  -> (cFmma x y (cMul z <1>) a)
+cFms [x y (cMul z@M a@M <1>@M)]                  -> (cFmms x y (cMul z <1>) a)
+cAdd  (cFma x@M y@M z@M) (cMul a@M <1>@M)         : (cFmma x y (cMul z <1>) a)
+cSub [(cFms x@M y@M z@M) (cMul a@M <1>@M)]       -> (cFmms x y (cMul z <1>) a)
+cFma [x y (cMul -1 <1>)]                         -> (cFms x y (cMul <1>))
+cFms [x y (cMul -1 <1>)]                         -> (cFma x y (cMul <1>))
+cFmma [x y (cMul -1 <1>) z]                      -> (cFmms x y (cMul <1>) z)
+cFmms [x y (cMul -1 <1>) z]                      -> (cFmma x y (cMul <1>) z)
+cFmma [x y z (cMul -1 <1>)]                      -> (cFmms x y (cMul <1>) z)
+cFmms [x y z (cMul -1 <1>)]                      -> (cFmma x y (cMul <1>) z)
+cFmma [(cMul -1 <1>) z x y]                      -> (cFmms x y (cMul <1>) z)
+cFmma [z (cMul -1 <1>) x y]                      -> (cFmms x y (cMul <1>) z)
+# Turn fms into fma whenever possible (easier to optimize)
+cFmms [x y z %]                                  -> (cFmma x y z -%)
+cFmms [x y % z]                                  -> (cFmma x y z -%)
+cFms  [x y %]                                    -> (cFma x y -%)
+
+#cFma [-1 x y]                        -> (cSub y x)
+#cFma [x -1 y]                        -> (cSub y x)
+#cFma [x y 0]                         -> (cMul x y)
+#cFms [x y 0]                         -> (cMul x y)
+#cFma [0 x y]                         -> y
+#cFma [x 0 y]                         -> y
+#cFms [0 x y]                         -> (cMul -1 y)
+#cFms [x 0 y]                         -> (cMul -1 y)
 
 [ABS_LOGICAL]
 

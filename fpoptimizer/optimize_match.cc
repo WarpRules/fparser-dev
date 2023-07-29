@@ -69,8 +69,10 @@ namespace
                 if(!fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
                 break;
             case Oneness_NotOne:
-                if(!tree.IsImmed()) return false;
-                if(fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
+                if(tree.IsImmed())
+                {
+                    if(fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
+                }
                 break;
         }
         switch(bitmask & ConstnessMask)
@@ -697,7 +699,13 @@ namespace FPoptimizer_Optimize
                             if(used[b]) continue; // Ignore subtrees that were already used
                             // Save this tree to this restholder
 
-                            matches.push_back(tree.GetParam(b));
+                            auto& param = tree.GetParam(b);
+                            if(!TestImmedConstraints(model_tree.restholder_constraints, param))
+                            {
+                                // A param in the restholder failed constraints
+                                goto retry_anyparams_3;
+                            }
+                            matches.push_back(param);
                             used[b] = true;
                             if(TopLevel) info.SaveMatchedParamIndex(b);
                         }

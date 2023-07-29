@@ -84,6 +84,11 @@ namespace FUNCTIONPARSERTYPES
         cRSub,  /* reverse subtraction (not x-y, but y-x) */
         cRSqrt, /* inverse square-root (1/sqrt(x)) */
 
+        cFma,   /* Fused multiply-and-add: a*b+c */
+        cFms,   /* Fused multiply-and-sub: a*b-c */
+        cFmma,  /* Fused multiply-and-add: a*b+c*d */
+        cFmms,  /* Fused multiply-and-sub: a*b-c*d */
+
         VarBegin
     };
 

@@ -51,6 +51,8 @@ namespace FUNCTIONPARSERTYPES
     bool IsAlwaysRealOpcode(unsigned op);
     bool IsUnaryOpcode(unsigned op);
     bool IsBinaryOpcode(unsigned op);
+    bool IsTernaryOpcode(unsigned op);
+    bool IsQuartaryOpcode(unsigned op);
     bool IsVarOpcode(unsigned op);
     bool IsCommutativeOrParamSwappableBinaryOpcode(unsigned op);
     unsigned GetParamSwappedBinaryOpcode(unsigned op);
@@ -1250,6 +1252,74 @@ namespace FUNCTIONPARSERTYPES
         return fp_polar_scalar<T> (fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
     }
   #endif
+#line 1 "extrasrc/functions/func_fma.hh"
+    template<typename Value_t>
+    inline Value_t fp_fma(const Value_t& x, const Value_t& y,
+                          const Value_t& a)
+    {
+        return x*y+a;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fma(const MpfrFloat& x, const MpfrFloat& y,
+                            const MpfrFloat& a)
+    {
+        return MpfrFloat::fma(x,y, a);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/func_fmma.hh"
+    template<typename Value_t>
+    inline Value_t fp_fmma(const Value_t& x, const Value_t& y,
+                           const Value_t& a, const Value_t& b)
+    {
+        return x*y+a*b;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fmma(const MpfrFloat& x, const MpfrFloat& y,
+                             const MpfrFloat& a, const MpfrFloat& b)
+    {
+        return MpfrFloat::fmma(x,y, a,b);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/func_fmms.hh"
+    template<typename Value_t>
+    inline Value_t fp_fmms(const Value_t& x, const Value_t& y,
+                           const Value_t& a, const Value_t& b)
+    {
+        return x*y-a*b;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fmms(const MpfrFloat& x, const MpfrFloat& y,
+                             const MpfrFloat& a, const MpfrFloat& b)
+    {
+        return MpfrFloat::fmms(x,y, a,b);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/func_fms.hh"
+    template<typename Value_t>
+    inline Value_t fp_fms(const Value_t& x, const Value_t& y,
+                          const Value_t& a)
+    {
+        return x*y-a;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fms(const MpfrFloat& x, const MpfrFloat& y,
+                            const MpfrFloat& a)
+    {
+        return MpfrFloat::fms(x,y, a);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/func_imag.hh"
     template<typename Value_t>
     inline Value_t fp_imag(const Value_t& ) { return Value_t{}; }
@@ -1708,7 +1778,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1712 "extrasrc/fpaux.hh"
+#line 1782 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES

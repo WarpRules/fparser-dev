@@ -391,9 +391,9 @@ namespace FPoptimizer_CodeTree
                     range<Value_t> item = CalculateResultBoundaries( tree.GetParam(a) );
 
                     if(item.min.known) result.min.val += item.min.val;
-                    else             result.min.known = false;
+                    else               result.min.known = false;
                     if(item.max.known) result.max.val += item.max.val;
-                    else             result.max.known = false;
+                    else               result.max.known = false;
 
                     if(!result.min.known && !result.max.known) break; // hopeless
                 }
@@ -843,6 +843,10 @@ namespace FPoptimizer_CodeTree
             case cNop:
             case cJump:
             case VarBegin:
+            case cFma:
+            case cFms:
+            case cFmma:
+            case cFmms:
                 break; /* Should never occur */
 
             /* Complex functions */
@@ -976,7 +980,12 @@ namespace FPoptimizer_CodeTree
                 return Unknown;
             }
             case cAdd:
+            case cSub:
             case cMul:
+            case cFma:
+            case cFms:
+            case cFmma:
+            case cFmms:
             {
                 // It's integer if all the components are integer
                 // Otherwise, unknown whether it's integer
