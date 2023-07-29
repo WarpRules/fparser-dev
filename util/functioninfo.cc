@@ -70,6 +70,7 @@ namespace
     bool gIgnoreErrors = false;
     bool gOnlySuppliedValues = false;
     bool gPrintByteCodeExpressions = true;
+    int gVerbosityLevel = 1;
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
     template<> inline float epsilon<float>() { return 1e-5F; }
@@ -837,8 +838,10 @@ namespace
         bool errors = false;
         for(std::size_t ind1 = 0; ind1 < functions.size(); ++ind1)
         {
+            if(gVerbosityLevel > 1) std::cout << "--func " << ind1 << "-- a\n";
             parser1.Parse
                 (functions[ind1].mFunctionString, gVarString, gUseDegrees);
+            if(gVerbosityLevel > 1) std::cout << "--func " << ind1 << "-- b\n";
             parser2.Parse
                 (functions[ind1].mFunctionString, gVarString, gUseDegrees);
             // parser 1 is not optimized
@@ -849,6 +852,7 @@ namespace
             // within Optimize() or Eval().
 
             ////std::cout << "Not optimized:\n"; parser2.PrintByteCode(std::cout);
+            if(gVerbosityLevel > 1) std::cout << "--func " << ind1 << "-- optimize\n";
             parser2.Optimize(); // parser 2 is optimized once
 
             ////std::cout << "Is optimized:\n"; parser2.PrintByteCode(std::cout);
@@ -1297,7 +1301,8 @@ int main(int argc, char* argv[])
         if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
         else if(std::strcmp(argv[i], "-d") == 0) parserType = FP_D;
         else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
-        else if(std::strcmp(argv[i], "-mpfr") == 0) parserType = FP_MPFR;
+        else if(std::strcmp(argv[i], "-mpfr") == 0
+             || std::strcmp(argv[i], "-mf") == 0) parserType = FP_MPFR;
         else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
         else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
         else if(std::strcmp(argv[i], "-cd") == 0) parserType = FP_CD;
@@ -1310,6 +1315,10 @@ int main(int argc, char* argv[])
         }
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
+        else if(std::strcmp(argv[i], "-v") == 0)
+            ++gVerbosityLevel;
+        else if(std::strcmp(argv[i], "-q") == 0)
+            --gVerbosityLevel;
         else if(std::strcmp(argv[i], "-ntd") == 0)
             noTimingIfEqualityErrors = true;
         else if(std::strcmp(argv[i], "-deg") == 0)
