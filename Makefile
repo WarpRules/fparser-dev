@@ -52,8 +52,8 @@ OPTIMIZATION=-O3 -ffast-math -march=native
 #OPTIMIZATION=-g -pg
 #OPTIMIZATION=-g -O0 -fsanitize=thread
 #LDFLAGS += -fsanitize=thread
-#OPTIMIZATION=-g -O0 -fsanitize=address
-#LDFLAGS += -fsanitize=address
+OPTIMIZATION=-g -O0 -fsanitize=address
+LDFLAGS += -fsanitize=address
 
 
 CXX=g++
@@ -160,8 +160,7 @@ TESTBED_MODULES = \
 TESTBED_GENSRC = \
 	tests/testbed_autogen.hh \
 	tests/testbed_alltests.cc \
-	tests/testbed_evaluate0.cc
-TESTBED_GENSRC1 = \
+	tests/testbed_evaluate0.cc \
 	tests/testbed_cpptest.hh
 define testbed_n
 TESTBED_MODULES += tests/testbed_evaluate$(N).o
@@ -249,9 +248,8 @@ tests/make_tests: tests/make_tests.o
 
 tests/make_tests.o: tests/make_tests.cc tests/stringutil.hh
 
-$(TESTBED_GENSRC) : $(TESTBED_GENSRC1) ;
-
-$(TESTBED_GENSRC1) : tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
+$(wordlist 2,99,TESTBED_GENSRC) : $(word 1,$(TESTBED_GENSRC)) ;
+$(word 1,$(TESTBED_GENSRC)) : tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
 	tests/make_tests \
 		--ignore "*~" \
 		--ignore "*.php" \
@@ -260,7 +258,6 @@ $(TESTBED_GENSRC1) : tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*
 		--ignore "*.hh" \
 		--strip_prefix "tests/" \
 		tests/*/* tests/*/*/*
-	touch $@
 
 FPOPTIMIZER_CC_FILES=\
 	    lib/autoptr.hh \
@@ -447,7 +444,7 @@ clean:
 		*.o \
 		.dep \
 		util/tree_grammar_parser.output \
-		$(TESTBED_GENSRC) $(TESTBED_GENSRC1)
+		$(TESTBED_GENSRC)
 
 release_clean:
 	rm -f testbed_release speedtest_release \
