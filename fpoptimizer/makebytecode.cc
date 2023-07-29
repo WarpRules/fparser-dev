@@ -128,9 +128,11 @@ namespace FPoptimizer_CodeTree
             using namespace FPoptimizer_Grammar;
             const void* g = (const void*)&grammar_optimize_recreate;
             while(ApplyGrammar(*(const Grammar*)g, *this))
-                {   FixIncompleteHashes();
-                }
+            {
+                FixIncompleteHashes();
+            }
         }
+        Sort();
     #ifdef DEBUG_SUBSTITUTIONS
         std::cout << "Actually synthesizing, after recreating inv/neg:\n";
         DumpTreeWithIndent(*this);

@@ -151,7 +151,7 @@ class FunctionParserBase
 
     void AddFunctionOpcode(unsigned);
     void AddImmedOpcode(Value_t v);
-    void incStackPtr();
+    void incStackPtr(unsigned by = 1);
     void CompilePowi(long);
     bool TryCompilePowi(Value_t);
 

@@ -571,12 +571,10 @@ namespace
             if(opcode.substr(0, 12) == "DO_STACKPLUS")
             {
                 unsigned n = std::stoi(opcode.substr(12));
-                for(unsigned a=0; a<n; ++a)
-                    outstream
-                        << Indent(indent) << "incStackPtr();\n";
-                for(unsigned a=0; a<n; ++a)
-                    outstream
-                        << Indent(indent) << "--mStackPtr;\n";
+                outstream
+                    << Indent(indent) << "incStackPtr(" << n << ");\n";
+                outstream
+                    << Indent(indent) << "mStackPtr -= " << n << ";\n";
                 continue;
             }
 

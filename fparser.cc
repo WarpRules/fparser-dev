@@ -1479,9 +1479,10 @@ inline const char* FunctionParserBase<Value_t>::SetErrorType(ParseErrorType t,
 }
 
 template<typename Value_t>
-inline void FunctionParserBase<Value_t>::incStackPtr()
+inline void FunctionParserBase<Value_t>::incStackPtr(unsigned by)
 {
-    if(++mStackPtr > mData->mStackSize) ++(mData->mStackSize);
+    mStackPtr += by;
+    if(mStackPtr > mData->mStackSize) mData->mStackSize += by;
 }
 
 // Forward declaration, used only if FP_BYTECODE_TRACE is used.

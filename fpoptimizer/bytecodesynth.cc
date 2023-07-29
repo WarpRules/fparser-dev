@@ -32,9 +32,9 @@ namespace FPoptimizer_ByteCode
 #define mData this
 #define mByteCode ByteCode
 #define mImmed Immed
-#define mStackPtr     StackTop
-#define mStackSize    StackMax
-#define incStackPtr() ProducedNParams(1)
+#define mStackPtr      StackTop
+#define mStackSize     StackMax
+#define incStackPtr(n) ProducedNParams(n)
 
     /* Specializer<bool,bool>: The bools are IsIntType, IsComplexType. */
     template<typename Value_t>
