@@ -156,7 +156,7 @@ namespace FPoptimizer_CodeTree
     {
         // If the synth can already locate our operand in the stack,
         // never mind synthesizing it again, just dup it.
-        if(synth.FindAndDup(*this))
+        if(GetOpcode() < VarBegin && synth.FindAndDup(*this))
         {
             return;
         }
