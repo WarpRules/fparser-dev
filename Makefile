@@ -248,7 +248,7 @@ tests/make_tests: tests/make_tests.o
 
 tests/make_tests.o: tests/make_tests.cc tests/stringutil.hh
 
-$(wordlist 2,99,TESTBED_GENSRC) : $(word 1,$(TESTBED_GENSRC)) ;
+$(wordlist 2,99,$(TESTBED_GENSRC)) : $(word 1,$(TESTBED_GENSRC)) ;
 $(word 1,$(TESTBED_GENSRC)) : tests/make_tests $(wildcard tests/*/*) $(wildcard tests/*/*/*)
 	tests/make_tests \
 		--ignore "*~" \
