@@ -896,7 +896,7 @@ namespace FPoptimizer_CodeTree
             case cInv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(0).GetImmed() != Value_t(0))
-                    { tree.ReplaceWithImmed( Value_t(1) / tree.GetParam(0).GetImmed() );
+                    { tree.ReplaceWithImmed( fp_inv(tree.GetParam(0).GetImmed()) );
                       goto do_return; }
                 // Note: Could use (mulgroup)^immed optimization from cPow
                 break;
@@ -930,28 +930,28 @@ namespace FPoptimizer_CodeTree
                 HANDLE_UNARY_CONST_FUNC(fp_exp2); break;
             case cRSqrt: // converted into cPow x -0.5
                 if(tree.GetParam(0).IsImmed())
-                    { tree.ReplaceWithImmed( Value_t(1) / fp_sqrt(tree.GetParam(0).GetImmed()) );
+                    { tree.ReplaceWithImmed( fp_rsqrt(tree.GetParam(0).GetImmed()) );
                       goto do_return; }
                 break;
             case cCot: // converted into cMul (cPow (cTan x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_tan(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
-                      { tree.ReplaceWithImmed( Value_t(1) / tmp );
+                      { tree.ReplaceWithImmed( fp_inv(tmp) );
                         goto do_return; } }
                 break;
             case cSec: // converted into cMul (cPow (cCos x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_cos(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
-                      { tree.ReplaceWithImmed( Value_t(1) / tmp );
+                      { tree.ReplaceWithImmed( fp_inv(tmp) );
                         goto do_return; } }
                 break;
             case cCsc: // converted into cMul (cPow (cSin x) -1)
                 if(tree.GetParam(0).IsImmed())
                     { Value_t tmp = fp_sin(tree.GetParam(0).GetImmed());
                       if(fp_nequal(tmp, Value_t(0)))
-                      { tree.ReplaceWithImmed( Value_t(1) / tmp );
+                      { tree.ReplaceWithImmed( fp_inv(tmp) );
                         goto do_return; } }
                 break;
             case cHypot: // converted into cSqrt(cAdd(cMul(x x), cMul(y y)))

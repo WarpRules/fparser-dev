@@ -91,28 +91,28 @@ namespace
     {
         // (sqrt^n(x))
         Value_t(1),
-        Value_t(1) / Value_t(2),
-        Value_t(1) / Value_t(2*2),
-        Value_t(1) / Value_t(2*2*2),
-        Value_t(1) / Value_t(2*2*2*2),
+        fp_inv(Value_t(2)),
+        fp_inv(Value_t(2*2)),
+        fp_inv(Value_t(2*2*2)),
+        fp_inv(Value_t(2*2*2*2)),
         // cbrt^1(sqrt^n(x))
-        Value_t(1) / Value_t(3),
-        Value_t(1) / Value_t(3*2),
-        Value_t(1) / Value_t(3*2*2),
-        Value_t(1) / Value_t(3*2*2*2),
-        Value_t(1) / Value_t(3*2*2*2*2),
+        fp_inv(Value_t(3)),
+        fp_inv(Value_t(3*2)),
+        fp_inv(Value_t(3*2*2)),
+        fp_inv(Value_t(3*2*2*2)),
+        fp_inv(Value_t(3*2*2*2*2)),
         // cbrt^2(sqrt^n(x))
-        Value_t(1) / Value_t(3*3),
-        Value_t(1) / Value_t(3*3*2),
-        Value_t(1) / Value_t(3*3*2*2),
-        Value_t(1) / Value_t(3*3*2*2*2),
-        Value_t(1) / Value_t(3*3*2*2*2*2),
+        fp_inv(Value_t(3*3)),
+        fp_inv(Value_t(3*3*2)),
+        fp_inv(Value_t(3*3*2*2)),
+        fp_inv(Value_t(3*3*2*2*2)),
+        fp_inv(Value_t(3*3*2*2*2*2)),
         // cbrt^3(sqrt^n(x))
-        Value_t(1) / Value_t(3*3*3),
-        Value_t(1) / Value_t(3*3*3*2),
-        Value_t(1) / Value_t(3*3*3*2*2),
-        Value_t(1) / Value_t(3*3*3*2*2*2),
-        Value_t(1) / Value_t(3*3*3*2*2*2*2)
+        fp_inv(Value_t(3*3*3)),
+        fp_inv(Value_t(3*3*3*2)),
+        fp_inv(Value_t(3*3*3*2*2)),
+        fp_inv(Value_t(3*3*3*2*2*2)),
+        fp_inv(Value_t(3*3*3*2*2*2*2))
     };
 
     struct PowiResolver
@@ -459,7 +459,7 @@ namespace FPoptimizer_CodeTree
                                 log2.CopyOnWrite();
                                 log2.SetOpcode(cLog2by);
                                 log2.AddParam( CodeTreeImmed(
-                                    fp_pow(immeds, Value_t(1) / log2_exponent) ) );
+                                    fp_pow(immeds, fp_inv(log2_exponent)) ) );
                                 log2.Rehash();
                                 break;
                             }

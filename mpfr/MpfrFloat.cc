@@ -1112,6 +1112,20 @@ MpfrFloat MpfrFloat::trunc(const MpfrFloat& value)
     return retval;
 }
 
+MpfrFloat MpfrFloat::rsqrt(const MpfrFloat& value)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_rec_sqrt(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::inv(const MpfrFloat& value)
+{
+    MpfrFloat retval(MpfrFloat::kNoInitialization);
+    mpfr_ui_div(retval.mData->mFloat, 1, value.mData->mFloat, GMP_RNDN);
+    return retval;
+}
+
 MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);

@@ -96,7 +96,7 @@ y                                                B [IsBinaryOpcode(B)&&!HasInval
 ###### INLINE EXPANSION OF BASIC OPERATORS :
 
 x cNeg			-> [-x]             # TEST 10/neg
-x [x!=Value_t()] cInv 	-> [Value_t(1)/x]
+x [x!=Value_t()] cInv 	-> [fp_inv(x)]
 y x cMul		-> [y*x]            # TEST 10/mul
 y x [x!=Value_t()] cDiv -> [y/x]           # TEST 10/div
 y x [x!=Value_t()] cMod -> [fp_mod(y,x)]   # TEST 10/mod
@@ -157,7 +157,7 @@ IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x> Value_t(0)] cLog2	-> [fp_log2(
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSin	 		-> [fp_sin(x)]                 # TEST 10/sin*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSinh	 		-> [fp_sinh(x)]                # TEST 10/sinh*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x>=Value_t(0)] cSqrt	-> [fp_sqrt(x)]                # TEST 10/sqr*
-#IF(FP_FLOAT_VERSION) x [x> Value_t()] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
+#IF(FP_FLOAT_VERSION) x [x> Value_t()] cRSqrt	-> [fp_rsqrt(x)]
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]                 # TEST 10/tan*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]                # TEST 10/tanh*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [ y!=Value_t(0) || x>=Value_t(0)] x cPow -> [fp_pow(y,x)] # TEST 10/pow*
@@ -181,7 +181,7 @@ IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x [x!=Value_t(0)] cLog2	-> [fp_log2(x
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSin	 		-> [fp_sin(x)]                 # TEST 10/sin*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSinh	 		-> [fp_sinh(x)]                # TEST 10/sinh*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cSqrt			-> [fp_sqrt(x)]
-#IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cRSqrt	-> [Value_t(1)/fp_sqrt(x)]
+#IF(FP_FLOAT_VERSION) x [x> Value_t(0)] cRSqrt	-> [fp_rsqrt(x)]
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTan	 		-> [fp_tan(x)]                 # TEST 10/tan*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) x cTanh	 		-> [fp_tanh(x)]                # TEST 10/tanh*
 IF(FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y x cPow			-> [fp_pow(y,x)]
@@ -329,7 +329,7 @@ IF(FP_FLOAT_VERSION) y [(y/x)==fp_const_rad_to_deg<Value_t>()] cMul x [x!=Value_
 IF(FP_FLOAT_VERSION) y [(y/x)==fp_const_deg_to_rad<Value_t>()] cMul x [x!=Value_t(0)] cDiv -> cRad
 IF(FP_FLOAT_VERSION) y cMul x [x!=Value_t(0)] cDiv 	-> [y/x] cMul
 
-IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul  # TEST 10/multodiv
+IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [fp_inv(x)] cMul  # TEST 10/multodiv
 
 #IF(FP_FLOAT_VERSION) y cExp  x cPow -> [y*x] cExp
 #IF(FP_FLOAT_VERSION) y cExp2 x cPow -> [y*x] cExp2
@@ -337,8 +337,8 @@ IF(FP_FLOAT_VERSION) x [x!=Value_t(0)] cDiv		-> [Value_t(1)/x] cMul  # TEST 10/m
 IF(FP_FLOAT_VERSION) y cPow  x cPow -> [y*x] cPow                      # TEST 10/ypowxpow (maybe?)
 
 IF(FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(0.5)]      cPow -> cSqrt            # TEST 10/powhalf
-IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(3)]  cPow -> cCbrt       # TEST 10/powthird
-IF(FP_FLOAT_VERSION) x [x==Value_t(1)/Value_t(-3)] cPow -> cCbrt cInv  # TEST 10/powminusthird
+IF(FP_FLOAT_VERSION) x [x==fp_inv(Value_t(3))]  cPow -> cCbrt       # TEST 10/powthird
+IF(FP_FLOAT_VERSION) x [x==fp_inv(Value_t(-3))] cPow -> cCbrt cInv  # TEST 10/powminusthird
 IF(FP_FLOAT_VERSION) x [x==fp_const_preciseDouble<Value_t>(-0.5)]     cPow -> cRSqrt           # TEST 10/powminushalf
 IF(FP_FLOAT_VERSION) x [x==Value_t(-1)]     cPow -> cInv               # TEST 10/powminusone
 
@@ -375,7 +375,7 @@ IF(!FP_COMPLEX_VERSION)                     y                 cAdd x A [IsCompar
 IF(!FP_COMPLEX_VERSION)                                       cNeg x A [IsComparisonOpcode(A)] -> [-x] {OppositeComparisonOpcode(A)}   # TEST 10/cmp_neg
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [y>Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] A                              # TEST 10/cmp_mulpos
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [y<Value_t(0)]  cMul x A [IsComparisonOpcode(A)] -> [x/y] {OppositeComparisonOpcode(A)}  # TEST 10/cmp_mulneg
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_pow(x,Value_t(1)/y)] A     # TEST 10/cmp_powy_*
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) y [y>Value_t(0)]  cPow [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_pow(x,fp_inv(y))] A     # TEST 10/cmp_powy_*
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                   cSqr [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> cAbs [fp_sqrt(x)] A   # TEST 10/cmp_sqr, 10/cmp_sqr_neg
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                  cExp [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_log(x)] A          # TEST 10/cmp_exp, 10/cmp_exp_neg
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION)                 cExp2 [x>Value_t(0)] x A [IsComparisonOpcode(A)] -> [fp_log2(x)] A         # TEST 10/cmp_exp2, 10/cmp_exp2_neg

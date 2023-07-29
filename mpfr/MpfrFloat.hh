@@ -191,6 +191,8 @@ public:
     static MpfrFloat ceil(const MpfrFloat&);
     static MpfrFloat floor(const MpfrFloat&);
     static MpfrFloat trunc(const MpfrFloat&);
+    static MpfrFloat rsqrt(const MpfrFloat&);
+    static MpfrFloat inv(const MpfrFloat&);
 
     static MpfrFloat parseString(const char* str, char** endptr);
 

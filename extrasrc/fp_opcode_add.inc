@@ -540,7 +540,7 @@ is available in the development package.
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
-					"[Value_t(1)/x]",
+					"[fp_inv(x)]",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Lbm;
@@ -1849,7 +1849,7 @@ Lbj: mData->mImmed.pop_back();
      mData->mByteCode.pop_back(); goto Lgd;
 Lbk: ImmedPtr[-1] = fp_less(x,y); goto Lap;
 Lbl: ImmedPtr[-1] = fp_lessOrEq(x,y); goto Lap;
-Lbm: ImmedPtr[0] = Value_t(1)/x; return;
+Lbm: ImmedPtr[0] = fp_inv(x); return;
 Lbo: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lgb;
 Lbp: ImmedPtr[-1] = fp_less(y,x); goto Lap;
@@ -2524,7 +2524,7 @@ goto TailCall_cRDiv;goto TailCall_cSub;
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
-					"[Value_t(1)/x]",
+					"[fp_inv(x)]",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Lbo;
@@ -3737,7 +3737,7 @@ Lbk: ImmedPtr[-1] = fp_less(x,y); goto Lap;
 Lbl: ImmedPtr[-1] = fp_lessOrEq(x,y); goto Lap;
 Lbm: ImmedPtr[0] = fp_imag(x); return;
 Lbn: mData->mImmed.push_back(Value_t()); goto Lff;
-Lbo: ImmedPtr[0] = Value_t(1)/x; return;
+Lbo: ImmedPtr[0] = fp_inv(x); return;
 Lbq: ImmedPtr[-1] = fp_less(y,x); goto Lap;
 Lbr: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lap;
 Lca: ImmedPtr[-1] = fp_max(x,y); goto Lap;
@@ -4728,7 +4728,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 				}
 				FP_TRACE_BYTECODE_OPTIMIZATION(332,
 					"x[x!=Value_t(0)] cDiv",
-					"[Value_t(1)/x] cMul",
+					"[fp_inv(x)] cMul",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Ldg;
@@ -5182,7 +5182,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
-					"[Value_t(1)/x]",
+					"[fp_inv(x)]",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Lfc;
@@ -6632,18 +6632,18 @@ goto TailCall_cReal;goto TailCall_cSub;
 					"    with x = " << x << "\n");
 				goto Lkd;
 			}
-			if(x==Value_t(1)/Value_t(3))
+			if(x==fp_inv(Value_t(3)))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(340,
-					"x[x==Value_t(1)/Value_t(3)] cPow",
+					"x[x==fp_inv(Value_t(3))] cPow",
 					"cCbrt",
 					"    with x = " << x << "\n");
 				goto Lke;
 			}
-			if(x==Value_t(1)/Value_t(-3))
+			if(x==fp_inv(Value_t(-3)))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(341,
-					"x[x==Value_t(1)/Value_t(-3)] cPow",
+					"x[x==fp_inv(Value_t(-3))] cPow",
 					"cCbrt cInv",
 					"    with x = " << x << "\n");
 				goto Lkf;
@@ -7370,7 +7370,7 @@ goto TailCall_cReal;goto TailCall_cSub;
 							{
 								FP_TRACE_BYTECODE_OPTIMIZATION(378,
 									"y[y>Value_t(0)] cPow[x>Value_t(0)] x A[IsComparisonOpcode(A)]",
-									"[fp_pow(x,Value_t(1)/y)] A",
+									"[fp_pow(x,fp_inv(y))] A",
 									"    with A = " << FP_TRACE_OPCODENAME(A)
 									    << ", x = " << x
 									    << ", y = " << y
@@ -7707,7 +7707,7 @@ Lor: opcode = cRad;
 Ldf: ImmedPtr[-1] = y/x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lnd;
-Ldg: ImmedPtr[0] = Value_t(1)/x; goto Lfd;
+Ldg: ImmedPtr[0] = fp_inv(x); goto Lfd;
 Ldh: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
@@ -7819,7 +7819,7 @@ Lfb: mData->mByteCode.pop_back();
 Lpk: opcode = cCot;
      FP_TRACE_BYTECODE_ADD(cCot);
      goto TailCall_cCot;
-Lfc: ImmedPtr[0] = Value_t(1)/x; return;
+Lfc: ImmedPtr[0] = fp_inv(x); return;
 Lfe: ImmedPtr[0] = fp_const_preciseDouble<Value_t>(0.5)/x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back();
@@ -8173,7 +8173,7 @@ Lqn: AddFunctionOpcode(OppositeComparisonOpcode(A)); return;
 Lml: ImmedPtr[0] = -x;
      ByteCodePtr[-1] = cImmed;
      mData->mByteCode.pop_back(); goto Lqn;
-Lmm: ImmedPtr[-1] = fp_pow(x,Value_t(1)/y); goto Lqk;
+Lmm: ImmedPtr[-1] = fp_pow(x,fp_inv(y)); goto Lqk;
 Lmn: ImmedPtr[0] = fp_asinh(x); goto Lqm;
 Lmo: mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
@@ -9010,7 +9010,7 @@ goto TailCall_cTrunc;
 				}
 				FP_TRACE_BYTECODE_OPTIMIZATION(332,
 					"x[x!=Value_t(0)] cDiv",
-					"[Value_t(1)/x] cMul",
+					"[fp_inv(x)] cMul",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Ldh;
@@ -9450,7 +9450,7 @@ goto TailCall_cTrunc;
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(99,
 					"x[x!=Value_t()] cInv",
-					"[Value_t(1)/x]",
+					"[fp_inv(x)]",
 					"    with x = " << x << "\n");
 				/* ByteCodePtr[0] = cImmed; */ // redundant, matches x @ 1
 				goto Ler;
@@ -10811,18 +10811,18 @@ goto TailCall_cTrunc;
 					"    with x = " << x << "\n");
 				goto Lji;
 			}
-			if(x==Value_t(1)/Value_t(3))
+			if(x==fp_inv(Value_t(3)))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(340,
-					"x[x==Value_t(1)/Value_t(3)] cPow",
+					"x[x==fp_inv(Value_t(3))] cPow",
 					"cCbrt",
 					"    with x = " << x << "\n");
 				goto Ljj;
 			}
-			if(x==Value_t(1)/Value_t(-3))
+			if(x==fp_inv(Value_t(-3)))
 			{
 				FP_TRACE_BYTECODE_OPTIMIZATION(341,
-					"x[x==Value_t(1)/Value_t(-3)] cPow",
+					"x[x==fp_inv(Value_t(-3))] cPow",
 					"cCbrt cInv",
 					"    with x = " << x << "\n");
 				goto Ljk;
@@ -11684,7 +11684,7 @@ Lnc: opcode = cRad;
 Ldg: ImmedPtr[-1] = y/x;
      mData->mImmed.pop_back();
      for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();} goto Lll;
-Ldh: ImmedPtr[0] = Value_t(1)/x; goto Lfa;
+Ldh: ImmedPtr[0] = fp_inv(x); goto Lfa;
 Ldi: for(unsigned tmp=2; tmp-->0; ) {mData->mByteCode.pop_back();}
      AddFunctionOpcode(A);
      AddFunctionOpcode(cMul);
@@ -11779,7 +11779,7 @@ Leq: mData->mByteCode.pop_back();
 Lnm: opcode = cCot;
      FP_TRACE_BYTECODE_ADD(cCot);
      goto TailCall_cCot;
-Ler: ImmedPtr[0] = Value_t(1)/x; return;
+Ler: ImmedPtr[0] = fp_inv(x); return;
 Lfb: ImmedPtr[-1] = fp_less(y,x); goto Lar;
 Lfc: ImmedPtr[-1] = fp_lessOrEq(y,x); goto Lar;
 Lfd: mData->mImmed.pop_back();

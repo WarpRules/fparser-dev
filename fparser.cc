@@ -328,27 +328,27 @@ namespace
     }
 }
 
-template<typename ValueT>
-ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
+template<typename Value_t>
+Value_t FUNCTIONPARSERTYPES::fp_pow(const Value_t& x, const Value_t& y)
 {
-    if(x == ValueT(1)) return ValueT(1);
+    if(x == Value_t(1)) return Value_t(1);
     // y is now zero or positive
     if(isLongInteger(y))
     {
         // Use fast binary exponentiation algorithm
-        if(y >= ValueT(0))
-            return fp_powi(x,              makeLongInteger(y));
+        if(y >= Value_t(0))
+            return fp_powi(x,         makeLongInteger(y));
         else
-            return ValueT(1) / fp_powi(x, -makeLongInteger(y));
+            return fp_inv(fp_powi(x, -makeLongInteger(y)));
     }
-    if(y >= ValueT(0))
+    if(y >= Value_t(0))
     {
         // y is now positive. Calculate using exp(log(x)*y).
-        if(x > ValueT(0)) return fp_pow_with_exp_log(x, y);
-        if(x == ValueT(0)) return ValueT(0);
+        if(x > Value_t(0)) return fp_pow_with_exp_log(x, y);
+        if(x == Value_t(0)) return Value_t(0);
         // At this point, y > 0.0 and x is known to be < 0.0,
         // because positive and zero cases are already handled.
-        if(!isInteger(y*ValueT(16)))
+        if(!isInteger(y*Value_t(16)))
             return -fp_pow_with_exp_log(-x, y);
         // ^This is not technically correct, but it allows
         // functions such as cbrt(x^5), that is, x^(5/3),
@@ -378,11 +378,11 @@ ValueT FUNCTIONPARSERTYPES::fp_pow(const ValueT& x, const ValueT& y)
     else
     {
         // y is negative. Utilize the x^y = 1/(x^-y) identity.
-        if(x > ValueT(0)) return fp_pow_with_exp_log(ValueT(1) / x, -y);
-        if(x < ValueT(0))
+        if(x > Value_t(0)) return fp_pow_with_exp_log(fp_inv(x), -y);
+        if(x < Value_t(0))
         {
-            if(!isInteger(y*ValueT(-16)))
-                return -fp_pow_with_exp_log(ValueT(-1) / x, -y);
+            if(!isInteger(y*Value_t(-16)))
+                return -fp_pow_with_exp_log(-fp_inv(x), -y);
             // ^ See comment above.
         }
         // Remaining case: 0.0 ^ negative number
@@ -2720,7 +2720,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                   const Value_t t = fp_tan(Stack[SP]);
                   if(t == Value_t(0))
                   { mData->mEvalErrorType=1; return Value_t(0); }
-                  Stack[SP] = Value_t(1)/t; break;
+                  Stack[SP] = fp_inv(t); break;
               }
 
           case   cCsc:
@@ -2728,7 +2728,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                   const Value_t s = fp_sin(Stack[SP]);
                   if(s == Value_t(0))
                   { mData->mEvalErrorType=1; return Value_t(0); }
-                  Stack[SP] = Value_t(1)/s; break;
+                  Stack[SP] = fp_inv(s); break;
               }
 
 
@@ -2806,7 +2806,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
                   const Value_t c = fp_cos(Stack[SP]);
                   if(c == Value_t(0))
                   { mData->mEvalErrorType=1; return Value_t(0); }
-                  Stack[SP] = Value_t(1)/c; break;
+                  Stack[SP] = fp_inv(c); break;
               }
 
           case   cSin: Stack[SP] = fp_sin(Stack[SP]); break;
@@ -2991,7 +2991,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cInv:
               if(Stack[SP] == Value_t(0))
               { mData->mEvalErrorType=1; return Value_t(0); }
-              Stack[SP] = Value_t(1)/Stack[SP];
+              Stack[SP] = fp_inv(Stack[SP]);
               break;
 
           case   cSqr:
@@ -3008,7 +3008,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case   cRSqrt:
               if(Stack[SP] == Value_t(0))
               { mData->mEvalErrorType=1; return Value_t(0); }
-              Stack[SP] = Value_t(1) / fp_sqrt(Stack[SP]); break;
+              Stack[SP] = fp_rsqrt(Stack[SP]); break;
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
           case   cReal: Stack[SP] = fp_real(Stack[SP]); break;

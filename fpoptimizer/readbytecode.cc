@@ -589,7 +589,7 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow);
                         break;
                     case cCbrt:
-                        sim.AddConst(Value_t(1) / Value_t(3));
+                        sim.AddConst(fp_inv(Value_t(3)));
                         sim.Eat(2, cPow);
                         break;
                     case cDeg:
