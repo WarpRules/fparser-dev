@@ -1,10 +1,5 @@
-//$DEP: func_arg
 //$DEP: util_fastcomplex
 //$DEP: help_polar_scalar
-
-    // Forward declaration of fp_abs() to break dependency loop
-    template<typename Value_t>
-    inline Value_t fp_abs(const Value_t& x);
 
     template<typename Value_t>
     inline Value_t fp_sqrt(const Value_t& x) { return std::sqrt(x); }
@@ -25,6 +20,6 @@
     {
         if(FP_ProbablyHasFastLibcComplex<T>::value)
             return std::sqrt(x);
-        return fp_polar_scalar<T> (fp_sqrt(fp_abs(x).real()), T(0.5)*fp_arg(x).real());
+        return fp_polar_scalar<T> (std::sqrt(std::abs(x)), T(0.5)*std::arg(x));
     }
 #endif

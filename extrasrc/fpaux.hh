@@ -161,32 +161,6 @@ namespace FUNCTIONPARSERTYPES
                 ? abs_d > Value_t()
                 : abs_d >= fp_const_preciseDouble<Value_t>(0.5);
     }
-#line 1 "extrasrc/functions/const_pi.hh"
-    template<typename Value_t>
-    inline Value_t fp_const_pi() // CONSTANT_PI
-    {
-        return Value_t(3.1415926535897932384626433832795028841971693993751L);
-    }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    template<>
-    inline MpfrFloat fp_const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
-  #endif
-#line 3 "extrasrc/functions/func_arg.hh"
-    // arg() for real numbers
-    template<typename Value_t>
-    inline Value_t fp_arg(const Value_t& x)
-    {
-        return x < Value_t() ? -fp_const_pi<Value_t>() : Value_t();
-    }
-
-  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
-    template<typename T>
-    inline std::complex<T> fp_arg(const std::complex<T>& x)
-    {
-        return std::arg(x);
-    }
-  #endif
 #line 1 "extrasrc/functions/func_cos.hh"
     template<typename Value_t>
     inline Value_t fp_cos(const Value_t& x) { return std::cos(x); }
@@ -333,11 +307,7 @@ namespace FUNCTIONPARSERTYPES
     template<> struct FP_ProbablyHasFastLibcComplex<double>: public std::true_type {};
     template<> struct FP_ProbablyHasFastLibcComplex<long double>: public std::true_type {};
   #endif
-#line 5 "extrasrc/functions/func_sqrt.hh"
-    // Forward declaration of fp_abs() to break dependency loop
-    template<typename Value_t>
-    inline Value_t fp_abs(const Value_t& x);
-
+#line 4 "extrasrc/functions/func_sqrt.hh"
     template<typename Value_t>
     inline Value_t fp_sqrt(const Value_t& x) { return std::sqrt(x); }
 
@@ -357,7 +327,7 @@ namespace FUNCTIONPARSERTYPES
     {
         if(FP_ProbablyHasFastLibcComplex<T>::value)
             return std::sqrt(x);
-        return fp_polar_scalar<T> (fp_sqrt(fp_abs(x).real()), T(0.5)*fp_arg(x).real());
+        return fp_polar_scalar<T> (std::sqrt(std::abs(x)), T(0.5)*std::arg(x));
     }
   #endif
 #line 3 "extrasrc/functions/func_hypot.hh"
@@ -529,6 +499,17 @@ namespace FUNCTIONPARSERTYPES
                 ? d != Value_t()
                 : fp_abs(d) >= fp_const_preciseDouble<Value_t>(0.5);
     }
+#line 1 "extrasrc/functions/const_pi.hh"
+    template<typename Value_t>
+    inline Value_t fp_const_pi() // CONSTANT_PI
+    {
+        return Value_t(3.1415926535897932384626433832795028841971693993751L);
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    template<>
+    inline MpfrFloat fp_const_pi<MpfrFloat>() { return MpfrFloat::const_pi(); }
+  #endif
 #line 2 "extrasrc/functions/const_d2r.hh"
     template<typename Value_t>
     const Value_t& fp_const_deg_to_rad() // CONSTANT_DR
@@ -622,6 +603,21 @@ namespace FUNCTIONPARSERTYPES
     {
         return Value_t(fp_absTruth(a) || fp_absTruth(b));
     }
+#line 3 "extrasrc/functions/func_arg.hh"
+    // arg() for real numbers
+    template<typename Value_t>
+    inline Value_t fp_arg(const Value_t& x)
+    {
+        return x < Value_t() ? -fp_const_pi<Value_t>() : Value_t();
+    }
+
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline std::complex<T> fp_arg(const std::complex<T>& x)
+    {
+        return std::arg(x);
+    }
+  #endif
 #line 4 "extrasrc/functions/func_log.hh"
     template<typename Value_t>
     inline Value_t fp_log(const Value_t& x) { return std::log(x); }
@@ -1000,6 +996,15 @@ namespace FUNCTIONPARSERTYPES
         //     fp_sinh(x.real())*fp_sin(x.imag()));
     }
   #endif
+#line 1 "extrasrc/functions/help_inv.hh"
+    template<typename Value_t>
+    inline Value_t fp_inv(const Value_t& x) { return Value_t(1) / x; }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_inv(const MpfrFloat& x) { return MpfrFloat::inv(x); }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/func_floor.hh"
     template<typename Value_t>
     inline Value_t fp_floor(const Value_t& x) { return std::floor(x); }
@@ -1118,21 +1123,42 @@ namespace FUNCTIONPARSERTYPES
 
     template<>
     inline bool isLongInteger(const long&) { return true; }
-#line 10 "extrasrc/functions/func_pow.hh"
-    // Forward declaration of fp_pow_base() to break dependency loop
+#line 8 "extrasrc/functions/help_pow_base.hh"
     template<typename Value_t>
-    inline Value_t fp_pow_base(const Value_t& x, const Value_t& y);
+    inline Value_t fp_pow_base(const Value_t& x, const Value_t& y)
+    {
+        return std::pow(x, y);
+    }
 
+    inline long fp_pow_base(const long&, const long&) { return 0; }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_pow_base(const MpfrFloat& x, const MpfrFloat& y)
+    {
+        return MpfrFloat::pow(x,y);
+    }
+  #endif
+
+  #ifdef FP_SUPPORT_GMP_INT_TYPE
+    inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
+  #endif
+#line 12 "extrasrc/functions/func_pow.hh"
     // Commented versions in fparser.cc
     template<typename Value_t>
     inline Value_t fp_pow_with_exp_log(const Value_t& x, const Value_t& y)
     {
+        // Exponentiation using exp(log(x)*y).
+        // See http://en.wikipedia.org/wiki/Exponentiation#Real_powers
+        // Requirements: x > 0.
         return fp_exp(fp_log(x) * y);
     }
 
     template<typename Value_t>
     inline Value_t fp_powi(Value_t x, unsigned long y)
     {
+        // Fast binary exponentiation algorithm
+        // See http://en.wikipedia.org/wiki/Exponentiation_by_squaring
+        // Requirements: y is non-negative integer.
         Value_t result(1);
         while(y != 0)
         {
@@ -1142,41 +1168,81 @@ namespace FUNCTIONPARSERTYPES
         return result;
     }
 
+    /* fp_pow() is a wrapper for std::pow()
+     * that produces an identical value for
+     * exp(1) ^ 2.0  (0x4000000000000000)
+     * as exp(2.0)   (0x4000000000000000)
+     * - std::pow() on x86_64
+     * produces 2.0  (0x3FFFFFFFFFFFFFFF) instead!
+     * See comments below for other special traits.
+     */
     template<typename Value_t>
     Value_t fp_pow(const Value_t& x, const Value_t& y)
     {
         if(x == Value_t(1)) return Value_t(1);
+        // y is now zero or positive
         if(isLongInteger(y))
         {
+            // Use fast binary exponentiation algorithm
             if(y >= Value_t(0))
-                return fp_powi(x, makeLongInteger(y));
+                return fp_powi(x,         makeLongInteger(y));
             else
-                return Value_t(1) / fp_powi(x, -makeLongInteger(y));
+                return fp_inv(fp_powi(x, -makeLongInteger(y)));
         }
         if(y >= Value_t(0))
         {
+            // y is now positive. Calculate using exp(log(x)*y).
             if(x > Value_t(0)) return fp_pow_with_exp_log(x, y);
             if(x == Value_t(0)) return Value_t(0);
-            if(!isInteger(y*Value_t(16)))
+            // At this point, y > 0.0 and x is known to be < 0.0,
+            // because positive and zero cases are already handled.
+            if(x < 0 && isLongInteger(fp_inv(y)))
                 return -fp_pow_with_exp_log(-x, y);
+            // ^This is not technically correct, but it allows
+            // functions such as cbrt(x^5), that is, x^(5/3),
+            // to be evaluated when x is negative.
+            // It is too complicated (and slow) to test whether y
+            // is a formed from a ratio of an integer to an odd integer.
+            // (And due to floating point inaccuracy, pointless too.)
+            // For example, x^1.30769230769... is
+            // actually x^(17/13), i.e. (x^17) ^ (1/13).
+            // (-5)^(17/13) gives us now -8.204227562330453.
+            // To see whether the result is right, we can test the given
+            // root: (-8.204227562330453)^13 gives us the value of (-5)^17,
+            // which proves that the expression was correct.
+            //
+            // The y*16 check prevents e.g. (-4)^(3/2) from being calculated,
+            // as it would confuse functioninfo when pow() returns no error
+            // but sqrt() does when the formula is converted into sqrt(x)*x.
+            //
+            // The errors in this approach are:
+            //     (-2)^sqrt(2) should produce NaN
+            //                  or actually sqrt(2)I + 2^sqrt(2),
+            //                  produces -(2^sqrt(2)) instead.
+            //                  (Impact: Neglible)
+            // Thus, at worst, we're changing a NaN (or complex)
+            // result into a negative real number result.
         }
         else
         {
+            // y is negative. Utilize the x^y = 1/(x^-y) identity.
             if(x > Value_t(0)) return fp_pow_with_exp_log(Value_t(1) / x, -y);
             if(x < Value_t(0))
             {
                 if(!isInteger(y*Value_t(-16)))
                     return -fp_pow_with_exp_log(Value_t(-1) / x, -y);
+                // ^ See comment above.
             }
+            // Remaining case: 0.0 ^ negative number
         }
+        // This is reached when:
+        //      x=0, and y<0
+        //      x<0, and y*16 is either positive or negative integer
+        // It is used for producing error values and as a safe fallback.
         return fp_pow_base(x, y);
     }
 
     inline long fp_pow(const long&, const long&) { return 0; }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_pow(const MpfrFloat& x, const MpfrFloat& y) { return MpfrFloat::pow(x, y); }
-  #endif
 
   #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_pow(const GmpInt&, const GmpInt&) { return 0; }
@@ -1641,15 +1707,6 @@ namespace FUNCTIONPARSERTYPES
     {
         return degrees * fp_const_deg_to_rad<Value_t>();
     }
-#line 1 "extrasrc/functions/help_inv.hh"
-    template<typename Value_t>
-    inline Value_t fp_inv(const Value_t& x) { return Value_t(1) / x; }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_inv(const MpfrFloat& x) { return MpfrFloat::inv(x); }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/help_make_imag.hh"
     template<typename Value_t>
     inline const Value_t fp_make_imag(const Value_t& ) // Imaginary 1. In real mode, always zero.
@@ -1663,25 +1720,6 @@ namespace FUNCTIONPARSERTYPES
     {
         return std::complex<T> ( T(), v.real() );
     }
-  #endif
-#line 3 "extrasrc/functions/help_pow_base.hh"
-    template<typename Value_t>
-    inline Value_t fp_pow_base(const Value_t& x, const Value_t& y)
-    {
-        return std::pow(x, y);
-    }
-
-    inline long fp_pow_base(const long&, const long&) { return 0; }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_pow_base(const MpfrFloat& x, const MpfrFloat& y)
-    {
-        return fp_pow(x,y);
-    }
-  #endif
-
-  #ifdef FP_SUPPORT_GMP_INT_TYPE
-    inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
   #endif
 #line 3 "extrasrc/functions/help_r2d.hh"
     template<typename Value_t>
@@ -1798,7 +1836,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1802 "extrasrc/fpaux.hh"
+#line 1840 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES
