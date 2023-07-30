@@ -302,14 +302,19 @@ cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 #cNEqual      [(cMul x <1>) (cMul x <2>)] : (cMul <1>) (cMul <2>)
 # ^ Note: This fails when x=0
 
-# Instead of x, generate (x^%)^(1/%) to further
-# delegate the possible responsibility of adding an abs() call.
-@R @F cLess        [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
-@R @F cLessOrEq    [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
-@R @F cGreater     [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
-@R @F cGreaterOrEq [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
-@R @F cEqual       [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
-@R @F cNEqual      [(cPow [x %@P]) &]  : (cPow [(cPow [x %]) /%]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+# FIXME: Do these rules only if POW() produces an actual number
+@R @F cLess        [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cLessOrEq    [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cGreater     [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cGreaterOrEq [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cEqual       [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cNEqual      [(cPow [x %@P@E]) &]  : (cAbs [x]) POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cLess        [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cLessOrEq    [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cGreater     [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cGreaterOrEq [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cEqual       [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
+@R @F cNEqual      [(cPow [x %@P@O]) &]  : x POW(& /%) # TEST 20/cmp*/pow_imm_*
 
 #@R @F cLess        [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*/powpow_imm_pospos
 #@R @F cLessOrEq    [(cPow [x %@P]) (cPow [y &@P])]  : (cPow [(cPow [x %]) /MIN(% &)]) (cPow [(cPow [y &]) /MIN(% &)]) # TEST 20/cmp*/powpow_imm_pospos
@@ -350,7 +355,7 @@ cMax x (cMin x <1>)  : x    # TEST 20/mixedminmax
 # We can do int(x) -> floor(x+.5) if positive, floor(x-.5) if negative
 # Also trunc(x) -> floor(x) if positive, ceil(x) if negative
 @F cInt [x@P] -> cFloor (cAdd x 0.5) 	        # TEST 50/62
-@F cInt [x@N] -> cFloor (cAdd x -0.5)           # TEST 50/62
+@F cInt [x@N] -> cCeil (cAdd x -0.5)            # TEST 50/62
 @F cTrunc [x@P] -> cFloor x                     # TEST 50/62
 @F cTrunc [x@N] -> cCeil x                      # TEST 50/62
 

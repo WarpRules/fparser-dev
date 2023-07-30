@@ -3,3 +3,11 @@
     {
         return d1>d2 ? d1 : d2;
     }
+
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline std::complex<T> fp_max(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        return fp_abs(x).real() > fp_abs(y).real() ? x : y;
+    }
+#endif

@@ -896,7 +896,7 @@ namespace FPoptimizer_CodeTree
             case cInv: // converted into cPow y -1
                 if(tree.GetParam(0).IsImmed()
                 && tree.GetParam(0).GetImmed() != Value_t(0))
-                    { tree.ReplaceWithImmed( fp_inv(tree.GetParam(0).GetImmed()) );
+                    { tree.ReplaceWithImmed( fp_inv<Value_t>(tree.GetParam(0).GetImmed()) );
                       goto do_return; }
                 // Note: Could use (mulgroup)^immed optimization from cPow
                 break;

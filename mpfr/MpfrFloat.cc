@@ -1122,7 +1122,7 @@ MpfrFloat MpfrFloat::rsqrt(const MpfrFloat& value)
 MpfrFloat MpfrFloat::inv(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_ui_div(retval.mData->mFloat, 1, value.mData->mFloat, GMP_RNDN);
+    mpfr_ui_div(retval.mData->mFloat, 1ul, value.mData->mFloat, GMP_RNDN);
     return retval;
 }
 

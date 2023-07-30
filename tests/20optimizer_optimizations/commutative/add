@@ -1,0 +1,5 @@
+T=d ld li f mf gi cf cd cld
+V=x,y
+R=-2,2,1
+F=(x+y) = (y+x)
+C=1

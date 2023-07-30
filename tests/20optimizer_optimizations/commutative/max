@@ -1,0 +1,5 @@
+T=d ld li f mf gi
+V=x,y
+R=-2,2,1
+F=max(x,y) = max(y,x)
+C=1

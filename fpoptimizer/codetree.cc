@@ -13,19 +13,24 @@ using namespace FUNCTIONPARSERTYPES;
 
 namespace
 {
+    template<typename T>
+    void OutFloatHex(std::ostream& o, const T& value)
+    {
+        o << '(' << std::hex << value << std::dec << ')';
+    }
 #ifdef DEBUG_SUBSTITUTIONS
     void OutFloatHex(std::ostream& o, double d)
     {
         union { double d; uint_least64_t h; } data;
         data.d = d;
-        o << "(" << std::hex << data.h << std::dec << ")";
+        o << '(' << std::hex << data.h << std::dec << ')';
     }
   #ifdef FP_SUPPORT_FLOAT_TYPE
     void OutFloatHex(std::ostream& o, float f)
     {
         union { float f; uint_least32_t h; } data;
         data.f = f;
-        o << "(" << std::hex << data.h << std::dec << ")";
+        o << '(' << std::hex << data.h << std::dec << ')';
     }
   #endif
   #ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
@@ -34,46 +39,9 @@ namespace
         union { long double ld;
                 struct { uint_least64_t a; unsigned short b; } s; } data;
         data.ld = ld;
-        o << "(" << std::hex << data.s.b << data.s.a << std::dec << ")";
+        o << '(' << std::hex << data.s.b << data.s.a << std::dec << ')';
     }
   #endif
-  #ifdef FP_SUPPORT_LONG_INT_TYPE
-    void OutFloatHex(std::ostream& o, long ld)
-    {
-        o << "(" << std::hex << ld << std::dec << ")";
-    }
-  #endif
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    void OutFloatHex(std::ostream& o, const MpfrFloat& p)
-    {
-        o << "(" << std::hex << p << std::dec << ")";
-    }
-  #endif
-  #ifdef FP_SUPPORT_GMP_INT_TYPE
-    void OutFloatHex(std::ostream& o, const GmpInt& p)
-    {
-        o << "(" << std::hex << p << std::dec << ")";
-    }
-  #endif
-  #ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-    void OutFloatHex(std::ostream& o, const std::complex<float>& p)
-    {
-        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
-    }
-  #endif
-  #ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-    void OutFloatHex(std::ostream& o, const std::complex<double>& p)
-    {
-        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
-    }
-  #endif
-  #ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-    void OutFloatHex(std::ostream& o, const std::complex<long double>& p)
-    {
-        o << "(" << std::hex << p.real() << ',' << p.imag() << std::dec << ")";
-    }
-  #endif
-
 #endif
 }
 

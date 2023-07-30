@@ -1,0 +1,5 @@
+T=d ld li f mf gi
+V=x,y
+R=-2,2,1
+F=min(x,y) = min(y,x)
+C=1

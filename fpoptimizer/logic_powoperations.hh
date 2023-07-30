@@ -78,18 +78,20 @@ namespace
 #endif
 
     template<typename Value_t>
-    Value_t Special_pow(Value_t a, Value_t b)
+    Value_t Special_pow(const Value_t& a, const Value_t& b)
     {
+        if(b == fp_inv(Value_t(2))) return fp_sqrt(a);
+        if(b == fp_inv(Value_t(3))) return fp_cbrt(a);
         return fp_pow(a, b);
     }
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    std::complex<T> Special_pow(std::complex<T> a, std::complex<T> b)
+    std::complex<T> Special_pow(const std::complex<T>& a, const std::complex<T>& b)
     {
         if(fp_imag(a) == T() && fp_imag(b) == T() && fp_real(b) > T())
         {
-            return std::complex<T>(fp_pow(a.real(), b.real()), T());
+            return std::complex<T>(Special_pow(a.real(), b.real()), T());
         }
         return fp_pow(a, b);
     }
@@ -109,6 +111,7 @@ namespace
             // So, if the exponent is 2, we do special calculation.
             Value_t a = tree.GetParam(0).GetImmed();
             Value_t b = tree.GetParam(1).GetImmed();
+            /* FIXME: Don't do pow if it results in nan/inf */
             Value_t const_value = Special_pow(a, b);
             tree.ReplaceWithImmed(const_value);
             return false;

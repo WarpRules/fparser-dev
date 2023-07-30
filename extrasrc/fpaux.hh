@@ -1331,15 +1331,6 @@ namespace FUNCTIONPARSERTYPES
         return x.imag();
     }
   #endif
-#line 1 "extrasrc/functions/func_inv.hh"
-    template<typename Value_t>
-    inline Value_t fp_inv(const Value_t& x) { return Value_t(1) / x; }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_inv(const MpfrFloat& x) { return MpfrFloat::inv(x); }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
 #line 4 "extrasrc/functions/func_log10.hh"
 /* log10() is in c++11 for BOTH real and complex */
   #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
@@ -1405,12 +1396,28 @@ namespace FUNCTIONPARSERTYPES
     {
         return d1>d2 ? d1 : d2;
     }
+
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline std::complex<T> fp_max(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        return fp_abs(x).real() > fp_abs(y).real() ? x : y;
+    }
+  #endif
 #line 1 "extrasrc/functions/func_min.hh"
     template<typename Value_t>
     inline const Value_t& fp_min(const Value_t& d1, const Value_t& d2)
     {
         return d1<d2 ? d1 : d2;
     }
+
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
+    template<typename T>
+    inline std::complex<T> fp_min(const std::complex<T>& x, const std::complex<T>& y)
+    {
+        return fp_abs(x).real() < fp_abs(y).real() ? x : y;
+    }
+  #endif
 #line 4 "extrasrc/functions/func_trunc.hh"
     template<typename Value_t>
     inline Value_t fp_trunc(const Value_t& x)
@@ -1504,15 +1511,6 @@ namespace FUNCTIONPARSERTYPES
         return x.real();
     }
   #endif
-#line 3 "extrasrc/functions/func_rsqrt.hh"
-    template<typename Value_t>
-    inline Value_t fp_rsqrt(const Value_t& x) { return Value_t(1) / fp_sqrt(x); }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_rsqrt(const MpfrFloat& x) { return MpfrFloat::rsqrt(x); }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
 #line 3 "extrasrc/functions/func_sinh.hh"
     template<typename Value_t>
     inline Value_t fp_sinh(const Value_t& x) { return std::sinh(x); }
@@ -1639,6 +1637,15 @@ namespace FUNCTIONPARSERTYPES
     {
         return degrees * fp_const_deg_to_rad<Value_t>();
     }
+#line 1 "extrasrc/functions/help_inv.hh"
+    template<typename Value_t>
+    inline Value_t fp_inv(const Value_t& x) { return Value_t(1) / x; }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_inv(const MpfrFloat& x) { return MpfrFloat::inv(x); }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/help_make_imag.hh"
     template<typename Value_t>
     inline const Value_t fp_make_imag(const Value_t& ) // Imaginary 1. In real mode, always zero.
@@ -1678,6 +1685,15 @@ namespace FUNCTIONPARSERTYPES
     {
         return radians * fp_const_rad_to_deg<Value_t>();
     }
+#line 3 "extrasrc/functions/help_rsqrt.hh"
+    template<typename Value_t>
+    inline Value_t fp_rsqrt(const Value_t& x) { return Value_t(1) / fp_sqrt(x); }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_rsqrt(const MpfrFloat& x) { return MpfrFloat::rsqrt(x); }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
 #line 6 "extrasrc/functions/test_iseven.hh"
     template<typename Value_t>
     inline bool isEvenInteger(const Value_t& value)
@@ -1778,7 +1794,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1782 "extrasrc/fpaux.hh"
+#line 1798 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES
