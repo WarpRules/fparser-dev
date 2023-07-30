@@ -91,7 +91,7 @@ namespace FPoptimizer_Grammar
                 }
                 break; }
         }
-        switch( ImmedConstraint_Value(constraints & ValueMask) )
+        switch( /*ImmedConstraint_Value*/(constraints & ValueMask) )
         {
             case ValueMask: break;
             case Value_AnyNum: break;
@@ -101,21 +101,21 @@ namespace FPoptimizer_Grammar
             case Value_NonInteger:o << "@F"; break;
             case Value_Logical:   o << "@L"; break;
         }
-        switch( ImmedConstraint_Sign(constraints & SignMask) )
+        switch( /*ImmedConstraint_Sign*/(constraints & SignMask) )
         {
             case SignMask: break;
             case Sign_AnySign: break;
             case Sign_Positive:   o << "@P"; break;
             case Sign_Negative:   o << "@N"; break;
         }
-        switch( ImmedConstraint_Oneness(constraints & OnenessMask) )
+        switch( /*ImmedConstraint_Oneness*/(constraints & OnenessMask) )
         {
             case OnenessMask: break;
             case Oneness_Any: break;
             case Oneness_One:     o << "@1"; break;
             case Oneness_NotOne:  o << "@M"; break;
         }
-        switch( ImmedConstraint_Constness(constraints & ConstnessMask) )
+        switch( /*ImmedConstraint_Constness*/(constraints & ConstnessMask) )
         {
             case ConstnessMask: break;
             case Constness_Const:
@@ -129,7 +129,7 @@ namespace FPoptimizer_Grammar
             case Constness_NotConst: o << "@V"; break;
             case Constness_Any: break;
         }
-        switch( ExpressionConstraint_Complexity(constraints & ComplexityMask) )
+        switch( /*ExpressionConstraint_Complexity*/(constraints & ComplexityMask) )
         {
             /*case ComplexityMask: break;*/
             case Complexity_Any: break;

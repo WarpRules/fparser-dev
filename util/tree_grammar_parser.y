@@ -67,14 +67,14 @@ namespace GrammarData
     {
     public:
         ParamMatchingType Type;
-        std::vector<ParamSpec*> Params;
-        unsigned RestHolderIndex;
-        unsigned RestHolderConstraints;
+        std::vector<ParamSpec*> Params{};
+        unsigned RestHolderIndex=0;
+        unsigned RestHolderConstraints=0;
 
     public:
-        MatchedParams()                    : Type(PositionalParams), Params(), RestHolderIndex(0) { }
-        MatchedParams(ParamMatchingType t) : Type(t),                Params(), RestHolderIndex(0) { }
-        MatchedParams(ParamSpec* p)        : Type(PositionalParams), Params(), RestHolderIndex(0) { Params.push_back(p); }
+        MatchedParams()                    : Type(PositionalParams) { }
+        MatchedParams(ParamMatchingType t) : Type(t)                { }
+        MatchedParams(ParamSpec* p)        : Type(PositionalParams) { Params.push_back(p); }
 
         MatchedParams* SetType(ParamMatchingType t) { Type=t; return this; }
         MatchedParams* AddParam(ParamSpec* p) { Params.push_back(p); return this; }
@@ -746,7 +746,7 @@ public:
         std::ostringstream result;
         const char* sep = "";
         static const char s[] = " | ";
-        switch( ImmedConstraint_Value( constraints & ValueMask ) )
+        switch( /*ImmedConstraint_Value*/( constraints & ValueMask ) )
         {
             case ValueMask: case Value_AnyNum: break;
             case Value_EvenInt: result << sep << "Value_EvenInt"; sep=s; break;
@@ -755,26 +755,26 @@ public:
             case Value_NonInteger: result << sep << "Value_NonInteger"; sep=s; break;
             case Value_Logical: result << sep << "Value_Logical"; sep=s; break;
         }
-        switch( ImmedConstraint_Sign( constraints & SignMask ) )
+        switch( /*ImmedConstraint_Sign*/( constraints & SignMask ) )
         {
             /*case SignMask:*/ case Sign_AnySign: break;
             case Sign_Positive: result << sep << "Sign_Positive"; sep=s; break;
             case Sign_Negative: result << sep << "Sign_Negative"; sep=s; break;
             case Sign_NoIdea:   result << sep << "Sign_NoIdea"; sep=s; break;
         }
-        switch( ImmedConstraint_Oneness( constraints & OnenessMask ) )
+        switch( /*ImmedConstraint_Oneness*/( constraints & OnenessMask ) )
         {
             case OnenessMask: case Oneness_Any: break;
             case Oneness_One: result << sep << "Oneness_One"; sep=s; break;
             case Oneness_NotOne: result << sep << "Oneness_NotOne"; sep=s; break;
         }
-        switch( ImmedConstraint_Constness( constraints & ConstnessMask ) )
+        switch( /*ImmedConstraint_Constness*/( constraints & ConstnessMask ) )
         {
             case ConstnessMask: case Oneness_Any: break;
             case Constness_Const: result << sep << "Constness_Const"; sep=s; break;
             case Constness_NotConst: result << sep << "Constness_NotConst"; sep=s; break;
         }
-        switch( ExpressionConstraint_Complexity( constraints & ComplexityMask ) )
+        switch( /*ExpressionConstraint_Complexity*/( constraints & ComplexityMask ) )
         {
             case Complexity_Any: /*case ComplexityMask:*/ break;
             case Complexity_Complex: result << sep << "Complexity_Complex"; sep=s; break;

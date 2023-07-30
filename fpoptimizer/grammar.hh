@@ -15,7 +15,7 @@ namespace FPoptimizer_CodeTree
 
 namespace FPoptimizer_Grammar
 {
-    enum ImmedConstraint_Value
+    enum ImmedConstraint//_Value
     {
         ValueMask = 0x07,
         Value_AnyNum     = 0x0, // any value
@@ -23,32 +23,28 @@ namespace FPoptimizer_Grammar
         Value_OddInt     = 0x2, // any odd integer (1,3, etc)
         Value_IsInteger  = 0x3, // any integer-value (excludes e.g. 0.2)
         Value_NonInteger = 0x4, // any non-integer (excludes e.g. 1 or 5)
-        Value_Logical    = 0x5  // a result of cNot,cNotNot,cAnd,cOr or comparators
-    }; // 3 bits
-    enum ImmedConstraint_Sign
-    {
+        Value_Logical    = 0x5, // a result of cNot,cNotNot,cAnd,cOr or comparators
+        // 3 bits
+    //enum ImmedConstraint_Sign
         SignMask  = 0x18,
         Sign_AnySign     = 0x00, // - or +
         Sign_Positive    = 0x08, // positive only
         Sign_Negative    = 0x10, // negative only
-        Sign_NoIdea      = 0x18  // where sign cannot be guessed
-    }; // 2 bits
-    enum ImmedConstraint_Oneness
-    {
+        Sign_NoIdea      = 0x18, // where sign cannot be guessed
+        // 2 bits
+    //enum ImmedConstraint_Oneness
         OnenessMask   = 0x60,
         Oneness_Any      = 0x00,
         Oneness_One      = 0x20, // +1 or -1
-        Oneness_NotOne   = 0x40  // anything but +1 or -1
-    }; // 2 bits
-    enum ImmedConstraint_Constness
-    {
+        Oneness_NotOne   = 0x40, // anything but +1 or -1
+        // 2 bits
+    //enum ImmedConstraint_Constness
         ConstnessMask = 0x180,
         Constness_Any    = 0x00,
         Constness_Const  = 0x80,
-        Constness_NotConst=0x100
-    }; // 2 bits
-    enum ExpressionConstraint_Complexity
-    {
+        Constness_NotConst=0x100,
+        // 2 bits
+    //enum ExpressionConstraint_Complexity
         ComplexityMask = 0x200,
         Complexity_Any     = 0x000,
         Complexity_Complex = 0x200
