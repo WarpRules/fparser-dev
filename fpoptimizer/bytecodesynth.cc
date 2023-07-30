@@ -659,6 +659,12 @@ namespace FPoptimizer_ByteCode
         }
     }
 }
+#undef mData
+#undef mImmed
+#undef mByteCode
+#undef mStackPtr
+#undef mStackSize
+#undef incStackPtr
 
 /* BEGIN_EXPLICIT_INSTANTATION */
 #include "instantiate.hh"
