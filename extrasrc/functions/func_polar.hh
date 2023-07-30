@@ -4,6 +4,7 @@
     inline Value_t fp_polar(const Value_t& x, const Value_t& y)
         { return x * fp_cos(y); }
 
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_polar(const std::complex<T>& x, const std::complex<T>& y)
     {
@@ -12,3 +13,4 @@
         //return std::polar(x.real(), y.real());
         //return x * (fp_cos(y) + (std::complex<T>(0,1) * fp_sin(y));
     }
+#endif

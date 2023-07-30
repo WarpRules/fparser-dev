@@ -1,3 +1,4 @@
+#ifdef FP_SUPPORT_COMPLEX_NUMBERS
     /* Less-than or greater-than operators are not technically defined
      * for Complex types. However, in fparser and its tool set, these
      * operators are widely required to be present.
@@ -49,3 +50,4 @@
         { return fp_realComplexScalarize(x) op fp_complexScalarize(y); }
     d( < ) d( <= ) d( > ) d( >= )
     #undef d
+#endif

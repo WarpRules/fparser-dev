@@ -87,6 +87,7 @@ namespace FUNCTIONPARSERTYPES
     inline MpfrFloat fp_const_preciseDouble<MpfrFloat>(double v) { return MpfrFloat::makeFromDouble(v); }
   #endif
 #line 1 "extrasrc/functions/util_complexcompare.hh"
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     /* Less-than or greater-than operators are not technically defined
      * for Complex types. However, in fparser and its tool set, these
      * operators are widely required to be present.
@@ -138,6 +139,7 @@ namespace FUNCTIONPARSERTYPES
         { return fp_realComplexScalarize(x) op fp_complexScalarize(y); }
     d( < ) d( <= ) d( > ) d( >= )
     #undef d
+  #endif
 #line 1 "extrasrc/functions/util_isinttype.hh"
 /* Everything is non-int except long and GmpInt */
 
@@ -1492,6 +1494,7 @@ namespace FUNCTIONPARSERTYPES
     inline Value_t fp_polar(const Value_t& x, const Value_t& y)
         { return x * fp_cos(y); }
 
+  #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
     inline std::complex<T> fp_polar(const std::complex<T>& x, const std::complex<T>& y)
     {
@@ -1500,6 +1503,7 @@ namespace FUNCTIONPARSERTYPES
         //return std::polar(x.real(), y.real());
         //return x * (fp_cos(y) + (std::complex<T>(0,1) * fp_sin(y));
     }
+  #endif
 #line 1 "extrasrc/functions/func_real.hh"
     template<typename Value_t>
     inline const Value_t& fp_real(const Value_t& x) { return x; }
@@ -1794,7 +1798,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1798 "extrasrc/fpaux.hh"
+#line 1802 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES
