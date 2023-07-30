@@ -2894,7 +2894,7 @@ int main(int argc, char* argv[])
                 std::string optstr = "-" #opt1; \
                 if(#opt2[0]) optstr += ", -" # opt2; \
                 std::cout << "    " << std::left << std::setw(18) << optstr \
-                          << ": Test " #type " datatype.\n"; \
+                          << "Test " #type " datatype.\n"; \
             } while(0);
             FP_DECLTYPES(o)
             #undef o
