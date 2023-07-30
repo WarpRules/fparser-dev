@@ -26,10 +26,72 @@ static const char* const kVersionNumber = "1.2.0.4";
 #include <sstream>
 #include <cassert>
 #include <algorithm>
+#include <functional>
 #include <cctype>
 
-#define SEPARATOR \
-"----------------------------------------------------------------------------"
+static const char SEPARATOR[] =
+"----------------------------------------------------------------------------";
+
+#define FP_DECLTYPES(o) \
+    o(float                     ,F,    f,      , "float") \
+    o(double                    ,D,    d,      , "double") \
+    o(long double               ,LD,   ld,     , "long double") \
+    o(long int                  ,LI,   li,     , "long int") \
+    o(MpfrFloat                 ,MPFR, mf, mpfr, ("MpfrFloat("+std::to_string(mantissaBits)+")").c_str()) \
+    o(GmpInt                    ,GI,   gi,     , "GmpInt") \
+    o(std::complex<float>       ,CF,   cf,     , "std::complex<float>") \
+    o(std::complex<double>      ,CD,   cd,     , "std::complex<double>") \
+    o(std::complex<long double> ,CLD,  cld,    , "std::complex<long double>")
+#ifndef FP_DISABLE_DOUBLE_TYPE
+    #define rt_D(ifyes, ifno) ifyes
+#else
+    #define rt_D(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    #define rt_F(ifyes, ifno) ifyes
+#else
+    #define rt_F(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    #define rt_LD(ifyes, ifno) ifyes
+#else
+    #define rt_LD(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    #define rt_LD(ifyes, ifno) ifyes
+#else
+    #define rt_LD(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_LONG_INT_TYPE
+    #define rt_LI(ifyes, ifno) ifyes
+#else
+    #define rt_LI(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_GMP_INT_TYPE
+    #define rt_GI(ifyes, ifno) ifyes
+#else
+    #define rt_GI(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    #define rt_MPFR(ifyes, ifno) ifyes
+#else
+    #define rt_MPFR(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    #define rt_CF(ifyes, ifno) ifyes
+#else
+    #define rt_CF(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    #define rt_CD(ifyes, ifno) ifyes
+#else
+    #define rt_CD(ifyes, ifno) ifno
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    #define rt_CLD(ifyes, ifno) ifyes
+#else
+    #define rt_CLD(ifyes, ifno) ifno
+#endif
 
 namespace
 {
@@ -74,34 +136,11 @@ namespace
 
     template<typename Value_t> Value_t epsilon() { return Value_t(1e-9); }
     template<> inline float epsilon<float>() { return 1e-5F; }
-    //template<> inline long epsilon<long>() { return 0; }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     template<> inline MpfrFloat epsilon<MpfrFloat>()
     { return MpfrFloat::someEpsilon(); }
 #endif
-
-//#ifdef FP_SUPPORT_GMP_INT_TYPE
-    //template<> inline GmpInt epsilon<GmpInt>() { return 0; }
-//#endif
-
-    template<typename Value_t>
-    Value_t Sqr(const Value_t* p)
-    {
-        return p[0]*p[0];
-    }
-
-    template<typename Value_t>
-    Value_t Sub(const Value_t* p)
-    {
-        return p[0]-p[1];
-    }
-
-    template<typename Value_t>
-    Value_t Value(const Value_t*)
-    {
-        return Value_t(10);
-    }
 
     template<typename Value_t>
     class InitializableParser: public FunctionParserBase<Value_t>
@@ -112,7 +151,6 @@ namespace
             assert(FunctionParserBase<Value_t>::Parse(function, vars) < 0);
         }
     };
-
 
     template<typename Value_t>
     class ParserWithConsts: public FunctionParserBase<Value_t>
@@ -128,9 +166,9 @@ namespace
             b::AddUnit("dozen", Value_t(12));
             b::AddUnit("dozens", Value_t(12));
 
-            b::AddFunction("sqr", Sqr<Value_t>, 1);
-            b::AddFunction("sub", Sub<Value_t>, 2);
-            b::AddFunction("value", Value<Value_t>, 0);
+            b::AddFunction("sqr",   [](const Value_t*p){ return p[0]*p[0];   }, 1);
+            b::AddFunction("sub",   [](const Value_t*p){ return p[0]-p[1];   }, 2);
+            b::AddFunction("value", [](const Value_t* ){ return Value_t{10}; }, 0);
 
             static InitializableParser<Value_t> SqrFun("x*x", "x");
             static InitializableParser<Value_t> SubFun("x-y", "x,y");
@@ -192,29 +230,7 @@ namespace
     std::string gFunctionString, gVarString;
     bool gUseDegrees = false;
 
-    template<typename Value_t>
-    inline void doParse()
-    {
-        ParserData<Value_t>::gParser.Parse
-            (gFunctionString, gVarString, gUseDegrees);
-    }
-
-    template<typename Value_t>
-    inline void doEval()
-    {
-        ParserData<Value_t>::gParser.Eval
-            (ParserData<Value_t>::gEvalParameters);
-    }
-
-    template<typename Value_t>
-    inline void doOptimize()
-    {
-        ParserData<Value_t>::gAuxParser = ParserData<Value_t>::gParser;
-        ParserData<Value_t>::gAuxParser.Optimize();
-    }
-
-    template<void(*Function)(), unsigned loopsPerUnit>
-    TimingInfo getTimingInfo()
+    TimingInfo getTimingInfo(unsigned loopsPerUnit, void(*Function)())
     {
         unsigned loopUnitsPerformed = 0;
         unsigned totalMilliseconds;
@@ -258,95 +274,75 @@ namespace
         gFunctionString = info.mFunctionString;
         ParserData<Value_t>::gEvalParameters = &info.mValidVarValues[0];
 
-        printTimingInfo();
-        info.mParseTiming =
-            getTimingInfo
-            <doParse<Value_t>, TimingConst<Value_t>::kParseLoopsPerUnit>();
+        using timings = TimingConst<Value_t>;
+        auto doParse = []
+        {
+            ParserData<Value_t>::gParser.Parse
+                (gFunctionString, gVarString, gUseDegrees);
+        };
+        auto doEval = []
+        {
+            ParserData<Value_t>::gParser.Eval
+                (ParserData<Value_t>::gEvalParameters);
+        };
+        auto doOptimize = []
+        {
+            ParserData<Value_t>::gAuxParser = ParserData<Value_t>::gParser;
+            ParserData<Value_t>::gAuxParser.Optimize();
+        };
 
         printTimingInfo();
-        info.mEvalTiming =
-            getTimingInfo
-            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
+        info.mParseTiming = getTimingInfo(timings::kParseLoopsPerUnit, doParse);
+
+        printTimingInfo();
+        info.mEvalTiming = getTimingInfo(timings::kEvalLoopsPerUnit, doEval);
 
         printTimingInfo();
         info.mOptimizeTiming = // optimizing a non-optimized func
-            getTimingInfo
-            <doOptimize<Value_t>,
-            TimingConst<Value_t>::kOptimizeLoopsPerUnit>();
+            getTimingInfo(timings::kOptimizeLoopsPerUnit, doOptimize);
 
         printTimingInfo();
         ParserData<Value_t>::gParser.Optimize();
         info.mDoubleOptimizeTiming = // optimizing an already-optimized func
-            getTimingInfo<doOptimize<Value_t>,
-            TimingConst<Value_t>::kOptimizeLoopsPerUnit>();
+            getTimingInfo(timings::kOptimizeLoopsPerUnit, doOptimize);
 
         printTimingInfo();
         info.mOptimizedEvalTiming = // evaluating an optimized func
-            getTimingInfo
-            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
+            getTimingInfo(timings::kEvalLoopsPerUnit, doEval);
 
         printTimingInfo();
         ParserData<Value_t>::gParser.Optimize();
         info.mDoubleOptimizedEvalTiming = // evaluating a twice-optimized func
-            getTimingInfo
-            <doEval<Value_t>, TimingConst<Value_t>::kEvalLoopsPerUnit>();
+            getTimingInfo(timings::kEvalLoopsPerUnit, doEval);
     }
 
     template<typename Value_t>
-    inline bool valueIsOk(Value_t value)
+    inline bool valueIsOk(const Value_t& value)
     {
+        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
+        {
+            return true;
+        }
         Value_t limit(10000000); limit *= limit; // Makes 1e14
-        return !(value < -limit || value > limit);
+        return FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_abs(value), limit);
     }
-
-    template<>
-    inline bool valueIsOk<long>(long) { return true; }
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline bool valueIsOk<GmpInt>(GmpInt) { return true; }
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-    template<>
-    inline bool valueIsOk<std::complex<double> > (std::complex<double>)
-    {
-        return true;
-    }
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-    template<>
-    inline bool valueIsOk<std::complex<float> > (std::complex<float>)
-    {
-        return true;
-    }
-#endif
-
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-    template<>
-    inline bool valueIsOk<std::complex<long double> > (std::complex<long double>)
-    {
-        return true;
-    }
-#endif
 
     template<typename Value_t>
     std::vector<Value_t> findImmeds(const std::vector<FunctionInfo<Value_t> >& functions)
     {
+        using parser = ParserWithConsts<Value_t>;
         std::vector<Value_t> result;
 
         for(std::size_t a=0; a<functions.size(); ++a)
         {
             const std::string& functionString = functions[a].mFunctionString;
-            const ParserWithConsts<Value_t>& parser = functions[a].mParser;
             const char* function = functionString.c_str();
             std::size_t len = functionString.size();
 
             for(std::size_t pos=0; pos<len; )
             {
                 std::pair<const char*, Value_t>
-                    literal = parser.ParseLiteral(function+pos);
+                    literal = parser::ParseLiteral(function+pos);
                 if(literal.first != (function+pos))
                 {
                     result.push_back(literal.second);
@@ -354,7 +350,7 @@ namespace
                     pos = literal.first - function;
                     continue;
                 }
-                unsigned identifier = parser.ParseIdentifier(function);
+                unsigned identifier = parser::ParseIdentifier(function);
 
                 unsigned skip_length = identifier & 0xFFFF;
                 if(skip_length == 0) skip_length = 1;
@@ -397,52 +393,36 @@ namespace
     template<typename Value_t>
     std::vector<Value_t> parseUserGivenVarValues(const std::string& str)
     {
+        using parser = ParserWithConsts<Value_t>;
         std::vector<Value_t> values;
-        std::istringstream is(str);
-        Value_t value;
-        while(is >> value) values.push_back(value);
-        return values;
-    }
 
-    template<typename Value_t>
-    std::vector<Value_t> parseUserGivenVarValuesFromSpecialClass
-    (const std::string& str)
-    {
-        std::vector<Value_t> values;
         const char* ptr = str.c_str();
-        char* endptr = 0;
         while(true)
         {
-            Value_t value = Value_t::parseString(ptr, &endptr);
-            if(endptr == ptr) break;
-            values.push_back(value);
-            ptr += endptr - ptr;
+            while(std::isspace(*ptr)) { ++ptr; }
+            std::pair<const char*, Value_t> literal = parser::ParseLiteral(ptr);
+            auto endptr = literal.first;
+            auto& value = literal.second;
+            if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
+            && (*endptr == '+' || *endptr == '-'))
+            {
+                ptr = endptr;
+                if(*ptr == '+') ++ptr;
+                std::pair<const char*, Value_t> literal2 = parser::ParseLiteral(ptr);
+                endptr = literal2.first;
+                value += literal2.second;
+            }
+            if(endptr == ptr || !endptr) break;
+
+            values.push_back( std::move(value) );
+            ptr = endptr;
         }
+
         return values;
     }
 
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    template<>
-    std::vector<MpfrFloat> parseUserGivenVarValues<MpfrFloat>
-    (const std::string& str)
-    {
-        return parseUserGivenVarValuesFromSpecialClass<MpfrFloat>(str);
-    }
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    std::vector<GmpInt> parseUserGivenVarValues<GmpInt>
-    (const std::string& str)
-    {
-        return parseUserGivenVarValuesFromSpecialClass<GmpInt>(str);
-    }
-#endif
-
-    template<typename Value_t
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
-     , bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
-#endif
+    template<typename Value_t,
+             bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
             >
     struct findValidVarValuesAux
     {
@@ -489,6 +469,8 @@ namespace
                     functions[i].mValidVarValues = userGivenVarValues;
                 ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
             }
+
+            if(gOnlySuppliedValues) return true;
 
             std::vector<std::size_t> immedCounter(varsAmount, 0);
 
@@ -601,6 +583,11 @@ namespace
                     userGivenVarValues.clear();
                 }
             }
+            if(userGivenVarValues.empty() && gOnlySuppliedValues)
+            {
+                std::cout << "Warning: -only option used without -varValues. Ignoring -only." << std::endl;
+                gOnlySuppliedValues = false;
+            }
 
             const unsigned valuesAmount = varsAmount*2;
 
@@ -621,6 +608,7 @@ namespace
                     functions[i].mValidVarValues = userGivenVarValues;
                 ParserData<Value_t>::gVarValues.push_back(userGivenVarValues);
             }
+            if(gOnlySuppliedValues) return true;
 
             std::vector<std::size_t> immedCounter(valuesAmount, 0);
 
@@ -710,9 +698,21 @@ namespace
     }
 
     template<typename Value_t>
-    inline Value_t scaledDiff(Value_t v1, Value_t v2)
+    inline Value_t scaledDiff(const Value_t& v1, const Value_t& v2)
     {
         using namespace FUNCTIONPARSERTYPES;
+        if(IsIntType<Value_t>::value)
+        {
+            return v2 - v1;
+        }
+        if(IsComplexType<Value_t>::value)
+        {
+            if(fp_imag(v1) != Value_t() || fp_imag(v2) != Value_t())
+            {
+                return fp_abs(scaledDiff(fp_real(v1), fp_real(v2)))
+                     + fp_abs(scaledDiff(fp_imag(v1), fp_imag(v2)));
+            }
+        }
         const Value_t scale =
             fp_pow(Value_t(10), fp_floor(fp_log10(fp_abs(v1))));
         const Value_t sv1 =
@@ -722,40 +722,16 @@ namespace
         return sv2 - sv1;
     }
 
-    template<>
-    inline long scaledDiff<long>(long v1, long v2)
-    {
-        return v2 - v1;
-    }
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline GmpInt scaledDiff<GmpInt>(GmpInt v1, GmpInt v2)
-    {
-        return v2 - v1;
-    }
-#endif
-
     template<typename Value_t>
-    inline bool notEqual(Value_t v1, Value_t v2)
+    inline bool notEqual(const Value_t& v1, const Value_t& v2)
     {
         using namespace FUNCTIONPARSERTYPES;
+        if(IsIntType<Value_t>::value)
+        {
+            return v1 != v2;
+        }
         return fp_abs(scaledDiff(v1, v2)) > epsilon<Value_t>();
     }
-
-    template<>
-    inline bool notEqual<long>(long v1, long v2)
-    {
-        return v1 != v2;
-    }
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    template<>
-    inline bool notEqual<GmpInt>(GmpInt v1, GmpInt v2)
-    {
-        return v1 != v2;
-    }
-#endif
 
     template<typename Value_t>
     bool compareFunctions(std::size_t function1Index,
@@ -1181,17 +1157,17 @@ namespace
             "FunctionParser functioninfo utility " << kVersionNumber <<
             "\n\nUsage: " << programName <<
             " [<options] <function1> [<function2> ...]\n\n"
-            "Options:\n"
-            "  -f                  : Use FunctionParser_f.\n"
-            "  -d                  : Use FunctionParser_d (default).\n"
-            "  -ld                 : Use FunctionParser_ld.\n"
-            "  -mpfr               : Use FunctionParser_mpfr.\n"
+            "Options:\n";
+        #define o(type, enumcode, opt1,opt2, verbosetype) do { \
+            std::string optstr = "-" #opt1; \
+            if(#opt2[0]) optstr += ", -" # opt2; \
+            std::cerr << "  " << std::left << std::setw(20) << optstr \
+                      << ": Use FunctionParser_" #opt1 ".\n"; \
+        } while(0);
+        FP_DECLTYPES(o)
+        #undef o
+        std::cerr <<
             "  -mpfr_bits <bits>   : MpfrFloat mantissa bits (default 80).\n"
-            "  -li                 : Use FunctionParser_li.\n"
-            "  -gi                 : Use FunctionParser_gmpint.\n"
-            "  -cd                 : Use FunctionParser_cd.\n"
-            "  -cf                 : Use FunctionParser_cf.\n"
-            "  -cld                : Use FunctionParser_cld.\n"
             "  -vars <string>      : Specify a var string.\n"
             "  -nt                 : No timing measurements.\n"
             "  -ntd                : No timing if functions differ.\n"
@@ -1288,7 +1264,11 @@ int main(int argc, char* argv[])
 {
     if(argc < 2) return printHelp(argv[0]);
 
-    enum ParserType { FP_D, FP_F, FP_LD, FP_MPFR, FP_LI, FP_GI, FP_CD, FP_CF, FP_CLD };
+    enum ParserType {
+        #define o(type, enumcode, opt1,opt2, verbosetype) FP_##enumcode,
+        FP_DECLTYPES(o)
+        #undef o
+    };
 
     std::vector<std::string> functionStrings;
     bool measureTimings = true, noTimingIfEqualityErrors = false;
@@ -1298,21 +1278,17 @@ int main(int argc, char* argv[])
 
     for(int i = 1; i < argc; ++i)
     {
-        if(std::strcmp(argv[i], "-f") == 0) parserType = FP_F;
-        else if(std::strcmp(argv[i], "-d") == 0) parserType = FP_D;
-        else if(std::strcmp(argv[i], "-ld") == 0) parserType = FP_LD;
-        else if(std::strcmp(argv[i], "-mpfr") == 0
-             || std::strcmp(argv[i], "-mf") == 0) parserType = FP_MPFR;
-        else if(std::strcmp(argv[i], "-li") == 0) parserType = FP_LI;
-        else if(std::strcmp(argv[i], "-gi") == 0) parserType = FP_GI;
-        else if(std::strcmp(argv[i], "-cd") == 0) parserType = FP_CD;
-        else if(std::strcmp(argv[i], "-cf") == 0) parserType = FP_CF;
-        else if(std::strcmp(argv[i], "-cld") == 0) parserType = FP_CLD;
-        else if(std::strcmp(argv[i], "-vars") == 0)
+        if(std::strcmp(argv[i], "-vars") == 0)
         {
             if(++i == argc) return printHelp(argv[0]);
             gVarString = argv[i];
         }
+        #define o(type, enumcode, opt1,opt2, verbosetype) \
+            else if(        std::strcmp(argv[i], "-" #opt1) == 0 \
+            || (#opt2[0] && std::strcmp(argv[i], "-" #opt2) == 0)) \
+                parserType = FP_##enumcode;
+        FP_DECLTYPES(o)
+        #undef o
         else if(std::strcmp(argv[i], "-nt") == 0)
             measureTimings = false;
         else if(std::strcmp(argv[i], "-v") == 0)
@@ -1350,113 +1326,25 @@ int main(int argc, char* argv[])
 
     if(functionStrings.empty()) return printHelp(argv[0]);
 
-    const char* notCompiledParserType = 0;
+    const char* notCompiledParserType = nullptr;
+
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    MpfrFloat::setDefaultMantissaBits(mantissaBits);
+#endif
 
     switch(parserType)
     {
-      case FP_D:
-#ifndef FP_DISABLE_DOUBLE_TYPE
-          return functionInfo<double>
-              ("double", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "double";
-          break;
-#endif
-
-      case FP_F:
-#ifdef FP_SUPPORT_FLOAT_TYPE
-          return functionInfo<float>
-              ("float", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "float";
-          break;
-#endif
-
-      case FP_LD:
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-          return functionInfo<long double>
-              ("long double", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "long double";
-          break;
-#endif
-
-      case FP_MPFR:
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-          {
-              MpfrFloat::setDefaultMantissaBits(mantissaBits);
-              std::ostringstream typeName;
-              typeName << "MpfrFloat(" << mantissaBits << ")";
-              return functionInfo<MpfrFloat>
-                  (typeName.str().c_str(), functionStrings,
-                   measureTimings, noTimingIfEqualityErrors,
-                   userGivenVarValues);
-          }
-#else
-          notCompiledParserType = "MpfrFloat";
-          break;
-#endif
-
-      case FP_LI:
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-          return functionInfo<long int>
-              ("long int", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "long int";
-          break;
-#endif
-
-      case FP_GI:
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-          return functionInfo<GmpInt>
-              ("GmpInt", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "GmpInt";
-          break;
-#endif
-
-      case FP_CD:
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-          return functionInfo<std::complex<double> >
-              ("std::complex<double>", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "std::complex<double>";
-          break;
-#endif
-
-      case FP_CF:
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-          return functionInfo<std::complex<float> >
-              ("std::complex<float>", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "std::complex<float>";
-          break;
-#endif
-
-      case FP_CLD:
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-          return functionInfo<std::complex<long double> >
-              ("std::complex<long double>", functionStrings,
-               measureTimings, noTimingIfEqualityErrors,
-               userGivenVarValues);
-#else
-          notCompiledParserType = "std::complex<long double>";
-          break;
-#endif
+    #define o(type, enumcode, opt1,opt2, verbosetype) \
+        case FP_##enumcode: \
+            rt_##enumcode(\
+                return functionInfo<type>(\
+                    verbosetype, functionStrings, \
+                    measureTimings, noTimingIfEqualityErrors, \
+                    userGivenVarValues) , \
+                notCompiledParserType = #type); \
+            break;
+        FP_DECLTYPES(o)
+    #undef o
     }
 
     if(notCompiledParserType)
