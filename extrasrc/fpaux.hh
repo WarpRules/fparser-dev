@@ -579,30 +579,6 @@ namespace FUNCTIONPARSERTYPES
         static const Value_t factor = Value_t(180) / fp_const_pi<Value_t>(); // to deg from rad
         return factor;
     }
-#line 3 "extrasrc/functions/func_absand.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absAnd(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_absTruth(a) && fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/func_absnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absNot(const Value_t& b)
-    {
-        return Value_t(!fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/func_absnotnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absNotNot(const Value_t& b)
-    {
-        return Value_t(fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/func_absor.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absOr(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_absTruth(a) || fp_absTruth(b));
-    }
 #line 3 "extrasrc/functions/func_arg.hh"
     // arg() for real numbers
     template<typename Value_t>
@@ -707,12 +683,6 @@ namespace FUNCTIONPARSERTYPES
   #ifdef FP_SUPPORT_GMP_INT_TYPE
     inline GmpInt fp_acosh(const GmpInt&) { return 0; }
   #endif
-#line 3 "extrasrc/functions/func_and.hh"
-    template<typename Value_t>
-    inline const Value_t fp_and(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_truth(a) && fp_truth(b));
-    }
 #line 4 "extrasrc/functions/func_asin.hh"
     template<typename Value_t>
     inline Value_t fp_asin(const Value_t& x) { return std::asin(x); }
@@ -1311,74 +1281,6 @@ namespace FUNCTIONPARSERTYPES
         return fp_polar_scalar<T> (fp_exp2(x.real()), x.imag()*fp_const_log2<T>());
     }
   #endif
-#line 1 "extrasrc/functions/func_fma.hh"
-    template<typename Value_t>
-    inline Value_t fp_fma(const Value_t& x, const Value_t& y,
-                          const Value_t& a)
-    {
-        return x*y+a;
-    }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_fma(const MpfrFloat& x, const MpfrFloat& y,
-                            const MpfrFloat& a)
-    {
-        return MpfrFloat::fma(x,y, a);
-    }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
-#line 1 "extrasrc/functions/func_fmma.hh"
-    template<typename Value_t>
-    inline Value_t fp_fmma(const Value_t& x, const Value_t& y,
-                           const Value_t& a, const Value_t& b)
-    {
-        return x*y+a*b;
-    }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_fmma(const MpfrFloat& x, const MpfrFloat& y,
-                             const MpfrFloat& a, const MpfrFloat& b)
-    {
-        return MpfrFloat::fmma(x,y, a,b);
-    }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
-#line 1 "extrasrc/functions/func_fmms.hh"
-    template<typename Value_t>
-    inline Value_t fp_fmms(const Value_t& x, const Value_t& y,
-                           const Value_t& a, const Value_t& b)
-    {
-        return x*y-a*b;
-    }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_fmms(const MpfrFloat& x, const MpfrFloat& y,
-                             const MpfrFloat& a, const MpfrFloat& b)
-    {
-        return MpfrFloat::fmms(x,y, a,b);
-    }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
-#line 1 "extrasrc/functions/func_fms.hh"
-    template<typename Value_t>
-    inline Value_t fp_fms(const Value_t& x, const Value_t& y,
-                          const Value_t& a)
-    {
-        return x*y-a;
-    }
-
-  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    inline MpfrFloat fp_fms(const MpfrFloat& x, const MpfrFloat& y,
-                            const MpfrFloat& a)
-    {
-        return MpfrFloat::fms(x,y, a);
-    }
-  #endif
-
-    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/func_imag.hh"
     template<typename Value_t>
     inline Value_t fp_imag(const Value_t& ) { return Value_t{}; }
@@ -1528,24 +1430,6 @@ namespace FUNCTIONPARSERTYPES
         return x - n * y;
     }
   #endif
-#line 3 "extrasrc/functions/func_not.hh"
-    template<typename Value_t>
-    inline const Value_t fp_not(const Value_t& b)
-    {
-        return Value_t(!fp_truth(b));
-    }
-#line 3 "extrasrc/functions/func_notnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_notNot(const Value_t& b)
-    {
-        return Value_t(fp_truth(b));
-    }
-#line 3 "extrasrc/functions/func_or.hh"
-    template<typename Value_t>
-    inline const Value_t fp_or(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_truth(a) || fp_truth(b));
-    }
 #line 3 "extrasrc/functions/func_polar.hh"
     template<typename Value_t> // Meaningless number for real numbers
     inline Value_t fp_polar(const Value_t& x, const Value_t& y)
@@ -1692,12 +1576,110 @@ namespace FUNCTIONPARSERTYPES
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
   #endif
+#line 3 "extrasrc/functions/help_absand.hh"
+    template<typename Value_t>
+    inline const Value_t fp_absAnd(const Value_t& a, const Value_t& b)
+    {
+        return Value_t(fp_absTruth(a) && fp_absTruth(b));
+    }
+#line 3 "extrasrc/functions/help_absnot.hh"
+    template<typename Value_t>
+    inline const Value_t fp_absNot(const Value_t& b)
+    {
+        return Value_t(!fp_absTruth(b));
+    }
+#line 3 "extrasrc/functions/help_absnotnot.hh"
+    template<typename Value_t>
+    inline const Value_t fp_absNotNot(const Value_t& b)
+    {
+        return Value_t(fp_absTruth(b));
+    }
+#line 3 "extrasrc/functions/help_absor.hh"
+    template<typename Value_t>
+    inline const Value_t fp_absOr(const Value_t& a, const Value_t& b)
+    {
+        return Value_t(fp_absTruth(a) || fp_absTruth(b));
+    }
+#line 3 "extrasrc/functions/help_and.hh"
+    template<typename Value_t>
+    inline const Value_t fp_and(const Value_t& a, const Value_t& b)
+    {
+        return Value_t(fp_truth(a) && fp_truth(b));
+    }
 #line 3 "extrasrc/functions/help_d2r.hh"
     template<typename Value_t>
     inline Value_t DegreesToRadians(const Value_t& degrees)
     {
         return degrees * fp_const_deg_to_rad<Value_t>();
     }
+#line 1 "extrasrc/functions/help_fma.hh"
+    template<typename Value_t>
+    inline Value_t fp_fma(const Value_t& x, const Value_t& y,
+                          const Value_t& a)
+    {
+        return x*y+a;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fma(const MpfrFloat& x, const MpfrFloat& y,
+                            const MpfrFloat& a)
+    {
+        return MpfrFloat::fma(x,y, a);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/help_fmma.hh"
+    template<typename Value_t>
+    inline Value_t fp_fmma(const Value_t& x, const Value_t& y,
+                           const Value_t& a, const Value_t& b)
+    {
+        return x*y+a*b;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fmma(const MpfrFloat& x, const MpfrFloat& y,
+                             const MpfrFloat& a, const MpfrFloat& b)
+    {
+        return MpfrFloat::fmma(x,y, a,b);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/help_fmms.hh"
+    template<typename Value_t>
+    inline Value_t fp_fmms(const Value_t& x, const Value_t& y,
+                           const Value_t& a, const Value_t& b)
+    {
+        return x*y-a*b;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fmms(const MpfrFloat& x, const MpfrFloat& y,
+                             const MpfrFloat& a, const MpfrFloat& b)
+    {
+        return MpfrFloat::fmms(x,y, a,b);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
+#line 1 "extrasrc/functions/help_fms.hh"
+    template<typename Value_t>
+    inline Value_t fp_fms(const Value_t& x, const Value_t& y,
+                          const Value_t& a)
+    {
+        return x*y-a;
+    }
+
+  #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    inline MpfrFloat fp_fms(const MpfrFloat& x, const MpfrFloat& y,
+                            const MpfrFloat& a)
+    {
+        return MpfrFloat::fms(x,y, a);
+    }
+  #endif
+
+    // long, mpfr and complex use the default implementation.
 #line 1 "extrasrc/functions/help_make_imag.hh"
     template<typename Value_t>
     inline const Value_t fp_make_imag(const Value_t& ) // Imaginary 1. In real mode, always zero.
@@ -1712,6 +1694,24 @@ namespace FUNCTIONPARSERTYPES
         return std::complex<T> ( T(), v.real() );
     }
   #endif
+#line 3 "extrasrc/functions/help_not.hh"
+    template<typename Value_t>
+    inline const Value_t fp_not(const Value_t& b)
+    {
+        return Value_t(!fp_truth(b));
+    }
+#line 3 "extrasrc/functions/help_notnot.hh"
+    template<typename Value_t>
+    inline const Value_t fp_notNot(const Value_t& b)
+    {
+        return Value_t(fp_truth(b));
+    }
+#line 3 "extrasrc/functions/help_or.hh"
+    template<typename Value_t>
+    inline const Value_t fp_or(const Value_t& a, const Value_t& b)
+    {
+        return Value_t(fp_truth(a) || fp_truth(b));
+    }
 #line 3 "extrasrc/functions/help_r2d.hh"
     template<typename Value_t>
     inline Value_t RadiansToDegrees(const Value_t& radians)

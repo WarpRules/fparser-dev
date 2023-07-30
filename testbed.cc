@@ -2738,20 +2738,18 @@ void printAvailableTests(std::vector<std::string>& tests)
             prev_test_prefix = "";
         else
         {
+            std::string path_prefix(tn, 0, p);
+            if(path_prefix != prev_test_prefix)
             {
-                std::string path_prefix(tn, 0, p);
-                if(path_prefix != prev_test_prefix)
+                if(counting_tests && count_length > 1)
                 {
-                    if(counting_tests && count_length > 1)
-                    {
-                        std::ostringstream tmp; tmp << "-" << last_count;
-                        std::cout << tmp.str(); column += tmp.str().size();
-                    }
-                    counting_tests = false;
-                    if(column) { std::cout << std::endl; column=0; }
-                    prev_test_prefix = path_prefix;
-                    std::cout << "    " << path_prefix << "/\n";
+                    std::ostringstream tmp; tmp << "-" << last_count;
+                    std::cout << tmp.str(); column += tmp.str().size();
                 }
+                counting_tests = false;
+                if(column) { std::cout << std::endl; column=0; }
+                prev_test_prefix = path_prefix;
+                std::cout << "    " << path_prefix << "/\n";
             }
             tn.erase(0, p+1);
         }
@@ -2855,11 +2853,8 @@ int main(int argc, char* argv[])
             while(i+1 < argc && argv[i+1][0] != '-')
             {
                 const char* t = argv[++i];
-                bool ok = false;
-                for(std::size_t a=0; a<tests.size(); ++a)
-                    if(WildMatch_Dirmask(t, tests[a].c_str()))
-                    { ok=true; break; }
-                if(!ok)
+                if(std::none_of(tests.begin(), tests.end(),
+                    [t](auto& e) { return WildMatch_Dirmask(t, e.c_str()); }))
                 {
                     std::cout << "No such test: " << t
                               << "\n\"testbed -tests help\" to list "
