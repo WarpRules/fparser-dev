@@ -1030,9 +1030,13 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline Value_t fp_int(const Value_t& x)
     {
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+        return std::round(x);
+  #else
         return x < Value_t()
         ? fp_ceil(x - fp_const_preciseDouble<Value_t>(0.5))
         : fp_floor(x + fp_const_preciseDouble<Value_t>(0.5));
+  #endif
     }
 
   #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
@@ -1054,7 +1058,11 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline long makeLongInteger(const Value_t& value)
     {
+  #ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+        return std::lround(value);
+  #else
         return (long) fp_int(value);
+  #endif
     }
 
     template<>
@@ -1090,7 +1098,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename Value_t>
     inline bool isInteger(const Value_t& value)
     {
-        return fp_equal(value, fp_floor(value));
+        return fp_equal(value, fp_int(value));
     }
 
     template<>
@@ -1143,7 +1151,6 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_pow_base(const GmpInt&, const GmpInt&) { return 0; }
   #endif
 #line 12 "extrasrc/functions/func_pow.hh"
-    // Commented versions in fparser.cc
     template<typename Value_t>
     inline Value_t fp_pow_with_exp_log(const Value_t& x, const Value_t& y)
     {
@@ -1194,50 +1201,34 @@ namespace FUNCTIONPARSERTYPES
             // y is now positive. Calculate using exp(log(x)*y).
             if(x > Value_t(0)) return fp_pow_with_exp_log(x, y);
             if(x == Value_t(0)) return Value_t(0);
-            // At this point, y > 0.0 and x is known to be < 0.0,
+            // At this point, y >= 0.0 and x is known to be < 0.0,
             // because positive and zero cases are already handled.
-            if(x < 0 && isLongInteger(fp_inv(y)))
-                return -fp_pow_with_exp_log(-x, y);
+            return -fp_pow_with_exp_log(-x, y);
             // ^This is not technically correct, but it allows
-            // functions such as cbrt(x^5), that is, x^(5/3),
-            // to be evaluated when x is negative.
-            // It is too complicated (and slow) to test whether y
-            // is a formed from a ratio of an integer to an odd integer.
-            // (And due to floating point inaccuracy, pointless too.)
-            // For example, x^1.30769230769... is
-            // actually x^(17/13), i.e. (x^17) ^ (1/13).
-            // (-5)^(17/13) gives us now -8.204227562330453.
-            // To see whether the result is right, we can test the given
-            // root: (-8.204227562330453)^13 gives us the value of (-5)^17,
-            // which proves that the expression was correct.
-            //
-            // The y*16 check prevents e.g. (-4)^(3/2) from being calculated,
-            // as it would confuse functioninfo when pow() returns no error
-            // but sqrt() does when the formula is converted into sqrt(x)*x.
-            //
-            // The errors in this approach are:
-            //     (-2)^sqrt(2) should produce NaN
-            //                  or actually sqrt(2)I + 2^sqrt(2),
-            //                  produces -(2^sqrt(2)) instead.
-            //                  (Impact: Neglible)
-            // Thus, at worst, we're changing a NaN (or complex)
-            // result into a negative real number result.
+            // custom roots such as x^(1/5) to work properly.
+            // We could test whether 1/y is an integer, but
+            // there is always a case where the integer check
+            // fails to work.
+            // For example, if mpfr precision is 96 bits and y = 1/7.
+            // There is no easy solution that works with every
+            // inverse of an integer.
+            // So we just blanket allow it for every y.
+            // This is wrong if 1/y is even (should produce an error),
+            // but how do we check it efficiently?
         }
         else
         {
             // y is negative. Utilize the x^y = 1/(x^-y) identity.
-            if(x > Value_t(0)) return fp_pow_with_exp_log(Value_t(1) / x, -y);
+            if(x > Value_t(0)) return fp_pow_with_exp_log(fp_inv(x), -y);
             if(x < Value_t(0))
             {
-                if(!isInteger(y*Value_t(-16)))
-                    return -fp_pow_with_exp_log(Value_t(-1) / x, -y);
+                return -fp_pow_with_exp_log(-fp_inv(x), -y);
                 // ^ See comment above.
             }
             // Remaining case: 0.0 ^ negative number
         }
         // This is reached when:
         //      x=0, and y<0
-        //      x<0, and y*16 is either positive or negative integer
         // It is used for producing error values and as a safe fallback.
         return fp_pow_base(x, y);
     }
@@ -1741,7 +1732,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool isEvenInteger(const Value_t& value)
     {
         const Value_t halfValue = value * fp_const_preciseDouble<Value_t>(0.5);
-        return fp_equal(halfValue, fp_floor(halfValue));
+        return fp_equal(halfValue, fp_int(halfValue));
     }
 
     template<>
@@ -1778,7 +1769,7 @@ namespace FUNCTIONPARSERTYPES
     inline bool isOddInteger(const Value_t& value)
     {
         const Value_t halfValue = (value + Value_t(1)) * fp_const_preciseDouble<Value_t>(0.5);
-        return fp_equal(halfValue, fp_floor(halfValue));
+        return fp_equal(halfValue, fp_int(halfValue));
     }
 
     template<>
@@ -1836,7 +1827,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1840 "extrasrc/fpaux.hh"
+#line 1831 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES

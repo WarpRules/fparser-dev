@@ -25,6 +25,7 @@ is available in the development package.
         : findName(mData->mNamePtrs,op,NameData<Value_t>::VARIABLE))
 
 # define FP_TRACE_BYTECODE_OPTIMIZATION(srcline,from,to,with) \
+    std::cout.precision(100); \
     std::cout << "Changing \"" from "\"\t(line " #srcline ")\n" \
                    "    into \"" to "\"\n" with << std::flush
 # define FP_TRACE_BYTECODE_DETAIL() \
@@ -42,6 +43,8 @@ is available in the development package.
 # define FP_TRACE_BYTECODE_ADD_IMMED(value) \
     std::cout << "Adding opcode: cImmed: " << value \
               << FP_TRACE_BYTECODE_DETAIL()
+# define FP_TRACE_BYTECODE_MOD_IMMED(value) \
+    std::cout << "Immed (" #value << ") changed to: " << value << std::endl
 # define FP_TRACE_BYTECODE_ADD_VAR(index) \
     std::cout << "Adding opcode: cVar" << index \
               << FP_TRACE_BYTECODE_DETAIL()
@@ -52,6 +55,7 @@ is available in the development package.
 # define FP_TRACE_BYTECODE_OPTIMIZATION(srcline,from,to,with)
 # define FP_TRACE_BYTECODE_ADD(opcode)
 # define FP_TRACE_BYTECODE_ADD_IMMED(value)
+# define FP_TRACE_BYTECODE_MOD_IMMED(value)
 # define FP_TRACE_BYTECODE_ADD_VAR(index)
 # define FP_TRACE_BYTECODE_RETRACT()
 #endif

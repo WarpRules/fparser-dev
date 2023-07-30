@@ -5,9 +5,13 @@
     template<typename Value_t>
     inline Value_t fp_int(const Value_t& x)
     {
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+        return std::round(x);
+#else
         return x < Value_t()
         ? fp_ceil(x - fp_const_preciseDouble<Value_t>(0.5))
         : fp_floor(x + fp_const_preciseDouble<Value_t>(0.5));
+#endif
     }
 
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE

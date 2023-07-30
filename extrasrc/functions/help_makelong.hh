@@ -3,7 +3,11 @@
     template<typename Value_t>
     inline long makeLongInteger(const Value_t& value)
     {
+#ifdef FP_SUPPORT_CPLUSPLUS11_MATH_FUNCS
+        return std::lround(value);
+#else
         return (long) fp_int(value);
+#endif
     }
 
     template<>

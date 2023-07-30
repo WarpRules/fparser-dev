@@ -92,14 +92,14 @@ class MpfrFloat::MpfrFloatDataContainer
                 *newnode = std::move(elem);
                 released_items.pop_back();
 
-                if(initToZero) mpfr_set_si(newnode->mFloat, 0, GMP_RNDN);
+                if(initToZero) mpfr_set_ui(newnode->mFloat, 0ul, mpfr_rnd_t::MPFR_RNDN);
                 return newnode;
             }
         }
 #endif
 
         mpfr_init2(newnode->mFloat, mDefaultPrecision);
-        if(initToZero) mpfr_set_si(newnode->mFloat, 0, GMP_RNDN);
+        if(initToZero) mpfr_set_ui(newnode->mFloat, 0ul, mpfr_rnd_t::MPFR_RNDN);
         return newnode;
     }
 
@@ -132,7 +132,7 @@ class MpfrFloat::MpfrFloatDataContainer
                     //for(auto& data: current_items)
                     //{
                     //    // FIXME: This call might not be atomic.
-                    //    mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+                    //    mpfr_prec_round(data.mFloat, bits, mpfr_rnd_t::MPFR_RNDN);
                     //}
 
                     /* Release the constants so that they will be recalculated
@@ -152,11 +152,11 @@ class MpfrFloat::MpfrFloatDataContainer
                     // If mpfr is thread-safe, then these operations are safe,
                     // even if another thread is using the same element.
                     //for(auto& data: current_items)
-                    //    mpfr_prec_round(data.mFloat, bits, GMP_RNDN);
+                    //    mpfr_prec_round(data.mFloat, bits, mpfr_rnd_t::MPFR_RNDN);
 
                     if(mConst_pi)
                     {
-                        mpfr_const_pi(mConst_pi->mFloat, GMP_RNDN);
+                        mpfr_const_pi(mConst_pi->mFloat, mpfr_rnd_t::MPFR_RNDN);
                     }
                     if(mConst_e)
                     {
@@ -164,7 +164,7 @@ class MpfrFloat::MpfrFloatDataContainer
                     }
                     if(mConst_log2)
                     {
-                        mpfr_const_log2(mConst_log2->mFloat, GMP_RNDN);
+                        mpfr_const_log2(mConst_log2->mFloat, mpfr_rnd_t::MPFR_RNDN);
                     }
                     if(mConst_log10)
                     {
@@ -200,7 +200,7 @@ class MpfrFloat::MpfrFloatDataContainer
     std::shared_ptr<MpfrFloatData> const_pi()
     {
         return make_const(mConst_pi, [](MpfrFloatData& data){
-            mpfr_const_pi(data.mFloat, GMP_RNDN);
+            mpfr_const_pi(data.mFloat, mpfr_rnd_t::MPFR_RNDN);
         });
     }
 
@@ -214,7 +214,7 @@ class MpfrFloat::MpfrFloatDataContainer
     std::shared_ptr<MpfrFloatData> const_log2()
     {
         return make_const(mConst_log2, [](MpfrFloatData& data){
-            mpfr_const_log2(data.mFloat, GMP_RNDN);
+            mpfr_const_log2(data.mFloat, mpfr_rnd_t::MPFR_RNDN);
         });
     }
 
@@ -260,31 +260,31 @@ private:
 
     void recalculate_e(MpfrFloatData& data)
     {
-        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
-        mpfr_exp(data.mFloat, data.mFloat, GMP_RNDN);
+        mpfr_set_ui(data.mFloat, 1ul, mpfr_rnd_t::MPFR_RNDN);
+        mpfr_exp(data.mFloat, data.mFloat, mpfr_rnd_t::MPFR_RNDN);
     }
 
     void recalculate_log10(MpfrFloatData& data)
     {
-        mpfr_set_si(data.mFloat, 10, GMP_RNDN);
-        mpfr_log(data.mFloat, data.mFloat, GMP_RNDN);
+        mpfr_set_ui(data.mFloat, 10ul, mpfr_rnd_t::MPFR_RNDN);
+        mpfr_log(data.mFloat, data.mFloat, mpfr_rnd_t::MPFR_RNDN);
     }
 
     void recalculate_log2inv(MpfrFloatData& data)
     {
-        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
-        mpfr_div(data.mFloat, data.mFloat, const_log2()->mFloat, GMP_RNDN);
+        mpfr_set_ui(data.mFloat, 1ul, mpfr_rnd_t::MPFR_RNDN);
+        mpfr_div(data.mFloat, data.mFloat, const_log2()->mFloat, mpfr_rnd_t::MPFR_RNDN);
     }
 
     void recalculate_log10inv(MpfrFloatData& data)
     {
-        mpfr_log10(data.mFloat, const_e()->mFloat, GMP_RNDN);
+        mpfr_log10(data.mFloat, const_e()->mFloat, mpfr_rnd_t::MPFR_RNDN);
     }
 
     void recalculateEpsilon(MpfrFloatData& data)
     {
-        mpfr_set_si(data.mFloat, 1, GMP_RNDN);
-        mpfr_div_2ui(data.mFloat, data.mFloat, mDefaultPrecision*7/8 - 1, GMP_RNDN);
+        mpfr_set_ui(data.mFloat, 1ul, mpfr_rnd_t::MPFR_RNDN);
+        mpfr_mul_2si(data.mFloat, data.mFloat, -long(mDefaultPrecision*7/8 - 1), mpfr_rnd_t::MPFR_RNDN);
     }
 
 #ifdef THREAD_SAFETY
@@ -327,7 +327,7 @@ void MpfrFloat::copyIfShared()
     if(mData.use_count() > 1)
     {
         auto newData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
-        mpfr_set(newData->mFloat, mData->mFloat, GMP_RNDN);
+        mpfr_set(newData->mFloat, mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
         std::swap(mData, newData);
         // old data goes out of scope, may get deallocated.
     }
@@ -382,7 +382,7 @@ MpfrFloat::MpfrFloat(double value)
     else
     {
         resetIfShared(false);
-        mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_d(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
 }
 
@@ -395,7 +395,7 @@ MpfrFloat::MpfrFloat(long double value)
     else
     {
         resetIfShared(false);
-        mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_ld(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
 }
 
@@ -408,7 +408,7 @@ MpfrFloat::MpfrFloat(long value)
     else
     {
         resetIfShared(false);
-        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_si(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
 }
 
@@ -421,14 +421,14 @@ MpfrFloat::MpfrFloat(int value)
     else
     {
         resetIfShared(false);
-        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_si(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
 }
 
 MpfrFloat::MpfrFloat(const char* value, char** endptr):
     mData(mpfrFloatDataContainer().allocateMpfrFloatData(false))
 {
-    mpfr_strtofr(mData->mFloat, value, endptr, 0, GMP_RNDN);
+    mpfr_strtofr(mData->mFloat, value, endptr, 0, mpfr_rnd_t::MPFR_RNDN);
 }
 
 MpfrFloat::~MpfrFloat()
@@ -473,7 +473,7 @@ MpfrFloat& MpfrFloat::operator=(double value)
     else
     {
         resetIfShared(true);
-        mpfr_set_d(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_d(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
     return *this;
 }
@@ -487,7 +487,7 @@ MpfrFloat& MpfrFloat::operator=(long double value)
     else
     {
         resetIfShared(true);
-        mpfr_set_ld(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_ld(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
     return *this;
 }
@@ -501,7 +501,7 @@ MpfrFloat& MpfrFloat::operator=(long value)
     else
     {
         resetIfShared(true);
-        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_si(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
     return *this;
 }
@@ -515,7 +515,7 @@ MpfrFloat& MpfrFloat::operator=(int value)
     else
     {
         resetIfShared(true);
-        mpfr_set_si(mData->mFloat, value, GMP_RNDN);
+        mpfr_set_si(mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     }
     return *this;
 }
@@ -529,7 +529,7 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
         mData = mpfrFloatDataContainer().allocateMpfrFloatData(false);
     }
 
-    mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
+    mpfr_set_str(mData->mFloat, value, 10, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 */
@@ -537,13 +537,13 @@ MpfrFloat& MpfrFloat::operator=(const char* value)
 void MpfrFloat::parseValue(const char* value)
 {
     resetIfShared(true);
-    mpfr_set_str(mData->mFloat, value, 10, GMP_RNDN);
+    mpfr_set_str(mData->mFloat, value, 10, mpfr_rnd_t::MPFR_RNDN);
 }
 
 void MpfrFloat::parseValue(const char* value, char** endptr)
 {
     resetIfShared(true);
-    mpfr_strtofr(mData->mFloat, value, endptr, 0, GMP_RNDN);
+    mpfr_strtofr(mData->mFloat, value, endptr, 0, mpfr_rnd_t::MPFR_RNDN);
 }
 
 
@@ -577,12 +577,12 @@ bool MpfrFloat::isInteger() const
 
 long MpfrFloat::toInt() const
 {
-    return mpfr_get_si(mData->mFloat, GMP_RNDN);
+    return mpfr_get_si(mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 double MpfrFloat::toDouble() const
 {
-    return mpfr_get_d(mData->mFloat, GMP_RNDN);
+    return mpfr_get_d(mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 
@@ -592,63 +592,63 @@ double MpfrFloat::toDouble() const
 MpfrFloat& MpfrFloat::operator+=(const MpfrFloat& rhs)
 {
     copyIfShared();
-    mpfr_add(mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_add(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator+=(double value)
 {
     copyIfShared();
-    mpfr_add_d(mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_add_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator-=(const MpfrFloat& rhs)
 {
     copyIfShared();
-    mpfr_sub(mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_sub(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator-=(double value)
 {
     copyIfShared();
-    mpfr_sub_d(mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_sub_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator*=(const MpfrFloat& rhs)
 {
     copyIfShared();
-    mpfr_mul(mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_mul(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator*=(double value)
 {
     copyIfShared();
-    mpfr_mul_d(mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_mul_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator/=(const MpfrFloat& rhs)
 {
     copyIfShared();
-    mpfr_div(mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_div(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator/=(double value)
 {
     copyIfShared();
-    mpfr_div_d(mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_div_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
 MpfrFloat& MpfrFloat::operator%=(const MpfrFloat& rhs)
 {
     copyIfShared();
-    mpfr_fmod(mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_fmod(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
@@ -659,13 +659,13 @@ MpfrFloat& MpfrFloat::operator%=(const MpfrFloat& rhs)
 void MpfrFloat::negate()
 {
     copyIfShared();
-    mpfr_neg(mData->mFloat, mData->mFloat, GMP_RNDN);
+    mpfr_neg(mData->mFloat, mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 void MpfrFloat::abs()
 {
     copyIfShared();
-    mpfr_abs(mData->mFloat, mData->mFloat, GMP_RNDN);
+    mpfr_abs(mData->mFloat, mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 
@@ -675,70 +675,70 @@ void MpfrFloat::abs()
 MpfrFloat MpfrFloat::operator+(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_add(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_add(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator+(double value) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_add_d(retval.mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_add_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator-(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_sub(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_sub(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator-(double value) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_sub_d(retval.mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_sub_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator*(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_mul(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_mul(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator*(double value) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_mul_d(retval.mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_mul_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator/(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_div(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_div(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator/(double value) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_div_d(retval.mData->mFloat, mData->mFloat, value, GMP_RNDN);
+    mpfr_div_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator%(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_fmod(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_fmod(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::operator-() const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_neg(retval.mData->mFloat, mData->mFloat, GMP_RNDN);
+    mpfr_neg(retval.mData->mFloat, mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -815,14 +815,14 @@ bool MpfrFloat::operator!=(long value) const
 MpfrFloat operator+(long lhs, const MpfrFloat& rhs)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_add_si(retval.mData->mFloat, rhs.mData->mFloat, lhs, GMP_RNDN);
+    mpfr_add_si(retval.mData->mFloat, rhs.mData->mFloat, lhs, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat operator-(long lhs, const MpfrFloat& rhs)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_si_sub(retval.mData->mFloat, lhs, rhs.mData->mFloat, GMP_RNDN);
+    mpfr_si_sub(retval.mData->mFloat, lhs, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -853,84 +853,84 @@ std::ostream& operator<<(std::ostream& os, const MpfrFloat& value)
 MpfrFloat MpfrFloat::log(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_log(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_log(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::log2(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_log2(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_log2(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::log10(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_log10(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_log10(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::exp(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_exp(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_exp(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::exp2(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_exp2(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_exp2(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::exp10(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_exp10(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_exp10(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::cos(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_cos(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_cos(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::sin(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_sin(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_sin(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::tan(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_tan(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_tan(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::sec(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_sec(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_sec(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::csc(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_csc(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_csc(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::cot(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_cot(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_cot(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -941,7 +941,7 @@ void MpfrFloat::sincos(const MpfrFloat& value,
     sin.copyIfShared();
     cos.copyIfShared();
     mpfr_sin_cos
-        (sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+        (sin.mData->mFloat, cos.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 void MpfrFloat::sinhcosh(const MpfrFloat& value,
@@ -951,27 +951,27 @@ void MpfrFloat::sinhcosh(const MpfrFloat& value,
     sinh.copyIfShared();
     cosh.copyIfShared();
     mpfr_sinh_cosh
-        (sinh.mData->mFloat, cosh.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+        (sinh.mData->mFloat, cosh.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
 }
 
 MpfrFloat MpfrFloat::acos(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_acos(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_acos(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::asin(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_asin(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_asin(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::atan(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_atan(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_atan(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -979,7 +979,7 @@ MpfrFloat MpfrFloat::atan2(const MpfrFloat& value1, const MpfrFloat& value2)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_atan2(retval.mData->mFloat,
-               value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
+               value1.mData->mFloat, value2.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -987,70 +987,70 @@ MpfrFloat MpfrFloat::hypot(const MpfrFloat& value1, const MpfrFloat& value2)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_hypot(retval.mData->mFloat,
-               value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
+               value1.mData->mFloat, value2.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::cosh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_cosh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_cosh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::sinh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_sinh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_sinh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::tanh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_tanh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_tanh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::acosh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_acosh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_acosh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::asinh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_asinh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_asinh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::atanh(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_atanh(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_atanh(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::sqrt(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_sqrt(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_sqrt(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::cbrt(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_cbrt(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_cbrt(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::root(const MpfrFloat& value, unsigned long root)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_rootn_ui(retval.mData->mFloat, value.mData->mFloat, root, GMP_RNDN);
+    mpfr_rootn_ui(retval.mData->mFloat, value.mData->mFloat, root, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1058,21 +1058,21 @@ MpfrFloat MpfrFloat::pow(const MpfrFloat& value1, const MpfrFloat& value2)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_pow(retval.mData->mFloat,
-             value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
+             value1.mData->mFloat, value2.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::pow(const MpfrFloat& value, long exponent)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_pow_si(retval.mData->mFloat, value.mData->mFloat, exponent, GMP_RNDN);
+    mpfr_pow_si(retval.mData->mFloat, value.mData->mFloat, exponent, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::abs(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_abs(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_abs(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1080,7 +1080,7 @@ MpfrFloat MpfrFloat::dim(const MpfrFloat& value1, const MpfrFloat& value2)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_dim(retval.mData->mFloat,
-             value1.mData->mFloat, value2.mData->mFloat, GMP_RNDN);
+             value1.mData->mFloat, value2.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1115,14 +1115,14 @@ MpfrFloat MpfrFloat::trunc(const MpfrFloat& value)
 MpfrFloat MpfrFloat::rsqrt(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_rec_sqrt(retval.mData->mFloat, value.mData->mFloat, GMP_RNDN);
+    mpfr_rec_sqrt(retval.mData->mFloat, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::inv(const MpfrFloat& value)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_ui_div(retval.mData->mFloat, 1ul, value.mData->mFloat, GMP_RNDN);
+    mpfr_ui_div(retval.mData->mFloat, 1ul, value.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1132,7 +1132,7 @@ MpfrFloat MpfrFloat::fma(const MpfrFloat& value1, const MpfrFloat& value2,
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_fma(retval.mData->mFloat,
              value1.mData->mFloat, value2.mData->mFloat,
-             value3.mData->mFloat, GMP_RNDN);
+             value3.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1142,7 +1142,7 @@ MpfrFloat MpfrFloat::fms(const MpfrFloat& value1, const MpfrFloat& value2,
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_fms(retval.mData->mFloat,
              value1.mData->mFloat, value2.mData->mFloat,
-             value3.mData->mFloat, GMP_RNDN);
+             value3.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1152,7 +1152,7 @@ MpfrFloat MpfrFloat::fmma(const MpfrFloat& value1, const MpfrFloat& value2,
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_fmma(retval.mData->mFloat,
               value1.mData->mFloat, value2.mData->mFloat,
-              value3.mData->mFloat, value4.mData->mFloat, GMP_RNDN);
+              value3.mData->mFloat, value4.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -1162,14 +1162,14 @@ MpfrFloat MpfrFloat::fmms(const MpfrFloat& value1, const MpfrFloat& value2,
     MpfrFloat retval(MpfrFloat::kNoInitialization);
     mpfr_fmms(retval.mData->mFloat,
               value1.mData->mFloat, value2.mData->mFloat,
-              value3.mData->mFloat, value4.mData->mFloat, GMP_RNDN);
+              value3.mData->mFloat, value4.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
 MpfrFloat MpfrFloat::parseString(const char* str, char** endptr)
 {
     MpfrFloat retval(MpfrFloat::kNoInitialization);
-    mpfr_strtofr(retval.mData->mFloat, str, endptr, 0, GMP_RNDN);
+    mpfr_strtofr(retval.mData->mFloat, str, endptr, 0, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 

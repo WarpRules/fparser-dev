@@ -602,7 +602,10 @@ namespace
                     else
                     {
                         if(rep_v_used || true)
+                        {
+                            OutLine(Out) << "FP_TRACE_BYTECODE_MOD_IMMED(" << opcode << ");";
                             OutLine(Out)  << Iexpr(i_offset-1) << " = " << opcode << ";";
+                        }
                         else
                         {
                             OutLine(Out)  << "rep_v = " << opcode << ";";

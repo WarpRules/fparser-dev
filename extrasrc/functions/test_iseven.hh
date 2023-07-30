@@ -7,7 +7,7 @@
     inline bool isEvenInteger(const Value_t& value)
     {
         const Value_t halfValue = value * fp_const_preciseDouble<Value_t>(0.5);
-        return fp_equal(halfValue, fp_floor(halfValue));
+        return fp_equal(halfValue, fp_int(halfValue));
     }
 
     template<>

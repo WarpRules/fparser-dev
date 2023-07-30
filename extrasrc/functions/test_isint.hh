@@ -4,7 +4,7 @@
     template<typename Value_t>
     inline bool isInteger(const Value_t& value)
     {
-        return fp_equal(value, fp_floor(value));
+        return fp_equal(value, fp_int(value));
     }
 
     template<>
