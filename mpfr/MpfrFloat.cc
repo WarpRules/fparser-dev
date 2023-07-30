@@ -596,24 +596,10 @@ MpfrFloat& MpfrFloat::operator+=(const MpfrFloat& rhs)
     return *this;
 }
 
-MpfrFloat& MpfrFloat::operator+=(double value)
-{
-    copyIfShared();
-    mpfr_add_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
-    return *this;
-}
-
 MpfrFloat& MpfrFloat::operator-=(const MpfrFloat& rhs)
 {
     copyIfShared();
     mpfr_sub(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
-    return *this;
-}
-
-MpfrFloat& MpfrFloat::operator-=(double value)
-{
-    copyIfShared();
-    mpfr_sub_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
@@ -624,17 +610,38 @@ MpfrFloat& MpfrFloat::operator*=(const MpfrFloat& rhs)
     return *this;
 }
 
-MpfrFloat& MpfrFloat::operator*=(double value)
-{
-    copyIfShared();
-    mpfr_mul_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
-    return *this;
-}
-
 MpfrFloat& MpfrFloat::operator/=(const MpfrFloat& rhs)
 {
     copyIfShared();
     mpfr_div(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator%=(const MpfrFloat& rhs)
+{
+    copyIfShared();
+    mpfr_fmod(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator+=(double value)
+{
+    copyIfShared();
+    mpfr_add_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator-=(double value)
+{
+    copyIfShared();
+    mpfr_sub_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator*=(double value)
+{
+    copyIfShared();
+    mpfr_mul_d(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
@@ -645,10 +652,31 @@ MpfrFloat& MpfrFloat::operator/=(double value)
     return *this;
 }
 
-MpfrFloat& MpfrFloat::operator%=(const MpfrFloat& rhs)
+MpfrFloat& MpfrFloat::operator+=(long value)
 {
     copyIfShared();
-    mpfr_fmod(mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    mpfr_add_si(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator-=(long value)
+{
+    copyIfShared();
+    mpfr_sub_si(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator*=(long value)
+{
+    copyIfShared();
+    mpfr_mul_si(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return *this;
+}
+
+MpfrFloat& MpfrFloat::operator/=(long value)
+{
+    copyIfShared();
+    mpfr_div_si(mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return *this;
 }
 
@@ -679,24 +707,10 @@ MpfrFloat MpfrFloat::operator+(const MpfrFloat& rhs) const
     return retval;
 }
 
-MpfrFloat MpfrFloat::operator+(double value) const
-{
-    MpfrFloat retval(kNoInitialization);
-    mpfr_add_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
-    return retval;
-}
-
 MpfrFloat MpfrFloat::operator-(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
     mpfr_sub(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
-    return retval;
-}
-
-MpfrFloat MpfrFloat::operator-(double value) const
-{
-    MpfrFloat retval(kNoInitialization);
-    mpfr_sub_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -707,17 +721,38 @@ MpfrFloat MpfrFloat::operator*(const MpfrFloat& rhs) const
     return retval;
 }
 
-MpfrFloat MpfrFloat::operator*(double value) const
-{
-    MpfrFloat retval(kNoInitialization);
-    mpfr_mul_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
-    return retval;
-}
-
 MpfrFloat MpfrFloat::operator/(const MpfrFloat& rhs) const
 {
     MpfrFloat retval(kNoInitialization);
     mpfr_div(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator%(const MpfrFloat& rhs) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_fmod(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator+(double value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_add_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator-(double value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_sub_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator*(double value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_mul_d(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 
@@ -728,10 +763,31 @@ MpfrFloat MpfrFloat::operator/(double value) const
     return retval;
 }
 
-MpfrFloat MpfrFloat::operator%(const MpfrFloat& rhs) const
+MpfrFloat MpfrFloat::operator+(long value) const
 {
     MpfrFloat retval(kNoInitialization);
-    mpfr_fmod(retval.mData->mFloat, mData->mFloat, rhs.mData->mFloat, mpfr_rnd_t::MPFR_RNDN);
+    mpfr_add_si(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator-(long value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_sub_si(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator*(long value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_mul_si(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
+    return retval;
+}
+
+MpfrFloat MpfrFloat::operator/(long value) const
+{
+    MpfrFloat retval(kNoInitialization);
+    mpfr_div_si(retval.mData->mFloat, mData->mFloat, value, mpfr_rnd_t::MPFR_RNDN);
     return retval;
 }
 

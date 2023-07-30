@@ -2030,7 +2030,7 @@ bool runRegressionTests(unsigned n_threads,
     // Test repeated constant addition
     // -------------------------------
    {using namespace FUNCTIONPARSERTYPES; // For a possible custom < operator
-    for(Value_t value = 1; value <= Value_t(20); value += 1)
+    for(Value_t value = 1; value <= Value_t(20); value += 1l)
     {
         Value_t value2 = value;
         if(value != value2)

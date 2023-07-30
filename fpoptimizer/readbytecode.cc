@@ -45,7 +45,7 @@ namespace
             if(ByteCode[IP] == opcodes.opcode_square)
             {
                 if(!isInteger(result)) break;
-                result *= 2;
+                result *= 2l;
                 ++IP;
                 continue;
             }

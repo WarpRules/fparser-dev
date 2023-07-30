@@ -96,30 +96,43 @@ public:
     double toDouble() const;
 
     MpfrFloat& operator+=(const MpfrFloat&);
-    MpfrFloat& operator+=(double);
     MpfrFloat& operator-=(const MpfrFloat&);
-    MpfrFloat& operator-=(double);
     MpfrFloat& operator*=(const MpfrFloat&);
-    MpfrFloat& operator*=(double);
     MpfrFloat& operator/=(const MpfrFloat&);
-    MpfrFloat& operator/=(double);
     MpfrFloat& operator%=(const MpfrFloat&);
 
     void negate();
     void abs();
 
     MpfrFloat operator+(const MpfrFloat&) const;
-    MpfrFloat operator+(double) const;
     MpfrFloat operator-(const MpfrFloat&) const;
-    MpfrFloat operator-(double) const;
     MpfrFloat operator*(const MpfrFloat&) const;
-    MpfrFloat operator*(double) const;
     MpfrFloat operator/(const MpfrFloat&) const;
-    MpfrFloat operator/(double) const;
     MpfrFloat operator%(const MpfrFloat&) const;
 
     MpfrFloat operator-() const;
 
+private:
+    MpfrFloat& operator+=(double);
+    MpfrFloat& operator-=(double);
+    MpfrFloat& operator*=(double);
+    MpfrFloat& operator/=(double);
+    MpfrFloat operator+(double) const;
+    MpfrFloat operator-(double) const;
+    MpfrFloat operator*(double) const;
+    MpfrFloat operator/(double) const;
+
+public:
+    MpfrFloat& operator+=(long);
+    MpfrFloat& operator-=(long);
+    MpfrFloat& operator*=(long);
+    MpfrFloat& operator/=(long);
+    MpfrFloat operator+(long) const;
+    MpfrFloat operator-(long) const;
+    MpfrFloat operator*(long) const;
+    MpfrFloat operator/(long) const;
+
+public:
     bool operator<(const MpfrFloat&) const;
     bool operator<=(const MpfrFloat&) const;
     bool operator>(const MpfrFloat&) const;
