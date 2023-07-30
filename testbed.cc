@@ -27,6 +27,7 @@ static const char* const kVersionNumber = "2.3.0.12";
 #include <atomic>
 #include <mutex>
 #include <random>
+#include "extrasrc/testbed_types.hh"
 
 /* Verbosity level:
    0 = No progress output. Error reporting as in verbosity level 1.
@@ -123,24 +124,12 @@ inline const TestType& getTest(unsigned index)
 template<typename Value_t>
 bool compareValuesWithEpsilon(const Value_t& value1, const Value_t& value2)
 {
-    return std::fabs(value1 - value2) <= testbedEpsilon<Value_t>();
+    using namespace FUNCTIONPARSERTYPES;
+    if(IsIntType<Value_t>::value)
+        return value1 == value2;
+    else
+        return fp_abs(value1 - value2) <= testbedEpsilon<Value_t>();
 }
-
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-bool compareValuesWithEpsilon(const MpfrFloat& value1, const MpfrFloat& value2)
-{
-    MpfrFloat diff = value1 - value2;
-    diff.abs();
-    return diff <= testbedEpsilon<MpfrFloat>();
-}
-#endif
-
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-bool compareValuesWithEpsilon(const GmpInt& value1, const GmpInt& value2)
-{
-    return value1 == value2;
-}
-#endif
 
 //=========================================================================
 // Test copying
@@ -292,27 +281,14 @@ static int testCopyingWithValueType()
 
 static int testCopying()
 {
-#ifndef FP_DISABLE_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing copying with FunctionParserBase<double>";
-    if(!testCopyingWithValueType<double>()) return false;
-#endif
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing copying with FunctionParserBase<float>";
-    if(!testCopyingWithValueType<float>()) return false;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing copying with FunctionParserBase<long double>";
-    if(!testCopyingWithValueType<long double>()) return false;
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing copying with FunctionParserBase<MpfrFloat>";
-    if(!testCopyingWithValueType<MpfrFloat>()) return false;
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing copying with FunctionParserBase<GmpInt>";
-    if(!testCopyingWithValueType<GmpInt>()) return false;
-#endif
-
+    #define o(type, enumcode, opt1,opt2, verbosetype) \
+        rt_##enumcode( \
+            if(gVerbosityLevel >= 3) \
+                std::cout << "\n - Testing copying with FunctionParserBase<" # type ">"; \
+            if(!testCopyingWithValueType<type>()) return false; , \
+        )
+    FP_DECLTYPES(o)
+    #undef o
     return true;
 }
 
@@ -1723,21 +1699,12 @@ namespace
 template<typename Value_t>
 const char* getNameForValue_t()
 {
-    if(std::is_same<Value_t, long>::value) return "long int";
-    if(std::is_same<Value_t, float>::value) return "float";
-    if(std::is_same<Value_t, double>::value) return "double";
-    if(std::is_same<Value_t, long double>::value) return "long double";
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-    if(std::is_same<Value_t, GmpInt>::value) return "GmpInt";
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(std::is_same<Value_t, MpfrFloat>::value) return "MpfrFloat";
-#endif
-#ifdef FP_SUPPORT_COMPLEX_NUMBERS
-    if(std::is_same<Value_t, std::complex<double>>::value) return "std::complex<double>";
-    if(std::is_same<Value_t, std::complex<float>>::value) return "std::complex<float>";
-    if(std::is_same<Value_t, std::complex<long double>>::value) return "std::complex<long double>";
-#endif
+    #define o(type, enumcode, opt1,opt2, verbosetype) \
+        rt_##enumcode( \
+            if(std::is_same<Value_t, type>::value) return #type; \
+        , );
+    FP_DECLTYPES(o)
+    #undef o
     return "unknown value type";
 }
 
@@ -2835,27 +2802,6 @@ void printAvailableTests(std::vector<std::string>& tests)
 //=========================================================================
 int main(int argc, char* argv[])
 {
-    const char* const optionsHelpText =
-        "    -q                Quiet (no progress, brief error reports)\n"
-        "    -v                Verbose (progress, full error reports)\n"
-        "    -vv               Very verbose\n"
-        "    -tests <tests>    Select tests to perform, wildcards ok (implies -noalgo)\n"
-        "                      Example: -tests 'cmp*'\n"
-        "    -tests help       List available tests\n"
-        "    -d                Test double datatype\n"
-        "    -f                Test float datatype\n"
-        "    -ld               Test long double datatype\n"
-        "    -li               Test long int datatype\n"
-        "    -mf, -mpfr        Test MpfrFloat datatype\n"
-        "    -gi, -gmpint      Test GmpInt datatype\n"
-        "    -cd               Test std::complex<double> datatype\n"
-        "    -cf               Test std::complex<float> datatype\n"
-        "    -cld              Test std::complex<long double> datatype\n"
-        "    -algo <n>         Run only algorithmic test <n>\n"
-        "    -noalgo           Skip all algorithmic tests\n"
-        "    -skipSlowAlgo     Skip slow algorithmic tests\n"
-        "    -h, --help        This help\n";
-
 #ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
     MpfrFloat::setDefaultMantissaBits(96);
 #endif
@@ -2866,9 +2812,10 @@ int main(int argc, char* argv[])
     bool skipSlowAlgo = false;
     bool runAllTypes = true;
     bool runAlgoTests = true;
-    bool run_d = false, run_f = false, run_ld = false;
-    bool run_li = false, run_mf = false, run_gi = false;
-    bool run_cd = false, run_cf = false, run_cld = false;
+    #define o(type, enumcode, opt1,opt2, verbosetype) \
+        bool run_##opt1 = false;
+    FP_DECLTYPES(o)
+    #undef o
     unsigned runAlgoTest = 0;
 
     for(int i = 1; i < argc; ++i)
@@ -2889,42 +2836,14 @@ int main(int argc, char* argv[])
             runAlgoTests = false;
 
             std::vector<std::string> tests;
-#ifndef FP_DISABLE_DOUBLE_TYPE
-            if(runAllTypes || run_d)
-            for(unsigned t: RegressionTests<double>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_FLOAT_TYPE
-            if(runAllTypes || run_f)
-            for(unsigned t: RegressionTests<float>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-            if(runAllTypes || run_ld)
-            for(unsigned t: RegressionTests<long double>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-            if(runAllTypes || run_li)
-            for(unsigned t: RegressionTests<long>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-            if(runAllTypes || run_mf)
-            for(unsigned t: RegressionTests<MpfrFloat>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-            if(runAllTypes || run_gi)
-            for(unsigned t: RegressionTests<GmpInt>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-            if(runAllTypes || run_cf)
-            for(unsigned t: RegressionTests<std::complex<float>>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-            if(runAllTypes || run_cd)
-            for(unsigned t: RegressionTests<std::complex<double>>::Tests) tests.push_back(AllTests[t].testName);
-#endif
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-            if(runAllTypes || run_cld)
-            for(unsigned t: RegressionTests<std::complex<long double>>::Tests) tests.push_back(AllTests[t].testName);
-#endif
+        #define o(type, enumcode, opt1,opt2, verbosetype) \
+            rt_##enumcode(\
+                if(runAllTypes || run_##opt1) \
+                for(unsigned t: RegressionTests<type>::Tests) \
+                    tests.push_back(AllTests[t].testName); \
+            , )
+            FP_DECLTYPES(o)
+        #undef o
             std::sort(tests.begin(), tests.end(), natcomp);
             tests.erase(std::unique(tests.begin(), tests.end()), tests.end());
 
@@ -2950,31 +2869,12 @@ int main(int argc, char* argv[])
                 gSelectedRegressionTests.push_back(t);
             }
         }
-        else if(std::strcmp(argv[i], "-d") == 0
-             || std::strcmp(argv[i], "-double") == 0)
-            runAllTypes = false, run_d = true;
-        else if(std::strcmp(argv[i], "-f") == 0
-             || std::strcmp(argv[i], "-float") == 0)
-            runAllTypes = false, run_f = true;
-        else if(std::strcmp(argv[i], "-ld") == 0
-             || std::strcmp(argv[i], "-longdouble") == 0)
-            runAllTypes = false, run_ld = true;
-        else if(std::strcmp(argv[i], "-li") == 0
-             || std::strcmp(argv[i], "-longint") == 0)
-            runAllTypes = false, run_li = true;
-        else if(std::strcmp(argv[i], "-mf") == 0
-             || std::strcmp(argv[i], "-mpfr") == 0)
-            runAllTypes = false, run_mf = true;
-        else if(std::strcmp(argv[i], "-gi") == 0
-             || std::strcmp(argv[i], "-gmpint") == 0)
-            runAllTypes = false, run_gi = true;
-        else if(std::strcmp(argv[i], "-cd") == 0)
-            runAllTypes = false, run_cd = true;
-        else if(std::strcmp(argv[i], "-cf") == 0)
-            runAllTypes = false, run_cf = true;
-        else if(std::strcmp(argv[i], "-cld") == 0)
-            runAllTypes = false, run_cld = true;
-
+        #define o(type, enumcode, opt1,opt2, verbosetype) \
+            else if(        std::strcmp(argv[i], "-" #opt1) == 0 \
+            || (#opt2[0] && std::strcmp(argv[i], "-" #opt2) == 0)) \
+                runAllTypes = false, run_##opt1 = true;
+        FP_DECLTYPES(o)
+        #undef o
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0
@@ -2983,7 +2883,26 @@ int main(int argc, char* argv[])
             std::cout <<
                 "FunctionParser testbed " << kVersionNumber <<
                 "\n\nUsage: " << argv[0] << " [<option> ...]\n"
-                "\n" << optionsHelpText;
+                "\n"
+                "    -q                Quiet (no progress, brief error reports)\n"
+                "    -v                Verbose (progress, full error reports)\n"
+                "    -vv               Very verbose\n"
+                "    -tests <tests>    Select tests to perform, wildcards ok (implies -noalgo)\n"
+                "                      Example: -tests 'cmp*'\n"
+                "    -tests help       List available tests\n";
+            #define o(type, enumcode, opt1,opt2, verbosetype) do { \
+                std::string optstr = "-" #opt1; \
+                if(#opt2[0]) optstr += ", -" # opt2; \
+                std::cout << "    " << std::left << std::setw(18) << optstr \
+                          << ": Test " #type " datatype.\n"; \
+            } while(0);
+            FP_DECLTYPES(o)
+            #undef o
+            std::cout <<
+                "    -algo <n>         Run only algorithmic test <n>\n"
+                "    -noalgo           Skip all algorithmic tests\n"
+                "    -skipSlowAlgo     Skip slow algorithmic tests\n"
+                "    -h, --help        This help\n";
             return 0;
         }
         else if(std::strlen(argv[i]) > 0)
@@ -3023,51 +2942,14 @@ int main(int argc, char* argv[])
 
     if(!runAllTypes || runAlgoTest == 0)
     {
-#ifndef FP_DISABLE_DOUBLE_TYPE
-        if(runAllTypes || run_d)
-            if(!runRegressionTests<double>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_FLOAT_TYPE
-        if(runAllTypes || run_f)
-            if(!runRegressionTests<float>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-        if(runAllTypes || run_ld)
-            if(!runRegressionTests<long double>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_LONG_INT_TYPE
-        if(runAllTypes || run_li)
-            if(!runRegressionTests<long>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-        if(runAllTypes || run_mf)
-            if(!runRegressionTests<MpfrFloat>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_GMP_INT_TYPE
-        if(runAllTypes || run_gi)
-            if(!runRegressionTests<GmpInt>())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-        if(runAllTypes || run_cd)
-            if(!runRegressionTests<std::complex<double> >())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-        if(runAllTypes || run_cf)
-            if(!runRegressionTests<std::complex<float> >())
-                allTestsOk = false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-        if(runAllTypes || run_cld)
-            if(!runRegressionTests<std::complex<long double> >())
-                allTestsOk = false;
-#endif
+    #define o(type, enumcode, opt1,opt2, verbosetype) \
+        rt_##enumcode(\
+            if(runAllTypes || run_##opt1) \
+                if(!runRegressionTests<type>()) \
+                    allTestsOk = false; \
+        , )
+        FP_DECLTYPES(o)
+    #undef o
     }
 
 ////////////////////////////

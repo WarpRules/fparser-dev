@@ -284,7 +284,7 @@ cNeg cFmma              -> cFmms
 cNeg cFmms              -> cFmma
 cMul A [IsVarOpcode(A)] B [IsUnaryOpcode(B)] cAdd -> [DO_STACKPLUS1] A B cFma
 cMul A [IsVarOpcode(A)] B [IsUnaryOpcode(B)] cSub -> [DO_STACKPLUS1] A B cFms
-
+# x+y*3 = x y 3 cMul cAdd, needs to be y 3 x  for cFma; no easy way to make it work.
 cDup cOr   -> cNotNot  # TEST 99/3
 cDup cAnd  -> cNotNot  # TEST 99/3
 
