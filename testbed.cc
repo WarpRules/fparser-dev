@@ -296,120 +296,123 @@ static int testCopying()
 //=========================================================================
 // Test error situations
 //=========================================================================
-int TestErrorSituations()
+template<typename Value_t>
+static int testErrorSituationsWithValueType()
 {
+    using Parser_t = FunctionParserBase<Value_t>;
+
     bool retval = true;
-    DefaultParser fp, tmpfp;
-    fp.AddUnit("unit", 2);
-    fp.AddFunction("Value", userDefFuncValue<DefaultValue_t>, 0);
-    fp.AddFunction("Sqr", userDefFuncSqr<DefaultValue_t>, 1);
-    fp.AddFunctionWrapper("Sub", UserDefFuncWrapper<DefaultValue_t>
-                          (userDefFuncSub<DefaultValue_t>), 2);
-    tmpfp.Parse("0", "x");
+    Parser_t parser, tmpParser;
+    parser.AddUnit("unit", static_cast<Value_t>(2));
+    parser.AddFunction("Value", userDefFuncValue<Value_t>, 0);
+    parser.AddFunction("Sqr", userDefFuncSqr<Value_t>, 1);
+    parser.AddFunctionWrapper("Sub", UserDefFuncWrapper<Value_t> (userDefFuncSub<Value_t>), 2);
+    tmpParser.Parse("0", "x");
 
     static const struct
     {
-        DefaultParser::ParseErrorType expected_error;
-        int                            expected_error_position;
-        const char*                    function_string;
-    } invalidFuncs[] =
+        Parser_t::ParseErrorType expected_error;
+        int expected_error_position;
+        const char* function_string;
+    } invalidFunctionData[] =
     {
-      { DefaultParser::MISSING_PARENTH,     5, "sin(x"},
-      { DefaultParser::EXPECT_PARENTH_FUNC, 4, "sin x"},
-      { DefaultParser::SYNTAX_ERROR,        2, "x+" },
-      { DefaultParser::EXPECT_OPERATOR,     2, "x x"},
-      { DefaultParser::UNKNOWN_IDENTIFIER,  4, "sin(y)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   5, "sin(x, 1)" },
-      { DefaultParser::EXPECT_OPERATOR,     1, "x, x"},
-      { DefaultParser::SYNTAX_ERROR,        2, "x^^2" },
-      { DefaultParser::SYNTAX_ERROR,        2, "x**x" },
-      { DefaultParser::SYNTAX_ERROR,        2, "x+*x" },
-      { DefaultParser::SYNTAX_ERROR,        0, "unit" },
-      { DefaultParser::SYNTAX_ERROR,        0, "unit x" },
-      { DefaultParser::SYNTAX_ERROR,        2, "x*unit" },
-      { DefaultParser::SYNTAX_ERROR,        0, "unit*unit" },
-      { DefaultParser::SYNTAX_ERROR,        0, "unit unit" },
-      { DefaultParser::EXPECT_OPERATOR,     1, "x(unit)"},
-      { DefaultParser::SYNTAX_ERROR,        2, "x+unit" },
-      { DefaultParser::SYNTAX_ERROR,        2, "x*unit" },
-      { DefaultParser::EMPTY_PARENTH,       1, "()"},
-      { DefaultParser::SYNTAX_ERROR,        0, "" },
-      { DefaultParser::EXPECT_OPERATOR,     1, "x()"},
-      { DefaultParser::EMPTY_PARENTH,       3, "x*()"},
-      { DefaultParser::SYNTAX_ERROR,        4, "sin(unit)" },
-      { DefaultParser::EXPECT_PARENTH_FUNC, 4, "sin unit"},
-      { DefaultParser::EXPECT_OPERATOR,     2, "1..2"},
-      { DefaultParser::SYNTAX_ERROR,        1, "(" },
-      { DefaultParser::MISM_PARENTH,        0, ")"},
-      { DefaultParser::MISSING_PARENTH,     2, "(x"},
-      { DefaultParser::EXPECT_OPERATOR,     1, "x)"},
-      { DefaultParser::MISM_PARENTH,        0, ")x("},
-      { DefaultParser::MISSING_PARENTH,     14,"(((((((x))))))"},
-      { DefaultParser::EXPECT_OPERATOR,     15,"(((((((x))))))))"},
-      { DefaultParser::EXPECT_OPERATOR,     1, "2x"},
-      { DefaultParser::EXPECT_OPERATOR,     3, "(2)x"},
-      { DefaultParser::EXPECT_OPERATOR,     3, "(x)2"},
-      { DefaultParser::EXPECT_OPERATOR,     1, "2(x)"},
-      { DefaultParser::EXPECT_OPERATOR,     1, "x(2)"},
-      { DefaultParser::SYNTAX_ERROR,        0, "[x]" },
-      { DefaultParser::SYNTAX_ERROR,        0, "@x" },
-      { DefaultParser::SYNTAX_ERROR,        0, "$x" },
-      { DefaultParser::SYNTAX_ERROR,        0, "{x}" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   5, "max(x)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   8, "max(x, 1, 2)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   6, "if(x,2)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   10,"if(x, 2, 3, 4)" },
-      { DefaultParser::MISSING_PARENTH,     6, "Value(x)"},
-      { DefaultParser::MISSING_PARENTH,     6, "Value(1+x)"},
-      { DefaultParser::MISSING_PARENTH,     6, "Value(1,x)"},
+      { Parser_t::MISSING_PARENTH,     5, "sin(x" },
+      { Parser_t::EXPECT_PARENTH_FUNC, 4, "sin x" },
+      { Parser_t::SYNTAX_ERROR,        2, "x+" },
+      { Parser_t::EXPECT_OPERATOR,     2, "x x"},
+      { Parser_t::UNKNOWN_IDENTIFIER,  4, "sin(y)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   5, "sin(x, 1)" },
+      { Parser_t::EXPECT_OPERATOR,     1, "x, x"},
+      { Parser_t::SYNTAX_ERROR,        2, "x^^2" },
+      { Parser_t::SYNTAX_ERROR,        2, "x**x" },
+      { Parser_t::SYNTAX_ERROR,        2, "x+*x" },
+      { Parser_t::SYNTAX_ERROR,        0, "unit" },
+      { Parser_t::SYNTAX_ERROR,        0, "unit x" },
+      { Parser_t::SYNTAX_ERROR,        2, "x*unit" },
+      { Parser_t::SYNTAX_ERROR,        0, "unit*unit" },
+      { Parser_t::SYNTAX_ERROR,        0, "unit unit" },
+      { Parser_t::EXPECT_OPERATOR,     1, "x(unit)"},
+      { Parser_t::SYNTAX_ERROR,        2, "x+unit" },
+      { Parser_t::SYNTAX_ERROR,        2, "x*unit" },
+      { Parser_t::EMPTY_PARENTH,       1, "()"},
+      { Parser_t::SYNTAX_ERROR,        0, "" },
+      { Parser_t::EXPECT_OPERATOR,     1, "x()"},
+      { Parser_t::EMPTY_PARENTH,       3, "x*()"},
+      { Parser_t::SYNTAX_ERROR,        4, "sin(unit)" },
+      { Parser_t::EXPECT_PARENTH_FUNC, 4, "sin unit"},
+      { Parser_t::EXPECT_OPERATOR,     2, "1..2"},
+      { Parser_t::SYNTAX_ERROR,        1, "(" },
+      { Parser_t::MISM_PARENTH,        0, ")"},
+      { Parser_t::MISSING_PARENTH,     2, "(x"},
+      { Parser_t::EXPECT_OPERATOR,     1, "x)"},
+      { Parser_t::MISM_PARENTH,        0, ")x("},
+      { Parser_t::MISSING_PARENTH,     14,"(((((((x))))))"},
+      { Parser_t::EXPECT_OPERATOR,     15,"(((((((x))))))))"},
+      { Parser_t::EXPECT_OPERATOR,     1, "2x"},
+      { Parser_t::EXPECT_OPERATOR,     3, "(2)x"},
+      { Parser_t::EXPECT_OPERATOR,     3, "(x)2"},
+      { Parser_t::EXPECT_OPERATOR,     1, "2(x)"},
+      { Parser_t::EXPECT_OPERATOR,     1, "x(2)"},
+      { Parser_t::SYNTAX_ERROR,        0, "[x]" },
+      { Parser_t::SYNTAX_ERROR,        0, "@x" },
+      { Parser_t::SYNTAX_ERROR,        0, "$x" },
+      { Parser_t::SYNTAX_ERROR,        0, "{x}" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   5, "max(x)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   8, "max(x, 1, 2)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   6, "if(x,2)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   10,"if(x, 2, 3, 4)" },
+      { Parser_t::MISSING_PARENTH,     6, "Value(x)"},
+      { Parser_t::MISSING_PARENTH,     6, "Value(1+x)"},
+      { Parser_t::MISSING_PARENTH,     6, "Value(1,x)"},
       // Note: ^should these three not return ILL_PARAMS_AMOUNT instead?
-      { DefaultParser::ILL_PARAMS_AMOUNT,   4, "Sqr()"},
-      { DefaultParser::ILL_PARAMS_AMOUNT,   5, "Sqr(x,1)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   5, "Sqr(1,2,x)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   4, "Sub()" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   5, "Sub(x)" },
-      { DefaultParser::ILL_PARAMS_AMOUNT,   7, "Sub(x,1,2)" },
-      { DefaultParser::UNKNOWN_IDENTIFIER,  2, "x+Sin(1)" },
-      { DefaultParser::UNKNOWN_IDENTIFIER,  0, "sub(1,2)" },
-      { DefaultParser::UNKNOWN_IDENTIFIER,  0, "sinx(1)"  },
-      { DefaultParser::UNKNOWN_IDENTIFIER,  2, "1+X"      },
-      { DefaultParser::UNKNOWN_IDENTIFIER,  0, "eval(x)" }
+      { Parser_t::ILL_PARAMS_AMOUNT,   4, "Sqr()"},
+      { Parser_t::ILL_PARAMS_AMOUNT,   5, "Sqr(x,1)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   5, "Sqr(1,2,x)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   4, "Sub()" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   5, "Sub(x)" },
+      { Parser_t::ILL_PARAMS_AMOUNT,   7, "Sub(x,1,2)" },
+      { Parser_t::UNKNOWN_IDENTIFIER,  2, "x+Sin(1)" },
+      { Parser_t::UNKNOWN_IDENTIFIER,  0, "sub(1,2)" },
+      { Parser_t::UNKNOWN_IDENTIFIER,  0, "sinx(1)"  },
+      { Parser_t::UNKNOWN_IDENTIFIER,  2, "1+X"      },
+      { Parser_t::UNKNOWN_IDENTIFIER,  0, "eval(x)" }
     };
-    const unsigned amnt = sizeof(invalidFuncs)/sizeof(invalidFuncs[0]);
-    for(unsigned i = 0; i < amnt; ++i)
+    const unsigned invalidFunctionDataAmount = sizeof(invalidFunctionData)/sizeof(invalidFunctionData[0]);
+
+    for(unsigned data_index = 0; data_index < invalidFunctionDataAmount; ++data_index)
     {
-        int parse_result = fp.Parse(invalidFuncs[i].function_string, "x");
+        int parse_result = parser.Parse(invalidFunctionData[data_index].function_string, "x");
         if(parse_result < 0)
         {
             retval = false;
             if(gVerbosityLevel >= 2)
             {
                 std::cout << "\n - Parsing the invalid function \""
-                          << invalidFuncs[i].function_string
+                          << invalidFunctionData[data_index].function_string
                           << "\" didn't fail\n";
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
-                fp.PrintByteCode(std::cout);
+                parser.PrintByteCode(std::cout);
 #endif
             }
         }
-        else if(fp.GetParseErrorType() != invalidFuncs[i].expected_error
-             || parse_result != invalidFuncs[i].expected_error_position)
+        else if(parser.GetParseErrorType() != invalidFunctionData[data_index].expected_error
+             || parse_result != invalidFunctionData[data_index].expected_error_position)
         {
             retval = false;
             if(gVerbosityLevel >= 2)
             {
                 std::cout << "\n - Parsing the invalid function \""
-                          << invalidFuncs[i].function_string
+                          << invalidFunctionData[data_index].function_string
                           << "\" produced ";
-                if(fp.GetParseErrorType() != invalidFuncs[i].expected_error)
-                    std::cout << "wrong error code (" << fp.ErrorMsg() << ")";
-                if(parse_result != invalidFuncs[i].expected_error_position)
+                if(parser.GetParseErrorType() != invalidFunctionData[data_index].expected_error)
+                    std::cout << "wrong error code (" << parser.ErrorMsg() << ")";
+                if(parse_result != invalidFunctionData[data_index].expected_error_position)
                     std::cout << "wrong pointer (expected "
-                              << invalidFuncs[i].expected_error_position
+                              << invalidFunctionData[data_index].expected_error_position
                               << ", got " << parse_result << ")";
                 std::cout << "\n";
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
-                fp.PrintByteCode(std::cout);
+                parser.PrintByteCode(std::cout);
 #endif
             }
         }
@@ -417,60 +420,60 @@ int TestErrorSituations()
 
     static const char* const invalidNames[] =
     { "s2%", "sin", "(x)", "5x", "2", "\302\240"/*nbsp*/ };
-    const unsigned namesAmnt = sizeof(invalidNames)/sizeof(invalidNames[0]);
+    const unsigned namesAmount = sizeof(invalidNames)/sizeof(invalidNames[0]);
 
-    for(unsigned i = 0; i < namesAmnt; ++i)
+    for(unsigned nameIndex = 0; nameIndex < namesAmount; ++nameIndex)
     {
-        const char* const n = invalidNames[i];
-        if(fp.AddConstant(n, 1))
+        const char* const name = invalidNames[nameIndex];
+        if(parser.AddConstant(name, static_cast<Value_t>(1)))
         {
             retval = false;
             if(gVerbosityLevel >= 2)
-                std::cout << "\n - Adding an invalid name (\"" << n
+                std::cout << "\n - Adding an invalid name (\"" << name
                           << "\") as constant didn't fail" << std::endl;
         }
-        if(fp.AddFunction(n, userDefFuncSqr<DefaultValue_t>, 1))
+        if(parser.AddFunction(name, userDefFuncSqr<Value_t>, 1))
         {
             retval = false;
             if(gVerbosityLevel >= 2)
-                std::cout << "\n - Adding an invalid name (\"" << n
+                std::cout << "\n - Adding an invalid name (\"" << name
                           << "\") as funcptr didn't fail" << std::endl;
         }
-        if(fp.AddFunction(n, tmpfp))
+        if(parser.AddFunction(name, tmpParser))
         {
             retval = false;
             if(gVerbosityLevel >= 2)
-                std::cout << "\n - Adding an invalid name (\"" << n
+                std::cout << "\n - Adding an invalid name (\"" << name
                           << "\") as funcparser didn't fail" << std::endl;
         }
-        if(fp.Parse("0", n) < 0)
+        if(parser.Parse("0", name) < 0)
         {
             retval = false;
             if(gVerbosityLevel >= 2)
-                std::cout << "\n - Using an invalid name (\"" << n
+                std::cout << "\n - Using an invalid name (\"" << name
                           << "\") as variable name didn't fail" << std::endl;
         }
     }
 
-    fp.AddConstant("CONST", CONST);
-    fp.AddFunction("PTR", userDefFuncSqr<DefaultValue_t>, 1);
-    fp.AddFunction("PARSER", tmpfp);
+    parser.AddConstant("CONST", FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(CONST));
+    parser.AddFunction("PTR", userDefFuncSqr<Value_t>, 1);
+    parser.AddFunction("PARSER", tmpParser);
 
-    if(fp.AddConstant("PTR", 1))
+    if(parser.AddConstant("PTR", static_cast<Value_t>(1)))
     {
         retval = false;
         if(gVerbosityLevel >= 2)
             std::cout << "\n - Adding a userdef function (\"PTR\") as "
                       << "constant didn't fail" << std::endl;
     }
-    if(fp.AddFunction("CONST", userDefFuncSqr<DefaultValue_t>, 1))
+    if(parser.AddFunction("CONST", userDefFuncSqr<Value_t>, 1))
     {
         retval = false;
         if(gVerbosityLevel >= 2)
             std::cout << "\n - Adding a userdef constant (\"CONST\") as "
                       << "funcptr didn't fail" << std::endl;
     }
-    if(fp.AddFunction("CONST", tmpfp))
+    if(parser.AddFunction("CONST", tmpParser))
     {
         retval = false;
         if(gVerbosityLevel >= 2)
@@ -479,6 +482,39 @@ int TestErrorSituations()
     }
 
     return retval;
+}
+
+static int testErrorSituations()
+{
+#ifndef FP_DISABLE_DOUBLE_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<double>";
+    if(!testErrorSituationsWithValueType<double>()) return false;
+#endif
+#ifdef FP_SUPPORT_FLOAT_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<float>";
+    if(!testErrorSituationsWithValueType<float>()) return false;
+#endif
+#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<long double>";
+    if(!testErrorSituationsWithValueType<long double>()) return false;
+#endif
+#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<double>>";
+    if(!testErrorSituationsWithValueType<std::complex<double>>()) return false;
+#endif
+#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<float>>";
+    if(!testErrorSituationsWithValueType<std::complex<float>>()) return false;
+#endif
+#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<long double>>";
+    if(!testErrorSituationsWithValueType<std::complex<long double>>()) return false;
+#endif
+#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
+    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<MpfrFloat>";
+    if(!testErrorSituationsWithValueType<MpfrFloat>()) return false;
+#endif
+    return true;
 }
 
 
@@ -2959,7 +2995,7 @@ int main(int argc, char* argv[])
     algorithmicTests[] =
     {
         { "Copy constructor and assignment", &testCopying },
-        { "Error situations", &TestErrorSituations },
+        { "Error situations", &testErrorSituations },
         { "Whitespaces", &WhiteSpaceTest },
         { "Optimizer test 1 (trig. combinations)", &testOptimizer1 },
         { "Optimizer test 2 (bool combinations, double)",

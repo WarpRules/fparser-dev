@@ -21,6 +21,7 @@ else
 fi
 
 if [ ! $m = 0 ]; then
+  echo "$time"
   exit $m
 fi
 next=0
