@@ -36,6 +36,7 @@ The number of parameters is automatically deduced from this.
 The variable names are to be written in a format accepted by fparser.
 If they are not valid C++ variable names, make_tests will rename them
 transparently.
+Variables must be listed in alphabetical order.
 
 
 -------------------------

@@ -1,0 +1,7 @@
+# Verify that the built-ins used by testbed do what they're supposed to do.
+T=d f ld mf
+V=w,x,y,z
+R=-2,2,1
+F=value() + w*pvalue() + sqr(x) + 8*sub(x,y) + 77*psqr(z) + 30*psub(x,y)
+# Use a hardcoded version here.
+C=10 + w*5 + x*x + 8*(x-y) + 77*z*z + 30*(x-y)

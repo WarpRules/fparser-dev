@@ -1,0 +1,7 @@
+# Verify that the built-ins used by testbed do what they're supposed to do.
+# value() is used to hide the 180 constant from bytecode optimizer. value() returns 10, so K = 180.
+T=d f ld mf
+V=w,x,y,z
+R=-1,1,0.5
+F=K:=value()*18;x*(pi/K) + y/K*pi + z/(K/pi) + w*pi/K
+C=d2r(x)+d2r(y)+d2r(z)+d2r(w)

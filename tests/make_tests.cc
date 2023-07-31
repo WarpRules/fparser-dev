@@ -1162,12 +1162,14 @@ namespace
             std::unordered_map<std::string,std::string> used_constants;
 
             const char* valuepos_1 = c_code.c_str();
+            unsigned uparam = 0;
             CompileFunction(
                 valuepos_1,
                 codebuf,
-                user_param_count,
+                uparam,
                 used_constants,
                 var_trans);
+            user_param_count = std::max(uparam, user_param_count);
 
             std::string code = codebuf.str();
             all_functions.emplace(testname,
