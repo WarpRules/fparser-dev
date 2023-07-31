@@ -523,9 +523,9 @@ namespace
         using Result = std::pair<Type, std::string>;
         std::function<Result(const char*&)> CompileExpression;
         std::function<Result(const char*&)> CompileUnaryMinus;
-        auto ToFun = [&](const std::string& f, const std::string& s)
+        auto IsParenthesized = [](const std::string& s, bool with_ident)
         {
-            unsigned length = f.empty() ? readIdentifierCommon(s.c_str()) : 0;
+            unsigned length = with_ident ? readIdentifierCommon(s.c_str()) : 0;
             bool fully_parens = s.size() > length && s[length] == '(';
             unsigned counter  = 0;
             for(unsigned pos=length; pos < s.size(); ++pos)
@@ -535,7 +535,11 @@ namespace
                 else if(c == ')') --counter;
                 else if(!counter) { fully_parens = false; break; }
             }
-            if(fully_parens)
+            return fully_parens;
+        };
+        auto ToFun = [&](const std::string& f, const std::string& s)
+        {
+            if(IsParenthesized(s, f.empty()==true))
                 return f + s;
             else
                 return f + "(" + s + ")";
@@ -712,6 +716,12 @@ namespace
                     if(rhs.first == Bool) rhs = Result(Other, ToVal(rhs.second));
                     if(rhs.second[0] == '-')
                         rhs.second.erase(0,1);
+                    else if(rhs.second[0] == '(' && rhs.second[1] == '-' && rhs.second.back() == ')'
+                    &&      IsParenthesized(rhs.second.substr(2, rhs.second.size()-3), true))
+                    {
+                        // "(-xx)" -> "xx"
+                        rhs.second = rhs.second.substr(2, rhs.second.size()-3);
+                    }
                     else
                         rhs.second = "-" + rhs.second; // Doesn't change type
                 }
@@ -886,11 +896,16 @@ namespace
                 break;
             std::string name(function, function+length);
             function2 += 2;
-            var_declarations.emplace_back(name, CompileExpression(function2));
+            auto expr = CompileExpression(function2);
+            while(IsParenthesized(expr.second, false))
+                expr.second = expr.second.substr(1, expr.second.size()-2);
+            var_declarations.emplace_back(name, expr);
             if(*function2 == ';') ++function2;
             function = function2;
         }
         Result result = CompileExpression(function);
+        while(IsParenthesized(result.second, false))
+            result.second = result.second.substr(1, result.second.size()-2);
         std::size_t n_pi = str_find_count(result.second, "$PI_CONST$");
         for(auto& v: var_declarations) n_pi += str_find_count(v.second.second, "$PI_CONST$");
         if(n_pi)
