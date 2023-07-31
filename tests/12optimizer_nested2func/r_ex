@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.5
 F=real(exp(a))
-C=fp_real(fp_exp(a))

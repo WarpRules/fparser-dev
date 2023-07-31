@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=sinh(acos(a))
-C=fp_sinh(fp_acos(a))

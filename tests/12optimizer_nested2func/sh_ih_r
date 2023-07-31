@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=sinh(1/hypot(a,b))
-C=fp_sinh(1/fp_hypot(a,b))

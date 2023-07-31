@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=atan(a)+sinh(a)
-C=fp_atan(a)+fp_sinh(a)
-#X=fp_add(fp_atan(a),fp_sinh(a))

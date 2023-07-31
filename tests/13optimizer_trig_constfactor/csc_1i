@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=csc(a*1i)
-C=1/fp_sin(a*i)
-#X=1/fp_sin(fp_mul(a,[0,1]))

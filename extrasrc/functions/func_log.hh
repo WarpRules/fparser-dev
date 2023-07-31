@@ -23,10 +23,13 @@
         // log(abs(x))        + i*arg(x)
         // log(Xr^2+Xi^2)*0.5 + i*arg(x)
         if(x.imag() == T{})
-            return std::complex<T>( fp_log(fp_abs(x.real())),
-                                    fp_arg(x.real()) ); // Note: Uses real-value fp_arg() here!
+        {
+            T realpart = x.real();
+            return std::complex<T>( fp_log(fp_abs(realpart)),
+                                    fp_arg(realpart) ); // Note: Uses real-value fp_arg() here!
+        }
         return std::complex<T>(
             fp_log(std::norm(x)) * T(0.5),
-            fp_arg(x).real() );
+            fp_arg(x) );
     }
 #endif

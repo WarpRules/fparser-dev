@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=acos(atan(a))
-C=fp_acos(fp_atan(a))

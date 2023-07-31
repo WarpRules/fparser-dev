@@ -2,4 +2,3 @@ T=d ld f
 V=x,y
 R=-2,2,0.5
 F=atan(x<y)
-C=fp_atan(fp_less(x,y))

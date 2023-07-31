@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=cos(-a)-asinh(-a)
-C=fp_cos(-a)-fp_asinh(-a)
-#X=fp_sub(fp_cos(fp_mul(a,[-1,0])),fp_asinh(fp_mul(a,[-1,0])))

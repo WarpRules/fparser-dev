@@ -259,12 +259,13 @@ namespace
     template<typename Value_t>
     inline bool valueIsOk(const Value_t& value)
     {
-        if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
+        using namespace FUNCTIONPARSERTYPES;
+        if(IsIntType<Value_t>::value)
         {
             return true;
         }
         Value_t limit(10000000); limit *= limit; // Makes 1e14
-        return FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_abs(value), limit);
+        return fp_less(fp_abs(value), fp_real(limit));
     }
 
     template<typename Value_t>
@@ -654,7 +655,7 @@ namespace
             }
         }
         const Value_t scale =
-            fp_pow(Value_t(10), fp_floor(fp_log10(fp_abs(v1))));
+            fp_pow(Value_t(10), Value_t(fp_floor(fp_log10(fp_abs(v1)))));
         const Value_t sv1 =
             fp_abs(v1) < epsilon<Value_t>() ? 0 : v1/scale;
         const Value_t sv2 =

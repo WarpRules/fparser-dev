@@ -5,4 +5,3 @@ T=d li
 V=a,b
 R=-1,1,1
 F=if(a,b*0,a*0)*0
-C=a*b*0

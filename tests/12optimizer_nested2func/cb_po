@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=0.5,2,0.5
 F=cbrt(polar(a,b))
-C=fp_cbrt(fp_polar(a,b))

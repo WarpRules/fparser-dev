@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sinh(a)+tanh(a)
-C=fp_sinh(a)+fp_tanh(a)
-#X=fp_add(fp_sinh(a),fp_tanh(a))

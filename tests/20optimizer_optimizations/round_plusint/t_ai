@@ -2,4 +2,3 @@ T=ld f mf cd cf cld
 V=x,y
 R=-1.5,1.5,0.5
 F=trunc(x+abs(int(y)))
-C=fp_trunc(x+fp_abs(fp_int(y)))

@@ -5,7 +5,3 @@ F=(sin(x) >= 0) + \
   2*(0 <= sin(x)) + \
   4*(sin(x) <= 0) + \
   8*(0 >= sin(x))
-C=fp_greaterOrEq(fp_sin(x), 0) + \
-  2*fp_lessOrEq(0, fp_sin(x)) + \
-  4*fp_lessOrEq(fp_sin(x), 0) + \
-  8*fp_greaterOrEq(0, fp_sin(x))

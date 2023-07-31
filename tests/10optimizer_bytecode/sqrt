@@ -2,4 +2,3 @@ T=d f ld mf
 V=x
 R=0,1,1
 F=sqrt(1.1)+x
-C=fp_sqrt(1.1)+x

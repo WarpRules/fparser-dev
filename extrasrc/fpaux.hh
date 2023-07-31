@@ -161,6 +161,30 @@ namespace FUNCTIONPARSERTYPES
                 ? abs_d > Value_t()
                 : abs_d >= fp_const_preciseDouble<Value_t>(0.5);
     }
+#line 3 "extrasrc/functions/comp_absand.hh"
+    template<typename Value_t>
+    inline bool fp_absAnd(const Value_t& a, const Value_t& b)
+    {
+        return fp_absTruth(a) && fp_absTruth(b);
+    }
+#line 3 "extrasrc/functions/comp_absnot.hh"
+    template<typename Value_t>
+    inline bool fp_absNot(const Value_t& b)
+    {
+        return !fp_absTruth(b);
+    }
+#line 3 "extrasrc/functions/comp_absnotnot.hh"
+    template<typename Value_t>
+    inline bool fp_absNotNot(const Value_t& b)
+    {
+        return fp_absTruth(b);
+    }
+#line 3 "extrasrc/functions/comp_absor.hh"
+    template<typename Value_t>
+    inline bool fp_absOr(const Value_t& a, const Value_t& b)
+    {
+        return fp_absTruth(a) || fp_absTruth(b);
+    }
 #line 1 "extrasrc/functions/func_cos.hh"
     template<typename Value_t>
     inline Value_t fp_cos(const Value_t& x) { return std::cos(x); }
@@ -383,7 +407,7 @@ namespace FUNCTIONPARSERTYPES
 
   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_abs(const std::complex<T>& x)
+    inline T fp_abs(const std::complex<T>& x)
     {
         return std::abs(x);
         //T extent = fp_max(fp_abs(x.real()), fp_abs(x.imag()));
@@ -391,6 +415,34 @@ namespace FUNCTIONPARSERTYPES
         //return extent * fp_hypot(x.real() / extent, x.imag() / extent);
     }
   #endif
+#line 6 "extrasrc/functions/comp_truth.hh"
+    template<typename Value_t>
+    inline bool fp_truth(const Value_t& d)
+    {
+        return IsIntType<Value_t>::value
+                ? d != Value_t()
+                : fp_abs(d) >= fp_const_preciseDouble<Value_t>(0.5);
+    }
+#line 3 "extrasrc/functions/comp_and.hh"
+    template<typename Value_t>
+    inline bool fp_and(const Value_t& a, const Value_t& b)
+    {
+        return fp_truth(a) && fp_truth(b);
+    }
+
+    template<typename Value_t>
+    inline bool fp_and(const Value_t& a, bool b)
+    {
+        return fp_truth(a) && b;
+    }
+
+    template<typename Value_t>
+    inline bool fp_and(bool a, const Value_t& b)
+    {
+        return a && fp_truth(b);
+    }
+
+    inline bool fp_and(bool a, bool b) { return a && b; }
 #line 1 "extrasrc/functions/util_epsilon.hh"
     template<typename Value_t>
     struct Epsilon
@@ -452,7 +504,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline bool fp_less(const std::complex<T>& x, const std::complex<T>& y)
     {
-        return (x.real() < y.real() - Epsilon<T>::value);
+        return fp_less(x.real(), y.real());
     }
   #endif
 #line 2 "extrasrc/functions/comp_greater.hh"
@@ -474,7 +526,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline bool fp_lessOrEq(const std::complex<T>& x, const std::complex<T>& y)
     {
-        return (x.real() <= y.real() + Epsilon<T>::value);
+        return fp_lessOrEq(x.real(), y.real());
     }
   #endif
 #line 2 "extrasrc/functions/comp_greateroreq.hh"
@@ -491,14 +543,42 @@ namespace FUNCTIONPARSERTYPES
             ? (x != y)
             : (fp_abs(x - y) > Epsilon<Value_t>::value);
     }
-#line 6 "extrasrc/functions/comp_truth.hh"
+#line 3 "extrasrc/functions/comp_not.hh"
     template<typename Value_t>
-    inline bool fp_truth(const Value_t& d)
+    inline bool fp_not(const Value_t& b)
     {
-        return IsIntType<Value_t>::value
-                ? d != Value_t()
-                : fp_abs(d) >= fp_const_preciseDouble<Value_t>(0.5);
+        return !fp_truth(b);
     }
+
+    inline bool fp_not(bool b) { return !b; }
+#line 3 "extrasrc/functions/comp_notnot.hh"
+    template<typename Value_t>
+    inline bool fp_notNot(const Value_t& b)
+    {
+        return fp_truth(b);
+    }
+
+    inline bool fp_notNot(bool b) { return b; }
+#line 3 "extrasrc/functions/comp_or.hh"
+    template<typename Value_t>
+    inline bool fp_or(const Value_t& a, const Value_t& b)
+    {
+        return fp_truth(a) || fp_truth(b);
+    }
+
+    template<typename Value_t>
+    inline bool fp_or(const Value_t& a, bool b)
+    {
+        return fp_truth(a) || b;
+    }
+
+    template<typename Value_t>
+    inline bool fp_or(bool a, const Value_t& b)
+    {
+        return a || fp_truth(b);
+    }
+
+    inline bool fp_or(bool a, bool b) { return a || b; }
 #line 1 "extrasrc/functions/const_pi.hh"
     template<typename Value_t>
     inline Value_t fp_const_pi() // CONSTANT_PI
@@ -589,7 +669,7 @@ namespace FUNCTIONPARSERTYPES
 
   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_arg(const std::complex<T>& x)
+    inline T fp_arg(const std::complex<T>& x)
     {
         return std::arg(x);
     }
@@ -617,14 +697,18 @@ namespace FUNCTIONPARSERTYPES
         // log(abs(x))        + i*arg(x)
         // log(Xr^2+Xi^2)*0.5 + i*arg(x)
         if(x.imag() == T{})
-            return std::complex<T>( fp_log(fp_abs(x.real())),
-                                    fp_arg(x.real()) ); // Note: Uses real-value fp_arg() here!
+        {
+            T realpart = x.real();
+            return std::complex<T>( fp_log(fp_abs(realpart)),
+                                    fp_arg(realpart) ); // Note: Uses real-value fp_arg() here!
+        }
         return std::complex<T>(
             fp_log(std::norm(x)) * T(0.5),
-            fp_arg(x).real() );
+            fp_arg(x) );
     }
   #endif
 #line 4 "extrasrc/functions/func_acos.hh"
+    // pi/2 - asin(x)
     template<typename Value_t>
     inline Value_t fp_acos(const Value_t& x) { return std::acos(x); }
 
@@ -684,6 +768,7 @@ namespace FUNCTIONPARSERTYPES
     inline GmpInt fp_acosh(const GmpInt&) { return 0; }
   #endif
 #line 4 "extrasrc/functions/func_asin.hh"
+    // atan(x / sqrt(1 - x^2))
     template<typename Value_t>
     inline Value_t fp_asin(const Value_t& x) { return std::asin(x); }
 
@@ -1287,7 +1372,7 @@ namespace FUNCTIONPARSERTYPES
 
   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_imag(const std::complex<T>& x)
+    inline T fp_imag(const std::complex<T>& x)
     {
         return x.imag();
     }
@@ -1362,7 +1447,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_max(const std::complex<T>& x, const std::complex<T>& y)
     {
-        return fp_abs(x).real() > fp_abs(y).real() ? x : y;
+        return fp_abs(x) > fp_abs(y) ? x : y;
     }
   #endif
 #line 1 "extrasrc/functions/func_min.hh"
@@ -1376,7 +1461,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     inline std::complex<T> fp_min(const std::complex<T>& x, const std::complex<T>& y)
     {
-        return fp_abs(x).real() < fp_abs(y).real() ? x : y;
+        return fp_abs(x) < fp_abs(y) ? x : y;
     }
   #endif
 #line 4 "extrasrc/functions/func_trunc.hh"
@@ -1451,7 +1536,7 @@ namespace FUNCTIONPARSERTYPES
 
   #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_real(const std::complex<T>& x)
+    inline T fp_real(const std::complex<T>& x)
     {
         return x.real();
     }
@@ -1483,6 +1568,7 @@ namespace FUNCTIONPARSERTYPES
     }
   #endif
 #line 3 "extrasrc/functions/func_tan.hh"
+    // sign(x) * sqrt(1 / cos(x)^2 - 1), or sin(x) / cos(x)
     template<typename Value_t>
     inline Value_t fp_tan(const Value_t& x) { return std::tan(x); }
 
@@ -1576,36 +1662,6 @@ namespace FUNCTIONPARSERTYPES
         // return (exp2x-T(1)) / (exp2x+T(1));
     }
   #endif
-#line 3 "extrasrc/functions/help_absand.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absAnd(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_absTruth(a) && fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/help_absnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absNot(const Value_t& b)
-    {
-        return Value_t(!fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/help_absnotnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absNotNot(const Value_t& b)
-    {
-        return Value_t(fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/help_absor.hh"
-    template<typename Value_t>
-    inline const Value_t fp_absOr(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_absTruth(a) || fp_absTruth(b));
-    }
-#line 3 "extrasrc/functions/help_and.hh"
-    template<typename Value_t>
-    inline const Value_t fp_and(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_truth(a) && fp_truth(b));
-    }
 #line 3 "extrasrc/functions/help_d2r.hh"
     template<typename Value_t>
     inline Value_t DegreesToRadians(const Value_t& degrees)
@@ -1694,24 +1750,6 @@ namespace FUNCTIONPARSERTYPES
         return std::complex<T> ( T(), v.real() );
     }
   #endif
-#line 3 "extrasrc/functions/help_not.hh"
-    template<typename Value_t>
-    inline const Value_t fp_not(const Value_t& b)
-    {
-        return Value_t(!fp_truth(b));
-    }
-#line 3 "extrasrc/functions/help_notnot.hh"
-    template<typename Value_t>
-    inline const Value_t fp_notNot(const Value_t& b)
-    {
-        return Value_t(fp_truth(b));
-    }
-#line 3 "extrasrc/functions/help_or.hh"
-    template<typename Value_t>
-    inline const Value_t fp_or(const Value_t& a, const Value_t& b)
-    {
-        return Value_t(fp_truth(a) || fp_truth(b));
-    }
 #line 3 "extrasrc/functions/help_r2d.hh"
     template<typename Value_t>
     inline Value_t RadiansToDegrees(const Value_t& radians)
@@ -1827,7 +1865,7 @@ namespace FUNCTIONPARSERTYPES
     template<typename T>
     struct IsComplexType<std::complex<T> >: public std::true_type { };
   #endif
-#line 1831 "extrasrc/fpaux.hh"
+#line 1869 "extrasrc/fpaux.hh"
 //$PLACEMENT_END
 
 } // namespace FUNCTIONPARSERTYPES

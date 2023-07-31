@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.25,3.25,0.5
 F=csc(log2(a))
-C=1/fp_sin(fp_log2(a))

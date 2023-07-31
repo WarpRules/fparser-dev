@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=imag(tan(a))
-C=fp_imag(fp_tan(a))

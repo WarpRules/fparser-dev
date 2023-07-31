@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-0.75,0.75,0.25
 F=atan(atanh(a))
-C=fp_atan(fp_atanh(a))

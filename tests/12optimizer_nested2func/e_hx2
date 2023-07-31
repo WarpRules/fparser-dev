@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=sec(hypot(a,2))
-C=1/fp_cos(fp_hypot(a,2))

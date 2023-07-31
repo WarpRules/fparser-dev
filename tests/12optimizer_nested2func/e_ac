@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=sec(acos(a))
-C=1/fp_cos(fp_acos(a))

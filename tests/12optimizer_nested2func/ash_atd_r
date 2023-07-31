@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=asinh(atan(a/b))
-C=fp_asinh(fp_atan(a/b))

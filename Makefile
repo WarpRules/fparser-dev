@@ -256,6 +256,7 @@ $(word 1,$(TESTBED_GENSRC)) : tests/make_tests $(wildcard tests/*/*) $(wildcard 
 endif
 	tests/make_tests \
 		--ignore "*~" \
+		--ignore "*.sh" \
 		--ignore "*.php" \
 		--ignore "*/.*" \
 		--ignore "*.cc" \

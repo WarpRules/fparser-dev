@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=atanh(tanh(a))
-C=fp_atanh(fp_tanh(a))

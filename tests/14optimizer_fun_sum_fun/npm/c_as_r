@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=-cos(a)-asin(-a)
-C=-fp_cos(a)-fp_asin(-a)
-#X=fp_sub(fp_mul(fp_cos(a),[-1,0]),fp_asin(fp_mul(a,[-1,0])))

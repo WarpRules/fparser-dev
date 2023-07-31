@@ -2,4 +2,3 @@ T=d f ld
 V=x
 R=-0.7, 0.7, 0.28
 F=cos(x) + sec(x)
-C=fp_cos(x) + 1/fp_cos(x)

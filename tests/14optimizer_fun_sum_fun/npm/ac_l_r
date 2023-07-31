@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-1,-0.1,0.5
 F=-acos(a)-log(-a)
-C=-fp_acos(a)-fp_log(-a)
-#X=fp_sub(fp_mul(fp_acos(a),[-1,0]),fp_log(fp_mul(a,[-1,0])))

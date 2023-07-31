@@ -55,8 +55,3 @@ F=x/sin(y) + x/cos(y) + x/tan(y) + x/csc(y) + x/sec(y) + x/cot(y) + \
 
 # Unfortunately, the optimizer generates tan(), sec() and so on
 # before it realizes the opportunities for sincos() use.
-
-C=    x/fp_sin(y) + x/fp_cos(y) + x/fp_tan(y) \
-    + x*fp_sin(y) + x*fp_cos(y) + x*fp_tan(y) \
-    + 1/fp_sin(y) + 1/fp_cos(y) + 1/fp_tan(y) \
-    + 1*fp_sin(y) + 1*fp_cos(y) + 1*fp_tan(y)

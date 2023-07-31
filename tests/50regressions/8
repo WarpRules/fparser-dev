@@ -5,4 +5,3 @@ T=d f
 V=x,y
 R=-9,9,1
 F=atan2(-x,-y) + 10*atan2(-x,y) + 20*atan2(x,-y) + 30*atan2(x,y)
-C=fp_atan2(-x,-y) + 10*fp_atan2(-x,y) + 20*fp_atan2(x,-y) + 30*fp_atan2(x,y)

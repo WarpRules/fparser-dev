@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=real(1/hypot(2,a))
-C=fp_real(1/fp_hypot(2,a))

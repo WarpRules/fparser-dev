@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=atan(a)-log(-a)
-C=fp_atan(a)-fp_log(-a)
-#X=fp_sub(fp_atan(a),fp_log(fp_mul(a,[-1,0])))

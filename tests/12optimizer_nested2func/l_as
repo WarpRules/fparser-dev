@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=log(asin(a))
-C=fp_log(fp_asin(a))

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=exp2(log(a))
-C=fp_exp2(fp_log(a))

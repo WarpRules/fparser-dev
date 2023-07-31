@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=0.25,0.75,0.125
 F=atanh(-a)-log(a)
-C=fp_atanh(-a)-fp_log(a)
-#X=fp_sub(fp_atanh(fp_mul(a,[-1,0])),fp_log(a))

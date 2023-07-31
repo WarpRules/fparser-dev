@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=log(conj(a))
-C=fp_log(fp_conj(a))

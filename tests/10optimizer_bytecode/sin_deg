@@ -1,6 +1,5 @@
 DEG=true
-T=d f ld
+T=d f ld mf
 V=x
 R=0,1,1
 F=sin(1.1)+x
-C=fp_sin(d2r(1.1))+x

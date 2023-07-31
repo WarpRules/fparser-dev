@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=csc(acosh((a+0.6)))
-C=1/fp_sin(fp_acosh(a+0.6))

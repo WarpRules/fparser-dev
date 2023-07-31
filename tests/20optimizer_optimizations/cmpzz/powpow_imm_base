@@ -16,9 +16,3 @@ F=0x0001 * (pow(2,x) < pow(-4,y)) + \
   0x0008 * (pow(2,x) >= pow(-4,y)) + \
   0x0010 * (pow(2,x) != pow(-4,y)) + \
   0x0020 * (pow(2,x) = pow(-4,y))
-C=0x0001 * fp_less(fp_pow(2,x), fp_pow(-4,y)) + \
-  0x0002 * fp_lessOrEq(fp_pow(2,x), fp_pow(-4,y)) + \
-  0x0004 * fp_greater(fp_pow(2,x), fp_pow(-4,y)) + \
-  0x0008 * fp_greaterOrEq(fp_pow(2,x), fp_pow(-4,y)) + \
-  0x0010 * fp_nequal(fp_pow(2,x), fp_pow(-4,y)) + \
-  0x0020 * fp_equal(fp_pow(2,x), fp_pow(-4,y))

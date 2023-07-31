@@ -5,7 +5,3 @@ F=(acos(x) >= 0) + \
   2*(0 <= acos(x)) + \
   4*(acos(x) <= 0) + \
   8*(0 >= acos(x))
-C=fp_greaterOrEq(fp_acos(x), 0) + \
-  2*fp_lessOrEq(0, fp_acos(x)) + \
-  4*fp_lessOrEq(fp_acos(x), 0) + \
-  8*fp_greaterOrEq(0, fp_acos(x))

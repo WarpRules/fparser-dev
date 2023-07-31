@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=arg(hypot(2,a))
-C=fp_arg(fp_hypot(2,a))

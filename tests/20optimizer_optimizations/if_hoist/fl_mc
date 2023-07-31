@@ -2,4 +2,3 @@ T=d ld f
 V=x,y
 R=-2,2,0.5
 F=floor((x<y)*-1.1)
-C=fp_floor(fp_less(x,y)*-1.1)

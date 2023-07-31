@@ -2,6 +2,3 @@ T=d f ld mf
 V=x
 R=-50,50,.1
 F=x*pi + sin(2*pi) + CONST
-C=[&]{ static const Value_t pi = fp_const_pi<Value_t>(); \
-  return \
-  x*pi + fp_sin(2*pi) + fp_const_preciseDouble<Value_t>(CONST); }()

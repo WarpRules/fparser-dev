@@ -2,4 +2,3 @@ T=d ld f
 V=x,y
 R=-2,2,0.5
 F=sqrt(x<y)
-C=fp_sqrt(fp_less(x,y))

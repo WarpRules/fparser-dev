@@ -66,12 +66,12 @@ namespace
             case Oneness_Any: case OnenessMask: break;
             case Oneness_One:
                 if(!tree.IsImmed()) return false;
-                if(!fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
+                if(!fp_equal(fp_abs(tree.GetImmed()), fp_real(Value_t(1)))) return false;
                 break;
             case Oneness_NotOne:
                 if(tree.IsImmed())
                 {
-                    if(fp_equal(fp_abs(tree.GetImmed()), Value_t(1))) return false;
+                    if(fp_equal(fp_abs(tree.GetImmed()), fp_real(Value_t(1)))) return false;
                 }
                 break;
         }

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-2,2,0.5
 F=asinh(tanh(a!=b))
-C=fp_asinh(fp_tanh(fp_nequal(a,b)))

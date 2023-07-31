@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=0.5,1,0.25
 F=asin(arg((a+0.6)))
-C=fp_asin(fp_arg(a+0.6))

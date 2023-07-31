@@ -5,4 +5,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.1
 F=log(a*a)
-C=fp_log(a*a)

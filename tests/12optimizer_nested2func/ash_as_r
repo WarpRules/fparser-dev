@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=asinh(asin(a))
-C=fp_asinh(fp_asin(a))

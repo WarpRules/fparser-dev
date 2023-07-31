@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.5
 F=conj(a)
-C=fp_conj(a)

@@ -1,5 +1,5 @@
-T=f ld mf
+T=f d ld mf
 V=x
-R=-400, 400, 0.1
+R=-400, 400, 0.25
 F=trunc(x)
-C=fp_trunc(x)
+C=(x < 0) ? fp_ceil(x) : fp_floor(x)

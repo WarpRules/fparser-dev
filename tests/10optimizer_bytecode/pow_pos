@@ -2,4 +2,3 @@ T=d f ld mf
 V=x
 R=0,1,1
 F=pow(1.1, 7.1)+x
-C=fp_pow(1.1, 7.1)+x

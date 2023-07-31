@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=cosh(atan(a/b))
-C=fp_cosh(fp_atan(a/b))

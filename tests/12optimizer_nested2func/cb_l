@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=cbrt(log(a))
-C=fp_cbrt(fp_log(a))

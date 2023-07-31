@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=0.5,2,0.5
 F=log2(pow(a,b))
-C=fp_log2(fp_pow(a,b))

@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=tanh(a)-cos(a)
-C=fp_tanh(a)-fp_cos(a)
-#X=fp_sub(fp_tanh(a),fp_cos(a))

@@ -4,4 +4,3 @@ T=d f ld mf li gi
 V=x
 R=-10,10,1
 F=-if(x<0, x, -x) + -if(x<5, 2, 3)
-C=-(x<0 ? x : -x) + -(x<5 ? 2 : 3)

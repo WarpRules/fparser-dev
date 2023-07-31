@@ -1,6 +1,7 @@
 //$DEP: func_log
 //$DEP: func_sqrt
 
+    // atan(x / sqrt(1 - x^2))
     template<typename Value_t>
     inline Value_t fp_asin(const Value_t& x) { return std::asin(x); }
 

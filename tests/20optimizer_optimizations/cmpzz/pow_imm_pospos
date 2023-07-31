@@ -1,4 +1,4 @@
-T=d ld f mf cd cf cld
+T=d ld f mf cd cf
 V=x
 R=-6,6,1
 
@@ -16,9 +16,3 @@ F=0x0001 * (pow(x,2) < 25) + \
   0x0008 * (pow(x,2) >= 25) + \
   0x0010 * (pow(x,2) != 25) + \
   0x0020 * (pow(x,2) = 25)
-C=0x0001 * fp_less(x*x, 25) + \
-  0x0002 * fp_lessOrEq(x*x, 25) + \
-  0x0004 * fp_greater(x*x, 25) + \
-  0x0008 * fp_greaterOrEq(x*x, 25) + \
-  0x0010 * fp_nequal(x*x, 25) + \
-  0x0020 * fp_equal(x*x, 25)

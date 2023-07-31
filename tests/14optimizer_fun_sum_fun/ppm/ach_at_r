@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=2.3125,4.75,0.0625
 F=acosh(a)+atan(-a)
-C=fp_acosh(a)+fp_atan(-a)
-#X=fp_add(fp_acosh(a),fp_atan(fp_mul(a,[-1,0])))

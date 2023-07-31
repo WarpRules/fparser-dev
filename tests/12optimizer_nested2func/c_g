@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=cos(arg(a))
-C=fp_cos(fp_arg(a))

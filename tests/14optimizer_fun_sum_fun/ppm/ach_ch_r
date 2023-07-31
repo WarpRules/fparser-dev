@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=2.25,6,0.0625
 F=acosh(a)+cosh(-a)
-C=fp_acosh(a)+fp_cosh(-a)
-#X=fp_add(fp_acosh(a),fp_cosh(fp_mul(a,[-1,0])))

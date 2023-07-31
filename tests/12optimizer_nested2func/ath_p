@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-3,3,2
 F=atanh(pow(a,b))
-C=fp_atanh(fp_pow(a,b))

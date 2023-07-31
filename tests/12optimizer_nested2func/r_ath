@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-0.75,0.75,0.25
 F=real(atanh(a))
-C=fp_real(fp_atanh(a))

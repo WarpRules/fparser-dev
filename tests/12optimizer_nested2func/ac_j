@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=acos(conj(a))
-C=fp_acos(fp_conj(a))

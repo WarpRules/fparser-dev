@@ -2,4 +2,3 @@ T=f d ld mf cf cd cld
 V=a
 R=-2,2,0.5
 F=tan(exp2(a))
-C=fp_tan(fp_exp2(a))

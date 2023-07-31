@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=cos(atan(a/b))
-C=fp_cos(fp_atan(a/b))

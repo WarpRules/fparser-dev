@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=acosh(hypot(a,2))
-C=fp_acosh(fp_hypot(a,2))

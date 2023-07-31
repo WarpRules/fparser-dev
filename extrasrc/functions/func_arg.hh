@@ -9,7 +9,7 @@
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_arg(const std::complex<T>& x)
+    inline T fp_arg(const std::complex<T>& x)
     {
         return std::arg(x);
     }

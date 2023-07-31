@@ -2,4 +2,3 @@ T=d ld f mf cd cf cld
 V=x
 R=-2.5,2.5,0.5
 F=sin(x)*-5.1+cos(x)*2.7
-C=fp_sin(x)*-5.1+fp_cos(x)*2.7

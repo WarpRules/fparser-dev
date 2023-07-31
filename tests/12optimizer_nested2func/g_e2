@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.5
 F=arg(exp2(a))
-C=fp_arg(fp_exp2(a))

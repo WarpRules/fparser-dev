@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=asinh(-a)-log(a)
-C=fp_asinh(-a)-fp_log(a)
-#X=fp_sub(fp_asinh(fp_mul(a,[-1,0])),fp_log(a))

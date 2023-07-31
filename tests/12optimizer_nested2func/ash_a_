@@ -2,4 +2,3 @@ T=f d ld mf cf cd cld
 V=a
 R=-3,3,2
 F=asinh(csc(a))
-C=fp_asinh(1/fp_sin(a))

@@ -237,15 +237,15 @@ cNeg cSub -> cAdd                                          # TEST 10/negsub
 cNeg cAbs -> cAbs                                          # TEST 10/negabs
 cDup cMul -> cSqr                                          # TEST 10/sqr_xx
 cNeg cSqr -> cSqr                                          # TEST 10/negsqr
-cAbs cSqr -> cSqr                                          # TEST 10/abssqr
+IF(!FP_COMPLEX_VERSION) cAbs cSqr -> cSqr                  # TEST 10/abssqr
 
-IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs  # TEST 10/sqrsqrt, 10/sqrsqrt_c
-IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                        # TEST 10/rsqrt0
-IF(FP_FLOAT_VERSION) cInv cSqrt -> cRSqrt                        # TEST 10/rsqrt1
-IF(FP_FLOAT_VERSION) cRSqrt cInv -> cSqrt                        # TEST 10/rsqrt2
-IF(FP_FLOAT_VERSION) cInv cRSqrt -> cSqrt                        # TEST 10/rsqrt3
-IF(FP_FLOAT_VERSION) cRSqrt cSqr  -> cInv                        # TEST 10/rsqrt4
-IF(FP_FLOAT_VERSION) cSqr cRSqrt  -> cInv cAbs                   # TEST 10/rsqrt5
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cSqrt  -> cAbs         # TEST 10/sqrsqrt, 10/sqrsqrt_c
+IF(FP_FLOAT_VERSION) cSqrt cInv -> cRSqrt                               # TEST 10/rsqrt0
+IF(FP_FLOAT_VERSION) cInv cSqrt -> cRSqrt                               # TEST 10/rsqrt1
+IF(FP_FLOAT_VERSION) cRSqrt cInv -> cSqrt                               # TEST 10/rsqrt2
+IF(FP_FLOAT_VERSION) cInv cRSqrt -> cSqrt                               # TEST 10/rsqrt3
+IF(FP_FLOAT_VERSION) cRSqrt cSqr  -> cInv                               # TEST 10/rsqrt4
+IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cRSqrt  -> cInv cAbs   # TEST 10/rsqrt5
 IF(!FP_COMPLEX_VERSION && FP_FLOAT_VERSION) cSqr cInv cAbs -> cSqr cInv # TEST 10/rsqrt6
 IF(!FP_COMPLEX_VERSION) A [IsNeverNegativeValueOpcode(A)] cAbs -> A # TEST 10/absneverneg
 

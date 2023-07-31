@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-3,3,2
 F=tanh(polar(a,b))
-C=fp_tanh(fp_polar(a,b))

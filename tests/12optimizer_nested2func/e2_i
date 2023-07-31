@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.5
 F=exp2(imag(a))
-C=fp_exp2(fp_imag(a))

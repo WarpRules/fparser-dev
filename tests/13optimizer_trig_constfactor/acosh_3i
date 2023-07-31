@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=acosh(a*3i)
-C=fp_acosh(a*(i+i+i))
-#X=fp_acosh(fp_mul(a,[0,3]))

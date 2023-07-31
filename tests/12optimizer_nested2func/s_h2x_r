@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sin(hypot(2,a))
-C=fp_sin(fp_hypot(2,a))

@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=2.875,7.9375,0.0625
 F=acosh(a)+asinh(a)
-C=fp_acosh(a)+fp_asinh(a)
-#X=fp_add(fp_acosh(a),fp_asinh(a))

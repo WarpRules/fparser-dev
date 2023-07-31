@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=5.9375,11.8125,0.0625
 F=acosh(a)-cos(a)
-C=fp_acosh(a)-fp_cos(a)
-#X=fp_sub(fp_acosh(a),fp_cos(a))

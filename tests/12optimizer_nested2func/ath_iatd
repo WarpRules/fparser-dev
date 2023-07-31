@@ -3,4 +3,3 @@ T=cf cd cld
 V=a,b
 R=0.5,1,0.25
 F=atanh(1/atan((a+-0.2)/(b+-0.2)))
-C=fp_atanh(1/fp_atan((a+-0.2)/(b+-0.2)))

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,1,0.25
 F=atanh(log2((a+0.2)))
-C=fp_atanh(fp_log2(a+0.2))

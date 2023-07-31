@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=atanh(sin(a))
-C=fp_atanh(fp_sin(a))

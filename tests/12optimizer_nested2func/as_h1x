@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=0.5,2,0.5
 F=asin(hypot(1,a))
-C=fp_asin(fp_hypot(1,a))

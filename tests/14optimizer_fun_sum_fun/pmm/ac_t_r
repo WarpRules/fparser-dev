@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=acos(-a)+tan(-a)
-C=fp_acos(-a)+fp_tan(-a)
-#X=fp_add(fp_acos(fp_mul(a,[-1,0])),fp_tan(fp_mul(a,[-1,0])))

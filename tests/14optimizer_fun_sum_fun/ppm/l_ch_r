@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=log(a)+cosh(-a)
-C=fp_log(a)+fp_cosh(-a)
-#X=fp_add(fp_log(a),fp_cosh(fp_mul(a,[-1,0])))

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=csc(1/atan2(a,b))
-C=1/fp_sin(1/fp_atan2(a,b))

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=cos(asin(a))
-C=fp_cos(fp_asin(a))

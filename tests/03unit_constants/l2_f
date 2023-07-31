@@ -2,4 +2,4 @@ T=f
 V=x
 R=0,1,1
 F=x*0+ logtwo
-C=logf(x*0+2)
+C=std::log(x*0+2)

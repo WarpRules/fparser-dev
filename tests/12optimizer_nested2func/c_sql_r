@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-2,2,0.5
 F=cos(sqrt(a!=b))
-C=fp_cos(fp_sqrt(fp_nequal(a,b)))

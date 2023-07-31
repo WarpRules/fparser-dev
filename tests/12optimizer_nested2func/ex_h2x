@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=exp(hypot(2,a))
-C=fp_exp(fp_hypot(2,a))

@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=acos(-a)-exp(a)
-C=fp_acos(-a)-fp_exp(a)
-#X=fp_sub(fp_acos(fp_mul(a,[-1,0])),fp_exp(a))

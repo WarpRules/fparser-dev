@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=1/atan(a/b)
-C=1/fp_atan(a/b)

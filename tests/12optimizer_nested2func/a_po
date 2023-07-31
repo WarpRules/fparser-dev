@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-3,3,2
 F=csc(polar(a,b))
-C=1/fp_sin(fp_polar(a,b))

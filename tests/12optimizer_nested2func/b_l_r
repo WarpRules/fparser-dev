@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=abs(log(a))
-C=fp_abs(fp_log(a))

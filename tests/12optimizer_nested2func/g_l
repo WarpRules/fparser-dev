@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=arg(log(a))
-C=fp_arg(fp_log(a))

@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-5.4375,-2.8125,0.0625
 F=asinh(a)-acosh(-a)
-C=fp_asinh(a)-fp_acosh(-a)
-#X=fp_sub(fp_asinh(a),fp_acosh(fp_mul(a,[-1,0])))

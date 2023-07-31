@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,1,0.25
 F=log10(tan(a))
-C=fp_log10(fp_tan(a))

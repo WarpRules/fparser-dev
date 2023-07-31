@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=tan(a)-sin(-a)
-C=fp_tan(a)-fp_sin(-a)
-#X=fp_sub(fp_tan(a),fp_sin(fp_mul(a,[-1,0])))

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-0.5,0.5,0.25
 F=acosh(1/hypot((a+-0.2),(b+-0.2)))
-C=fp_acosh(1/fp_hypot(a+-0.2,b+-0.2))

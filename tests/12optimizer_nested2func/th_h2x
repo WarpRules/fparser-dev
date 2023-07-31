@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-1,1,0.5
 F=tanh(hypot(2,a))
-C=fp_tanh(fp_hypot(2,a))

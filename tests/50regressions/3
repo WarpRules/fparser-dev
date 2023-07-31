@@ -5,5 +5,3 @@ T=d f ld mf li gi
 V=x
 R=-2, 2, 1
 F=sub(  (!x & !!x) ,  (!x | !!x)  )
-#C=-1
-C=userDefFuncSub({  fp_and(fp_not(x), fp_notNot(x)),  fp_or(fp_not(x), fp_notNot(x)) })

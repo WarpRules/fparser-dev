@@ -2,4 +2,3 @@ T=d ld f mf cd cf cld
 V=x
 R=-3,3,0.25
 F=if(x<0,  ceil(x),floor(x))
-C=fp_floor(x)*fp_not(fp_less(x,0)) + fp_ceil(x)*fp_less(x,0)

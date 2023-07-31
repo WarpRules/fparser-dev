@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=5.6875,9.6875,0.0625
 F=tan(-a)-acosh(a)
-C=fp_tan(-a)-fp_acosh(a)
-#X=fp_sub(fp_tan(fp_mul(a,[-1,0])),fp_acosh(a))

@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=0.25,3.25,0.5
 F=acosh(sqrt(a))
-C=fp_acosh(fp_sqrt(a))

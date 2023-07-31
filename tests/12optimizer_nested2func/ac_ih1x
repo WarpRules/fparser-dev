@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=acos(1/hypot(1,a))
-C=fp_acos(1/fp_hypot(1,a))

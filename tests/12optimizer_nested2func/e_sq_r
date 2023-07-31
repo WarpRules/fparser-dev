@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0,2,0.5
 F=sec(sqrt(a))
-C=1/fp_cos(fp_sqrt(a))

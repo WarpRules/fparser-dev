@@ -1717,17 +1717,18 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                        OutStream&    out,
                        std::ostream& briefErrorMessages)
 {
+    using namespace FUNCTIONPARSERTYPES;
     const TestType &testData = getTest(testIndex);
 
     Value_t vars[10];
     Value_t fp_vars[10];
 
-    bool is_complex = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value;
+    bool is_complex = IsComplexType<Value_t>::value;
     Value_t complex_1_0 = Value_t(1);
-    Value_t complex_0_1 = is_complex ? FUNCTIONPARSERTYPES::fp_sqrt((Value_t)(-1)) : 0;
+    Value_t complex_0_1 = is_complex ? fp_sqrt((Value_t)(-1)) : 0;
     // ^ This expression constructs 1i in a way that compiles fine in real & integer modes
     Value_t complex_1_1 = complex_0_1 + complex_1_0;
-    bool use_complex_stepping = is_complex && FUNCTIONPARSERTYPES::fp_imag(paramStep) == Value_t();
+    bool use_complex_stepping = is_complex && fp_imag(paramStep) == Value_t();
 
     for(unsigned i = 0; i < testData.paramAmount; ++i)
     {
@@ -1763,7 +1764,7 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
                 error << "EvalError " << fp.EvalError() << " ("
                       << getEvalErrorName(fp.EvalError()) << ")";
             }
-            else if(FUNCTIONPARSERTYPES::IsIntType<Value_t>::value)
+            else if(IsIntType<Value_t>::value)
             {
                 if(v1 != v2)
                 {
@@ -1779,13 +1780,13 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             else
             {
             #ifdef FP_SUPPORT_COMPLEX_NUMBERS
-                if(FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value && testData.ignoreImagSign)
+                if(IsComplexType<Value_t>::value && testData.ignoreImagSign)
                 {
                     // Ignore differences in the sign of the imaginary component
-                    if(FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_imag(v1), Value_t{})
-                    != FUNCTIONPARSERTYPES::fp_less(FUNCTIONPARSERTYPES::fp_imag(v2), Value_t{}))
+                    if(fp_less(fp_imag(v1), fp_real(Value_t{}))
+                    != fp_less(fp_imag(v2), fp_real(Value_t{})))
                     {
-                        v2 = FUNCTIONPARSERTYPES::fp_conj(v2);
+                        v2 = fp_conj(v2);
                     }
                 }
             #endif
@@ -1885,14 +1886,14 @@ bool runRegressionTest(FunctionParserBase<Value_t>& fp,
             vars[paramInd] += paramStep;
             if(use_complex_stepping)
             {
-                if(fp_real(vars[paramInd]) <= FUNCTIONPARSERTYPES::fp_real(paramMax))
+                if(fp_real(vars[paramInd]) <= fp_real(paramMax))
                     break;
                 // Reset the real-axis component to minimum
                 // and step the imag-axis
-                auto imagOnly = (vars[paramInd] - FUNCTIONPARSERTYPES::fp_conj(vars[paramInd]))
+                auto imagOnly = (vars[paramInd] - fp_conj(vars[paramInd]))
                                 / Value_t(2);
                 vars[paramInd] = fp_real(paramMin) + imagOnly + complex_0_1 * paramStep;
-                if(fp_imag(vars[paramInd]) <= FUNCTIONPARSERTYPES::fp_real(paramMax))
+                if(fp_imag(vars[paramInd]) <= fp_real(paramMax))
                 {
                     break;
                 }
@@ -1956,21 +1957,17 @@ bool runRegressionTests(unsigned n_threads,
                         std::string& prev_test_prefix,
                         std::atomic<unsigned>& test_counter)
 {
+    using namespace FUNCTIONPARSERTYPES;
     // Setup the function parser for testing
     // -------------------------------------
     FunctionParserBase<Value_t> fp;
     locked_cout out(print_lock);
 
-    bool ret = fp.AddConstant("pi",
-                              FUNCTIONPARSERTYPES::fp_const_pi<Value_t>());
-    ret = ret && fp.AddConstant("naturalnumber",
-                                FUNCTIONPARSERTYPES::fp_const_e<Value_t>());
-    ret = ret && fp.AddConstant("logtwo",
-                                FUNCTIONPARSERTYPES::fp_const_log2<Value_t>());
-    ret = ret && fp.AddConstant("logten",
-                                FUNCTIONPARSERTYPES::fp_const_log10<Value_t>());
-    ret = ret && fp.AddConstant("CONST",
-                                FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(CONST));
+    bool ret = fp.AddConstant("pi", fp_const_pi<Value_t>());
+    ret = ret && fp.AddConstant("naturalnumber", fp_const_e<Value_t>());
+    ret = ret && fp.AddConstant("logtwo", fp_const_log2<Value_t>());
+    ret = ret && fp.AddConstant("logten", fp_const_log10<Value_t>());
+    ret = ret && fp.AddConstant("CONST", fp_const_preciseDouble<Value_t>(CONST));
     if(!ret)
     {
         if(thread_index == 0)
@@ -2094,8 +2091,8 @@ bool runRegressionTests(unsigned n_threads,
         if(gVerbosityLevel >= 3)
         {
             Value_t n_testvalues = (paramMax - paramMin) / paramStep;
-            bool use_complex_stepping = FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
-                                     && FUNCTIONPARSERTYPES::fp_imag(paramStep) == Value_t();
+            bool use_complex_stepping = IsComplexType<Value_t>::value
+                                     && fp_imag(paramStep) == Value_t();
             if(use_complex_stepping)
             {
                 // Parameter space is squared
@@ -2104,7 +2101,7 @@ bool runRegressionTests(unsigned n_threads,
             out << /*std::right <<*/ std::setw(2)
                 << testData.testName << ": \""
                 << testData.funcString << "\" ("
-                << std::pow(FUNCTIONPARSERTYPES::makeLongInteger(n_testvalues),
+                << std::pow(makeLongInteger(n_testvalues),
                             (long)testData.paramAmount)
                 << " param. combinations): " << std::flush;
         }

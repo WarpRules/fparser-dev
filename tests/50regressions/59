@@ -4,4 +4,3 @@ T=d f ld mf
 V=x,y
 R=-2, 2, 1.2
 F=cosh(x^2) + tanh(y^2)
-C=fp_cosh(x*x) + fp_tanh(y*y)

@@ -3,4 +3,3 @@ T=f d
 V=x,y
 R=-5.5,5.5,0.5
 F=int(0.5+x)+10*trunc(0.5+y)
-C=fp_int(0.5+x)+10*fp_trunc(0.5+y)

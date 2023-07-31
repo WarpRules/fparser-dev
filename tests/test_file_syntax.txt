@@ -12,6 +12,9 @@ A line beginning with "T=" describes which datatypes this rule applies to.
   mf=mpfr float
   li=long int
   gi=gmp int
+  cf=complex float
+  cd=complex double
+  cld=complex long double
 
 -------------------------
 DEG=true
@@ -33,8 +36,6 @@ The number of parameters is automatically deduced from this.
 The variable names are to be written in a format accepted by fparser.
 If they are not valid C++ variable names, make_tests will rename them
 transparently.
-
-This line, must be indicated before the C line.
 
 
 -------------------------
@@ -61,7 +62,7 @@ You can use \ to continue the function to the next line.
 C=x+y+z
 -------------------------
 
-Mandatory!
+Optional.
 This specifies the C++ function expression that corresponds
 the fparser function. You do not need to typecast your numeric
 constants; casts will be automatically added by make_tests.
@@ -71,6 +72,10 @@ You can use \ to continue the function to the next line.
 The expression must not be a full statement; make_tests will
 automatically prefix it with "return " and add a ";" at the
 end of it.
+
+If the expression definition is omitted, make_tests will
+create one by translating the Fparser function into C++.
+
 
 ------------------------
 Calling PCall functions in the C++ code

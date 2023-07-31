@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-2,2,0.5
 F=arg(exp2(a!=b))
-C=fp_arg(fp_exp2(fp_nequal(a,b)))

@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=-0.5,0.5,0.25
 F=asin(abs(a))
-C=fp_asin(fp_abs(a))

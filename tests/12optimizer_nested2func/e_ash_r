@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sec(asinh(a))
-C=1/fp_cos(fp_asinh(a))

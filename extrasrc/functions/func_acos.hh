@@ -1,6 +1,7 @@
 //$DEP: func_log
 //$DEP: func_sqrt
 
+    // pi/2 - asin(x)
     template<typename Value_t>
     inline Value_t fp_acos(const Value_t& x) { return std::acos(x); }
 

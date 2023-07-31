@@ -1,6 +1,5 @@
 # cSqr cSqrt
-T=f d ld cf cd cld
+T=f d ld cd
 V=x
 R=-2,2,0.5
 F=sqrt(x^2)
-C=fp_sqrt(x*x)

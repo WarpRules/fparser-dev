@@ -2,4 +2,3 @@ T=d ld li f mf gi
 V=x,y
 R=-2,2,1
 F=if(x, min(y,2), min(y,5))
-C=fp_min(y, (fp_truth(x)!=0 ? 2 : 5))

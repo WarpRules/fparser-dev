@@ -6,4 +6,3 @@ T=d f ld mf li gi
 V=x,y
 R=-2, 2, 1
 F=sub(!(x-y), !!(x-y))
-C=userDefFuncSub({ fp_not(x-y), fp_notNot(x-y) })

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=log2(log((a+0.6)))
-C=fp_log2(fp_log(a+0.6))

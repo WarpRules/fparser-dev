@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=asinh(a)-tan(a)
-C=fp_asinh(a)-fp_tan(a)
-#X=fp_sub(fp_asinh(a),fp_tan(a))

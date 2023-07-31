@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.5
 F=sec(a*3i)
-C=1/fp_cos(a*(i+i+i))
-#X=1/fp_cos(fp_mul(a,[0,3]))

@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-2,2,0.5
 F=arg(sec(a!=b))
-C=fp_arg(1/fp_cos(fp_nequal(a,b)))

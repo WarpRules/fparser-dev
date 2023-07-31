@@ -7,9 +7,3 @@ F=1*(atan(x)=atan(2)) + \
   8*(atan(x)>atan(2)) + \
   16*(atan(x)>=atan(2)) + \
   32*(atan(x)!=atan(2))
-C=1*fp_equal(fp_atan(x),fp_atan(2)) + \
-  2*fp_less(fp_atan(x),fp_atan(2)) + \
-  4*fp_lessOrEq(fp_atan(x),fp_atan(2)) + \
-  8*fp_greater(fp_atan(x),fp_atan(2)) + \
-  16*fp_greaterOrEq(fp_atan(x),fp_atan(2)) + \
-  32*fp_nequal(fp_atan(x),fp_atan(2))

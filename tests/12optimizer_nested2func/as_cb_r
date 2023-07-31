@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0,1,0.5
 F=asin(cbrt(a))
-C=fp_asin(fp_cbrt(a))

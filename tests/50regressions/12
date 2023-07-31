@@ -6,4 +6,3 @@ T=cf cd cld
 V=a
 R=-2,2,0.1
 F=sin(a+4i) + 3i*cos(a+3i)
-C=fp_sin(a+(i+i+i+i)) + (i+i+i)*fp_cos(a+(i+i+i))

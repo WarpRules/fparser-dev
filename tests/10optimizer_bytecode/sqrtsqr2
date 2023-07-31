@@ -4,4 +4,3 @@ T=d f
 V=x
 R=-1,1,0.5
 F=sqrt(acos(x))^2
-C=fp_pow(fp_sqrt(fp_acos(x)), 2)

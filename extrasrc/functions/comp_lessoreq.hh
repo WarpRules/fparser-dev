@@ -14,6 +14,6 @@
     template<typename T>
     inline bool fp_lessOrEq(const std::complex<T>& x, const std::complex<T>& y)
     {
-        return (x.real() <= y.real() + Epsilon<T>::value);
+        return fp_lessOrEq(x.real(), y.real());
     }
 #endif

@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sin(tan(a))
-C=fp_sin(fp_tan(a))

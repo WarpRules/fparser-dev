@@ -2,4 +2,3 @@ T=cf cd cld
 V=a,b
 R=-2,2,2
 F=atan(polar(a,b))
-C=fp_atan(fp_polar(a,b))

@@ -2,4 +2,3 @@ T=d ld f
 V=x,y
 R=-2,2,0.5
 F=log2(if(x<y, 1.1, 1.1))
-C=fp_log2((fp_less(x,y)!=0 ? 1.1 : 1.1))

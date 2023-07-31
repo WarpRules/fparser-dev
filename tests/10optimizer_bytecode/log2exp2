@@ -4,4 +4,3 @@ T=d f
 V=x
 R=-1,0.75,0.25
 F=exp2(log2(acos(x)))
-C=fp_exp2(fp_log2(fp_acos(x)))

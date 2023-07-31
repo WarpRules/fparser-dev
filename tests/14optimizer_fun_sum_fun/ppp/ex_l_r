@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=0.5,2,0.5
 F=exp(a)+log(a)
-C=fp_exp(a)+fp_log(a)
-#X=fp_add(fp_exp(a),fp_log(a))

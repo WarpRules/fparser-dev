@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=-log(a)-sin(-a)
-C=-fp_log(a)-fp_sin(-a)
-#X=fp_sub(fp_mul(fp_log(a),[-1,0]),fp_sin(fp_mul(a,[-1,0])))

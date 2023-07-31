@@ -1,5 +1,4 @@
-T=d ld f mf cd cf cld
+T=d ld f mf cd cf
 V=x
 R=-6,6,1
-F=(pow(x,3) < -125)
-C=fp_less(x*x*x, -125)
+F=pow(x,3) < -125

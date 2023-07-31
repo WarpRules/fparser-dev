@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=0.5,2,0.5
 F=log(1/atan2(a,b))
-C=fp_log(1/fp_atan2(a,b))

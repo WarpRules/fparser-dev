@@ -17,6 +17,26 @@ namespace
         }
     }
 
+    [[maybe_unused]] void
+    str_replace_inplace(std::string& where, const char* search, const char* with)
+    {
+        str_replace_inplace(where, std::string(search), std::string(with));
+    }
+
+    [[maybe_unused]] [[nodiscard]]
+    std::size_t str_find_count(const std::string& haystack, const std::string& needle)
+    {
+        std::size_t start = 0, result = 0;
+        while(start < haystack.size())
+        {
+            std::size_t pos = haystack.find(needle, start);
+            if(pos == haystack.npos) break;
+            ++result;
+            start = pos + needle.size();
+        }
+        return result;
+    }
+
     [[nodiscard]] [[maybe_unused]] bool WildMatch(const char *pattern, const char *what)
     {
         for(; *what || *pattern; ++what, ++pattern)

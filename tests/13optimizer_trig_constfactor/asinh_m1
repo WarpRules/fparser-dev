@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=asinh(a*-1)
-C=fp_asinh(a*-1)
-#X=fp_asinh(fp_mul(a,[-1,0]))

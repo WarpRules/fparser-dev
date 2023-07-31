@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-0.75,-0.25,0.25
 F=atanh(-a)+tan(-a)
-C=fp_atanh(-a)+fp_tan(-a)
-#X=fp_add(fp_atanh(fp_mul(a,[-1,0])),fp_tan(fp_mul(a,[-1,0])))

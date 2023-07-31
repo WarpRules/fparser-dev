@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-3,3,2
 F=acos(a)+acosh(-a)
-C=fp_acos(a)+fp_acosh(-a)
-#X=fp_add(fp_acos(a),fp_acosh(fp_mul(a,[-1,0])))

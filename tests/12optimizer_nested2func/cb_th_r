@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=0,2,0.5
 F=cbrt(tanh(a))
-C=fp_cbrt(fp_tanh(a))

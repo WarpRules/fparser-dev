@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=0.5,1,0.25
 F=asin(atan((a+0.4)/(b+0.4)))
-C=fp_asin(fp_atan((a+0.4)/(b+0.4)))

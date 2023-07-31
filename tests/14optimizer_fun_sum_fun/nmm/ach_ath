@@ -2,5 +2,3 @@ T=cf cd cld
 V=a
 R=-0.75,-0.25,0.25
 F=-acosh(-a)-atanh(-a)
-C=-fp_acosh(-a)-fp_atanh(-a)
-#X=fp_sub(fp_mul(fp_acosh(fp_mul(a,[-1,0])),[-1,0]),fp_atanh(fp_mul(a,[-1,0])))

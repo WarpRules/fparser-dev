@@ -2,4 +2,3 @@ T=f d ld mf cf cd cld
 V=a,b
 R=0.5,2,0.5
 F=sec(pow(a,b))
-C=1/fp_cos(fp_pow(a,b))

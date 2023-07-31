@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sin(a)+atan(-a)
-C=fp_sin(a)+fp_atan(-a)
-#X=fp_add(fp_sin(a),fp_atan(fp_mul(a,[-1,0])))

@@ -89,10 +89,10 @@ namespace
             if(!p.min.known || !p.max.known) return false;
             switch(when)
             {
-                case Eq0: return p.min.val==Value_t(0) && p.max.val==p.min.val;
-                case Eq1: return p.min.val==Value_t(1) && p.max.val==p.max.val;
-                case Gt0Le1: return p.min.val>Value_t(0) && p.max.val<=Value_t(1);
-                case Ge0Lt1: return p.min.val>=Value_t(0) && p.max.val<Value_t(1);
+                case Eq0: return p.min.val==fp_real(Value_t(0)) && p.max.val==p.min.val;
+                case Eq1: return p.min.val==fp_real(Value_t(1)) && p.max.val==p.max.val;
+                case Gt0Le1: return p.min.val>fp_real(Value_t(0)) && p.max.val<=fp_real(Value_t(1));
+                case Ge0Lt1: return p.min.val>=fp_real(Value_t(0)) && p.max.val<fp_real(Value_t(1));
                 default:;
             }
             return false;
@@ -267,7 +267,7 @@ namespace
                     tree.SetParam(1, CodeTreeImmed(fp_asinh(tree.GetParam(1).GetImmed())));
                     return true;
                 case cTanh:
-                    if(fp_less(fp_abs(tree.GetParam(1).GetImmed()), Value_t(1)))
+                    if(fp_less(fp_abs(tree.GetParam(1).GetImmed()), fp_real(Value_t(1))))
                     {
                         tree.SetParam(0, tree.GetParam(0).GetParam(0));
                         tree.SetParam(1, CodeTreeImmed(fp_atanh(tree.GetParam(1).GetImmed())));

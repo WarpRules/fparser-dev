@@ -2,4 +2,3 @@ T=f d ld mf cf cd cld
 V=a
 R=-3,3,2
 F=sinh(cot(a))
-C=fp_sinh(1/fp_tan(a))

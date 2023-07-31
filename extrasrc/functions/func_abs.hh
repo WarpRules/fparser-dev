@@ -14,7 +14,7 @@
 
 #ifdef FP_SUPPORT_COMPLEX_NUMBERS
     template<typename T>
-    inline std::complex<T> fp_abs(const std::complex<T>& x)
+    inline T fp_abs(const std::complex<T>& x)
     {
         return std::abs(x);
         //T extent = fp_max(fp_abs(x.real()), fp_abs(x.imag()));

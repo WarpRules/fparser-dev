@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-4,0,0.75
 F=sinh(a)+log(-a)
-C=fp_sinh(a)+fp_log(-a)
-#X=fp_add(fp_sinh(a),fp_log(fp_mul(a,[-1,0])))

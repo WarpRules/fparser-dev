@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-2,2,0.5
 F=sinh(tan(a))
-C=fp_sinh(fp_tan(a))

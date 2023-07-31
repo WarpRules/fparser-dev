@@ -2,5 +2,3 @@ T=f d ld mf
 V=a
 R=-1,1,0.5
 F=asin(a)-tanh(-a)
-C=fp_asin(a)-fp_tanh(-a)
-#X=fp_sub(fp_asin(a),fp_tanh(fp_mul(a,[-1,0])))

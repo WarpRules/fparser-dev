@@ -2,4 +2,3 @@ T=f d ld mf
 V=a
 R=-0.1875,0.1875,0.0625
 F=acos(exp((a+-0.2)))
-C=fp_acos(fp_exp(a+-0.2))

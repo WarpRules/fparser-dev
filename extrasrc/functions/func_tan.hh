@@ -1,5 +1,6 @@
 //$DEP: help_sincos
 
+    // sign(x) * sqrt(1 / cos(x)^2 - 1), or sin(x) / cos(x)
     template<typename Value_t>
     inline Value_t fp_tan(const Value_t& x) { return std::tan(x); }
 

@@ -11,6 +11,8 @@
 #include <unordered_set>
 #include <vector>
 #include <map>
+#include <list>
+#include <functional>
 
 #include "stringutil.hh"
 
@@ -405,9 +407,9 @@ namespace
                     // Generate numeric literal
                     std::string literal(funcstr, endptr-funcstr);
                     std::string codename = "l"+literal;
-                    str_replace_inplace(codename, std::string("."), std::string("_"));
-                    str_replace_inplace(codename, std::string("+"), std::string("p"));
-                    str_replace_inplace(codename, std::string("-"), std::string("m"));
+                    str_replace_inplace(codename, ".", "_");
+                    str_replace_inplace(codename, "+", "p");
+                    str_replace_inplace(codename, "-", "m");
                     used_constants[codename] = literal;
                     codebuf << "c." << codename;
                     funcstr = endptr;
@@ -455,6 +457,501 @@ namespace
         }
     }
 
+    template<unsigned offset>
+    struct SimpleSpaceMask
+    {
+        enum { mask =
+            (1UL << ('\r'-offset)) |
+            (1UL << ('\n'-offset)) |
+            (1UL << ('\v'-offset)) |
+            (1UL << ('\t'-offset)) |
+            (1UL << (' ' -offset)) };
+    };
+    void SkipWS(const char*& function)
+    {
+        while(true)
+        {
+            enum { n = sizeof(unsigned long)>=8 ? 0 : '\t' };
+            typedef signed char schar;
+            unsigned byte = (unsigned char)*function;
+            byte -= n;
+            // ^Note: values smaller than n intentionally become
+            //        big values here due to integer wrap. The
+            //        comparison below thus excludes them, making
+            //        the effective range 0x09..0x20 (32-bit)
+            //        or 0x00..0x20 (64-bit) within the if-clause.
+            if(byte <= (unsigned char)(' '-n))
+            {
+                unsigned long shifted = 1UL << byte;
+                const unsigned long mask = SimpleSpaceMask<n>::mask;
+                if(mask & shifted)
+                    { ++function; continue; } // \r, \n, \t, \v and space
+                break;
+            }
+            if(byte < 0xC2-n) [[likely]]
+                break;
+
+            if(byte == 0xC2-n && function[1] == char(0xA0))
+                { function += 2; continue; } // U+00A0
+            if(byte == 0xE3-n &&
+               function[1] == char(0x80) && function[2] == char(0x80))
+                { function += 3; continue; } // U+3000
+            if(byte == 0xE2-n)
+            {
+                if(function[1] == char(0x81))
+                {
+                    if(function[2] != char(0x9F)) break;
+                    function += 3; // U+205F
+                    continue;
+                }
+                if(function[1] == char(0x80))
+                if(function[2] == char(0xAF) || // U+202F
+                   schar(function[2]) <= schar(0x8B) // U+2000..U+200B
+                  )
+                {
+                    function += 3;
+                    continue;
+                }
+            }
+            break;
+        } // while(true)
+    }
+
+    std::string TranslateToCpp(const char* function, bool OnlyInt, bool HasComplex, bool UseDegrees)
+    {
+        enum Type { Bool, Real, Other };
+        using Result = std::pair<Type, std::string>;
+        std::function<Result(const char*&)> CompileExpression;
+        std::function<Result(const char*&)> CompileUnaryMinus;
+        auto ToFun = [&](const std::string& f, const std::string& s)
+        {
+            unsigned length = f.empty() ? readIdentifierCommon(s.c_str()) : 0;
+            bool fully_parens = s.size() > length && s[length] == '(';
+            unsigned counter  = 0;
+            for(unsigned pos=length; pos < s.size(); ++pos)
+            {
+                char c = s[pos];
+                if(c == '(') ++counter;
+                else if(c == ')') --counter;
+                else if(!counter) { fully_parens = false; break; }
+            }
+            if(fully_parens)
+                return f + s;
+            else
+                return f + "(" + s + ")";
+        };
+        auto ToVal = [&](const std::string& s)
+        {
+            return ToFun("Value_t", s);
+        };
+        auto CompileElement = [&](const char*& function)
+        {
+            SkipWS(function);
+            //std::cerr << "CompileElement: At \"" << function << "\"?\n";
+            if((*function >= '0' && *function <= '9') || *function == '.')
+            {
+                char*endptr;
+                strtold(function, &endptr);
+                std::string tok(function, endptr-function);
+                function = endptr;
+                if(*function == 'i')
+                {
+                    tok = "(" + tok + "*i)";
+                    ++function;
+                }
+                return Result(Other, tok);
+            }
+            unsigned length = readIdentifierCommon(function);
+            if(length)
+            {
+                std::string id(function, function+length);
+                function += length;
+                SkipWS(function);
+                if(*function == '(') // Function call?
+                {
+                    ++function;
+                    std::list<Result> params;
+                    for(;;)
+                    {
+                        params.push_back(CompileExpression(function));
+                        SkipWS(function);
+                        if(*function == ',') { ++function; continue; }
+                        break;
+                    }
+                    SkipWS(function);
+                    if(*function == ')') ++function; else params.back().second += "?)?";
+                    if(id == "if")
+                    {
+                        auto cond = params.front(); params.pop_front();
+                        auto lhs  = params.front(); params.pop_front();
+                        auto rhs  = params.front(); params.pop_front();
+                        if(cond.first != Bool)
+                            cond = Result(Bool, ToFun("fp_truth", cond.second));
+                        if(lhs.first != rhs.first)
+                        {
+                            if(lhs.first == Bool || (lhs.first == Real && rhs.first != Real)) lhs = Result(Other, ToVal(lhs.second));
+                            if(rhs.first == Bool || (rhs.first == Real && lhs.first != Real)) rhs = Result(Other, ToVal(rhs.second));
+                        }
+                        return Result(lhs.first, "(" + cond.second + " ? " + lhs.second + " : " + rhs.second + ")");
+                    }
+                    else
+                    {
+                        for(auto& arg: params)
+                            if(arg.first != Other)
+                                arg = Result(Other, ToVal(arg.second));
+                        auto restype = Other;
+                        if(id == "arg" || id == "abs" || id == "real" || id == "imag") restype = Real;
+                        bool inv = false;
+                        /**/ if(id == "sec") { id = "cos"; inv = true; }
+                        else if(id == "csc") { id = "sin"; inv = true; }
+                        else if(id == "cot") { id = "tan"; inv = true; }
+                        bool AngleIn = (id == "sin" || id == "cos" || id == "tan"
+                                     || id == "cosh" || id == "sinh" || id == "tanh");
+                        bool AngleOut = (id == "asin" || id == "atan" || id == "acos"
+                                      || id == "asinh" || id == "acosh"
+                                      || id == "atan2" || id == "arg");
+                        const char* first = "(", *last = ")";
+                        bool fp = true;
+                        if(id == "sqr" || id == "psqr") // userDefFuncSqr
+                        {
+                            id = "userDefFuncSqr";
+                            first = "({"; last = "})";
+                            fp = false;
+                        }
+                        else if(id == "sub" || id == "psub")
+                        {
+                            id = "userDefFuncSub";
+                            first = "({"; last = "})";
+                            fp = false;
+                        }
+                        else if(id == "value")
+                        {
+                            id = "userDefFuncValue";
+                            first = "({"; last = "})";
+                            fp = false;
+                        }
+                        std::string result = id;
+                        if(fp) result = "fp_" + result;
+
+                        const char* sep = first;
+                        for(auto& arg: params)
+                        {
+                            result += sep;
+                            std::string& param = arg.second;
+                            if(AngleIn && UseDegrees)
+                                param = ToFun("d2r", param);
+                            //if(forceparens)
+                            //      param = ToFun("", param);
+                            result += std::move(param);
+                            sep = ",";
+                        }
+                        result += last;
+                        if(id == "pvalue")
+                            result = "5";
+
+                        if(AngleOut && UseDegrees) result = ToFun("r2d", result);
+                        if(inv) result = ToFun("fp_inv", result);
+                        return Result(restype, result);
+                    }
+                }
+                else // Just a regular identifier
+                {
+                    if(id == "pi")
+                    {
+                        id = "$PI_CONST$";
+                    }
+                    else if(id == "CONST")
+                    {
+                        id = "fp_const_preciseDouble<Value_t>(CONST)";
+                    }
+                    return Result(Other, id);
+                }
+            }
+            SkipWS(function);
+            if(*function == '(')
+            {
+                ++function;
+                auto result = CompileExpression(function);
+                SkipWS(function);
+                if(*function == ')') ++function; else result.second += "?)?";
+                return Result(result.first, ToFun("", result.second));
+            }
+            return Result(Bool, "");
+        };
+        auto CompilePow = [&](const char*& function)
+        {
+            auto lhs = CompileElement(function);
+            SkipWS(function);
+            //std::cerr << "CompilePow: At \"" << function << "\"?\n";
+            if(*function != '^') return lhs;
+            ++function;
+            auto rhs = CompileUnaryMinus(function);
+            if(lhs.first == Bool || (lhs.first == Real && HasComplex)) lhs = Result(Other, ToVal(lhs.second));
+            if(rhs.first == Bool || (rhs.first == Real && HasComplex)) rhs = Result(Other, ToVal(rhs.second));
+            auto restype = (lhs.first == Real && rhs.first == Real) ? Real : Other;
+            return Result(restype, "fp_pow(" + lhs.second + "," + rhs.second + ")");
+        };
+        CompileUnaryMinus = [&](const char*& function)
+        {
+            SkipWS(function);
+            //std::cerr << "CompileUnaryMinus: At \"" << function << "\"?\n";
+            if(*function == '-' || *function == '!')
+            {
+                char op = *function++;
+                if(op == '!' && *function == '!') { op = '\0'; ++function; }
+                auto rhs = CompileUnaryMinus(function);
+                if(op == '-')
+                {
+                    if(rhs.first == Bool) rhs = Result(Other, ToVal(rhs.second));
+                    if(rhs.second[0] == '-')
+                        rhs.second.erase(0,1);
+                    else
+                        rhs.second = "-" + rhs.second; // Doesn't change type
+                }
+                else if(!op) // notnot
+                {
+                    if(rhs.first != Bool)
+                        rhs = Result(Bool, ToFun("fp_notNot", rhs.second));
+                }
+                else // not
+                {
+                    if(rhs.first == Bool)
+                        rhs.second = "!" + rhs.second;
+                    else
+                        rhs.second = ToFun("fp_not", rhs.second);
+                    rhs.first = Bool;
+                }
+                return rhs;
+            }
+            return CompilePow(function);
+        };
+        auto CompileMult = [&](const char*& function)
+        {
+            static const char* const ops[7] = {"","*","/","%"};
+            static const char* const fns[7] = {"","","","fp_mod"};
+            std::list<Result> exprs;
+            enum { None,Mult,Div,Mod } prevop = None;
+            for(;;)
+            {
+                exprs.push_back( CompileUnaryMinus(function) );
+                if(exprs.size() >= 2)
+                {
+                    auto  lhs = exprs.front(); exprs.pop_front();
+                    auto& rhs = exprs.front();
+                    if(lhs.first == Bool || (lhs.first == Real && HasComplex)) lhs = Result(Other, ToVal(lhs.second));
+                    if(rhs.first == Bool || (rhs.first == Real && HasComplex)) rhs = Result(Other, ToVal(rhs.second));
+                    auto restype = (lhs.first == Real && rhs.first == Real) ? Real : Other;
+                    if(prevop == Mod && !OnlyInt)
+                        rhs = Result(restype, std::string(fns[int(prevop)]) + "(" + lhs.second + "," + rhs.second + ")");
+                    else if(prevop == Div && lhs.second == "1")
+                        rhs = Result(restype, ToFun("fp_inv", rhs.second));
+                    else
+                        rhs = Result(restype, lhs.second + ops[int(prevop)] + rhs.second);
+                }
+                SkipWS(function);
+                //std::cerr << "CompileMult: at \"" << function << "\"?\n";
+                if(*function == '*') { ++function; prevop = Mult; }
+                else if(*function == '/') { ++function; prevop = Div; }
+                else if(*function == '%') { ++function; prevop = Mod; }
+                else break;
+                SkipWS(function);
+            }
+            return exprs.front();
+        };
+        auto CompileAddition = [&](const char*& function)
+        {
+            static const char* const ops[7] = {"","-","+"};
+            std::list<Result> exprs;
+            enum { None,Minus,Plus } prevop = None;
+            for(;;)
+            {
+                exprs.push_back( CompileMult(function) );
+                if(exprs.size() >= 2)
+                {
+                    auto  lhs = exprs.front(); exprs.pop_front();
+                    auto& rhs = exprs.front();
+                    if(lhs.first == Bool || (lhs.first == Real && HasComplex)) lhs = Result(Other, ToVal(lhs.second));
+                    if(rhs.first == Bool || (rhs.first == Real && HasComplex)) rhs = Result(Other, ToVal(rhs.second));
+                    auto restype = (lhs.first == Real && rhs.first == Real) ? Real : Other;
+                    rhs = Result(restype, lhs.second + ops[int(prevop)] + rhs.second);
+                }
+                SkipWS(function);
+                //std::cerr << "CompileAddition: at \"" << function << "\"?\n";
+                if(*function == '+') { ++function; prevop = Plus; }
+                else if(*function == '-') { ++function; prevop = Minus; }
+                else break;
+                SkipWS(function);
+            }
+            return exprs.front();
+        };
+        auto CompileComparison = [&](const char*& function)
+        {
+            static const char* const ops[7] = {"","==","!=","<","<=",">",">="};
+            static const char* const fns[7] = {"","fp_equal","fp_nequal","fp_less","fp_lessOrEq","fp_greater","fp_greaterOrEq"};
+            std::list<Result> exprs;
+            enum { None, Eq,Ne,Lt,Le,Gt,Ge } prevop = None;
+            for(;;)
+            {
+                exprs.push_back( CompileAddition(function) );
+                if(exprs.size() >= 2)
+                {
+                    auto  lhs = exprs.front(); exprs.pop_front();
+                    auto& rhs = exprs.front();
+                    if(lhs.first == Bool || (lhs.first == Real && (rhs.first == Other || HasComplex))) lhs.second = ToVal(lhs.second);
+                    if(rhs.first == Bool || (rhs.first == Real && (lhs.first == Other || HasComplex))) rhs.second = ToVal(rhs.second);
+                    if(OnlyInt)
+                        rhs.second = lhs.second + ops[int(prevop)] + rhs.second;
+                    else
+                        rhs.second = std::string(fns[int(prevop)]) + "(" + lhs.second + "," + rhs.second + ")";
+                    rhs.first = Bool;
+                }
+                SkipWS(function);
+                //std::cerr << "CompileComp: at \"" << function << "\"?\n";
+                if(*function == '=') { ++function; prevop = Eq; }
+                else if(*function == '!' && function[1] == '=') { function += 2; prevop = Ne; }
+                else if(*function == '<') { ++function; if(*function == '=') { ++function; prevop = Le; } else prevop = Lt; }
+                else if(*function == '>') { ++function; if(*function == '=') { ++function; prevop = Ge; } else prevop = Gt; }
+                else break;
+                SkipWS(function);
+            }
+            return exprs.front();
+        };
+        auto CompileAnd = [&](const char*& function)
+        {
+            std::list<Result> exprs;
+            for(;;)
+            {
+                exprs.push_back( CompileComparison(function) );
+                SkipWS(function);
+                //std::cerr << "CompileAnd: at \"" << function << "\"?\n";
+                if(*function != '&') break;
+                SkipWS(++function);
+            }
+            while(exprs.size() >= 2)
+            {
+                auto first = exprs.front(); exprs.pop_front();
+                auto& second = exprs.front();
+                exprs.front() = (first.first == Bool && second.first == Bool)
+                    ? Result(Bool, first.second + "&&" + second.second)
+                    : Result(Bool, "fp_and(" + first.second + "," + second.second + ")");
+            }
+            return exprs.front();
+        };
+        CompileExpression = [&](const char*& function)
+        {
+            std::list<Result> exprs;
+            for(;;)
+            {
+                exprs.push_back( CompileAnd(function) );
+                SkipWS(function);
+                //std::cerr << "CompileOr: at \"" << function << "\"?\n";
+                if(*function != '|') break;
+                SkipWS(++function);
+            }
+            while(exprs.size() >= 2)
+            {
+                auto first = exprs.front(); exprs.pop_front();
+                auto& second = exprs.front();
+                if(first.first == Bool && second.first == Bool)
+                {
+                    if(first.second.find("&&")  != first.second.npos)  first.second  = ToFun("", first.second);
+                    if(second.second.find("&&") != second.second.npos) second.second = ToFun("", second.second);
+                    exprs.front() = Result(Bool, first.second + "||" + second.second);
+                }
+                else
+                {
+                    exprs.front() = Result(Bool, "fp_or(" + first.second + "," + second.second + ")");
+                }
+            }
+            return exprs.front();
+        };
+
+        std::vector<std::pair<std::string, Result>> var_declarations;
+
+        for(;;) // Check for identifiers in beginning
+        {
+            SkipWS(function);
+            unsigned length = readIdentifierCommon(function);
+            if(!length) break;
+            const char* function2 = function + length;
+            SkipWS(function2);
+            if(!(function2[0] == ':' && function2[1] == '='))
+                break;
+            std::string name(function, function+length);
+            function2 += 2;
+            var_declarations.emplace_back(name, CompileExpression(function2));
+            if(*function2 == ';') ++function2;
+            function = function2;
+        }
+        Result result = CompileExpression(function);
+        std::size_t n_pi = str_find_count(result.second, "$PI_CONST$");
+        for(auto& v: var_declarations) n_pi += str_find_count(v.second.second, "$PI_CONST$");
+        if(n_pi)
+        {
+            if(n_pi > 1 || !var_declarations.empty())
+            {
+                var_declarations.emplace(var_declarations.begin(),
+                                         "pi", Result(Other, "fp_const_pi<Value_t>()"));
+                str_replace_inplace(result.second, "$PI_CONST$", "pi");
+                for(auto& v: var_declarations)
+                    str_replace_inplace(v.second.second, "$PI_CONST$", "pi");
+            }
+            else
+                str_replace_inplace(result.second, "$PI_CONST$", "fp_const_pi<Value_t>()");
+        }
+        if(!var_declarations.empty())
+        {
+            std::string variables_list;
+            for(auto& v: var_declarations)
+            {
+                if(!variables_list.empty()) variables_list += ", ";
+                variables_list += v.first + " = " + v.second.second;
+            }
+            result.second = "[&]{ Value_t " + variables_list + "; return " + result.second + "; }()";
+        }
+        /*
+        Automatic translation of code:
+            ( )
+                stay same
+            + * / -
+                These operators stay same
+                If operand is bool, cast to Value_t
+                If operand is real and type may be complex, cast to Value_t
+            ^
+                fp_pow()
+                If operand is bool, cast to Value_t
+                If operand is real and type may be complex, cast to Value_t
+            %
+                fp_mod()
+                If operand is bool, cast to Value_t
+                If operand is real and type may be complex, cast to Value_t
+            < > <= >= = !=
+                If operand is bool, cast to Value_t()
+                If operand is real and type may be complex, cast to Value_t
+                Use fp_, returns bool
+                If type is integer ONLY, then use operators verbatim -- type is still bool
+            & |
+                Use fp_, returns bool
+                Both Value_t and bool operands are fine
+            ! !!
+                If operand is bool, use ! or nothing
+                Otherwise, use fp_not, fp_notNot, return value is bool
+            if(x,y,z)
+                x ? y : x
+                If x is not bool, add fp_truth()
+            abs(x), arg(x), real(x), imag(x)
+                If operand is bool, cast to Value_t
+                returns real
+            Other functions:
+                fp_functioname()
+                If operand is bool, cast to Value_t
+            1/x
+                fp_inv(x)
+                If operand is bool, cast to Value_t
+        */
+        return result.second;
+    }
+
     void CompileTest(std::istream& inf,
                      const std::string& testname,
                      unsigned&          user_param_count)
@@ -498,6 +995,7 @@ namespace
         };
 
         unsigned linenumber = 0;
+        std::string c_code;
         for(;;)
         {
             auto got = getline();
@@ -602,24 +1100,44 @@ namespace
                 case 'C': // the C++ template function
                     if(valuepos)
                     {
-                        std::ostringstream codebuf;
-                        std::unordered_map<std::string,std::string> used_constants;
-
-                        const char* valuepos_1 = valuepos;
-                        CompileFunction(
-                            valuepos_1,
-                            codebuf,
-                            user_param_count,
-                            used_constants,
-                            var_trans);
-
-                        std::string code = codebuf.str();
-                        all_functions.emplace(testname,
-                            FunctionInfo{datatype_limit_mask, std::move(code), std::move(used_constants)}
-                                              );
+                        c_code = valuepos;
                     }
                     break;
             }
+        }
+        if(c_code.empty())
+        {
+            bool OnlyInt    = true;
+            bool HasComplex = false;
+            #define o(code,mask,typename,def,lit) \
+                if(datatype_limit_mask & mask) \
+                { \
+                    if(#code[1] != 'i') OnlyInt = false; \
+                    if(#code[0] == 'c') HasComplex = true; \
+                }
+            DEFINE_TYPES(o)
+            #undef o
+            std::cerr << "Translating " << testname << " : " << test.FuncString << '\n';
+            c_code = TranslateToCpp(test.FuncString.c_str(), OnlyInt, HasComplex, test.UseDegrees);
+            std::cerr << "Translated to " << c_code << "\n";
+        }
+        if(!c_code.empty())
+        {
+            std::ostringstream codebuf;
+            std::unordered_map<std::string,std::string> used_constants;
+
+            const char* valuepos_1 = c_code.c_str();
+            CompileFunction(
+                valuepos_1,
+                codebuf,
+                user_param_count,
+                used_constants,
+                var_trans);
+
+            std::string code = codebuf.str();
+            all_functions.emplace(testname,
+                FunctionInfo{datatype_limit_mask, std::move(code), std::move(used_constants)}
+            );
         }
 
         for(auto type: test.DataTypes)
@@ -878,7 +1396,6 @@ template<typename Value_t> struct const_container<Value_t,)" << m << R"(>
 
         out2 << no_optimization << R"(
 #include "testbed_autogen.hh"
-#include "testbed_comp.hh"
 #include "testbed_cpptest.hh"
 )";
         for(unsigned n=1, m=1; m<=highest_mask; m<<=1, ++n)
@@ -890,7 +1407,12 @@ template<typename Value_t, unsigned type_mask>
 Value_t evaluate_test(unsigned which, const Value_t* vars)
 {
     static const_container<Value_t> c;
+)";
+    if(user_param_count)
+        out2 << R"(
     [[maybe_unused]] Value_t uparam[)" << user_param_count << R"(];
+)";
+    out2 << R"(
     using namespace FUNCTIONPARSERTYPES;
     switch(which)
     {
@@ -945,7 +1467,6 @@ default: break;
 
         out2 << R"(
 #include "testbed_autogen.hh"
-#include "testbed_comp.hh"
 #include "testbed_cpptest.hh"
 #include "testbed_const)" << n << R"(.hh"
 

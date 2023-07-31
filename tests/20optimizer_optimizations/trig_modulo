@@ -7,13 +7,6 @@ F=y := x*pi; p23 := pi*2/3; p52 := pi*5/2; p62 := pi*6/2; p72 := pi*7/2; \
   sin(y+pi) + sin(y+p23) + sin(y+p52) + sin(y+p62) + sin(y+p72) + \
   cos(y-pi) + cos(y-p23) + cos(y-p52) + cos(y-p62) + cos(y-p72) + \
   sin(y-pi) + sin(y-p23) + sin(y-p52) + sin(y-p62) + sin(y-p72)
-C=[&]{ static const Value_t pi = fp_const_pi<Value_t>(); \
-       Value_t y = x*pi, p23=pi*2/3, p52=pi*5/2, p62=pi*6/2, p72=pi*7/2; \
-  return \
-  fp_cos(y + pi) + fp_cos(y + p23) + fp_cos(y + p52) + fp_cos(y + p62) + fp_cos(y + p72) + \
-  fp_sin(y + pi) + fp_sin(y + p23) + fp_sin(y + p52) + fp_sin(y + p62) + fp_sin(y + p72) + \
-  fp_cos(y - pi) + fp_cos(y - p23) + fp_cos(y - p52) + fp_cos(y - p62) + fp_cos(y - p72) + \
-  fp_sin(y - pi) + fp_sin(y - p23) + fp_sin(y - p52) + fp_sin(y - p62) + fp_sin(y - p72); }()
 
 # Expected optimization:
 #   cos(x*pi + pi*2/3)

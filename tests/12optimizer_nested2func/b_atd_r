@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-3,3,2
 F=abs(atan(a/b))
-C=fp_abs(fp_atan(a/b))

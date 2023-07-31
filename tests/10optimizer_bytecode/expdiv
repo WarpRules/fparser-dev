@@ -2,4 +2,3 @@ T=d f ld mf
 V=x,y
 R=-3,3,2
 F=x/exp(y)
-C=x/fp_exp(y)

@@ -2,4 +2,3 @@ T=cf cd cld
 V=a
 R=0.5,2,0.5
 F=sqrt(imag(a))
-C=fp_sqrt(fp_imag(a))

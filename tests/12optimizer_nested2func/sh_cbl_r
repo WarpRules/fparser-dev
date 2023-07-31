@@ -2,4 +2,3 @@ T=f d ld mf
 V=a,b
 R=-2,2,0.5
 F=sinh(cbrt(a!=b))
-C=fp_sinh(fp_cbrt(fp_nequal(a,b)))

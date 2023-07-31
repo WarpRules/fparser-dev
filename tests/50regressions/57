@@ -4,4 +4,3 @@ T=d f ld mf
 V=x
 R=.05, 1.0, .01
 F=cosh(asinh(x))
-C=fp_cosh(fp_asinh(x))
