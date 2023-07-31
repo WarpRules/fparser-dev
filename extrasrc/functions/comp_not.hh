@@ -5,5 +5,3 @@
     {
         return !fp_truth(b);
     }
-
-    inline bool fp_not(bool b) { return !b; }

@@ -2451,7 +2451,7 @@ namespace OptimizerTests
         {
           case 0: return varValue;
           case 1: return fp_not(varValue);
-          case 2: return fp_notNot(varValue);
+          case 2: return fp_truth(varValue);
         }
 
         opIndex -= 3;

@@ -2852,7 +2852,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 
           case   cNot: Stack[SP] = fp_not(Stack[SP]); break;
 
-          case cNotNot: Stack[SP] = fp_notNot(Stack[SP]); break;
+          case cNotNot: Stack[SP] = fp_truth(Stack[SP]); break;
 
           case   cAnd:
               Stack[SP-1] = fp_and(Stack[SP-1], Stack[SP]);

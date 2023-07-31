@@ -8,5 +8,5 @@
     {
         return IsIntType<Value_t>::value
             ? (x == y)
-            : (fp_abs(x - y) <= Epsilon<Value_t>::value);
+            : (fp_abs(x - y) <= fp_real(Epsilon<Value_t>::value));
     }

@@ -728,7 +728,7 @@ namespace
                 else if(!op) // notnot
                 {
                     if(rhs.first != Bool)
-                        rhs = Result(Bool, ToFun("fp_notNot", rhs.second));
+                        rhs = Result(Bool, ToFun("fp_truth", rhs.second));
                 }
                 else // not
                 {
@@ -848,9 +848,18 @@ namespace
             {
                 auto first = exprs.front(); exprs.pop_front();
                 auto& second = exprs.front();
-                exprs.front() = (first.first == Bool && second.first == Bool)
-                    ? Result(Bool, first.second + "&&" + second.second)
-                    : Result(Bool, "fp_and(" + first.second + "," + second.second + ")");
+                if(first.first != Bool && second.first != Bool)
+                {
+                    if(first.first != second.first && first.first == Real) first = Result(Other, ToFun("Value_t", first.second));
+                    if(first.first != second.first && second.first == Real) second = Result(Other, ToFun("Value_t", second.second));
+                    exprs.front() = Result(Bool, "fp_and(" + first.second + "," + second.second + ")");
+                }
+                else
+                {
+                    if(first.first != Bool) first = Result(Bool, ToFun("fp_truth", first.second));
+                    if(second.first != Bool) second = Result(Bool, ToFun("fp_truth", second.second));
+                    exprs.front() = Result(Bool, first.second + "&&" + second.second);
+                }
             }
             return exprs.front();
         };
@@ -869,15 +878,19 @@ namespace
             {
                 auto first = exprs.front(); exprs.pop_front();
                 auto& second = exprs.front();
-                if(first.first == Bool && second.first == Bool)
+                if(first.first != Bool && second.first != Bool)
                 {
-                    if(first.second.find("&&")  != first.second.npos)  first.second  = ToFun("", first.second);
-                    if(second.second.find("&&") != second.second.npos) second.second = ToFun("", second.second);
-                    exprs.front() = Result(Bool, first.second + "||" + second.second);
+                    if(first.first != second.first && first.first == Real) first = Result(Other, ToFun("Value_t", first.second));
+                    if(first.first != second.first && second.first == Real) second = Result(Other, ToFun("Value_t", second.second));
+                    exprs.front() = Result(Bool, "fp_or(" + first.second + "," + second.second + ")");
                 }
                 else
                 {
-                    exprs.front() = Result(Bool, "fp_or(" + first.second + "," + second.second + ")");
+                    if(first.first != Bool) first = Result(Bool, ToFun("fp_truth", first.second));
+                    if(second.first != Bool) second = Result(Bool, ToFun("fp_truth", second.second));
+                    if(first.second.find("&&")  != first.second.npos)  first.second  = ToFun("", first.second);
+                    if(second.second.find("&&") != second.second.npos) second.second = ToFun("", second.second);
+                    exprs.front() = Result(Bool, first.second + "||" + second.second);
                 }
             }
             return exprs.front();
@@ -957,7 +970,7 @@ namespace
                 Both Value_t and bool operands are fine
             ! !!
                 If operand is bool, use ! or nothing
-                Otherwise, use fp_not, fp_notNot, return value is bool
+                Otherwise, use fp_not, fp_truth, return value is bool
             if(x,y,z)
                 x ? y : x
                 If x is not bool, add fp_truth()
@@ -1432,7 +1445,7 @@ Value_t evaluate_test(unsigned which, const Value_t* vars)
 )";
     if(user_param_count)
         out2 << R"(
-    [[maybe_unused]] Value_t uparam[)" << user_param_count << R"(];
+    [[maybe_unused]] static thread_local Value_t uparam[)" << user_param_count << R"(];
 )";
     out2 << R"(
     using namespace FUNCTIONPARSERTYPES;
@@ -1503,7 +1516,12 @@ template<typename Value_t>
 Value_t evaluator<Value_t,)" << m << R"(>::calc(unsigned which, const Value_t* vars)
 {
     static const_container<Value_t> c;
-    [[maybe_unused]] Value_t uparam[)" << user_param_count << R"(];
+)";
+    if(user_param_count)
+        out2 << R"(
+    [[maybe_unused]] static thread_local Value_t uparam[)" << user_param_count << R"(];
+)";
+    out2 << R"(
     using namespace FUNCTIONPARSERTYPES;
     switch(which) {
 )";
