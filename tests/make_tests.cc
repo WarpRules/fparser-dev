@@ -633,19 +633,26 @@ namespace
                         std::string result = id;
                         if(fp) result = "fp_" + result;
 
-                        const char* sep = first;
-                        for(auto& arg: params)
+                        if(params.size() == 1 && !UseDegrees && std::string(last) == ")")
                         {
-                            result += sep;
-                            std::string& param = arg.second;
-                            if(AngleIn && UseDegrees)
-                                param = ToFun("d2r", param);
-                            //if(forceparens)
-                            //      param = ToFun("", param);
-                            result += std::move(param);
-                            sep = ",";
+                            result = ToFun(result, params.front().second);
                         }
-                        result += last;
+                        else
+                        {
+                            const char* sep = first;
+                            for(auto& arg: params)
+                            {
+                                result += sep;
+                                std::string& param = arg.second;
+                                if(AngleIn && UseDegrees)
+                                    param = ToFun("d2r", param);
+                                //if(forceparens)
+                                //      param = ToFun("", param);
+                                result += std::move(param);
+                                sep = ",";
+                            }
+                            result += last;
+                        }
                         if(id == "pvalue")
                             result = "5";
 
@@ -1117,9 +1124,9 @@ namespace
                 }
             DEFINE_TYPES(o)
             #undef o
-            std::cerr << "Translating " << testname << " : " << test.FuncString << '\n';
+            //std::cerr << "Translating " << testname << " : " << test.FuncString << '\n';
             c_code = TranslateToCpp(test.FuncString.c_str(), OnlyInt, HasComplex, test.UseDegrees);
-            std::cerr << "Translated to " << c_code << "\n";
+            //std::cerr << "Translated to " << c_code << "\n";
         }
         if(!c_code.empty())
         {
