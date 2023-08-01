@@ -646,7 +646,7 @@ template<typename Value_t>
 FunctionParserBase<Value_t>::Data::Data():
     mReferenceCounter(1),
     mDelimiterChar(0),
-    mParseErrorType(NO_FUNCTION_PARSED_YET),
+    mParseErrorType(FunctionParserErrorType::no_function_parsed_yet),
     mEvalErrorType(0),
     mUseDegreeConversion(false),
     mErrorLocation(0),
@@ -1026,22 +1026,18 @@ namespace
         ""
     };
 
-    template<typename Value_t>
-    inline typename FunctionParserBase<Value_t>::ParseErrorType
-    noCommaError(char c)
+    inline FunctionParserErrorType noCommaError(char c)
     {
         return c == ')' ?
-            FunctionParserBase<Value_t>::ILL_PARAMS_AMOUNT :
-            FunctionParserBase<Value_t>::SYNTAX_ERROR;
+            FunctionParserErrorType::illegal_parameters_amount :
+            FunctionParserErrorType::syntax_error;
     }
 
-    template<typename Value_t>
-    inline typename FunctionParserBase<Value_t>::ParseErrorType
-    noParenthError(char c)
+    inline FunctionParserErrorType noParenthError(char c)
     {
         return c == ',' ?
-            FunctionParserBase<Value_t>::ILL_PARAMS_AMOUNT :
-            FunctionParserBase<Value_t>::MISSING_PARENTH;
+            FunctionParserErrorType::illegal_parameters_amount :
+            FunctionParserErrorType::missing_parenthesis;
     }
 
     template<typename Value_t, unsigned offset, bool complex = IsComplexType<Value_t>::value>
@@ -1206,12 +1202,18 @@ U+000B  \v
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::ErrorMsg() const
 {
-    return ParseErrorMessage[mData->mParseErrorType];
+    return ParseErrorMessage[static_cast<unsigned>(mData->mParseErrorType)];
 }
 
 template<typename Value_t>
 typename FunctionParserBase<Value_t>::ParseErrorType
 FunctionParserBase<Value_t>::GetParseErrorType() const
+{
+    return static_cast<ParseErrorType>(mData->mParseErrorType);
+}
+
+template<typename Value_t>
+FunctionParserErrorType FunctionParserBase<Value_t>::ParseError() const
 {
     return mData->mParseErrorType;
 }
@@ -1291,8 +1293,8 @@ int FunctionParserBase<Value_t>::Parse(const char* Function,
 
     if(!ParseVariables(Vars))
     {
-        mData->mParseErrorType = INVALID_VARS;
-        return int(strlen(Function));
+        mData->mParseErrorType = FunctionParserErrorType::invalid_vars;
+        return static_cast<int>(std::strlen(Function));
     }
 
     return ParseFunction(Function, useDegrees);
@@ -1307,8 +1309,8 @@ int FunctionParserBase<Value_t>::Parse(const std::string& Function,
 
     if(!ParseVariables(Vars))
     {
-        mData->mParseErrorType = INVALID_VARS;
-        return int(Function.size());
+        mData->mParseErrorType = FunctionParserErrorType::invalid_vars;
+        return static_cast<int>(Function.size());
     }
 
     return ParseFunction(Function.c_str(), useDegrees);
@@ -1323,7 +1325,7 @@ int FunctionParserBase<Value_t>::ParseFunction(const char* function,
                                                bool useDegrees)
 {
     mData->mUseDegreeConversion = useDegrees;
-    mData->mParseErrorType = FP_NO_ERROR;
+    mData->mParseErrorType = FunctionParserErrorType::no_error;
 
     mData->mInlineVarNames.clear();
     mData->mByteCode.clear(); mData->mByteCode.reserve(128);
@@ -1341,15 +1343,15 @@ int FunctionParserBase<Value_t>::ParseFunction(const char* function,
             mData->mByteCode[i] &= ~FP_ParamGuardMask;
     }
 
-    if(mData->mParseErrorType != FP_NO_ERROR)
-        return int(mData->mErrorLocation - function);
+    if(mData->mParseErrorType != FunctionParserErrorType::no_error)
+        return static_cast<int>(mData->mErrorLocation - function);
 
     assert(ptr); // Should never be null at this point. It's a bug otherwise.
     if(*ptr)
     {
         if(mData->mDelimiterChar == 0 || *ptr != mData->mDelimiterChar)
-            mData->mParseErrorType = EXPECT_OPERATOR;
-        return int(ptr - function);
+            mData->mParseErrorType = FunctionParserErrorType::expect_operator;
+        return static_cast<int>(ptr - function);
     }
 
 #ifndef FP_USE_THREAD_SAFE_EVAL
@@ -1364,8 +1366,7 @@ int FunctionParserBase<Value_t>::ParseFunction(const char* function,
 // Parsing and bytecode compiling functions
 //=========================================================================
 template<typename Value_t>
-inline const char* FunctionParserBase<Value_t>::SetErrorType(ParseErrorType t,
-                                                             const char* pos)
+inline const char* FunctionParserBase<Value_t>::SetErrorType(FunctionParserErrorType t, const char* pos)
 {
     mData->mParseErrorType = t;
     mData->mErrorLocation = pos;
@@ -1744,7 +1745,7 @@ FunctionParserBase<Value_t>::CompileLiteral(const char* function)
     std::pair<const char*, Value_t> result = ParseLiteral(function);
 
     if(result.first == function)
-        return SetErrorType(SYNTAX_ERROR, result.first);
+        return SetErrorType(FunctionParserErrorType::syntax_error, result.first);
 
     AddImmedOpcode(result.second);
     incStackPtr();
@@ -1755,12 +1756,12 @@ FunctionParserBase<Value_t>::CompileLiteral(const char* function)
 template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
 {
-    if(*function != '(') return SetErrorType(EXPECT_PARENTH_FUNC, function);
+    if(*function != '(') return SetErrorType(FunctionParserErrorType::missing_parenthesis_after_function, function);
 
     function = CompileExpression(function+1);
     if(!function) return 0;
     if(*function != ',')
-        return SetErrorType(noCommaError<Value_t>(*function), function);
+        return SetErrorType(noCommaError(*function), function);
 
     OPCODE opcode = cIf;
     if(mData->mByteCode.back() == cNotNot) mData->mByteCode.pop_back();
@@ -1785,7 +1786,7 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
     function = CompileExpression(function + 1);
     if(!function) return 0;
     if(*function != ',')
-        return SetErrorType(noCommaError<Value_t>(*function), function);
+        return SetErrorType(noCommaError(*function), function);
 
     FP_TRACE_BYTECODE_ADD(cJump);
     mData->mByteCode.push_back(cJump);
@@ -1799,7 +1800,7 @@ const char* FunctionParserBase<Value_t>::CompileIf(const char* function)
     function = CompileExpression(function + 1);
     if(!function) return 0;
     if(*function != ')')
-        return SetErrorType(noParenthError<Value_t>(*function), function);
+        return SetErrorType(noParenthError(*function), function);
 
     PutOpcodeParamAt<true> ( mData->mByteCode.back(), unsigned(mData->mByteCode.size()-1) );
     // ^Necessary for guarding against if(x,1,2)+1 being changed
@@ -1820,7 +1821,7 @@ template<typename Value_t>
 const char* FunctionParserBase<Value_t>::CompileFunctionParams
 (const char* function, unsigned requiredParams)
 {
-    if(*function != '(') return SetErrorType(EXPECT_PARENTH_FUNC, function);
+    if(*function != '(') return SetErrorType(FunctionParserErrorType::missing_parenthesis_after_function, function);
 
     if(requiredParams > 0)
     {
@@ -1831,7 +1832,7 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
             ++function;
             SkipSpace(function);
             if(*function == ')')
-                return SetErrorType(ILL_PARAMS_AMOUNT, function);
+                return SetErrorType(FunctionParserErrorType::illegal_parameters_amount, function);
             // Not caused by (), use the error message given by CompileExpression()
             return 0;
         }
@@ -1840,7 +1841,7 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
         for(unsigned i = 1; i < requiredParams; ++i)
         {
             if(*function != ',')
-                return SetErrorType(noCommaError<Value_t>(*function), function);
+                return SetErrorType(noCommaError(*function), function);
 
             function = CompileExpression(function+1);
             if(!function) return 0;
@@ -1856,7 +1857,7 @@ const char* FunctionParserBase<Value_t>::CompileFunctionParams
     }
 
     if(*function != ')')
-        return SetErrorType(noParenthError<Value_t>(*function), function);
+        return SetErrorType(noParenthError(*function), function);
     ++function;
     SkipSpace(function);
     return function;
@@ -1873,8 +1874,8 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     {
         // No identifier found
         if(*function == '(') return CompileParenthesis(function);
-        if(*function == ')') return SetErrorType(MISM_PARENTH, function);
-        return SetErrorType(SYNTAX_ERROR, function);
+        if(*function == ')') return SetErrorType(FunctionParserErrorType::mismatched_parenthesis, function);
+        return SetErrorType(FunctionParserErrorType::syntax_error, function);
     }
 
     // Function, variable or constant
@@ -1916,7 +1917,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
             }
         }
 
-        return SetErrorType(UNKNOWN_IDENTIFIER, function);
+        return SetErrorType(FunctionParserErrorType::unknown_identifier, function);
     }
 
     const NameData<Value_t>* nameData = &nameIter->second;
@@ -1966,7 +1967,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     }
 
     // When it's an unit (or unrecognized type):
-    return SetErrorType(SYNTAX_ERROR, function);
+    return SetErrorType(FunctionParserErrorType::syntax_error, function);
 }
 
 template<typename Value_t>
@@ -2008,11 +2009,11 @@ FunctionParserBase<Value_t>::CompileParenthesis(const char* function)
     ++function; // Skip '('
 
     SkipSpace(function);
-    if(*function == ')') return SetErrorType(EMPTY_PARENTH, function);
+    if(*function == ')') return SetErrorType(FunctionParserErrorType::empty_parentheses, function);
     function = CompileExpression(function);
     if(!function) return 0;
 
-    if(*function != ')') return SetErrorType(MISSING_PARENTH, function);
+    if(*function != ')') return SetErrorType(FunctionParserErrorType::missing_parenthesis, function);
     ++function; // Skip ')'
 
     SkipSpace(function);
@@ -2602,7 +2603,7 @@ inline void FunctionParserBase<Value_t>::PutOpcodeParamAt
 template<typename Value_t>
 Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
 {
-    if(mData->mParseErrorType != FP_NO_ERROR) return Value_t(0);
+    if(mData->mParseErrorType != FunctionParserErrorType::no_error) return Value_t(0);
 
     const unsigned* const byteCode = &(mData->mByteCode[0]);
     const Value_t* const immed = mData->mImmed.empty() ? 0 : &(mData->mImmed[0]);

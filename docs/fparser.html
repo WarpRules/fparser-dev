@@ -32,7 +32,7 @@ Joel Yliluoma
 	  <li><a href="#longdesc_Parse"><code>Parse()</code></a>
 	  <li><a href="#longdesc_setDelimiterChar"><code>setDelimiterChar()</code></a>
 	  <li><a href="#longdesc_ErrorMsg"><code>ErrorMsg()</code></a>
-	  <li><a href="#longdesc_GetParseErrorType"><code>GetParseErrorType()</code></a>
+	  <li><a href="#longdesc_GetParseErrorType"><code>ParseError()</code></a>
 	  <li><a href="#longdesc_Eval"><code>Eval()</code></a>
 	  <li><a href="#longdesc_EvalError"><code>EvalError()</code></a>
 	  <li><a href="#longdesc_Optimize"><code>Optimize()</code></a>
@@ -411,7 +411,7 @@ const char* ErrorMsg(void) const;
 
 <hr>
 <pre>
-ParseErrorType GetParseErrorType() const;
+FunctionParserErrorType ParseError() const;
 </pre>
 
 <p>Returns the type of parsing error which occurred. Possible return types
@@ -585,7 +585,7 @@ ending in the null character <code>'\0'</code>).
 encountered at the outermost parsing level by the <code>Parse()</code>
 function, and the input function has been valid so far, <code>Parse()</code>
 will return an index to this character inside the input string, but rather
-than set an error code, <code>FP_NO_ERROR</code> will be set.
+than set an error code, <code>FunctionParserErrorType::no_error</code> will be set.
 
 <p>The idea is that this can be used to more easily parse functions which
 are embedded inside larger strings, containing surrounding data, without
@@ -602,8 +602,8 @@ With this feature what you can do instead is to set <code>'}'</code> as
 the delimiter character and then simply give a pointer to the character
 which comes after the <code>'{'</code>. If all goes well, the
 <code>Parse()</code> function will return an index to the <code>'}'</code>
-character (from the given starting point) and <code>GetParseErrorType()</code>
-will return <code>FP_NO_ERROR</code>. You can use the return
+character (from the given starting point) and <code>ParseError()</code>
+will return <code>FunctionParserErrorType::no_error</code>. You can use the return
 value (if it's not <code>-1</code>) to jump forward in the string to the
 delimiter character.
 
@@ -655,7 +655,7 @@ message to the user). If no such error has occurred, returns an empty string.
 <hr>
 <a name="longdesc_GetParseErrorType"></a>
 <pre>
-ParseErrorType GetParseErrorType() const;
+FunctionParserErrorType ParseError() const;
 </pre>
 
 <p>Returns the type of parse error which occurred.
@@ -666,57 +666,55 @@ used for printing customized error messages (eg. in another language).
 If the default error messages suffice, then this method doesn't need
 to be called.
 
-<code>FunctionParser::ParseErrorType</code> is an enumerated type inside
-the class (ie. its values are accessed like
-"<code>FunctionParser::SYNTAX_ERROR</code>").
+<code>FunctionParserErrorType</code> is a strongly-typed enumeration type
+(ie. its values are accessed like "<code>FunctionParserErrorType::syntax_error</code>").
 
-<p>The possible values for FunctionParser::ParseErrorType are listed below,
-along with their equivalent error message returned by the
-<code>ErrorMsg()</code> method:
+<p>The possible values for <code>FunctionParserErrorType</code> are listed below,
+along with their equivalent error message returned by the <code>ErrorMsg()</code> method:
 
 <p><table border=2>
 <tr>
- <td><code>FP_NO_ERROR</code></td>
+ <td><code>FunctionParserErrorType::no_error</code></td>
  <td>If no error occurred in the previous call to <code>Parse()</code>.</td>
 </tr><tr>
- <td><code>SYNTAX_ERROR</code></td>
+ <td><code>FunctionParserErrorType::syntax_error</code></td>
  <td>"Syntax error"</td>
 </tr><tr>
- <td><code>MISM_PARENTH</code></td>
+ <td><code>FunctionParserErrorType::mismatched_parenthesis</code></td>
  <td>"Mismatched parenthesis"</td>
 </tr><tr>
- <td><code>MISSING_PARENTH</code></td>
+ <td><code>FunctionParserErrorType::missing_parenthesis</code></td>
  <td>"Missing ')'"</td>
 </tr><tr>
- <td><code>EMPTY_PARENTH</code></td>
+ <td><code>FunctionParserErrorType::empty_parentheses</code></td>
  <td>"Empty parentheses"</td>
 </tr><tr>
- <td><code>EXPECT_OPERATOR</code></td>
+ <td><code>FunctionParserErrorType::expect_operator</code></td>
  <td>"Syntax error: Operator expected"</td>
 </tr><tr>
- <td><code>OUT_OF_MEMORY</code></td>
+ <td><code>FunctionParserErrorType::out_of_memory</code></td>
  <td>"Not enough memory"</td>
 </tr><tr>
- <td><code>UNEXPECTED_ERROR</code></td>
+ <td><code>FunctionParserErrorType::unexpected_error</code></td>
  <td>"An unexpected error occurred. Please make a full bug report to the
       author"</td>
 </tr><tr>
- <td><code>INVALID_VARS</code></td>
+ <td><code>FunctionParserErrorType::invalid_vars</code></td>
  <td>"Syntax error in parameter 'Vars' given to FunctionParser::Parse()"</td>
 </tr><tr>
- <td><code>ILL_PARAMS_AMOUNT</code></td>
+ <td><code>FunctionParserErrorType::illegal_parameters_amount</code></td>
  <td>"Illegal number of parameters to function"</td>
 </tr><tr>
- <td><code>PREMATURE_EOS</code></td>
+ <td><code>FunctionParserErrorType::premature_end_of_string</code></td>
  <td>"Syntax error: Premature end of string"</td>
 </tr><tr>
- <td><code>EXPECT_PARENTH_FUNC</code></td>
+ <td><code>FunctionParserErrorType::missing_parenthesis_after_function</code></td>
  <td>"Syntax error: Expecting ( after function"</td>
 </tr><tr>
- <td><code>UNKNOWN_IDENTIFIER</code></td>
+ <td><code>FunctionParserErrorType::unknown_identifier</code></td>
  <td>"Syntax error: Unknown identifier"</td>
 </tr><tr>
- <td><code>NO_FUNCTION_PARSED_YET</code></td>
+ <td><code>FunctionParserErrorType::no_function_parsed_yet</code></td>
  <td>"(No function has been parsed yet)"</td>
 </tr>
 </table>

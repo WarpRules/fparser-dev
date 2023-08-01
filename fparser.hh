@@ -24,6 +24,24 @@
 #pragma warning(disable : 4661)
 #endif
 
+enum class FunctionParserErrorType: unsigned
+{
+    syntax_error,
+    mismatched_parenthesis,
+    missing_parenthesis,
+    empty_parentheses,
+    expect_operator,
+    out_of_memory,
+    unexpected_error,
+    invalid_vars,
+    illegal_parameters_amount,
+    premature_end_of_string,
+    missing_parenthesis_after_function,
+    unknown_identifier,
+    no_function_parsed_yet,
+    no_error
+};
+
 namespace FPoptimizer_CodeTree { template<typename Value_t> class CodeTree; }
 
 template<typename Value_t>
@@ -54,7 +72,9 @@ class FunctionParserBase
     static void setEpsilon(Value_t);
 
     const char* ErrorMsg() const;
-    ParseErrorType GetParseErrorType() const;
+
+    [[deprecated("Use ParseError() instead")]] ParseErrorType GetParseErrorType() const;
+    FunctionParserErrorType ParseError() const;
 
     Value_t Eval(const Value_t* Vars);
     int EvalError() const;
@@ -147,7 +167,7 @@ class FunctionParserBase
     bool NameExists(const char*, unsigned);
     bool ParseVariables(const std::string&);
     int ParseFunction(const char*, bool);
-    const char* SetErrorType(ParseErrorType, const char*);
+    const char* SetErrorType(FunctionParserErrorType, const char*);
 
     void AddFunctionOpcode(unsigned);
     void AddImmedOpcode(Value_t v);

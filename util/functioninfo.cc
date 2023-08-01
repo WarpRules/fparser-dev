@@ -1038,8 +1038,7 @@ namespace
             std::cerr << "\"" << info.mFunctionString << "\"\n"
                       << std::string(result+1, ' ')
                       << "^ " << info.mParser.ErrorMsg() << std::endl;
-            if(info.mParser.GetParseErrorType() ==
-               FunctionParserBase<Value_t>::INVALID_VARS)
+            if(info.mParser.ParseError() == FunctionParserErrorType::invalid_vars)
                 std::cerr << "Vars: \"" << gVarString << "\"" << std::endl;
             return false;
         }

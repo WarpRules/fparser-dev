@@ -5,6 +5,13 @@ speedtest
 testbed
 testbed_tests.inc
 tests/make_tests
+tests/testbed_alltests.cc
+tests/testbed_autogen.hh
+tests/testbed_const*.hh
+tests/testbed_cpptest.hh
+tests/testbed_evaluate*.cc
+tests/testbed_testlist*.cc
+util/build_fpaux
 util/bytecoderules_parser
 util/tree_grammar_parser
 util/tree_grammar_parser.cc

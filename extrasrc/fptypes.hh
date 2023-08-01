@@ -224,7 +224,7 @@ struct FunctionParserBase<Value_t>::Data
     unsigned mReferenceCounter;
 
     char mDelimiterChar;
-    ParseErrorType mParseErrorType;
+    FunctionParserErrorType mParseErrorType;
     int mEvalErrorType;
     bool mUseDegreeConversion;
     bool mHasByteCodeFlags;
