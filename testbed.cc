@@ -296,8 +296,16 @@ static int testCopying()
 //=========================================================================
 // Test error situations
 //=========================================================================
-template<typename Value_t>
-static int testErrorSituationsWithValueType()
+struct ErrorSituationsTestData
+{
+    FunctionParserErrorType expected_error;
+    int expected_error_position;
+    const char* function_string;
+};
+
+template<typename Value_t, unsigned testDataAmount, unsigned invalidNamesAmount>
+static int testErrorSituationsWithValueType(const ErrorSituationsTestData(&testData)[testDataAmount],
+                                            const char* const (&invalidNames)[invalidNamesAmount])
 {
     using Parser_t = FunctionParserBase<Value_t>;
 
@@ -309,107 +317,41 @@ static int testErrorSituationsWithValueType()
     parser.AddFunctionWrapper("Sub", UserDefFuncWrapper<Value_t> (userDefFuncSub<Value_t>), 2);
     tmpParser.Parse("0", "x");
 
-    static const struct
+    for(unsigned data_index = 0; data_index < testDataAmount; ++data_index)
     {
-        FunctionParserErrorType expected_error;
-        int expected_error_position;
-        const char* function_string;
-    } invalidFunctionData[] =
-    {
-      { FunctionParserErrorType::missing_parenthesis,                5, "sin(x" },
-      { FunctionParserErrorType::missing_parenthesis_after_function, 4, "sin x" },
-      { FunctionParserErrorType::syntax_error,                       2, "x+" },
-      { FunctionParserErrorType::expect_operator,                    2, "x x"},
-      { FunctionParserErrorType::unknown_identifier,                 4, "sin(y)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          5, "sin(x, 1)" },
-      { FunctionParserErrorType::expect_operator,                    1, "x, x"},
-      { FunctionParserErrorType::syntax_error,                       2, "x^^2" },
-      { FunctionParserErrorType::syntax_error,                       2, "x**x" },
-      { FunctionParserErrorType::syntax_error,                       2, "x+*x" },
-      { FunctionParserErrorType::syntax_error,                       0, "unit" },
-      { FunctionParserErrorType::syntax_error,                       0, "unit x" },
-      { FunctionParserErrorType::syntax_error,                       2, "x*unit" },
-      { FunctionParserErrorType::syntax_error,                       0, "unit*unit" },
-      { FunctionParserErrorType::syntax_error,                       0, "unit unit" },
-      { FunctionParserErrorType::expect_operator,                    1, "x(unit)"},
-      { FunctionParserErrorType::syntax_error,                       2, "x+unit" },
-      { FunctionParserErrorType::syntax_error,                       2, "x*unit" },
-      { FunctionParserErrorType::empty_parentheses,                  1, "()"},
-      { FunctionParserErrorType::syntax_error,                       0, "" },
-      { FunctionParserErrorType::expect_operator,                    1, "x()"},
-      { FunctionParserErrorType::empty_parentheses,                  3, "x*()"},
-      { FunctionParserErrorType::syntax_error,                       4, "sin(unit)" },
-      { FunctionParserErrorType::missing_parenthesis_after_function, 4, "sin unit"},
-      { FunctionParserErrorType::expect_operator,                    2, "1..2"},
-      { FunctionParserErrorType::syntax_error,                       1, "(" },
-      { FunctionParserErrorType::mismatched_parenthesis,             0, ")"},
-      { FunctionParserErrorType::missing_parenthesis,                2, "(x"},
-      { FunctionParserErrorType::expect_operator,                    1, "x)"},
-      { FunctionParserErrorType::mismatched_parenthesis,             0, ")x("},
-      { FunctionParserErrorType::missing_parenthesis,                14, "(((((((x))))))"},
-      { FunctionParserErrorType::expect_operator,                    15, "(((((((x))))))))"},
-      { FunctionParserErrorType::expect_operator,                    1, "2x"},
-      { FunctionParserErrorType::expect_operator,                    3, "(2)x"},
-      { FunctionParserErrorType::expect_operator,                    3, "(x)2"},
-      { FunctionParserErrorType::expect_operator,                    1, "2(x)"},
-      { FunctionParserErrorType::expect_operator,                    1, "x(2)"},
-      { FunctionParserErrorType::syntax_error,                       0, "[x]" },
-      { FunctionParserErrorType::syntax_error,                       0, "@x" },
-      { FunctionParserErrorType::syntax_error,                       0, "$x" },
-      { FunctionParserErrorType::syntax_error,                       0, "{x}" },
-      { FunctionParserErrorType::illegal_parameters_amount,          5, "max(x)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          8, "max(x, 1, 2)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          6, "if(x,2)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          10, "if(x, 2, 3, 4)" },
-      { FunctionParserErrorType::missing_parenthesis,                6, "Value(x)"},
-      { FunctionParserErrorType::missing_parenthesis,                6, "Value(1+x)"},
-      { FunctionParserErrorType::missing_parenthesis,                6, "Value(1,x)"},
-      // Note: ^should these three not return ILL_PARAMS_AMOUNT instead?
-      { FunctionParserErrorType::illegal_parameters_amount,          4, "Sqr()"},
-      { FunctionParserErrorType::illegal_parameters_amount,          5, "Sqr(x,1)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          5, "Sqr(1,2,x)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          4, "Sub()" },
-      { FunctionParserErrorType::illegal_parameters_amount,          5, "Sub(x)" },
-      { FunctionParserErrorType::illegal_parameters_amount,          7, "Sub(x,1,2)" },
-      { FunctionParserErrorType::unknown_identifier,                 2, "x+Sin(1)" },
-      { FunctionParserErrorType::unknown_identifier,                 0, "sub(1,2)" },
-      { FunctionParserErrorType::unknown_identifier,                 0, "sinx(1)"  },
-      { FunctionParserErrorType::unknown_identifier,                 2, "1+X"      },
-      { FunctionParserErrorType::unknown_identifier,                 0, "eval(x)" }
-    };
-    const unsigned invalidFunctionDataAmount = sizeof(invalidFunctionData)/sizeof(invalidFunctionData[0]);
-
-    for(unsigned data_index = 0; data_index < invalidFunctionDataAmount; ++data_index)
-    {
-        int parse_result = parser.Parse(invalidFunctionData[data_index].function_string, "x");
+        int parse_result = parser.Parse(testData[data_index].function_string, "x");
         if(parse_result < 0)
         {
             retval = false;
             if(gVerbosityLevel >= 2)
             {
                 std::cout << "\n - Parsing the invalid function \""
-                          << invalidFunctionData[data_index].function_string
+                          << testData[data_index].function_string
                           << "\" didn't fail\n";
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                 parser.PrintByteCode(std::cout);
 #endif
             }
         }
-        else if(parser.ParseError() != invalidFunctionData[data_index].expected_error
-             || parse_result != invalidFunctionData[data_index].expected_error_position)
+        else if(parser.ParseError() != testData[data_index].expected_error
+             || parse_result != testData[data_index].expected_error_position)
         {
             retval = false;
             if(gVerbosityLevel >= 2)
             {
                 std::cout << "\n - Parsing the invalid function \""
-                          << invalidFunctionData[data_index].function_string
+                          << testData[data_index].function_string
                           << "\" produced ";
-                if(parser.ParseError() != invalidFunctionData[data_index].expected_error)
+                if(parser.ParseError() != testData[data_index].expected_error)
+                {
                     std::cout << "wrong error code (" << parser.ErrorMsg() << ")";
-                if(parse_result != invalidFunctionData[data_index].expected_error_position)
+                }
+                if(parse_result != testData[data_index].expected_error_position)
+                {
                     std::cout << "wrong pointer (expected "
-                              << invalidFunctionData[data_index].expected_error_position
+                              << testData[data_index].expected_error_position
                               << ", got " << parse_result << ")";
+                }
                 std::cout << "\n";
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
                 parser.PrintByteCode(std::cout);
@@ -418,11 +360,7 @@ static int testErrorSituationsWithValueType()
         }
     }
 
-    static const char* const invalidNames[] =
-    { "s2%", "sin", "(x)", "5x", "2", "\302\240"/*nbsp*/ };
-    const unsigned namesAmount = sizeof(invalidNames)/sizeof(invalidNames[0]);
-
-    for(unsigned nameIndex = 0; nameIndex < namesAmount; ++nameIndex)
+    for(unsigned nameIndex = 0; nameIndex < invalidNamesAmount; ++nameIndex)
     {
         const char* const name = invalidNames[nameIndex];
         if(parser.AddConstant(name, static_cast<Value_t>(1)))
@@ -486,35 +424,106 @@ static int testErrorSituationsWithValueType()
 
 static int testErrorSituations()
 {
-#ifndef FP_DISABLE_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<double>";
-    if(!testErrorSituationsWithValueType<double>()) return false;
-#endif
-#ifdef FP_SUPPORT_FLOAT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<float>";
-    if(!testErrorSituationsWithValueType<float>()) return false;
-#endif
-#ifdef FP_SUPPORT_LONG_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<long double>";
-    if(!testErrorSituationsWithValueType<long double>()) return false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<double>>";
-    if(!testErrorSituationsWithValueType<std::complex<double>>()) return false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_FLOAT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<float>>";
-    if(!testErrorSituationsWithValueType<std::complex<float>>()) return false;
-#endif
-#ifdef FP_SUPPORT_COMPLEX_LONG_DOUBLE_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<std::complex<long double>>";
-    if(!testErrorSituationsWithValueType<std::complex<long double>>()) return false;
-#endif
-#ifdef FP_SUPPORT_MPFR_FLOAT_TYPE
-    if(gVerbosityLevel >= 3) std::cout << "\n - Testing error handling with FunctionParserBase<MpfrFloat>";
-    if(!testErrorSituationsWithValueType<MpfrFloat>()) return false;
-#endif
-    return true;
+    static const ErrorSituationsTestData test_data_common[] =
+    {
+        { FunctionParserErrorType::syntax_error,                       2, "x+" },
+        { FunctionParserErrorType::expect_operator,                    2, "x x"},
+        { FunctionParserErrorType::unknown_identifier,                 0, "y" },
+        { FunctionParserErrorType::expect_operator,                    1, "x, x"},
+        { FunctionParserErrorType::syntax_error,                       2, "x**x" },
+        { FunctionParserErrorType::syntax_error,                       2, "x+*x" },
+        { FunctionParserErrorType::syntax_error,                       0, "unit" },
+        { FunctionParserErrorType::syntax_error,                       0, "unit x" },
+        { FunctionParserErrorType::syntax_error,                       2, "x*unit" },
+        { FunctionParserErrorType::syntax_error,                       0, "unit*unit" },
+        { FunctionParserErrorType::syntax_error,                       0, "unit unit" },
+        { FunctionParserErrorType::expect_operator,                    1, "x(unit)"},
+        { FunctionParserErrorType::syntax_error,                       2, "x+unit" },
+        { FunctionParserErrorType::syntax_error,                       2, "x*unit" },
+        { FunctionParserErrorType::empty_parentheses,                  1, "()"},
+        { FunctionParserErrorType::syntax_error,                       0, "" },
+        { FunctionParserErrorType::expect_operator,                    1, "x()"},
+        { FunctionParserErrorType::empty_parentheses,                  3, "x*()"},
+        { FunctionParserErrorType::syntax_error,                       1, "(" },
+        { FunctionParserErrorType::mismatched_parenthesis,             0, ")"},
+        { FunctionParserErrorType::missing_parenthesis,                2, "(x"},
+        { FunctionParserErrorType::expect_operator,                    1, "x)"},
+        { FunctionParserErrorType::mismatched_parenthesis,             0, ")x("},
+        { FunctionParserErrorType::missing_parenthesis,                14, "(((((((x))))))"},
+        { FunctionParserErrorType::expect_operator,                    15, "(((((((x))))))))"},
+        { FunctionParserErrorType::expect_operator,                    1, "2x"},
+        { FunctionParserErrorType::expect_operator,                    3, "(2)x"},
+        { FunctionParserErrorType::expect_operator,                    3, "(x)2"},
+        { FunctionParserErrorType::expect_operator,                    1, "2(x)"},
+        { FunctionParserErrorType::expect_operator,                    1, "x(2)"},
+        { FunctionParserErrorType::syntax_error,                       0, "[x]" },
+        { FunctionParserErrorType::syntax_error,                       0, "@x" },
+        { FunctionParserErrorType::syntax_error,                       0, "$x" },
+        { FunctionParserErrorType::syntax_error,                       0, "{x}" },
+        { FunctionParserErrorType::illegal_parameters_amount,          6, "if(x,2)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          10, "if(x, 2, 3, 4)" },
+        { FunctionParserErrorType::missing_parenthesis,                6, "Value(x)"},
+        { FunctionParserErrorType::missing_parenthesis,                6, "Value(1+x)"},
+        { FunctionParserErrorType::missing_parenthesis,                6, "Value(1,x)"},
+        // Note: ^should these three not return ILL_PARAMS_AMOUNT instead?
+        { FunctionParserErrorType::illegal_parameters_amount,          4, "Sqr()"},
+        { FunctionParserErrorType::illegal_parameters_amount,          5, "Sqr(x,1)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          5, "Sqr(1,2,x)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          4, "Sub()" },
+        { FunctionParserErrorType::illegal_parameters_amount,          5, "Sub(x)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          7, "Sub(x,1,2)" },
+        { FunctionParserErrorType::unknown_identifier,                 2, "x+Sin(1)" },
+        { FunctionParserErrorType::unknown_identifier,                 0, "sub(1,2)" },
+        { FunctionParserErrorType::unknown_identifier,                 0, "sinx(1)"  },
+        { FunctionParserErrorType::unknown_identifier,                 2, "1+X"      },
+        { FunctionParserErrorType::unknown_identifier,                 0, "eval(x)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          5, "max(x)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          8, "max(x, 1, 2)" },
+    };
+
+    static const ErrorSituationsTestData test_data_fp_parsers[] =
+    {
+        { FunctionParserErrorType::syntax_error,                       2, "x^^2" },
+        { FunctionParserErrorType::expect_operator,                    2, "1..2"},
+        { FunctionParserErrorType::missing_parenthesis,                5, "sin(x" },
+        { FunctionParserErrorType::missing_parenthesis_after_function, 4, "sin x" },
+        { FunctionParserErrorType::unknown_identifier,                 4, "sin(y)" },
+        { FunctionParserErrorType::illegal_parameters_amount,          5, "sin(x, 1)" },
+        { FunctionParserErrorType::syntax_error,                       4, "sin(unit)" },
+        { FunctionParserErrorType::missing_parenthesis_after_function, 4, "sin unit"},
+    };
+
+    static const ErrorSituationsTestData test_data_int_parsers[] =
+    {
+        { FunctionParserErrorType::expect_operator,                    1, "x^^2" },
+        { FunctionParserErrorType::expect_operator,                    1, "1..2"},
+        { FunctionParserErrorType::unknown_identifier,                 0, "sin(x)" },
+        { FunctionParserErrorType::unknown_identifier,                 0, "cos(x)" },
+        { FunctionParserErrorType::unknown_identifier,                 8, "1 + 2 * sin(x)" },
+    };
+
+    static const char* const invalid_names_common[] =
+        { "s2%", "(x)", "5x", "2", "\302\240"/*nbsp*/ };
+
+    static const char* const invalid_names_fp_parsers[] =
+        { "sin", "cos", "tan", "sqrt", "sinh", "cosh", "tanh", "hypot" };
+
+    int retval = 1;
+
+#define o(type, enumcode, opt1,opt2, verbosetype) \
+    rt_##enumcode( \
+        if(gVerbosityLevel >= 3) \
+            std::cout << "\n - Testing error handing with FunctionParserBase<" # type ">"; \
+        retval &= testErrorSituationsWithValueType<type>(test_data_common, invalid_names_common); \
+        if(FUNCTIONPARSERTYPES::IsIntType<type>::value) \
+            retval &= testErrorSituationsWithValueType<type>(test_data_int_parsers, invalid_names_common); \
+        else \
+            retval &= testErrorSituationsWithValueType<type>(test_data_fp_parsers, invalid_names_fp_parsers); \
+        , )
+    FP_DECLTYPES(o)
+#undef o
+
+    return retval;
 }
 
 
