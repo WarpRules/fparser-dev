@@ -23,6 +23,8 @@
 #include <map>
 #endif
 
+#include <string_view>
+
 namespace FUNCTIONPARSERTYPES
 {
     enum OPCODE
@@ -165,31 +167,6 @@ namespace FUNCTIONPARSERTYPES
     };
 #undef FP_FNAME
 
-    struct NamePtr
-    {
-        const char* name;
-        unsigned nameLength;
-
-        NamePtr(const char* n, unsigned l): name(n), nameLength(l) {}
-
-        inline bool operator==(const NamePtr& rhs) const
-        {
-            return nameLength == rhs.nameLength
-                && std::memcmp(name, rhs.name, nameLength) == 0;
-        }
-        inline bool operator<(const NamePtr& rhs) const
-        {
-            for(unsigned i = 0; i < nameLength; ++i)
-            {
-                if(i == rhs.nameLength) return false;
-                const char c1 = name[i], c2 = rhs.name[i];
-                if(c1 < c2) return true;
-                if(c2 < c1) return false;
-            }
-            return nameLength < rhs.nameLength;
-        }
-    };
-
     template<typename Value_t>
     struct NameData
     {
@@ -206,8 +183,7 @@ namespace FUNCTIONPARSERTYPES
 
     template<typename Value_t>
     class NamePtrsMap: public
-    std::map<FUNCTIONPARSERTYPES::NamePtr,
-             FUNCTIONPARSERTYPES::NameData<Value_t> >
+    std::map<std::string_view, FUNCTIONPARSERTYPES::NameData<Value_t>>
     {
     };
 
@@ -236,7 +212,7 @@ struct FunctionParserBase<Value_t>::Data
 
     struct InlineVariable
     {
-        FUNCTIONPARSERTYPES::NamePtr mName;
+        std::string_view mName;
         unsigned mFetchIndex;
     };
 

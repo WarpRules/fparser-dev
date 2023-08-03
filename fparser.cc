@@ -597,18 +597,24 @@ namespace
 //=========================================================================
 namespace
 {
+    std::string_view allocCopyOfStringView(std::string_view another)
+    {
+        unsigned length = another.size();
+        char* namebuf = new char[length];
+        memcpy(namebuf, another.data(), length);
+        return std::string_view(namebuf, length);
+    }
+
     // -----------------------------------------------------------------------
     // Add a new identifier to the specified identifier map
     // -----------------------------------------------------------------------
     // Return value will be false if the name already existed
     template<typename Value_t>
     bool addNewNameData(NamePtrsMap<Value_t>& namePtrs,
-                        std::pair<NamePtr, NameData<Value_t> >&& newName,
+                        std::pair<std::string_view, NameData<Value_t>>&& newName,
                         bool isVar)
     {
-        typename NamePtrsMap<Value_t>::iterator nameIter =
-            namePtrs.lower_bound(newName.first);
-
+        auto nameIter = namePtrs.lower_bound(newName.first);
         if(nameIter != namePtrs.end() && newName.first == nameIter->first)
         {
             // redefining a var is not allowed.
@@ -628,9 +634,7 @@ namespace
             // Allocate a copy of the name (pointer stored in the map key)
             // However, for VARIABLEs, the pointer points to VariableString,
             // which is managed separately. Thusly, only done when !IsVar.
-            char* namebuf = new char[newName.first.nameLength];
-            memcpy(namebuf, newName.first.name, newName.first.nameLength);
-            newName.first.name = namebuf;
+            newName.first = allocCopyOfStringView(newName.first);
         }
 
         namePtrs.insert(nameIter, std::move(newName));
@@ -674,28 +678,22 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 #endif
     mStackSize(rhs.mStackSize)
 {
-    for(typename NamePtrsMap<Value_t>::const_iterator i = rhs.mNamePtrs.begin();
-        i != rhs.mNamePtrs.end();
-        ++i)
+    for(const auto& name: rhs.mNamePtrs)
     {
-        if(i->second.type == NameData<Value_t>::VARIABLE)
+        if(name.second.type == NameData<Value_t>::VARIABLE)
         {
             const std::size_t variableStringOffset =
-                i->first.name - rhs.mVariablesString.c_str();
-            std::pair<NamePtr, NameData<Value_t> > tmp
-                (NamePtr(&mVariablesString[variableStringOffset],
-                         i->first.nameLength),
-                 i->second);
-            mNamePtrs.insert(mNamePtrs.end(), tmp);
+                name.first.data() - rhs.mVariablesString.data();
+            mNamePtrs.emplace(
+                std::string_view(&mVariablesString[variableStringOffset],
+                                 name.first.size()),
+                name.second);
         }
         else
         {
-            std::pair<NamePtr, NameData<Value_t> > tmp
-                (NamePtr(new char[i->first.nameLength], i->first.nameLength),
-                 i->second );
-            memcpy(const_cast<char*>(tmp.first.name), i->first.name,
-                   tmp.first.nameLength);
-            mNamePtrs.insert(mNamePtrs.end(), tmp);
+            mNamePtrs.emplace(
+                std::make_pair(allocCopyOfStringView(name.first),
+                               name.second));
         }
     }
 }
@@ -703,12 +701,10 @@ FunctionParserBase<Value_t>::Data::Data(const Data& rhs):
 template<typename Value_t>
 FunctionParserBase<Value_t>::Data::~Data()
 {
-    for(typename NamePtrsMap<Value_t>::iterator i = mNamePtrs.begin();
-        i != mNamePtrs.end();
-        ++i)
+    for(const auto& name: mNamePtrs)
     {
-        if(i->second.type != NameData<Value_t>::VARIABLE)
-            delete[] i->first.name;
+        if(name.second.type != NameData<Value_t>::VARIABLE)
+            delete[] name.first.data();
     }
 }
 
@@ -871,8 +867,7 @@ bool FunctionParserBase<Value_t>::AddConstant(const std::string& name,
     if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr, NameData<Value_t> > newName
-        (NamePtr(name.data(), unsigned(name.size())),
+    auto newName = std::make_pair(std::string_view(name),
          NameData<Value_t>(NameData<Value_t>::CONSTANT, std::move(value)));
 
     return addNewNameData(mData->mNamePtrs, std::move(newName), false);
@@ -885,9 +880,8 @@ bool FunctionParserBase<Value_t>::AddUnit(const std::string& name,
     if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr, NameData<Value_t> > newName
-        (NamePtr(name.data(), unsigned(name.size())),
-         NameData<Value_t>(NameData<Value_t>::UNIT, value));
+    auto newName = std::make_pair(std::string_view(name),
+         NameData<Value_t>(NameData<Value_t>::UNIT, std::move(value)));
     return addNewNameData(mData->mNamePtrs, std::move(newName), false);
 }
 
@@ -898,8 +892,7 @@ bool FunctionParserBase<Value_t>::AddFunction
     if(!containsOnlyValidIdentifierChars<Value_t>(name)) return false;
 
     CopyOnWrite();
-    std::pair<NamePtr, NameData<Value_t> > newName
-        (NamePtr(name.data(), unsigned(name.size())),
+    auto newName = std::make_pair(std::string_view(name),
          NameData<Value_t>(NameData<Value_t>::FUNC_PTR,
                            unsigned(mData->mFuncPtrs.size())));
 
@@ -927,17 +920,14 @@ typename FunctionParserBase<Value_t>::FunctionWrapper*
 FunctionParserBase<Value_t>::GetFunctionWrapper(const std::string& name)
 {
     CopyOnWrite();
-    NamePtr namePtr(name.data(), unsigned(name.size()));
 
-    typename NamePtrsMap<Value_t>::iterator nameIter =
-        mData->mNamePtrs.find(namePtr);
-
+    auto nameIter = mData->mNamePtrs.find(name);
     if(nameIter != mData->mNamePtrs.end() &&
        nameIter->second.type == NameData<Value_t>::FUNC_PTR)
     {
         return mData->mFuncPtrs[nameIter->second.index].mFuncWrapperPtr;
     }
-    return 0;
+    return nullptr;
 }
 
 template<typename Value_t>
@@ -960,8 +950,7 @@ bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
         return false;
 
     CopyOnWrite();
-    std::pair<NamePtr, NameData<Value_t> > newName
-        (NamePtr(name.data(), unsigned(name.size())),
+    auto newName = std::make_pair(std::string_view(name),
          NameData<Value_t>(NameData<Value_t>::PARSER_PTR,
                            unsigned(mData->mFuncParsers.size())));
 
@@ -980,11 +969,7 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
 {
     CopyOnWrite();
 
-    NamePtr namePtr(name.data(), unsigned(name.size()));
-
-    typename NamePtrsMap<Value_t>::iterator nameIter =
-        mData->mNamePtrs.find(namePtr);
-
+    auto nameIter = mData->mNamePtrs.find(name);
     if(nameIter != mData->mNamePtrs.end())
     {
         if(nameIter->second.type == NameData<Value_t>::VARIABLE)
@@ -992,7 +977,7 @@ bool FunctionParserBase<Value_t>::RemoveIdentifier(const std::string& name)
             // Illegal attempt to delete variables
             return false;
         }
-        delete[] nameIter->first.name;
+        delete[] nameIter->first.data();
         mData->mNamePtrs.erase(nameIter);
         return true;
     }
@@ -1235,17 +1220,16 @@ bool FunctionParserBase<Value_t>::ParseVariables
     if(mData->mVariablesString == inputVarString) return true;
 
     /* Delete existing variables from mNamePtrs */
-    for(typename NamePtrsMap<Value_t>::iterator i =
-            mData->mNamePtrs.begin();
-        i != mData->mNamePtrs.end(); )
+    for(auto nameIter = mData->mNamePtrs.begin();
+        nameIter != mData->mNamePtrs.end(); )
     {
-        if(i->second.type == NameData<Value_t>::VARIABLE)
+        if(nameIter->second.type == NameData<Value_t>::VARIABLE)
         {
-            typename NamePtrsMap<Value_t>::iterator j (i);
-            ++i;
-            mData->mNamePtrs.erase(j);
+            auto next = std::next(nameIter);
+            mData->mNamePtrs.erase(nameIter);
+            nameIter = std::move(next);
         }
-        else ++i;
+        else ++nameIter;
     }
     mData->mVariablesString = inputVarString;
 
@@ -1265,9 +1249,9 @@ bool FunctionParserBase<Value_t>::ParseVariables
         SkipSpace(endPtr);
         if(endPtr != finalPtr && *endPtr != ',') return false;
 
-        std::pair<NamePtr, NameData<Value_t> > newName
-            (NamePtr(beginPtr, nameLength),
-             NameData<Value_t>(NameData<Value_t>::VARIABLE, varNumber++));
+        auto newName = std::make_pair(
+            std::string_view(beginPtr, nameLength),
+            NameData<Value_t>(NameData<Value_t>::VARIABLE, varNumber++));
 
         if(!addNewNameData(mData->mNamePtrs, std::move(newName), true))
         {
@@ -1386,19 +1370,13 @@ namespace
 {
     /* Needed by fp_opcode_add.inc if tracing is enabled */
     template<typename Value_t>
-    std::string findName(const NamePtrsMap<Value_t>& nameMap,
-                         unsigned index,
-                         typename NameData<Value_t>::DataType type)
+    std::string_view findName(const NamePtrsMap<Value_t>& nameMap,
+                              unsigned index,
+                              typename NameData<Value_t>::DataType type)
     {
-        for(typename NamePtrsMap<Value_t>::const_iterator
-                iter = nameMap.begin();
-            iter != nameMap.end();
-            ++iter)
-        {
-            if(iter->second.type == type && iter->second.index == index)
-                return std::string(iter->first.name,
-                                   iter->first.name + iter->first.nameLength);
-        }
+        for(const auto& name: nameMap)
+            if(name.second.type == type && name.second.index == index)
+                return name.first;
         return "?";
     }
 }
@@ -1885,23 +1863,21 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
         return CompileFunction(function + (nameLength & 0xFFFF), func_opcode);
     }
 
-    NamePtr name(function, nameLength);
+    std::string_view name(function, nameLength);
     const char* endPtr = function + nameLength;
     SkipSpace(endPtr);
 
-    typename NamePtrsMap<Value_t>::iterator nameIter =
-        mData->mNamePtrs.find(name);
+    auto nameIter = mData->mNamePtrs.find(name);
     if(nameIter == mData->mNamePtrs.end())
     {
         // Check if it's an inline variable:
-        for(typename Data::InlineVarNamesContainer::reverse_iterator iter =
-                mData->mInlineVarNames.rbegin();
-            iter != mData->mInlineVarNames.rend();
-            ++iter)
+        for(auto revIter = mData->mInlineVarNames.rbegin();
+            revIter != mData->mInlineVarNames.rend();
+            ++revIter)
         {
-            if(name == iter->mName)
+            if(name == revIter->mName)
             {
-                if( iter->mFetchIndex+1 == mStackPtr)
+                if( revIter->mFetchIndex+1 == mStackPtr)
                 {
                     FP_TRACE_BYTECODE_ADD(cDup);
                     mData->mByteCode.push_back(cDup);
@@ -1910,7 +1886,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
                 {
                     FP_TRACE_BYTECODE_ADD(cFetch);
                     mData->mByteCode.push_back(cFetch);
-                    PushOpcodeParam<true>(iter->mFetchIndex);
+                    PushOpcodeParam<true>(revIter->mFetchIndex);
                 }
                 incStackPtr();
                 return endPtr;
@@ -1920,27 +1896,27 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
         return SetErrorType(FunctionParserErrorType::unknown_identifier, function);
     }
 
-    const NameData<Value_t>* nameData = &nameIter->second;
-    switch(nameData->type)
+    const NameData<Value_t>& nameData = nameIter->second;
+    switch(nameData.type)
     {
       case NameData<Value_t>::VARIABLE: // is variable
           if(!mData->mByteCode.empty() &&
-                      mData->mByteCode.back() == nameData->index) [[unlikely]]
+              mData->mByteCode.back() == nameData.index) [[unlikely]]
           {
               FP_TRACE_BYTECODE_ADD(cDup);
               mData->mByteCode.push_back(cDup);
           }
           else [[likely]]
           {
-              FP_TRACE_BYTECODE_ADD_VAR(nameData->index);
-              mData->mByteCode.push_back(nameData->index);
+              FP_TRACE_BYTECODE_ADD_VAR(nameData.index);
+              mData->mByteCode.push_back(nameData.index);
           }
           incStackPtr();
           return endPtr;
 
       case NameData<Value_t>::CONSTANT: // is constant
-          FP_TRACE_BYTECODE_ADD_IMMED(nameData->value);
-          AddImmedOpcode(nameData->value);
+          FP_TRACE_BYTECODE_ADD_IMMED(nameData.value);
+          AddImmedOpcode(nameData.value);
           incStackPtr();
           return endPtr;
 
@@ -1949,20 +1925,20 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 
       case NameData<Value_t>::FUNC_PTR: // is C++ function
           function = CompileFunctionParams
-              (endPtr, mData->mFuncPtrs[nameData->index].mParams);
+              (endPtr, mData->mFuncPtrs[nameData.index].mParams);
           //if(!function) return 0;
           FP_TRACE_BYTECODE_ADD(cFCall);
           mData->mByteCode.push_back(cFCall);
-          PushOpcodeParam<true>(nameData->index);
+          PushOpcodeParam<true>(nameData.index);
           return function;
 
       case NameData<Value_t>::PARSER_PTR: // is FunctionParser
           function = CompileFunctionParams
-              (endPtr, mData->mFuncParsers[nameData->index].mParams);
+              (endPtr, mData->mFuncParsers[nameData.index].mParams);
           //if(!function) return 0;
           FP_TRACE_BYTECODE_ADD(cPCall);
           mData->mByteCode.push_back(cPCall);
-          PushOpcodeParam<true>(nameData->index);
+          PushOpcodeParam<true>(nameData.index);
           return function;
     }
 
@@ -2028,16 +2004,14 @@ FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
     if(nameLength & 0x80000000U) return function; // built-in function name
     if(nameLength != 0)
     {
-        NamePtr name(function, nameLength);
-
-        typename NamePtrsMap<Value_t>::iterator nameIter =
-            mData->mNamePtrs.find(name);
+        std::string_view name(function, nameLength);
+        auto nameIter = mData->mNamePtrs.find(name);
         if(nameIter != mData->mNamePtrs.end())
         {
-            const NameData<Value_t>* nameData = &nameIter->second;
-            if(nameData->type == NameData<Value_t>::UNIT)
+            const NameData<Value_t>& nameData = nameIter->second;
+            if(nameData.type == NameData<Value_t>::UNIT)
             {
-                AddImmedOpcode(nameData->value);
+                AddImmedOpcode(nameData.value);
                 incStackPtr();
                 AddFunctionOpcode(cMul);
                 --mStackPtr;
@@ -2546,12 +2520,11 @@ const char* FunctionParserBase<Value_t>::Compile(const char* function)
         unsigned nameLength = readIdentifier<Value_t>(function);
         if(nameLength > 0 && !(nameLength & 0x80000000U))
         {
-            typename Data::InlineVariable inlineVar =
-                { NamePtr(function, nameLength), 0 };
+            typename Data::InlineVariable inlineVar
+                { std::string_view(function, nameLength), 0 };
 
             // Check if it's an unknown identifier:
-            typename NamePtrsMap<Value_t>::iterator nameIter =
-                mData->mNamePtrs.find(inlineVar.mName);
+            auto nameIter = mData->mNamePtrs.find(inlineVar.mName);
             if(nameIter == mData->mNamePtrs.end())
             {
                 const char* function2 = function + nameLength;
@@ -2567,7 +2540,7 @@ const char* FunctionParserBase<Value_t>::Compile(const char* function)
                     if(*function2 != ';') return function2;
 
                     inlineVar.mFetchIndex = mStackPtr - 1;
-                    mData->mInlineVarNames.push_back(inlineVar);
+                    mData->mInlineVarNames.push_back(std::move(inlineVar));
 
                     // Continue with the expression after the ';':
                     function = function2 + 1;
@@ -3535,8 +3508,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                       const unsigned index = ByteCode[++IP];
                       params = mData->mFuncPtrs[index].mParams;
                       static std::string name;
-                      name = "f:" + findName(mData->mNamePtrs, index,
-                                             NameData<Value_t>::FUNC_PTR);
+                      name = "f:" + std::string(
+                          findName(mData->mNamePtrs, index,
+                                   NameData<Value_t>::FUNC_PTR));
                       n = name.c_str();
                       out_params = true;
                       break;
@@ -3547,8 +3521,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                       const unsigned index = ByteCode[++IP];
                       params = mData->mFuncParsers[index].mParams;
                       static std::string name;
-                      name = "p:" + findName(mData->mNamePtrs, index,
-                                             NameData<Value_t>::PARSER_PTR);
+                      name = "p:" + std::string(
+                          findName(mData->mNamePtrs, index,
+                                   NameData<Value_t>::PARSER_PTR));
                       n = name.c_str();
                       out_params = true;
                       break;
@@ -3559,9 +3534,9 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                   {
                       if(showExpression)
                       {
-                          stack.push_back(std::make_pair(0,
-                              (findName(mData->mNamePtrs, opcode,
-                                        NameData<Value_t>::VARIABLE))));
+                          stack.push_back(std::make_pair(0, std::string(
+                              findName(mData->mNamePtrs, opcode,
+                                       NameData<Value_t>::VARIABLE))));
                       }
                       output << "push Var" << opcode-VarBegin;
                       produces = 0;
