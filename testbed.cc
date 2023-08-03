@@ -2896,7 +2896,7 @@ int main(int argc, char* argv[])
             {
                 const char* t = argv[++i];
                 if(std::none_of(tests.begin(), tests.end(),
-                    [t](auto& e) { return WildMatch_Dirmask(t, e.c_str()); }))
+                    [t](const std::string& e) { return WildMatch_Dirmask(t, e.c_str()); }))
                 {
                     std::cout << "No such test: " << t
                               << "\n\"testbed -tests help\" to list "
