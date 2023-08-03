@@ -17,7 +17,7 @@
 #define ONCE_FPARSER_TYPES_H_
 
 #include "../fpconfig.hh"
-#include <cstring>
+#include <cstring> /* For memcmp */
 
 #ifdef ONCE_FPARSER_H_
 #include <map>
@@ -107,8 +107,8 @@ namespace FUNCTIONPARSERTYPES
 #ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
         const char name[8];
 #endif
-        unsigned params : 8;
-        unsigned flags  : 8;
+        unsigned num_params : 8;
+        unsigned flags      : 8;
 
         inline bool okForInt() const { return (flags & OkForInt) != 0; }
         inline bool complexOnly() const { return (flags & ComplexOnly) != 0; }
@@ -165,6 +165,11 @@ namespace FUNCTIONPARSERTYPES
     };
 #undef FP_FNAME
 
+    /* NamePtr is essentially the same as std::string_view,
+     * but std::string_view requires c++17 while fparser
+     * currently only depends on c++11.
+     * See fptypes_use_stringview branch.
+     */
     struct NamePtr
     {
         const char* name;
@@ -195,21 +200,17 @@ namespace FUNCTIONPARSERTYPES
     {
         enum DataType { CONSTANT, UNIT, FUNC_PTR, PARSER_PTR, VARIABLE };
         DataType type;
-        unsigned index;
-        Value_t value;
+        unsigned index; // Used with FUNC_PTR, PARSER_PTR, VARIABLE
+        Value_t value;  // Used with CONSTANT, UNIT
 
         NameData(DataType t, unsigned v)       : type(t), index(v), value() { }
         NameData(DataType t, const Value_t& v) : type(t), index(), value(v) { }
         NameData(DataType t, Value_t&& v)      : type(t), index(), value(std::move(v)) { }
-        NameData() { }
     };
 
     template<typename Value_t>
-    class NamePtrsMap: public
-    std::map<FUNCTIONPARSERTYPES::NamePtr,
-             FUNCTIONPARSERTYPES::NameData<Value_t> >
-    {
-    };
+    using NamePtrsMap = std::map<FUNCTIONPARSERTYPES::NamePtr,
+                                 FUNCTIONPARSERTYPES::NameData<Value_t>>;
 
     const unsigned FUNC_AMOUNT = sizeof(Functions)/sizeof(Functions[0]);
 #endif // ONCE_FPARSER_H_
@@ -221,18 +222,19 @@ namespace FUNCTIONPARSERTYPES
 template<typename Value_t>
 struct FunctionParserBase<Value_t>::Data
 {
-    unsigned mReferenceCounter;
+    unsigned mReferenceCounter = 1;
 
-    char mDelimiterChar;
-    FunctionParserErrorType mParseErrorType;
-    int mEvalErrorType;
-    bool mUseDegreeConversion;
-    bool mHasByteCodeFlags;
-    const char* mErrorLocation;
+    char mDelimiterChar = '\0';
+    FunctionParserErrorType mParseErrorType =
+        FunctionParserErrorType::no_function_parsed_yet;
+    int mEvalErrorType = 0;
+    bool mUseDegreeConversion = false;
+    bool mHasByteCodeFlags = false;
+    const char* mErrorLocation = nullptr;
 
-    unsigned mVariablesAmount;
-    std::string mVariablesString;
-    FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> mNamePtrs;
+    unsigned mVariablesAmount = 0;
+    std::string mVariablesString {};
+    FUNCTIONPARSERTYPES::NamePtrsMap<Value_t> mNamePtrs {};
 
     struct InlineVariable
     {
@@ -241,7 +243,7 @@ struct FunctionParserBase<Value_t>::Data
     };
 
     typedef std::vector<InlineVariable> InlineVarNamesContainer;
-    InlineVarNamesContainer mInlineVarNames;
+    InlineVarNamesContainer mInlineVarNames {};
 
     struct FuncWrapperPtrData
     {
@@ -249,40 +251,44 @@ struct FunctionParserBase<Value_t>::Data
            will be null. (The raw function pointer could be implemented
            as a FunctionWrapper specialization, but it's done like this
            for efficiency.) */
-        FunctionPtr mRawFuncPtr;
-        FunctionWrapper* mFuncWrapperPtr;
-        unsigned mParams;
+        FunctionPtr      mRawFuncPtr     = nullptr;
+        FunctionWrapper* mFuncWrapperPtr = nullptr;
+        unsigned mNumParams = 0;
 
         FuncWrapperPtrData();
         ~FuncWrapperPtrData();
         FuncWrapperPtrData(const FuncWrapperPtrData&);
+        FuncWrapperPtrData(FuncWrapperPtrData&&);
         FuncWrapperPtrData& operator=(const FuncWrapperPtrData&);
+        FuncWrapperPtrData& operator=(FuncWrapperPtrData&&);
     };
 
     struct FuncParserPtrData
     {
-        FunctionParserBase<Value_t>* mParserPtr;
-        unsigned mParams;
+        FunctionParserBase<Value_t>* mParserPtr = nullptr;
+        unsigned mNumParams = 0;
     };
 
-    std::vector<FuncWrapperPtrData> mFuncPtrs;
-    std::vector<FuncParserPtrData> mFuncParsers;
+    std::vector<FuncWrapperPtrData> mFuncPtrs {};
+    std::vector<FuncParserPtrData> mFuncParsers {};
 
-    std::vector<unsigned> mByteCode;
-    std::vector<Value_t> mImmed;
+    std::vector<unsigned> mByteCode {};
+    std::vector<Value_t> mImmed {};
 
 #if !defined(FP_USE_THREAD_SAFE_EVAL) && \
     !defined(FP_USE_THREAD_SAFE_EVAL_WITH_ALLOCA)
-    std::vector<Value_t> mStack;
+    std::vector<Value_t> mStack {};
     // Note: When mStack exists,
     //       mStack.size() and mStackSize are mutually redundant.
 #endif
 
-    unsigned mStackSize;
+    unsigned mStackSize = 0;
 
     Data();
     Data(const Data&);
-    Data& operator=(const Data&); // not implemented on purpose
+    Data(Data&&) = delete;
+    Data& operator=(const Data&) = delete; // not implemented on purpose
+    Data& operator=(Data&&) = delete;
     ~Data();
 };
 #endif

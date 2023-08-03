@@ -95,7 +95,7 @@ void PrintByteCode(const std::vector<unsigned>& ByteCode,
 
                     default:
                         n      = Functions[opcode-cAbs].name;
-                        params = Functions[opcode-cAbs].params;
+                        params = Functions[opcode-cAbs].num_params;
                   }
                   dest << n;
                   if(params != 1) dest << " (" << params << ")";

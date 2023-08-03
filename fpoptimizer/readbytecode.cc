@@ -553,8 +553,8 @@ namespace FPoptimizer_CodeTree
                     {
                         unsigned funcno = ByteCode[++IP];
                         assert(funcno < fpdata.mFuncPtrs.size());
-                        unsigned params = fpdata.mFuncPtrs[funcno].mParams;
-                        sim.EatFunc(params, OPCODE(opcode), funcno);
+                        unsigned numparams = fpdata.mFuncPtrs[funcno].mNumParams;
+                        sim.EatFunc(numparams, OPCODE(opcode), funcno);
                         break;
                     }
                     case cPCall:
@@ -563,11 +563,11 @@ namespace FPoptimizer_CodeTree
                         assert(funcno < fpdata.mFuncParsers.size());
                         const FunctionParserBase<Value_t>& p =
                             *fpdata.mFuncParsers[funcno].mParserPtr;
-                        unsigned params = fpdata.mFuncParsers[funcno].mParams;
+                        unsigned numparams = fpdata.mFuncParsers[funcno].mNumParams;
 
                         /* Inline the procedure call */
                         /* Works because cPCalls can never recurse */
-                        std::vector<CodeTree> paramlist = sim.Pop(params);
+                        std::vector<CodeTree> paramlist = sim.Pop(numparams);
                         CodeTree pcall_tree;
                         pcall_tree.GenerateFrom(*p.mData, paramlist);
                         sim.Push(std::move(pcall_tree));
@@ -795,7 +795,7 @@ namespace FPoptimizer_CodeTree
                         unsigned funcno = opcode-cAbs;
                         assert(funcno < FUNC_AMOUNT);
                         const FuncDefinition& func = Functions[funcno];
-                        sim.Eat(func.params, OPCODE(opcode));
+                        sim.Eat(func.num_params, OPCODE(opcode));
                         break;
                 }
             }

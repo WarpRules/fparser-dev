@@ -153,7 +153,7 @@ bool FUNCTIONPARSERTYPES::IsUnaryOpcode(unsigned op)
       case cDeg: case cRad:
           return true;
     }
-    return (op < FUNC_AMOUNT && Functions[op].params == 1);
+    return (op < FUNC_AMOUNT && Functions[op].num_params == 1);
 }
 
 bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
@@ -169,7 +169,7 @@ bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
       case cOr: case cAbsOr:
           return true;
     }
-    return (op < FUNC_AMOUNT && Functions[op].params == 2);
+    return (op < FUNC_AMOUNT && Functions[op].num_params == 2);
 }
 
 bool FUNCTIONPARSERTYPES::IsTernaryOpcode(unsigned op)
@@ -179,7 +179,7 @@ bool FUNCTIONPARSERTYPES::IsTernaryOpcode(unsigned op)
       case cFma: case cFms:
           return true;
     }
-    return (op < FUNC_AMOUNT && Functions[op].params == 3);
+    return (op < FUNC_AMOUNT && Functions[op].num_params == 3);
 }
 
 bool FUNCTIONPARSERTYPES::IsQuartaryOpcode(unsigned op)
@@ -189,7 +189,7 @@ bool FUNCTIONPARSERTYPES::IsQuartaryOpcode(unsigned op)
       case cFmma: case cFmms:
           return true;
     }
-    return (op < FUNC_AMOUNT && Functions[op].params == 4);
+    return (op < FUNC_AMOUNT && Functions[op].num_params == 4);
 }
 
 bool FUNCTIONPARSERTYPES::IsVarOpcode(unsigned op)
@@ -643,15 +643,7 @@ namespace
 // Data struct implementation
 //=========================================================================
 template<typename Value_t>
-FunctionParserBase<Value_t>::Data::Data():
-    mReferenceCounter(1),
-    mDelimiterChar(0),
-    mParseErrorType(FunctionParserErrorType::no_function_parsed_yet),
-    mEvalErrorType(0),
-    mUseDegreeConversion(false),
-    mErrorLocation(0),
-    mVariablesAmount(0),
-    mStackSize(0)
+FunctionParserBase<Value_t>::Data::Data()
 {}
 
 template<typename Value_t>
@@ -727,8 +719,7 @@ unsigned FunctionParserBase<Value_t>::decFuncWrapperRefCount
 }
 
 template<typename Value_t>
-FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData():
-    mRawFuncPtr(0), mFuncWrapperPtr(0), mParams(0)
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData()
 {}
 
 template<typename Value_t>
@@ -744,10 +735,21 @@ FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData
 (const FuncWrapperPtrData& rhs):
     mRawFuncPtr(rhs.mRawFuncPtr),
     mFuncWrapperPtr(rhs.mFuncWrapperPtr),
-    mParams(rhs.mParams)
+    mNumParams(rhs.mNumParams)
 {
     if(mFuncWrapperPtr)
         FunctionParserBase::incFuncWrapperRefCount(mFuncWrapperPtr);
+}
+
+template<typename Value_t>
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::FuncWrapperPtrData
+(FuncWrapperPtrData&& rhs):
+    mRawFuncPtr(std::move(rhs.mRawFuncPtr)),
+    mFuncWrapperPtr(std::move(rhs.mFuncWrapperPtr)),
+    mNumParams(std::move(rhs.mNumParams))
+{
+    rhs.mRawFuncPtr = nullptr;
+    rhs.mFuncWrapperPtr = nullptr;
 }
 
 template<typename Value_t>
@@ -762,9 +764,25 @@ FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::operator=
             delete mFuncWrapperPtr;
         mRawFuncPtr = rhs.mRawFuncPtr;
         mFuncWrapperPtr = rhs.mFuncWrapperPtr;
-        mParams = rhs.mParams;
+        mNumParams = rhs.mNumParams;
         if(mFuncWrapperPtr)
             FunctionParserBase::incFuncWrapperRefCount(mFuncWrapperPtr);
+    }
+    return *this;
+}
+
+template<typename Value_t>
+typename FunctionParserBase<Value_t>::Data::FuncWrapperPtrData&
+FunctionParserBase<Value_t>::Data::FuncWrapperPtrData::operator=
+(FuncWrapperPtrData&& rhs)
+{
+    if(&rhs != this)
+    {
+        mRawFuncPtr = rhs.mRawFuncPtr;
+        mFuncWrapperPtr = rhs.mFuncWrapperPtr;
+        mNumParams = rhs.mNumParams;
+        rhs.mRawFuncPtr = nullptr;
+        rhs.mFuncWrapperPtr = nullptr;
     }
     return *this;
 }
@@ -908,7 +926,7 @@ bool FunctionParserBase<Value_t>::AddFunction
     {
         mData->mFuncPtrs.push_back(typename Data::FuncWrapperPtrData());
         mData->mFuncPtrs.back().mRawFuncPtr = ptr;
-        mData->mFuncPtrs.back().mParams = paramsAmount;
+        mData->mFuncPtrs.back().mNumParams = paramsAmount;
     }
     return success;
 }
@@ -970,7 +988,7 @@ bool FunctionParserBase<Value_t>::AddFunction(const std::string& name,
     {
         mData->mFuncParsers.push_back(typename Data::FuncParserPtrData());
         mData->mFuncParsers.back().mParserPtr = &fp;
-        mData->mFuncParsers.back().mParams = fp.mData->mVariablesAmount;
+        mData->mFuncParsers.back().mNumParams = fp.mData->mVariablesAmount;
     }
     return success;
 }
@@ -1949,7 +1967,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 
       case NameData<Value_t>::FUNC_PTR: // is C++ function
           function = CompileFunctionParams
-              (endPtr, mData->mFuncPtrs[nameData->index].mParams);
+              (endPtr, mData->mFuncPtrs[nameData->index].mNumParams);
           //if(!function) return 0;
           FP_TRACE_BYTECODE_ADD(cFCall);
           mData->mByteCode.push_back(cFCall);
@@ -1958,7 +1976,7 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 
       case NameData<Value_t>::PARSER_PTR: // is FunctionParser
           function = CompileFunctionParams
-              (endPtr, mData->mFuncParsers[nameData->index].mParams);
+              (endPtr, mData->mFuncParsers[nameData->index].mNumParams);
           //if(!function) return 0;
           FP_TRACE_BYTECODE_ADD(cPCall);
           mData->mByteCode.push_back(cPCall);
@@ -1980,7 +1998,7 @@ inline const char* FunctionParserBase<Value_t>::CompileFunction
     if(func_opcode == cIf) // "if" is a special case
         return CompileIf(function);
 
-    unsigned requiredParams = funcDef.params;
+    unsigned requiredParams = funcDef.num_params;
 
     function = CompileFunctionParams(function, requiredParams);
     if(!function) return 0;
@@ -2871,7 +2889,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case cFCall:
               {
                   const unsigned index = byteCode[++IP];
-                  const unsigned params = mData->mFuncPtrs[index].mParams;
+                  const unsigned params = mData->mFuncPtrs[index].mNumParams;
                   const Value_t retVal =
                       mData->mFuncPtrs[index].mRawFuncPtr ?
                       mData->mFuncPtrs[index].mRawFuncPtr(&Stack[SP-params+1]) :
@@ -2885,7 +2903,7 @@ Value_t FunctionParserBase<Value_t>::Eval(const Value_t* Vars)
           case cPCall:
               {
                   unsigned index = byteCode[++IP];
-                  unsigned params = mData->mFuncParsers[index].mParams;
+                  unsigned params = mData->mFuncParsers[index].mNumParams;
                   Value_t retVal =
                       mData->mFuncParsers[index].mParserPtr->Eval
                       (&Stack[SP-params+1]);
@@ -3533,7 +3551,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
               case cFCall:
                   {
                       const unsigned index = ByteCode[++IP];
-                      params = mData->mFuncPtrs[index].mParams;
+                      params = mData->mFuncPtrs[index].mNumParams;
                       static std::string name;
                       name = "f:" + findName(mData->mNamePtrs, index,
                                              NameData<Value_t>::FUNC_PTR);
@@ -3545,7 +3563,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
               case cPCall:
                   {
                       const unsigned index = ByteCode[++IP];
-                      params = mData->mFuncParsers[index].mParams;
+                      params = mData->mFuncParsers[index].mNumParams;
                       static std::string name;
                       name = "p:" + findName(mData->mNamePtrs, index,
                                              NameData<Value_t>::PARSER_PTR);
@@ -3676,7 +3694,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
 
                         default:
                             n = Functions[opcode-cAbs].name;
-                            params = Functions[opcode-cAbs].params;
+                            params = Functions[opcode-cAbs].num_params;
                             out_params = params != 1;
                       }
                   }
