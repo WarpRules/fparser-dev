@@ -530,47 +530,60 @@ static int testErrorSituations()
 //=========================================================================
 // Thoroughly test whitespaces
 //=========================================================================
-DefaultValue_t wsFunc(DefaultValue_t x)
+template<typename Value_t>
+static bool testWhitespaceFunction(FunctionParserBase<Value_t>& parser, const std::string& function,
+                                   Value_t(*cppFunction)(const Value_t&))
 {
-    return
-        x + std::sin((x*-1.5)-(.5*2.0)*(((-x)*1.5+(2-(x)*2.0)*2.0)+(3.0*2.0))+
-                     (1.5*2.0))+(cos(x)*2.0);
-}
+    using namespace FUNCTIONPARSERTYPES;
 
-bool testWsFunc(DefaultParser& fp, const std::string& function)
-{
-    int res = fp.Parse(function, "x");
+    int res = parser.Parse(function, "x");
     if(res > -1)
     {
         if(gVerbosityLevel >= 2)
             std::cout << "\n - Parsing function:\n\"" << function
                       << "\"\nfailed at char " << res
-                      << ": " << fp.ErrorMsg() << std::endl;
+                      << ": " << parser.ErrorMsg() << std::endl;
         return false;
     }
 
-    DefaultValue_t vars[1];
-    for(vars[0] = -2.0; vars[0] <= 2.0; vars[0] += .1)
-        if(std::fabs(fp.Eval(vars) - wsFunc(vars[0])) >
-           testbedEpsilon<DefaultValue_t>())
+    static const Value_t
+        v_1_0 = FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(1.0),
+        v_5_0 = FUNCTIONPARSERTYPES::fp_const_preciseDouble<Value_t>(5.0);
+
+    Value_t vars[1] = { -v_5_0 };
+    for(; vars[0] <= v_5_0; vars[0] += v_1_0)
+    {
+        const Value_t value = parser.Eval(vars);
+        const Value_t expected = cppFunction(vars[0]);
+        if(FUNCTIONPARSERTYPES::fp_abs(value - expected) > testbedEpsilon<Value_t>())
         {
+            if(gVerbosityLevel >= 2)
+            {
+                std::cout << "\n - For function:\n\"" << function
+                          << "\"\nparser returned value " << value << " instead of " << expected << std::endl;
+#ifdef FUNCTIONPARSER_SUPPORT_DEBUGGING
+                parser.PrintByteCode(std::cout);
+#endif
+            }
             return false;
         }
+    }
     return true;
 }
 
-int WhiteSpaceTest()
+template<typename Value_t>
+static int testWhitespacesWithType(const char *testFunctionString, Value_t(*cppFunction)(const Value_t&))
 {
-    DefaultParser fp;
-    fp.AddConstant("const", 1.5);
-    fp.AddUnit("unit", 2.0);
-    std::string function(" x + sin ( ( x * - 1.5 ) - .5 unit * ( ( ( - x ) * "
-                         "const + ( 2 - ( x ) unit ) unit ) + 3 unit ) + "
-                         "( const ) unit ) + cos ( x ) unit ");
+    using namespace FUNCTIONPARSERTYPES;
 
-    if(!testWsFunc(fp, function)) return false;
+    FunctionParserBase<Value_t> parser;
+    parser.AddConstant("const", fp_const_preciseDouble<Value_t>(5.2));
+    parser.AddUnit("unit", fp_const_preciseDouble<Value_t>(2));
+    std::string function = testFunctionString;
 
-    static const unsigned char WhiteSpaceTables[][4] =
+    if(!testWhitespaceFunction(parser, function, cppFunction)) return false;
+
+    static const unsigned char whiteSpaceTables[][4] =
     {
         { 1, 0x09, 0,0 }, // tab
         { 1, 0x0A, 0,0 }, // linefeed
@@ -587,7 +600,7 @@ int WhiteSpaceTest()
         { 3, 0xE3,0x80,0x80 } // U+3000
     };
     const unsigned n_whitespaces =
-        sizeof(WhiteSpaceTables)/sizeof(*WhiteSpaceTables);
+        sizeof(whiteSpaceTables)/sizeof(*whiteSpaceTables);
 
     for(unsigned i = 0; i < function.size(); ++i)
     {
@@ -596,11 +609,11 @@ int WhiteSpaceTest()
             function.erase(i, 1);
             for(std::size_t a = 0; a < n_whitespaces; ++a)
             {
-                if(!testWsFunc(fp, function)) return false;
-                int length = (int)WhiteSpaceTables[a][0];
-                const char* sequence = (const char*)&WhiteSpaceTables[a][1];
+                if(!testWhitespaceFunction(parser, function, cppFunction)) return false;
+                int length = static_cast<int>(whiteSpaceTables[a][0]);
+                const char* sequence = (const char*)&whiteSpaceTables[a][1];
                 function.insert(i, sequence, length);
-                if(!testWsFunc(fp, function)) return false;
+                if(!testWhitespaceFunction(parser, function, cppFunction)) return false;
                 function.erase(i, length);
             }
         }
@@ -608,6 +621,58 @@ int WhiteSpaceTest()
     return true;
 }
 
+template<typename Value_t>
+static Value_t whitespaceFunction_floating_point(const Value_t& x)
+{
+    using namespace FUNCTIONPARSERTYPES;
+
+    static const Value_t
+        v_1_0 = fp_const_preciseDouble<Value_t>(1.0),
+        v_1_5 = fp_const_preciseDouble<Value_t>(1.5),
+        v_2_0 = fp_const_preciseDouble<Value_t>(2.0),
+        v_3_0 = fp_const_preciseDouble<Value_t>(3.0),
+        v_5_2 = fp_const_preciseDouble<Value_t>(5.2);
+    return
+        x + fp_sin((x*-v_1_5) - v_1_0 * (((-x)*v_5_2 + (v_2_0 - x*v_2_0)*v_2_0)+(v_3_0*v_2_0))+ (v_5_2*v_2_0)) + fp_cos(x)*v_2_0;
+}
+
+template<typename Value_t>
+static Value_t whitespaceFunction_int(const Value_t& x)
+{
+    using namespace FUNCTIONPARSERTYPES;
+
+    static const Value_t
+        v_1 = fp_const_preciseDouble<Value_t>(1),
+        v_2 = fp_const_preciseDouble<Value_t>(2),
+        v_5 = fp_const_preciseDouble<Value_t>(5),
+        v_6 = fp_const_preciseDouble<Value_t>(6);
+    return
+        x + fp_abs((x*-v_1) - v_6 * (((-x)*v_5 + (v_2 - x*v_2)*v_2) + v_6)+ (v_5*v_2)) + fp_abs(x)*v_2;
+}
+
+static int whiteSpaceTest()
+{
+    const char *const function_string_floating_point =
+        " x + sin ( ( x * - 1.5 ) - .5 unit * ( ( ( - x ) * const + ( 2 - ( x ) unit ) unit ) + 3 unit ) + ( const ) unit ) + cos ( x ) unit ";
+    const char *const function_string_int =
+        " x + abs ( ( x * - 1 ) - 3 unit * ( ( ( - x ) * const + ( 2 - ( x ) unit ) unit ) + 3 unit ) + ( const ) unit ) + abs ( x ) unit ";
+
+    int retval = 1;
+
+#define o(type, enumcode, opt1,opt2, verbosetype) \
+    rt_##enumcode( \
+        if(gVerbosityLevel >= 3) \
+            std::cout << "\n - Testing whitespace with FunctionParserBase<" # type ">"; \
+        if(FUNCTIONPARSERTYPES::IsIntType<type>::value) \
+            retval &= testWhitespacesWithType<type>(function_string_int, whitespaceFunction_int); \
+        else \
+            retval &= testWhitespacesWithType<type>(function_string_floating_point, whitespaceFunction_floating_point); \
+        , )
+    FP_DECLTYPES(o)
+#undef o
+
+    return retval;
+}
 
 //=========================================================================
 // Test integer powers
@@ -3005,7 +3070,7 @@ int main(int argc, char* argv[])
     {
         { "Copy constructor and assignment", &testCopying },
         { "Error situations", &testErrorSituations },
-        { "Whitespaces", &WhiteSpaceTest },
+        { "Whitespaces", &whiteSpaceTest },
         { "Optimizer test 1 (trig. combinations)", &testOptimizer1 },
         { "Optimizer test 2 (bool combinations, double)",
           (skipSlowAlgo || (!runAllTypes && !run_d)) ? 0 : &testOptimizer2 },
