@@ -677,50 +677,59 @@ static int whiteSpaceTest()
 //=========================================================================
 // Test integer powers
 //=========================================================================
-bool compareExpValues(DefaultValue_t value,
-                      const std::string& funcStr,
-                      DefaultValue_t v1,
-                      DefaultValue_t v2,
-                      bool isOptimized)
+template<typename Value_t>
+static bool compareExpValues(const Value_t& value,
+                             const std::string& funcStr,
+                             const Value_t& v1,
+                             const Value_t& v2,
+                             bool isOptimized)
 {
-    const DefaultValue_t epsilon = testbedEpsilon<DefaultValue_t>();
-    const DefaultValue_t diff =
-        std::fabs(v1) < epsilon ?
-        (std::fabs(v2) < epsilon ? std::fabs(v1 - v2) :
-         std::fabs((v1 - v2) / v2)) :
-        std::fabs((v1 - v2) / v1);
+    using namespace FUNCTIONPARSERTYPES;
+
+    const Value_t epsilon = testbedEpsilon<Value_t>();
+    const Value_t abs_diff_v1_v2 = fp_abs(v1 - v2);
+    const Value_t diff =
+        fp_abs(v1) < epsilon ?
+        (fp_abs(v2) < epsilon ? abs_diff_v1_v2 : abs_diff_v1_v2 / v2) :
+         abs_diff_v1_v2 / v1;
+
     if(diff > epsilon)
     {
         if(gVerbosityLevel >= 2)
         {
-            std::cout << "\n - For \"" << funcStr << "\" with x=" << value
-                      << " the library (";
+            std::cout << "\n - For \"" << funcStr << "\" with x=" << value << " the library (";
             if(!isOptimized) std::cout << "not ";
             std::cout << "optimized) returned\n"
                       << std::setprecision(18) << v2
-                      << " instead of " << v1 << std::endl;
+                      << " instead of " << v1
+                      << "\n(Epsilon = " << epsilon << ")" << std::endl;
         }
         return false;
     }
     return true;
 }
 
-bool runIntPowTest(DefaultParser& fp, const std::string& funcStr,
-                   int exponent, bool isOptimized)
+template<typename Value_t>
+static bool runIntPowTest(FunctionParserBase<Value_t>& parser, const std::string& funcStr,
+                          int exponent, bool isOptimized)
 {
+    using namespace FUNCTIONPARSERTYPES;
+
     const int absExponent = exponent < 0 ? -exponent : exponent;
+    const Value_t value_0 = fp_const_preciseDouble<Value_t>(0);
+    const Value_t value_1 = fp_const_preciseDouble<Value_t>(1);
+    const Value_t value_100 = fp_const_preciseDouble<Value_t>(100);
 
     for(int valueOffset = 0; valueOffset <= 5; ++valueOffset)
     {
-        const DefaultValue_t value =
-            (exponent >= 0 && valueOffset == 0) ? 0.0 :
-            1.0+(valueOffset-1)/100.0;
-        DefaultValue_t v1 = exponent == 0 ? 1 : value;
+        const Value_t valueOffset_minus_1 = fp_const_preciseDouble<Value_t>(valueOffset - 1);
+        const Value_t value = (exponent >= 0 && valueOffset == 0) ? value_0 : value_1 + valueOffset_minus_1 / value_100;
+        Value_t v1 = exponent == 0 ? value_1 : value;
         for(int i = 2; i <= absExponent; ++i)
             v1 *= value;
-        if(exponent < 0) v1 = 1.0/v1;
+        if(exponent < 0) v1 = value_1 / v1;
 
-        const DefaultValue_t v2 = fp.Eval(&value);
+        const Value_t v2 = parser.Eval(&value);
 
         if(!compareExpValues(value, funcStr, v1, v2, isOptimized))
             return false;
@@ -729,78 +738,111 @@ bool runIntPowTest(DefaultParser& fp, const std::string& funcStr,
     return true;
 }
 
-bool runFractionalPowTest(const std::string& funcStr, double exponent)
+template<typename Value_t>
+static bool runFractionalPowTest(const std::string& funcStr, const Value_t& exponent)
 {
-    DefaultParser fp;
-    if(fp.Parse(funcStr, "x") != -1)
+    using namespace FUNCTIONPARSERTYPES;
+
+    FunctionParserBase<Value_t> parser;
+    if(parser.Parse(funcStr, "x") != -1)
     {
         if(gVerbosityLevel >= 2)
-            std::cout << "\n - Parsing \"" << funcStr <<"\" failed: "
-                      << fp.ErrorMsg() << "\n";
+            std::cout << "\n - Parsing \"" << funcStr <<"\" failed: " << parser.ErrorMsg() << "\n";
         return false;
     }
+
+    const Value_t value_0 = fp_const_preciseDouble<Value_t>(0);
+    const Value_t value_1 = fp_const_preciseDouble<Value_t>(1);
+    const Value_t value_2 = fp_const_preciseDouble<Value_t>(2);
 
     for(int i = 0; i < 3; ++i)
     {
         for(int valueOffset = 0; valueOffset <= 10; ++valueOffset)
         {
-            const DefaultValue_t value =
-                (exponent >= 0 && valueOffset == 0) ? 0.0 :
-                1.0+(valueOffset-1)/2.0;
-            const DefaultValue_t v1 = std::pow(value, exponent);
-            const DefaultValue_t v2 = fp.Eval(&value);
+            const Value_t valueOffset_minus_1 = fp_const_preciseDouble<Value_t>(valueOffset - 1);
+            const Value_t value = (exponent >= value_0 && valueOffset == 0) ? value_0 : value_1 + valueOffset_minus_1 / value_2;
+            const Value_t v1 = fp_pow(value, exponent);
+            const Value_t v2 = parser.Eval(&value);
 
             if(!compareExpValues(value, funcStr, v1, v2, i > 0))
                 return false;
         }
-        fp.Optimize();
+        parser.Optimize();
     }
 
     return true;
 }
 
-int TestIntPow()
+template<typename Value_t>
+static int testIntPowWithType()
 {
-    DefaultParser fp;
+    using namespace FUNCTIONPARSERTYPES;
+
+    FunctionParserBase<Value_t> parser;
 
     for(int exponent = -1300; exponent <= 1300; ++exponent)
     {
         std::ostringstream os;
         os << "x^" << exponent;
         const std::string func = os.str();
-        if(fp.Parse(func, "x") != -1)
+        if(parser.Parse(func, "x") != -1)
         {
             if(gVerbosityLevel >= 2)
-                std::cout << "\n - Parsing \"" << func <<"\" failed: "
-                          << fp.ErrorMsg() << "\n";
+                std::cout << "\n - Parsing \"" << func <<"\" failed: " << parser.ErrorMsg() << "\n";
             return false;
         }
 
-        if(!runIntPowTest(fp, func, exponent, false)) return false;
-        fp.Optimize();
-        if(!runIntPowTest(fp, func, exponent, true)) return false;
+        if(!runIntPowTest(parser, func, exponent, false)) return false;
+        parser.Optimize();
+        if(!runIntPowTest(parser, func, exponent, true)) return false;
     }
+
+    const Value_t value_2 = fp_const_preciseDouble<Value_t>(2);
+    const Value_t value_3 = fp_const_preciseDouble<Value_t>(3);
 
     for(int m = -27; m <= 27; ++m)
     {
-        for(int n_sqrt=0; n_sqrt<=4; ++n_sqrt)
-            for(int n_cbrt=0; n_cbrt<=4; ++n_cbrt)
+        for(int n_sqrt = 0; n_sqrt <= 4; ++n_sqrt)
+        {
+            const Value_t pow_2_n_sqrt = fp_pow(value_2, fp_const_preciseDouble<Value_t>(n_sqrt));
+            for(int n_cbrt = 0; n_cbrt <= 4; ++n_cbrt)
             {
-                if(n_sqrt+n_cbrt == 0) continue;
+                if(n_sqrt + n_cbrt == 0) continue;
+
+                const Value_t pow_3_n_cbrt = fp_pow(value_3, fp_const_preciseDouble<Value_t>(n_cbrt));
 
                 std::ostringstream os;
                 os << "x^(" << m << "/(1";
-                for(int n=0; n<n_sqrt; ++n) os << "*2";
-                for(int n=0; n<n_cbrt; ++n) os << "*3";
+                for(int n=0; n < n_sqrt; ++n) os << "*2";
+                for(int n=0; n < n_cbrt; ++n) os << "*3";
                 os << "))";
-                DefaultValue_t exponent = DefaultValue_t(m);
-                if(n_sqrt > 0) exponent /= std::pow(2.0, n_sqrt);
-                if(n_cbrt > 0) exponent /= std::pow(3.0, n_cbrt);
-                if(!runFractionalPowTest(os.str(), exponent)) return false;
+                Value_t exponent = fp_const_preciseDouble<Value_t>(m);
+                if(n_sqrt > 0) exponent /= pow_2_n_sqrt;
+                if(n_cbrt > 0) exponent /= pow_3_n_cbrt;
+                if(!runFractionalPowTest<Value_t>(os.str(), exponent)) return false;
             }
+        }
     }
 
     return true;
+}
+
+static int testIntPow()
+{
+    int retval = 1;
+
+#define o(type, enumcode, opt1,opt2, verbosetype) \
+    rt_##enumcode( \
+        if(FUNCTIONPARSERTYPES::IsIntType<type>::value) {} \
+        else { \
+        if(gVerbosityLevel >= 3) \
+            std::cout << "\n - Testing integer and fractional powers with FunctionParserBase<" # type ">"; \
+            retval &= testIntPowWithType<type>(); \
+        } , )
+    FP_DECLTYPES(o)
+#undef o
+
+    return retval;
 }
 
 
@@ -3076,7 +3118,7 @@ int main(int argc, char* argv[])
           (skipSlowAlgo || (!runAllTypes && !run_d)) ? 0 : &testOptimizer2 },
         { "Optimizer test 3 (bool combinations, long)",
           (!runAllTypes && !run_li) ? 0 : &testOptimizer3 },
-        { "Integral powers",  &TestIntPow },
+        { "Integral powers",  &testIntPow },
         { "UTF8 test", skipSlowAlgo ? 0 : &UTF8Test },
         { "Identifier test", &TestIdentifiers },
         { "Used-defined functions", &testUserDefinedFunctions },
