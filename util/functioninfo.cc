@@ -7,7 +7,7 @@
   See gpl.txt for the license text.
 ============================================================================*/
 
-static const char* const kVersionNumber = "1.2.0.4";
+static const char* const kVersionNumber = "1.3.0.4";
 
 #include "fparser.hh"
 #include "fparser_mpfr.hh"
@@ -362,11 +362,11 @@ namespace
         return values;
     }
 
-    template<typename Value_t,
-             bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value
-            >
+    template<typename Value_t, bool IsComplexType=FUNCTIONPARSERTYPES::IsComplexType<Value_t>::value>
     struct findValidVarValuesAux
     {
+        /* TODO: Add comments to this code explaining what it's doing
+         */
         static bool find(std::vector<FunctionInfo<Value_t> >& functions,
                          const std::string& userGivenVarValuesString)
         {
@@ -465,8 +465,7 @@ namespace
                     if(immedCounter[varIndex] < immedList.size())
                     {
                         std::size_t& i = immedCounter[varIndex];
-                        doubleValues[varIndex] =
-                            makeDoubleFrom (immedList[i] );
+                        doubleValues[varIndex] = makeDoubleFrom(immedList[i]);
                         i += 1;
                         break;
                     }
@@ -478,8 +477,7 @@ namespace
                     {
                         if(ParserData<Value_t>::gVarValues.empty())
                         {
-                            ParserData<Value_t>::gVarValues.push_back
-                                (std::vector<Value_t>(varsAmount, Value_t()));
+                            ParserData<Value_t>::gVarValues.push_back(std::vector<Value_t>(varsAmount, Value_t()));
                             return false;
                         }
                         return true;
@@ -1031,8 +1029,7 @@ namespace
     template<typename Value_t>
     bool checkFunctionValidity(FunctionInfo<Value_t>& info)
     {
-        int result = info.mParser.Parse(info.mFunctionString, gVarString,
-                                        gUseDegrees);
+        int result = info.mParser.Parse(info.mFunctionString, gVarString, gUseDegrees);
         if(result >= 0)
         {
             std::cerr << "\"" << info.mFunctionString << "\"\n"
@@ -1091,6 +1088,30 @@ namespace
         }
     }
 
+    template<typename Value_t>
+    void evaluateFunctionsAndPrintResult(std::vector<FunctionInfo<Value_t>>& functions,
+                                         const std::string& evalVarValues)
+    {
+        if(!findValidVarValues(functions, evalVarValues))
+        {
+            std::cout << "ERROR: Parameter to -eval contained invalid syntax:\n\"" << evalVarValues << "\"\n";
+            return;
+        }
+
+        functions[0].mParser.Parse(functions[0].mFunctionString, gVarString, gUseDegrees);
+        const Value_t result = functions[0].mParser.Eval(&functions[0].mValidVarValues[0]);
+
+        const int precision = FUNCTIONPARSERTYPES::fp_value_precision_decimal_digits<Value_t>();
+
+        std::cout << "Function: \"" << functions[0].mFunctionString
+                  << "\"\n- Variables: \"" << gVarString
+                  << "\" with values:\n";
+        for(const Value_t& value: functions[0].mValidVarValues)
+            std::cout << "- " << std::fixed << std::setprecision(precision) << value << "\n";
+
+        std::cout << "Result: " << std::fixed << std::setprecision(precision) << result << "\n";
+    }
+
     int printHelp(const char* programName)
     {
         std::cerr <<
@@ -1115,7 +1136,10 @@ namespace
             "  -noexpr             : Don't print byte code expressions.\n"
             "  -noerr              : Ignore differences in whether function produces an error.\n"
             "  -varValues <values> : Space-separated variable values to use.\n"
-            "    -only             : Test using only the supplied variable values.\n";
+            "  -only               : Test using only the supplied variable values.\n"
+            "  -eval <values>      : Evaluate the function using the specified\n"
+            "                        space-separated variable values. Example:\n"
+            "                        functioninfo \"x+y\" -eval \"10 25\"\n";
         return 1;
     }
 }
@@ -1124,7 +1148,8 @@ template<typename Value_t>
 int functionInfo(const char* const parserTypeString,
                  const std::vector<std::string>& functionStrings,
                  bool measureTimings, bool noTimingIfEqualityErrors,
-                 const std::string& userGivenVarValues)
+                 const std::string& userGivenVarValues,
+                 const std::string& evalVarValues)
 {
     std::vector<FunctionInfo<Value_t> > functions(functionStrings.size());
     for(std::size_t i = 0; i < functions.size(); ++i)
@@ -1192,6 +1217,11 @@ int functionInfo(const char* const parserTypeString,
         printFunctionTimings(functions);
     }
 
+    if(!evalVarValues.empty())
+    {
+        evaluateFunctionsAndPrintResult(functions, evalVarValues);
+    }
+
     /* Release all global references to Value_t() _before_
      * the global destructors for GmpInt and MpfrFloat are run
      */
@@ -1214,7 +1244,7 @@ int main(int argc, char* argv[])
     bool measureTimings = true, noTimingIfEqualityErrors = false;
     ParserType parserType = FP_D;
     unsigned long mantissaBits = 80;
-    std::string userGivenVarValues;
+    std::string userGivenVarValues, evalVarValues;
 
     for(int i = 1; i < argc; ++i)
     {
@@ -1255,6 +1285,11 @@ int main(int argc, char* argv[])
             if(++i == argc) return printHelp(argv[0]);
             userGivenVarValues = argv[i];
         }
+        else if(std::strcmp(argv[i], "-eval") == 0)
+        {
+            if(++i == argc) return printHelp(argv[0]);
+            evalVarValues = argv[i];
+        }
         else if(std::strcmp(argv[i], "--help") == 0
              || std::strcmp(argv[i], "-help") == 0
              || std::strcmp(argv[i], "-h") == 0
@@ -1280,7 +1315,7 @@ int main(int argc, char* argv[])
                 return functionInfo<type>(\
                     verbosetype, functionStrings, \
                     measureTimings, noTimingIfEqualityErrors, \
-                    userGivenVarValues) , \
+                    userGivenVarValues, evalVarValues) , \
                 notCompiledParserType = #type); \
             break;
         FP_DECLTYPES(o)
