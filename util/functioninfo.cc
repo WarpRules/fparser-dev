@@ -33,6 +33,95 @@ static const char* const kVersionNumber = "1.3.0.4";
 static const char SEPARATOR[] =
 "----------------------------------------------------------------------------";
 
+/* Prints a value to the given stream, using the given precision.
+   In this case "precision" refers to the amount of most-significant decimal digits.
+   For example, printing different values of type double with a precision of 15 (ie.
+   15 most-significant digits of the value will be printed), will result in eg:
+
+     1.23456789012345
+     12.3456789012345
+     12345.6789012345
+     12345678901.2345
+     -1234567.89012345
+
+   If the integer portion of the value contains more digits than the specified precision,
+   then that many most-significant digits will be printed and zeros appended.
+
+     123456789012345000000
+*/
+template<typename Value_t>
+static void printValueWithPrecision(std::ostream& os, const Value_t& value, int precision)
+{
+    using namespace FUNCTIONPARSERTYPES;
+    const int integer_part_digits = 1 +
+        static_cast<int>(makeLongInteger(fp_log10(fp_abs(value))));
+
+    if(integer_part_digits <= precision)
+        precision -= integer_part_digits;
+    else
+        precision = 0;
+
+    std::ios_base::fmtflags flags = os.flags();
+    os << std::fixed << std::setprecision(precision) << value;
+    os.flags(flags);
+}
+
+template<typename Value_t>
+struct ValueWithPrecisionPrinter
+{
+    const Value_t& value;
+    int precision;
+    ValueWithPrecisionPrinter(const Value_t& v, int p): value(v), precision(p) {}
+};
+
+template<typename Value_t>
+std::ostream& operator<<(std::ostream& os, const ValueWithPrecisionPrinter<Value_t>& printer)
+{
+    printValueWithPrecision(os, printer.value, printer.precision);
+    return os;
+}
+
+[[maybe_unused]]
+static void testPrintValueWithPrecision()
+{
+    const struct { double value; const char *expectedOutput; }
+    testData[] =
+    {
+        {     0.001, "0.00100000000000000" },
+        {      0.01, "0.0100000000000000" },
+        {       0.1, "0.100000000000000" },
+        {       1.0, "1.00000000000000" },
+        {      10.0, "10.0000000000000" },
+        {     100.0, "100.000000000000" },
+        {    1000.0, "1000.00000000000" },
+        {   10000.0, "10000.0000000000" },
+        {  100000.0, "100000.000000000" },
+        { 1000000.0, "1000000.00000000" },
+        { 0.00123456789012345, "0.00123456789012345" },
+        { 0.0123456789012345, "0.0123456789012345" },
+        { 0.123456789012345, "0.123456789012345" },
+        { 1.23456789012345, "1.23456789012345" },
+        { 12.3456789012345, "12.3456789012345" },
+        { 123.456789012345, "123.456789012345" },
+        { 1234.56789012345, "1234.56789012345" },
+        { 12345.6789012345, "12345.6789012345" },
+        { 123456.789012345, "123456.789012345" },
+    };
+
+    std::ostringstream outputStream;
+    for(const auto& testDataValues: testData)
+    {
+        outputStream.str("");
+        printValueWithPrecision(outputStream, testDataValues.value, 15);
+        if(outputStream.str() != testDataValues.expectedOutput)
+        {
+            std::cerr << "INTERNAL ERROR: For value " << testDataValues.value
+                      << " printValueWithPrecision() resulted in:\n| " << outputStream.str()
+                      << "\ninstead of expected:\n| " << testDataValues.expectedOutput << "\n";
+        }
+    }
+}
+
 namespace
 {
     template<typename Value_t>
@@ -1107,9 +1196,9 @@ namespace
                   << "\"\n- Variables: \"" << gVarString
                   << "\" with values:\n";
         for(const Value_t& value: functions[0].mValidVarValues)
-            std::cout << "- " << std::fixed << std::setprecision(precision) << value << "\n";
+            std::cout << "- " << ValueWithPrecisionPrinter<Value_t>(value, precision) << "\n";
 
-        std::cout << "Result: " << std::fixed << std::setprecision(precision) << result << "\n";
+        std::cout << "Result: " << ValueWithPrecisionPrinter<Value_t>(result, precision) << "\n";
     }
 
     int printHelp(const char* programName)
@@ -1232,6 +1321,8 @@ int functionInfo(const char* const parserTypeString,
 
 int main(int argc, char* argv[])
 {
+    testPrintValueWithPrecision();
+
     if(argc < 2) return printHelp(argv[0]);
 
     enum ParserType {
