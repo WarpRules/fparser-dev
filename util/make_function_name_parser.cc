@@ -18,29 +18,41 @@
 #include "fpconfig.hh"
 #include "extrasrc/fptypes.hh"
 
-#include "../fpoptimizer/opcodename.cc"
-
 using namespace FUNCTIONPARSERTYPES;
 
-static void Compile(std::ostream& outStream, const std::string& prefix, size_t length)
+struct FuncDefinition
+{
+    const char opname[8];
+    const char name[8];
+    unsigned flags;
+};
+static const FuncDefinition Functions[] = // indexed by opcode
+{
+#define o(code, funcname, nparams, options) \
+    { #code, #funcname, options | (nparams << 24) },
+    FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+#undef o
+};
+static constexpr unsigned FUNC_AMOUNT = sizeof(Functions) / sizeof(*Functions);
+
+static void Compile(std::ostream& outStream, const std::string& prefix, std::size_t length)
 {
     // if the prefix matches, check what we've got
     outStream << "/* prefix " << prefix << " */";
 
-    for(size_t a=0; a<FUNC_AMOUNT; ++a)
+    for(std::size_t a=0; a<FUNC_AMOUNT; ++a)
         if(prefix == Functions[a].name
         && length == strlen(Functions[a].name))
         {
-            std::string o = FP_GetOpcodeName(OPCODE(a));
-            outStream << "return (" << o << "<<16) | 0x";
-            outStream << std::hex << (0x80000000U | length);
-            outStream << std::dec << "U;";
+            outStream << "return (" << Functions[a].opname << "<<16) | 0x";
+            outStream << std::hex << std::uppercase << (Functions[a].flags | length);
+            outStream << std::dec << "u;";
             outStream << "\n    ";
             return;
         }
 
-    size_t n_possible_children = 0;
-    for(size_t a=0; a<FUNC_AMOUNT; ++a)
+    std::size_t n_possible_children = 0;
+    for(std::size_t a=0; a<FUNC_AMOUNT; ++a)
     {
         if(strlen(Functions[a].name) != length) continue;
         if(strlen(Functions[a].name) < prefix.size()) continue;
@@ -50,7 +62,7 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
 
     if(n_possible_children == 1)
     {
-        for(size_t a=0; a<FUNC_AMOUNT; ++a)
+        for(std::size_t a=0; a<FUNC_AMOUNT; ++a)
         {
             if(strlen(Functions[a].name) != length) continue;
             if(strlen(Functions[a].name) < prefix.size()) continue;
@@ -58,12 +70,12 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
             {
                 if(prefix != Functions[a].name)
                 {
-                    size_t tmpbytes = length - prefix.size();
+                    std::size_t tmpbytes = length - prefix.size();
                     if(tmpbytes > 2)
                     {
                         outStream << "{";
                         outStream << "static const char tmp[" << tmpbytes << "] = {";
-                        for(size_t b=prefix.size(); b<length; ++b)
+                        for(std::size_t b=prefix.size(); b<length; ++b)
                         {
                             if(b > prefix.size()) outStream << ',';
                             outStream << "'" << Functions[a].name[b] << "'";
@@ -76,7 +88,7 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
                     else
                     {
                         outStream << "if(";
-                        for(size_t b=prefix.size(); b<length; ++b)
+                        for(std::size_t b=prefix.size(); b<length; ++b)
                         {
                             if(b != prefix.size()) outStream << "\n    && ";
                             outStream << "'" << Functions[a].name[b] << "' == uptr[" << b << "]";
@@ -84,10 +96,9 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
                         outStream << ") ";
                     }
 
-                    std::string o = FP_GetOpcodeName(OPCODE(a));
-                    outStream << "return (" << o << "<<16) | 0x";
-                    outStream << std::hex << (0x80000000U | length);
-                    outStream << std::dec << "U;";
+                    outStream << "return (" << Functions[a].opname << "<<16) | 0x";
+                    outStream << std::hex << std::uppercase << (Functions[a].flags | length);
+                    outStream << std::dec << "u;";
                     outStream << "\n    return " << length << ";";
                     if(tmpbytes > 2) outStream << " }";
                     outStream << "\n    ";
@@ -98,7 +109,7 @@ static void Compile(std::ostream& outStream, const std::string& prefix, size_t l
     }
 
     std::set<char> possible_children;
-    for(size_t a=0; a<FUNC_AMOUNT; ++a)
+    for(std::size_t a=0; a<FUNC_AMOUNT; ++a)
     {
         if(strlen(Functions[a].name) != length) continue;
         if(strlen(Functions[a].name) <= prefix.size()) continue;
@@ -156,7 +167,7 @@ int main()
 "        switch(nameLength)\n"
 "        {\n    ";
     std::set<unsigned> lengthSet;
-    for(size_t a=0; a<FUNC_AMOUNT; ++a)
+    for(std::size_t a=0; a<FUNC_AMOUNT; ++a)
         lengthSet.insert(strlen(Functions[a].name));
     for(std::set<unsigned>::iterator
         i = lengthSet.begin(); i != lengthSet.end(); ++i)

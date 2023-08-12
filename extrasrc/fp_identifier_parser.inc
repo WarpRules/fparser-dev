@@ -139,7 +139,7 @@ to be modified by hand.
         {
              case 2:
     /* prefix  */if('i' == uptr[0]
-    && 'f' == uptr[1]) return (cIf<<16) | 0x80000002U;
+    && 'f' == uptr[1]) return (cIf<<16) | 0x90000002u;
     return 2;
 
              case 3:
@@ -147,10 +147,10 @@ to be modified by hand.
     case 'a':
     /* prefix a */switch(uptr[1]) {
     case 'b':
-    /* prefix ab */if('s' == uptr[2]) return (cAbs<<16) | 0x80000003U;
+    /* prefix ab */if('s' == uptr[2]) return (cAbs<<16) | 0x91000003u;
     return 3;
     case 'r':
-    /* prefix ar */if('g' == uptr[2]) return (cArg<<16) | 0x80000003U;
+    /* prefix ar */if('g' == uptr[2]) return (cArg<<16) | 0xA9000003u;
     return 3;
     default: return 3; }
     case 'c':
@@ -158,51 +158,51 @@ to be modified by hand.
     case 'o':
     /* prefix co */switch(uptr[2]) {
     case 's':
-    /* prefix cos */return (cCos<<16) | 0x80000003U;
+    /* prefix cos */return (cCos<<16) | 0xC1000003u;
     case 't':
-    /* prefix cot */return (cCot<<16) | 0x80000003U;
+    /* prefix cot */return (cCot<<16) | 0xC1000003u;
     default: return 3; }
     case 's':
-    /* prefix cs */if('c' == uptr[2]) return (cCsc<<16) | 0x80000003U;
+    /* prefix cs */if('c' == uptr[2]) return (cCsc<<16) | 0xC1000003u;
     return 3;
     default: return 3; }
     case 'e':
     /* prefix e */if('x' == uptr[1]
-    && 'p' == uptr[2]) return (cExp<<16) | 0x80000003U;
+    && 'p' == uptr[2]) return (cExp<<16) | 0x81000003u;
     return 3;
     case 'i':
     /* prefix i */if('n' == uptr[1]
-    && 't' == uptr[2]) return (cInt<<16) | 0x80000003U;
+    && 't' == uptr[2]) return (cInt<<16) | 0x81000003u;
     return 3;
     case 'l':
     /* prefix l */if('o' == uptr[1]
-    && 'g' == uptr[2]) return (cLog<<16) | 0x80000003U;
+    && 'g' == uptr[2]) return (cLog<<16) | 0x81000003u;
     return 3;
     case 'm':
     /* prefix m */switch(uptr[1]) {
     case 'a':
-    /* prefix ma */if('x' == uptr[2]) return (cMax<<16) | 0x80000003U;
+    /* prefix ma */if('x' == uptr[2]) return (cMax<<16) | 0x92000003u;
     return 3;
     case 'i':
-    /* prefix mi */if('n' == uptr[2]) return (cMin<<16) | 0x80000003U;
+    /* prefix mi */if('n' == uptr[2]) return (cMin<<16) | 0x92000003u;
     return 3;
     default: return 3; }
     case 'p':
     /* prefix p */if('o' == uptr[1]
-    && 'w' == uptr[2]) return (cPow<<16) | 0x80000003U;
+    && 'w' == uptr[2]) return (cPow<<16) | 0x82000003u;
     return 3;
     case 's':
     /* prefix s */switch(uptr[1]) {
     case 'e':
-    /* prefix se */if('c' == uptr[2]) return (cSec<<16) | 0x80000003U;
+    /* prefix se */if('c' == uptr[2]) return (cSec<<16) | 0xC1000003u;
     return 3;
     case 'i':
-    /* prefix si */if('n' == uptr[2]) return (cSin<<16) | 0x80000003U;
+    /* prefix si */if('n' == uptr[2]) return (cSin<<16) | 0xC1000003u;
     return 3;
     default: return 3; }
     case 't':
     /* prefix t */if('a' == uptr[1]
-    && 'n' == uptr[2]) return (cTan<<16) | 0x80000003U;
+    && 'n' == uptr[2]) return (cTan<<16) | 0xC1000003u;
     return 3;
     default: return 3; }
 
@@ -212,67 +212,67 @@ to be modified by hand.
     /* prefix a */switch(uptr[1]) {
     case 'c':
     /* prefix ac */if('o' == uptr[2]
-    && 's' == uptr[3]) return (cAcos<<16) | 0x80000004U;
+    && 's' == uptr[3]) return (cAcos<<16) | 0xA1000004u;
     return 4;
     case 's':
     /* prefix as */if('i' == uptr[2]
-    && 'n' == uptr[3]) return (cAsin<<16) | 0x80000004U;
+    && 'n' == uptr[3]) return (cAsin<<16) | 0xA1000004u;
     return 4;
     case 't':
     /* prefix at */if('a' == uptr[2]
-    && 'n' == uptr[3]) return (cAtan<<16) | 0x80000004U;
+    && 'n' == uptr[3]) return (cAtan<<16) | 0xA1000004u;
     return 4;
     default: return 4; }
     case 'c':
     /* prefix c */switch(uptr[1]) {
     case 'b':
     /* prefix cb */if('r' == uptr[2]
-    && 't' == uptr[3]) return (cCbrt<<16) | 0x80000004U;
+    && 't' == uptr[3]) return (cCbrt<<16) | 0x81000004u;
     return 4;
     case 'e':
     /* prefix ce */if('i' == uptr[2]
-    && 'l' == uptr[3]) return (cCeil<<16) | 0x80000004U;
+    && 'l' == uptr[3]) return (cCeil<<16) | 0x81000004u;
     return 4;
     case 'o':
     /* prefix co */switch(uptr[2]) {
     case 'n':
-    /* prefix con */if('j' == uptr[3]) return (cConj<<16) | 0x80000004U;
+    /* prefix con */if('j' == uptr[3]) return (cConj<<16) | 0x89000004u;
     return 4;
     case 's':
-    /* prefix cos */if('h' == uptr[3]) return (cCosh<<16) | 0x80000004U;
+    /* prefix cos */if('h' == uptr[3]) return (cCosh<<16) | 0xC1000004u;
     return 4;
     default: return 4; }
     default: return 4; }
     case 'e':
     /* prefix e */{static const char tmp[3] = {'x','p','2'};
-    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cExp2<<16) | 0x80000004U;
+    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cExp2<<16) | 0x81000004u;
     return 4; }
     case 'i':
     /* prefix i */{static const char tmp[3] = {'m','a','g'};
-    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cImag<<16) | 0x80000004U;
+    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cImag<<16) | 0x89000004u;
     return 4; }
     case 'l':
     /* prefix l */{static const char tmp[3] = {'o','g','2'};
-    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cLog2<<16) | 0x80000004U;
+    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cLog2<<16) | 0x81000004u;
     return 4; }
     case 'r':
     /* prefix r */{static const char tmp[3] = {'e','a','l'};
-    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cReal<<16) | 0x80000004U;
+    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cReal<<16) | 0x89000004u;
     return 4; }
     case 's':
     /* prefix s */switch(uptr[1]) {
     case 'i':
     /* prefix si */if('n' == uptr[2]
-    && 'h' == uptr[3]) return (cSinh<<16) | 0x80000004U;
+    && 'h' == uptr[3]) return (cSinh<<16) | 0xC1000004u;
     return 4;
     case 'q':
     /* prefix sq */if('r' == uptr[2]
-    && 't' == uptr[3]) return (cSqrt<<16) | 0x80000004U;
+    && 't' == uptr[3]) return (cSqrt<<16) | 0x81000004u;
     return 4;
     default: return 4; }
     case 't':
     /* prefix t */{static const char tmp[3] = {'a','n','h'};
-    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cTanh<<16) | 0x80000004U;
+    if(std::memcmp(uptr+1, tmp, 3) == 0) return (cTanh<<16) | 0xC1000004u;
     return 4; }
     default: return 4; }
 
@@ -282,41 +282,41 @@ to be modified by hand.
     /* prefix a */switch(uptr[1]) {
     case 'c':
     /* prefix ac */{static const char tmp[3] = {'o','s','h'};
-    if(std::memcmp(uptr+2, tmp, 3) == 0) return (cAcosh<<16) | 0x80000005U;
+    if(std::memcmp(uptr+2, tmp, 3) == 0) return (cAcosh<<16) | 0xA1000005u;
     return 5; }
     case 's':
     /* prefix as */{static const char tmp[3] = {'i','n','h'};
-    if(std::memcmp(uptr+2, tmp, 3) == 0) return (cAsinh<<16) | 0x80000005U;
+    if(std::memcmp(uptr+2, tmp, 3) == 0) return (cAsinh<<16) | 0xA1000005u;
     return 5; }
     case 't':
     /* prefix at */if('a' == uptr[2]) {
     /* prefix ata */if('n' == uptr[3]) {
     /* prefix atan */switch(uptr[4]) {
     case '2':
-    /* prefix atan2 */return (cAtan2<<16) | 0x80000005U;
+    /* prefix atan2 */return (cAtan2<<16) | 0xA2000005u;
     case 'h':
-    /* prefix atanh */return (cAtanh<<16) | 0x80000005U;
+    /* prefix atanh */return (cAtanh<<16) | 0x81000005u;
     default: return 5; }
     }return 5;}return 5;default: return 5; }
     case 'f':
     /* prefix f */{static const char tmp[4] = {'l','o','o','r'};
-    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cFloor<<16) | 0x80000005U;
+    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cFloor<<16) | 0x81000005u;
     return 5; }
     case 'h':
     /* prefix h */{static const char tmp[4] = {'y','p','o','t'};
-    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cHypot<<16) | 0x80000005U;
+    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cHypot<<16) | 0x82000005u;
     return 5; }
     case 'l':
     /* prefix l */{static const char tmp[4] = {'o','g','1','0'};
-    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cLog10<<16) | 0x80000005U;
+    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cLog10<<16) | 0x81000005u;
     return 5; }
     case 'p':
     /* prefix p */{static const char tmp[4] = {'o','l','a','r'};
-    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cPolar<<16) | 0x80000005U;
+    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cPolar<<16) | 0xCA000005u;
     return 5; }
     case 't':
     /* prefix t */{static const char tmp[4] = {'r','u','n','c'};
-    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cTrunc<<16) | 0x80000005U;
+    if(std::memcmp(uptr+1, tmp, 4) == 0) return (cTrunc<<16) | 0x81000005u;
     return 5; }
     default: return 5; }
 

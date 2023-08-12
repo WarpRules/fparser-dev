@@ -152,8 +152,11 @@ bool FUNCTIONPARSERTYPES::IsUnaryOpcode(unsigned op)
       case cSqr: case cRSqrt:
       case cDeg: case cRad:
           return true;
+#define o(code, funcname, nparams, options) case code: return nparams == 1;
+      FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+#undef o
     }
-    return (op < FUNC_AMOUNT && Functions[op].num_params == 1);
+    return false;
 }
 
 bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
@@ -168,28 +171,11 @@ bool FUNCTIONPARSERTYPES::IsBinaryOpcode(unsigned op)
       case cAnd: case cAbsAnd:
       case cOr: case cAbsOr:
           return true;
+#define o(code, funcname, nparams, options) case code: return nparams == 2;
+      FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+#undef o
     }
-    return (op < FUNC_AMOUNT && Functions[op].num_params == 2);
-}
-
-bool FUNCTIONPARSERTYPES::IsTernaryOpcode(unsigned op)
-{
-    switch(op)
-    {
-      case cFma: case cFms:
-          return true;
-    }
-    return (op < FUNC_AMOUNT && Functions[op].num_params == 3);
-}
-
-bool FUNCTIONPARSERTYPES::IsQuartaryOpcode(unsigned op)
-{
-    switch(op)
-    {
-      case cFmma: case cFmms:
-          return true;
-    }
-    return (op < FUNC_AMOUNT && Functions[op].num_params == 4);
+    return false;
 }
 
 bool FUNCTIONPARSERTYPES::IsVarOpcode(unsigned op)
@@ -334,9 +320,15 @@ namespace
         /* Assuming unsigned = 32 bits:
               76543210 76543210 76543210 76543210
            Return value if built-in function:
-              1PPPPPPP PPPPPPPP LLLLLLLL LLLLLLLL
-                P = function opcode      (15 bits)
+              1<>IC___ PPPPPPPP LLLLLLLL LLLLLLLL
+                P = function opcode      (8 bits)
                 L = function name length (16 bits)
+                1 = 0x80000000u is set to indicate built-in function
+                < = 0x40000000u is set if function takes an angle as input
+                > = 0x20000000u is set if function produces an angle as output
+                I = 0x10000000u is set if function is supported in ints mode
+                C = 0x08000000u is set if function is only supported in complex mode
+                ___ = number of parameters the function takes (3 bits)
            Return value if not built-in function:
               0LLLLLLL LLLLLLLL LLLLLLLL LLLLLLLL
                 L = identifier length (31 bits)
@@ -351,17 +343,15 @@ namespace
     inline unsigned readIdentifier(const char* input)
     {
         const unsigned value = readIdentifierCommon(input);
-        if( (value & 0x80000000U) != 0) // Function?
+        if( (value & FunctionFlag::IsFunction) != 0) // Function?
         {
             // Verify that the function actually exists for this datatype
-            if(IsIntType<Value_t>::value
-            && !Functions[(value >> 16) & 0x7FFF].okForInt())
+            if(IsIntType<Value_t>::value && !(value & FunctionFlag::OkForInt))
             {
                 // If it does not exist, return it as an identifier instead
                 return value & 0xFFFFu;
             }
-            if(!IsComplexType<Value_t>::value
-            && Functions[(value >> 16) & 0x7FFF].complexOnly())
+            if(!IsComplexType<Value_t>::value && (value & FunctionFlag::ComplexOnly))
             {
                 // If it does not exist, return it as an identifier instead
                 return value & 0xFFFFu;
@@ -1278,7 +1268,8 @@ bool FunctionParserBase<Value_t>::ParseVariables
     {
         SkipSpace(beginPtr);
         unsigned nameLength = readIdentifier<Value_t>(beginPtr);
-        if(nameLength == 0 || (nameLength & 0x80000000U)) return false;
+        // No valid identifier, or a function identifier: failed parse
+        if(nameLength == 0 || (nameLength & FunctionFlag::IsFunction)) return false;
         const char* endPtr = beginPtr + nameLength;
         SkipSpace(endPtr);
         if(endPtr != finalPtr && *endPtr != ',') return false;
@@ -1897,10 +1888,10 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
     }
 
     // Function, variable or constant
-    if(nameLength & 0x80000000U) // Function
+    if(nameLength & FunctionFlag::IsFunction) // Function
     {
-        OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0x7FFF );
-        return CompileFunction(function + (nameLength & 0xFFFF), func_opcode);
+        OPCODE func_opcode = OPCODE( (nameLength >> 16) & 0xFF );
+        return CompileFunction(function + (nameLength & 0xFFFF), func_opcode, nameLength);
     }
 
     NamePtr name(function, nameLength);
@@ -1990,27 +1981,26 @@ const char* FunctionParserBase<Value_t>::CompileElement(const char* function)
 
 template<typename Value_t>
 inline const char* FunctionParserBase<Value_t>::CompileFunction
-(const char* function, unsigned func_opcode)
+(const char* function, unsigned func_opcode, unsigned func_flags)
 {
     SkipSpace(function);
-    const FuncDefinition& funcDef = Functions[func_opcode];
 
     if(func_opcode == cIf) // "if" is a special case
         return CompileIf(function);
 
-    unsigned requiredParams = funcDef.num_params;
+    unsigned requiredParams = (func_flags >> 24) & 7;
 
     function = CompileFunctionParams(function, requiredParams);
     if(!function) return 0;
 
     if(mData->mUseDegreeConversion)
     {
-        if(funcDef.flags & FuncDefinition::AngleIn)
+        if(func_flags & FunctionFlag::AngleIn)
             AddFunctionOpcode(cRad);
 
         AddFunctionOpcode(func_opcode);
 
-        if(funcDef.flags & FuncDefinition::AngleOut)
+        if(func_flags & FunctionFlag::AngleOut)
             AddFunctionOpcode(cDeg);
     }
     else
@@ -2043,7 +2033,7 @@ const char*
 FunctionParserBase<Value_t>::CompilePossibleUnit(const char* function)
 {
     unsigned nameLength = readIdentifier<Value_t>(function);
-    if(nameLength & 0x80000000U) return function; // built-in function name
+    if(nameLength & FunctionFlag::IsFunction) return function; // built-in function name
     if(nameLength != 0)
     {
         NamePtr name(function, nameLength);
@@ -2559,10 +2549,11 @@ const char* FunctionParserBase<Value_t>::Compile(const char* function)
 {
     while(true)
     {
-        // Check if an identifier appears as first token:
+        // Check if an identifier (but not a function name)
+        // appears as first token:
         SkipSpace(function);
         unsigned nameLength = readIdentifier<Value_t>(function);
-        if(nameLength > 0 && !(nameLength & 0x80000000U))
+        if(nameLength > 0 && !(nameLength & FunctionFlag::IsFunction))
         {
             typename Data::InlineVariable inlineVar =
                 { NamePtr(function, nameLength), 0 };
@@ -3062,8 +3053,7 @@ namespace
             if(index == oldIndex) return index;
 
             unsigned nameLength = readIdentifier<Value_t>(funcStr + index);
-            if(nameLength & 0x80000000U) return index;
-            if(nameLength == 0) return index;
+            if(nameLength == 0 || (nameLength & FunctionFlag::IsFunction)) return index;
 
             varNames.insert(std::string(funcStr + index, nameLength));
             oldIndex = index;
@@ -3481,7 +3471,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
 
             switch(opcode)
             {
-              case cIf:
+              handle_if:
               {
                   unsigned label = ByteCode[IP+1]+1;
                   output << "jz ";
@@ -3572,6 +3562,119 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                       break;
                   }
 
+              case cNeg: n = "neg"; params = 1; break;
+              case cAdd: n = "add"; break;
+              case cSub: n = "sub"; break;
+              case cMul: n = "mul"; break;
+              case cDiv: n = "div"; break;
+              case cMod: n = "mod"; break;
+              case cEqual: n = "eq"; break;
+              case cNEqual: n = "neq"; break;
+              case cLess: n = "lt"; break;
+              case cLessOrEq: n = "le"; break;
+              case cGreater: n = "gt"; break;
+              case cGreaterOrEq: n = "ge"; break;
+              case cAnd: n = "and"; break;
+              case cOr: n = "or"; break;
+              case cNot: n = "not"; params = 1; break;
+              case cNotNot: n = "notnot"; params = 1; break;
+              case cDeg: n = "deg"; params = 1; break;
+              case cRad: n = "rad"; params = 1; break;
+              case cFma:  n = "fma"; params = 3; break;
+              case cFms:  n = "fms"; params = 3; break;
+              case cFmma: n = "fmma"; params = 4; break;
+              case cFmms: n = "fmms"; params = 4; break;
+
+              case cFetch:
+              {
+                  unsigned index = ByteCode[++IP];
+                  if(showExpression && index < stack.size())
+                      stack.push_back(stack[index]);
+                  output << "cFetch(" << index << ")";
+                  produces = 0;
+                  break;
+              }
+#ifdef FP_SUPPORT_OPTIMIZER
+              case cLog2by: n = "log2by"; params = 2; out_params = true; break;
+              case cPopNMov:
+              {
+                  std::size_t a = ByteCode[++IP];
+                  std::size_t b = ByteCode[++IP];
+                  if(showExpression && b < stack.size())
+                  {
+                      std::pair<int, std::string> stacktop(0, "?");
+                      if(b < stack.size()) stacktop = stack[b];
+                      stack.resize(a);
+                      stack.push_back(stacktop);
+                  }
+                  output << "cPopNMov(" << a << ", " << b << ")";
+                  produces = 0;
+                  break;
+              }
+              case cNop:
+                  output << "nop"; params = 0; produces = 0;
+                  break;
+#endif
+              case cSinCos:
+              {
+                  if(showExpression)
+                  {
+                      std::pair<int, std::string> sin = stack.back();
+                      std::pair<int, std::string> cos(
+                          0, "cos(" + sin.second + ")");
+                      sin.first = 0;
+                      sin.second = "sin(" + sin.second + ")";
+                      stack.back() = sin;
+                      stack.push_back(cos);
+                  }
+                  output << "sincos";
+                  produces = 0;
+                  break;
+              }
+              case cSinhCosh:
+              {
+                  if(showExpression)
+                  {
+                      std::pair<int, std::string> sinh = stack.back();
+                      std::pair<int, std::string> cosh(
+                          0, "cosh(" + sinh.second + ")");
+                      sinh.first = 0;
+                      sinh.second = "sinh(" + sinh.second + ")";
+                      stack.back() = sinh;
+                      stack.push_back(cosh);
+                  }
+                  output << "sinhcosh";
+                  produces = 0;
+                  break;
+              }
+              case cAbsAnd: n = "abs_and"; break;
+              case cAbsOr:  n = "abs_or"; break;
+              case cAbsNot: n = "abs_not"; params = 1; break;
+              case cAbsNotNot: n = "abs_notnot"; params = 1; break;
+              case cDup:
+              {
+                  if(showExpression)
+                      stack.push_back(stack.back());
+                  output << "dup";
+                  produces = 0;
+                  break;
+              }
+              case cInv: n = "inv"; params = 1; break;
+              case cSqr: n = "sqr"; params = 1; break;
+              case cRDiv: n = "rdiv"; break;
+              case cRSub: n = "rsub"; break;
+              case cRSqrt: n = "rsqrt"; params = 1; break;
+
+          #define o(code, funcname, nparams, options) \
+              case code: \
+                  if(code == cIf) goto handle_if; \
+                  n = #funcname; \
+                  params = nparams; \
+                  if(nparams != 1 && code != cPow) out_params = true; \
+                  break;
+              FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+          #undef o
+
               default:
                   if(IsVarOpcode(opcode))
                   {
@@ -3586,117 +3689,7 @@ void FunctionParserBase<Value_t>::PrintByteCode(std::ostream& dest,
                   }
                   else
                   {
-                      switch(OPCODE(opcode))
-                      {
-                        case cNeg: n = "neg"; params = 1; break;
-                        case cAdd: n = "add"; break;
-                        case cSub: n = "sub"; break;
-                        case cMul: n = "mul"; break;
-                        case cDiv: n = "div"; break;
-                        case cMod: n = "mod"; break;
-                        case cPow: n = "pow"; break;
-                        case cEqual: n = "eq"; break;
-                        case cNEqual: n = "neq"; break;
-                        case cLess: n = "lt"; break;
-                        case cLessOrEq: n = "le"; break;
-                        case cGreater: n = "gt"; break;
-                        case cGreaterOrEq: n = "ge"; break;
-                        case cAnd: n = "and"; break;
-                        case cOr: n = "or"; break;
-                        case cNot: n = "not"; params = 1; break;
-                        case cNotNot: n = "notnot"; params = 1; break;
-                        case cDeg: n = "deg"; params = 1; break;
-                        case cRad: n = "rad"; params = 1; break;
-                        case cFma:  n = "fma"; params = 3; break;
-                        case cFms:  n = "fms"; params = 3; break;
-                        case cFmma: n = "fmma"; params = 4; break;
-                        case cFmms: n = "fmms"; params = 4; break;
-
-                        case cFetch:
-                        {
-                            unsigned index = ByteCode[++IP];
-                            if(showExpression && index < stack.size())
-                                stack.push_back(stack[index]);
-                            output << "cFetch(" << index << ")";
-                            produces = 0;
-                            break;
-                        }
-    #ifdef FP_SUPPORT_OPTIMIZER
-                        case cLog2by: n = "log2by"; params = 2; out_params = 1; break;
-                        case cPopNMov:
-                        {
-                            std::size_t a = ByteCode[++IP];
-                            std::size_t b = ByteCode[++IP];
-                            if(showExpression && b < stack.size())
-                            {
-                                std::pair<int, std::string> stacktop(0, "?");
-                                if(b < stack.size()) stacktop = stack[b];
-                                stack.resize(a);
-                                stack.push_back(stacktop);
-                            }
-                            output << "cPopNMov(" << a << ", " << b << ")";
-                            produces = 0;
-                            break;
-                        }
-                        case cNop:
-                            output << "nop"; params = 0; produces = 0;
-                            break;
-    #endif
-                        case cSinCos:
-                        {
-                            if(showExpression)
-                            {
-                                std::pair<int, std::string> sin = stack.back();
-                                std::pair<int, std::string> cos(
-                                    0, "cos(" + sin.second + ")");
-                                sin.first = 0;
-                                sin.second = "sin(" + sin.second + ")";
-                                stack.back() = sin;
-                                stack.push_back(cos);
-                            }
-                            output << "sincos";
-                            produces = 0;
-                            break;
-                        }
-                        case cSinhCosh:
-                        {
-                            if(showExpression)
-                            {
-                                std::pair<int, std::string> sinh = stack.back();
-                                std::pair<int, std::string> cosh(
-                                    0, "cosh(" + sinh.second + ")");
-                                sinh.first = 0;
-                                sinh.second = "sinh(" + sinh.second + ")";
-                                stack.back() = sinh;
-                                stack.push_back(cosh);
-                            }
-                            output << "sinhcosh";
-                            produces = 0;
-                            break;
-                        }
-                        case cAbsAnd: n = "abs_and"; break;
-                        case cAbsOr:  n = "abs_or"; break;
-                        case cAbsNot: n = "abs_not"; params = 1; break;
-                        case cAbsNotNot: n = "abs_notnot"; params = 1; break;
-                        case cDup:
-                        {
-                            if(showExpression)
-                                stack.push_back(stack.back());
-                            output << "dup";
-                            produces = 0;
-                            break;
-                        }
-                        case cInv: n = "inv"; params = 1; break;
-                        case cSqr: n = "sqr"; params = 1; break;
-                        case cRDiv: n = "rdiv"; break;
-                        case cRSub: n = "rsub"; break;
-                        case cRSqrt: n = "rsqrt"; params = 1; break;
-
-                        default:
-                            n = Functions[opcode-cAbs].name;
-                            params = Functions[opcode-cAbs].num_params;
-                            out_params = params != 1;
-                      }
+                      assert(!"what?");
                   }
             }
         }

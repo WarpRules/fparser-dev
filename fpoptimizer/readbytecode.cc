@@ -523,7 +523,7 @@ namespace FPoptimizer_CodeTree
                 switch( OPCODE(opcode) )
                 {
                     // Specials
-                    case cIf:
+                    handle_if:
                     case cAbsIf:
                     {
                         if_stack.resize(if_stack.size() + 1);
@@ -595,7 +595,7 @@ namespace FPoptimizer_CodeTree
                         sim.Eat(2, cPow);
                         break;
                     // Unary functions requiring special attention
-                    case cSqrt: // already handled by powi_opt
+                    handle_sqrt: // already handled by powi_opt
                         sim.AddConst( fp_const_preciseDouble<Value_t>(0.5) );
                         sim.Eat(2, cPow);
                         break;
@@ -603,7 +603,7 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst( fp_const_preciseDouble<Value_t>(-0.5) );
                         sim.Eat(2, cPow);
                         break;
-                    case cCbrt:
+                    handle_cbrt:
                         sim.AddConst(fp_inv(Value_t(3)));
                         sim.Eat(2, cPow);
                         break;
@@ -615,37 +615,37 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(fp_const_deg_to_rad<Value_t>());
                         sim.Eat(2, cMul);
                         break;
-                    case cExp:
-                        if(keep_powi) goto default_function_handling;
+                    handle_exp:
+                        if(keep_powi) { sim.Eat(1, OPCODE(opcode)); break; }
                         sim.AddConst(fp_const_e<Value_t>());
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
                         break;
-                    case cExp2: // from fpoptimizer
-                        if(keep_powi) goto default_function_handling;
+                    handle_exp2: // from fpoptimizer
+                        if(keep_powi) { sim.Eat(1, OPCODE(opcode)); break; }
                         sim.AddConst(2);
                         sim.SwapLastTwoInStack();
                         sim.Eat(2, cPow);
                         break;
-                    case cCot:
+                    handle_cot:
                         sim.Eat(1, cTan);
                         if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
-                    case cCsc:
+                    handle_csc:
                         sim.Eat(1, cSin);
                         if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
-                    case cSec:
+                    handle_sec:
                         sim.Eat(1, cCos);
                         if(keep_powi) { sim.Eat(1, cInv); break; }
                         sim.AddConst(-1);
                         sim.Eat(2, cPow);
                         break;
-                    case cInt:
+                    handle_int:
                         // int(x) = floor(x - 0.5)   if x is negative
                         // int(x) = floor(x + 0.5)   if x is non-negative
                     #ifndef __x86_64
@@ -654,26 +654,26 @@ namespace FPoptimizer_CodeTree
                         /*
                         Don't know which action to take
                         */
-                        goto default_function_handling;
+                        sim.Eat(1, OPCODE(opcode)); break;
                         /*
                         sim.AddConst( fp_const_preciseDouble<Value_t>(0.5) );
                         sim.Eat(2, cAdd);
                         sim.Eat(1, cFloor);
                         */
                         break;
-                    case cTrunc:
+                    handle_trunc:
                         // trunc(x) = ceil(x)      if x is negative
                         // trunc(x) = floor(x)     if x is positive
                         /*
                         Don't know which action to take
                         */
-                        goto default_function_handling;
-                    case cLog10:
+                        sim.Eat(1, OPCODE(opcode)); break;
+                    handle_log10:
                         sim.Eat(1, cLog);
                         sim.AddConst(fp_const_log10inv<Value_t>());
                         sim.Eat(2, cMul);
                         break;
-                    case cLog2:
+                    handle_log2:
                         sim.Eat(1, cLog);
                         sim.AddConst(fp_const_log2inv<Value_t>());
                         sim.Eat(2, cMul);
@@ -684,7 +684,7 @@ namespace FPoptimizer_CodeTree
                         sim.AddConst(fp_const_log2inv<Value_t>()); // y log(x) CONSTANT_L2I
                         sim.Eat(3, cMul);           // y*log(x)*CONSTANT_L2I
                         break;
-                    case cHypot: // x y -> sqrt(x*x + y*y)
+                    handle_hypot: // x y -> sqrt(x*x + y*y)
                         sim.AddConst(2);
                         sim.Eat(2, cPow); // x y^2
                         sim.SwapLastTwoInStack();
@@ -764,7 +764,7 @@ namespace FPoptimizer_CodeTree
                         break;
                     // Binary operators not requiring special attention
                     case cAdd: case cMul:
-                    case cMod: case cPow:
+                    case cMod: handle_pow:
                     case cEqual: case cLess: case cGreater:
                     case cNEqual: case cLessOrEq: case cGreaterOrEq:
                     case cAnd: case cOr:
@@ -790,12 +790,29 @@ namespace FPoptimizer_CodeTree
                         break;
                     }
 
+                #define o(code, funcname, nparams, options) \
+                    case code: \
+                        if(code == cLog10) goto handle_log10; \
+                        if(code == cLog2) goto handle_log2; \
+                        if(code == cHypot) goto handle_hypot; \
+                        if(code == cIf) goto handle_if; \
+                        if(code == cSqrt) goto handle_sqrt; \
+                        if(code == cCbrt) goto handle_cbrt; \
+                        if(code == cExp) goto handle_exp; \
+                        if(code == cExp2) goto handle_exp2; \
+                        if(code == cCot) goto handle_cot; \
+                        if(code == cCsc) goto handle_csc; \
+                        if(code == cSec) goto handle_sec; \
+                        if(code == cInt) goto handle_int; \
+                        if(code == cTrunc) goto handle_trunc; \
+                        if(code == cPow) goto handle_pow; \
+                        sim.Eat(nparams, code); \
+                        break;
+                    FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+                #undef o
+
                     default:
-                    default_function_handling:;
-                        unsigned funcno = opcode-cAbs;
-                        assert(funcno < FUNC_AMOUNT);
-                        const FuncDefinition& func = Functions[funcno];
-                        sim.Eat(func.num_params, OPCODE(opcode));
+                        assert(!"Unknown function"); // Unknown function
                         break;
                 }
             }

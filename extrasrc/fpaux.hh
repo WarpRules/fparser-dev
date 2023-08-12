@@ -51,8 +51,6 @@ namespace FUNCTIONPARSERTYPES
     bool IsAlwaysRealOpcode(unsigned op);
     bool IsUnaryOpcode(unsigned op);
     bool IsBinaryOpcode(unsigned op);
-    bool IsTernaryOpcode(unsigned op);
-    bool IsQuartaryOpcode(unsigned op);
     bool IsVarOpcode(unsigned op);
     bool IsCommutativeOrParamSwappableBinaryOpcode(unsigned op);
     unsigned GetParamSwappedBinaryOpcode(unsigned op);

@@ -46,44 +46,10 @@ const std::string FP_GetOpcodeName(FUNCTIONPARSERTYPES::OPCODE opcode,        bo
     const char* p = 0;
     switch(opcode)
     {
-        case cAbs: p = "cAbs"; break;
-        case cAcos: p = "cAcos"; break;
-        case cAcosh: p = "cAcosh"; break;
-        case cArg: p = "cArg"; break;
-        case cAsin: p = "cAsin"; break;
-        case cAsinh: p = "cAsinh"; break;
-        case cAtan: p = "cAtan"; break;
-        case cAtan2: p = "cAtan2"; break;
-        case cAtanh: p = "cAtanh"; break;
-        case cCbrt: p = "cCbrt"; break;
-        case cCeil: p = "cCeil"; break;
-        case cConj: p = "cConj"; break;
-        case cCos: p = "cCos"; break;
-        case cCosh: p = "cCosh"; break;
-        case cCot: p = "cCot"; break;
-        case cCsc: p = "cCsc"; break;
-        case cExp: p = "cExp"; break;
-        case cExp2: p = "cExp2"; break;
-        case cFloor: p = "cFloor"; break;
-        case cHypot: p = "cHypot"; break;
-        case cIf: p = "cIf"; break;
-        case cImag: p = "cImag"; break;
-        case cInt: p = "cInt"; break;
-        case cLog: p = "cLog"; break;
-        case cLog2: p = "cLog2"; break;
-        case cLog10: p = "cLog10"; break;
-        case cMax: p = "cMax"; break;
-        case cMin: p = "cMin"; break;
-        case cPolar: p = "cPolar"; break;
-        case cPow: p = "cPow"; break;
-        case cReal: p = "cReal"; break;
-        case cSec: p = "cSec"; break;
-        case cSin: p = "cSin"; break;
-        case cSinh: p = "cSinh"; break;
-        case cSqrt: p = "cSqrt"; break;
-        case cTan: p = "cTan"; break;
-        case cTanh: p = "cTanh"; break;
-        case cTrunc: p = "cTrunc"; break;
+#define o(code, funcname, nparams, options) \
+            case FUNCTIONPARSERTYPES::code: p = #code; break;
+        FUNCTIONPARSER_LIST_FUNCTION_OPCODES(o)
+#undef o
         case cImmed: p = "cImmed"; break;
         case cJump: p = "cJump"; break;
         case cNeg: p = "cNeg"; break;
