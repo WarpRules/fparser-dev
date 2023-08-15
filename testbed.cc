@@ -1142,7 +1142,6 @@ static int UTF8TestWithType()
 
 static int UTF8Test()
 {
-    //return UTF8TestWithType<double>();
     int retval = 1;
 
 #define o(type, enumcode, opt1,opt2, verbosetype) \
@@ -1162,9 +1161,12 @@ static int UTF8Test()
 //=========================================================================
 // Test identifier adding and removal
 //=========================================================================
-bool AddIdentifier(DefaultParser& fp, const std::string& name, int type)
+template<typename Value_t>
+static bool addIdentifier(FunctionParserBase<Value_t>& parser, const std::string& name, int type)
 {
-    static DefaultParser anotherParser;
+    using namespace FUNCTIONPARSERTYPES;
+
+    static FunctionParserBase<Value_t> anotherParser;
     static bool anotherParserInitialized = false;
     if(!anotherParserInitialized)
     {
@@ -1174,17 +1176,18 @@ bool AddIdentifier(DefaultParser& fp, const std::string& name, int type)
 
     switch(type)
     {
-      case 0: return fp.AddConstant(name, 123);
-      case 1: return fp.AddUnit(name, 456);
-      case 2: return fp.AddFunction(name, userDefFuncSqr<DefaultValue_t>, 1);
-      case 3: return fp.AddFunction(name, anotherParser);
+      case 0: return parser.AddConstant(name, fp_const_preciseDouble<Value_t>(123));
+      case 1: return parser.AddUnit(name, fp_const_preciseDouble<Value_t>(456));
+      case 2: return parser.AddFunction(name, userDefFuncSqr<Value_t>, 1);
+      case 3: return parser.AddFunction(name, anotherParser);
     }
     return false;
 }
 
-int TestIdentifiers()
+template<typename Value_t>
+static int testIdentifiersWithType()
 {
-    DefaultParser fParser;
+    FunctionParserBase<Value_t> fParser;
     std::vector<std::string> identifierNames(26*26, std::string("AA"));
 
     unsigned nameInd = 0;
@@ -1195,11 +1198,10 @@ int TestIdentifiers()
             identifierNames.at(nameInd)[0] = char('A' + i1);
             identifierNames[nameInd][1] = char('A' + i2);
 
-            if(!AddIdentifier(fParser, identifierNames[nameInd], (i1+26*i2)%3))
+            if(!addIdentifier(fParser, identifierNames[nameInd], (i1+26*i2)%3))
             {
                 if(gVerbosityLevel >= 2)
-                    std::cout << "\n - Failed to add identifier '"
-                              << identifierNames[nameInd] << "'\n";
+                    std::cout << "\n - Failed to add identifier '" << identifierNames[nameInd] << "'\n";
                 return false;
             }
 
@@ -1215,33 +1217,28 @@ int TestIdentifiers()
     {
         for(unsigned removedInd = 0; removedInd < nameInd; ++removedInd)
         {
-            if(!AddIdentifier(fParser, identifierNames[removedInd], 3))
+            if(!addIdentifier(fParser, identifierNames[removedInd], 3))
             {
                 if(gVerbosityLevel >= 2)
-                    std::cout
-                        << "\n - Failure: Identifier '"
-                        << identifierNames[removedInd]
-                        << "' was still reserved even after removing it.\n";
+                    std::cout << "\n - Failure: Identifier '" << identifierNames[removedInd]
+                              << "' was still reserved even after removing it.\n";
                 return false;
             }
             if(!fParser.RemoveIdentifier(identifierNames[removedInd]))
             {
                 if(gVerbosityLevel >= 2)
-                    std::cout << "\n - Failure: Removing the identifier '"
-                              << identifierNames[removedInd]
+                    std::cout << "\n - Failure: Removing the identifier '" << identifierNames[removedInd]
                               << "' after adding it again failed.\n";
                 return false;
             }
         }
 
-        for(unsigned existingInd = nameInd;
-            existingInd < identifierNames.size(); ++existingInd)
+        for(unsigned existingInd = nameInd; existingInd < identifierNames.size(); ++existingInd)
         {
-            if(AddIdentifier(fParser, identifierNames[existingInd], 3))
+            if(addIdentifier(fParser, identifierNames[existingInd], 3))
             {
                 if(gVerbosityLevel >= 2)
-                    std::cout << "\n - Failure: Trying to add identifier '"
-                              << identifierNames[existingInd]
+                    std::cout << "\n - Failure: Trying to add identifier '" << identifierNames[existingInd]
                               << "' for a second time didn't fail.\n";
                 return false;
             }
@@ -1259,8 +1256,7 @@ int TestIdentifiers()
             if(fParser.RemoveIdentifier(identifierNames[nameInd]))
             {
                 if(gVerbosityLevel >= 2)
-                    std::cout << "\n - Failure: Trying to remove identifier '"
-                              << identifierNames[nameInd]
+                    std::cout << "\n - Failure: Trying to remove identifier '" << identifierNames[nameInd]
                               << "' for a second time didn't fail.\n";
                 return false;
             }
@@ -1268,6 +1264,22 @@ int TestIdentifiers()
     }
 
     return true;
+}
+
+static int testIdentifiers()
+{
+    int retval = 1;
+
+#define o(type, enumcode, opt1,opt2, verbosetype) \
+    rt_##enumcode( \
+        if(gVerbosityLevel >= 3) \
+            std::cout << "\n - Testing adding/removing identifiers with FunctionParserBase<" # type "> "; \
+        retval &= testIdentifiersWithType<type>(); \
+        , )
+    FP_DECLTYPES(o)
+#undef o
+
+    return retval;
 }
 
 
@@ -3138,7 +3150,7 @@ int main(int argc, char* argv[])
           (!runAllTypes && !run_li) ? nullptr : &testOptimizer3 },
         { "Integral powers",  &testIntPow },
         { "UTF8 test", skipSlowAlgo ? nullptr : &UTF8Test },
-        { "Identifier test", &TestIdentifiers },
+        { "Identifier test", &testIdentifiers },
         { "Used-defined functions", &testUserDefinedFunctions },
         { "Multithreading", &testMultithreadedEvaluation }
     };
