@@ -835,8 +835,8 @@ static int testIntPow()
     rt_##enumcode( \
         if(FUNCTIONPARSERTYPES::IsIntType<type>::value) {} \
         else { \
-        if(gVerbosityLevel >= 3) \
-            std::cout << "\n - Testing integer and fractional powers with FunctionParserBase<" # type ">"; \
+            if(gVerbosityLevel >= 3) \
+                std::cout << "\n - Testing integer and fractional powers with FunctionParserBase<" # type ">"; \
             retval &= testIntPowWithType<type>(); \
         } , )
     FP_DECLTYPES(o)
@@ -1061,9 +1061,10 @@ namespace
     }
 }
 
-int UTF8Test()
+template<typename Value_t>
+static int UTF8TestWithType()
 {
-    typedef DefaultParser::value_type Value_t;
+    using namespace FUNCTIONPARSERTYPES;
 
     CharIter iters[4] =
         { CharIter(true, false),
@@ -1071,13 +1072,13 @@ int UTF8Test()
           CharIter(false, false),
           CharIter(false, false) };
     std::string identifier;
-    DefaultParser fp;
-    const Value_t value = 0.0;
+    FunctionParserBase<Value_t> parser;
+    const Value_t value = fp_const_preciseDouble<Value_t>(0);
 
     for(unsigned length = 1; length <= 4; ++length)
     {
         if(gVerbosityLevel >= 1)
-            std::cout << " " << length << std::flush;
+            std::cout << "." << std::flush;
         bool cont = true;
         while(cont)
         {
@@ -1085,12 +1086,11 @@ int UTF8Test()
             for(unsigned i = 0; i < length; ++i)
                 iters[i].appendChar(identifier);
 
-            if(fp.Parse(identifier, identifier) >= 0)
+            if(parser.Parse(identifier, identifier) >= 0)
                 return printUTF8TestError("Parsing", iters, length, identifier);
 
-            if(fp.Eval(&value) != 0.0)
-                return printUTF8TestError("Evaluation", iters, length,
-                                          identifier);
+            if(parser.Eval(&value) != value)
+                return printUTF8TestError("Evaluation", iters, length, identifier);
 
             cont = false;
             const unsigned step = (length == 1) ? 1 : length-1;
@@ -1112,7 +1112,7 @@ int UTF8Test()
     for(unsigned length = 1; length <= 3; ++length)
     {
         if(gVerbosityLevel >= 1)
-            std::cout << " " << 4+length << std::flush;
+            std::cout << "." << std::flush;
         unsigned numchars = length < 3 ? length : 2;
         unsigned firstchar = length < 3 ? 0 : 1;
         bool cont = true;
@@ -1124,7 +1124,7 @@ int UTF8Test()
                 invalidIters[firstchar+i].appendChar(identifier);
             identifier += 'a';
 
-            if(fp.Parse(identifier, identifier) < 0)
+            if(parser.Parse(identifier, identifier) < 0)
                 return printUTF8TestError2(invalidIters, length);
 
             cont = false;
@@ -1138,6 +1138,24 @@ int UTF8Test()
     }
 
     return true;
+}
+
+static int UTF8Test()
+{
+    //return UTF8TestWithType<double>();
+    int retval = 1;
+
+#define o(type, enumcode, opt1,opt2, verbosetype) \
+    rt_##enumcode( \
+        if(gVerbosityLevel >= 3) \
+            std::cout << "\n - Testing UTF8 support with FunctionParserBase<" # type "> "; \
+        else if(gVerbosityLevel >= 1) std::cout << " " # enumcode; \
+        retval &= UTF8TestWithType<type>(); \
+        , )
+    FP_DECLTYPES(o)
+#undef o
+
+    return retval;
 }
 
 
@@ -3115,11 +3133,11 @@ int main(int argc, char* argv[])
         { "Whitespaces", &whiteSpaceTest },
         { "Optimizer test 1 (trig. combinations)", &testOptimizer1 },
         { "Optimizer test 2 (bool combinations, double)",
-          (skipSlowAlgo || (!runAllTypes && !run_d)) ? 0 : &testOptimizer2 },
+          (skipSlowAlgo || (!runAllTypes && !run_d)) ? nullptr : &testOptimizer2 },
         { "Optimizer test 3 (bool combinations, long)",
-          (!runAllTypes && !run_li) ? 0 : &testOptimizer3 },
+          (!runAllTypes && !run_li) ? nullptr : &testOptimizer3 },
         { "Integral powers",  &testIntPow },
-        { "UTF8 test", skipSlowAlgo ? 0 : &UTF8Test },
+        { "UTF8 test", skipSlowAlgo ? nullptr : &UTF8Test },
         { "Identifier test", &TestIdentifiers },
         { "Used-defined functions", &testUserDefinedFunctions },
         { "Multithreading", &testMultithreadedEvaluation }
